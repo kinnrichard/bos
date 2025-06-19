@@ -1,10 +1,376 @@
-/*
- * This is a manifest file that'll be compiled into application.css.
- *
- * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
- * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
- * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
- * depending on specificity.
- *
- * Consider organizing styles into separate files for maintainability.
- */
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Colors based on macOS dark theme */
+  --bg-black: #000000;
+  --bg-primary: #1C1C1E;
+  --bg-secondary: #2C2C2E;
+  --bg-tertiary: #3A3A3C;
+  --border-primary: #38383A;
+  --text-primary: #F2F2F7;
+  --text-secondary: #C7C7CC;
+  --text-tertiary: #8E8E93;
+  --accent-blue: #00A3FF;
+  --accent-blue-hover: #0089E0;
+  
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-black);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Main container with rounded corners */
+.main-container {
+  background-color: var(--bg-primary);
+  border-radius: 12px;
+  margin: 8px;
+  height: calc(100vh - 16px);
+  overflow: hidden;
+  display: flex;
+}
+
+/* Sidebar styles */
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+.sidebar-logo {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.sidebar-logo img {
+  height: 32px;
+  width: auto;
+}
+
+.sidebar-section {
+  padding: 16px 0;
+}
+
+.sidebar-section-header {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 16px;
+  margin-bottom: 4px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: default;
+  transition: background-color 0.15s ease;
+}
+
+.sidebar-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.sidebar-item.active {
+  background-color: var(--accent-blue);
+  color: white;
+}
+
+.sidebar-item-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.sidebar-item-text {
+  flex: 1;
+  font-size: 13px;
+}
+
+.sidebar-item-badge {
+  background-color: var(--text-tertiary);
+  color: var(--bg-primary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.sidebar-item.active .sidebar-item-badge {
+  background-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+/* Flexbox utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* Main content area */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+}
+
+/* Header styles */
+.header {
+  height: 60px;
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 20px;
+  gap: 12px;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: all 0.15s ease;
+  font-size: 18px;
+}
+
+.btn-icon:hover {
+  background-color: var(--bg-tertiary);
+  border-color: #48484A;
+}
+
+.btn-icon:active {
+  transform: scale(0.95);
+}
+
+/* Search input */
+.search-container {
+  position: relative;
+  width: 240px;
+}
+
+.search-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-input:focus {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-blue);
+}
+
+/* Content area */
+.content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  max-width: 600px;
+}
+
+.empty-state h1 {
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.empty-state p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.empty-state a {
+  color: var(--accent-blue);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.empty-state a:hover {
+  color: var(--accent-blue-hover);
+  text-decoration: underline;
+}
+
+/* Popover styles */
+.popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  min-width: 320px;
+  z-index: 1000;
+}
+
+.popover-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.popover-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.popover-content {
+  padding: 16px;
+}
+
+.popover-input {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  resize: none;
+  font-family: var(--font-family);
+}
+
+.popover-input:focus {
+  border-color: var(--accent-blue);
+}
+
+/* Search dropdown */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.search-section {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.search-section:last-child {
+  border-bottom: none;
+}
+
+.search-section h3 {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  margin-bottom: 4px;
+}
+
+.search-result {
+  display: block;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.search-result:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.search-result.new-client {
+  color: var(--accent-blue);
+}
+
+/* Utilities */
+.hidden {
+  display: none !important;
+}
+
+/* Tag colors */
+.tag-blue {
+  color: #00A3FF;
+}
+
+.tag-purple {
+  color: #BF5AF2;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #48484A;
+}
