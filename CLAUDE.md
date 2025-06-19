@@ -1,1 +1,1 @@
-- Remember to run `rails tmp:clear && rails assets:clobber && rails assets:precompile` before the end of your turn when you've made a styling change
+- Remember to run `rails tmp:clear && rails assets:clobber && rails assets:precompile && rm -f public/assets/.manifest.json` before the end of your turn when you've made a styling change

@@ -26,7 +26,9 @@ module Components
     def navigation_sections
       div(class: "flex-1") do
         # Recents
-        nav_item("Recents", href: "#", icon: "🕘", active: @active_section == :recents)
+        div(style: "margin-top: 12px;") do
+          nav_item("Recents", href: "#", icon: "🕘", active: @active_section == :recents)
+        end
 
         # Cases section
         div(class: "sidebar-section") do
@@ -43,7 +45,9 @@ module Components
       div(style: "margin-top: auto;") do
         # Bottom links
         nav_item("Logs", href: "/logs", icon: "📜", active: @active_section == :logs)
-        nav_item("Settings", href: "/settings", icon: "⚙️", active: @active_section == :settings)
+        div(style: "margin-bottom: 12px;") do
+          nav_item("Settings", href: "/settings", icon: "⚙️", active: @active_section == :settings)
+        end
       end
     end
 

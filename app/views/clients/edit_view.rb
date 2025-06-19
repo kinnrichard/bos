@@ -3,6 +3,9 @@
 module Views
   module Clients
     class EditView < Views::Base
+      include Phlex::Rails::Helpers::LinkTo
+      include Phlex::Rails::Helpers::Routes
+      
       def initialize(client:, current_user:, authenticity_token: nil)
         @client = client
         @current_user = current_user
@@ -73,8 +76,18 @@ module Views
               
               # Form actions
               div(class: "form-actions") do
-                button(type: "submit", class: "btn btn-primary") { "Update Client" }
-                a(href: "/clients/#{@client.id}", class: "btn btn-secondary") { "Cancel" }
+                a(href: "/clients/#{@client.id}", class: "btn btn-secondary", style: "margin-right: auto;") { "Cancel" }
+                button(type: "submit", class: "btn btn-primary") { "Save" }
+              end
+            end
+            
+            # Delete button at the bottom
+            div(style: "margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;") do
+              form(action: client_path(@client), method: "post", style: "display: inline;", 
+                   onsubmit: "return confirm('Are you sure you want to delete this client?');") do
+                input(type: "hidden", name: "_method", value: "delete")
+                input(type: "hidden", name: "authenticity_token", value: @authenticity_token)
+                button(type: "submit", class: "btn btn-danger") { "Delete Client" }
               end
             end
           end

@@ -20,7 +20,8 @@ module Components
           button(
             type: "button",
             class: "btn-icon",
-            data: { action: "click->popover#toggle" }
+            data: { action: "click->popover#toggle" },
+            style: "line-height: 30px;"
           ) { "+" }
           
           # Popover will be added later with Motion

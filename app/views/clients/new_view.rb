@@ -73,8 +73,8 @@ module Views
               
               # Form actions
               div(class: "form-actions") do
-                button(type: "submit", class: "btn btn-primary") { "Create Client" }
-                a(href: "/clients", class: "btn btn-secondary") { "Cancel" }
+                a(href: "/clients", class: "btn btn-secondary", style: "margin-right: auto;") { "Cancel" }
+                button(type: "submit", class: "btn btn-primary") { "Save" }
               end
             end
           end

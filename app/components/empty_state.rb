@@ -7,7 +7,7 @@ module Components
     end
 
     def view_template
-      div(class: "empty-state") do
+      div(class: "empty-state", data: { controller: "empty-state" }) do
         h1 do
           "#{greeting}, #{@user.name || 'Oliver'}!"
         end
@@ -22,7 +22,9 @@ module Components
           plain "You can also "
           a(
             href: "#",
-            data: { action: "click->search#focus" }
+            data: { 
+              action: "click->empty-state#focusSearch"
+            }
           ) { "search" }
           plain " for a client or case."
         end

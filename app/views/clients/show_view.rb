@@ -17,25 +17,28 @@ module Views
           current_user: @current_user,
           active_section: :clients
         ) do
-          div(class: "client-detail-container") do
+          div(class: "client-detail-container", data: { controller: "client" }) do
             div(class: "client-header") do
               div do
                 h1 { @client.name }
-                span(class: "client-type-badge tag tag-#{@client.business? ? 'purple' : 'blue'}") do
-                  @client.client_type.capitalize
-                end
               end
               
               div(class: "client-actions") do
-                link_to "Edit", edit_client_path(@client), class: "btn btn-secondary"
-                link_to "Delete", client_path(@client), 
-                  data: { "turbo-method": "delete", "turbo-confirm": "Are you sure?" },
-                  class: "btn btn-danger"
+                link_to "Edit", edit_client_path(@client), 
+                  class: "btn btn-secondary",
+                  data: { action: "click->client#showDelete" }
+                form(action: client_path(@client), method: "post", style: "display: none;", 
+                     data: { "client-target": "deleteButton" },
+                     onsubmit: "return confirm('Are you sure?');") do
+                  input(type: "hidden", name: "_method", value: "delete")
+                  input(type: "hidden", name: "authenticity_token", value: helpers.form_authenticity_token)
+                  button(type: "submit", class: "btn btn-danger") { "Delete" }
+                end
               end
             end
             
             div(class: "client-info-section") do
-              h2 { "Client Information" }
+              h2 { "Client Info" }
               
               div(class: "info-grid") do
                 div(class: "info-item") do

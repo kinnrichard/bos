@@ -61,4 +61,9 @@ export default class extends Controller {
     const name = this.inputTarget.value
     window.location.href = `/clients/new?name=${encodeURIComponent(name)}`
   }
+
+  focus(event) {
+    event.preventDefault()
+    this.inputTarget.focus()
+  }
 }
