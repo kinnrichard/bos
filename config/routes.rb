@@ -18,7 +18,11 @@ Rails.application.routes.draw do
     resources :people
     resources :devices
     resources :jobs do
-      resources :tasks
+      resources :tasks do
+        collection do
+          patch :reorder
+        end
+      end
       resources :notes
     end
     member do

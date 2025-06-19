@@ -32,7 +32,7 @@ module Views
                 class: "job-title",
                 contenteditable: "true",
                 data: { 
-                  action: "blur->job#updateTitle",
+                  action: "blur->job#updateTitle keydown.enter->job#handleTitleEnter",
                   job_target: "title"
                 }
               ) { @job.title }
@@ -240,20 +240,30 @@ module Views
       def render_task_item(task)
         div(
           class: "task-item #{task.successfully_completed? ? 'completed' : ''}",
+          draggable: "true",
           data: { 
             task_id: task.id,
-            job_target: "task"
+            task_status: task.status,
+            task_position: task.position,
+            job_target: "task",
+            action: "dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd"
           }
         ) do
-          # Checkbox
-          div(class: "task-checkbox") do
+          # Status indicator with dropdown
+          div(class: "task-status-container") do
             button(
-              class: "checkbox-circle #{task.successfully_completed? ? 'checked' : ''}",
-              data: { action: "click->job#toggleTask" }
+              class: "task-status-button",
+              data: { action: "click->job#toggleTaskStatus" }
             ) do
-              if task.successfully_completed?
-                span { "✓" }
-              end
+              span { task.status_emoji || "⚫" }
+            end
+            
+            # Status dropdown (hidden by default)
+            div(
+              class: "task-status-dropdown hidden",
+              data: { job_target: "taskStatusDropdown" }
+            ) do
+              render_task_status_options(task)
             end
           end
           
@@ -353,6 +363,30 @@ module Views
         # For now, use initials. Could be replaced with actual avatars
         initials = technician.name.split.map(&:first).join.upcase[0..1]
         span(class: "technician-initials") { initials }
+      end
+      
+      def render_task_status_options(task)
+        task_statuses = {
+          'new_task' => { emoji: '⚫', label: 'New' },
+          'in_progress' => { emoji: '🟢', label: 'In Progress' },
+          'paused' => { emoji: '⏸️', label: 'Paused' },
+          'successfully_completed' => { emoji: '☑️', label: 'Successfully Completed' },
+          'cancelled' => { emoji: '❌', label: 'Cancelled' }
+        }
+        
+        task_statuses.each do |status, info|
+          button(
+            class: "task-status-option #{task.status == status ? 'active' : ''}",
+            data: { 
+              action: "click->job#updateTaskStatus",
+              task_id: task.id,
+              status: status
+            }
+          ) do
+            span(class: "status-emoji") { info[:emoji] }
+            span { info[:label] }
+          end
+        end
       end
     end
   end

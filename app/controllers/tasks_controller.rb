@@ -22,15 +22,30 @@ class TasksController < ApplicationController
   
   def update
     if @task.update(task_params)
-      redirect_to client_job_path(@client, @job), notice: 'Task was successfully updated.'
+      respond_to do |format|
+        format.json { render json: { status: 'success', task: @task } }
+        format.html { redirect_to client_job_path(@client, @job), notice: 'Task was successfully updated.' }
+      end
     else
-      render :edit
+      respond_to do |format|
+        format.json { render json: { error: @task.errors.full_messages.join(', ') }, status: :unprocessable_entity }
+        format.html { render :edit }
+      end
     end
   end
   
   def destroy
     @task.destroy
     redirect_to client_job_path(@client, @job), notice: 'Task was successfully deleted.'
+  end
+  
+  def reorder
+    params[:positions].each do |position_data|
+      task = @job.tasks.find(position_data[:id])
+      task.update(position: position_data[:position])
+    end
+    
+    render json: { status: 'success' }
   end
   
   private

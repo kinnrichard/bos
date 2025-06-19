@@ -51,11 +51,19 @@ export default class extends Controller {
   }
 
   handleOutsideClick(event) {
+    // Handle job popover
     const popover = document.querySelector('.job-popover')
     const statusBubble = document.querySelector('.status-bubble')
     if (popover && !popover.contains(event.target) && 
         statusBubble && !statusBubble.contains(event.target)) {
       popover.classList.add("hidden")
+    }
+    
+    // Handle task status dropdowns
+    if (!event.target.closest('.task-status-container')) {
+      document.querySelectorAll('.task-status-dropdown').forEach(dropdown => {
+        dropdown.classList.add("hidden")
+      })
     }
   }
 
@@ -80,6 +88,11 @@ export default class extends Controller {
   }
 
   // Title editing
+  handleTitleEnter(event) {
+    event.preventDefault()
+    event.target.blur()
+  }
+  
   updateTitle(event) {
     const newTitle = event.target.textContent.trim()
     if (!newTitle) {
@@ -184,7 +197,7 @@ export default class extends Controller {
     }).then(response => response.json())
       .then(data => {
         // Add the new task to the list
-        this.addTaskToList(data)
+        this.addTaskToList(data.task)
         // Reset form
         this.newTaskInputTarget.value = ""
         this.newTaskFormTarget.classList.add("hidden")
@@ -208,11 +221,48 @@ export default class extends Controller {
   }
 
   renderTask(task) {
+    const statusEmojis = {
+      'new_task': '⚫',
+      'in_progress': '🟢',
+      'paused': '⏸️',
+      'successfully_completed': '☑️',
+      'cancelled': '❌'
+    }
+    
+    const statusLabels = {
+      'new_task': 'New',
+      'in_progress': 'In Progress',
+      'paused': 'Paused',
+      'successfully_completed': 'Successfully Completed',
+      'cancelled': 'Cancelled'
+    }
+    
+    const emoji = statusEmojis[task.status] || '⚫'
+    const isCompleted = task.status === 'successfully_completed'
+    
     return `
-      <div class="task-item" data-task-id="${task.id}" data-job-target="task">
-        <div class="task-checkbox">
-          <button class="checkbox-circle" data-action="click->job#toggleTask">
+      <div class="task-item ${isCompleted ? 'completed' : ''}" 
+           draggable="true"
+           data-task-id="${task.id}" 
+           data-task-status="${task.status}" 
+           data-task-position="${task.position || 0}"
+           data-job-target="task"
+           data-action="dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd">
+        <div class="task-status-container">
+          <button class="task-status-button" data-action="click->job#toggleTaskStatus">
+            <span>${emoji}</span>
           </button>
+          <div class="task-status-dropdown hidden" data-job-target="taskStatusDropdown">
+            ${Object.entries(statusEmojis).map(([status, emoji]) => `
+              <button class="task-status-option ${task.status === status ? 'active' : ''}" 
+                      data-action="click->job#updateTaskStatus" 
+                      data-task-id="${task.id}" 
+                      data-status="${status}">
+                <span class="status-emoji">${emoji}</span>
+                <span>${statusLabels[status]}</span>
+              </button>
+            `).join('')}
+          </div>
         </div>
         <div class="task-content">
           <div class="task-title">${task.title}</div>
@@ -222,10 +272,25 @@ export default class extends Controller {
     `
   }
 
-  toggleTask(event) {
+  toggleTaskStatus(event) {
+    event.stopPropagation()
     const taskElement = event.target.closest(".task-item")
-    const taskId = taskElement.dataset.taskId
-    const isCompleted = taskElement.classList.contains("completed")
+    const dropdown = taskElement.querySelector(".task-status-dropdown")
+    
+    // Close all other dropdowns
+    document.querySelectorAll(".task-status-dropdown").forEach(d => {
+      if (d !== dropdown) d.classList.add("hidden")
+    })
+    
+    dropdown.classList.toggle("hidden")
+  }
+  
+  updateTaskStatus(event) {
+    event.stopPropagation()
+    const taskId = event.currentTarget.dataset.taskId
+    const newStatus = event.currentTarget.dataset.status
+    const taskElement = event.target.closest(".task-item")
+    const dropdown = taskElement.querySelector(".task-status-dropdown")
     
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
       method: "PATCH",
@@ -235,15 +300,33 @@ export default class extends Controller {
       },
       body: JSON.stringify({ 
         task: { 
-          status: isCompleted ? "pending" : "successfully_completed" 
+          status: newStatus 
         } 
       })
     }).then(response => response.json())
       .then(data => {
-        taskElement.classList.toggle("completed")
-        const checkbox = taskElement.querySelector(".checkbox-circle")
-        checkbox.classList.toggle("checked")
-        checkbox.innerHTML = data.status === "successfully_completed" ? "<span>✓</span>" : ""
+        // Update the task element
+        taskElement.dataset.taskStatus = data.task.status
+        taskElement.classList.toggle("completed", data.task.status === "successfully_completed")
+        
+        // Update the status button emoji
+        const statusEmojis = {
+          'new_task': '⚫',
+          'in_progress': '🟢',
+          'paused': '⏸️',
+          'successfully_completed': '☑️',
+          'cancelled': '❌'
+        }
+        const statusButton = taskElement.querySelector(".task-status-button span")
+        statusButton.textContent = statusEmojis[data.task.status] || '⚫'
+        
+        // Update active state in dropdown
+        taskElement.querySelectorAll(".task-status-option").forEach(opt => {
+          opt.classList.toggle("active", opt.dataset.status === data.task.status)
+        })
+        
+        // Hide dropdown
+        dropdown.classList.add("hidden")
       })
   }
 
@@ -287,5 +370,90 @@ export default class extends Controller {
         window.location.href = `/clients/${this.clientIdValue}/jobs`
       })
     }
+  }
+  
+  // Drag and drop handlers
+  handleDragStart(event) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/html', event.target.innerHTML)
+    this.draggedElement = event.target
+    event.target.classList.add('dragging')
+  }
+  
+  handleDragOver(event) {
+    if (event.preventDefault) {
+      event.preventDefault()
+    }
+    event.dataTransfer.dropEffect = 'move'
+    
+    const draggingElement = this.draggedElement
+    const targetElement = event.target.closest('.task-item')
+    
+    if (targetElement && targetElement !== draggingElement) {
+      const rect = targetElement.getBoundingClientRect()
+      const midpoint = rect.top + rect.height / 2
+      
+      if (event.clientY < midpoint) {
+        targetElement.classList.add('drag-over-top')
+        targetElement.classList.remove('drag-over-bottom')
+      } else {
+        targetElement.classList.add('drag-over-bottom')
+        targetElement.classList.remove('drag-over-top')
+      }
+    }
+    
+    return false
+  }
+  
+  handleDrop(event) {
+    if (event.stopPropagation) {
+      event.stopPropagation()
+    }
+    
+    const draggingElement = this.draggedElement
+    const targetElement = event.target.closest('.task-item')
+    
+    if (targetElement && targetElement !== draggingElement) {
+      const rect = targetElement.getBoundingClientRect()
+      const midpoint = rect.top + rect.height / 2
+      const insertBefore = event.clientY < midpoint
+      
+      const tasksContainer = this.tasksListTarget
+      if (insertBefore) {
+        tasksContainer.insertBefore(draggingElement, targetElement)
+      } else {
+        tasksContainer.insertBefore(draggingElement, targetElement.nextSibling)
+      }
+      
+      // Update positions on server
+      this.updateTaskPositions()
+    }
+    
+    return false
+  }
+  
+  handleDragEnd(event) {
+    event.target.classList.remove('dragging')
+    document.querySelectorAll('.task-item').forEach(item => {
+      item.classList.remove('drag-over-top', 'drag-over-bottom')
+    })
+    this.draggedElement = null
+  }
+  
+  updateTaskPositions() {
+    const taskElements = this.taskTargets
+    const positions = taskElements.map((element, index) => ({
+      id: element.dataset.taskId,
+      position: index + 1
+    }))
+    
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/reorder`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ positions: positions })
+    })
   }
 }
