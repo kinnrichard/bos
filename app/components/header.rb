@@ -8,6 +8,13 @@ module Components
 
     def view_template
       header(class: "header") do
+        # Mobile menu button
+        button(
+          type: "button",
+          class: "btn-icon mobile-menu-btn",
+          data: { action: "click->sidebar#toggle" }
+        ) { "☰" }
+        
         # Add note button with popover
         div(class: "relative", data: { controller: "popover" }) do
           button(

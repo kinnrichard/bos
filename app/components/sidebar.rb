@@ -8,12 +8,10 @@ module Components
     end
 
     def view_template
-      aside(class: "sidebar") do
-        logo_section
-        div(class: "flex-1 flex flex-col") do
-          navigation_sections
-          bottom_sections
-        end
+      logo_section
+      div(class: "flex-1 flex flex-col") do
+        navigation_sections
+        bottom_sections
       end
     end
 
@@ -21,7 +19,7 @@ module Components
 
     def logo_section
       div(class: "sidebar-logo") do
-        img(src: "/assets/faultless_logo.png", alt: "Faultless")
+        img(src: "/assets/faultless_logo-7d7cd0c4.png", alt: "Faultless", class: "logo-image")
       end
     end
 
