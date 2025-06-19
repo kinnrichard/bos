@@ -22,12 +22,10 @@ class DevicesController < ApplicationController
     
     if @device.save
       ActivityLog.create!(
-        client: @client,
         user: current_user,
         action: 'created',
-        resource_type: 'Device',
-        resource_id: @device.id,
-        details: { device_name: @device.name }
+        loggable: @device,
+        metadata: { device_name: @device.name, client_name: @client.name }
       )
       redirect_to client_device_path(@client, @device), notice: 'Device was successfully created.'
     else
@@ -44,12 +42,10 @@ class DevicesController < ApplicationController
   def update
     if @device.update(device_params)
       ActivityLog.create!(
-        client: @client,
         user: current_user,
         action: 'updated',
-        resource_type: 'Device',
-        resource_id: @device.id,
-        details: { device_name: @device.name }
+        loggable: @device,
+        metadata: { device_name: @device.name, client_name: @client.name }
       )
       redirect_to client_device_path(@client, @device), notice: 'Device was successfully updated.'
     else
@@ -69,12 +65,11 @@ class DevicesController < ApplicationController
     @device.destroy
     
     ActivityLog.create!(
-      client: @client,
       user: current_user,
       action: 'deleted',
-      resource_type: 'Device',
-      resource_id: @device.id,
-      details: { device_name: device_name }
+      loggable_type: 'Device',
+      loggable_id: @device.id,
+      metadata: { device_name: device_name, client_name: @client.name }
     )
     
     redirect_to client_devices_path(@client), notice: 'Device was successfully deleted.'

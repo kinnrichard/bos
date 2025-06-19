@@ -3,7 +3,6 @@
 module Views
   module Clients
     class EditView < Views::Base
-      include Phlex::Rails::Helpers::LinkTo
       include Phlex::Rails::Helpers::Routes
       
       def initialize(client:, current_user:, authenticity_token: nil)

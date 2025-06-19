@@ -7,6 +7,14 @@ class Views::Base < Components::Base
   # can change that to `Phlex::HTML` if you want to keep views and
   # components independent.
   
+  # Common Rails helpers used across views
+  include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::FormWith
+  include Phlex::Rails::Helpers::ButtonTag
+  include Phlex::Rails::Helpers::ButtonTo
+  include Phlex::Rails::Helpers::ImageTag
+  include Phlex::Rails::Helpers::NumberToHumanSize
+  
   private
   
   def render_layout(title:, current_user:, active_section: nil, client: nil, &content)

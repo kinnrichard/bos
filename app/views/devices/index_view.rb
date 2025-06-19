@@ -3,9 +3,6 @@
 module Views
   module Devices
     class IndexView < Views::Base
-      include Phlex::Rails::Helpers::LinkTo
-      include Phlex::Rails::Helpers::Routes
-      
       def initialize(client:, devices:)
         @client = client
         @devices = devices

@@ -3,7 +3,6 @@
 module Views
   module People
     class ShowView < Views::Base
-      include Phlex::Rails::Helpers::LinkTo
       include Phlex::Rails::Helpers::Routes
       
       def initialize(client:, person:, current_user:)

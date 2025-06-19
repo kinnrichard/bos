@@ -98,7 +98,7 @@ module Views
           input(
             type: "text",
             name: "person[contact_methods_attributes][#{index}][value]",
-            value: contact&.value,
+            value: contact&.formatted_value || contact&.value,
             class: "form-input",
             placeholder: "Phone, email, or address"
           )

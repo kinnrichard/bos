@@ -5,5 +5,7 @@ class Person < ApplicationRecord
   
   validates :name, presence: true
   
-  accepts_nested_attributes_for :contact_methods, allow_destroy: true
+  accepts_nested_attributes_for :contact_methods, 
+    allow_destroy: true,
+    reject_if: :all_blank
 end

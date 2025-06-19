@@ -3,12 +3,6 @@
 module Views
   module Devices
     class EditView < Views::Base
-      include Phlex::Rails::Helpers::LinkTo
-      include Phlex::Rails::Helpers::Routes
-      include Phlex::Rails::Helpers::FormWith
-      include Phlex::Rails::Helpers::OptionsForSelect
-      include Phlex::Rails::Helpers::ButtonTag
-      
       def initialize(client:, device:, people:)
         @client = client
         @device = device
@@ -45,8 +39,8 @@ module Views
               div(class: "form-group") do
                 f.label(:person_id, "Owner (Optional)", class: "form-label")
                 f.select(:person_id, 
-                  options_for_select([["No owner", ""]] + @people.map { |p| [p.name, p.id] }, @device.person_id),
-                  {},
+                  [["No owner", ""]] + @people.map { |p| [p.name, p.id] },
+                  { selected: @device.person_id },
                   class: "form-input"
                 )
               end

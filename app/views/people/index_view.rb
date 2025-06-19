@@ -3,7 +3,6 @@
 module Views
   module People
     class IndexView < Views::Base
-      include Phlex::Rails::Helpers::LinkTo
       include Phlex::Rails::Helpers::Routes
       
       def initialize(client:, people:, current_user:)

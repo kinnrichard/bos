@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_19_115244) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_19_122345) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -44,7 +44,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_115244) do
   end
 
   create_table "devices", force: :cascade do |t|
-    t.bigint "person_id", null: false
+    t.bigint "person_id"
     t.string "name"
     t.string "model"
     t.string "serial_number"
@@ -53,6 +53,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_115244) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "client_id", null: false
+    t.index ["client_id", "name"], name: "index_devices_on_client_id_and_name", unique: true
     t.index ["client_id"], name: "index_devices_on_client_id"
     t.index ["person_id"], name: "index_devices_on_person_id"
   end

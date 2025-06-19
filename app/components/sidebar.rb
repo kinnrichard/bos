@@ -2,7 +2,6 @@
 
 module Components
   class Sidebar < Base
-    include Phlex::Rails::Helpers::Routes
     
     def initialize(current_user:, active_section: nil, client: nil)
       @current_user = current_user
@@ -26,7 +25,9 @@ module Components
 
     def logo_section
       div(class: "sidebar-logo") do
-        img(src: asset_path("faultless_logo.png"), alt: "Faultless", class: "logo-image")
+        link_to(root_path) do
+          img(src: asset_path("faultless_logo.png"), alt: "Faultless", class: "logo-image")
+        end
       end
     end
 
@@ -110,7 +111,7 @@ module Components
       a(href: href, class: classes) do
         span(class: "sidebar-item-icon") { icon }
         span(class: "sidebar-item-text") { text }
-        if badge
+        if badge && badge > 0
           span(class: "sidebar-item-badge") { badge.to_s }
         end
       end
