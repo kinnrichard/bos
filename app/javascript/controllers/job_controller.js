@@ -133,6 +133,7 @@ export default class extends Controller {
   // Status updates
   updateStatus(event) {
     const newStatus = event.currentTarget.dataset.status
+    const dropdownContainer = event.target.closest('.dropdown-container')
     
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH",
@@ -144,6 +145,39 @@ export default class extends Controller {
     }).then(response => response.json())
       .then(data => {
         this.statusValue = newStatus
+        
+        // Update the dropdown button text
+        if (dropdownContainer) {
+          const statusEmojis = {
+            'new': '⚫',
+            'in_progress': '🟢',
+            'paused': '⏸️',
+            'successfully_completed': '☑️',
+            'cancelled': '❌'
+          }
+          const statusLabels = {
+            'new': 'New',
+            'in_progress': 'In Progress',
+            'paused': 'Paused',
+            'successfully_completed': 'Successfully Completed',
+            'cancelled': 'Cancelled'
+          }
+          
+          const dropdownValue = dropdownContainer.querySelector('.dropdown-value')
+          if (dropdownValue) {
+            dropdownValue.innerHTML = `
+              <span class="status-emoji">${statusEmojis[newStatus] || '⚫'}</span>
+              <span>${statusLabels[newStatus] || newStatus}</span>
+            `
+          }
+          
+          // Close the dropdown
+          const dropdownMenu = dropdownContainer.querySelector('.dropdown-menu')
+          if (dropdownMenu) {
+            dropdownMenu.classList.add('hidden')
+          }
+        }
+        
         this.updateStatusBubble()
         this.highlightActiveStatus()
       })
@@ -151,6 +185,7 @@ export default class extends Controller {
 
   updatePriority(event) {
     const newPriority = event.currentTarget.dataset.priority
+    const dropdownContainer = event.target.closest('.dropdown-container')
     
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH", 
@@ -162,6 +197,40 @@ export default class extends Controller {
     }).then(response => response.json())
       .then(data => {
         this.priorityValue = newPriority
+        
+        // Update the dropdown button text
+        if (dropdownContainer) {
+          const priorityEmojis = {
+            'critical': '🔥',
+            'high': '❗',
+            'normal': '',
+            'low': '➖',
+            'proactive_followup': '💬'
+          }
+          const priorityLabels = {
+            'critical': 'Critical',
+            'high': 'High',
+            'normal': 'Normal',
+            'low': 'Low',
+            'proactive_followup': 'Proactive Followup'
+          }
+          
+          const dropdownValue = dropdownContainer.querySelector('.dropdown-value')
+          if (dropdownValue) {
+            const emoji = priorityEmojis[newPriority] || ''
+            const label = priorityLabels[newPriority] || newPriority
+            dropdownValue.innerHTML = emoji ? 
+              `<span class="priority-emoji">${emoji}</span><span>${label}</span>` :
+              `<span>${label}</span>`
+          }
+          
+          // Close the dropdown
+          const dropdownMenu = dropdownContainer.querySelector('.dropdown-menu')
+          if (dropdownMenu) {
+            dropdownMenu.classList.add('hidden')
+          }
+        }
+        
         this.updateStatusBubble()
         this.highlightActivePriority()
       })
@@ -174,6 +243,8 @@ export default class extends Controller {
   }
   
   setUnassigned(event) {
+    const dropdownContainer = event.target.closest('.dropdown-container')
+    
     // Remove all technicians
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH",
@@ -184,12 +255,34 @@ export default class extends Controller {
       body: JSON.stringify({ job: { technician_ids: [] } })
     }).then(response => response.json())
       .then(data => {
-        location.reload()
+        // Update the dropdown button text
+        if (dropdownContainer) {
+          const dropdownValue = dropdownContainer.querySelector('.dropdown-value')
+          if (dropdownValue) {
+            dropdownValue.textContent = 'Unassigned'
+          }
+          
+          // Update active states
+          dropdownContainer.querySelectorAll('.assignee-option').forEach(opt => {
+            opt.classList.remove('active')
+          })
+          event.currentTarget.classList.add('active')
+          
+          // Close the dropdown
+          const dropdownMenu = dropdownContainer.querySelector('.dropdown-menu')
+          if (dropdownMenu) {
+            dropdownMenu.classList.add('hidden')
+          }
+        }
+        
+        this.updateStatusBubble()
       })
   }
   
   toggleAssignee(event) {
     const technicianId = event.currentTarget.dataset.technicianId
+    const dropdownContainer = event.target.closest('.dropdown-container')
+    const technicianName = event.currentTarget.querySelector('span:nth-child(2)').textContent
     
     // Get current technician IDs
     const currentTechIds = Array.from(document.querySelectorAll('.assignee-option.active'))
@@ -214,7 +307,37 @@ export default class extends Controller {
       body: JSON.stringify({ job: { technician_ids: newTechIds } })
     }).then(response => response.json())
       .then(data => {
-        location.reload()
+        // Update the dropdown button text
+        if (dropdownContainer) {
+          // Toggle active state
+          event.currentTarget.classList.toggle('active')
+          
+          // Get all selected technicians
+          const selectedTechs = Array.from(dropdownContainer.querySelectorAll('.assignee-option.active'))
+            .filter(opt => opt.dataset.technicianId) // Exclude unassigned option
+            .map(opt => opt.querySelector('span:nth-child(2)').textContent)
+          
+          const dropdownValue = dropdownContainer.querySelector('.dropdown-value')
+          if (dropdownValue) {
+            dropdownValue.textContent = selectedTechs.length > 0 ? 
+              selectedTechs.join(', ') : 'Unassigned'
+          }
+          
+          // Update checkmarks
+          dropdownContainer.querySelectorAll('.assignee-option').forEach(opt => {
+            const checkmark = opt.querySelector('.checkmark')
+            if (checkmark) {
+              checkmark.remove()
+            }
+            if (opt.classList.contains('active') && opt.dataset.technicianId) {
+              opt.insertAdjacentHTML('beforeend', '<span class="checkmark">✓</span>')
+            }
+          })
+          
+          // Don't close dropdown for assignee multi-select
+        }
+        
+        this.updateStatusBubble()
       })
   }
 
