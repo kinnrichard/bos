@@ -1572,3 +1572,102 @@ h1.job-title,
 .job-view .checkbox-circle.checked {
   background-color: #48484A !important;
 }
+
+/* Job popover styles */
+.job-popover {
+  position: absolute;
+  top: 100px;
+  right: 40px;
+  width: 320px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: popoverIn 0.2s ease-out;
+}
+
+.job-popover.hidden {
+  display: none;
+}
+
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popover-arrow {
+  position: absolute;
+  top: -8px;
+  right: 120px;
+  width: 16px;
+  height: 16px;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  border-left: 1px solid var(--border-primary);
+  transform: rotate(45deg);
+}
+
+.popover-content {
+  padding: 16px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.popover-section {
+  margin-bottom: 20px;
+}
+
+.popover-section:last-child {
+  margin-bottom: 0;
+}
+
+.popover-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+/* Status and Priority Options */
+.status-options,
+.priority-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-option,
+.priority-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  text-align: left;
+  font-size: 15px;
+}
+
+.status-option:hover,
+.priority-option:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.status-option.active,
+.priority-option.active {
+  background-color: var(--accent-blue);
+  color: #FFF;
+}
