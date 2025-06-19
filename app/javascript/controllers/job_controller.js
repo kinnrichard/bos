@@ -180,6 +180,29 @@ export default class extends Controller {
     this.newTaskFormTarget.classList.remove("hidden")
     this.newTaskInputTarget.focus()
   }
+  
+  addSubtask(event) {
+    const parentTaskId = event.currentTarget.dataset.parentTaskId
+    const title = prompt("Enter subtask title:")
+    
+    if (!title || !title.trim()) return
+    
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ task: { title: title.trim(), parent_id: parentTaskId } })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          location.reload() // Reload to show the new subtask
+        } else {
+          alert(data.error || 'Failed to create subtask')
+        }
+      })
+  }
 
   createTask(event) {
     event.preventDefault()
@@ -283,6 +306,34 @@ export default class extends Controller {
     })
     
     dropdown.classList.toggle("hidden")
+  }
+  
+  toggleSubtaskStatus(event) {
+    event.stopPropagation()
+    const subtaskItem = event.currentTarget.closest('.subtask-item')
+    const taskId = subtaskItem.dataset.taskId
+    const currentStatus = subtaskItem.dataset.taskStatus
+    
+    // Simple toggle between new_task and successfully_completed for subtasks
+    const newStatus = currentStatus === 'successfully_completed' ? 'new_task' : 'successfully_completed'
+    const newStatusLabel = newStatus === 'successfully_completed' ? 'Successfully Completed' : 'New'
+    
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ task: { status: newStatus } })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Update UI
+          subtaskItem.dataset.taskStatus = newStatus
+          subtaskItem.classList.toggle('completed', newStatus === 'successfully_completed')
+          event.currentTarget.querySelector('span').textContent = newStatus === 'successfully_completed' ? '☑️' : '⚫️'
+        }
+      })
   }
   
   updateTaskStatus(event) {

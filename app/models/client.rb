@@ -1,4 +1,6 @@
 class Client < ApplicationRecord
+  include Loggable
+  
   # Associations
   has_many :people, dependent: :destroy
   has_many :jobs, dependent: :destroy

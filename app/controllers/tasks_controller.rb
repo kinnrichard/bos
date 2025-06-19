@@ -8,6 +8,12 @@ class TasksController < ApplicationController
     @task = @job.tasks.build(task_params)
     
     if @task.save
+      # Log task creation with parent job info
+      @task.log_action('added', user: current_user, metadata: { 
+        parent_type: '💼',
+        parent_name: @job.title
+      })
+      
       respond_to do |format|
         format.json { render json: { status: 'success', task: @task } }
         format.html { redirect_to client_job_path(@client, @job), notice: 'Task was successfully created.' }
@@ -63,7 +69,7 @@ class TasksController < ApplicationController
   end
   
   def task_params
-    params.require(:task).permit(:title, :status, :assigned_to_id)
+    params.require(:task).permit(:title, :status, :assigned_to_id, :parent_id)
   end
   
   def json_request?

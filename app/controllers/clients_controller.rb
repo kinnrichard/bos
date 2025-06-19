@@ -36,6 +36,7 @@ class ClientsController < ApplicationController
   end
   
   def show
+    @client.log_action('viewed', user: current_user)
     render Views::Clients::ShowView.new(client: @client, current_user: current_user)
   end
   
@@ -58,6 +59,19 @@ class ClientsController < ApplicationController
   def destroy
     @client.destroy
     redirect_to clients_path, notice: "Client deleted successfully."
+  end
+  
+  def logs
+    @logs = ActivityLog.for_client(@client)
+                      .includes(:user, :loggable)
+                      .recent
+                      .limit(100)
+    
+    render Views::Clients::LogsView.new(
+      client: @client, 
+      logs: @logs, 
+      current_user: current_user
+    )
   end
   
   private

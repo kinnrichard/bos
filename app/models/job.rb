@@ -1,4 +1,6 @@
 class Job < ApplicationRecord
+  include Loggable
+  
   belongs_to :client
   belongs_to :created_by, class_name: 'User'
   

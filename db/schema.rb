@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_19_124725) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_19_195731) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -22,6 +22,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_124725) do
     t.jsonb "metadata"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "client_id"
+    t.index ["client_id", "created_at"], name: "index_activity_logs_on_client_id_and_created_at"
+    t.index ["client_id"], name: "index_activity_logs_on_client_id"
     t.index ["loggable_type", "loggable_id"], name: "index_activity_logs_on_loggable"
     t.index ["user_id"], name: "index_activity_logs_on_user_id"
   end
@@ -121,8 +124,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_124725) do
     t.bigint "assigned_to_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "parent_id"
+    t.integer "subtasks_count", default: 0
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
     t.index ["job_id"], name: "index_tasks_on_job_id"
+    t.index ["parent_id"], name: "index_tasks_on_parent_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -133,6 +139,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_124725) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "activity_logs", "clients"
   add_foreign_key "activity_logs", "users"
   add_foreign_key "contact_methods", "people"
   add_foreign_key "devices", "clients"
@@ -146,5 +153,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_124725) do
   add_foreign_key "notes", "users"
   add_foreign_key "people", "clients"
   add_foreign_key "tasks", "jobs"
+  add_foreign_key "tasks", "tasks", column: "parent_id"
   add_foreign_key "tasks", "users", column: "assigned_to_id"
 end

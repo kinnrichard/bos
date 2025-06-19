@@ -59,10 +59,10 @@ module Views
                 )
               end
               
-              # Existing tasks
+              # Existing tasks (only root tasks)
               div(class: "tasks-list", data: { job_target: "tasksList" }) do
-                if @job.tasks.any?
-                  @job.tasks.order(:position).each do |task|
+                if @job.tasks.root_tasks.any?
+                  @job.tasks.root_tasks.order(:position).each do |task|
                     render_task_item(task)
                   end
                 else
@@ -270,6 +270,15 @@ module Views
           # Task content
           div(class: "task-content") do
             div(class: "task-title") { task.title }
+            
+            # Show time in progress if available
+            if task.formatted_time_in_progress.present?
+              div(class: "task-time-tracking") do
+                span(class: "time-icon") { "⏱️" }
+                span(class: "time-value") { task.formatted_time_in_progress }
+              end
+            end
+            
             if task.notes.any?
               div(class: "task-notes") { "Notes" }
             end
@@ -284,6 +293,55 @@ module Views
             if task.assigned_to
               div(class: "task-assignee-icon", title: task.assigned_to.name) do
                 technician_icon(task.assigned_to)
+              end
+            end
+          end
+        end
+        
+        # Render subtasks if any
+        if task.has_subtasks?
+          div(class: "subtasks-container") do
+            task.subtasks.order(:position).each do |subtask|
+              render_subtask_item(subtask)
+            end
+          end
+        end
+        
+        # Add subtask button
+        button(
+          class: "add-subtask-button",
+          data: { 
+            action: "click->job#addSubtask",
+            parent_task_id: task.id
+          }
+        ) { "+ Add subtask" }
+      end
+      
+      def render_subtask_item(subtask)
+        div(
+          class: "subtask-item #{subtask.successfully_completed? ? 'completed' : ''}",
+          data: { 
+            task_id: subtask.id,
+            task_status: subtask.status
+          }
+        ) do
+          # Status indicator
+          button(
+            class: "subtask-status-button",
+            data: { action: "click->job#toggleSubtaskStatus" }
+          ) do
+            span { subtask.status_emoji || "⚫" }
+          end
+          
+          # Subtask content
+          div(class: "subtask-content") do
+            div(class: "subtask-title") { subtask.title }
+            
+            # Show time in progress if available
+            if subtask.formatted_time_in_progress.present?
+              div(class: "subtask-time-tracking") do
+                span(class: "time-icon") { "⏱️" }
+                span(class: "time-value") { subtask.formatted_time_in_progress }
               end
             end
           end

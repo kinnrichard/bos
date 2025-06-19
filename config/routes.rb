@@ -35,6 +35,9 @@ Rails.application.routes.draw do
   # Job routes
   resources :jobs
   
+  # Logs routes
+  resources :logs, only: [:index]
+  
   # Defines the root path route ("/")
   root "home#show"
 end
