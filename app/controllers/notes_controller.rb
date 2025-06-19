@@ -1,4 +1,5 @@
 class NotesController < ApplicationController
+  skip_before_action :verify_authenticity_token, if: :json_request?
   before_action :set_client
   before_action :set_job
   before_action :set_note, only: [:destroy]
@@ -41,5 +42,9 @@ class NotesController < ApplicationController
   
   def note_params
     params.require(:note).permit(:content)
+  end
+  
+  def json_request?
+    request.format.json?
   end
 end
