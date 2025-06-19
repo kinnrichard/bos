@@ -18,6 +18,8 @@ gem "phlex-rails", "~> 2.0"
 gem "motion", "~> 0.5"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
+# For drag-and-drop ordering
+gem "acts_as_list"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"

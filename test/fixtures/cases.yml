@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  client: one
+  title: MyString
+  status: 1
+  priority: 1
+  due_date: 2025-06-19 04:09:01
+  start_on_date: 2025-06-19 04:09:01
+  created_by: one
+
+two:
+  client: two
+  title: MyString
+  status: 1
+  priority: 1
+  due_date: 2025-06-19 04:09:01
+  start_on_date: 2025-06-19 04:09:01
+  created_by: two
