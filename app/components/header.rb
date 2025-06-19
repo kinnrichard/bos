@@ -56,7 +56,7 @@ module Components
           input(
             type: "search",
             class: "search-input",
-            placeholder: "Search clients...",
+            placeholder: "Search",
             data: {
               search_target: "input",
               action: "input->search#search"

@@ -7,8 +7,12 @@ class ApplicationController < ActionController::Base
   private
   
   def current_user
-    # For now, use the System user
-    @current_user ||= User.find_by(id: 1) || User.first
+    # TODO: Replace with actual authentication
+    @current_user ||= User.first || User.create!(
+      name: "System User",
+      email: "system@example.com", 
+      role: :admin
+    )
   end
   
   helper_method :current_user
