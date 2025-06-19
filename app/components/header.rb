@@ -41,13 +41,33 @@ module Components
           end
         end
 
-        # Search box - placeholder for now, will be Motion component
-        div(class: "search-container") do
+        # Search box with autocomplete
+        div(
+          class: "search-container", 
+          data: { 
+            controller: "search",
+            search_url_value: "/clients/search"
+          }
+        ) do
           input(
             type: "search",
             class: "search-input",
-            placeholder: "Search"
+            placeholder: "Search clients...",
+            data: {
+              search_target: "input",
+              action: "input->search#search"
+            }
           )
+          
+          # Search dropdown
+          div(
+            class: "search-dropdown hidden",
+            data: { search_target: "dropdown" }
+          ) do
+            div(
+              data: { search_target: "results" }
+            ) { "" }
+          end
         end
       end
     end
