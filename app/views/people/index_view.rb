@@ -34,11 +34,11 @@ module Views
                     missing_types = missing_contact_types(person)
                     if missing_types.any?
                       div(class: "person-contacts") do
-                        missing_types.each do |type|
-                          span(class: "contact-icon missing") do
+                        span(class: "contact-icon") do
+                          missing_types.each do |type|
                             plain contact_icon(type)
-                            plain "❗"
                           end
+                          plain "❗"
                         end
                       end
                     end
