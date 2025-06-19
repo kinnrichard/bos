@@ -566,7 +566,8 @@ export default class extends Controller {
 
   toggleTaskStatus(event) {
     event.stopPropagation()
-    const taskElement = event.target.closest(".task-item")
+    // Find the task element - could be either task-item or subtask-item
+    const taskElement = event.target.closest(".task-item") || event.target.closest(".subtask-item")
     const dropdown = taskElement.querySelector(".task-status-dropdown")
     
     // Close all other dropdowns
@@ -609,7 +610,8 @@ export default class extends Controller {
     event.stopPropagation()
     const taskId = event.currentTarget.dataset.taskId
     const newStatus = event.currentTarget.dataset.status
-    const taskElement = event.target.closest(".task-item")
+    // Find the task element - could be either task-item or subtask-item
+    const taskElement = event.target.closest(".task-item") || event.target.closest(".subtask-item")
     const dropdown = taskElement.querySelector(".task-status-dropdown")
     
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
@@ -637,8 +639,10 @@ export default class extends Controller {
           'successfully_completed': '☑️',
           'cancelled': '❌'
         }
-        const statusButton = taskElement.querySelector(".task-status-button span")
-        statusButton.textContent = statusEmojis[data.task.status] || '⚫'
+        const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
+        if (statusButton) {
+          statusButton.textContent = statusEmojis[data.task.status] || '⚫'
+        }
         
         // Update active state in dropdown
         taskElement.querySelectorAll(".task-status-option").forEach(opt => {

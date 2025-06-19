@@ -353,12 +353,25 @@ module Views
             task_status: subtask.status
           }
         ) do
-          # Status indicator
-          button(
-            class: "subtask-status-button",
-            data: { action: "click->job#toggleSubtaskStatus" }
-          ) do
-            span { subtask.status_emoji || "⚫" }
+          # Status button container
+          div(class: "task-status-container") do
+            button(
+              class: "subtask-status-button",
+              data: { 
+                action: "click->job#toggleTaskStatus",
+                job_target: "taskStatusButton"
+              }
+            ) do
+              span { subtask.status_emoji || "⚫" }
+            end
+            
+            # Status dropdown (hidden by default)
+            div(
+              class: "task-status-dropdown hidden",
+              data: { job_target: "taskStatusDropdown" }
+            ) do
+              render_task_status_options(subtask)
+            end
           end
           
           # Subtask content
