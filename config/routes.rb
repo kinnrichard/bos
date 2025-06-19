@@ -17,7 +17,10 @@ Rails.application.routes.draw do
     
     resources :people
     resources :devices
-    resources :jobs
+    resources :jobs do
+      resources :tasks
+      resources :notes
+    end
     member do
       get :schedule
       get :logs

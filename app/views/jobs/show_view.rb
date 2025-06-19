@@ -15,7 +15,7 @@ module Views
           active_section: :jobs,
           client: @client
         ) do
-          div(class: "job-detail-container") do
+          div(class: "job-detail-container", data: { controller: "job", job_id: @job.id, client_id: @client.id }) do
             div(class: "job-header") do
               div do
                 h1 { @job.title }
@@ -124,7 +124,7 @@ module Views
             end
             
             # Tasks Section
-            div(class: "job-info-section") do
+            div(class: "job-info-section", data: { job_target: "tasksSection" }) do
               div(class: "section-header") do
                 h2 { "Tasks" }
                 button(class: "btn btn-secondary btn-sm", data: { action: "click->job#addTask" }) do
@@ -144,7 +144,7 @@ module Views
             end
             
             # Notes Section
-            div(class: "job-info-section") do
+            div(class: "job-info-section", data: { job_target: "notesSection" }) do
               div(class: "section-header") do
                 h2 { "Notes" }
                 button(class: "btn btn-secondary btn-sm", data: { action: "click->job#addNote" }) do
