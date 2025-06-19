@@ -528,11 +528,10 @@ body {
 .clients-list {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  background-color: var(--border-primary);
   border: 1px solid var(--border-primary);
   border-radius: 8px;
   overflow: hidden;
+  background-color: var(--bg-secondary);
 }
 
 .client-item {
@@ -540,9 +539,13 @@ body {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background-color: var(--bg-secondary);
   text-decoration: none;
   transition: all 0.15s ease;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.client-item:last-child {
+  border-bottom: none;
 }
 
 .client-item:hover {
@@ -763,11 +766,7 @@ body {
   margin: 0;
 }
 
-/* People styles */
-.people-container {
-  padding: 40px;
-}
-
+/* Page header styles */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -782,62 +781,54 @@ body {
   margin: 0;
 }
 
-.people-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-}
-
-.person-card {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.2s ease;
-}
-
-.person-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.person-card-link {
-  display: block;
-  padding: 20px;
-  text-decoration: none;
-  color: inherit;
-}
-
-.person-header h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 12px 0;
-}
-
-.contact-methods {
+/* People list styles */
+.people-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--bg-secondary);
 }
 
-.contact-method {
+.person-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.person-item:last-child {
+  border-bottom: none;
+}
+
+.person-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.person-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.person-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.person-contacts {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  color: var(--text-secondary);
 }
 
 .contact-icon {
   font-size: 16px;
-}
-
-.person-notes {
-  font-size: 14px;
-  color: var(--text-tertiary);
-  line-height: 1.5;
 }
 
 /* Person detail styles */
@@ -929,64 +920,59 @@ body {
   font-size: 13px;
 }
 
-/* Device styles */
-.devices-container {
-  padding: 40px;
-}
-
-.devices-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-}
-
-.device-card {
-  background-color: var(--bg-secondary);
+/* Device list styles */
+.devices-list {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border-primary);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
-  transition: all 0.2s ease;
+  background-color: var(--bg-secondary);
 }
 
-.device-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.device-card-link {
-  display: block;
-  padding: 20px;
-  text-decoration: none;
-  color: inherit;
-}
-
-.device-header h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 12px 0;
-}
-
-.device-owner,
-.device-location {
+.device-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
+  padding: 16px 20px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid var(--border-primary);
 }
 
-.owner-icon,
-.location-icon {
+.device-item:last-child {
+  border-bottom: none;
+}
+
+.device-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.device-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.device-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.device-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meta-icon {
   font-size: 16px;
 }
 
-.device-notes {
+.meta-text {
   font-size: 14px;
-  color: var(--text-tertiary);
-  line-height: 1.5;
-  margin-top: 12px;
+  color: var(--text-secondary);
 }
 
 /* Device detail styles */
