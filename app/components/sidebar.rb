@@ -11,7 +11,7 @@ module Components
 
     def view_template
       logo_section
-      div(class: "flex-1 flex flex-col") do
+      div(class: "sidebar-scroll-container") do
         if @client
           client_navigation_sections
         else
