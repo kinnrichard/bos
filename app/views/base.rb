@@ -23,10 +23,10 @@ class Views::Base < Components::Base
 
   # TODO: Replace with actual authentication
   def current_user
-    OpenStruct.new(
-      name: "John Doe",
-      email: "john@example.com",
-      id: 1
+    @current_user ||= User.first || User.create!(
+      name: "System User",
+      email: "system@example.com",
+      role: :admin
     )
   end
 
