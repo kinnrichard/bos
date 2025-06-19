@@ -14,10 +14,6 @@ export default class extends Controller {
             <label class="form-label">Task Title</label>
             <input type="text" class="form-input" name="title" placeholder="Enter task title" required>
           </div>
-          <div class="form-group" style="margin-top: 12px;">
-            <label class="form-label">Description (optional)</label>
-            <textarea class="form-input" name="description" rows="3" placeholder="Enter task description"></textarea>
-          </div>
           <div class="form-actions" style="margin-top: 12px;">
             <button type="submit" class="btn btn-primary">Add Task</button>
             <button type="button" class="btn btn-secondary" data-action="click->job#cancelTaskForm">Cancel</button>
@@ -86,8 +82,7 @@ export default class extends Controller {
         },
         body: JSON.stringify({
           task: {
-            title: formData.get('title'),
-            description: formData.get('description')
+            title: formData.get('title')
           }
         })
       })

@@ -7,13 +7,8 @@ class ApplicationController < ActionController::Base
   private
   
   def current_user
-    # For now, create a mock user object
-    @current_user ||= OpenStruct.new(
-      id: 1,
-      name: "Oliver Chen",
-      clients: Client,
-      can_delete?: ->(resource) { true }
-    )
+    # For now, use the System user
+    @current_user ||= User.find_by(id: 1) || User.first
   end
   
   helper_method :current_user

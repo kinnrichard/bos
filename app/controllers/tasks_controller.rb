@@ -2,7 +2,7 @@ class TasksController < ApplicationController
   skip_before_action :verify_authenticity_token, if: :json_request?
   before_action :set_client
   before_action :set_job
-  before_action :set_task, only: [:show, :edit, :update, :destroy]
+  before_action :set_task, only: [:update, :destroy]
   
   def create
     @task = @job.tasks.build(task_params)
@@ -36,7 +36,7 @@ class TasksController < ApplicationController
   private
   
   def set_client
-    @client = current_user.clients.find(params[:client_id])
+    @client = Client.find(params[:client_id])
   end
   
   def set_job
@@ -48,7 +48,7 @@ class TasksController < ApplicationController
   end
   
   def task_params
-    params.require(:task).permit(:title, :description, :status, :assigned_to_id)
+    params.require(:task).permit(:title, :status, :assigned_to_id)
   end
   
   def json_request?
