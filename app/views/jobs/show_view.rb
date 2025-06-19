@@ -45,9 +45,6 @@ module Views
                 class: "task-item new-task hidden",
                 data: { job_target: "newTaskForm" }
               ) do
-                div(class: "task-checkbox") do
-                  button(class: "checkbox-circle", type: "button")
-                end
                 input(
                   type: "text",
                   class: "new-task-input",
@@ -221,28 +218,6 @@ module Views
           }
         ) do
           render_status_bubble
-        end
-        
-        # List view button (placeholder)
-        view.button(class: "toolbar-button", disabled: true) { "☰" }
-        
-        # Add task button
-        view.button(
-          class: "toolbar-button",
-          data: { action: "click->job#addNewTask" }
-        ) { "+" }
-        
-        # Search
-        view.div(class: "toolbar-search") do
-          view.input(
-            type: "search",
-            placeholder: "Search tasks",
-            class: "toolbar-search-input",
-            data: { 
-              action: "input->job#filterTasks",
-              job_target: "searchInput"
-            }
-          )
         end
       end
       
