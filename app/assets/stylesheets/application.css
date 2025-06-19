@@ -1,3 +1,7 @@
+/*
+ *= require_self
+ */
+
 /* Reset and base styles */
 * {
   margin: 0;
@@ -1530,4 +1534,41 @@ body {
 .modal-footer .btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ===== JOB VIEW OVERRIDES ===== */
+/* Force blue color on job title */
+.job-title,
+h1.job-title,
+.job-title[contenteditable="true"] {
+  color: #0A84FF !important;
+  -webkit-text-fill-color: #0A84FF !important;
+}
+
+/* Override task-item styles for job view */
+.job-view .task-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  padding: 12px 0 !important;
+  padding-top: 8px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: none !important;
+  background-color: transparent !important;
+  gap: 12px !important;
+}
+
+/* Circular checkboxes for job view */
+.job-view .checkbox-circle {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border-radius: 50% !important;
+  width: 20px !important;
+  height: 20px !important;
+  border: 1.5px solid #48484A !important;
+  background: transparent !important;
+}
+
+.job-view .checkbox-circle.checked {
+  background-color: #48484A !important;
 }

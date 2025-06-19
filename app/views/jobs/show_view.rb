@@ -32,7 +32,6 @@ module Views
                 h1(
                   class: "job-title",
                   contenteditable: "true",
-                  style: "color: #0A84FF !important; -webkit-text-fill-color: #0A84FF !important;",
                   data: { 
                     action: "blur->job#updateTitle",
                     job_target: "title"
@@ -219,39 +218,6 @@ module Views
                 end
               end
             end
-            
-            # Inline critical styles to override application.css
-            style { 
-              # Output CSS as plain text
-              %(
-                /* Override task-item styles from application.css */
-                .job-view .task-item {
-                  display: flex !important;
-                  align-items: flex-start !important;
-                  padding-top: 8px;
-                  border: none !important;
-                  border-radius: 0 !important;
-                  background: none !important;
-                  background-color: transparent !important;
-                  gap: 12px !important;
-                }
-                
-                /* Circular checkboxes */
-                .job-view .checkbox-circle {
-                  -webkit-appearance: none !important;
-                  appearance: none !important;
-                  border-radius: 50% !important;
-                  width: 20px !important;
-                  height: 20px !important;
-                  border: 1.5px solid #48484A !important;
-                  background: transparent !important;
-                }
-                
-                .job-view .checkbox-circle.checked {
-                  background-color: #48484A !important;
-                }
-              )
-            }
           end
         end
       end

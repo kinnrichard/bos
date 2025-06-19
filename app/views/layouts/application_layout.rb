@@ -15,7 +15,7 @@ module Views
             unsafe_raw(helpers.csrf_meta_tags)
             unsafe_raw(helpers.csp_meta_tag)
             
-            link(rel: "stylesheet", href: "/assets/application.css")
+            unsafe_raw(helpers.stylesheet_link_tag("application", "data-turbo-track": "reload"))
             unsafe_raw(helpers.javascript_importmap_tags)
             
             # Allow additional head content

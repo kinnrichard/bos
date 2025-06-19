@@ -609,3 +609,31 @@ button.checkbox-circle {
   appearance: none;
   border-radius: 50% !important;
 }
+
+/* Override task-item styles from application.css */
+.job-view .task-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  padding: 12px 0 !important;
+  padding-top: 8px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: none !important;
+  background-color: transparent !important;
+  gap: 12px !important;
+}
+
+/* Override circular checkboxes with higher specificity */
+.job-view .checkbox-circle {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border-radius: 50% !important;
+  width: 20px !important;
+  height: 20px !important;
+  border: 1.5px solid #48484A !important;
+  background: transparent !important;
+}
+
+.job-view .checkbox-circle.checked {
+  background-color: #48484A !important;
+}
