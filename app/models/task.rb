@@ -1,5 +1,5 @@
 class Task < ApplicationRecord
-  belongs_to :case
+  belongs_to :job
   belongs_to :assigned_to, class_name: 'User', optional: true
   
   has_many :notes, as: :notable, dependent: :destroy
@@ -16,7 +16,7 @@ class Task < ApplicationRecord
   validates :status, presence: true
   
   # For drag and drop reordering
-  acts_as_list scope: :case
+  acts_as_list scope: :job
   
   # Set defaults
   after_initialize :set_defaults, if: :new_record?

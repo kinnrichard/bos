@@ -44,8 +44,8 @@ class ActivityLog < ApplicationRecord
     case loggable_type
     when 'Client'
       loggable&.name || 'Unknown Client'
-    when 'Case'
-      loggable&.title || 'Unknown Case'
+    when 'Job'
+      loggable&.title || 'Unknown Job'
     when 'Task'
       loggable&.title || 'Unknown Task'
     else
@@ -57,7 +57,7 @@ class ActivityLog < ApplicationRecord
     case loggable_type
     when 'Client'
       loggable&.business? ? '🏢' : '🏠'
-    when 'Case'
+    when 'Job'
       '💼'
     when 'Task'
       '☑️'

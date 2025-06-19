@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_19_081031) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_19_081947) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -24,38 +24,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_081031) do
     t.datetime "updated_at", null: false
     t.index ["loggable_type", "loggable_id"], name: "index_activity_logs_on_loggable"
     t.index ["user_id"], name: "index_activity_logs_on_user_id"
-  end
-
-  create_table "case_assignments", force: :cascade do |t|
-    t.bigint "case_id", null: false
-    t.bigint "user_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["case_id"], name: "index_case_assignments_on_case_id"
-    t.index ["user_id"], name: "index_case_assignments_on_user_id"
-  end
-
-  create_table "case_people", force: :cascade do |t|
-    t.bigint "case_id", null: false
-    t.bigint "person_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["case_id"], name: "index_case_people_on_case_id"
-    t.index ["person_id"], name: "index_case_people_on_person_id"
-  end
-
-  create_table "cases", force: :cascade do |t|
-    t.bigint "client_id", null: false
-    t.string "title"
-    t.integer "status"
-    t.integer "priority"
-    t.datetime "due_date"
-    t.datetime "start_on_date"
-    t.bigint "created_by_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["client_id"], name: "index_cases_on_client_id"
-    t.index ["created_by_id"], name: "index_cases_on_created_by_id"
   end
 
   create_table "clients", force: :cascade do |t|
@@ -87,6 +55,38 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_081031) do
     t.index ["person_id"], name: "index_devices_on_person_id"
   end
 
+  create_table "job_assignments", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_id"], name: "index_job_assignments_on_job_id"
+    t.index ["user_id"], name: "index_job_assignments_on_user_id"
+  end
+
+  create_table "job_people", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.bigint "person_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_id"], name: "index_job_people_on_job_id"
+    t.index ["person_id"], name: "index_job_people_on_person_id"
+  end
+
+  create_table "jobs", force: :cascade do |t|
+    t.bigint "client_id", null: false
+    t.string "title"
+    t.integer "status"
+    t.integer "priority"
+    t.datetime "due_date"
+    t.datetime "start_on_date"
+    t.bigint "created_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["client_id"], name: "index_jobs_on_client_id"
+    t.index ["created_by_id"], name: "index_jobs_on_created_by_id"
+  end
+
   create_table "notes", force: :cascade do |t|
     t.string "notable_type", null: false
     t.bigint "notable_id", null: false
@@ -108,7 +108,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_081031) do
   end
 
   create_table "tasks", force: :cascade do |t|
-    t.bigint "case_id", null: false
+    t.bigint "job_id", null: false
     t.string "title"
     t.integer "status"
     t.integer "position"
@@ -116,7 +116,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_081031) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
-    t.index ["case_id"], name: "index_tasks_on_case_id"
+    t.index ["job_id"], name: "index_tasks_on_job_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -128,16 +128,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_081031) do
   end
 
   add_foreign_key "activity_logs", "users"
-  add_foreign_key "case_assignments", "cases"
-  add_foreign_key "case_assignments", "users"
-  add_foreign_key "case_people", "cases"
-  add_foreign_key "case_people", "people"
-  add_foreign_key "cases", "clients"
-  add_foreign_key "cases", "users", column: "created_by_id"
   add_foreign_key "contact_methods", "people"
   add_foreign_key "devices", "people"
+  add_foreign_key "job_assignments", "jobs"
+  add_foreign_key "job_assignments", "users"
+  add_foreign_key "job_people", "jobs"
+  add_foreign_key "job_people", "people"
+  add_foreign_key "jobs", "clients"
+  add_foreign_key "jobs", "users", column: "created_by_id"
   add_foreign_key "notes", "users"
   add_foreign_key "people", "clients"
-  add_foreign_key "tasks", "cases"
+  add_foreign_key "tasks", "jobs"
   add_foreign_key "tasks", "users", column: "assigned_to_id"
 end

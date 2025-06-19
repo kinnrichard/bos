@@ -40,7 +40,7 @@ module Components
         # Client-specific navigation
         nav_item("People", href: client_people_path(@client), icon: "👤", active: @active_section == :people)
         nav_item("Devices", href: client_devices_path(@client), icon: "💻", active: @active_section == :devices)
-        nav_item("Cases", href: client_cases_path(@client), icon: "💼", badge: @client.cases.count, active: @active_section == :cases)
+        nav_item("Jobs", href: client_jobs_path(@client), icon: "💼", badge: @client.jobs.count, active: @active_section == :jobs)
         nav_item("Schedule", href: client_schedule_path(@client), icon: "🗓️", badge: scheduled_count, active: @active_section == :schedule)
         nav_item("Invoices", href: client_invoices_path(@client), icon: "🧾", active: @active_section == :invoices)
         
@@ -51,11 +51,11 @@ module Components
         
         # All Cases section
         div(class: "sidebar-section", style: "margin-top: 24px;") do
-          div(class: "sidebar-section-header") { "All Cases" }
-          nav_item("My Cases", href: "/cases?filter=mine", icon: "👤", badge: my_cases_count, active: @active_section == :my_cases)
-          nav_item("Unassigned", href: "/cases?filter=unassigned", icon: "❓", badge: unassigned_count, active: @active_section == :unassigned)
-          nav_item("Assigned to Others", href: "/cases?filter=others", icon: "👥", active: @active_section == :others)
-          nav_item("Closed", href: "/cases?filter=closed", icon: "☑️", active: @active_section == :closed)
+          div(class: "sidebar-section-header") { "All Jobs" }
+          nav_item("My Jobs", href: "/jobs?filter=mine", icon: "👤", badge: my_jobs_count, active: @active_section == :my_jobs)
+          nav_item("Unassigned", href: "/jobs?filter=unassigned", icon: "❓", badge: unassigned_count, active: @active_section == :unassigned)
+          nav_item("Assigned to Others", href: "/jobs?filter=others", icon: "👥", active: @active_section == :others)
+          nav_item("Closed", href: "/jobs?filter=closed", icon: "☑️", active: @active_section == :closed)
         end
       end
     end
@@ -67,13 +67,13 @@ module Components
           nav_item("Recents", href: "#", icon: "🕘", active: @active_section == :recents)
         end
 
-        # Cases section
+        # Jobs section
         div(class: "sidebar-section") do
-          div(class: "sidebar-section-header") { "Cases" }
-          nav_item("My Cases", href: "/cases?filter=mine", icon: "👤", badge: my_cases_count, active: @active_section == :my_cases)
-          nav_item("Unassigned", href: "/cases?filter=unassigned", icon: "❓", badge: unassigned_count, active: @active_section == :unassigned)
-          nav_item("Assigned to Others", href: "/cases?filter=others", icon: "👥", active: @active_section == :others)
-          nav_item("Closed", href: "/cases?filter=closed", icon: "☑️", active: @active_section == :closed)
+          div(class: "sidebar-section-header") { "Jobs" }
+          nav_item("My Jobs", href: "/jobs?filter=mine", icon: "👤", badge: my_jobs_count, active: @active_section == :my_jobs)
+          nav_item("Unassigned", href: "/jobs?filter=unassigned", icon: "❓", badge: unassigned_count, active: @active_section == :unassigned)
+          nav_item("Assigned to Others", href: "/jobs?filter=others", icon: "👥", active: @active_section == :others)
+          nav_item("Closed", href: "/jobs?filter=closed", icon: "☑️", active: @active_section == :closed)
         end
       end
     end
@@ -88,7 +88,7 @@ module Components
       end
     end
 
-    def my_cases_count
+    def my_jobs_count
       # TODO: Replace with actual count from database
       12
     end
@@ -101,7 +101,7 @@ module Components
     def scheduled_count
       return 0 unless @client
       # TODO: Replace with actual count from database
-      @client.cases.where.not(start_on_date: nil).count
+      @client.jobs.where.not(start_on_date: nil).count
     end
 
     def nav_item(text, href:, icon:, badge: nil, active: false)

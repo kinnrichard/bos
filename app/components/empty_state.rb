@@ -14,7 +14,7 @@ module Components
         
         p do
           plain "Get started by opening "
-          a(href: "/cases?filter=mine") { "My Cases" }
+          a(href: "/jobs?filter=mine") { "My Jobs" }
           plain "."
         end
         
@@ -26,7 +26,7 @@ module Components
               action: "click->empty-state#focusSearch"
             }
           ) { "search" }
-          plain " for a client or case."
+          plain " for a client or job."
         end
       end
     end

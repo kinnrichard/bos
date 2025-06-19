@@ -1,7 +1,7 @@
 class Client < ApplicationRecord
   # Associations
   has_many :people, dependent: :destroy
-  has_many :cases, class_name: 'Case', dependent: :destroy
+  has_many :jobs, dependent: :destroy
   has_many :devices, through: :people
   
   # Validations

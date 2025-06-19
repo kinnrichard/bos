@@ -17,11 +17,14 @@ Rails.application.routes.draw do
     
     resources :people
     resources :devices
-    resources :cases
+    resources :jobs
     get :schedule, on: :member
     resources :invoices
     get :logs, on: :member
   end
+  
+  # Job routes
+  resources :jobs
   
   # Defines the root path route ("/")
   root "home#show"
