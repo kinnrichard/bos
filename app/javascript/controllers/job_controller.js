@@ -179,6 +179,10 @@ export default class extends Controller {
       opt.classList.toggle('active', opt.dataset.status === newStatus)
     })
     
+    // Update the internal status value IMMEDIATELY before server call
+    this._statusValue = newStatus
+    this.updateStatusBubble()
+    
     // Update the server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH",
@@ -189,9 +193,7 @@ export default class extends Controller {
       body: JSON.stringify({ job: { status: newStatus } })
     }).then(response => response.json())
       .then(data => {
-        // Update the internal status value
-        this._statusValue = newStatus
-        this.updateStatusBubble()
+        // Status already updated above
       })
   }
 
@@ -236,6 +238,10 @@ export default class extends Controller {
       opt.classList.toggle('active', opt.dataset.priority === newPriority)
     })
     
+    // Update the internal priority value IMMEDIATELY before server call
+    this._priorityValue = newPriority
+    this.updateStatusBubble()
+    
     // Update the server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH", 
@@ -246,9 +252,7 @@ export default class extends Controller {
       body: JSON.stringify({ job: { priority: newPriority } })
     }).then(response => response.json())
       .then(data => {
-        // Update the internal priority value
-        this._priorityValue = newPriority
-        this.updateStatusBubble()
+        // Priority already updated above
       })
   }
 
@@ -340,6 +344,9 @@ export default class extends Controller {
       dropdownMenu.classList.add('hidden')
     }
     
+    // Update status bubble immediately
+    this.updateStatusBubble()
+    
     // Update the server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH",
@@ -350,7 +357,7 @@ export default class extends Controller {
       body: JSON.stringify({ job: { technician_ids: [] } })
     }).then(response => response.json())
       .then(data => {
-        this.updateStatusBubble()
+        // Already updated above
       })
   }
   
@@ -408,6 +415,9 @@ export default class extends Controller {
     
     // Don't close dropdown for assignee multi-select - keep it open
     
+    // Update status bubble immediately
+    this.updateStatusBubble()
+    
     // Update the server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH",
@@ -418,7 +428,7 @@ export default class extends Controller {
       body: JSON.stringify({ job: { technician_ids: currentTechIds } })
     }).then(response => response.json())
       .then(data => {
-        this.updateStatusBubble()
+        // Already updated above
       })
   }
 
