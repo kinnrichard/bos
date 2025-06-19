@@ -37,7 +37,7 @@ module Views
           if @jobs.any?
             div(class: "jobs-list") do
               @jobs.each do |job|
-                render_job_card(job)
+                render Components::JobCard.new(job: job, show_client: true, show_description: false)
               end
             end
           else
@@ -107,70 +107,6 @@ module Views
         end
       end
       
-      def render_job_card(job)
-        link_to client_job_path(job.client, job), 
-                class: "job-card",
-                data: { turbo: false } do
-          div(class: "job-card-header") do
-            h3(class: "job-title") { job.title }
-            div(class: "job-meta") do
-              span(class: "client-name") { job.client.name }
-              span(class: "separator") { "•" }
-              span(class: "job-date") { "Created #{time_ago_in_words(job.created_at)} ago" }
-            end
-          end
-          
-          div(class: "job-status-row") do
-            # Status
-            span(class: "status-badge status-#{job.status}") do
-              span(class: "status-emoji") { job_status_emoji(job.status) }
-              span { status_label(job.status) }
-            end
-            
-            # Priority
-            if job.priority != 'normal'
-              span(class: "priority-badge priority-#{job.priority}") do
-                span(class: "priority-emoji") { priority_emoji(job.priority) }
-                span { priority_label(job.priority) }
-              end
-            end
-            
-            # Assignees
-            if job.technicians.any?
-              span(class: "assignee-info") do
-                job.technicians.each_with_index do |tech, index|
-                  span(class: "technician-initials") { tech.name.split.map(&:first).join.upcase[0..1] }
-                  span { tech.name } if index == 0 && job.technicians.count == 1
-                end
-                span { " +#{job.technicians.count - 1}" } if job.technicians.count > 1
-              end
-            else
-              span(class: "assignee-info unassigned") { "Unassigned" }
-            end
-            
-            # Task count
-            if job.tasks.any?
-              span(class: "task-count") do
-                completed = job.tasks.where(status: 'successfully_completed').count
-                total = job.tasks.count
-                "#{completed}/#{total} tasks"
-              end
-            end
-          end
-        end
-      end
-      
-      def job_status_emoji(status)
-        case status
-        when 'open' then '⚫'
-        when 'in_progress' then '🟢'
-        when 'paused' then '⏸️'
-        when 'successfully_completed' then '☑️'
-        when 'cancelled' then '❌'
-        else '❓'
-        end
-      end
-      
       def status_label(status)
         case status
         when 'open' then 'New'
@@ -181,23 +117,6 @@ module Views
         when 'successfully_completed' then 'Successfully Completed'
         when 'cancelled' then 'Cancelled'
         else status.humanize
-        end
-      end
-      
-      def priority_emoji(priority)
-        case priority
-        when 'critical' then '🔥'
-        when 'high' then '❗'
-        when 'low' then '➖'
-        when 'proactive_followup' then '💬'
-        else ''
-        end
-      end
-      
-      def priority_label(priority)
-        case priority
-        when 'proactive_followup' then 'Proactive Followup'
-        else priority.humanize
         end
       end
       

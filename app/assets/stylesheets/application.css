@@ -2305,6 +2305,17 @@ h1.job-title,
   color: var(--text-tertiary);
 }
 
+.job-scheduled {
+  color: var(--text-secondary);
+}
+
+.job-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 12px 0;
+}
+
 /* Job status row */
 .job-status-row {
   display: flex;
