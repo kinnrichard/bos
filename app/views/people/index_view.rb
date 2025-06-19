@@ -18,10 +18,11 @@ module Views
           active_section: :people,
           client: @client
         ) do
-          div(class: "page-header") do
-            h1 { "People" }
-            link_to "Add Person", new_client_person_path(@client), class: "btn btn-primary"
-          end
+          render Components::PageHeader.new(
+            title: "People",
+            action_text: "Add Person",
+            action_path: new_client_person_path(@client)
+          )
           
           if @people.any?
             div(class: "people-list") do
@@ -36,7 +37,7 @@ module Views
                       div(class: "person-contacts") do
                         span(class: "contact-icon") do
                           missing_types.each do |type|
-                            plain contact_icon(type)
+                            plain contact_method_icon(type)
                           end
                           plain "❗"
                         end
@@ -47,28 +48,16 @@ module Views
               end
             end
           else
-            div(class: "empty-state") do
-              p { "No people added yet." }
-              p do
-                plain "Add family members, employees, or other contacts associated with "
-                plain @client.name
-                plain "."
-              end
-            end
+            render Components::GenericEmptyState.new(
+              title: "No people added yet",
+              message: "Add family members, employees, or other contacts associated with #{@client.name}."
+            )
           end
         end
       end
       
       private
       
-      def contact_icon(type)
-        case type
-        when 'phone' then "📱"
-        when 'email' then "✉️"
-        when 'address' then "📍"
-        else "📝"
-        end
-      end
       
       def missing_contact_types(person)
         all_types = ['phone', 'email', 'address']

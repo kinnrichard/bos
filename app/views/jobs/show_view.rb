@@ -50,7 +50,7 @@ module Views
                   div(class: "info-label") { "STATUS" }
                   div(class: "info-value") do
                     span(class: "job-status-badge #{@job.status}") do
-                      status_emoji(@job) + " " + @job.status.humanize
+                      status_with_emoji(@job.status)
                     end
                   end
                 end
@@ -168,18 +168,6 @@ module Views
       
       private
       
-      def status_emoji(job)
-        case job.status
-        when 'open' then '🔵'
-        when 'in_progress' then '🟢'
-        when 'paused' then '⏸️'
-        when 'waiting_for_customer' then '⏳'
-        when 'waiting_for_scheduled_appointment' then '📅'
-        when 'successfully_completed' then '✅'
-        when 'cancelled' then '❌'
-        else '❓'
-        end
-      end
       
       def task_item(task)
         div(class: "task-item", data: { task_id: task.id }) do
@@ -206,14 +194,6 @@ module Views
         end
       end
       
-      def current_user
-        # TODO: Replace with actual current user from authentication
-        User.first || User.create!(
-          name: 'System User',
-          email: 'system@example.com',
-          role: :admin
-        )
-      end
     end
   end
 end

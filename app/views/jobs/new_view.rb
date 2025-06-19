@@ -17,20 +17,9 @@ module Views
           active_section: :jobs,
           client: @client
         ) do
-          div(class: "form-container") do
-            h1(class: "form-title") { "New Job" }
-            
+          render Components::FormContainer.new(title: "New Job") do
             form_with(model: [@client, @job], class: "job-form") do |f|
-              if @job.errors.any?
-                div(class: "error-messages") do
-                  h3 { "Please correct the following errors:" }
-                  ul do
-                    @job.errors.full_messages.each do |message|
-                      li { message }
-                    end
-                  end
-                end
-              end
+              render Components::FormErrors.new(model: @job)
               
               div(class: "form-group") do
                 f.label(:title, "Title", class: "form-label")
@@ -104,10 +93,10 @@ module Views
                 end
               end
               
-              div(class: "form-actions") do
-                f.submit("Create Job", class: "btn btn-primary")
-                link_to("Cancel", client_jobs_path(@client), class: "btn btn-secondary")
-              end
+              render Components::FormActions.new(
+                cancel_path: client_jobs_path(@client),
+                submit_text: "Create Job"
+              )
             end
           end
         end
@@ -127,14 +116,6 @@ module Views
         end
       end
       
-      def current_user
-        # TODO: Replace with actual current user from authentication
-        User.first || User.create!(
-          name: 'System User',
-          email: 'system@example.com',
-          role: :admin
-        )
-      end
     end
   end
 end

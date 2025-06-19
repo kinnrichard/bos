@@ -26,17 +26,17 @@ module Views
               @clients.each do |client|
                 link_to client_path(client), class: "client-item" do
                   span(class: "client-type-emoji") do
-                    client.business? ? "🏢" : "🏠"
+                    client_type_icon(client.client_type)
                   end
                   span(class: "client-name") { client.name }
                 end
               end
             end
           else
-            div(class: "empty-state") do
-              h2 { "No clients yet" }
-              p { "Start by searching for a client in the search bar above." }
-            end
+            render Components::GenericEmptyState.new(
+              title: "No clients yet",
+              message: "Start by searching for a client in the search bar above."
+            )
           end
         end
       end

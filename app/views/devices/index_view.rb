@@ -15,10 +15,11 @@ module Views
           active_section: :devices,
           client: @client
         ) do
-          div(class: "page-header") do
-            h1 { "Devices" }
-            link_to("Add Device", new_client_device_path(@client), class: "btn btn-primary")
-          end
+          render Components::PageHeader.new(
+            title: "Devices",
+            action_text: "Add Device", 
+            action_path: new_client_device_path(@client)
+          )
           
           if @devices.any?
             div(class: "devices-list") do
@@ -51,21 +52,14 @@ module Views
       private
       
       def empty_state
-        div(class: "empty-state") do
-          h2 { "No devices yet" }
-          p { "Add your first device to get started." }
-          link_to("Add Device", new_client_device_path(@client), class: "btn btn-primary")
-        end
-      end
-      
-      def current_user
-        # TODO: Replace with actual current user from authentication
-        User.first || User.create!(
-          name: 'System User',
-          email: 'system@example.com',
-          role: :admin
+        render Components::GenericEmptyState.new(
+          title: "No devices yet",
+          message: "Add your first device to get started.",
+          action_text: "Add Device",
+          action_path: new_client_device_path(@client)
         )
       end
+      
     end
   end
 end

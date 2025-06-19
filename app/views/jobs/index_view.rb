@@ -16,10 +16,11 @@ module Views
           client: @client
         ) do
           div(class: "jobs-container") do
-            div(class: "page-header") do
-              h1 { "Jobs" }
-              link_to("New Job", new_client_job_path(@client), class: "btn btn-primary")
-            end
+            render Components::PageHeader.new(
+              title: "Jobs",
+              action_text: "New Job",
+              action_path: new_client_job_path(@client)
+            )
             
             if @jobs.any?
               div(class: "jobs-list") do
@@ -43,7 +44,7 @@ module Views
               div do
                 h3 { job.title }
                 div(class: "job-meta") do
-                  span(class: "job-status #{job.status}") { status_emoji(job) + " " + job.status.humanize }
+                  span(class: "job-status #{job.status}") { status_with_emoji(job.status) }
                   span(class: "job-priority #{job.priority}") { "• " + job.priority.humanize }
                   if job.technicians.any?
                     span(class: "job-assignees") do
@@ -76,35 +77,16 @@ module Views
         end
       end
       
-      def status_emoji(job)
-        case job.status
-        when 'open' then '🔵'
-        when 'in_progress' then '🟢'
-        when 'paused' then '⏸️'
-        when 'waiting_for_customer' then '⏳'
-        when 'waiting_for_scheduled_appointment' then '📅'
-        when 'successfully_completed' then '✅'
-        when 'cancelled' then '❌'
-        else '❓'
-        end
-      end
       
       def empty_state
-        div(class: "empty-state") do
-          h2 { "No jobs yet" }
-          p { "Create your first job to get started." }
-          link_to("New Job", new_client_job_path(@client), class: "btn btn-primary")
-        end
-      end
-      
-      def current_user
-        # TODO: Replace with actual current user from authentication
-        User.first || User.create!(
-          name: 'System User',
-          email: 'system@example.com',
-          role: :admin
+        render Components::GenericEmptyState.new(
+          title: "No jobs yet",
+          message: "Create your first job to get started.",
+          action_text: "New Job",
+          action_path: new_client_job_path(@client)
         )
       end
+      
     end
   end
 end

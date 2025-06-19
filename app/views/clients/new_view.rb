@@ -16,8 +16,7 @@ module Views
           current_user: @current_user,
           active_section: :clients
         ) do
-          div(class: "form-container") do
-            h1(class: "form-title") { "New Client" }
+          render Components::FormContainer.new(title: "New Client") do
             
             form(action: "/clients", method: "post", class: "client-form") do
               # CSRF token
@@ -50,7 +49,7 @@ module Views
                       class: "client-type-radio"
                     )
                     span(class: "client-type-label") do
-                      span(class: "client-type-icon") { "🏠" }
+                      span(class: "client-type-icon") { client_type_icon('residential') }
                       span { "Residential" }
                     end
                   end
@@ -64,7 +63,7 @@ module Views
                       class: "client-type-radio"
                     )
                     span(class: "client-type-label") do
-                      span(class: "client-type-icon") { "🏢" }
+                      span(class: "client-type-icon") { client_type_icon('business') }
                       span { "Business" }
                     end
                   end
@@ -72,10 +71,10 @@ module Views
               end
               
               # Form actions
-              div(class: "form-actions") do
-                a(href: "/clients", class: "btn btn-secondary", style: "margin-right: auto;") { "Cancel" }
-                button(type: "submit", class: "btn btn-primary") { "Save" }
-              end
+              render Components::FormActions.new(
+                cancel_path: "/clients",
+                submit_text: "Save"
+              )
             end
           end
         end
