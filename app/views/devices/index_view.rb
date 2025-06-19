@@ -52,12 +52,14 @@ module Views
       private
       
       def empty_state
-        render Components::GenericEmptyState.new(
-          title: "No devices yet",
-          message: "Add your first device to get started.",
-          action_text: "Add Device",
-          action_path: new_client_device_path(@client)
-        )
+        div(class: "empty-state-wrapper") do
+          render Components::GenericEmptyState.new(
+            title: "No devices yet",
+            message: "Add your first device to get started.",
+            action_text: "Add Device",
+            action_path: new_client_device_path(@client)
+          )
+        end
       end
       
     end

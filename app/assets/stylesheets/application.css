@@ -291,6 +291,14 @@ body {
   margin: 0 auto;
 }
 
+/* Empty state wrapper for vertical centering */
+.empty-state-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 60px - 40px); /* viewport height minus header (60px) and padding (40px) */
+}
+
 .empty-state h1 {
   font-size: 32px;
   font-weight: 600;

@@ -79,12 +79,14 @@ module Views
       
       
       def empty_state
-        render Components::GenericEmptyState.new(
-          title: "No jobs yet",
-          message: "Create your first job to get started.",
-          action_text: "New Job",
-          action_path: new_client_job_path(@client)
-        )
+        div(class: "empty-state-wrapper") do
+          render Components::GenericEmptyState.new(
+            title: "No jobs yet",
+            message: "Create your first job to get started.",
+            action_text: "New Job",
+            action_path: new_client_job_path(@client)
+          )
+        end
       end
       
     end
