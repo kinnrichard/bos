@@ -2,7 +2,7 @@ class Client < ApplicationRecord
   # Associations
   has_many :people, dependent: :destroy
   has_many :jobs, dependent: :destroy
-  has_many :devices, through: :people
+  has_many :devices, dependent: :destroy
   
   # Validations
   validates :name, presence: true

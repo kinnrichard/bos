@@ -1,4 +1,5 @@
 class Device < ApplicationRecord
+  belongs_to :client
   belongs_to :person, optional: true
   
   validates :name, presence: true

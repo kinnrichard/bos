@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_19_081947) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_19_115244) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,6 +52,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_081947) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "client_id", null: false
+    t.index ["client_id"], name: "index_devices_on_client_id"
     t.index ["person_id"], name: "index_devices_on_person_id"
   end
 
@@ -129,6 +131,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_19_081947) do
 
   add_foreign_key "activity_logs", "users"
   add_foreign_key "contact_methods", "people"
+  add_foreign_key "devices", "clients"
   add_foreign_key "devices", "people"
   add_foreign_key "job_assignments", "jobs"
   add_foreign_key "job_assignments", "users"
