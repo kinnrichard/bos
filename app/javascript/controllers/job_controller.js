@@ -1,153 +1,237 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["tasksSection", "notesSection"]
+  static targets = ["title", "statusBubble", "popover", "tasksContainer", "tasksList", 
+                    "newTaskForm", "newTaskInput", "searchInput", "task"]
   
-  addTask(event) {
-    event.preventDefault()
-    
-    // Create a form for adding a new task
-    const formHtml = `
-      <div class="task-form" style="margin-top: 16px; padding: 16px; background-color: var(--bg-primary); border: 1px solid var(--border-primary); border-radius: 8px;">
-        <form data-action="submit->job#submitTask">
-          <div class="form-group">
-            <label class="form-label">Task Title</label>
-            <input type="text" class="form-input" name="title" placeholder="Enter task title" required>
-          </div>
-          <div class="form-actions" style="margin-top: 12px;">
-            <button type="submit" class="btn btn-primary">Add Task</button>
-            <button type="button" class="btn btn-secondary" data-action="click->job#cancelTaskForm">Cancel</button>
-          </div>
-        </form>
-      </div>
-    `
-    
-    // Insert the form after the button
-    event.target.insertAdjacentHTML('afterend', formHtml)
-    
-    // Hide the add button
-    event.target.style.display = 'none'
-    
-    // Focus on the title input
-    const titleInput = this.tasksSectionTarget.querySelector('input[name="title"]')
-    if (titleInput) titleInput.focus()
+  static values = { 
+    jobId: Number,
+    clientId: Number,
+    status: String,
+    priority: String
   }
-  
-  addNote(event) {
-    event.preventDefault()
-    
-    // Create a form for adding a new note
-    const formHtml = `
-      <div class="note-form" style="margin-top: 16px; padding: 16px; background-color: var(--bg-primary); border: 1px solid var(--border-primary); border-radius: 8px;">
-        <form data-action="submit->job#submitNote">
-          <div class="form-group">
-            <label class="form-label">Note</label>
-            <textarea class="form-input" name="content" rows="4" placeholder="Enter your note" required></textarea>
-          </div>
-          <div class="form-actions" style="margin-top: 12px;">
-            <button type="submit" class="btn btn-primary">Add Note</button>
-            <button type="button" class="btn btn-secondary" data-action="click->job#cancelNoteForm">Cancel</button>
-          </div>
-        </form>
-      </div>
-    `
-    
-    // Insert the form after the button
-    event.target.insertAdjacentHTML('afterend', formHtml)
-    
-    // Hide the add button
-    event.target.style.display = 'none'
-    
-    // Focus on the textarea
-    const textarea = this.notesSectionTarget.querySelector('textarea[name="content"]')
-    if (textarea) textarea.focus()
+
+  connect() {
+    // Close popover when clicking outside
+    this.handleOutsideClick = this.handleOutsideClick.bind(this)
+    document.addEventListener("click", this.handleOutsideClick)
   }
-  
-  async submitTask(event) {
-    event.preventDefault()
-    
-    const form = event.target
-    const formData = new FormData(form)
-    
-    const jobId = this.element.dataset.jobId
-    const clientId = this.element.dataset.clientId
-    
-    try {
-      const response = await fetch(`/clients/${clientId}/jobs/${jobId}/tasks`, {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          task: {
-            title: formData.get('title')
-          }
-        })
-      })
-      
-      if (response.ok) {
-        // Reload the page to show the new task
-        window.location.reload()
-      } else {
-        const data = await response.json()
-        alert('Error creating task: ' + (data.error || 'Unknown error'))
-      }
-    } catch (error) {
-      alert('Error creating task: ' + error.message)
+
+  disconnect() {
+    document.removeEventListener("click", this.handleOutsideClick)
+  }
+
+  handleOutsideClick(event) {
+    if (!this.popoverTarget.contains(event.target) && 
+        !this.statusBubbleTarget.contains(event.target)) {
+      this.popoverTarget.classList.add("hidden")
     }
   }
-  
-  async submitNote(event) {
-    event.preventDefault()
+
+  // Title editing
+  updateTitle(event) {
+    const newTitle = event.target.textContent.trim()
+    if (!newTitle) {
+      event.target.textContent = "Untitled Job"
+      return
+    }
+
+    // Update via API
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ job: { title: newTitle } })
+    })
+  }
+
+  // Popover
+  togglePopover(event) {
+    event.stopPropagation()
+    this.popoverTarget.classList.toggle("hidden")
+  }
+
+  // Status updates
+  updateStatus(event) {
+    const newStatus = event.currentTarget.dataset.status
     
-    const form = event.target
-    const formData = new FormData(form)
-    
-    const jobId = this.element.dataset.jobId
-    const clientId = this.element.dataset.clientId
-    
-    try {
-      const response = await fetch(`/clients/${clientId}/jobs/${jobId}/notes`, {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          note: {
-            content: formData.get('content')
-          }
-        })
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ job: { status: newStatus } })
+    }).then(response => response.json())
+      .then(data => {
+        this.statusValue = newStatus
+        this.updateStatusBubble()
+        this.highlightActiveStatus()
       })
-      
-      if (response.ok) {
-        // Reload the page to show the new note
-        window.location.reload()
-      } else {
-        const data = await response.json()
-        alert('Error creating note: ' + (data.error || 'Unknown error'))
-      }
-    } catch (error) {
-      alert('Error creating note: ' + error.message)
+  }
+
+  updatePriority(event) {
+    const newPriority = event.currentTarget.dataset.priority
+    
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
+      method: "PATCH", 
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ job: { priority: newPriority } })
+    }).then(response => response.json())
+      .then(data => {
+        this.priorityValue = newPriority
+        this.updateStatusBubble()
+        this.highlightActivePriority()
+      })
+  }
+
+  updateStatusBubble() {
+    // This would be better done with a partial update from the server
+    // For now, we'll update the icons manually
+    location.reload()
+  }
+
+  highlightActiveStatus() {
+    this.element.querySelectorAll(".status-option").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.status === this.statusValue)
+    })
+  }
+
+  highlightActivePriority() {
+    this.element.querySelectorAll(".priority-option").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.priority === this.priorityValue)
+    })
+  }
+
+  // Task management
+  addNewTask(event) {
+    this.newTaskFormTarget.classList.remove("hidden")
+    this.newTaskInputTarget.focus()
+  }
+
+  createTask(event) {
+    event.preventDefault()
+    const title = this.newTaskInputTarget.value.trim()
+    
+    if (!title) return
+
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ task: { title: title } })
+    }).then(response => response.json())
+      .then(data => {
+        // Add the new task to the list
+        this.addTaskToList(data)
+        // Reset form
+        this.newTaskInputTarget.value = ""
+        this.newTaskFormTarget.classList.add("hidden")
+      })
+  }
+
+  cancelNewTask(event) {
+    this.newTaskInputTarget.value = ""
+    this.newTaskFormTarget.classList.add("hidden")
+  }
+
+  addTaskToList(task) {
+    const taskHtml = this.renderTask(task)
+    if (this.taskTargets.length === 0) {
+      // Remove empty state
+      this.tasksListTarget.innerHTML = taskHtml
+    } else {
+      // Prepend new task
+      this.tasksListTarget.insertAdjacentHTML("afterbegin", taskHtml)
     }
   }
-  
-  cancelTaskForm(event) {
-    const form = event.target.closest('.task-form')
-    const addButton = form.previousElementSibling
-    
-    form.remove()
-    addButton.style.display = ''
+
+  renderTask(task) {
+    return `
+      <div class="task-item" data-task-id="${task.id}" data-job-target="task">
+        <div class="task-checkbox">
+          <button class="checkbox-circle" data-action="click->job#toggleTask">
+          </button>
+        </div>
+        <div class="task-content">
+          <div class="task-title">${task.title}</div>
+        </div>
+        <div class="task-icons"></div>
+      </div>
+    `
   }
-  
-  cancelNoteForm(event) {
-    const form = event.target.closest('.note-form')
-    const addButton = form.previousElementSibling
+
+  toggleTask(event) {
+    const taskElement = event.target.closest(".task-item")
+    const taskId = taskElement.dataset.taskId
+    const isCompleted = taskElement.classList.contains("completed")
     
-    form.remove()
-    addButton.style.display = ''
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json", 
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ 
+        task: { 
+          status: isCompleted ? "pending" : "successfully_completed" 
+        } 
+      })
+    }).then(response => response.json())
+      .then(data => {
+        taskElement.classList.toggle("completed")
+        const checkbox = taskElement.querySelector(".checkbox-circle")
+        checkbox.classList.toggle("checked")
+        checkbox.innerHTML = data.status === "successfully_completed" ? "<span>✓</span>" : ""
+      })
+  }
+
+  // Search/filter
+  filterTasks(event) {
+    const searchTerm = event.target.value.toLowerCase()
+    
+    this.taskTargets.forEach(task => {
+      const title = task.querySelector(".task-title").textContent.toLowerCase()
+      const matches = title.includes(searchTerm)
+      task.style.display = matches ? "flex" : "none"
+    })
+  }
+
+  // Assignee management
+  removeAssignee(event) {
+    const technicianId = event.currentTarget.dataset.technicianId
+    
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/remove_technician`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ technician_id: technicianId })
+    }).then(() => {
+      event.currentTarget.closest(".assignee-tag").remove()
+      this.updateStatusBubble()
+    })
+  }
+
+  // Delete job
+  confirmDelete(event) {
+    if (confirm("Are you sure you want to delete this job? This will also delete all associated tasks and notes.")) {
+      fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
+        method: "DELETE",
+        headers: {
+          "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        }
+      }).then(() => {
+        window.location.href = `/clients/${this.clientIdValue}/jobs`
+      })
+    }
   }
 }

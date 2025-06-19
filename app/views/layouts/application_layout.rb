@@ -17,6 +17,11 @@ module Views
             
             link(rel: "stylesheet", href: "/assets/application.css")
             unsafe_raw(helpers.javascript_importmap_tags)
+            
+            # Allow additional head content
+            if helpers.content_for?(:head)
+              unsafe_raw(helpers.content_for(:head))
+            end
           end
 
           body do

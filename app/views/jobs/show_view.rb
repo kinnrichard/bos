@@ -3,6 +3,9 @@
 module Views
   module Jobs
     class ShowView < Views::Base
+      include Phlex::Rails::Helpers::ContentTag
+      include Phlex::Rails::Helpers::FormWith
+      
       def initialize(client:, job:)
         @client = client
         @job = job
@@ -15,185 +18,387 @@ module Views
           active_section: :jobs,
           client: @client
         ) do
-          div(class: "job-detail-container", data: { controller: "job", job_id: @job.id, client_id: @client.id }) do
-            div(class: "job-header") do
-              div do
-                h1 { @job.title }
-                div(class: "job-status-priority") do
-                  span(class: "job-status-badge #{@job.status}") do
-                    status_emoji(@job) + " " + @job.status.humanize
-                  end
-                  span(class: "job-priority-badge #{@job.priority}") do
-                    @job.priority.humanize
-                  end
-                end
+          div(class: "job-view", data: { 
+            controller: "job", 
+            job_id: @job.id, 
+            client_id: @client.id,
+            job_status_value: @job.status,
+            job_priority_value: @job.priority
+          }) do
+            # Toolbar
+            div(class: "job-toolbar") do
+              # Left side - title
+              div(class: "job-title-section") do
+                h1(
+                  class: "job-title",
+                  contenteditable: "true",
+                  style: "color: #0A84FF !important; -webkit-text-fill-color: #0A84FF !important;",
+                  data: { 
+                    action: "blur->job#updateTitle",
+                    job_target: "title"
+                  }
+                ) { @job.title }
               end
               
-              div(class: "job-actions") do
-                link_to("Edit", edit_client_job_path(@client, @job), class: "btn btn-secondary")
-                if current_user.can_delete?(@job)
-                  delete_form_with_confirmation(
-                    url: client_job_path(@client, @job),
-                    message: "Are you sure you want to delete the job '#{@job.title}'? This will also delete all associated tasks and notes.",
-                    checkbox_label: "I understand this will permanently delete this job and all its data"
-                  ) { "Delete" }
+              # Right side - controls
+              div(class: "job-toolbar-controls") do
+                # Show sidebar button (when hidden)
+                button(
+                  class: "toolbar-button show-sidebar-btn",
+                  data: { action: "click->sidebar#show" },
+                  title: "Show sidebar"
+                ) { "☰" }
+                
+                # Status bubble with assignee and status
+                button(
+                  class: "status-bubble",
+                  data: { 
+                    action: "click->job#togglePopover",
+                    job_target: "statusBubble"
+                  }
+                ) do
+                  render_status_bubble
+                end
+                
+                # List view button (placeholder)
+                button(class: "toolbar-button", disabled: true) { "☰" }
+                
+                # Add task button
+                button(
+                  class: "toolbar-button",
+                  data: { action: "click->job#addNewTask" }
+                ) { "+" }
+                
+                # Search
+                div(class: "toolbar-search") do
+                  input(
+                    type: "search",
+                    placeholder: "Search",
+                    class: "toolbar-search-input",
+                    data: { 
+                      action: "input->job#filterTasks",
+                      job_target: "searchInput"
+                    }
+                  )
                 end
               end
             end
             
-            # Job Details Section
-            div(class: "job-info-section") do
-              h2 { "Job Details" }
-              
-              div(class: "info-grid") do
-                div(class: "info-item") do
-                  div(class: "info-label") { "STATUS" }
-                  div(class: "info-value") do
-                    span(class: "job-status-badge #{@job.status}") do
-                      status_with_emoji(@job.status)
-                    end
-                  end
+            # Tasks list
+            div(class: "tasks-container", data: { job_target: "tasksContainer" }) do
+              # New task input (hidden by default)
+              div(
+                class: "task-item new-task hidden",
+                data: { job_target: "newTaskForm" }
+              ) do
+                div(class: "task-checkbox") do
+                  button(class: "checkbox-circle", type: "button")
                 end
-                
-                div(class: "info-item") do
-                  div(class: "info-label") { "PRIORITY" }
-                  div(class: "info-value") do
-                    span(class: "job-priority-badge #{@job.priority}") do
-                      @job.priority.humanize
-                    end
-                  end
-                end
-                
-                div(class: "info-item") do
-                  div(class: "info-label") { "CREATED BY" }
-                  div(class: "info-value") { @job.created_by.name }
-                end
-                
-                div(class: "info-item") do
-                  div(class: "info-label") { "CREATED" }
-                  div(class: "info-value") { @job.created_at.strftime("%B %d, %Y at %I:%M %p") }
-                end
-                
-                if @job.start_on_date
-                  div(class: "info-item") do
-                    div(class: "info-label") { "SCHEDULED DATE" }
-                    div(class: "info-value") { @job.start_on_date.strftime("%B %d, %Y") }
-                  end
-                end
+                input(
+                  type: "text",
+                  class: "new-task-input",
+                  placeholder: "What needs to be done?",
+                  data: { 
+                    action: "keydown.enter->job#createTask keydown.escape->job#cancelNewTask",
+                    job_target: "newTaskInput"
+                  }
+                )
               end
               
-              if @job.description.present?
-                div(style: "margin-top: 24px;") do
-                  h3(class: "info-label", style: "margin-bottom: 8px;") { "DESCRIPTION" }
-                  div(class: "description-content") { @job.description }
-                end
-              end
-            end
-            
-            # Assigned Technicians Section
-            if @job.technicians.any?
-              div(class: "job-info-section") do
-                h2 { "Assigned Technicians" }
-                div(class: "technicians-list") do
-                  @job.technicians.each do |technician|
-                    div(class: "technician-item") do
-                      span(class: "technician-icon") { "👤" }
-                      span { technician.name }
-                      span(class: "technician-role") { technician.role.humanize }
-                    end
+              # Existing tasks
+              div(class: "tasks-list", data: { job_target: "tasksList" }) do
+                if @job.tasks.any?
+                  @job.tasks.order(:position).each do |task|
+                    render_task_item(task)
+                  end
+                else
+                  div(class: "empty-tasks") do
+                    p { "No tasks yet. Click + to add a task." }
                   end
                 end
               end
             end
             
-            # Related People Section
-            if @job.people.any?
-              div(class: "job-info-section") do
-                h2 { "Related People" }
-                div(class: "people-list") do
-                  @job.people.each do |person|
-                    div(class: "person-item") do
-                      link_to(client_person_path(@client, person), class: "person-link") do
-                        span(class: "person-icon") { "👤" }
-                        span { person.name }
+            # Status/Assignment Popover
+            div(
+              class: "job-popover hidden",
+              data: { job_target: "popover" }
+            ) do
+              # Arrow pointer
+              div(class: "popover-arrow")
+              
+              div(class: "popover-content") do
+                # Status section
+                div(class: "popover-section") do
+                  h3 { "Status" }
+                  div(class: "status-options") do
+                    render_status_options
+                  end
+                end
+                
+                # Priority section
+                div(class: "popover-section") do
+                  h3 { "Priority" }
+                  div(class: "priority-options") do
+                    render_priority_options
+                  end
+                end
+                
+                # Assignee section
+                div(class: "popover-section") do
+                  h3 { "Assigned to" }
+                  div(class: "assignee-search", data: { controller: "technician-search" }) do
+                    input(
+                      type: "text",
+                      class: "assignee-input",
+                      placeholder: "Search technicians...",
+                      data: { 
+                        action: "focus->technician-search#showDropdown input->technician-search#search",
+                        technician_search_target: "input"
+                      }
+                    )
+                    div(
+                      class: "assignee-dropdown hidden",
+                      data: { technician_search_target: "dropdown" }
+                    ) do
+                      # Will be populated by JavaScript
+                    end
+                  end
+                  
+                  # Current assignees
+                  if @job.technicians.any?
+                    div(class: "current-assignees") do
+                      @job.technicians.each do |tech|
+                        div(class: "assignee-tag") do
+                          span { tech.name }
+                          button(
+                            class: "remove-assignee",
+                            data: { 
+                              action: "click->job#removeAssignee",
+                              technician_id: tech.id
+                            }
+                          ) { "×" }
+                        end
                       end
                     end
                   end
                 end
+                
+                # Job details section
+                if @job.description.present? || @job.people.any?
+                  div(class: "popover-section") do
+                    h3 { "Details" }
+                    
+                    if @job.description.present?
+                      div(class: "job-description") do
+                        p { @job.description }
+                      end
+                    end
+                    
+                    if @job.people.any?
+                      div(class: "related-people") do
+                        h4 { "Related People" }
+                        @job.people.each do |person|
+                          div(class: "person-tag") { person.name }
+                        end
+                      end
+                    end
+                  end
+                end
+                
+                # Actions section
+                div(class: "popover-section popover-actions") do
+                  if current_user.can_delete?(@job)
+                    button(
+                      class: "btn-danger",
+                      data: { 
+                        action: "click->job#confirmDelete"
+                      }
+                    ) { "Delete Job" }
+                  end
+                end
               end
             end
             
-            # Tasks Section
-            div(class: "job-info-section", data: { job_target: "tasksSection" }) do
-              div(class: "section-header") do
-                h2 { "Tasks" }
-                button(class: "btn btn-secondary btn-sm", data: { action: "click->job#addTask" }) do
-                  "+ Add Task"
-                end
-              end
-              
-              if @job.tasks.any?
-                div(class: "tasks-list") do
-                  @job.tasks.order(:position).each do |task|
-                    task_item(task)
-                  end
-                end
-              else
-                p(class: "empty-message") { "No tasks yet. Add a task to get started." }
-              end
-            end
-            
-            # Notes Section
-            div(class: "job-info-section", data: { job_target: "notesSection" }) do
-              div(class: "section-header") do
-                h2 { "Notes" }
-                button(class: "btn btn-secondary btn-sm", data: { action: "click->job#addNote" }) do
-                  "+ Add Note"
-                end
-              end
-              
-              if @job.notes.any?
-                div(class: "notes-list") do
-                  @job.notes.order(created_at: :desc).each do |note|
-                    note_item(note)
-                  end
-                end
-              else
-                p(class: "empty-message") { "No notes yet." }
-              end
-            end
+            # Inline critical styles to override application.css
+            style { 
+              # Output CSS as plain text
+              %(
+                /* Override task-item styles from application.css */
+                .job-view .task-item {
+                  display: flex !important;
+                  align-items: flex-start !important;
+                  padding-top: 8px;
+                  border: none !important;
+                  border-radius: 0 !important;
+                  background: none !important;
+                  background-color: transparent !important;
+                  gap: 12px !important;
+                }
+                
+                /* Circular checkboxes */
+                .job-view .checkbox-circle {
+                  -webkit-appearance: none !important;
+                  appearance: none !important;
+                  border-radius: 50% !important;
+                  width: 20px !important;
+                  height: 20px !important;
+                  border: 1.5px solid #48484A !important;
+                  background: transparent !important;
+                }
+                
+                .job-view .checkbox-circle.checked {
+                  background-color: #48484A !important;
+                }
+              )
+            }
           end
         end
       end
       
       private
       
+      def render_status_bubble
+        # Priority emoji (if not normal)
+        if @job.priority != 'normal'
+          span(class: "bubble-icon priority-icon") do
+            priority_emoji(@job.priority)
+          end
+        end
+        
+        # Assignee or unassigned icon
+        span(class: "bubble-icon assignee-icon") do
+          if @job.technicians.any?
+            # Show first technician's initial or emoji
+            technician_icon(@job.technicians.first)
+          else
+            "❓"
+          end
+        end
+        
+        # Status icon
+        span(class: "bubble-icon status-icon") do
+          job_status_emoji(@job.status)
+        end
+      end
       
-      def task_item(task)
-        div(class: "task-item", data: { task_id: task.id }) do
-          div(class: "task-status") { task.status_emoji }
+      def render_task_item(task)
+        div(
+          class: "task-item #{task.successfully_completed? ? 'completed' : ''}",
+          data: { 
+            task_id: task.id,
+            job_target: "task"
+          }
+        ) do
+          # Checkbox
+          div(class: "task-checkbox") do
+            button(
+              class: "checkbox-circle #{task.successfully_completed? ? 'checked' : ''}",
+              data: { action: "click->job#toggleTask" }
+            ) do
+              if task.successfully_completed?
+                span { "✓" }
+              end
+            end
+          end
+          
+          # Task content
           div(class: "task-content") do
             div(class: "task-title") { task.title }
             if task.notes.any?
-              div(class: "task-notes-count") { "#{task.notes.count} notes" }
+              div(class: "task-notes") { "Notes" }
             end
           end
-          if task.assigned_to
-            div(class: "task-assignee") { task.assigned_to.name }
+          
+          # Right side icons
+          div(class: "task-icons") do
+            if task.notes.any?
+              span(class: "task-icon info-icon", title: "#{task.notes.count} notes") { "ⓘ" }
+            end
+            
+            if task.assigned_to
+              div(class: "task-assignee-icon", title: task.assigned_to.name) do
+                technician_icon(task.assigned_to)
+              end
+            end
           end
         end
       end
       
-      def note_item(note)
-        div(class: "note-item") do
-          div(class: "note-header") do
-            span(class: "note-author") { note.user.name }
-            span(class: "note-date") { note.created_at.strftime("%b %d, %Y at %I:%M %p") }
+      def render_status_options
+        statuses = {
+          'open' => { emoji: '⚫', label: 'New' },
+          'in_progress' => { emoji: '🟢', label: 'In Progress' },
+          'paused' => { emoji: '⏸️', label: 'Paused' },
+          'successfully_completed' => { emoji: '☑️', label: 'Successfully Completed' },
+          'cancelled' => { emoji: '❌', label: 'Cancelled' }
+        }
+        
+        statuses.each do |status, info|
+          button(
+            class: "status-option #{@job.status == status ? 'active' : ''}",
+            data: { 
+              action: "click->job#updateStatus",
+              status: status
+            }
+          ) do
+            span(class: "status-emoji") { info[:emoji] }
+            span { info[:label] }
           end
-          div(class: "note-content") { note.content }
         end
       end
       
+      def render_priority_options
+        priorities = {
+          'critical' => { emoji: '🔥', label: 'Critical' },
+          'high' => { emoji: '❗', label: 'High' },
+          'normal' => { emoji: '', label: 'Normal' },
+          'low' => { emoji: '➖', label: 'Low' },
+          'proactive_followup' => { emoji: '💬', label: 'Proactive Followup' }
+        }
+        
+        priorities.each do |priority, info|
+          button(
+            class: "priority-option #{@job.priority == priority ? 'active' : ''}",
+            data: { 
+              action: "click->job#updatePriority",
+              priority: priority
+            }
+          ) do
+            if info[:emoji].present?
+              span(class: "priority-emoji") { info[:emoji] }
+            end
+            span { info[:label] }
+          end
+        end
+      end
+      
+      def priority_emoji(priority)
+        case priority
+        when 'critical' then '🔥'
+        when 'high' then '❗'
+        when 'low' then '➖'
+        when 'proactive_followup' then '💬'
+        else ''
+        end
+      end
+      
+      def job_status_emoji(status)
+        case status
+        when 'open' then '⚫'
+        when 'in_progress' then '🟢'
+        when 'paused' then '⏸️'
+        when 'successfully_completed' then '☑️'
+        when 'cancelled' then '❌'
+        else '❓'
+        end
+      end
+      
+      def technician_icon(technician)
+        # For now, use initials. Could be replaced with actual avatars
+        initials = technician.name.split.map(&:first).join.upcase[0..1]
+        span(class: "technician-initials") { initials }
+      end
     end
   end
 end
