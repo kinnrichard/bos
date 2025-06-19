@@ -1,5 +1,3 @@
-require 'ostruct'
-
 class HomeController < ApplicationController
   def show
     # For now, create a mock user object

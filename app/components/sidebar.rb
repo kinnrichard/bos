@@ -19,7 +19,7 @@ module Components
 
     def logo_section
       div(class: "sidebar-logo") do
-        img(src: "/assets/faultless_logo-7d7cd0c4.png", alt: "Faultless", class: "logo-image")
+        img(src: asset_path("faultless_logo.png"), alt: "Faultless", class: "logo-image")
       end
     end
 

@@ -441,7 +441,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: 10px 16px;
   background-color: var(--bg-secondary);
   border: 2px solid var(--border-primary);
   border-radius: 8px;
@@ -449,7 +449,7 @@ body {
 }
 
 .client-type-icon {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .client-type-radio:checked + .client-type-label {
