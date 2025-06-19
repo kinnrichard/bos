@@ -132,9 +132,48 @@ export default class extends Controller {
 
   // Status updates
   updateStatus(event) {
+    event.preventDefault()
     const newStatus = event.currentTarget.dataset.status
-    const dropdownContainer = event.target.closest('.dropdown-container')
+    const dropdownContainer = event.currentTarget.closest('.dropdown-container')
     
+    // Close the dropdown immediately
+    const dropdownMenu = dropdownContainer?.querySelector('.dropdown-menu')
+    if (dropdownMenu) {
+      dropdownMenu.classList.add('hidden')
+    }
+    
+    // Update the dropdown button text immediately
+    const statusEmojis = {
+      'open': '⚫',
+      'new': '⚫',
+      'in_progress': '🟢',
+      'paused': '⏸️',
+      'successfully_completed': '☑️',
+      'cancelled': '❌'
+    }
+    const statusLabels = {
+      'open': 'New',
+      'new': 'New',
+      'in_progress': 'In Progress',
+      'paused': 'Paused',
+      'successfully_completed': 'Successfully Completed',
+      'cancelled': 'Cancelled'
+    }
+    
+    const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
+    if (dropdownValue) {
+      dropdownValue.innerHTML = `
+        <span class="status-emoji">${statusEmojis[newStatus] || '⚫'}</span>
+        <span>${statusLabels[newStatus] || newStatus}</span>
+      `
+    }
+    
+    // Update active states
+    dropdownContainer?.querySelectorAll('.status-option').forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.status === newStatus)
+    })
+    
+    // Update the server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH",
       headers: {
@@ -145,48 +184,52 @@ export default class extends Controller {
     }).then(response => response.json())
       .then(data => {
         this.statusValue = newStatus
-        
-        // Update the dropdown button text
-        if (dropdownContainer) {
-          const statusEmojis = {
-            'new': '⚫',
-            'in_progress': '🟢',
-            'paused': '⏸️',
-            'successfully_completed': '☑️',
-            'cancelled': '❌'
-          }
-          const statusLabels = {
-            'new': 'New',
-            'in_progress': 'In Progress',
-            'paused': 'Paused',
-            'successfully_completed': 'Successfully Completed',
-            'cancelled': 'Cancelled'
-          }
-          
-          const dropdownValue = dropdownContainer.querySelector('.dropdown-value')
-          if (dropdownValue) {
-            dropdownValue.innerHTML = `
-              <span class="status-emoji">${statusEmojis[newStatus] || '⚫'}</span>
-              <span>${statusLabels[newStatus] || newStatus}</span>
-            `
-          }
-          
-          // Close the dropdown
-          const dropdownMenu = dropdownContainer.querySelector('.dropdown-menu')
-          if (dropdownMenu) {
-            dropdownMenu.classList.add('hidden')
-          }
-        }
-        
         this.updateStatusBubble()
-        this.highlightActiveStatus()
       })
   }
 
   updatePriority(event) {
+    event.preventDefault()
     const newPriority = event.currentTarget.dataset.priority
-    const dropdownContainer = event.target.closest('.dropdown-container')
+    const dropdownContainer = event.currentTarget.closest('.dropdown-container')
     
+    // Close the dropdown immediately
+    const dropdownMenu = dropdownContainer?.querySelector('.dropdown-menu')
+    if (dropdownMenu) {
+      dropdownMenu.classList.add('hidden')
+    }
+    
+    // Update the dropdown button text immediately
+    const priorityEmojis = {
+      'critical': '🔥',
+      'high': '❗',
+      'normal': '',
+      'low': '➖',
+      'proactive_followup': '💬'
+    }
+    const priorityLabels = {
+      'critical': 'Critical',
+      'high': 'High',
+      'normal': 'Normal',
+      'low': 'Low',
+      'proactive_followup': 'Proactive Followup'
+    }
+    
+    const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
+    if (dropdownValue) {
+      const emoji = priorityEmojis[newPriority] || ''
+      const label = priorityLabels[newPriority] || newPriority
+      dropdownValue.innerHTML = emoji ? 
+        `<span class="priority-emoji">${emoji}</span><span>${label}</span>` :
+        `<span>${label}</span>`
+    }
+    
+    // Update active states
+    dropdownContainer?.querySelectorAll('.priority-option').forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.priority === newPriority)
+    })
+    
+    // Update the server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH", 
       headers: {
@@ -197,42 +240,7 @@ export default class extends Controller {
     }).then(response => response.json())
       .then(data => {
         this.priorityValue = newPriority
-        
-        // Update the dropdown button text
-        if (dropdownContainer) {
-          const priorityEmojis = {
-            'critical': '🔥',
-            'high': '❗',
-            'normal': '',
-            'low': '➖',
-            'proactive_followup': '💬'
-          }
-          const priorityLabels = {
-            'critical': 'Critical',
-            'high': 'High',
-            'normal': 'Normal',
-            'low': 'Low',
-            'proactive_followup': 'Proactive Followup'
-          }
-          
-          const dropdownValue = dropdownContainer.querySelector('.dropdown-value')
-          if (dropdownValue) {
-            const emoji = priorityEmojis[newPriority] || ''
-            const label = priorityLabels[newPriority] || newPriority
-            dropdownValue.innerHTML = emoji ? 
-              `<span class="priority-emoji">${emoji}</span><span>${label}</span>` :
-              `<span>${label}</span>`
-          }
-          
-          // Close the dropdown
-          const dropdownMenu = dropdownContainer.querySelector('.dropdown-menu')
-          if (dropdownMenu) {
-            dropdownMenu.classList.add('hidden')
-          }
-        }
-        
         this.updateStatusBubble()
-        this.highlightActivePriority()
       })
   }
 
@@ -243,9 +251,30 @@ export default class extends Controller {
   }
   
   setUnassigned(event) {
-    const dropdownContainer = event.target.closest('.dropdown-container')
+    event.preventDefault()
+    const dropdownContainer = event.currentTarget.closest('.dropdown-container')
     
-    // Remove all technicians
+    // Update the dropdown button text immediately
+    const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
+    if (dropdownValue) {
+      dropdownValue.textContent = 'Unassigned'
+    }
+    
+    // Update active states immediately
+    dropdownContainer?.querySelectorAll('.assignee-option').forEach(opt => {
+      opt.classList.remove('active')
+      const checkmark = opt.querySelector('.checkmark')
+      if (checkmark) checkmark.remove()
+    })
+    event.currentTarget.classList.add('active')
+    
+    // Close the dropdown
+    const dropdownMenu = dropdownContainer?.querySelector('.dropdown-menu')
+    if (dropdownMenu) {
+      dropdownMenu.classList.add('hidden')
+    }
+    
+    // Update the server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH",
       headers: {
@@ -255,88 +284,58 @@ export default class extends Controller {
       body: JSON.stringify({ job: { technician_ids: [] } })
     }).then(response => response.json())
       .then(data => {
-        // Update the dropdown button text
-        if (dropdownContainer) {
-          const dropdownValue = dropdownContainer.querySelector('.dropdown-value')
-          if (dropdownValue) {
-            dropdownValue.textContent = 'Unassigned'
-          }
-          
-          // Update active states
-          dropdownContainer.querySelectorAll('.assignee-option').forEach(opt => {
-            opt.classList.remove('active')
-          })
-          event.currentTarget.classList.add('active')
-          
-          // Close the dropdown
-          const dropdownMenu = dropdownContainer.querySelector('.dropdown-menu')
-          if (dropdownMenu) {
-            dropdownMenu.classList.add('hidden')
-          }
-        }
-        
         this.updateStatusBubble()
       })
   }
   
   toggleAssignee(event) {
+    event.preventDefault()
     const technicianId = event.currentTarget.dataset.technicianId
-    const dropdownContainer = event.target.closest('.dropdown-container')
-    const technicianName = event.currentTarget.querySelector('span:nth-child(2)').textContent
+    const dropdownContainer = event.currentTarget.closest('.dropdown-container')
     
-    // Get current technician IDs
-    const currentTechIds = Array.from(document.querySelectorAll('.assignee-option.active'))
+    // Toggle active state immediately
+    event.currentTarget.classList.toggle('active')
+    
+    // Get current technician IDs after toggling
+    const currentTechIds = Array.from(dropdownContainer.querySelectorAll('.assignee-option.active'))
       .map(el => el.dataset.technicianId)
       .filter(id => id) // Remove undefined values
     
-    let newTechIds
-    if (currentTechIds.includes(technicianId)) {
-      // Remove technician
-      newTechIds = currentTechIds.filter(id => id !== technicianId)
-    } else {
-      // Add technician
-      newTechIds = [...currentTechIds, technicianId]
+    // Update the dropdown button text immediately
+    const selectedTechs = Array.from(dropdownContainer.querySelectorAll('.assignee-option.active'))
+      .filter(opt => opt.dataset.technicianId) // Exclude unassigned option
+      .map(opt => opt.querySelector('span:nth-child(2)').textContent)
+    
+    const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
+    if (dropdownValue) {
+      dropdownValue.textContent = selectedTechs.length > 0 ? 
+        selectedTechs.join(', ') : 'Unassigned'
     }
     
+    // Update checkmarks immediately
+    const checkmark = event.currentTarget.querySelector('.checkmark')
+    if (event.currentTarget.classList.contains('active')) {
+      if (!checkmark) {
+        event.currentTarget.insertAdjacentHTML('beforeend', '<span class="checkmark">✓</span>')
+      }
+    } else {
+      if (checkmark) {
+        checkmark.remove()
+      }
+    }
+    
+    // Don't close dropdown for assignee multi-select - keep it open
+    
+    // Update the server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
       },
-      body: JSON.stringify({ job: { technician_ids: newTechIds } })
+      body: JSON.stringify({ job: { technician_ids: currentTechIds } })
     }).then(response => response.json())
       .then(data => {
-        // Update the dropdown button text
-        if (dropdownContainer) {
-          // Toggle active state
-          event.currentTarget.classList.toggle('active')
-          
-          // Get all selected technicians
-          const selectedTechs = Array.from(dropdownContainer.querySelectorAll('.assignee-option.active'))
-            .filter(opt => opt.dataset.technicianId) // Exclude unassigned option
-            .map(opt => opt.querySelector('span:nth-child(2)').textContent)
-          
-          const dropdownValue = dropdownContainer.querySelector('.dropdown-value')
-          if (dropdownValue) {
-            dropdownValue.textContent = selectedTechs.length > 0 ? 
-              selectedTechs.join(', ') : 'Unassigned'
-          }
-          
-          // Update checkmarks
-          dropdownContainer.querySelectorAll('.assignee-option').forEach(opt => {
-            const checkmark = opt.querySelector('.checkmark')
-            if (checkmark) {
-              checkmark.remove()
-            }
-            if (opt.classList.contains('active') && opt.dataset.technicianId) {
-              opt.insertAdjacentHTML('beforeend', '<span class="checkmark">✓</span>')
-            }
-          })
-          
-          // Don't close dropdown for assignee multi-select
-        }
-        
         this.updateStatusBubble()
       })
   }
