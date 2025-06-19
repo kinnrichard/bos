@@ -2,6 +2,7 @@
 
 module Components
   class FormActions < Base
+    include Phlex::Rails::Helpers::ButtonTag
     def initialize(cancel_path:, submit_text: "Save", cancel_text: "Cancel", additional_actions: nil)
       @cancel_path = cancel_path
       @submit_text = submit_text
