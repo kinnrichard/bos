@@ -51,7 +51,7 @@ module Views
             div(class: "empty-state-wrapper") do
               render Components::GenericEmptyState.new(
                 title: "No people added yet",
-                message: "Add family members, employees, or other contacts associated with #{@client.name}."
+                message: "Add family members, employees, or other contacts at #{@client.name}."
               )
             end
           end

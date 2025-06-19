@@ -43,8 +43,8 @@ module Components
         nav_item("People", href: client_people_path(@client), icon: "👤", active: @active_section == :people)
         nav_item("Devices", href: client_devices_path(@client), icon: "💻", active: @active_section == :devices)
         nav_item("Jobs", href: client_jobs_path(@client), icon: "💼", badge: @client.jobs.count, active: @active_section == :jobs)
-        nav_item("Schedule", href: schedule_client_path(@client), icon: "🗓️", badge: scheduled_count, active: @active_section == :schedule)
-        nav_item("Invoices", href: client_invoices_path(@client), icon: "🧾", active: @active_section == :invoices)
+        #nav_item("Schedule", href: schedule_client_path(@client), icon: "🗓️", badge: scheduled_count, active: @active_section == :schedule)
+        #nav_item("Invoices", href: client_invoices_path(@client), icon: "🧾", active: @active_section == :invoices)
         
         div(style: "margin-top: 24px; margin-bottom: 12px;") do
           nav_item("Client Info", href: client_path(@client), icon: "ℹ️", active: @active_section == :client_info)
@@ -85,19 +85,17 @@ module Components
         # Bottom links
         nav_item("Logs", href: "/logs", icon: "📜", active: @active_section == :logs)
         div(style: "margin-bottom: 0;") do
-          nav_item("Settings", href: "/settings", icon: "⚙️", active: @active_section == :settings)
+          #nav_item("Settings", href: "/settings", icon: "⚙️", active: @active_section == :settings)
         end
       end
     end
 
     def my_jobs_count
-      # TODO: Replace with actual count from database
-      12
+      Job.joins(:job_assignments).where(job_assignments: { user_id: @current_user.id }).count
     end
 
     def unassigned_count
-      # TODO: Replace with actual count from database
-      5
+      Job.left_joins(:job_assignments).where(job_assignments: { id: nil }).count
     end
     
     def scheduled_count

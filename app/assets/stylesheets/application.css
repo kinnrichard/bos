@@ -2155,3 +2155,239 @@ h1.job-title,
 .log-timestamp time {
   display: block;
 }
+
+/* Jobs listing styles */
+.header-with-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Filter dropdown styles */
+.filter-dropdown {
+  position: relative;
+}
+
+.filter-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  min-width: 320px;
+  max-height: 500px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.filter-section {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.filter-section:last-child {
+  border-bottom: none;
+}
+
+.filter-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.filter-actions {
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+}
+
+/* Button styles */
+.button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  font-family: var(--font-family);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.button-primary {
+  background-color: var(--accent-blue);
+  color: white;
+}
+
+.button-primary:hover {
+  background-color: var(--accent-blue-hover);
+}
+
+.button-secondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.button-secondary:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Job card styles for listing */
+.job-card {
+  display: block;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.job-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.job-card-header {
+  margin-bottom: 12px;
+}
+
+.job-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.job-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.client-name {
+  color: var(--accent-blue);
+}
+
+.separator {
+  color: var(--text-tertiary);
+}
+
+.job-date {
+  color: var(--text-tertiary);
+}
+
+/* Job status row */
+.job-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Status badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  background-color: var(--bg-tertiary);
+}
+
+.status-badge.status-open { color: #00A3FF; }
+.status-badge.status-in_progress { color: #32D74B; }
+.status-badge.status-paused { color: #FFD60A; }
+.status-badge.status-successfully_completed { color: #32D74B; }
+.status-badge.status-cancelled { color: #FF453A; }
+
+.status-emoji {
+  font-size: 14px;
+}
+
+/* Priority badge */
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  background-color: var(--bg-tertiary);
+}
+
+.priority-badge.priority-critical { color: #FF453A; }
+.priority-badge.priority-high { color: #FF9F0A; }
+.priority-badge.priority-low { color: var(--text-tertiary); }
+.priority-badge.priority-proactive_followup { color: #BF5AF2; }
+
+.priority-emoji {
+  font-size: 14px;
+  min-width: 14px;
+  display: inline-block;
+}
+
+/* Assignee info */
+.assignee-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.assignee-info.unassigned {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.technician-initials {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: var(--bg-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Task count */
+.task-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}

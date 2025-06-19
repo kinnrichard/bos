@@ -33,7 +33,7 @@ Rails.application.routes.draw do
   end
   
   # Job routes
-  resources :jobs
+  get '/jobs', to: 'all_jobs#index', as: :jobs
   
   # Logs routes
   resources :logs, only: [:index]
