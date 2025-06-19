@@ -15,7 +15,8 @@ module Views
         render_layout(
           title: "#{@client.name} - Faultless",
           current_user: @current_user,
-          active_section: :clients
+          active_section: :client_info,
+          client: @client
         ) do
           div(class: "client-detail-container", data: { controller: "client" }) do
             div(class: "client-header") do

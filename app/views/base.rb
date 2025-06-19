@@ -9,7 +9,7 @@ class Views::Base < Components::Base
   
   private
   
-  def render_layout(title:, current_user:, active_section: nil, &content)
+  def render_layout(title:, current_user:, active_section: nil, client: nil, &content)
     doctype
     html(lang: "en") do
       head do
@@ -30,7 +30,8 @@ class Views::Base < Components::Base
           div(class: "sidebar", data: { sidebar_target: "sidebar" }) do
             render Components::Sidebar.new(
               current_user: current_user,
-              active_section: active_section
+              active_section: active_section,
+              client: client
             )
           end
 

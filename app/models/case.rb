@@ -1,4 +1,5 @@
 class Case < ApplicationRecord
+  self.table_name = "cases"
   belongs_to :client
   belongs_to :created_by, class_name: 'User'
   

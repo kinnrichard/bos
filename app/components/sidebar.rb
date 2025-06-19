@@ -2,15 +2,22 @@
 
 module Components
   class Sidebar < Base
-    def initialize(current_user:, active_section: nil)
+    include Phlex::Rails::Helpers::Routes
+    
+    def initialize(current_user:, active_section: nil, client: nil)
       @current_user = current_user
       @active_section = active_section
+      @client = client
     end
 
     def view_template
       logo_section
       div(class: "flex-1 flex flex-col") do
-        navigation_sections
+        if @client
+          client_navigation_sections
+        else
+          navigation_sections
+        end
         bottom_sections
       end
     end
@@ -20,6 +27,36 @@ module Components
     def logo_section
       div(class: "sidebar-logo") do
         img(src: asset_path("faultless_logo.png"), alt: "Faultless", class: "logo-image")
+      end
+    end
+
+    def client_navigation_sections
+      div(class: "flex-1") do
+        # Client name header
+        div(class: "sidebar-client-header") do
+          h3 { @client.name }
+        end
+        
+        # Client-specific navigation
+        nav_item("People", href: client_people_path(@client), icon: "👤", active: @active_section == :people)
+        nav_item("Devices", href: client_devices_path(@client), icon: "💻", active: @active_section == :devices)
+        nav_item("Cases", href: client_cases_path(@client), icon: "💼", badge: @client.cases.count, active: @active_section == :cases)
+        nav_item("Schedule", href: client_schedule_path(@client), icon: "🗓️", badge: scheduled_count, active: @active_section == :schedule)
+        nav_item("Invoices", href: client_invoices_path(@client), icon: "🧾", active: @active_section == :invoices)
+        
+        div(style: "margin-top: 24px; margin-bottom: 12px;") do
+          nav_item("Client Info", href: client_path(@client), icon: "ℹ️", active: @active_section == :client_info)
+          nav_item("Client Logs", href: client_logs_path(@client), icon: "📜", active: @active_section == :client_logs)
+        end
+        
+        # All Cases section
+        div(class: "sidebar-section", style: "margin-top: 24px;") do
+          div(class: "sidebar-section-header") { "All Cases" }
+          nav_item("My Cases", href: "/cases?filter=mine", icon: "👤", badge: my_cases_count, active: @active_section == :my_cases)
+          nav_item("Unassigned", href: "/cases?filter=unassigned", icon: "❓", badge: unassigned_count, active: @active_section == :unassigned)
+          nav_item("Assigned to Others", href: "/cases?filter=others", icon: "👥", active: @active_section == :others)
+          nav_item("Closed", href: "/cases?filter=closed", icon: "☑️", active: @active_section == :closed)
+        end
       end
     end
 
@@ -59,6 +96,12 @@ module Components
     def unassigned_count
       # TODO: Replace with actual count from database
       5
+    end
+    
+    def scheduled_count
+      return 0 unless @client
+      # TODO: Replace with actual count from database
+      @client.cases.where.not(start_on_date: nil).count
     end
 
     def nav_item(text, href:, icon:, badge: nil, active: false)

@@ -14,6 +14,13 @@ Rails.application.routes.draw do
     collection do
       get :search
     end
+    
+    resources :people
+    resources :devices
+    resources :cases
+    get :schedule, on: :member
+    resources :invoices
+    get :logs, on: :member
   end
   
   # Defines the root path route ("/")
