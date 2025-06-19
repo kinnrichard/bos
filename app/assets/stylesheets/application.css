@@ -282,6 +282,8 @@ body {
   padding: 0 20px;
   overflow-y: auto;
   background-color: #000000;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Empty state */
@@ -296,7 +298,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: calc(100vh - 60px - 40px); /* viewport height minus header (60px) and padding (40px) */
+  flex: 1;
+  width: 100%;
 }
 
 .empty-state h1 {
