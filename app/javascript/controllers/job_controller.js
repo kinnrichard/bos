@@ -13,13 +13,6 @@ export default class extends Controller {
   
   timerInterval = null
   
-  connect() {
-    this.startTimers()
-  }
-  
-  disconnect() {
-    this.stopTimers()
-  }
   
   get jobIdValue() {
     return this._jobIdValue || this.getValueFromJobView('jobId')
@@ -51,13 +44,26 @@ export default class extends Controller {
   }
 
   connect() {
+    // Start timers for task time tracking
+    this.startTimers()
+    
     // Close popover when clicking outside
     this.handleOutsideClick = this.handleOutsideClick.bind(this)
     document.addEventListener("click", this.handleOutsideClick)
+    
+    // Store controller reference for debugging
+    if (this.element) {
+      this.element._jobController = this
+    }
   }
 
   disconnect() {
+    this.stopTimers()
     document.removeEventListener("click", this.handleOutsideClick)
+    
+    if (this.element && this.element._jobController === this) {
+      delete this.element._jobController
+    }
   }
 
   handleOutsideClick(event) {
@@ -249,20 +255,24 @@ export default class extends Controller {
   updateStatusBubble() {
     // Update the status bubble in the toolbar
     const statusBubble = document.querySelector('.job-status-bubble')
-    if (!statusBubble) return
+    if (!statusBubble) {
+      console.error('Status bubble not found')
+      return
+    }
     
     // Clear existing content
     statusBubble.innerHTML = ''
     
     // Add priority icon if not normal
-    if (this.priorityValue && this.priorityValue !== 'normal') {
+    const currentPriority = this.priorityValue || this.getValueFromJobView('jobPriorityValue')
+    if (currentPriority && currentPriority !== 'normal') {
       const priorityEmojis = {
         'critical': '🔥',
         'high': '❗',
         'low': '➖',
         'proactive_followup': '💬'
       }
-      const priorityIcon = priorityEmojis[this.priorityValue]
+      const priorityIcon = priorityEmojis[currentPriority]
       if (priorityIcon) {
         const span = document.createElement('span')
         span.className = 'bubble-icon priority-icon'
@@ -289,6 +299,7 @@ export default class extends Controller {
     statusBubble.appendChild(assigneeIcon)
     
     // Add status icon
+    const currentStatus = this.statusValue || this.getValueFromJobView('jobStatusValue')
     const statusEmojis = {
       'open': '⚫',
       'new': '⚫',
@@ -299,7 +310,7 @@ export default class extends Controller {
     }
     const statusIcon = document.createElement('span')
     statusIcon.className = 'bubble-icon status-icon'
-    statusIcon.textContent = statusEmojis[this.statusValue] || '⚫'
+    statusIcon.textContent = statusEmojis[currentStatus] || '⚫'
     statusBubble.appendChild(statusIcon)
   }
   
