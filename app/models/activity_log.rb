@@ -13,35 +13,37 @@ class ActivityLog < ApplicationRecord
   
   # Generate human-readable log messages
   def message
+    user_name = user&.name || 'System'
+    
     case action
     when 'created'
-      "#{user.name} created #{loggable_type_emoji} #{loggable_name}"
+      "#{user_name} created #{loggable_type_emoji} #{loggable_name}"
     when 'viewed'
-      "#{user.name} viewed #{loggable_name}"
+      "#{user_name} viewed #{loggable_name}"
     when 'renamed'
-      "#{user.name} renamed #{metadata['old_name']} to #{metadata['new_name']}"
+      "#{user_name} renamed #{metadata['old_name']} to #{metadata['new_name']}"
     when 'updated'
       if metadata['changes'].present?
         changes_text = metadata['changes'].map { |field, values| 
           "#{field} from '#{values[0]}' to '#{values[1]}'"
         }.join(', ')
-        "#{user.name} updated #{loggable_name}: #{changes_text}"
+        "#{user_name} updated #{loggable_name}: #{changes_text}"
       else
-        "#{user.name} updated #{loggable_name}"
+        "#{user_name} updated #{loggable_name}"
       end
     when 'deleted'
-      "#{user.name} deleted #{loggable_type_emoji} #{loggable_name}"
+      "#{user_name} deleted #{loggable_type_emoji} #{loggable_name}"
     when 'assigned'
-      "#{user.name} assigned #{loggable_type_emoji} #{loggable_name} to #{metadata['assigned_to']}"
+      "#{user_name} assigned #{loggable_type_emoji} #{loggable_name} to #{metadata['assigned_to']}"
     when 'unassigned'
-      "#{user.name} unassigned #{metadata['unassigned_from']} from #{loggable_type_emoji} #{loggable_name}"
+      "#{user_name} unassigned #{metadata['unassigned_from']} from #{loggable_type_emoji} #{loggable_name}"
     when 'status_changed'
       status_emoji = get_status_emoji(metadata['new_status'])
-      "#{user.name} marked #{loggable_type_emoji} #{loggable_name} #{status_emoji} #{metadata['new_status_label']}"
+      "#{user_name} marked #{loggable_type_emoji} #{loggable_name} #{status_emoji} #{metadata['new_status_label']}"
     when 'added'
-      "#{user.name} added #{loggable_type_emoji} #{loggable_name} to #{metadata['parent_type']} #{metadata['parent_name']}"
+      "#{user_name} added #{loggable_type_emoji} #{loggable_name} to #{metadata['parent_type']} #{metadata['parent_name']}"
     else
-      "#{user.name} #{action} #{loggable_name}"
+      "#{user_name} #{action} #{loggable_name}"
     end
   end
   
