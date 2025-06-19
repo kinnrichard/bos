@@ -83,7 +83,7 @@ module Components
       div(style: "margin-top: auto;") do
         # Bottom links
         nav_item("Logs", href: "/logs", icon: "📜", active: @active_section == :logs)
-        div(style: "margin-bottom: 12px;") do
+        div(style: "margin-bottom: 8px;") do
           nav_item("Settings", href: "/settings", icon: "⚙️", active: @active_section == :settings)
         end
       end
