@@ -443,6 +443,8 @@ module Views
           ) do
             if info[:emoji].present?
               span(class: "priority-emoji") { info[:emoji] }
+            else
+              span(class: "priority-emoji") { "&nbsp;".html_safe }
             end
             span { info[:label] }
           end
