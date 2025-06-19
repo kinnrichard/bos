@@ -10,7 +10,7 @@ module Components
     end
 
     def view_template
-      logo_section
+      logo_and_header_section
       div(class: "sidebar-scroll-container") do
         if @client
           client_navigation_sections
@@ -23,21 +23,22 @@ module Components
 
     private
 
-    def logo_section
+    def logo_and_header_section
       div(class: "sidebar-logo") do
         link_to(root_path) do
           img(src: asset_path("faultless_logo.png"), alt: "Faultless", class: "logo-image")
+        end
+        
+        if @client
+          div(class: "sidebar-client-header") do
+            h3 { @client.name }
+          end
         end
       end
     end
 
     def client_navigation_sections
       div(class: "flex-1") do
-        # Client name header
-        div(class: "sidebar-client-header") do
-          h3 { @client.name }
-        end
-        
         # Client-specific navigation
         nav_item("People", href: client_people_path(@client), icon: "👤", active: @active_section == :people)
         nav_item("Devices", href: client_devices_path(@client), icon: "💻", active: @active_section == :devices)
