@@ -18,9 +18,11 @@ Rails.application.routes.draw do
     resources :people
     resources :devices
     resources :jobs
-    get :schedule, on: :member
+    member do
+      get :schedule
+      get :logs
+    end
     resources :invoices
-    get :logs, on: :member
   end
   
   # Job routes

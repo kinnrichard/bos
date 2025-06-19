@@ -1,5 +1,5 @@
 class Job < ApplicationRecord
-    belongs_to :client
+  belongs_to :client
   belongs_to :created_by, class_name: 'User'
   
   has_many :job_assignments, dependent: :destroy
@@ -9,7 +9,7 @@ class Job < ApplicationRecord
   has_many :tasks, dependent: :destroy
   has_many :notes, as: :notable, dependent: :destroy
   
-  enum status: {
+  enum :status, {
     open: 0,
     in_progress: 1,
     paused: 2,
@@ -19,7 +19,7 @@ class Job < ApplicationRecord
     cancelled: 6
   }
   
-  enum priority: {
+  enum :priority, {
     critical: 0,
     high: 1,
     normal: 2,

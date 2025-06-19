@@ -41,12 +41,12 @@ module Components
         nav_item("People", href: client_people_path(@client), icon: "👤", active: @active_section == :people)
         nav_item("Devices", href: client_devices_path(@client), icon: "💻", active: @active_section == :devices)
         nav_item("Jobs", href: client_jobs_path(@client), icon: "💼", badge: @client.jobs.count, active: @active_section == :jobs)
-        nav_item("Schedule", href: client_schedule_path(@client), icon: "🗓️", badge: scheduled_count, active: @active_section == :schedule)
+        nav_item("Schedule", href: schedule_client_path(@client), icon: "🗓️", badge: scheduled_count, active: @active_section == :schedule)
         nav_item("Invoices", href: client_invoices_path(@client), icon: "🧾", active: @active_section == :invoices)
         
         div(style: "margin-top: 24px; margin-bottom: 12px;") do
           nav_item("Client Info", href: client_path(@client), icon: "ℹ️", active: @active_section == :client_info)
-          nav_item("Client Logs", href: client_logs_path(@client), icon: "📜", active: @active_section == :client_logs)
+          nav_item("Client Logs", href: logs_client_path(@client), icon: "📜", active: @active_section == :client_logs)
         end
         
         # All Cases section

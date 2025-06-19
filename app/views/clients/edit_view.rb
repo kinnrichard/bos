@@ -84,10 +84,11 @@ module Views
             # Delete button at the bottom
             div(style: "margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;") do
               form(action: client_path(@client), method: "post", style: "display: inline;", 
-                   onsubmit: "return confirm('Are you sure you want to delete this client?');") do
+                   data: { "turbo": "false" }) do
                 input(type: "hidden", name: "_method", value: "delete")
                 input(type: "hidden", name: "authenticity_token", value: @authenticity_token)
-                button(type: "submit", class: "btn btn-danger") { "Delete Client" }
+                button(type: "submit", class: "btn btn-danger", 
+                       data: { confirm: "Are you sure you want to delete this client?" }) { "Delete Client" }
               end
             end
           end

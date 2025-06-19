@@ -29,11 +29,14 @@ module Views
                   class: "btn btn-secondary",
                   data: { action: "click->client#showDelete" }
                 form(action: client_path(@client), method: "post", style: "display: none;", 
-                     data: { "client-target": "deleteButton" },
-                     onsubmit: "return confirm('Are you sure?');") do
+                     data: { 
+                       "client-target": "deleteButton",
+                       "turbo": "false"
+                     }) do
                   input(type: "hidden", name: "_method", value: "delete")
                   input(type: "hidden", name: "authenticity_token", value: helpers.form_authenticity_token)
-                  button(type: "submit", class: "btn btn-danger") { "Delete" }
+                  button(type: "submit", class: "btn btn-danger", 
+                         data: { confirm: "Are you sure?" }) { "Delete" }
                 end
               end
             end
