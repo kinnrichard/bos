@@ -267,23 +267,20 @@ export default class extends Controller {
     // Clear existing content
     statusBubble.innerHTML = ''
     
-    // Add priority icon if not normal
-    const currentPriority = this.priorityValue || this.getValueFromJobView('jobPriorityValue')
-    if (currentPriority && currentPriority !== 'normal') {
-      const priorityEmojis = {
-        'critical': '🔥',
-        'high': '❗',
-        'low': '➖',
-        'proactive_followup': '💬'
-      }
-      const priorityIcon = priorityEmojis[currentPriority]
-      if (priorityIcon) {
-        const span = document.createElement('span')
-        span.className = 'bubble-icon priority-icon'
-        span.textContent = priorityIcon
-        statusBubble.appendChild(span)
-      }
+    // Add status icon
+    const currentStatus = this.statusValue || this.getValueFromJobView('jobStatusValue')
+    const statusEmojis = {
+      'open': '⚫',
+      'new': '⚫',
+      'in_progress': '🟢',
+      'paused': '⏸️',
+      'successfully_completed': '☑️',
+      'cancelled': '❌'
     }
+    const statusIcon = document.createElement('span')
+    statusIcon.className = 'bubble-icon status-icon'
+    statusIcon.textContent = statusEmojis[currentStatus] || '⚫'
+    statusBubble.appendChild(statusIcon)
     
     // Add assignee icon
     const assigneeIcon = document.createElement('span')
@@ -302,20 +299,23 @@ export default class extends Controller {
     }
     statusBubble.appendChild(assigneeIcon)
     
-    // Add status icon
-    const currentStatus = this.statusValue || this.getValueFromJobView('jobStatusValue')
-    const statusEmojis = {
-      'open': '⚫',
-      'new': '⚫',
-      'in_progress': '🟢',
-      'paused': '⏸️',
-      'successfully_completed': '☑️',
-      'cancelled': '❌'
+    // Add priority icon if not normal
+    const currentPriority = this.priorityValue || this.getValueFromJobView('jobPriorityValue')
+    if (currentPriority && currentPriority !== 'normal') {
+      const priorityEmojis = {
+        'critical': '🔥',
+        'high': '❗',
+        'low': '➖',
+        'proactive_followup': '💬'
+      }
+      const priorityIcon = priorityEmojis[currentPriority]
+      if (priorityIcon) {
+        const span = document.createElement('span')
+        span.className = 'bubble-icon priority-icon'
+        span.textContent = priorityIcon
+        statusBubble.appendChild(span)
+      }
     }
-    const statusIcon = document.createElement('span')
-    statusIcon.className = 'bubble-icon status-icon'
-    statusIcon.textContent = statusEmojis[currentStatus] || '⚫'
-    statusBubble.appendChild(statusIcon)
   }
   
   setUnassigned(event) {

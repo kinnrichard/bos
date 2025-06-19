@@ -105,35 +105,7 @@ module Views
                   end
                 end
                 
-                # Priority section
-                div(class: "popover-section") do
-                  h3 { "Priority" }
-                  div(class: "dropdown-container", data: { controller: "dropdown" }) do
-                    button(
-                      class: "dropdown-button",
-                      data: { 
-                        action: "click->dropdown#toggle",
-                        dropdown_target: "button"
-                      }
-                    ) do
-                      span(class: "dropdown-value") do
-                        if priority_emoji(@job.priority).present?
-                          span(class: "priority-emoji") { priority_emoji(@job.priority) }
-                        end
-                        span { priority_label(@job.priority) }
-                      end
-                      span(class: "dropdown-arrow") { "▼" }
-                    end
-                    div(
-                      class: "dropdown-menu hidden",
-                      data: { dropdown_target: "menu" }
-                    ) do
-                      render_priority_options
-                    end
-                  end
-                end
-                
-                # Assignee section
+                # Assignee section (moved to second position)
                 div(class: "popover-section") do
                   h3 { "Assigned to" }
                   div(class: "dropdown-container", data: { controller: "dropdown" }) do
@@ -164,6 +136,34 @@ module Views
                       data: { dropdown_target: "menu" }
                     ) do
                       render_assignee_options
+                    end
+                  end
+                end
+                
+                # Priority section (moved to third position)
+                div(class: "popover-section") do
+                  h3 { "Priority" }
+                  div(class: "dropdown-container", data: { controller: "dropdown" }) do
+                    button(
+                      class: "dropdown-button",
+                      data: { 
+                        action: "click->dropdown#toggle",
+                        dropdown_target: "button"
+                      }
+                    ) do
+                      span(class: "dropdown-value") do
+                        if priority_emoji(@job.priority).present?
+                          span(class: "priority-emoji") { priority_emoji(@job.priority) }
+                        end
+                        span { priority_label(@job.priority) }
+                      end
+                      span(class: "dropdown-arrow") { "▼" }
+                    end
+                    div(
+                      class: "dropdown-menu hidden",
+                      data: { dropdown_target: "menu" }
+                    ) do
+                      render_priority_options
                     end
                   end
                 end
@@ -222,11 +222,9 @@ module Views
       end
       
       def render_status_bubble
-        # Priority emoji (if not normal)
-        if @job.priority != 'normal'
-          span(class: "bubble-icon priority-icon") do
-            priority_emoji(@job.priority)
-          end
+        # Status icon
+        span(class: "bubble-icon status-icon") do
+          job_status_emoji(@job.status)
         end
         
         # Assignee or unassigned icon
@@ -239,9 +237,11 @@ module Views
           end
         end
         
-        # Status icon
-        span(class: "bubble-icon status-icon") do
-          job_status_emoji(@job.status)
+        # Priority emoji (if not normal)
+        if @job.priority != 'normal'
+          span(class: "bubble-icon priority-icon") do
+            priority_emoji(@job.priority)
+          end
         end
       end
       
