@@ -2,18 +2,17 @@
 
 module Components
   class FormContainer < Base
-    def initialize(title: nil, &content)
+    def initialize(title: nil)
       @title = title
-      @content = content
     end
 
-    def view_template
+    def view_template(&block)
       div(class: "form-container") do
         if @title
           h1(class: "form-title") { @title }
         end
 
-        @content.call if @content
+        yield if block_given?
       end
     end
   end
