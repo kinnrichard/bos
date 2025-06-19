@@ -1,4 +1,9 @@
 class Client < ApplicationRecord
+  # Associations
+  has_many :people, dependent: :destroy
+  has_many :cases, dependent: :destroy
+  has_many :devices, through: :people
+  
   # Validations
   validates :name, presence: true
   validates :client_type, presence: true
