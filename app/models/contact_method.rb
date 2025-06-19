@@ -1,7 +1,7 @@
 class ContactMethod < ApplicationRecord
   belongs_to :person
   
-  enum contact_type: {
+  enum :contact_type, {
     phone: 0,
     email: 1,
     address: 2

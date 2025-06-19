@@ -4,7 +4,7 @@ class Task < ApplicationRecord
   
   has_many :notes, as: :notable, dependent: :destroy
   
-  enum status: {
+  enum :status, {
     new_task: 0,
     in_progress: 1,
     paused: 2,

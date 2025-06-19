@@ -1,5 +1,5 @@
 class User < ApplicationRecord
-  enum role: {
+  enum :role, {
     admin: 0,
     technician: 1,
     customer_specialist: 2,
