@@ -1404,12 +1404,16 @@ input:focus {
 
 .task-content {
   flex: 1;
+  min-width: 0; /* Allow text truncation */
 }
 
 .task-title {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .task-notes-count {
@@ -1418,21 +1422,24 @@ input:focus {
   margin-top: 4px;
 }
 
-.task-time-tracking {
+/* Task right section */
+.task-right {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--text-tertiary);
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
-.task-time-tracking .time-icon {
-  font-size: 14px;
+.task-time-tracking {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-right: 8px;
 }
 
 .task-time-tracking .time-value {
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Subtasks styles */
@@ -1513,21 +1520,33 @@ input:focus {
 
 /* Add subtask button styling */
 .add-subtask-button {
-  margin-left: 40px;
-  margin-top: 4px;
-  font-size: 12px;
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-tertiary);
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 0;
   border-radius: 4px;
   transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.task-wrapper:hover .add-subtask-button,
+.task-item:hover .add-subtask-button {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .add-subtask-button:hover {
-  background-color: var(--bg-secondary);
-  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .task-assignee {
@@ -1773,18 +1792,23 @@ h1.job-title,
   background-color: var(--bg-secondary);
 }
 
+/* Task wrapper for proper layout */
+.task-wrapper {
+  position: relative;
+}
+
 /* Override task-item styles for job view */
 .job-view .task-item {
   display: flex !important;
-  align-items: flex-start !important;
-  padding: 12px 0 !important;
-  padding-top: 8px !important;
+  align-items: center !important;
+  padding: 8px 0 !important;
   border: none !important;
   border-radius: 0 !important;
   background: none !important;
   background-color: transparent !important;
   gap: 8px !important;
   position: relative;
+  min-height: 32px;
 }
 
 /* Task status container and button */

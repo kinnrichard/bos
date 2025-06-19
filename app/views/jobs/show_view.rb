@@ -238,83 +238,103 @@ module Views
       end
       
       def render_task_item(task)
-        div(
-          class: "task-item #{task.successfully_completed? ? 'completed' : ''}",
-          draggable: "true",
-          data: { 
-            task_id: task.id,
-            task_status: task.status,
-            task_position: task.position,
-            job_target: "task",
-            action: "dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd"
-          }
-        ) do
-          # Status indicator with dropdown
-          div(class: "task-status-container") do
-            button(
-              class: "task-status-button",
-              data: { action: "click->job#toggleTaskStatus" }
-            ) do
-              span { task.status_emoji || "⚫" }
-            end
-            
-            # Status dropdown (hidden by default)
-            div(
-              class: "task-status-dropdown hidden",
-              data: { job_target: "taskStatusDropdown" }
-            ) do
-              render_task_status_options(task)
-            end
-          end
+        # Get time tracking data for in-progress tasks
+        time_data = {}
+        if task.in_progress?
+          # Get the last time it went into progress
+          last_start = task.activity_logs
+            .where(action: 'status_changed')
+            .where("metadata->>'new_status' = ?", 'in_progress')
+            .order(:created_at)
+            .last&.created_at
           
-          # Task content
-          div(class: "task-content") do
-            div(class: "task-title") { task.title }
-            
-            # Show time in progress if available
-            if task.formatted_time_in_progress.present?
-              div(class: "task-time-tracking") do
-                span(class: "time-icon") { "⏱️" }
-                span(class: "time-value") { task.formatted_time_in_progress }
+          time_data[:in_progress_since] = last_start.iso8601 if last_start
+          time_data[:accumulated_seconds] = task.time_in_progress
+        end
+        
+        div(class: "task-wrapper") do
+          div(
+            class: "task-item #{task.successfully_completed? ? 'completed' : ''}",
+            draggable: "true",
+            data: { 
+              task_id: task.id,
+              task_status: task.status,
+              task_position: task.position,
+              job_target: "task",
+              action: "dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask"
+            }.merge(time_data)
+          ) do
+            # Status indicator with dropdown
+            div(class: "task-status-container") do
+              button(
+                class: "task-status-button",
+                data: { action: "click->job#toggleTaskStatus" }
+              ) do
+                span { task.status_emoji || "⚫" }
+              end
+              
+              # Status dropdown (hidden by default)
+              div(
+                class: "task-status-dropdown hidden",
+                data: { job_target: "taskStatusDropdown" }
+              ) do
+                render_task_status_options(task)
               end
             end
             
-            if task.notes.any?
-              div(class: "task-notes") { "Notes" }
+            # Task content
+            div(class: "task-content") do
+              div(class: "task-title") { task.title }
+            end
+            
+            # Right side section
+            div(class: "task-right") do
+              # Time tracking (if in progress)
+              if task.in_progress? || task.formatted_time_in_progress.present?
+                div(
+                  class: "task-time-tracking",
+                  data: { 
+                    job_target: "taskTimer",
+                    task_id: task.id
+                  }
+                ) do
+                  span(class: "time-value") { task.formatted_time_in_progress || "0m" }
+                end
+              end
+              
+              # Icons
+              if task.notes.any?
+                span(class: "task-icon info-icon", title: "#{task.notes.count} notes") { "ⓘ" }
+              end
+              
+              if task.assigned_to
+                div(class: "task-assignee-icon", title: task.assigned_to.name) do
+                  technician_icon(task.assigned_to)
+                end
+              end
+              
+              # Add subtask button (hidden by default)
+              button(
+                class: "add-subtask-button",
+                data: { 
+                  action: "click->job#addSubtask",
+                  parent_task_id: task.id,
+                  job_target: "addSubtaskButton"
+                },
+                title: "Add subtask"
+              ) { "+" }
             end
           end
           
-          # Right side icons
-          div(class: "task-icons") do
-            if task.notes.any?
-              span(class: "task-icon info-icon", title: "#{task.notes.count} notes") { "ⓘ" }
-            end
-            
-            if task.assigned_to
-              div(class: "task-assignee-icon", title: task.assigned_to.name) do
-                technician_icon(task.assigned_to)
+          # Render subtasks if any
+          if task.has_subtasks?
+            div(class: "subtasks-container") do
+              task.subtasks.order(:position).each do |subtask|
+                render_subtask_item(subtask)
               end
             end
           end
         end
-        
-        # Render subtasks if any
-        if task.has_subtasks?
-          div(class: "subtasks-container") do
-            task.subtasks.order(:position).each do |subtask|
-              render_subtask_item(subtask)
-            end
-          end
-        end
-        
-        # Add subtask button
-        button(
-          class: "add-subtask-button",
-          data: { 
-            action: "click->job#addSubtask",
-            parent_task_id: task.id
-          }
-        ) { "+ Add subtask" }
       end
       
       def render_subtask_item(subtask)

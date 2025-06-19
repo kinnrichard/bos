@@ -2,13 +2,23 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["title", "statusBubble", "popover", "tasksContainer", "tasksList", 
-                    "newTaskForm", "newTaskInput", "searchInput", "task"]
+                    "newTaskForm", "newTaskInput", "searchInput", "task", "taskTimer", "addSubtaskButton"]
   
   static values = { 
     jobId: Number,
     clientId: Number,
     status: String,
     priority: String
+  }
+  
+  timerInterval = null
+  
+  connect() {
+    this.startTimers()
+  }
+  
+  disconnect() {
+    this.stopTimers()
   }
   
   get jobIdValue() {
@@ -506,5 +516,63 @@ export default class extends Controller {
       },
       body: JSON.stringify({ positions: positions })
     })
+  }
+  
+  // Timer management
+  startTimers() {
+    this.updateAllTimers()
+    this.timerInterval = setInterval(() => {
+      this.updateAllTimers()
+    }, 1000) // Update every second
+  }
+  
+  stopTimers() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval)
+      this.timerInterval = null
+    }
+  }
+  
+  updateAllTimers() {
+    this.taskTimerTargets.forEach(timerElement => {
+      const taskItem = timerElement.closest('.task-item')
+      if (!taskItem) return
+      
+      const inProgressSince = taskItem.dataset.inProgressSince
+      const accumulatedSeconds = parseInt(taskItem.dataset.accumulatedSeconds || 0)
+      
+      if (inProgressSince) {
+        // Calculate current session time
+        const startTime = new Date(inProgressSince)
+        const now = new Date()
+        const currentSessionSeconds = Math.floor((now - startTime) / 1000)
+        
+        // Total time = accumulated + current session
+        const totalSeconds = accumulatedSeconds + currentSessionSeconds
+        
+        // Format and display
+        timerElement.querySelector('.time-value').textContent = this.formatTime(totalSeconds)
+      }
+    })
+  }
+  
+  formatTime(totalSeconds) {
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`
+    } else {
+      return `${minutes}m`
+    }
+  }
+  
+  // Show/hide add subtask button on hover
+  showAddSubtask(event) {
+    // Handled by CSS now
+  }
+  
+  hideAddSubtask(event) {
+    // Handled by CSS now
   }
 }
