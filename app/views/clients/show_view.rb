@@ -47,7 +47,7 @@ module Views
                 end
                 
                 div(class: "info-item") do
-                  span(class: "info-label") { "Created" }
+                  span(class: "info-label") { "Added" }
                   span(class: "info-value") { @client.created_at.strftime("%B %d, %Y") }
                 end
               end

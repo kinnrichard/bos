@@ -15,63 +15,31 @@ module Components
     
     def view_template
       link_to job_path, 
-              class: "job-card",
+              class: "job-card-inline",
               data: { turbo: false } do
-        div(class: "job-card-header") do
-          h3(class: "job-title") { @job.title }
-          div(class: "job-meta") do
-            if @show_client
-              span(class: "client-name") { @job.client.name }
-              span(class: "separator") { "•" }
-            end
-            span(class: "job-date") { "Created #{time_ago_in_words(@job.created_at)} ago" }
-            if @job.start_on_date
-              span(class: "separator") { "•" }
-              span(class: "job-scheduled") { "Scheduled: #{@job.start_on_date.strftime('%b %d, %Y')}" }
-            end
+        # Status emoji
+        span(class: "job-status-emoji") { job_status_emoji(@job.status) }
+        
+        # Client and job name
+        span(class: "job-name-section") do
+          if @show_client
+            span(class: "client-name-prefix") { "#{@job.client.name}:" }
+            span { " " }
           end
+          span(class: "job-name") { @job.title }
         end
         
-        if @show_description && @job.description.present?
-          div(class: "job-description") do
-            plain @job.description.truncate(150)
-          end
-        end
-        
-        div(class: "job-status-row") do
-          # Status
-          span(class: "status-badge status-#{@job.status}") do
-            span(class: "status-emoji") { job_status_emoji(@job.status) }
-            span { status_label(@job.status) }
-          end
-          
-          # Priority
+        # Right side items
+        span(class: "job-right-section") do
+          # Priority emoji (if not normal)
           if @job.priority != 'normal'
-            span(class: "priority-badge priority-#{@job.priority}") do
-              span(class: "priority-emoji") { priority_emoji(@job.priority) }
-              span { priority_label(@job.priority) }
-            end
+            span(class: "job-priority-emoji") { priority_emoji(@job.priority) }
           end
           
-          # Assignees
+          # Technician avatar
           if @job.technicians.any?
-            span(class: "assignee-info") do
-              @job.technicians.each_with_index do |tech, index|
-                span(class: "technician-initials") { tech.name.split.map(&:first).join.upcase[0..1] }
-                span { tech.name } if index == 0 && @job.technicians.count == 1
-              end
-              span { " +#{@job.technicians.count - 1}" } if @job.technicians.count > 1
-            end
-          else
-            span(class: "assignee-info unassigned") { "Unassigned" }
-          end
-          
-          # Task count
-          if @job.tasks.any?
-            span(class: "task-count") do
-              completed = @job.tasks.where(status: 'successfully_completed').count
-              total = @job.tasks.count
-              "#{completed}/#{total} tasks"
+            @job.technicians.first(1).each do |tech|
+              span(class: "technician-avatar") { tech.name.split.map(&:first).join.upcase[0..1] }
             end
           end
         end

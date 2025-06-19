@@ -2245,21 +2245,76 @@ h1.job-title,
   background-color: var(--bg-tertiary);
 }
 
-/* Job card styles for listing */
-.job-card {
-  display: block;
+/* Job card inline styles for listing */
+.job-card-inline {
+  display: flex;
+  align-items: center;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-primary);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 12px 16px;
   text-decoration: none;
   color: inherit;
   transition: all 0.2s ease;
+  gap: 12px;
 }
 
-.job-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+.job-card-inline:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-blue);
+}
+
+.job-status-emoji {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.job-name-section {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  overflow: hidden;
+}
+
+.client-name-prefix {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
+.job-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.job-right-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.job-priority-emoji {
+  font-size: 18px;
+}
+
+.technician-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background-color: var(--bg-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
 }
 
 .job-card-header {
