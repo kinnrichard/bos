@@ -10,6 +10,35 @@ export default class extends Controller {
     status: String,
     priority: String
   }
+  
+  get jobIdValue() {
+    return this._jobIdValue || this.getValueFromJobView('jobId')
+  }
+  
+  get clientIdValue() {
+    return this._clientIdValue || this.getValueFromJobView('clientId')
+  }
+  
+  get statusValue() {
+    return this._statusValue || this.getValueFromJobView('jobStatusValue')
+  }
+  
+  set statusValue(value) {
+    this._statusValue = value
+  }
+  
+  get priorityValue() {
+    return this._priorityValue || this.getValueFromJobView('jobPriorityValue')
+  }
+  
+  set priorityValue(value) {
+    this._priorityValue = value
+  }
+  
+  getValueFromJobView(dataName) {
+    const jobView = document.querySelector('.job-view')
+    return jobView ? parseInt(jobView.dataset[dataName]) || jobView.dataset[dataName] : null
+  }
 
   connect() {
     // Close popover when clicking outside
@@ -22,10 +51,32 @@ export default class extends Controller {
   }
 
   handleOutsideClick(event) {
-    if (!this.popoverTarget.contains(event.target) && 
-        !this.statusBubbleTarget.contains(event.target)) {
-      this.popoverTarget.classList.add("hidden")
+    const popover = document.querySelector('.job-popover')
+    const statusBubble = document.querySelector('.status-bubble')
+    if (popover && !popover.contains(event.target) && 
+        statusBubble && !statusBubble.contains(event.target)) {
+      popover.classList.add("hidden")
     }
+  }
+
+  get titleTarget() {
+    return document.querySelector('[data-job-target="title"]')
+  }
+  
+  get newTaskFormTarget() {
+    return document.querySelector('[data-job-target="newTaskForm"]')
+  }
+  
+  get newTaskInputTarget() {
+    return document.querySelector('[data-job-target="newTaskInput"]')
+  }
+  
+  get tasksListTarget() {
+    return document.querySelector('[data-job-target="tasksList"]')
+  }
+  
+  get taskTargets() {
+    return Array.from(document.querySelectorAll('[data-job-target="task"]'))
   }
 
   // Title editing
@@ -50,7 +101,10 @@ export default class extends Controller {
   // Popover
   togglePopover(event) {
     event.stopPropagation()
-    this.popoverTarget.classList.toggle("hidden")
+    const popover = document.querySelector('.job-popover')
+    if (popover) {
+      popover.classList.toggle("hidden")
+    }
   }
 
   // Status updates

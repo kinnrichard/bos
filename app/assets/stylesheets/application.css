@@ -62,16 +62,14 @@ body {
   margin-right: 0;
   height: calc(100vh - 24px);
   overflow: hidden;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
 }
 
 .sidebar.sidebar-hidden {
-  transform: translateX(-100%);
+  transform: translateX(calc(-100% - 12px));
   opacity: 0;
   pointer-events: none;
-  width: 0;
-  min-width: 0;
-  margin: 0;
+  margin-left: -280px;
 }
 
 .sidebar-logo {

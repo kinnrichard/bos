@@ -17,10 +17,10 @@ module Views
           current_user: current_user,
           active_section: :jobs,
           client: @client,
-          toolbar_items: method(:render_toolbar_items)
+          toolbar_items: method(:render_toolbar_items),
+          extra_controllers: ["job"]
         ) do
           div(class: "job-view", data: { 
-            controller: "job", 
             job_id: @job.id, 
             client_id: @client.id,
             job_status_value: @job.status,
@@ -182,10 +182,9 @@ module Views
       def render_toolbar_items(view)
         # Status bubble with assignee and status
         view.button(
-          class: "status-bubble",
+          class: "status-bubble job-status-bubble",
           data: { 
-            action: "click->job#togglePopover",
-            job_target: "statusBubble"
+            action: "click->job#togglePopover"
           }
         ) do
           render_status_bubble
