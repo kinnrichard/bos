@@ -50,6 +50,9 @@ module Components
             search_url_value: "/clients/search"
           }
         ) do
+          # Magnifying glass icon
+          span(class: "search-icon")
+          
           input(
             type: "search",
             class: "search-input",
