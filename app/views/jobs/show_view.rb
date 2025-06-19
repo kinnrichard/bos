@@ -149,9 +149,15 @@ module Views
                     ) do
                       span(class: "dropdown-value") do
                         if @job.technicians.any?
-                          @job.technicians.map(&:name).join(", ")
+                          if @job.technicians.count == 1
+                            technician_icon(@job.technicians.first)
+                            span { @job.technicians.first.name }
+                          else
+                            span { "#{@job.technicians.count} assigned" }
+                          end
                         else
-                          "Unassigned"
+                          span { "❓" }
+                          span { "Unassigned" }
                         end
                       end
                       span(class: "dropdown-arrow") { "▼" }

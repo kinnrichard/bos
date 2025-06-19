@@ -183,7 +183,8 @@ export default class extends Controller {
       body: JSON.stringify({ job: { status: newStatus } })
     }).then(response => response.json())
       .then(data => {
-        this.statusValue = newStatus
+        // Update the internal status value
+        this._statusValue = newStatus
         this.updateStatusBubble()
       })
   }
@@ -239,15 +240,67 @@ export default class extends Controller {
       body: JSON.stringify({ job: { priority: newPriority } })
     }).then(response => response.json())
       .then(data => {
-        this.priorityValue = newPriority
+        // Update the internal priority value
+        this._priorityValue = newPriority
         this.updateStatusBubble()
       })
   }
 
   updateStatusBubble() {
-    // This would be better done with a partial update from the server
-    // For now, we'll update the icons manually
-    location.reload()
+    // Update the status bubble in the toolbar
+    const statusBubble = document.querySelector('.job-status-bubble')
+    if (!statusBubble) return
+    
+    // Clear existing content
+    statusBubble.innerHTML = ''
+    
+    // Add priority icon if not normal
+    if (this.priorityValue && this.priorityValue !== 'normal') {
+      const priorityEmojis = {
+        'critical': '🔥',
+        'high': '❗',
+        'low': '➖',
+        'proactive_followup': '💬'
+      }
+      const priorityIcon = priorityEmojis[this.priorityValue]
+      if (priorityIcon) {
+        const span = document.createElement('span')
+        span.className = 'bubble-icon priority-icon'
+        span.textContent = priorityIcon
+        statusBubble.appendChild(span)
+      }
+    }
+    
+    // Add assignee icon
+    const assigneeIcon = document.createElement('span')
+    assigneeIcon.className = 'bubble-icon assignee-icon'
+    
+    // Get current assignees from the dropdown
+    const assignedTechs = document.querySelectorAll('.assignee-option.active[data-technician-id]')
+    if (assignedTechs.length > 0) {
+      // Show first technician's icon
+      const firstTechIcon = assignedTechs[0].querySelector('span:first-child')
+      if (firstTechIcon) {
+        assigneeIcon.innerHTML = firstTechIcon.outerHTML
+      }
+    } else {
+      assigneeIcon.textContent = '❓'
+    }
+    statusBubble.appendChild(assigneeIcon)
+    
+    // Add status icon
+    const statusEmojis = {
+      'open': '⚫',
+      'new': '⚫',
+      'in_progress': '🟢',
+      'paused': '⏸️',
+      'successfully_completed': '☑️',
+      'cancelled': '❌'
+    }
+    const statusIcon = document.createElement('span')
+    statusIcon.className = 'bubble-icon status-icon'
+    statusIcon.textContent = statusEmojis[this.statusValue] || '⚫'
+    statusBubble.appendChild(statusIcon)
   }
   
   setUnassigned(event) {
@@ -257,7 +310,7 @@ export default class extends Controller {
     // Update the dropdown button text immediately
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
     if (dropdownValue) {
-      dropdownValue.textContent = 'Unassigned'
+      dropdownValue.innerHTML = '<span>❓</span><span>Unassigned</span>'
     }
     
     // Remove active from all technician options
@@ -318,8 +371,16 @@ export default class extends Controller {
     
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
     if (dropdownValue) {
-      dropdownValue.textContent = selectedTechs.length > 0 ? 
-        selectedTechs.join(', ') : 'Unassigned'
+      if (selectedTechs.length === 0) {
+        dropdownValue.innerHTML = '<span>❓</span><span>Unassigned</span>'
+      } else if (selectedTechs.length === 1) {
+        // Get the icon HTML from the selected option
+        const selectedOption = dropdownContainer.querySelector('.assignee-option.active[data-technician-id]')
+        const iconHtml = selectedOption?.querySelector('span:first-child')?.outerHTML || ''
+        dropdownValue.innerHTML = `${iconHtml}<span>${selectedTechs[0]}</span>`
+      } else {
+        dropdownValue.innerHTML = `<span>${selectedTechs.length} assigned</span>`
+      }
     }
     
     // Update checkmarks immediately
