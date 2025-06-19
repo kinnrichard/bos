@@ -27,15 +27,12 @@ module Views
                 link_to "Edit", edit_client_path(@client), 
                   class: "btn btn-secondary",
                   data: { action: "click->client#showDelete" }
-                form(action: client_path(@client), method: "post", style: "display: none;", 
-                     data: { 
-                       "client-target": "deleteButton",
-                       "turbo": "false"
-                     }) do
-                  input(type: "hidden", name: "_method", value: "delete")
-                  input(type: "hidden", name: "authenticity_token", value: helpers.form_authenticity_token)
-                  button(type: "submit", class: "btn btn-danger", 
-                         data: { confirm: "Are you sure?" }) { "Delete" }
+                div(style: "display: none;", data: { "client-target": "deleteButton" }) do
+                  delete_form_with_confirmation(
+                    url: client_path(@client),
+                    message: "Are you sure you want to delete #{@client.name}? This will permanently delete ALL associated people, devices, jobs, and other data.",
+                    checkbox_label: "I understand ALL data for this client will be permanently deleted"
+                  ) { "Delete" }
                 end
               end
             end

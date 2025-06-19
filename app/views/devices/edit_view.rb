@@ -62,9 +62,11 @@ module Views
               
               if current_user.can_delete?(@device)
                 div(style: "margin-top: 40px; padding-top: 40px; border-top: 1px solid var(--border-primary);") do
-                  form_with(url: client_device_path(@client, @device), method: :delete, data: { confirm: "Are you sure you want to delete this device?" }) do |delete_form|
-                    button_tag("Delete Device", type: "submit", class: "btn btn-danger")
-                  end
+                  delete_form_with_confirmation(
+                    url: client_device_path(@client, @device),
+                    message: "Are you sure you want to delete the device '#{@device.name}'?",
+                    checkbox_label: "I understand this device will be permanently deleted"
+                  ) { "Delete Device" }
                 end
               end
             end

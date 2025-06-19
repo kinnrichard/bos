@@ -19,6 +19,31 @@ class Views::Base < Components::Base
   
   private
   
+  def delete_form_with_confirmation(url:, message: nil, checkbox_label: nil, &block)
+    div(data: { controller: "delete-confirmation" }) do
+      # Render the modal
+      render Components::DeleteConfirmationModal.new(
+        message: message,
+        checkbox_label: checkbox_label
+      )
+      
+      # Render the form with the trigger
+      form_with(url: url, method: :delete, data: { turbo: false }) do |f|
+        button_tag(
+          type: "button",
+          class: "btn btn-danger",
+          data: { 
+            action: "click->delete-confirmation#open",
+            delete_confirmation_message_value: message,
+            delete_confirmation_checkbox_label_value: checkbox_label
+          }
+        ) do
+          block_given? ? yield : "Delete"
+        end
+      end
+    end
+  end
+  
   def render_layout(title:, current_user:, active_section: nil, client: nil, &content)
     doctype
     html(lang: "en") do

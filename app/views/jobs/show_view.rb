@@ -32,9 +32,11 @@ module Views
               div(class: "job-actions") do
                 link_to("Edit", edit_client_job_path(@client, @job), class: "btn btn-secondary")
                 if current_user.can_delete?(@job)
-                  form_with(url: client_job_path(@client, @job), method: :delete, data: { confirm: "Are you sure?" }) do |f|
-                    button_tag("Delete", type: "submit", class: "btn btn-danger")
-                  end
+                  delete_form_with_confirmation(
+                    url: client_job_path(@client, @job),
+                    message: "Are you sure you want to delete the job '#{@job.title}'? This will also delete all associated tasks and notes.",
+                    checkbox_label: "I understand this will permanently delete this job and all its data"
+                  ) { "Delete" }
                 end
               end
             end

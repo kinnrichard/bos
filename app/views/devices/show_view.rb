@@ -21,9 +21,11 @@ module Views
               div(class: "device-actions") do
                 link_to("Edit", edit_client_device_path(@client, @device), class: "btn btn-secondary")
                 if current_user.can_delete?(@device)
-                  form_with(url: client_device_path(@client, @device), method: :delete, data: { confirm: "Are you sure?" }) do |f|
-                    button_tag("Delete", type: "submit", class: "btn btn-danger")
-                  end
+                  delete_form_with_confirmation(
+                    url: client_device_path(@client, @device),
+                    message: "Are you sure you want to delete the device '#{@device.name}'?",
+                    checkbox_label: "I understand this device will be permanently deleted"
+                  ) { "Delete" }
                 end
               end
             end
