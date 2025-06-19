@@ -4,17 +4,17 @@ class DevicesController < ApplicationController
   
   def index
     @devices = @client.devices.includes(:person).order(:name)
-    render Devices::IndexView.new(client: @client, devices: @devices)
+    render Views::Devices::IndexView.new(client: @client, devices: @devices)
   end
   
   def show
-    render Devices::ShowView.new(client: @client, device: @device)
+    render Views::Devices::ShowView.new(client: @client, device: @device)
   end
   
   def new
     @device = @client.devices.build
     @people = @client.people.order(:name)
-    render Devices::NewView.new(client: @client, device: @device, people: @people)
+    render Views::Devices::NewView.new(client: @client, device: @device, people: @people)
   end
   
   def create
@@ -32,13 +32,13 @@ class DevicesController < ApplicationController
       redirect_to client_device_path(@client, @device), notice: 'Device was successfully created.'
     else
       @people = @client.people.order(:name)
-      render Devices::NewView.new(client: @client, device: @device, people: @people), status: :unprocessable_entity
+      render Views::Devices::NewView.new(client: @client, device: @device, people: @people), status: :unprocessable_entity
     end
   end
   
   def edit
     @people = @client.people.order(:name)
-    render Devices::EditView.new(client: @client, device: @device, people: @people)
+    render Views::Devices::EditView.new(client: @client, device: @device, people: @people)
   end
   
   def update
@@ -54,7 +54,7 @@ class DevicesController < ApplicationController
       redirect_to client_device_path(@client, @device), notice: 'Device was successfully updated.'
     else
       @people = @client.people.order(:name)
-      render Devices::EditView.new(client: @client, device: @device, people: @people), status: :unprocessable_entity
+      render Views::Devices::EditView.new(client: @client, device: @device, people: @people), status: :unprocessable_entity
     end
   end
   

@@ -1,16 +1,26 @@
-module Devices
-  class NewView < ApplicationView
-    def initialize(client:, device:, people:)
-      @client = client
-      @device = device
-      @people = people
-    end
+# frozen_string_literal: true
 
-    def template
-      render Layout.new do
-        render Sidebar.new(active_section: :devices, client: @client)
-        
-        div(class: "main-content") do
+module Views
+  module Devices
+    class NewView < Views::Base
+      include Phlex::Rails::Helpers::LinkTo
+      include Phlex::Rails::Helpers::Routes
+      include Phlex::Rails::Helpers::FormWith
+      include Phlex::Rails::Helpers::OptionsForSelect
+      
+      def initialize(client:, device:, people:)
+        @client = client
+        @device = device
+        @people = people
+      end
+
+      def view_template
+        render_layout(
+          title: "New Device - #{@client.name}",
+          current_user: current_user,
+          active_section: :devices,
+          client: @client
+        ) do
           div(class: "form-container") do
             h1(class: "form-title") { "New Device" }
             
@@ -57,6 +67,17 @@ module Devices
             end
           end
         end
+      end
+      
+      private
+      
+      def current_user
+        # TODO: Replace with actual current user from authentication
+        User.first || User.create!(
+          name: 'System User',
+          email: 'system@example.com',
+          role: :admin
+        )
       end
     end
   end
