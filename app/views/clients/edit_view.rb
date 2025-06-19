@@ -15,7 +15,8 @@ module Views
         render_layout(
           title: "Edit #{@client.name} - Faultless",
           current_user: @current_user,
-          active_section: :clients
+          active_section: :client_info,
+          client: @client
         ) do
           div(class: "form-container") do
             h1(class: "form-title") { "Edit Client" }
