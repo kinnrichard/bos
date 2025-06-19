@@ -14,6 +14,8 @@ class Views::Base < Components::Base
   include Phlex::Rails::Helpers::ButtonTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::NumberToHumanSize
+  include Phlex::Rails::Helpers::CheckBoxTag
+  include Phlex::Rails::Helpers::TimeAgoInWords
   
   private
   

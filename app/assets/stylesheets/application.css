@@ -153,6 +153,7 @@ body {
   flex-direction: column;
   background-color: #000000;
   overflow: hidden;
+  min-height: 0; /* Important for flex children */
 }
 
 /* Header styles */
@@ -221,9 +222,10 @@ body {
 .content {
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 40px;
+  overflow-y: auto;
 }
 
 /* Empty state */
@@ -1047,4 +1049,331 @@ body {
 
 .text-link:hover {
   text-decoration: underline;
+}
+
+/* Jobs styles */
+.jobs-container {
+  padding: 40px;
+}
+
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.job-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.job-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.job-card-link {
+  display: block;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.job-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.job-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.job-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.job-status.open { color: #00A3FF; }
+.job-status.in_progress { color: #32D74B; }
+.job-status.paused { color: #FFD60A; }
+.job-status.waiting_for_customer { color: #FF9F0A; }
+.job-status.waiting_for_scheduled_appointment { color: #BF5AF2; }
+.job-status.successfully_completed { color: #32D74B; }
+.job-status.cancelled { color: #FF453A; }
+
+.job-priority.critical { color: #FF453A; }
+.job-priority.high { color: #FF9F0A; }
+.job-priority.normal { color: var(--text-secondary); }
+.job-priority.low { color: var(--text-tertiary); }
+
+.job-tasks-summary {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.job-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.job-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* Job detail styles */
+.job-detail-container {
+  padding: 40px;
+}
+
+.job-status-priority {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.job-status-badge,
+.job-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.job-status-badge {
+  background-color: var(--bg-tertiary);
+}
+
+.job-status-badge.open { color: #00A3FF; }
+.job-status-badge.in_progress { color: #32D74B; }
+.job-status-badge.paused { color: #FFD60A; }
+.job-status-badge.waiting_for_customer { color: #FF9F0A; }
+.job-status-badge.waiting_for_scheduled_appointment { color: #BF5AF2; }
+.job-status-badge.successfully_completed { color: #32D74B; }
+.job-status-badge.cancelled { color: #FF453A; }
+
+.job-priority-badge {
+  background-color: var(--bg-tertiary);
+}
+
+.job-priority-badge.critical { color: #FF453A; }
+.job-priority-badge.high { color: #FF9F0A; }
+.job-priority-badge.normal { color: var(--text-primary); }
+.job-priority-badge.low { color: var(--text-tertiary); }
+
+.job-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.job-info-section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.job-info-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 20px 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
+.description-content {
+  white-space: pre-wrap;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.technicians-list,
+.people-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.technician-item,
+.person-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.technician-icon,
+.person-icon {
+  font-size: 16px;
+}
+
+.technician-role {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-left: 4px;
+}
+
+.person-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+.person-link:hover {
+  text-decoration: underline;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+}
+
+.task-status {
+  font-size: 20px;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.task-notes-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+.task-assignee {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.note-item {
+  padding: 16px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+}
+
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.note-author {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.note-date {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.note-content {
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.empty-message {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* Form styles */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-col {
+  flex: 1;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.checkbox-item label {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
 }
