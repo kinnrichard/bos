@@ -846,6 +846,10 @@ body {
   font-size: 16px;
 }
 
+.contact-icon.missing {
+  opacity: 0.6;
+}
+
 /* Person detail styles */
 .person-detail-container {
   padding: 40px;

@@ -30,10 +30,15 @@ module Views
                   div(class: "person-info") do
                     span(class: "person-name") { person.name }
                     
-                    if person.contact_methods.any?
+                    # Show missing contact methods
+                    missing_types = missing_contact_types(person)
+                    if missing_types.any?
                       div(class: "person-contacts") do
-                        person.contact_methods.each do |contact|
-                          span(class: "contact-icon") { contact_icon(contact.contact_type) }
+                        missing_types.each do |type|
+                          span(class: "contact-icon missing") do
+                            plain contact_icon(type)
+                            plain "❗"
+                          end
                         end
                       end
                     end
@@ -63,6 +68,12 @@ module Views
         when 'address' then "📍"
         else "📝"
         end
+      end
+      
+      def missing_contact_types(person)
+        all_types = ['phone', 'email', 'address']
+        existing_types = person.contact_methods.pluck(:contact_type)
+        all_types - existing_types
       end
     end
   end
