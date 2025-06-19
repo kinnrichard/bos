@@ -51,14 +51,8 @@ module Components
           nav_item("Client Logs", href: logs_client_path(@client), icon: "📜", active: @active_section == :client_logs)
         end
         
-        # All Cases section
-        div(class: "sidebar-section", style: "margin-top: 24px;") do
-          div(class: "sidebar-section-header") { "All Jobs" }
-          nav_item("My Jobs", href: "/jobs?filter=mine", icon: "👤", badge: my_jobs_count, active: @active_section == :my_jobs)
-          nav_item("Unassigned", href: "/jobs?filter=unassigned", icon: "❓", badge: unassigned_count, active: @active_section == :unassigned)
-          nav_item("Assigned to Others", href: "/jobs?filter=others", icon: "👥", active: @active_section == :others)
-          nav_item("Closed", href: "/jobs?filter=closed", icon: "☑️", active: @active_section == :closed)
-        end
+        # All Jobs section
+        render_jobs_section(header_text: "All Jobs", margin_top: "24px")
       end
     end
 
@@ -70,13 +64,7 @@ module Components
         end
 
         # Jobs section
-        div(class: "sidebar-section") do
-          div(class: "sidebar-section-header") { "Jobs" }
-          nav_item("My Jobs", href: "/jobs?filter=mine", icon: "👤", badge: my_jobs_count, active: @active_section == :my_jobs)
-          nav_item("Unassigned", href: "/jobs?filter=unassigned", icon: "❓", badge: unassigned_count, active: @active_section == :unassigned)
-          nav_item("Assigned to Others", href: "/jobs?filter=others", icon: "👥", active: @active_section == :others)
-          nav_item("Closed", href: "/jobs?filter=closed", icon: "☑️", active: @active_section == :closed)
-        end
+        render_jobs_section(header_text: "Jobs")
       end
     end
 
@@ -90,12 +78,36 @@ module Components
       end
     end
 
+    def render_jobs_section(header_text:, margin_top: nil)
+      div_attrs = { class: "sidebar-section" }
+      div_attrs[:style] = "margin-top: #{margin_top};" if margin_top
+      
+      div(**div_attrs) do
+        div(class: "sidebar-section-header") { header_text }
+        nav_item("My Jobs", href: "/jobs?filter=mine", icon: "👤", badge: my_jobs_count, active: @active_section == :my_jobs)
+        nav_item("Unassigned", href: "/jobs?filter=unassigned", icon: "❓", badge: unassigned_count, active: @active_section == :unassigned)
+        nav_item("Assigned to Others", href: "/jobs?filter=others", icon: "👥", badge: others_count, active: @active_section == :others)
+        nav_item("Closed", href: "/jobs?filter=closed", icon: "☑️", badge: closed_count, active: @active_section == :closed)
+      end
+    end
+
     def my_jobs_count
       Job.joins(:job_assignments).where(job_assignments: { user_id: @current_user.id }).count
     end
 
     def unassigned_count
       Job.left_joins(:job_assignments).where(job_assignments: { id: nil }).count
+    end
+    
+    def others_count
+      Job.joins(:job_assignments)
+         .where.not(job_assignments: { user_id: @current_user.id })
+         .distinct
+         .count
+    end
+    
+    def closed_count
+      Job.where(status: ['successfully_completed', 'cancelled']).count
     end
     
     def scheduled_count

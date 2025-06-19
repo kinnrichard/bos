@@ -1,8 +1,16 @@
 class HomeController < ApplicationController
   def show
-    # For now, create a mock user object
-    current_user = OpenStruct.new(name: "Oliver")
-    
     render Views::Home::ShowView.new(current_user: current_user)
+  end
+  
+  private
+  
+  def current_user
+    # TODO: Replace with actual current user from authentication
+    @current_user ||= User.first || User.create!(
+      name: "System User",
+      email: "system@example.com",
+      role: :admin
+    )
   end
 end

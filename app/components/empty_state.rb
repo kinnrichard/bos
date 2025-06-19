@@ -36,7 +36,8 @@ module Components
     def greeting
       hour = Time.current.hour
       case hour
-      when 0..11 then "Good morning"
+      when 0..3 then "Hello"
+      when 4..11 then "Good morning"
       when 12..17 then "Good afternoon"
       else "Good evening"
       end
