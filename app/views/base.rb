@@ -55,7 +55,7 @@ class Views::Base < Components::Base
     end
   end
 
-  def render_layout(title:, current_user:, active_section: nil, client: nil, &content)
+  def render_layout(title:, current_user:, active_section: nil, client: nil, toolbar_items: nil, &content)
     doctype
     html(lang: "en") do
       head do
@@ -82,7 +82,10 @@ class Views::Base < Components::Base
           end
 
           div(class: "main-content") do
-            render Components::Header.new(current_user: current_user)
+            render Components::Header.new(
+              current_user: current_user,
+              toolbar_items: toolbar_items
+            )
 
             div(class: "content", &content)
           end

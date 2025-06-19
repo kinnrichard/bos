@@ -204,8 +204,20 @@ body {
   height: 60px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 0 12px;
+  gap: 12px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
@@ -421,9 +433,81 @@ body {
   color: var(--accent-blue);
 }
 
-/* Mobile menu button */
-.mobile-menu-btn {
-  display: none;
+/* Sidebar toggle button */
+.sidebar-toggle-btn {
+  /* Always visible, not just on mobile */
+}
+
+/* Toolbar button styles */
+.toolbar-button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toolbar-button:hover {
+  background-color: var(--bg-tertiary);
+  border-color: #48484A;
+}
+
+.toolbar-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status bubble for job view */
+.status-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.status-bubble:hover {
+  background-color: var(--bg-tertiary);
+  border-color: #48484A;
+}
+
+.bubble-icon {
+  font-size: 16px;
+}
+
+/* Toolbar search */
+.toolbar-search {
+  position: relative;
+}
+
+.toolbar-search-input {
+  height: 32px;
+  padding: 0 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.15s ease;
+  width: 180px;
+}
+
+.toolbar-search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.toolbar-search-input:focus {
+  border-color: var(--accent-blue);
 }
 
 /* Utilities */
@@ -767,9 +851,12 @@ body {
     gap: 8px;
   }
   
-  .mobile-menu-btn {
-    display: flex;
-    margin-right: auto;
+  .header-left {
+    flex: 1;
+  }
+  
+  .header-right {
+    gap: 8px;
   }
   
   .content {
@@ -1545,12 +1632,34 @@ body {
 }
 
 /* ===== JOB VIEW OVERRIDES ===== */
+/* Job title section */
+.job-title-section {
+  margin-bottom: 24px;
+}
+
 /* Force blue color on job title */
 .job-title,
 h1.job-title,
 .job-title[contenteditable="true"] {
   color: #0A84FF !important;
   -webkit-text-fill-color: #0A84FF !important;
+  font-size: 32px;
+  font-weight: 600;
+  margin: 0;
+  outline: none;
+  border: none;
+  background: transparent;
+  padding: 4px 2px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.job-title[contenteditable="true"]:hover {
+  background-color: var(--bg-secondary);
+}
+
+.job-title[contenteditable="true"]:focus {
+  background-color: var(--bg-secondary);
 }
 
 /* Override task-item styles for job view */

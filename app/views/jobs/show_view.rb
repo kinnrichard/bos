@@ -16,7 +16,8 @@ module Views
           title: "#{@job.title} - #{@client.name}",
           current_user: current_user,
           active_section: :jobs,
-          client: @client
+          client: @client,
+          toolbar_items: method(:render_toolbar_items)
         ) do
           div(class: "job-view", data: { 
             controller: "job", 
@@ -25,62 +26,16 @@ module Views
             job_status_value: @job.status,
             job_priority_value: @job.priority
           }) do
-            # Toolbar
-            div(class: "job-toolbar") do
-              # Left side - title
-              div(class: "job-title-section") do
-                h1(
-                  class: "job-title",
-                  contenteditable: "true",
-                  data: { 
-                    action: "blur->job#updateTitle",
-                    job_target: "title"
-                  }
-                ) { @job.title }
-              end
-              
-              # Right side - controls
-              div(class: "job-toolbar-controls") do
-                # Show sidebar button (when hidden)
-                button(
-                  class: "toolbar-button show-sidebar-btn",
-                  data: { action: "click->sidebar#show" },
-                  title: "Show sidebar"
-                ) { "☰" }
-                
-                # Status bubble with assignee and status
-                button(
-                  class: "status-bubble",
-                  data: { 
-                    action: "click->job#togglePopover",
-                    job_target: "statusBubble"
-                  }
-                ) do
-                  render_status_bubble
-                end
-                
-                # List view button (placeholder)
-                button(class: "toolbar-button", disabled: true) { "☰" }
-                
-                # Add task button
-                button(
-                  class: "toolbar-button",
-                  data: { action: "click->job#addNewTask" }
-                ) { "+" }
-                
-                # Search
-                div(class: "toolbar-search") do
-                  input(
-                    type: "search",
-                    placeholder: "Search",
-                    class: "toolbar-search-input",
-                    data: { 
-                      action: "input->job#filterTasks",
-                      job_target: "searchInput"
-                    }
-                  )
-                end
-              end
+            # Job title
+            div(class: "job-title-section") do
+              h1(
+                class: "job-title",
+                contenteditable: "true",
+                data: { 
+                  action: "blur->job#updateTitle",
+                  job_target: "title"
+                }
+              ) { @job.title }
             end
             
             # Tasks list
@@ -223,6 +178,41 @@ module Views
       end
       
       private
+      
+      def render_toolbar_items(view)
+        # Status bubble with assignee and status
+        view.button(
+          class: "status-bubble",
+          data: { 
+            action: "click->job#togglePopover",
+            job_target: "statusBubble"
+          }
+        ) do
+          render_status_bubble
+        end
+        
+        # List view button (placeholder)
+        view.button(class: "toolbar-button", disabled: true) { "☰" }
+        
+        # Add task button
+        view.button(
+          class: "toolbar-button",
+          data: { action: "click->job#addNewTask" }
+        ) { "+" }
+        
+        # Search
+        view.div(class: "toolbar-search") do
+          view.input(
+            type: "search",
+            placeholder: "Search tasks",
+            class: "toolbar-search-input",
+            data: { 
+              action: "input->job#filterTasks",
+              job_target: "searchInput"
+            }
+          )
+        end
+      end
       
       def render_status_bubble
         # Priority emoji (if not normal)
