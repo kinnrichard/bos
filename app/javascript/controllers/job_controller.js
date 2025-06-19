@@ -260,12 +260,14 @@ export default class extends Controller {
       dropdownValue.textContent = 'Unassigned'
     }
     
-    // Update active states immediately
-    dropdownContainer?.querySelectorAll('.assignee-option').forEach(opt => {
+    // Remove active from all technician options
+    dropdownContainer?.querySelectorAll('.assignee-option[data-technician-id]').forEach(opt => {
       opt.classList.remove('active')
       const checkmark = opt.querySelector('.checkmark')
       if (checkmark) checkmark.remove()
     })
+    
+    // Add active to Unassigned
     event.currentTarget.classList.add('active')
     
     // Close the dropdown
@@ -295,6 +297,14 @@ export default class extends Controller {
     
     // Toggle active state immediately
     event.currentTarget.classList.toggle('active')
+    
+    // If we're selecting a technician (activating), remove active from Unassigned
+    if (event.currentTarget.classList.contains('active')) {
+      const unassignedOption = dropdownContainer.querySelector('.assignee-option[data-action*="setUnassigned"]')
+      if (unassignedOption) {
+        unassignedOption.classList.remove('active')
+      }
+    }
     
     // Get current technician IDs after toggling
     const currentTechIds = Array.from(dropdownContainer.querySelectorAll('.assignee-option.active'))
