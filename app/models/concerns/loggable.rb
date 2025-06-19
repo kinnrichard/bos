@@ -65,7 +65,7 @@ module Loggable
     case self
     when Client
       self
-    when Job, Person, Device, Invoice
+    when Job, Person, Device
       client
     when Task
       job&.client

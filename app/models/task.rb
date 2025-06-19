@@ -129,7 +129,7 @@ class Task < ApplicationRecord
   end
   
   def prevent_self_reference
-    errors.add(:parent_id, "can't reference itself") if parent_id == id
+    errors.add(:parent_id, "can't reference itself") if parent_id.present? && parent_id == id
   end
   
   def prevent_circular_reference
