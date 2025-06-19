@@ -272,7 +272,6 @@ body {
 }
 
 .search-input:focus {
-  background-color: var(--bg-tertiary);
   border-color: var(--accent-blue);
 }
 
@@ -1094,7 +1093,6 @@ body {
 
 /* Jobs styles */
 .jobs-container {
-  padding: 40px;
 }
 
 .jobs-list {
