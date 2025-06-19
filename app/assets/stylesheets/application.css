@@ -1972,6 +1972,75 @@ h1.job-title,
   margin-bottom: 12px;
 }
 
+/* Dropdown styles */
+.dropdown-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Ensure dropdown sections in popover don't clip */
+.popover-section .dropdown-container {
+  position: static; /* Allow dropdown to overflow popover boundaries */
+}
+
+.dropdown-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.dropdown-button:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent-blue);
+}
+
+.dropdown-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  transition: transform 0.15s ease;
+}
+
+.dropdown-container.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 2000; /* Higher than popover z-index */
+}
+
+/* Special handling for dropdowns inside popovers */
+.popover-section .dropdown-menu {
+  position: fixed; /* Use fixed positioning to escape popover bounds */
+  width: 288px; /* Match popover width minus padding */
+}
+
 /* Status and Priority Options */
 .status-options,
 .priority-options {
@@ -1981,30 +2050,50 @@ h1.job-title,
 }
 
 .status-option,
-.priority-option {
+.priority-option,
+.assignee-option {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   border: none;
   color: var(--text-primary);
   cursor: pointer;
   transition: background-color 0.15s;
   text-align: left;
-  font-size: 15px;
+  font-size: 14px;
+  width: 100%;
 }
 
 .status-option:hover,
-.priority-option:hover {
+.priority-option:hover,
+.assignee-option:hover {
   background-color: var(--bg-tertiary);
 }
 
 .status-option.active,
-.priority-option.active {
+.priority-option.active,
+.assignee-option.active {
   background-color: var(--accent-blue);
   color: #FFF;
+}
+
+.assignee-option .checkmark {
+  margin-left: auto;
+}
+
+.assignee-option .technician-initials {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 /* Logs styles */

@@ -316,6 +316,7 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   z-index: 1000;
   animation: popoverIn 0.2s ease-out;
+  overflow: visible; /* Allow dropdown menus to overflow */
 }
 
 .job-popover.hidden {
@@ -348,7 +349,8 @@
 .popover-content {
   padding: 16px;
   max-height: 600px;
-  overflow-y: auto;
+  overflow-y: visible; /* Changed from auto to visible to allow dropdown overflow */
+  overflow-x: visible;
 }
 
 .popover-section {

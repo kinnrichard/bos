@@ -85,55 +85,82 @@ module Views
                 # Status section
                 div(class: "popover-section") do
                   h3 { "Status" }
-                  div(class: "status-options") do
-                    render_status_options
+                  div(class: "dropdown-container", data: { controller: "dropdown" }) do
+                    button(
+                      class: "dropdown-button",
+                      data: { 
+                        action: "click->dropdown#toggle",
+                        dropdown_target: "button"
+                      }
+                    ) do
+                      span(class: "dropdown-value") do
+                        span(class: "status-emoji") { job_status_emoji(@job.status) }
+                        span { status_label(@job.status) }
+                      end
+                      span(class: "dropdown-arrow") { "▼" }
+                    end
+                    div(
+                      class: "dropdown-menu hidden",
+                      data: { dropdown_target: "menu" }
+                    ) do
+                      render_status_options
+                    end
                   end
                 end
                 
                 # Priority section
                 div(class: "popover-section") do
                   h3 { "Priority" }
-                  div(class: "priority-options") do
-                    render_priority_options
+                  div(class: "dropdown-container", data: { controller: "dropdown" }) do
+                    button(
+                      class: "dropdown-button",
+                      data: { 
+                        action: "click->dropdown#toggle",
+                        dropdown_target: "button"
+                      }
+                    ) do
+                      span(class: "dropdown-value") do
+                        if priority_emoji(@job.priority).present?
+                          span(class: "priority-emoji") { priority_emoji(@job.priority) }
+                        end
+                        span { priority_label(@job.priority) }
+                      end
+                      span(class: "dropdown-arrow") { "▼" }
+                    end
+                    div(
+                      class: "dropdown-menu hidden",
+                      data: { dropdown_target: "menu" }
+                    ) do
+                      render_priority_options
+                    end
                   end
                 end
                 
                 # Assignee section
                 div(class: "popover-section") do
                   h3 { "Assigned to" }
-                  div(class: "assignee-search", data: { controller: "technician-search" }) do
-                    input(
-                      type: "text",
-                      class: "assignee-input",
-                      placeholder: "Search technicians...",
+                  div(class: "dropdown-container", data: { controller: "dropdown" }) do
+                    button(
+                      class: "dropdown-button",
                       data: { 
-                        action: "focus->technician-search#showDropdown input->technician-search#search",
-                        technician_search_target: "input"
+                        action: "click->dropdown#toggle",
+                        dropdown_target: "button"
                       }
-                    )
-                    div(
-                      class: "assignee-dropdown hidden",
-                      data: { technician_search_target: "dropdown" }
                     ) do
-                      # Will be populated by JavaScript
-                    end
-                  end
-                  
-                  # Current assignees
-                  if @job.technicians.any?
-                    div(class: "current-assignees") do
-                      @job.technicians.each do |tech|
-                        div(class: "assignee-tag") do
-                          span { tech.name }
-                          button(
-                            class: "remove-assignee",
-                            data: { 
-                              action: "click->job#removeAssignee",
-                              technician_id: tech.id
-                            }
-                          ) { "×" }
+                      span(class: "dropdown-value") do
+                        if @job.technicians.any?
+                          @job.technicians.map(&:name).join(", ")
+                        else
+                          "Unassigned"
                         end
                       end
+                      span(class: "dropdown-arrow") { "▼" }
+                    end
+                    div(
+                      class: "dropdown-menu hidden",
+                      data: { dropdown_target: "menu" }
+                    ) do
+                      render_assignee_options
                     end
                   end
                 end
@@ -437,10 +464,59 @@ module Views
         end
       end
       
+      def status_label(status)
+        case status
+        when 'open' then 'New'
+        when 'in_progress' then 'In Progress'
+        when 'paused' then 'Paused'
+        when 'successfully_completed' then 'Successfully Completed'
+        when 'cancelled' then 'Cancelled'
+        else status.humanize
+        end
+      end
+      
+      def priority_label(priority)
+        case priority
+        when 'proactive_followup' then 'Proactive Followup'
+        else priority&.humanize || 'Normal'
+        end
+      end
+      
       def technician_icon(technician)
         # For now, use initials. Could be replaced with actual avatars
         initials = technician.name.split.map(&:first).join.upcase[0..1]
         span(class: "technician-initials") { initials }
+      end
+      
+      def render_assignee_options
+        # Unassigned option
+        button(
+          class: "assignee-option #{@job.technicians.empty? ? 'active' : ''}",
+          data: { 
+            action: "click->job#setUnassigned"
+          }
+        ) do
+          span { "❓" }
+          span { "Unassigned" }
+        end
+        
+        # Get all available technicians
+        User.where(role: [:technician, :admin]).order(:name).each do |tech|
+          is_assigned = @job.technicians.include?(tech)
+          button(
+            class: "assignee-option #{is_assigned ? 'active' : ''}",
+            data: { 
+              action: "click->job#toggleAssignee",
+              technician_id: tech.id
+            }
+          ) do
+            technician_icon(tech)
+            span { tech.name }
+            if is_assigned
+              span(class: "checkmark") { "✓" }
+            end
+          end
+        end
       end
       
       def render_task_status_options(task)

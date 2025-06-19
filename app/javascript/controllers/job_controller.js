@@ -172,6 +172,51 @@ export default class extends Controller {
     // For now, we'll update the icons manually
     location.reload()
   }
+  
+  setUnassigned(event) {
+    // Remove all technicians
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ job: { technician_ids: [] } })
+    }).then(response => response.json())
+      .then(data => {
+        location.reload()
+      })
+  }
+  
+  toggleAssignee(event) {
+    const technicianId = event.currentTarget.dataset.technicianId
+    
+    // Get current technician IDs
+    const currentTechIds = Array.from(document.querySelectorAll('.assignee-option.active'))
+      .map(el => el.dataset.technicianId)
+      .filter(id => id) // Remove undefined values
+    
+    let newTechIds
+    if (currentTechIds.includes(technicianId)) {
+      // Remove technician
+      newTechIds = currentTechIds.filter(id => id !== technicianId)
+    } else {
+      // Add technician
+      newTechIds = [...currentTechIds, technicianId]
+    }
+    
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ job: { technician_ids: newTechIds } })
+    }).then(response => response.json())
+      .then(data => {
+        location.reload()
+      })
+  }
 
   highlightActiveStatus() {
     this.element.querySelectorAll(".status-option").forEach(btn => {

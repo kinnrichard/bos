@@ -126,7 +126,7 @@ class JobsController < ApplicationController
   end
   
   def job_params
-    params.require(:job).permit(:title, :description, :status, :priority, :start_on_date)
+    params.require(:job).permit(:title, :description, :status, :priority, :start_on_date, technician_ids: [])
   end
   
   def current_user
