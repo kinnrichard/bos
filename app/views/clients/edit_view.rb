@@ -74,7 +74,7 @@ module Views
               # Form actions
               div(class: "form-actions") do
                 button(type: "submit", class: "btn btn-primary") { "Update Client" }
-                link_to "Cancel", client_path(@client), class: "btn btn-secondary"
+                a(href: "/clients/#{@client.id}", class: "btn btn-secondary") { "Cancel" }
               end
             end
           end
