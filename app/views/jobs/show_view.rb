@@ -62,8 +62,14 @@ module Views
                   },
                   title: "Click or press Enter to create a new task"
                 ) do
-                  span(class: "invisible-emoji", style: "font-size: 20px;") { "⚫" }
-                  span(data: { job_target: "newTaskText" }) { "New task..." }
+                  div(class: "task-status-container") do
+                    div(class: "task-status-button", style: "cursor: default;") do
+                      span(class: "invisible-emoji", style: "font-size: 20px;") { "⚫" }
+                    end
+                  end
+                  div(class: "task-content") do
+                    span(data: { job_target: "newTaskText" }) { "New task..." }
+                  end
                 end
               end
             end

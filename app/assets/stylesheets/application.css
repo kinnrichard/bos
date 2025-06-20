@@ -2039,7 +2039,7 @@ h1.job-title,
 .new-task-placeholder {
   display: flex;
   align-items: center;
-  padding: 8px 30px 8px 38px; /* Match task item padding */
+  padding: 8px 30px; /* Match task item padding exactly */
   margin: 0 -30px;
   width: calc(100% + 60px);
   min-height: 32px;

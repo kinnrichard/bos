@@ -646,23 +646,19 @@ button.checkbox-circle {
   display: flex;
   align-items: center;
   gap: 8px; /* Match task item gap */
-  padding: 12px 30px; /* Match task item padding */
+  padding: 12px 30px !important; /* Match task item padding */
   color: #48484A;
   cursor: pointer;
   font-size: 17px;
   transition: color 0.2s;
 }
 
+.new-task-placeholder .task-status-button {
+  pointer-events: none; /* Prevent button hover effects */
+}
+
 .new-task-placeholder .invisible-emoji {
   visibility: hidden;
-  margin-right: 0; /* Use gap from parent instead */
-  font-size: 20px !important; /* Match task status button size */
-  width: 24px; /* Match task status button width */
-  height: 24px; /* Match task status button height */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
 }
 
 .new-task-placeholder:hover {
