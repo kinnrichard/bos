@@ -53,22 +53,27 @@ module Views
                   end
                 end
                 
-                # New task clickable area / input
-                div(
-                  class: "new-task-placeholder",
-                  data: { 
-                    action: "click->job#showNewTaskInput",
-                    job_target: "newTaskPlaceholder" 
-                  },
-                  title: "Click or press Enter to create a new task"
-                ) do
-                  div(class: "task-status-container") do
-                    div(class: "task-status-button", style: "cursor: default;") do
-                      span(class: "invisible-emoji", style: "font-size: 20px;") { "⚫" }
+                # New task placeholder with same structure as regular tasks
+                div(class: "task-wrapper") do
+                  div(
+                    class: "task-item new-task",
+                    data: { 
+                      action: "click->job#showNewTaskInput",
+                      job_target: "newTaskPlaceholder" 
+                    },
+                    title: "Click or press Enter to create a new task"
+                  ) do
+                    div(class: "task-status-container") do
+                      button(
+                        class: "task-status-button",
+                        disabled: true
+                      ) do
+                        span { "⚫" }
+                      end
                     end
-                  end
-                  div(class: "task-content") do
-                    span(data: { job_target: "newTaskText" }) { "New task..." }
+                    div(class: "task-content") do
+                      div(class: "task-title", data: { job_target: "newTaskText" }) { "New task..." }
+                    end
                   end
                 end
               end

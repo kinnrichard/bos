@@ -1016,14 +1016,17 @@ export default class extends Controller {
     input.className = 'new-task-input'
     input.placeholder = 'What needs to be done?'
     
-    // Replace only the text span, keeping the emoji
-    const textSpan = placeholder.querySelector('[data-job-target="newTaskText"]')
-    if (textSpan) {
-      textSpan.replaceWith(input)
+    // Find the task-content div and replace its contents
+    const taskContent = placeholder.querySelector('.task-content')
+    if (taskContent) {
+      taskContent.innerHTML = ''
+      taskContent.appendChild(input)
     } else {
-      // Fallback if structure is different
-      placeholder.innerHTML = ''
-      placeholder.appendChild(input)
+      // Fallback - replace the text div
+      const textDiv = placeholder.querySelector('[data-job-target="newTaskText"]')
+      if (textDiv) {
+        textDiv.replaceWith(input)
+      }
     }
     
     // Add event listeners
@@ -1052,13 +1055,15 @@ export default class extends Controller {
     // Restore the placeholder
     const placeholder = this.newTaskPlaceholderTarget
     if (placeholder && this.currentNewTaskInput) {
-      // Find the input and replace it with the text span
-      const input = placeholder.querySelector('.new-task-input')
-      if (input) {
-        const textSpan = document.createElement('span')
-        textSpan.setAttribute('data-job-target', 'newTaskText')
-        textSpan.textContent = 'New task...'
-        input.replaceWith(textSpan)
+      // Find the task-content div and restore its original content
+      const taskContent = placeholder.querySelector('.task-content')
+      if (taskContent) {
+        taskContent.innerHTML = ''
+        const textDiv = document.createElement('div')
+        textDiv.className = 'task-title'
+        textDiv.setAttribute('data-job-target', 'newTaskText')
+        textDiv.textContent = 'New task...'
+        taskContent.appendChild(textDiv)
       }
       placeholder.dataset.action = 'click->job#showNewTaskInput'
       this.currentNewTaskInput = null

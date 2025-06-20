@@ -641,29 +641,29 @@ button.checkbox-circle {
   border-color: #0A84FF !important;
 }
 
-/* New Task Placeholder - Inline Style */
-.new-task-placeholder {
-  display: flex;
-  align-items: center;
-  gap: 8px; /* Match task item gap */
-  padding: 12px 30px !important; /* Match task item padding */
-  color: #48484A;
+/* New Task - Styled like a task but with invisible emoji */
+.task-item.new-task {
   cursor: pointer;
-  font-size: 17px;
-  transition: color 0.2s;
+  transition: background-color 0.15s ease;
 }
 
-.new-task-placeholder .task-status-button {
-  pointer-events: none; /* Prevent button hover effects */
+.task-item.new-task:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
-.new-task-placeholder .invisible-emoji {
-  visibility: hidden;
+.task-item.new-task .task-status-button {
+  pointer-events: none; /* Prevent button interaction */
+  cursor: default;
 }
 
-.new-task-placeholder:hover {
-  color: #8E8E93;
+.task-item.new-task .task-status-button span {
+  visibility: hidden; /* Make emoji invisible but maintain space */
 }
+
+.task-item.new-task .task-title {
+  color: #48484A;
+}
+
 
 .new-task-placeholder .new-task-input {
   flex: 1;
