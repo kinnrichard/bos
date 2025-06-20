@@ -242,6 +242,13 @@
   word-wrap: break-word;
   font-weight: 400;
   line-height: 1.3;
+  cursor: text;
+  
+  &:hover {
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.3);
+    text-underline-offset: 2px;
+  }
 }
 
 // Task right section
@@ -375,6 +382,13 @@
   font-size: 15px;
   color: var(--text-primary);
   line-height: 1.4;
+  cursor: text;
+  
+  &:hover {
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.3);
+    text-underline-offset: 2px;
+  }
 }
 
 .subtask-time-tracking {

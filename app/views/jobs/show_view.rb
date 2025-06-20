@@ -301,7 +301,10 @@ module Views
             
             # Task content
             div(class: "task-content") do
-              div(class: "task-title") { task.title }
+              div(
+                class: "task-title",
+                data: { action: "click->job#handleTaskTitleClick" }
+              ) { task.title }
             end
             
             # Right side section
@@ -386,7 +389,10 @@ module Views
           
           # Subtask content
           div(class: "subtask-content") do
-            div(class: "subtask-title") { subtask.title }
+            div(
+              class: "subtask-title",
+              data: { action: "click->job#handleTaskTitleClick" }
+            ) { subtask.title }
             
             # Show time in progress if available
             if subtask.formatted_time_in_progress.present?

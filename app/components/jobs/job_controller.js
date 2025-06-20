@@ -110,6 +110,40 @@ export default class extends Controller {
     }
   }
   
+  // Task title click handling - immediate rename unless cmd/shift held
+  handleTaskTitleClick(event) {
+    const taskElement = event.currentTarget.closest('.task-item, .subtask-item')
+    
+    // If cmd/shift held, handle selection instead of rename
+    if (event.metaKey || event.ctrlKey || event.shiftKey) {
+      // Stop event from bubbling to task click handler
+      event.stopPropagation()
+      
+      // Handle selection logic directly
+      if (event.metaKey || event.ctrlKey) {
+        // Toggle selection with Cmd/Ctrl
+        this.toggleTaskSelection(taskElement)
+      } else if (event.shiftKey && this.lastClickedTask) {
+        // Range select with Shift
+        this.selectTaskRange(this.lastClickedTask, taskElement)
+      }
+      
+      this.lastClickedTask = taskElement
+      return
+    }
+    
+    // Stop event from bubbling to task click handler
+    event.stopPropagation()
+    
+    // Clear any existing selection and select this task
+    this.clearSelection()
+    this.selectTask(taskElement)
+    this.lastClickedTask = taskElement
+    
+    // Immediately start rename
+    this.startRename(taskElement, event)
+  }
+  
   // Task selection and renaming
   handleTaskClick(event) {
     const taskElement = event.currentTarget
@@ -119,6 +153,11 @@ export default class extends Controller {
     if (event.target.closest('.task-status-container') || 
         event.target.closest('.add-subtask-button') ||
         event.target.closest('input')) {
+      return
+    }
+    
+    // Don't handle clicks on task title text (handled separately)
+    if (event.target.closest('.task-title, .subtask-title')) {
       return
     }
     
@@ -135,27 +174,9 @@ export default class extends Controller {
       // Range select with Shift
       this.selectTaskRange(this.lastClickedTask, taskElement)
     } else {
-      // Check if clicking on already selected task
-      const wasSelected = this.selectedTasks.has(taskElement)
-      
-      // Clear selection unless clicking on already selected
-      if (!wasSelected) {
-        this.clearSelection()
-        this.selectTask(taskElement)
-      } else {
-        // Second click on selected task - check for rename
-        if (this.clickTimer) {
-          clearTimeout(this.clickTimer)
-          this.clickTimer = null
-        }
-        
-        this.clickTimer = setTimeout(() => {
-          if (this.selectedTasks.has(taskElement) && this.selectedTasks.size === 1) {
-            this.startRename(taskElement, event)
-          }
-          this.clickTimer = null
-        }, 500)
-      }
+      // Regular click on task row (not on text) - just select
+      this.clearSelection()
+      this.selectTask(taskElement)
     }
     
     this.lastClickedTask = taskElement
