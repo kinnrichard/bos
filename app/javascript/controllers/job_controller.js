@@ -1016,9 +1016,15 @@ export default class extends Controller {
     input.className = 'new-task-input'
     input.placeholder = 'What needs to be done?'
     
-    // Clear the placeholder content and add the input
-    placeholder.innerHTML = ''
-    placeholder.appendChild(input)
+    // Replace only the text span, keeping the emoji
+    const textSpan = placeholder.querySelector('[data-job-target="newTaskText"]')
+    if (textSpan) {
+      textSpan.replaceWith(input)
+    } else {
+      // Fallback if structure is different
+      placeholder.innerHTML = ''
+      placeholder.appendChild(input)
+    }
     
     // Add event listeners
     input.addEventListener('keydown', (e) => {
@@ -1046,7 +1052,14 @@ export default class extends Controller {
     // Restore the placeholder
     const placeholder = this.newTaskPlaceholderTarget
     if (placeholder && this.currentNewTaskInput) {
-      placeholder.innerHTML = '<span data-job-target="newTaskText">New task...</span>'
+      // Find the input and replace it with the text span
+      const input = placeholder.querySelector('.new-task-input')
+      if (input) {
+        const textSpan = document.createElement('span')
+        textSpan.setAttribute('data-job-target', 'newTaskText')
+        textSpan.textContent = 'New task...'
+        input.replaceWith(textSpan)
+      }
       placeholder.dataset.action = 'click->job#showNewTaskInput'
       this.currentNewTaskInput = null
     }
