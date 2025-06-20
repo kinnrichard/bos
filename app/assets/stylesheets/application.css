@@ -1865,7 +1865,13 @@ h1.job-title,
 
 /* Ensure the container with open dropdown has higher z-index */
 .task-status-container:has(.task-status-dropdown:not(.hidden)) {
-  z-index: 1001;
+  z-index: 1001 !important;
+  position: relative;
+}
+
+/* Ensure the dropdown itself is above everything */
+.task-status-dropdown:not(.hidden) {
+  z-index: 9999 !important;
 }
 
 .task-status-option {
@@ -1934,6 +1940,12 @@ h1.job-title,
   border-color: var(--accent-blue);
   position: relative;
   z-index: 1;
+}
+
+/* But ensure selected items don't block their own dropdowns */
+.task-item.selected .task-status-container:has(.task-status-dropdown:not(.hidden)),
+.subtask-item.selected .task-status-container:has(.task-status-dropdown:not(.hidden)) {
+  z-index: 9998 !important;
 }
 
 .task-item.selected .task-title,
