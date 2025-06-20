@@ -18,9 +18,9 @@ module Views
           active_section: :jobs,
           client: @client
         ) do
-          render Components::FormContainer.new(title: "New Job") do
+          render Components::Forms::FormContainerComponent.new(title: "New Job") do
             form_with(model: [@client, @job], class: "job-form") do |f|
-              render Components::FormErrors.new(model: @job)
+              render Components::Forms::FormErrorsComponent.new(model: @job)
               
               div(class: "form-group") do
                 f.label(:title, "Title", class: "form-label")
@@ -94,7 +94,7 @@ module Views
                 end
               end
               
-              render Components::FormActions.new(
+              render Components::Forms::FormActionsComponent.new(
                 cancel_path: client_jobs_path(@client),
                 submit_text: "Create Job"
               )

@@ -9,8 +9,8 @@
 // 3. Generic - Reset and normalization
 @use 'generic';
 
-// 4. Elements - Base HTML elements (to be created)
-// @import 'elements/index';
+// 4. Elements - Base HTML elements
+@use 'elements';
 
 // 5. Objects - Layout patterns
 @use 'objects';

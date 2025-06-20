@@ -16,7 +16,7 @@ module Views
           current_user: @current_user,
           active_section: :clients
         ) do
-          render Components::FormContainer.new(title: "New Client") do
+          render Components::Forms::FormContainerComponent.new(title: "New Client") do
             
             form(action: "/clients", method: "post", class: "client-form") do
               # CSRF token
@@ -71,7 +71,7 @@ module Views
               end
               
               # Form actions
-              render Components::FormActions.new(
+              render Components::Forms::FormActionsComponent.new(
                 cancel_path: "/clients",
                 submit_text: "Save"
               )

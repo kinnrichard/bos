@@ -44,10 +44,8 @@
   
   // Title styles
   h1 {
-    font-size: 32px;
-    font-weight: 600;
+    // Inherits base h1 styles from elements layer
     margin-bottom: 12px;
-    color: var(--text-primary);
   }
   
   h2 {
@@ -91,7 +89,7 @@
 @media (max-width: 768px) {
   .empty-state {
     h1 {
-      font-size: 24px;
+      // Mobile size handled by elements layer
     }
     
     h2 {

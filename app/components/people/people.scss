@@ -78,10 +78,7 @@
 }
 
 .person-header h1 {
-  font-size: 32px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
+  // Inherits base h1 styles from elements layer
 }
 
 .person-actions {

@@ -24,9 +24,8 @@
 }
 
 .clients-header h1 {
-  font-size: 32px;
-  font-weight: 600;
-  color: var(--text-primary);
+  // Inherits base h1 styles from elements layer
+  margin-bottom: 0;
 }
 
 .clients-list {
@@ -82,9 +81,7 @@
 }
 
 .client-header h1 {
-  font-size: 32px;
-  font-weight: 600;
-  color: var(--text-primary);
+  // Inherits base h1 styles from elements layer
   margin-bottom: 8px;
 }
 

@@ -46,45 +46,21 @@
   flex: 0 0 auto; // Don't grow, prevents huge gap issue
 }
 
-// Large editable job title
+// Job title styling - inherits base h1 styles with editable behavior
 .job-title {
-  font-size: 56px;
-  font-weight: 600;
-  color: #0A84FF !important;
-  margin: 0;
+  // Inherits font-size, font-weight, color from base h1 styles
   padding: 8px 0;
   border: none;
   background: none;
-  transition: opacity 0.2s;
   outline: none;
   display: inline-block;
   cursor: text;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  -webkit-text-fill-color: #0A84FF !important;
-  
-  &:hover {
-    opacity: 0.8;
-  }
   
   &:focus {
-    opacity: 1;
     text-decoration: underline;
     text-decoration-color: rgba(10, 132, 255, 0.3);
     text-underline-offset: 4px;
   }
-  
-  // Ensure contenteditable stays blue
-  &[contenteditable="true"] {
-    color: #0A84FF !important;
-    -webkit-text-fill-color: #0A84FF !important;
-  }
-}
-
-// Force blue color on h1 title
-h1.job-title {
-  color: #0A84FF !important;
-  -webkit-text-fill-color: #0A84FF !important;
 }
 
 // Tasks container
@@ -117,6 +93,11 @@ h1.job-title {
   gap: 12px;
   transition: opacity 0.2s;
   animation: fadeIn 0.3s ease-out;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   
   &.completed {
     opacity: 0.5;
@@ -124,6 +105,26 @@ h1.job-title {
     .task-title {
       text-decoration: line-through;
       color: #8E8E93;
+    }
+  }
+  
+  // Selected state for task highlighting
+  &.selected {
+    background-color: var(--accent-blue) !important;
+    border-radius: 8px !important;
+    padding: 12px 16px !important;
+    margin: 0 -16px !important;
+    
+    .task-title {
+      color: #FFFFFF !important;
+    }
+    
+    .task-assignee {
+      color: rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    .task-time-tracking {
+      color: rgba(255, 255, 255, 0.8) !important;
     }
   }
   
@@ -145,6 +146,31 @@ h1.job-title {
   background: none !important;
   background-color: transparent !important;
   gap: 12px !important;
+  cursor: default !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  
+  // Selected state with higher specificity
+  &.selected {
+    background-color: var(--accent-blue) !important;
+    border-radius: 8px !important;
+    padding: 12px 16px !important;
+    margin: 0 -16px !important;
+    
+    .task-title {
+      color: #FFFFFF !important;
+    }
+    
+    .task-assignee {
+      color: rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    .task-time-tracking {
+      color: rgba(255, 255, 255, 0.8) !important;
+    }
+  }
 }
 
 // New task wrapper
@@ -304,7 +330,11 @@ h1.job-title {
   align-items: flex-start;
   padding: 8px 0;
   gap: 12px;
-  cursor: pointer;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   transition: background-color 0.15s;
   
   &:hover {
@@ -317,6 +347,22 @@ h1.job-title {
     .subtask-title {
       text-decoration: line-through;
       color: #8E8E93;
+    }
+  }
+  
+  // Selected state for subtask highlighting
+  &.selected {
+    background-color: var(--accent-blue) !important;
+    border-radius: 8px;
+    padding: 8px 16px !important;
+    margin: 0 -16px;
+    
+    .subtask-title {
+      color: #FFFFFF !important;
+    }
+    
+    .subtask-time-tracking {
+      color: rgba(255, 255, 255, 0.8) !important;
     }
   }
 }
@@ -664,6 +710,37 @@ h1.job-title {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+// Task rename input - invisible like the editable h1
+.task-rename-input {
+  // Make input invisible and inherit task styling
+  background: none;
+  border: none;
+  outline: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  cursor: text;
+  
+  &:focus {
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.3);
+    text-underline-offset: 2px;
+  }
+}
+
+// When task is selected, style the rename input differently
+.task-item.selected .task-rename-input,
+.subtask-item.selected .task-rename-input {
+  &:focus {
+    text-decoration-color: rgba(255, 255, 255, 0.5);
   }
 }
 
