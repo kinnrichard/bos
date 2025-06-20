@@ -1,6 +1,6 @@
 class LogsController < ApplicationController
   def index
-    @logs = ActivityLog.includes(:user, :loggable)
+    @logs = ActivityLog.includes(:user)
                       .recent
                       .where.not(action: 'updated', metadata: { changes: { position: [] } })
                       .limit(100)
