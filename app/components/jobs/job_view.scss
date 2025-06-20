@@ -113,7 +113,15 @@
   -ms-user-select: none;
   
   &.completed {
-    opacity: 0.5;
+    // Don't apply opacity to the entire task to avoid affecting dropdown
+    .task-status-button,
+    .task-title,
+    .task-content,
+    .task-assignee,
+    .task-time-tracking,
+    .add-subtask-button {
+      opacity: 0.5;
+    }
     
     .task-title {
       text-decoration: line-through;
@@ -169,7 +177,7 @@
   &.selected {
     background-color: var(--accent-blue) !important;
     border-radius: 8px !important;
-    padding: 12px 16px !important;
+    padding: 10px 16px !important;
     margin: 0 -16px !important;
     
     .task-title {
@@ -373,7 +381,12 @@
   }
   
   &.completed {
-    opacity: 0.5;
+    // Don't apply opacity to the entire subtask to avoid affecting dropdown
+    .subtask-status-button,
+    .subtask-title,
+    .subtask-content {
+      opacity: 0.5;
+    }
     
     .subtask-title {
       text-decoration: line-through;
