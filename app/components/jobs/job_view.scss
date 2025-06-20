@@ -39,6 +39,19 @@
   display: flex;
   flex-direction: column;
   background-color: #000000;
+  
+  // Sortable.js cursor styles
+  .task-wrapper {
+    cursor: move !important;
+  }
+  
+  .task-item {
+    cursor: move !important;
+  }
+  
+  .task-title {
+    cursor: text !important;
+  }
 }
 
 // Job title section

@@ -1632,6 +1632,10 @@ h1.job-title,
 }
 
 /* Draggable cursor - show on task items but not on text */
+.job-view .task-wrapper {
+  cursor: move;
+}
+
 .job-view .task-item {
   cursor: move;
 }

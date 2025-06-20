@@ -9,25 +9,21 @@ export default class extends Controller {
   }
   
   initializeSortable() {
-    // Initialize Sortable with basic functionality first
-    this.sortable = Sortable.create(this.element, {
+    // Find the tasks list element
+    const tasksList = this.element.querySelector('.tasks-list');
+    if (!tasksList) {
+      console.warn('No .tasks-list element found');
+      return;
+    }
+    
+    // Initialize Sortable on the tasks list
+    this.sortable = Sortable.create(tasksList, {
       // Animation
       animation: 150,
       
-      // Enable dragging from anywhere except text content
-      filter: '.task-title', // Prevent dragging from text content
-      preventOnFilter: false, // Still allow clicks on filtered elements
-      
-      // Prevent drag when clicking directly on text
-      onMove: (evt) => {
-        // If the drag started from the text content, cancel it
-        if (evt.dragged.querySelector('.task-title').contains(evt.related)) {
-          return false;
-        }
-      },
-      
       // Handle configuration
-      draggable: '.task-item',
+      draggable: '.task-wrapper',
+      handle: '.task-item', // Use task-item as the drag handle
       
       // Events
       onStart: (evt) => {
@@ -43,7 +39,8 @@ export default class extends Controller {
         evt.item.classList.remove('dragging')
         
         // Handle reordering
-        const taskId = evt.item.dataset.taskId
+        const taskItem = evt.item.querySelector('.task-item')
+        const taskId = taskItem ? taskItem.dataset.taskId : evt.item.dataset.taskId
         const oldIndex = evt.oldIndex
         const newIndex = evt.newIndex
         
