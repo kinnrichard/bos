@@ -1793,8 +1793,6 @@ export default class extends Controller {
     
     if (allTasks.length === 0) return
     
-    // Debug logging
-    console.log('Arrow navigation:', direction, 'Selected tasks:', this.selectedTasks.size, 'Tasks:', Array.from(this.selectedTasks))
     
     // Clean up selectedTasks set - remove any tasks that are no longer in DOM
     const tasksToRemove = []
@@ -1805,16 +1803,17 @@ export default class extends Controller {
     })
     tasksToRemove.forEach(task => this.selectedTasks.delete(task))
     
-    // Get currently selected tasks that have the selected class
-    const actuallySelected = allTasks.filter(task => task.classList.contains('selected'))
-    console.log('Actually selected (by class):', actuallySelected.length, actuallySelected)
+    // Get the currently selected task from the set (not from DOM classes)
+    let currentTask = null
+    if (this.selectedTasks.size === 1) {
+      currentTask = Array.from(this.selectedTasks)[0]
+    } else if (this.selectedTasks.size > 1) {
+      // If multiple selected, use the last clicked one
+      currentTask = this.lastClickedTask || Array.from(this.selectedTasks)[0]
+    }
     
-    // Sync our set with what's actually selected
-    this.selectedTasks.clear()
-    actuallySelected.forEach(task => this.selectedTasks.add(task))
-    
-    // If no tasks are selected, select the first (for down) or last (for up) task
-    if (this.selectedTasks.size === 0) {
+    // If no current task, select first/last based on direction
+    if (!currentTask) {
       const taskToSelect = direction === 'down' ? allTasks[0] : allTasks[allTasks.length - 1]
       this.clearSelection()
       this.selectTask(taskToSelect)
@@ -1823,48 +1822,33 @@ export default class extends Controller {
       return
     }
     
-    // If one task is selected, move to next/previous
-    if (this.selectedTasks.size === 1) {
-      const currentTask = Array.from(this.selectedTasks)[0]
-      const currentIndex = allTasks.indexOf(currentTask)
-      
-      let newIndex
-      if (direction === 'up') {
-        newIndex = Math.max(0, currentIndex - 1)
-      } else {
-        newIndex = Math.min(allTasks.length - 1, currentIndex + 1)
-      }
-      
-      if (newIndex !== currentIndex) {
-        const newTask = allTasks[newIndex]
-        this.clearSelection()
-        this.selectTask(newTask)
-        this.lastClickedTask = newTask
-        newTask.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      }
-      return // Add explicit return to prevent falling through
+    // Find the current task's index
+    const currentIndex = allTasks.indexOf(currentTask)
+    if (currentIndex === -1) {
+      // Current task not found, select first/last
+      const taskToSelect = direction === 'down' ? allTasks[0] : allTasks[allTasks.length - 1]
+      this.clearSelection()
+      this.selectTask(taskToSelect)
+      this.lastClickedTask = taskToSelect
+      taskToSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      return
     }
     
-    // If multiple tasks are selected, move from the edge of selection
-    const selectedArray = Array.from(this.selectedTasks)
-    const indices = selectedArray.map(task => allTasks.indexOf(task)).sort((a, b) => a - b)
-    
-    let taskToSelect
+    // Calculate new index
+    let newIndex
     if (direction === 'up') {
-      // Select the task above the topmost selected task
-      const topIndex = indices[0]
-      const newIndex = Math.max(0, topIndex - 1)
-      taskToSelect = allTasks[newIndex]
+      newIndex = Math.max(0, currentIndex - 1)
     } else {
-      // Select the task below the bottommost selected task
-      const bottomIndex = indices[indices.length - 1]
-      const newIndex = Math.min(allTasks.length - 1, bottomIndex + 1)
-      taskToSelect = allTasks[newIndex]
+      newIndex = Math.min(allTasks.length - 1, currentIndex + 1)
     }
     
-    this.clearSelection()
-    this.selectTask(taskToSelect)
-    this.lastClickedTask = taskToSelect
-    taskToSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    // Select the new task
+    if (newIndex !== currentIndex) {
+      const newTask = allTasks[newIndex]
+      this.clearSelection()
+      this.selectTask(newTask)
+      this.lastClickedTask = newTask
+      newTask.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
   }
 }

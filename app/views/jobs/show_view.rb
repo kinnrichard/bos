@@ -18,8 +18,7 @@ module Views
           current_user: @current_user,
           active_section: :jobs,
           client: @client,
-          toolbar_items: method(:render_toolbar_items),
-          extra_controllers: ["job"]
+          toolbar_items: method(:render_toolbar_items)
         ) do
           div(class: "job-view", data: { 
             controller: "job",
