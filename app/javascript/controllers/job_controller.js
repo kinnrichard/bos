@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["title", "statusBubble", "popover", "tasksContainer", "tasksList", 
-                    "newTaskForm", "newTaskInput", "searchInput", "task", "taskTimer", "addSubtaskButton"]
+                    "newTaskPlaceholder", "newTaskText", "searchInput", "task", "taskTimer", "addSubtaskButton"]
   
   static values = { 
     jobId: Number,
@@ -619,12 +619,12 @@ export default class extends Controller {
     return document.querySelector('[data-job-target="title"]')
   }
   
-  get newTaskFormTarget() {
-    return document.querySelector('[data-job-target="newTaskForm"]')
+  get newTaskPlaceholderTarget() {
+    return document.querySelector('[data-job-target="newTaskPlaceholder"]')
   }
   
-  get newTaskInputTarget() {
-    return document.querySelector('[data-job-target="newTaskInput"]')
+  get newTaskTextTarget() {
+    return document.querySelector('[data-job-target="newTaskText"]')
   }
   
   get tasksListTarget() {
@@ -987,30 +987,58 @@ export default class extends Controller {
       emptyMessage.remove()
     }
     
-    // Use the existing hidden new task form
-    const newTaskForm = this.newTaskFormTarget
-    if (newTaskForm) {
-      newTaskForm.classList.remove('hidden')
-      const input = this.newTaskInputTarget
-      if (input) {
-        input.value = ''
-        input.focus()
-        this.currentNewTaskInput = input
+    // Transform the placeholder into an input
+    const placeholder = this.newTaskPlaceholderTarget
+    if (!placeholder) return
+    
+    // Create input element
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.className = 'new-task-input'
+    input.placeholder = 'What needs to be done?'
+    
+    // Clear the placeholder content and add the input
+    placeholder.innerHTML = ''
+    placeholder.appendChild(input)
+    
+    // Add event listeners
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        this.saveNewTask({ target: input })
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        this.cancelNewTask()
       }
-    }
+    })
+    
+    input.addEventListener('blur', (e) => this.handleNewTaskBlur(e))
+    
+    // Focus the input
+    input.focus()
+    this.currentNewTaskInput = input
+    
+    // Remove click handler temporarily
+    placeholder.dataset.action = ''
   }
   
 
   cancelNewTask(event) {
-    const wrapper = document.querySelector('.new-task-wrapper')
-    if (wrapper) {
-      wrapper.remove()
+    // Restore the placeholder
+    const placeholder = this.newTaskPlaceholderTarget
+    if (placeholder && this.currentNewTaskInput) {
+      placeholder.innerHTML = '<span data-job-target="newTaskText">New task...</span>'
+      placeholder.dataset.action = 'click->job#showNewTaskInput'
+      this.currentNewTaskInput = null
     }
     
     // Check if tasks list is empty
-    const remainingTasks = document.querySelectorAll('.task-item:not(.new-task-item)')
+    const remainingTasks = document.querySelectorAll('.task-item')
     if (remainingTasks.length === 0) {
-      this.tasksListTarget.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Press ⌘N to add a task.</p></div>'
+      const tasksList = this.tasksListTarget
+      if (tasksList && !tasksList.querySelector('.empty-tasks')) {
+        tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click below to add a task.</p></div>'
+      }
     }
   }
   
@@ -1457,15 +1485,14 @@ export default class extends Controller {
             emptyMessage.remove()
           }
           
-          // Get the new task form to insert after
-          const newTaskForm = this.newTaskFormTarget
+          // Get the tasks container
           const tasksContainer = this.tasksListTarget
           
           // Create task element HTML
           const newTaskHtml = this.createTaskHtml(data.task)
           
-          // Insert the new task before the new task form
-          newTaskForm.insertAdjacentHTML('beforebegin', newTaskHtml)
+          // Insert the new task at the end of the tasks list
+          tasksContainer.insertAdjacentHTML('beforeend', newTaskHtml)
           
           // Clear the input and keep focus for another task
           input.value = ''
@@ -1484,28 +1511,6 @@ export default class extends Controller {
       })
   }
   
-  cancelNewTask(event) {
-    // Hide the new task form
-    const newTaskForm = this.newTaskFormTarget
-    if (newTaskForm) {
-      newTaskForm.classList.add('hidden')
-    }
-    
-    // Clear the input
-    const input = this.newTaskInputTarget
-    if (input) {
-      input.value = ''
-    }
-    
-    // Check if tasks list is now empty
-    const tasksList = this.tasksListTarget
-    const remainingTasks = tasksList.querySelectorAll('.task-wrapper')
-    if (remainingTasks.length === 0) {
-      tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click "New task..." below to add a task.</p></div>'
-    }
-    
-    this.currentNewTaskInput = null
-  }
   
   handleNewTaskBlur(event) {
     // Don't cancel if we're tabbing to save another task

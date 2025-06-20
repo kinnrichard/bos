@@ -42,22 +42,6 @@ module Views
             
             # Tasks list
             div(class: "tasks-container", data: { job_target: "tasksContainer" }) do
-              # New task input (hidden by default)
-              div(
-                class: "new-task hidden",
-                data: { job_target: "newTaskForm" }
-              ) do
-                input(
-                  type: "text",
-                  class: "new-task-input",
-                  placeholder: "What needs to be done?",
-                  data: { 
-                    action: "keydown.enter->job#saveNewTask keydown.escape->job#cancelNewTask",
-                    job_target: "newTaskInput"
-                  }
-                )
-              end
-              
               # Existing tasks (only root tasks)
               div(class: "tasks-list", data: { job_target: "tasksList" }) do
                 if @job.tasks.root_tasks.any?
@@ -66,18 +50,21 @@ module Views
                   end
                 else
                   div(class: "empty-tasks") do
-                    p { "No tasks yet. Click + to add a task." }
+                    p { "No tasks yet. Click below to add a task." }
                   end
                 end
               end
               
-              # New task clickable area
+              # New task clickable area / input
               div(
                 class: "new-task-placeholder",
-                data: { action: "click->job#showNewTaskInput" },
+                data: { 
+                  action: "click->job#showNewTaskInput",
+                  job_target: "newTaskPlaceholder" 
+                },
                 title: "Click or press Enter to create a new task"
               ) do
-                span { "New task..." }
+                span(data: { job_target: "newTaskText" }) { "New task..." }
               end
             end
             

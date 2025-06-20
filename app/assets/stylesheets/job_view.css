@@ -637,5 +637,39 @@ button.checkbox-circle {
 }
 
 .job-view .checkbox-circle.checked {
-  background-color: #48484A !important;
+  background: #0A84FF !important;
+  border-color: #0A84FF !important;
+}
+
+/* New Task Placeholder - Inline Style */
+.new-task-placeholder {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  padding-left: 32px; /* Align with task items */
+  color: #48484A;
+  cursor: pointer;
+  font-size: 17px;
+  transition: color 0.2s;
+}
+
+.new-task-placeholder:hover {
+  color: #8E8E93;
+}
+
+.new-task-placeholder .new-task-input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 400;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  font-family: inherit;
+}
+
+.new-task-placeholder .new-task-input::placeholder {
+  color: #48484A;
 }
