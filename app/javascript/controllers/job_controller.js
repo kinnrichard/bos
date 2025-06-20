@@ -242,6 +242,32 @@ export default class extends Controller {
       }
     }
     
+    // Status change shortcuts (Cmd+Shift+...)
+    if (event.metaKey && event.shiftKey && this.selectedTasks.size > 0 && !this.isRenaming) {
+      const activeElement = document.activeElement
+      if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+        let newStatus = null
+        
+        switch(event.key.toLowerCase()) {
+          case 'p': // In Progress
+            newStatus = 'in_progress'
+            break
+          case 'n': // New
+            newStatus = 'new_task'
+            break
+          case 'c': // Completed Successfully
+            newStatus = 'successfully_completed'
+            break
+        }
+        
+        if (newStatus) {
+          event.preventDefault()
+          this.updateSelectedTasksStatus(newStatus)
+          return false
+        }
+      }
+    }
+    
     // Delete selected tasks
     if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedTasks.size > 0 && !this.isRenaming) {
       const activeElement = document.activeElement
@@ -1237,6 +1263,53 @@ export default class extends Controller {
         // Hide dropdown
         dropdown.classList.add("hidden")
       })
+  }
+  
+  // Update status for all selected tasks
+  updateSelectedTasksStatus(newStatus) {
+    const tasksToUpdate = Array.from(this.selectedTasks)
+    
+    // Update each selected task
+    tasksToUpdate.forEach(taskElement => {
+      const taskId = taskElement.dataset.taskId
+      
+      fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        },
+        body: JSON.stringify({ task: { status: newStatus } })
+      }).then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            // Update the task element
+            taskElement.dataset.taskStatus = newStatus
+            taskElement.classList.toggle("completed", newStatus === "successfully_completed")
+            
+            // Update the status button emoji
+            const statusEmojis = {
+              'new_task': '⚫',
+              'in_progress': '🟢',
+              'paused': '⏸️',
+              'successfully_completed': '☑️',
+              'cancelled': '❌'
+            }
+            const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
+            if (statusButton) {
+              statusButton.textContent = statusEmojis[newStatus] || '⚫'
+            }
+            
+            // Update active state in dropdown if open
+            taskElement.querySelectorAll(".task-status-option").forEach(opt => {
+              opt.classList.toggle("active", opt.dataset.status === newStatus)
+            })
+          }
+        })
+        .catch(error => {
+          console.error('Error updating task status:', error)
+        })
+    })
   }
 
   // Search/filter
