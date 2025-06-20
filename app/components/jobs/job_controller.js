@@ -231,9 +231,11 @@ export default class extends Controller {
   
   // Keyboard navigation
   handleKeydown(event) {
-    // Check if we're in an input field
+    // Check if we're in an input field or contenteditable element
     const activeElement = document.activeElement
-    const isInputField = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA'
+    const isInputField = activeElement.tagName === 'INPUT' || 
+                        activeElement.tagName === 'TEXTAREA' || 
+                        activeElement.isContentEditable
     
     // Handle status menu navigation if open - MUST BE FIRST
     if (this.activeStatusDropdown) {
@@ -251,9 +253,20 @@ export default class extends Controller {
       return false
     }
     
-    // Escape key to deselect all tasks (only when not in input field)
-    if (event.key === 'Escape' && !isInputField) {
-      if (this.selectedTasks.size > 0) {
+    // Escape key handling
+    if (event.key === 'Escape') {
+      // If we're in a contenteditable element, revert changes and blur
+      if (activeElement.isContentEditable) {
+        event.preventDefault()
+        const originalTitle = activeElement.dataset.originalTitle
+        if (originalTitle !== undefined) {
+          activeElement.textContent = originalTitle
+        }
+        activeElement.blur()
+        return false
+      }
+      // Otherwise, deselect all tasks (only when not in input field)
+      else if (!isInputField && this.selectedTasks.size > 0) {
         event.preventDefault()
         this.clearSelection()
         return false
@@ -273,7 +286,9 @@ export default class extends Controller {
     // Select all with Cmd/Ctrl+A
     if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
       const activeElement = document.activeElement
-      if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+      if (activeElement.tagName !== 'INPUT' && 
+          activeElement.tagName !== 'TEXTAREA' && 
+          !activeElement.isContentEditable) {
         event.preventDefault()
         this.selectAllTasks()
       }
