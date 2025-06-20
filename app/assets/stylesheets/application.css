@@ -1883,7 +1883,8 @@ h1.job-title,
   width: 100%;
 }
 
-.task-status-option:hover {
+.task-status-option:hover,
+.task-status-option.keyboard-focused {
   background-color: var(--bg-tertiary);
 }
 

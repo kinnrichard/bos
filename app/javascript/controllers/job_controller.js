@@ -17,6 +17,8 @@ export default class extends Controller {
   clickTimer = null
   isRenaming = false
   draggedTasks = []
+  activeStatusDropdown = null
+  activeStatusTask = null
   
   
   get jobIdValue() {
@@ -91,6 +93,10 @@ export default class extends Controller {
       document.querySelectorAll('.task-status-dropdown').forEach(dropdown => {
         dropdown.classList.add("hidden")
       })
+      // Close active dropdown if any
+      if (this.activeStatusDropdown) {
+        this.closeStatusMenu()
+      }
     }
     
     // Clear selection if clicking outside tasks
@@ -240,6 +246,19 @@ export default class extends Controller {
         event.preventDefault()
         this.selectAllTasks()
       }
+    }
+    
+    // Spacebar to open status menu
+    if (event.key === ' ' && this.selectedTasks.size === 1 && !this.isRenaming && !isInputField) {
+      event.preventDefault()
+      this.openStatusMenuForSelectedTask()
+      return false
+    }
+    
+    // Handle status menu navigation if open
+    if (this.activeStatusDropdown) {
+      this.handleStatusMenuKeyboard(event)
+      return false
     }
     
     // Status change shortcuts (Cmd+Shift+...)
@@ -1310,6 +1329,121 @@ export default class extends Controller {
           console.error('Error updating task status:', error)
         })
     })
+  }
+  
+  // Open status menu for selected task
+  openStatusMenuForSelectedTask() {
+    if (this.selectedTasks.size !== 1) return
+    
+    const selectedTask = Array.from(this.selectedTasks)[0]
+    const statusButton = selectedTask.querySelector('.task-status-button, .subtask-status-button')
+    if (!statusButton) return
+    
+    // Close all other dropdowns
+    document.querySelectorAll('.task-status-dropdown').forEach(d => d.classList.add('hidden'))
+    
+    // Open this dropdown
+    const dropdown = selectedTask.querySelector('.task-status-dropdown')
+    if (dropdown) {
+      dropdown.classList.remove('hidden')
+      this.activeStatusDropdown = dropdown
+      this.activeStatusTask = selectedTask
+      
+      // Focus on the dropdown for keyboard navigation
+      dropdown.setAttribute('tabindex', '-1')
+      dropdown.focus()
+    }
+  }
+  
+  // Handle keyboard navigation in status menu
+  handleStatusMenuKeyboard(event) {
+    if (!this.activeStatusDropdown) return
+    
+    const statusMap = {
+      'n': 'new_task',        // N for New
+      'i': 'in_progress',     // I for In Progress
+      'p': 'paused',          // P for Paused
+      's': 'successfully_completed', // S for Successfully completed
+      'c': 'cancelled'        // C for Cancelled
+    }
+    
+    // Handle letter keys for quick selection
+    const key = event.key.toLowerCase()
+    if (statusMap[key]) {
+      event.preventDefault()
+      this.selectStatusByKey(statusMap[key])
+      return
+    }
+    
+    // Handle Enter/Space to confirm selection
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      const focusedOption = this.activeStatusDropdown.querySelector('.task-status-option:focus, .task-status-option.keyboard-focused')
+      if (focusedOption) {
+        focusedOption.click()
+      }
+      return
+    }
+    
+    // Handle Escape to close
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      this.closeStatusMenu()
+      return
+    }
+    
+    // Handle arrow keys for navigation
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      event.preventDefault()
+      this.navigateStatusMenu(event.key === 'ArrowUp' ? -1 : 1)
+      return
+    }
+  }
+  
+  // Select status by first letter
+  selectStatusByKey(status) {
+    const option = this.activeStatusDropdown.querySelector(`[data-status="${status}"]`)
+    if (option) {
+      // Highlight the option
+      this.activeStatusDropdown.querySelectorAll('.task-status-option').forEach(opt => {
+        opt.classList.remove('keyboard-focused')
+      })
+      option.classList.add('keyboard-focused')
+      
+      // Auto-select after a brief moment
+      setTimeout(() => {
+        option.click()
+        this.closeStatusMenu()
+      }, 100)
+    }
+  }
+  
+  // Navigate status menu with arrow keys
+  navigateStatusMenu(direction) {
+    const options = Array.from(this.activeStatusDropdown.querySelectorAll('.task-status-option'))
+    const currentIndex = options.findIndex(opt => opt.classList.contains('keyboard-focused'))
+    
+    let newIndex
+    if (currentIndex === -1) {
+      newIndex = direction === 1 ? 0 : options.length - 1
+    } else {
+      newIndex = currentIndex + direction
+      if (newIndex < 0) newIndex = options.length - 1
+      if (newIndex >= options.length) newIndex = 0
+    }
+    
+    options.forEach((opt, i) => {
+      opt.classList.toggle('keyboard-focused', i === newIndex)
+    })
+  }
+  
+  // Close status menu
+  closeStatusMenu() {
+    if (this.activeStatusDropdown) {
+      this.activeStatusDropdown.classList.add('hidden')
+      this.activeStatusDropdown = null
+      this.activeStatusTask = null
+    }
   }
 
   // Search/filter
