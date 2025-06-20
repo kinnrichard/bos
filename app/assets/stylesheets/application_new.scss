@@ -1653,7 +1653,6 @@ h1.job-title,
 .task-item.selected,
 .subtask-item.selected {
   background-color: var(--accent-blue) !important;
-  border-color: var(--accent-blue);
   position: relative;
   /* NO z-index here - this prevents stacking context issues */
 }
