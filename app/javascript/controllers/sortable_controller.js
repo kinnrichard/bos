@@ -24,6 +24,8 @@ export default class extends Controller {
       // Handle configuration
       draggable: '.task-wrapper',
       handle: '.task-item', // Use task-item as the drag handle
+      filter: '.task-title', // Prevent dragging from task title
+      preventOnFilter: false, // Allow clicks on filtered elements
       
       // Events
       onStart: (evt) => {
