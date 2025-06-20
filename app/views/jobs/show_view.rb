@@ -42,7 +42,7 @@ module Views
             div(class: "tasks-container", data: { job_target: "tasksContainer" }) do
               # New task input (hidden by default)
               div(
-                class: "task-item new-task hidden",
+                class: "new-task hidden",
                 data: { job_target: "newTaskForm" }
               ) do
                 input(

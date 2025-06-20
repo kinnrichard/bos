@@ -1458,7 +1458,8 @@ input:focus {
 .subtask-item {
   display: flex;
   align-items: flex-start;
-  padding: 8px 30px 8px 0; /* Add right padding to match parent tasks */
+  padding: 8px 30px 8px 30px; /* Add padding on both sides */
+  margin-left: -30px; /* Extend to left to cover indent area */
   margin-right: -30px; /* Extend to right edge */
   gap: 8px;
   position: relative;
@@ -1955,6 +1956,32 @@ h1.job-title,
   font-family: inherit;
   padding: 0;
   margin: 0;
+}
+
+/* New task input row */
+.new-task {
+  display: flex;
+  align-items: center;
+  padding: 8px 30px;
+  margin: 0 -30px;
+  min-height: 32px;
+  background-color: transparent;
+}
+
+.new-task-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: inherit;
+  padding: 0;
+  margin: 0;
+}
+
+.new-task-input::placeholder {
+  color: var(--text-tertiary);
 }
 
 .task-item.selected .task-rename-input,
