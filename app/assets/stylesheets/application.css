@@ -1452,12 +1452,14 @@ input:focus {
 /* Subtasks styles */
 .subtasks-container {
   margin-left: 30px;
+  margin-right: -30px; /* Extend container to right edge */
 }
 
 .subtask-item {
   display: flex;
   align-items: flex-start;
-  padding: 8px 0;
+  padding: 8px 30px 8px 0; /* Add right padding to match parent tasks */
+  margin-right: -30px; /* Extend to right edge */
   gap: 8px;
   position: relative;
   cursor: default;
@@ -1465,6 +1467,7 @@ input:focus {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  transition: background-color 0.15s ease;
 }
 
 .subtask-item:before {
