@@ -656,7 +656,7 @@ button.checkbox-circle {
 .new-task-placeholder .invisible-emoji {
   visibility: hidden;
   margin-right: 12px; /* Same spacing as task status buttons */
-  font-size: 20px;
+  font-size: 20px !important; /* Match task status button size */
   width: 20px;
   display: inline-block;
 }

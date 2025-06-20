@@ -1486,6 +1486,7 @@ input:focus {
   border: none;
   cursor: pointer;
   padding: 0;
+  font-size: 20px;
   line-height: 1;
   display: flex;
   align-items: center;
