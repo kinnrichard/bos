@@ -12,6 +12,11 @@ export default class extends Controller {
   }
   
   timerInterval = null
+  selectedTasks = new Set()
+  lastClickedTask = null
+  clickTimer = null
+  isRenaming = false
+  draggedTasks = []
   
   
   get jobIdValue() {
@@ -51,6 +56,10 @@ export default class extends Controller {
     this.handleOutsideClick = this.handleOutsideClick.bind(this)
     document.addEventListener("click", this.handleOutsideClick)
     
+    // Handle keyboard navigation
+    this.handleKeydown = this.handleKeydown.bind(this)
+    document.addEventListener("keydown", this.handleKeydown)
+    
     // Store controller reference for debugging
     if (this.element) {
       this.element._jobController = this
@@ -60,6 +69,7 @@ export default class extends Controller {
   disconnect() {
     this.stopTimers()
     document.removeEventListener("click", this.handleOutsideClick)
+    document.removeEventListener("keydown", this.handleKeydown)
     
     if (this.element && this.element._jobController === this) {
       delete this.element._jobController
@@ -81,6 +91,355 @@ export default class extends Controller {
         dropdown.classList.add("hidden")
       })
     }
+    
+    // Clear selection if clicking outside tasks
+    if (!event.target.closest('.task-item') && !event.target.closest('.subtask-item') && 
+        !this.isRenaming && !event.metaKey && !event.ctrlKey) {
+      this.clearSelection()
+    }
+  }
+  
+  // Task selection and renaming
+  handleTaskClick(event) {
+    const taskElement = event.currentTarget
+    const isSubtask = taskElement.classList.contains('subtask-item')
+    
+    // Don't handle clicks on interactive elements
+    if (event.target.closest('.task-status-container') || 
+        event.target.closest('.add-subtask-button') ||
+        event.target.closest('input')) {
+      return
+    }
+    
+    // Handle selection
+    if (event.metaKey || event.ctrlKey) {
+      // Toggle selection with Cmd/Ctrl
+      this.toggleTaskSelection(taskElement)
+    } else if (event.shiftKey && this.lastClickedTask) {
+      // Range select with Shift
+      this.selectTaskRange(this.lastClickedTask, taskElement)
+    } else {
+      // Check if clicking on already selected task
+      const wasSelected = this.selectedTasks.has(taskElement)
+      
+      // Clear selection unless clicking on already selected
+      if (!wasSelected) {
+        this.clearSelection()
+        this.selectTask(taskElement)
+      } else {
+        // Second click on selected task - check for rename
+        if (this.clickTimer) {
+          clearTimeout(this.clickTimer)
+          this.clickTimer = null
+        }
+        
+        this.clickTimer = setTimeout(() => {
+          if (this.selectedTasks.has(taskElement) && this.selectedTasks.size === 1) {
+            this.startRename(taskElement, event)
+          }
+          this.clickTimer = null
+        }, 500)
+      }
+    }
+    
+    this.lastClickedTask = taskElement
+  }
+  
+  selectTask(taskElement) {
+    this.selectedTasks.add(taskElement)
+    taskElement.classList.add('selected')
+    taskElement.setAttribute('aria-selected', 'true')
+  }
+  
+  deselectTask(taskElement) {
+    this.selectedTasks.delete(taskElement)
+    taskElement.classList.remove('selected')
+    taskElement.setAttribute('aria-selected', 'false')
+  }
+  
+  toggleTaskSelection(taskElement) {
+    if (this.selectedTasks.has(taskElement)) {
+      this.deselectTask(taskElement)
+    } else {
+      this.selectTask(taskElement)
+    }
+  }
+  
+  clearSelection() {
+    this.selectedTasks.forEach(task => {
+      task.classList.remove('selected')
+      task.setAttribute('aria-selected', 'false')
+    })
+    this.selectedTasks.clear()
+  }
+  
+  selectTaskRange(fromTask, toTask) {
+    const allTasks = [...document.querySelectorAll('.task-item, .subtask-item')]
+    const fromIndex = allTasks.indexOf(fromTask)
+    const toIndex = allTasks.indexOf(toTask)
+    
+    if (fromIndex === -1 || toIndex === -1) return
+    
+    const start = Math.min(fromIndex, toIndex)
+    const end = Math.max(fromIndex, toIndex)
+    
+    this.clearSelection()
+    for (let i = start; i <= end; i++) {
+      this.selectTask(allTasks[i])
+    }
+  }
+  
+  selectAllTasks() {
+    const allTasks = document.querySelectorAll('.task-item, .subtask-item')
+    this.clearSelection()
+    allTasks.forEach(task => this.selectTask(task))
+  }
+  
+  // Keyboard navigation
+  handleKeydown(event) {
+    // Select all with Cmd/Ctrl+A
+    if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
+      const activeElement = document.activeElement
+      if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+        event.preventDefault()
+        this.selectAllTasks()
+      }
+    }
+    
+    // Enter to rename selected task
+    if (event.key === 'Enter' && this.selectedTasks.size === 1 && !this.isRenaming) {
+      event.preventDefault()
+      const selectedTask = Array.from(this.selectedTasks)[0]
+      this.startRename(selectedTask)
+    }
+    
+    // Escape to cancel rename
+    if (event.key === 'Escape' && this.isRenaming) {
+      event.preventDefault()
+      this.cancelRename()
+    }
+    
+    // Arrow key navigation
+    if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && 
+        !this.isRenaming && this.selectedTasks.size > 0) {
+      event.preventDefault()
+      this.navigateSelection(event.key === 'ArrowUp' ? -1 : 1, event.shiftKey)
+    }
+  }
+  
+  navigateSelection(direction, extend = false) {
+    const allTasks = [...document.querySelectorAll('.task-item, .subtask-item')]
+    if (allTasks.length === 0) return
+    
+    let targetIndex
+    if (this.selectedTasks.size === 0) {
+      targetIndex = direction === 1 ? 0 : allTasks.length - 1
+    } else {
+      const selectedIndices = Array.from(this.selectedTasks).map(task => allTasks.indexOf(task))
+      const currentIndex = direction === 1 ? Math.max(...selectedIndices) : Math.min(...selectedIndices)
+      targetIndex = currentIndex + direction
+      
+      if (targetIndex < 0) targetIndex = 0
+      if (targetIndex >= allTasks.length) targetIndex = allTasks.length - 1
+    }
+    
+    const targetTask = allTasks[targetIndex]
+    if (!targetTask) return
+    
+    if (extend && this.lastClickedTask) {
+      this.selectTaskRange(this.lastClickedTask, targetTask)
+    } else {
+      this.clearSelection()
+      this.selectTask(targetTask)
+      this.lastClickedTask = targetTask
+    }
+    
+    // Scroll into view if needed
+    targetTask.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }
+  
+  // Rename functionality
+  startRename(taskElement, clickEvent = null) {
+    if (this.isRenaming) return
+    
+    this.isRenaming = true
+    this.renamingTask = taskElement
+    
+    const titleElement = taskElement.querySelector('.task-title, .subtask-title')
+    if (!titleElement) return
+    
+    // Store original text
+    this.originalTaskTitle = titleElement.textContent.trim()
+    
+    // Create input element
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.className = 'task-rename-input'
+    input.value = this.originalTaskTitle
+    
+    // Replace title with input
+    titleElement.style.display = 'none'
+    titleElement.parentNode.insertBefore(input, titleElement)
+    
+    // Set cursor position if click event provided
+    if (clickEvent) {
+      const rect = titleElement.getBoundingClientRect()
+      const x = clickEvent.clientX - rect.left
+      const charWidth = rect.width / this.originalTaskTitle.length
+      const position = Math.round(x / charWidth)
+      
+      input.focus()
+      input.setSelectionRange(position, position)
+    } else {
+      input.focus()
+      input.select()
+    }
+    
+    // Handle input events
+    input.addEventListener('keydown', (e) => this.handleRenameKeydown(e))
+    input.addEventListener('blur', () => this.finishRename())
+  }
+  
+  handleRenameKeydown(event) {
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault()
+      this.finishRename()
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      this.cancelRename()
+    }
+  }
+  
+  finishRename() {
+    if (!this.isRenaming) return
+    
+    const input = this.renamingTask.querySelector('.task-rename-input')
+    const titleElement = this.renamingTask.querySelector('.task-title, .subtask-title')
+    const newTitle = input.value.trim()
+    
+    if (newTitle === '') {
+      this.handleEmptyRename()
+    } else if (newTitle !== this.originalTaskTitle) {
+      this.saveTaskRename(newTitle)
+    } else {
+      this.cleanupRename()
+    }
+  }
+  
+  cancelRename() {
+    if (!this.isRenaming) return
+    
+    const titleElement = this.renamingTask.querySelector('.task-title, .subtask-title')
+    titleElement.textContent = this.originalTaskTitle
+    
+    this.cleanupRename()
+  }
+  
+  cleanupRename() {
+    const input = this.renamingTask.querySelector('.task-rename-input')
+    const titleElement = this.renamingTask.querySelector('.task-title, .subtask-title')
+    
+    if (input) input.remove()
+    if (titleElement) titleElement.style.display = ''
+    
+    this.isRenaming = false
+    this.renamingTask = null
+    this.originalTaskTitle = null
+  }
+  
+  handleEmptyRename() {
+    const taskId = this.renamingTask.dataset.taskId
+    const hasDeletePermission = this.checkDeletePermission()
+    
+    const message = hasDeletePermission 
+      ? "Are you sure you want to delete this task?" 
+      : "Are you sure you want to cancel this task?"
+    
+    if (confirm(message)) {
+      if (hasDeletePermission) {
+        this.deleteTask(taskId)
+      } else {
+        this.cancelTask(taskId)
+      }
+    } else {
+      this.cancelRename()
+    }
+  }
+  
+  checkDeletePermission() {
+    // TODO: Check actual user permissions
+    // For now, assume admin/superadmin can delete
+    const currentUser = document.querySelector('[data-current-user-role]')
+    const role = currentUser?.dataset.currentUserRole
+    return role === 'admin' || role === 'superadmin'
+  }
+  
+  saveTaskRename(newTitle) {
+    const taskId = this.renamingTask.dataset.taskId
+    
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ task: { title: newTitle } })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          const titleElement = this.renamingTask.querySelector('.task-title, .subtask-title')
+          titleElement.textContent = newTitle
+          this.cleanupRename()
+        } else {
+          alert(data.error || 'Failed to rename task')
+          this.cancelRename()
+        }
+      })
+      .catch(error => {
+        console.error('Error renaming task:', error)
+        this.cancelRename()
+      })
+  }
+  
+  deleteTask(taskId) {
+    if (!confirm("Are you sure you want to delete this task?")) return
+    
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
+      method: "DELETE",
+      headers: {
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      }
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          this.renamingTask.remove()
+          this.clearSelection()
+          this.cleanupRename()
+        } else {
+          alert(data.error || 'Failed to delete task')
+          this.cancelRename()
+        }
+      })
+  }
+  
+  cancelTask(taskId) {
+    this.cleanupRename()
+    // Update status to cancelled
+    const statusUpdate = { task: { status: 'cancelled' } }
+    
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify(statusUpdate)
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          location.reload() // Reload to show updated status
+        }
+      })
   }
 
   get titleTarget() {
@@ -698,10 +1057,23 @@ export default class extends Controller {
   
   // Drag and drop handlers
   handleDragStart(event) {
+    // Check if dragging a selected task
+    const taskElement = event.target
+    if (!this.selectedTasks.has(taskElement)) {
+      // If dragging unselected task, clear selection and select only this task
+      this.clearSelection()
+      this.selectTask(taskElement)
+    }
+    
+    // Store all selected tasks
+    this.draggedTasks = Array.from(this.selectedTasks)
+    this.draggedElement = taskElement
+    
     event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/html', event.target.innerHTML)
-    this.draggedElement = event.target
-    event.target.classList.add('dragging')
+    event.dataTransfer.setData('text/html', 'multiple tasks')
+    
+    // Add dragging class to all selected tasks
+    this.draggedTasks.forEach(task => task.classList.add('dragging'))
   }
   
   handleDragOver(event) {
@@ -710,10 +1082,10 @@ export default class extends Controller {
     }
     event.dataTransfer.dropEffect = 'move'
     
-    const draggingElement = this.draggedElement
     const targetElement = event.target.closest('.task-item')
     
-    if (targetElement && targetElement !== draggingElement) {
+    // Don't show drop indicator if target is one of the dragged tasks
+    if (targetElement && !this.draggedTasks.includes(targetElement)) {
       const rect = targetElement.getBoundingClientRect()
       const midpoint = rect.top + rect.height / 2
       
@@ -734,20 +1106,28 @@ export default class extends Controller {
       event.stopPropagation()
     }
     
-    const draggingElement = this.draggedElement
     const targetElement = event.target.closest('.task-item')
     
-    if (targetElement && targetElement !== draggingElement) {
+    if (targetElement && !this.draggedTasks.includes(targetElement)) {
       const rect = targetElement.getBoundingClientRect()
       const midpoint = rect.top + rect.height / 2
       const insertBefore = event.clientY < midpoint
       
       const tasksContainer = this.tasksListTarget
-      if (insertBefore) {
-        tasksContainer.insertBefore(draggingElement, targetElement)
-      } else {
-        tasksContainer.insertBefore(draggingElement, targetElement.nextSibling)
-      }
+      
+      // Sort dragged tasks by their current position
+      const sortedDraggedTasks = this.draggedTasks.sort((a, b) => {
+        return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+      })
+      
+      // Insert all dragged tasks
+      sortedDraggedTasks.forEach(draggedTask => {
+        if (insertBefore) {
+          tasksContainer.insertBefore(draggedTask, targetElement)
+        } else {
+          tasksContainer.insertBefore(draggedTask, targetElement.nextSibling)
+        }
+      })
       
       // Update positions on server
       this.updateTaskPositions()
@@ -757,11 +1137,15 @@ export default class extends Controller {
   }
   
   handleDragEnd(event) {
-    event.target.classList.remove('dragging')
+    // Remove dragging class from all dragged tasks
+    this.draggedTasks.forEach(task => task.classList.remove('dragging'))
+    
     document.querySelectorAll('.task-item').forEach(item => {
       item.classList.remove('drag-over-top', 'drag-over-bottom')
     })
+    
     this.draggedElement = null
+    this.draggedTasks = []
   }
   
   updateTaskPositions() {

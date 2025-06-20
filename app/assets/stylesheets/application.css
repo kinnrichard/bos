@@ -1398,6 +1398,8 @@ input:focus {
   background-color: var(--bg-primary);
   border: 1px solid var(--border-primary);
   border-radius: 8px;
+  cursor: default;
+  user-select: none;
 }
 
 .task-status {
@@ -1455,6 +1457,8 @@ input:focus {
   padding: 8px 0;
   gap: 8px;
   position: relative;
+  cursor: default;
+  user-select: none;
 }
 
 .subtask-item:before {
@@ -1880,8 +1884,12 @@ h1.job-title,
 
 /* Drag and drop styles */
 .job-view .task-item {
-  cursor: move;
+  cursor: default;
   transition: opacity 0.2s ease;
+}
+
+.job-view .task-item:active:not(.selected) {
+  cursor: move;
 }
 
 .job-view .task-item.dragging {
@@ -1896,6 +1904,47 @@ h1.job-title,
 .job-view .task-item.drag-over-bottom {
   border-bottom: 2px solid var(--accent-blue);
   padding-bottom: 10px !important;
+}
+
+/* Task Selection and Multi-selection */
+.task-item.selected,
+.subtask-item.selected {
+  background-color: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+.task-item.selected .task-title,
+.subtask-item.selected .subtask-title,
+.task-item.selected .task-time-tracking,
+.subtask-item.selected .subtask-time-tracking,
+.task-item.selected .task-assignee-icon,
+.task-item.selected .task-status-button span,
+.subtask-item.selected .subtask-status-button span {
+  color: white;
+}
+
+.task-item.selected .task-status-container,
+.subtask-item.selected .task-status-container {
+  filter: brightness(1.5);
+}
+
+/* Task rename input */
+.task-rename-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: inherit;
+  padding: 0;
+  margin: 0;
+}
+
+.task-item.selected .task-rename-input,
+.subtask-item.selected .task-rename-input {
+  color: white;
 }
 
 /* Job popover styles */

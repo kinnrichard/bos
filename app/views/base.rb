@@ -71,7 +71,7 @@ class Views::Base < Components::Base
         script(src: asset_path("search.js"), defer: true)
       end
 
-      body do
+      body(data: { current_user_role: current_user.role }) do
         controllers = ["sidebar"]
         controllers += extra_controllers if extra_controllers
         

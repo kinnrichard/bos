@@ -269,7 +269,7 @@ module Views
               task_status: task.status,
               task_position: task.position,
               job_target: "task",
-              action: "dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask"
+              action: "click->job#handleTaskClick dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask"
             }.merge(time_data)
           ) do
             # Status indicator with dropdown
@@ -350,7 +350,8 @@ module Views
           class: "subtask-item #{subtask.successfully_completed? ? 'completed' : ''}",
           data: { 
             task_id: subtask.id,
-            task_status: subtask.status
+            task_status: subtask.status,
+            action: "click->job#handleTaskClick"
           }
         ) do
           # Status button container
