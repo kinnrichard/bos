@@ -1074,14 +1074,6 @@ export default class extends Controller {
     
     const statusLabels = {
       'new_task': 'New',
-      'in_progress': 'In Progress',
-      'paused': 'Paused',
-      'successfully_completed': 'Successfully Completed',
-      'cancelled': 'Cancelled'
-    }
-    
-    const statusLabels = {
-      'new_task': 'New',
       'open': 'New',
       'in_progress': 'In Progress',
       'paused': 'Paused',
