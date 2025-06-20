@@ -1837,24 +1837,23 @@ export default class extends Controller {
     // If multiple tasks are selected, move from the edge of selection
     const selectedArray = Array.from(this.selectedTasks)
     const indices = selectedArray.map(task => allTasks.indexOf(task)).sort((a, b) => a - b)
-      
-      let taskToSelect
-      if (direction === 'up') {
-        // Select the task above the topmost selected task
-        const topIndex = indices[0]
-        const newIndex = Math.max(0, topIndex - 1)
-        taskToSelect = allTasks[newIndex]
-      } else {
-        // Select the task below the bottommost selected task
-        const bottomIndex = indices[indices.length - 1]
-        const newIndex = Math.min(allTasks.length - 1, bottomIndex + 1)
-        taskToSelect = allTasks[newIndex]
-      }
-      
-      this.clearSelection()
-      this.selectTask(taskToSelect)
-      this.lastClickedTask = taskToSelect
-      taskToSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    
+    let taskToSelect
+    if (direction === 'up') {
+      // Select the task above the topmost selected task
+      const topIndex = indices[0]
+      const newIndex = Math.max(0, topIndex - 1)
+      taskToSelect = allTasks[newIndex]
+    } else {
+      // Select the task below the bottommost selected task
+      const bottomIndex = indices[indices.length - 1]
+      const newIndex = Math.min(allTasks.length - 1, bottomIndex + 1)
+      taskToSelect = allTasks[newIndex]
     }
+    
+    this.clearSelection()
+    this.selectTask(taskToSelect)
+    this.lastClickedTask = taskToSelect
+    taskToSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 }
