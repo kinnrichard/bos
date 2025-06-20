@@ -207,6 +207,13 @@ export default class extends Controller {
     const activeElement = document.activeElement
     const isInputField = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA'
     
+    // Arrow key navigation (only when not in input field)
+    if (!isInputField && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      event.preventDefault()
+      this.handleArrowNavigation(event.key === 'ArrowUp' ? 'up' : 'down')
+      return false
+    }
+    
     // Return key to create new task (only when not in input field and no task selected)
     if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey && !event.altKey && !isInputField) {
       // Only create new task if no tasks are selected (otherwise Enter renames)
@@ -1553,4 +1560,64 @@ export default class extends Controller {
     `
   }
   
+  handleArrowNavigation(direction) {
+    // Get all visible tasks (including subtasks)
+    const allTasks = Array.from(document.querySelectorAll('.task-item:not(.new-task-item)'))
+    
+    if (allTasks.length === 0) return
+    
+    // If no tasks are selected, select the first (for down) or last (for up) task
+    if (this.selectedTasks.size === 0) {
+      const taskToSelect = direction === 'down' ? allTasks[0] : allTasks[allTasks.length - 1]
+      this.clearSelection()
+      this.selectTask(taskToSelect)
+      this.lastClickedTask = taskToSelect
+      taskToSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      return
+    }
+    
+    // If one task is selected, move to next/previous
+    if (this.selectedTasks.size === 1) {
+      const currentTask = Array.from(this.selectedTasks)[0]
+      const currentIndex = allTasks.indexOf(currentTask)
+      
+      let newIndex
+      if (direction === 'up') {
+        newIndex = Math.max(0, currentIndex - 1)
+      } else {
+        newIndex = Math.min(allTasks.length - 1, currentIndex + 1)
+      }
+      
+      if (newIndex !== currentIndex) {
+        const newTask = allTasks[newIndex]
+        this.clearSelection()
+        this.selectTask(newTask)
+        this.lastClickedTask = newTask
+        newTask.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }
+    // If multiple tasks are selected, just clear and select the top/bottom one based on direction
+    else {
+      const selectedArray = Array.from(this.selectedTasks)
+      const indices = selectedArray.map(task => allTasks.indexOf(task)).sort((a, b) => a - b)
+      
+      let taskToSelect
+      if (direction === 'up') {
+        // Select the task above the topmost selected task
+        const topIndex = indices[0]
+        const newIndex = Math.max(0, topIndex - 1)
+        taskToSelect = allTasks[newIndex]
+      } else {
+        // Select the task below the bottommost selected task
+        const bottomIndex = indices[indices.length - 1]
+        const newIndex = Math.min(allTasks.length - 1, bottomIndex + 1)
+        taskToSelect = allTasks[newIndex]
+      }
+      
+      this.clearSelection()
+      this.selectTask(taskToSelect)
+      this.lastClickedTask = taskToSelect
+      taskToSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }
 }
