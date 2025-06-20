@@ -1457,7 +1457,7 @@ input:focus {
 .subtask-item {
   display: flex;
   align-items: flex-start;
-  padding: 8px 30px 8px 30px; /* Add padding on both sides */
+  padding: 8px 30px 8px 60px; /* Extra left padding for indent */
   margin-left: -60px; /* Extend all the way left */
   margin-right: -30px; /* Extend to viewport edge */
   width: calc(100% + 90px); /* Full width plus margins */
@@ -1473,7 +1473,7 @@ input:focus {
 
 .subtask-item:before {
   position: absolute;
-  left: -18px;
+  left: 12px; /* Adjusted for new padding */
   top: 18px;
   width: 16px;
   height: 2px;
