@@ -8,7 +8,7 @@ module Components
     end
 
     def view_template
-      header(class: "header") do
+      header(class: "header", data: { controller: "header-job" }) do
         # Left side toolbar items
         div(class: "header-left") do
           # Sidebar toggle button (always visible)

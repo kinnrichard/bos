@@ -223,7 +223,7 @@ module Views
         view.button(
           class: "status-bubble job-status-bubble",
           data: { 
-            action: "click->job#togglePopover"
+            action: "click->header-job#toggleJobPopover"
           }
         ) do
           render_status_bubble
