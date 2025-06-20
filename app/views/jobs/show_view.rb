@@ -21,6 +21,7 @@ module Views
           extra_controllers: ["job"]
         ) do
           div(class: "job-view", data: { 
+            controller: "job",
             job_id: @job.id, 
             client_id: @client.id,
             job_status_value: @job.status,

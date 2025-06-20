@@ -58,7 +58,8 @@ export default class extends Controller {
     
     // Handle keyboard navigation
     this.handleKeydown = this.handleKeydown.bind(this)
-    document.addEventListener("keydown", this.handleKeydown)
+    // Use capture phase to intercept before browser default
+    document.addEventListener("keydown", this.handleKeydown, true)
     
     // Store controller reference for debugging
     if (this.element) {
@@ -69,7 +70,7 @@ export default class extends Controller {
   disconnect() {
     this.stopTimers()
     document.removeEventListener("click", this.handleOutsideClick)
-    document.removeEventListener("keydown", this.handleKeydown)
+    document.removeEventListener("keydown", this.handleKeydown, true)
     
     if (this.element && this.element._jobController === this) {
       delete this.element._jobController
@@ -204,10 +205,14 @@ export default class extends Controller {
   handleKeydown(event) {
     // New task with Cmd/Ctrl+N
     if ((event.metaKey || event.ctrlKey) && event.key === 'n') {
+      // Always prevent default for Cmd+N to stop browser new window
+      event.preventDefault()
+      event.stopPropagation()
+      
       const activeElement = document.activeElement
       if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
-        event.preventDefault()
         this.showNewTaskInput()
+        return false
       }
     }
     
