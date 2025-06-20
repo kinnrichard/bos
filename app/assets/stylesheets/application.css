@@ -1823,6 +1823,7 @@ h1.job-title,
 .task-status-container {
   position: relative;
   margin-top: 2px;
+  z-index: 10;
 }
 
 .task-status-button {
@@ -1858,8 +1859,13 @@ h1.job-title,
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   min-width: 220px;
-  z-index: 100;
+  z-index: 1000;
   overflow: hidden;
+}
+
+/* Ensure the container with open dropdown has higher z-index */
+.task-status-container:has(.task-status-dropdown:not(.hidden)) {
+  z-index: 1001;
 }
 
 .task-status-option {
@@ -1925,6 +1931,8 @@ h1.job-title,
 .subtask-item.selected {
   background-color: var(--accent-blue) !important;
   border-color: var(--accent-blue);
+  position: relative;
+  z-index: 1;
 }
 
 .task-item.selected .task-title,
