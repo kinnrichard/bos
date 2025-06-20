@@ -645,6 +645,7 @@ button.checkbox-circle {
 .new-task-placeholder {
   display: flex;
   align-items: center;
+  gap: 8px; /* Match task item gap */
   padding: 12px 0;
   padding-left: 16px; /* Reduced since we now have invisible emoji */
   color: #48484A;
@@ -655,10 +656,14 @@ button.checkbox-circle {
 
 .new-task-placeholder .invisible-emoji {
   visibility: hidden;
-  margin-right: 8px; /* Reduced spacing for better alignment */
+  margin-right: 0; /* Use gap from parent instead */
   font-size: 20px !important; /* Match task status button size */
-  width: 20px;
-  display: inline-block;
+  width: 24px; /* Match task status button width */
+  height: 24px; /* Match task status button height */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .new-task-placeholder:hover {
