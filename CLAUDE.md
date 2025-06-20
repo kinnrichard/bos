@@ -1,1 +1,2 @@
 - Remember to run `rails tmp:clear && rails assets:clobber && rails assets:precompile && rm -f public/assets/.manifest.json` before the end of your turn when you've made a styling change
+- If you make any changes to view code, javascript, and/or CSS, please at a bare minimum load the page(s) it affects in Puppeteer, attempt to use the feature, check for errors, and check for warnings or errors in the browser console. If you find any bugs or warnings in the console, please try to fix them before proceeding

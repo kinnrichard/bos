@@ -24,7 +24,7 @@ export default class extends Controller {
         if (evt.dragged.querySelector('.task-title').contains(evt.related)) {
           return false;
         }
-      }
+      },
       
       // Handle configuration
       draggable: '.task-item',
