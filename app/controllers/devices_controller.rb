@@ -4,17 +4,17 @@ class DevicesController < ApplicationController
   
   def index
     @devices = @client.devices.includes(:person).order(:name)
-    render Views::Devices::IndexView.new(client: @client, devices: @devices)
+    render Views::Devices::IndexView.new(client: @client, devices: @devices, current_user: current_user)
   end
   
   def show
-    render Views::Devices::ShowView.new(client: @client, device: @device)
+    render Views::Devices::ShowView.new(client: @client, device: @device, current_user: current_user)
   end
   
   def new
     @device = @client.devices.build
     @people = @client.people.order(:name)
-    render Views::Devices::NewView.new(client: @client, device: @device, people: @people)
+    render Views::Devices::NewView.new(client: @client, device: @device, people: @people, current_user: current_user)
   end
   
   def create
@@ -30,13 +30,13 @@ class DevicesController < ApplicationController
       redirect_to client_device_path(@client, @device), notice: 'Device was successfully created.'
     else
       @people = @client.people.order(:name)
-      render Views::Devices::NewView.new(client: @client, device: @device, people: @people), status: :unprocessable_entity
+      render Views::Devices::NewView.new(client: @client, device: @device, people: @people, current_user: current_user), status: :unprocessable_entity
     end
   end
   
   def edit
     @people = @client.people.order(:name)
-    render Views::Devices::EditView.new(client: @client, device: @device, people: @people)
+    render Views::Devices::EditView.new(client: @client, device: @device, people: @people, current_user: current_user)
   end
   
   def update
@@ -50,7 +50,7 @@ class DevicesController < ApplicationController
       redirect_to client_device_path(@client, @device), notice: 'Device was successfully updated.'
     else
       @people = @client.people.order(:name)
-      render Views::Devices::EditView.new(client: @client, device: @device, people: @people), status: :unprocessable_entity
+      render Views::Devices::EditView.new(client: @client, device: @device, people: @people, current_user: current_user), status: :unprocessable_entity
     end
   end
   
@@ -87,14 +87,5 @@ class DevicesController < ApplicationController
   
   def device_params
     params.require(:device).permit(:name, :location, :person_id, :notes)
-  end
-  
-  def current_user
-    # TODO: Replace with actual current user from authentication
-    User.first || User.create!(
-      name: 'System User',
-      email: 'system@example.com',
-      role: :admin
-    )
   end
 end

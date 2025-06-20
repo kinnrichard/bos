@@ -3,15 +3,16 @@
 module Views
   module Devices
     class ShowView < Views::Base
-      def initialize(client:, device:)
+      def initialize(client:, device:, current_user:)
         @client = client
         @device = device
+        @current_user = current_user
       end
 
       def view_template
         render_layout(
           title: "#{@device.name} - #{@client.name}",
-          current_user: current_user,
+          current_user: @current_user,
           active_section: :devices,
           client: @client
         ) do
@@ -20,7 +21,7 @@ module Views
               h1 { @device.name }
               div(class: "device-actions") do
                 link_to("Edit", edit_client_device_path(@client, @device), class: "btn btn-secondary")
-                if current_user.can_delete?(@device)
+                if @current_user.can_delete?(@device)
                   delete_form_with_confirmation(
                     url: client_device_path(@client, @device),
                     message: "Are you sure you want to delete the device '#{@device.name}'?",
@@ -68,15 +69,6 @@ module Views
       end
       
       private
-      
-      def current_user
-        # TODO: Replace with actual current user from authentication
-        User.first || User.create!(
-          name: 'System User',
-          email: 'system@example.com',
-          role: :admin
-        )
-      end
     end
   end
 end

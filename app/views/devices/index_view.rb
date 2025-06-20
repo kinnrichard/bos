@@ -3,15 +3,16 @@
 module Views
   module Devices
     class IndexView < Views::Base
-      def initialize(client:, devices:)
+      def initialize(client:, devices:, current_user:)
         @client = client
         @devices = devices
+        @current_user = current_user
       end
 
       def view_template
         render_layout(
           title: "Devices - #{@client.name}",
-          current_user: current_user,
+          current_user: @current_user,
           active_section: :devices,
           client: @client
         ) do

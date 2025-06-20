@@ -3,16 +3,17 @@
 module Views
   module Devices
     class EditView < Views::Base
-      def initialize(client:, device:, people:)
+      def initialize(client:, device:, people:, current_user:)
         @client = client
         @device = device
         @people = people
+        @current_user = current_user
       end
 
       def view_template
         render_layout(
           title: "Edit Device - #{@client.name}",
-          current_user: current_user,
+          current_user: @current_user,
           active_section: :devices,
           client: @client
         ) do
@@ -60,7 +61,7 @@ module Views
                 link_to("Cancel", client_device_path(@client, @device), class: "btn btn-secondary", style: "margin-right: auto;")
               end
               
-              if current_user.can_delete?(@device)
+              if @current_user.can_delete?(@device)
                 div(style: "margin-top: 40px; padding-top: 40px; border-top: 1px solid var(--border-primary);") do
                   delete_form_with_confirmation(
                     url: client_device_path(@client, @device),
@@ -75,15 +76,6 @@ module Views
       end
       
       private
-      
-      def current_user
-        # TODO: Replace with actual current user from authentication
-        User.first || User.create!(
-          name: 'System User',
-          email: 'system@example.com',
-          role: :admin
-        )
-      end
     end
   end
 end

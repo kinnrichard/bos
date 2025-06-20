@@ -3,16 +3,17 @@
 module Views
   module Devices
     class NewView < Views::Base
-      def initialize(client:, device:, people:)
+      def initialize(client:, device:, people:, current_user:)
         @client = client
         @device = device
         @people = people
+        @current_user = current_user
       end
 
       def view_template
         render_layout(
           title: "New Device - #{@client.name}",
-          current_user: current_user,
+          current_user: @current_user,
           active_section: :devices,
           client: @client
         ) do
@@ -65,15 +66,6 @@ module Views
       end
       
       private
-      
-      def current_user
-        # TODO: Replace with actual current user from authentication
-        User.first || User.create!(
-          name: 'System User',
-          email: 'system@example.com',
-          role: :admin
-        )
-      end
     end
   end
 end
