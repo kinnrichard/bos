@@ -1,4 +1,6 @@
 class User < ApplicationRecord
+  has_secure_password
+  
   has_many :activity_logs
   has_many :assigned_jobs, class_name: 'Job', foreign_key: 'assigned_to_id'
   has_many :assigned_tasks, class_name: 'Task', foreign_key: 'assigned_to_id'
@@ -13,8 +15,9 @@ class User < ApplicationRecord
   }
   
   validates :name, presence: true
-  validates :email, presence: true, uniqueness: { case_sensitive: false }
+  validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :role, presence: true
+  validates :password, length: { minimum: 6 }, if: :password_required?
   
   before_validation :downcase_email
   
@@ -37,5 +40,9 @@ class User < ApplicationRecord
   
   def downcase_email
     self.email = email.downcase if email.present?
+  end
+  
+  def password_required?
+    new_record? || password.present?
   end
 end

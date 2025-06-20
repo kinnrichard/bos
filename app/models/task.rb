@@ -32,6 +32,9 @@ class Task < ApplicationRecord
   # Set defaults
   after_initialize :set_defaults, if: :new_record?
   
+  # Automatically reorder tasks when status changes
+  after_update :reorder_by_status, if: :saved_change_to_status?
+  
   # Status emoji helpers
   def status_emoji
     case status
@@ -145,6 +148,32 @@ class Task < ApplicationRecord
       end
       visited.add(current.id)
       current = current.parent
+    end
+  end
+  
+  def reorder_by_status
+    # Define status priority order
+    status_priority = {
+      'in_progress' => 1,
+      'paused' => 2,
+      'new_task' => 3,
+      'cancelled' => 4,
+      'successfully_completed' => 5
+    }
+    
+    # Get all sibling tasks (same parent_id)
+    siblings = Task.where(job_id: job_id, parent_id: parent_id)
+                   .order(Arel.sql("CASE 
+                     WHEN status = 0 THEN #{status_priority['new_task']}
+                     WHEN status = 1 THEN #{status_priority['in_progress']}
+                     WHEN status = 2 THEN #{status_priority['paused']}
+                     WHEN status = 3 THEN #{status_priority['successfully_completed']}
+                     WHEN status = 4 THEN #{status_priority['cancelled']}
+                     END, position ASC"))
+    
+    # Update positions to reflect new order
+    siblings.each_with_index do |task, index|
+      task.update_column(:position, index + 1) if task.position != index + 1
     end
   end
 end

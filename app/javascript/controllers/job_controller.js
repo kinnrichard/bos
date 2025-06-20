@@ -987,37 +987,17 @@ export default class extends Controller {
       emptyMessage.remove()
     }
     
-    // Check if new task input already exists
-    if (this.currentNewTaskInput) {
-      this.currentNewTaskInput.focus()
-      return
+    // Use the existing hidden new task form
+    const newTaskForm = this.newTaskFormTarget
+    if (newTaskForm) {
+      newTaskForm.classList.remove('hidden')
+      const input = this.newTaskInputTarget
+      if (input) {
+        input.value = ''
+        input.focus()
+        this.currentNewTaskInput = input
+      }
     }
-    
-    // Create new task input element
-    const newTaskWrapper = document.createElement('div')
-    newTaskWrapper.className = 'task-wrapper new-task-wrapper'
-    newTaskWrapper.innerHTML = `
-      <div class="task-item new-task-item" data-job-target="newTaskForm">
-        <input 
-          type="text" 
-          class="new-task-input" 
-          placeholder="New task..."
-          data-action="keydown.enter->job#saveNewTask keydown.escape->job#cancelNewTask blur->job#handleNewTaskBlur"
-          data-job-target="newTaskInput"
-        />
-      </div>
-    `
-    
-    // Append to tasks list
-    const tasksList = this.tasksListTarget
-    tasksList.appendChild(newTaskWrapper)
-    
-    // Focus the input
-    const input = newTaskWrapper.querySelector('input')
-    input.focus()
-    
-    // Store reference
-    this.currentNewTaskInput = input
   }
   
 
@@ -1100,37 +1080,51 @@ export default class extends Controller {
       'cancelled': 'Cancelled'
     }
     
+    const statusLabels = {
+      'new_task': 'New',
+      'open': 'New',
+      'in_progress': 'In Progress',
+      'paused': 'Paused',
+      'waiting': 'Waiting',
+      'successfully_completed': 'Successfully Completed',
+      'cancelled': 'Cancelled'
+    }
+    
     const emoji = statusEmojis[task.status] || '⚫'
     const isCompleted = task.status === 'successfully_completed'
     
     return `
-      <div class="task-item ${isCompleted ? 'completed' : ''}" 
-           draggable="true"
-           data-task-id="${task.id}" 
-           data-task-status="${task.status}" 
-           data-task-position="${task.position || 0}"
-           data-job-target="task"
-           data-action="dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd">
-        <div class="task-status-container">
-          <button class="task-status-button" data-action="click->job#toggleTaskStatus">
-            <span>${emoji}</span>
-          </button>
-          <div class="task-status-dropdown hidden" data-job-target="taskStatusDropdown">
-            ${Object.entries(statusEmojis).map(([status, emoji]) => `
-              <button class="task-status-option ${task.status === status ? 'active' : ''}" 
-                      data-action="click->job#updateTaskStatus" 
-                      data-task-id="${task.id}" 
-                      data-status="${status}">
-                <span class="status-emoji">${emoji}</span>
-                <span>${statusLabels[status]}</span>
-              </button>
-            `).join('')}
+      <div class="task-wrapper">
+        <div class="task-item ${isCompleted ? 'completed' : ''}" 
+             draggable="true"
+             data-task-id="${task.id}" 
+             data-task-status="${task.status}" 
+             data-task-position="${task.position || 0}"
+             data-job-target="task"
+             data-action="click->job#handleTaskClick dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask">
+          <div class="task-status-container">
+            <button class="task-status-button" data-action="click->job#toggleTaskStatus">
+              <span>${emoji}</span>
+            </button>
+            <div class="task-status-dropdown hidden" data-job-target="taskStatusDropdown">
+              ${Object.entries(statusEmojis).map(([status, emoji]) => `
+                <button class="task-status-option ${task.status === status ? 'active' : ''}" 
+                        data-action="click->job#updateTaskStatus" 
+                        data-task-id="${task.id}" 
+                        data-status="${status}">
+                  <span class="status-emoji">${emoji}</span>
+                  <span>${statusLabels[status]}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          <div class="task-content">
+            <div class="task-title">${task.title}</div>
+          </div>
+          <div class="task-right">
+            <!-- Task icons and time tracking go here -->
           </div>
         </div>
-        <div class="task-content">
-          <div class="task-title">${task.title}</div>
-        </div>
-        <div class="task-icons"></div>
       </div>
     `
   }
@@ -1465,22 +1459,28 @@ export default class extends Controller {
     }).then(response => response.json())
       .then(data => {
         if (data.status === 'success') {
-          // Insert the new task into the DOM
-          const wrapper = input.closest('.new-task-wrapper')
+          // Remove empty tasks message if present
+          const emptyMessage = this.tasksListTarget.querySelector('.empty-tasks')
+          if (emptyMessage) {
+            emptyMessage.remove()
+          }
+          
+          // Get the new task form to insert after
+          const newTaskForm = this.newTaskFormTarget
           const tasksContainer = this.tasksListTarget
           
-          // Create task element
+          // Create task element HTML
           const newTaskHtml = this.createTaskHtml(data.task)
-          const tempDiv = document.createElement('div')
-          tempDiv.innerHTML = newTaskHtml
-          const newTaskElement = tempDiv.firstChild
           
-          // Insert before the new task input
-          tasksContainer.insertBefore(newTaskElement, wrapper)
+          // Insert the new task before the new task form
+          newTaskForm.insertAdjacentHTML('beforebegin', newTaskHtml)
           
-          // Clear the input and show another new task input
+          // Clear the input and keep focus for another task
           input.value = ''
           input.focus()
+          
+          // Store reference to the current input
+          this.currentNewTaskInput = input
         } else {
           console.error('Failed to create task:', data.error)
           alert('Failed to create task: ' + (data.error || 'Unknown error'))
@@ -1493,36 +1493,52 @@ export default class extends Controller {
   }
   
   cancelNewTask(event) {
-    const wrapper = event.currentTarget.closest('.new-task-wrapper')
-    if (wrapper) {
-      wrapper.remove()
+    // Hide the new task form
+    const newTaskForm = this.newTaskFormTarget
+    if (newTaskForm) {
+      newTaskForm.classList.add('hidden')
+    }
+    
+    // Clear the input
+    const input = this.newTaskInputTarget
+    if (input) {
+      input.value = ''
     }
     
     // Check if tasks list is now empty
     const tasksList = this.tasksListTarget
-    if (tasksList.children.length === 0) {
-      tasksList.innerHTML = '<div class="empty-tasks">No tasks yet</div>'
+    const remainingTasks = tasksList.querySelectorAll('.task-wrapper')
+    if (remainingTasks.length === 0) {
+      tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click "New task..." below to add a task.</p></div>'
     }
     
     this.currentNewTaskInput = null
   }
   
   handleNewTaskBlur(event) {
-    // Only cancel if the input is empty
-    if (!event.currentTarget.value.trim()) {
-      this.cancelNewTask(event)
+    // Don't cancel if we're tabbing to save another task
+    if (event.relatedTarget && event.relatedTarget.classList.contains('new-task-input')) {
+      return
     }
+    
+    // Small delay to allow for clicks on other elements
+    setTimeout(() => {
+      const input = event.target
+      if (input.value.trim() === '') {
+        this.cancelNewTask(event)
+      }
+    }, 200)
   }
   
   createTaskHtml(task) {
     const statusEmojis = {
       'new_task': '⚫',
       'open': '⚫',
-      'in_progress': '🔵',
+      'in_progress': '🟢',
       'paused': '⏸️',
       'waiting': '⏳',
       'successfully_completed': '☑️',
-      'cancelled': '🚫'
+      'cancelled': '❌'
     }
     
     const emoji = statusEmojis[task.status] || '⚫'

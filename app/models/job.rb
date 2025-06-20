@@ -42,9 +42,40 @@ class Job < ApplicationRecord
     .distinct 
   }
   scope :closed, -> { where(status: [:successfully_completed, :cancelled]) }
+  scope :overdue, -> { where('due_on < ?', Date.current).or(where(due_on: Date.current, due_time: ...Time.current)) }
+  scope :upcoming, -> { where('due_on >= ?', Date.current) }
   
   # Set defaults
   after_initialize :set_defaults, if: :new_record?
+  
+  # Computed datetime methods
+  def due_at
+    return nil unless due_on
+    if due_time
+      DateTime.new(due_on.year, due_on.month, due_on.day, due_time.hour, due_time.min, due_time.sec)
+    else
+      due_on.to_datetime
+    end
+  end
+  
+  def start_at
+    return nil unless start_on
+    if start_time
+      DateTime.new(start_on.year, start_on.month, start_on.day, start_time.hour, start_time.min, start_time.sec)
+    else
+      start_on.to_datetime
+    end
+  end
+  
+  def overdue?
+    return false unless due_at
+    due_at < Time.current
+  end
+  
+  def days_until_due
+    return nil unless due_on
+    (due_on - Date.current).to_i
+  end
   
   private
   

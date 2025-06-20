@@ -38,6 +38,25 @@ module Views
       
       private
       
+      def format_log_timestamp(timestamp)
+        now = Time.current
+        today = now.to_date
+        yesterday = today - 1
+        timestamp_date = timestamp.to_date
+        
+        time_str = timestamp.strftime("%-I:%M %p")
+        
+        if timestamp_date == today
+          "Today at #{time_str}"
+        elsif timestamp_date == yesterday
+          "Yesterday at #{time_str}"
+        elsif timestamp_date >= today - 6 && timestamp_date < today
+          "#{timestamp.strftime('%A')} at #{time_str}"
+        else
+          timestamp.strftime("%B %-d at #{time_str}")
+        end
+      end
+      
       def render_log_item(log)
         div(class: "log-item") do
           div(class: "log-message") do
@@ -46,7 +65,7 @@ module Views
           
           div(class: "log-timestamp") do
             time(datetime: log.created_at.iso8601, title: log.created_at.to_s) do
-              helpers.time_ago_in_words(log.created_at) + " ago"
+              format_log_timestamp(log.created_at)
             end
           end
         end

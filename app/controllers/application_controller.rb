@@ -6,16 +6,23 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
   
+  before_action :require_login
+  
   private
   
   def current_user
-    # TODO: Replace with actual authentication
-    @current_user ||= User.first || User.create!(
-      name: "System User",
-      email: "system@example.com", 
-      role: :admin
-    )
+    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
   end
   
-  helper_method :current_user
+  def logged_in?
+    current_user.present?
+  end
+  
+  def require_login
+    unless logged_in?
+      redirect_to login_path(return_to: request.fullpath), alert: "Please sign in to continue"
+    end
+  end
+  
+  helper_method :current_user, :logged_in?
 end

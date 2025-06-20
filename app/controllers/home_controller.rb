@@ -5,12 +5,4 @@ class HomeController < ApplicationController
   
   private
   
-  def current_user
-    # TODO: Replace with actual current user from authentication
-    @current_user ||= User.first || User.create!(
-      name: "System User",
-      email: "system@example.com",
-      role: :admin
-    )
-  end
 end

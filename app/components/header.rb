@@ -85,6 +85,41 @@ module Components
               ) { "" }
             end
           end
+          
+          # User menu
+          if @current_user
+            div(class: "user-menu") do
+              button(
+                class: "user-menu-button",
+                data: { 
+                  controller: "dropdown",
+                  action: "click->dropdown#toggle"
+                }
+              ) do
+                span(class: "user-initials") do
+                  @current_user.name.split.map(&:first).join.upcase[0..1]
+                end
+              end
+              
+              div(
+                class: "dropdown-menu user-dropdown hidden",
+                data: { dropdown_target: "menu" }
+              ) do
+                div(class: "dropdown-header") do
+                  div(class: "user-name") { @current_user.name }
+                  div(class: "user-email") { @current_user.email }
+                  div(class: "user-role") { @current_user.role.humanize }
+                end
+                div(class: "dropdown-divider")
+                button_to(
+                  "Sign Out",
+                  logout_path,
+                  method: :delete,
+                  class: "dropdown-item"
+                )
+              end
+            end
+          end
         end
       end
     end

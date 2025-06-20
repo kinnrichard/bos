@@ -3,7 +3,8 @@ class JobsController < ApplicationController
   before_action :set_job, only: [:show, :edit, :update, :destroy]
   
   def index
-    @jobs = @client.jobs.includes(:technicians, :tasks).order(created_at: :desc)
+    @jobs = @client.jobs.includes(:technicians, :tasks)
+                         .order(Arel.sql('due_on ASC NULLS LAST, due_time ASC NULLS LAST, priority ASC, created_at DESC'))
     render Views::Jobs::IndexView.new(client: @client, jobs: @jobs)
   end
   
@@ -126,15 +127,7 @@ class JobsController < ApplicationController
   end
   
   def job_params
-    params.require(:job).permit(:title, :description, :status, :priority, :start_on_date, technician_ids: [])
+    params.require(:job).permit(:title, :description, :status, :priority, :due_on, :due_time, :start_on, :start_time, technician_ids: [])
   end
   
-  def current_user
-    # TODO: Replace with actual current user from authentication
-    User.first || User.create!(
-      name: 'System User',
-      email: 'system@example.com',
-      role: :admin
-    )
-  end
 end

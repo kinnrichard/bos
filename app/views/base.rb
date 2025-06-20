@@ -21,15 +21,6 @@ class Views::Base < Components::Base
 
   private
 
-  # TODO: Replace with actual authentication
-  def current_user
-    @current_user ||= User.first || User.create!(
-      name: "System User",
-      email: "system@example.com",
-      role: :admin
-    )
-  end
-
   def delete_form_with_confirmation(url:, message: nil, checkbox_label: nil, &block)
     div(data: { controller: "delete-confirmation" }) do
       # Render the modal
@@ -55,7 +46,7 @@ class Views::Base < Components::Base
     end
   end
 
-  def render_layout(title:, current_user:, active_section: nil, client: nil, toolbar_items: nil, extra_controllers: nil, &content)
+  def render_layout(title:, current_user: nil, active_section: nil, client: nil, toolbar_items: nil, extra_controllers: nil, hide_sidebar: false, &content)
     doctype
     html(lang: "en") do
       head do
@@ -71,26 +62,31 @@ class Views::Base < Components::Base
         script(src: asset_path("search.js"), defer: true)
       end
 
-      body(data: { current_user_role: current_user.role }) do
-        controllers = ["sidebar"]
-        controllers += extra_controllers if extra_controllers
-        
-        div(class: "main-container", data: { controller: controllers.join(" ") }) do
-          div(class: "sidebar", data: { sidebar_target: "sidebar" }) do
-            render Components::Sidebar.new(
-              current_user: current_user,
-              active_section: active_section,
-              client: client
-            )
-          end
+      body(data: { current_user_role: current_user&.role }) do
+        if hide_sidebar
+          # Simple layout without sidebar/header for auth pages
+          yield
+        else
+          controllers = ["sidebar"]
+          controllers += extra_controllers if extra_controllers
+          
+          div(class: "main-container", data: { controller: controllers.join(" ") }) do
+            div(class: "sidebar", data: { sidebar_target: "sidebar" }) do
+              render Components::Sidebar.new(
+                current_user: current_user,
+                active_section: active_section,
+                client: client
+              )
+            end
 
-          div(class: "main-content") do
-            render Components::Header.new(
-              current_user: current_user,
-              toolbar_items: toolbar_items
-            )
+            div(class: "main-content") do
+              render Components::Header.new(
+                current_user: current_user,
+                toolbar_items: toolbar_items
+              )
 
-            div(class: "content", &content)
+              div(class: "content", &content)
+            end
           end
         end
       end

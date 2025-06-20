@@ -66,6 +66,7 @@ class ClientsController < ApplicationController
                       .includes(:user, :loggable)
                       .recent
                       .limit(100)
+                      .reject { |log| log.action == 'updated' && log.metadata['changes']&.keys == ['position'] }
     
     render Views::Clients::LogsView.new(
       client: @client, 

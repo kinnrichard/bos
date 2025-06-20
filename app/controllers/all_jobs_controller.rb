@@ -49,8 +49,8 @@ class AllJobsController < ApplicationController
       @jobs = @jobs.where(status: statuses) if statuses.any?
     end
     
-    # Order jobs same as client jobs page
-    @jobs = @jobs.order(created_at: :desc)
+    # Order jobs by due date, then priority, then created date
+    @jobs = @jobs.order(Arel.sql('due_on ASC NULLS LAST, due_time ASC NULLS LAST, priority ASC, created_at DESC'))
     
     # Get all technicians and statuses for filter dropdown
     @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
@@ -70,12 +70,4 @@ class AllJobsController < ApplicationController
   
   private
   
-  def current_user
-    # TODO: Replace with actual current user from authentication
-    User.first || User.create!(
-      name: 'System User',
-      email: 'system@example.com',
-      role: :admin
-    )
-  end
 end
