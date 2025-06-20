@@ -1452,15 +1452,15 @@ input:focus {
 /* Subtasks styles */
 .subtasks-container {
   margin-left: 30px;
-  margin-right: -24px; /* Extend container to job-view edge */
+  margin-right: -30px; /* Extend container to right edge */
 }
 
 .subtask-item {
   display: flex;
   align-items: flex-start;
-  padding: 8px 24px 8px 30px; /* Right padding matches parent tasks */
+  padding: 8px 30px 8px 30px; /* Add padding on both sides */
   margin-left: -30px; /* Extend to left to cover indent area */
-  margin-right: -24px; /* Extend to job-view edge */
+  margin-right: -30px; /* Extend to right edge */
   gap: 8px;
   position: relative;
   cursor: default;
@@ -1799,14 +1799,16 @@ h1.job-title,
 /* Task wrapper for proper layout */
 .task-wrapper {
   position: relative;
+  margin: 0 -30px; /* Extend to content padding */
+  padding: 0 30px;
 }
 
 /* Override task-item styles for job view */
 .job-view .task-item {
   display: flex !important;
   align-items: center !important;
-  padding: 8px 24px !important;
-  margin: 0 -24px !important; /* Extend to job-view edges */
+  padding: 8px 30px !important;
+  margin: 0 -30px !important; /* Extend to content padding */
   border: none !important;
   border-radius: 0 !important;
   background: none !important;
@@ -1894,11 +1896,6 @@ h1.job-title,
   text-decoration: line-through;
 }
 
-/* Job view container */
-.job-view {
-  padding: 24px;
-}
-
 /* Drag and drop styles */
 .job-view .task-item {
   cursor: default;
@@ -1965,8 +1962,8 @@ h1.job-title,
 .new-task {
   display: flex;
   align-items: center;
-  padding: 8px 24px;
-  margin: 0 -24px;
+  padding: 8px 30px;
+  margin: 0 -30px;
   min-height: 32px;
   background-color: transparent;
 }
