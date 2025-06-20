@@ -136,10 +136,8 @@ export default class extends Controller {
     // Stop event from bubbling to task click handler
     event.stopPropagation()
     
-    // Clear any existing selection and select this task
-    this.clearSelection()
-    this.selectTask(taskElement)
-    this.lastClickedTask = taskElement
+    // Don't select the task when clicking to edit - just clear any existing selection
+    // The focus event handler will clear selection when contenteditable gets focus
     
     // Contenteditable will handle the focus and editing automatically
   }
@@ -863,6 +861,9 @@ export default class extends Controller {
     if (!titleElement.dataset.originalTitle) {
       titleElement.dataset.originalTitle = titleElement.textContent.trim()
     }
+    
+    // Clear all selections when entering edit mode
+    this.clearSelection()
   }
 
   // Update task title on blur (contenteditable)
