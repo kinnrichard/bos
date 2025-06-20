@@ -945,6 +945,12 @@ export default class extends Controller {
       emptyMessage.remove()
     }
     
+    // Check if new task input already exists
+    if (this.currentNewTaskInput) {
+      this.currentNewTaskInput.focus()
+      return
+    }
+    
     // Create new task input element
     const newTaskWrapper = document.createElement('div')
     newTaskWrapper.className = 'task-wrapper new-task-wrapper'

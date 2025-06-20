@@ -2020,6 +2020,38 @@ h1.job-title,
   color: var(--text-tertiary);
 }
 
+/* New task placeholder */
+.new-task-placeholder {
+  display: flex;
+  align-items: center;
+  padding: 8px 30px 8px 38px; /* Match task item padding */
+  margin: 0 -30px;
+  width: calc(100% + 60px);
+  min-height: 32px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.new-task-placeholder:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.new-task-placeholder span {
+  opacity: 0.6;
+}
+
+.new-task-placeholder:hover span {
+  opacity: 0.8;
+}
+
+/* Hide placeholder when new task input is visible */
+.new-task-wrapper + .new-task-placeholder {
+  display: none;
+}
+
 .task-item.selected .task-rename-input,
 .subtask-item.selected .task-rename-input {
   color: white;

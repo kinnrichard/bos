@@ -68,6 +68,14 @@ module Views
                   end
                 end
               end
+              
+              # New task clickable area
+              div(
+                class: "new-task-placeholder",
+                data: { action: "click->job#showNewTaskInput" }
+              ) do
+                span { "New task..." }
+              end
             end
             
             # Status/Assignment Popover
