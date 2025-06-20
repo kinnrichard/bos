@@ -73,7 +73,8 @@ module Views
               # New task clickable area
               div(
                 class: "new-task-placeholder",
-                data: { action: "click->job#showNewTaskInput" }
+                data: { action: "click->job#showNewTaskInput" },
+                title: "Click or press Enter to create a new task"
               ) do
                 span { "New task..." }
               end

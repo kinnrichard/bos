@@ -203,14 +203,15 @@ export default class extends Controller {
   
   // Keyboard navigation
   handleKeydown(event) {
-    // New task with Cmd/Ctrl+N
-    if ((event.metaKey || event.ctrlKey) && event.key === 'n') {
-      // Always prevent default for Cmd+N to stop browser new window
-      event.preventDefault()
-      event.stopPropagation()
-      
-      const activeElement = document.activeElement
-      if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+    // Check if we're in an input field
+    const activeElement = document.activeElement
+    const isInputField = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA'
+    
+    // Return key to create new task (only when not in input field and no task selected)
+    if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey && !event.altKey && !isInputField) {
+      // Only create new task if no tasks are selected (otherwise Enter renames)
+      if (this.selectedTasks.size === 0) {
+        event.preventDefault()
         this.showNewTaskInput()
         return false
       }
@@ -1551,4 +1552,5 @@ export default class extends Controller {
       </div>
     `
   }
+  
 }
