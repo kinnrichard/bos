@@ -50,7 +50,7 @@ module Views
                   class: "new-task-input",
                   placeholder: "What needs to be done?",
                   data: { 
-                    action: "keydown.enter->job#createTask keydown.escape->job#cancelNewTask",
+                    action: "keydown.enter->job#saveNewTask keydown.escape->job#cancelNewTask",
                     job_target: "newTaskInput"
                   }
                 )

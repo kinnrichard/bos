@@ -1985,6 +1985,41 @@ h1.job-title,
   color: var(--text-tertiary);
 }
 
+/* New task wrapper and item styles */
+.new-task-wrapper {
+  position: relative;
+}
+
+.new-task-item {
+  display: flex !important;
+  align-items: center !important;
+  padding: 8px 30px 8px 38px !important; /* Extra left padding to align with task content */
+  margin: 0 -30px !important;
+  width: calc(100% + 60px) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: none !important;
+  background-color: transparent !important;
+  min-height: 32px;
+}
+
+.new-task-item .new-task-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: inherit;
+  padding: 0;
+  margin: 0;
+}
+
+.new-task-item .new-task-input::placeholder {
+  color: var(--text-tertiary);
+}
+
 .task-item.selected .task-rename-input,
 .subtask-item.selected .task-rename-input {
   color: white;

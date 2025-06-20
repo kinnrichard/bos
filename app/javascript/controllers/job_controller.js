@@ -202,6 +202,15 @@ export default class extends Controller {
   
   // Keyboard navigation
   handleKeydown(event) {
+    // New task with Cmd/Ctrl+N
+    if ((event.metaKey || event.ctrlKey) && event.key === 'n') {
+      const activeElement = document.activeElement
+      if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+        event.preventDefault()
+        this.showNewTaskInput()
+      }
+    }
+    
     // Select all with Cmd/Ctrl+A
     if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
       const activeElement = document.activeElement
@@ -926,9 +935,111 @@ export default class extends Controller {
   }
 
   // Task management
-  addNewTask(event) {
-    this.newTaskFormTarget.classList.remove("hidden")
-    this.newTaskInputTarget.focus()
+  showNewTaskInput() {
+    // Clear any selection
+    this.clearSelection()
+    
+    // Remove empty tasks message if present
+    const emptyMessage = document.querySelector('.empty-tasks')
+    if (emptyMessage) {
+      emptyMessage.remove()
+    }
+    
+    // Create new task input element
+    const newTaskWrapper = document.createElement('div')
+    newTaskWrapper.className = 'task-wrapper new-task-wrapper'
+    newTaskWrapper.innerHTML = `
+      <div class="task-item new-task-item" data-job-target="newTaskForm">
+        <input 
+          type="text" 
+          class="new-task-input" 
+          placeholder="New task..."
+          data-action="keydown.enter->job#saveNewTask keydown.escape->job#cancelNewTask blur->job#handleNewTaskBlur"
+          data-job-target="newTaskInput"
+        />
+      </div>
+    `
+    
+    // Append to tasks list
+    const tasksList = this.tasksListTarget
+    tasksList.appendChild(newTaskWrapper)
+    
+    // Focus the input
+    const input = newTaskWrapper.querySelector('input')
+    input.focus()
+    
+    // Store reference
+    this.currentNewTaskInput = input
+  }
+  
+  saveNewTask(event) {
+    event.preventDefault()
+    const input = event.target
+    const title = input.value.trim()
+    
+    if (!title) {
+      // If empty, just show another new task input
+      this.cancelNewTask()
+      this.showNewTaskInput()
+      return
+    }
+
+    // Save the task
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ task: { title: title } })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Remove the input wrapper
+          const wrapper = input.closest('.new-task-wrapper')
+          wrapper.remove()
+          
+          // Add the new task to the list
+          this.addTaskToList(data.task)
+          
+          // Show another new task input
+          this.showNewTaskInput()
+        } else {
+          alert(data.error || 'Failed to create task')
+        }
+      })
+      .catch(error => {
+        console.error('Error creating task:', error)
+        alert('Failed to create task')
+      })
+  }
+
+  cancelNewTask(event) {
+    const wrapper = document.querySelector('.new-task-wrapper')
+    if (wrapper) {
+      wrapper.remove()
+    }
+    
+    // Check if tasks list is empty
+    const remainingTasks = document.querySelectorAll('.task-item:not(.new-task-item)')
+    if (remainingTasks.length === 0) {
+      this.tasksListTarget.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Press ⌘N to add a task.</p></div>'
+    }
+  }
+  
+  handleNewTaskBlur(event) {
+    // Don't cancel if we're tabbing to save another task
+    if (event.relatedTarget && event.relatedTarget.classList.contains('new-task-input')) {
+      return
+    }
+    
+    // Small delay to allow for clicks on other elements
+    setTimeout(() => {
+      const input = event.target
+      if (input.value.trim() === '') {
+        this.cancelNewTask()
+      }
+    }, 200)
   }
   
   addSubtask(event) {
@@ -952,34 +1063,6 @@ export default class extends Controller {
           alert(data.error || 'Failed to create subtask')
         }
       })
-  }
-
-  createTask(event) {
-    event.preventDefault()
-    const title = this.newTaskInputTarget.value.trim()
-    
-    if (!title) return
-
-    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
-      },
-      body: JSON.stringify({ task: { title: title } })
-    }).then(response => response.json())
-      .then(data => {
-        // Add the new task to the list
-        this.addTaskToList(data.task)
-        // Reset form
-        this.newTaskInputTarget.value = ""
-        this.newTaskFormTarget.classList.add("hidden")
-      })
-  }
-
-  cancelNewTask(event) {
-    this.newTaskInputTarget.value = ""
-    this.newTaskFormTarget.classList.add("hidden")
   }
 
   addTaskToList(task) {
@@ -1343,5 +1426,118 @@ export default class extends Controller {
   
   hideAddSubtask(event) {
     // Handled by CSS now
+  }
+  
+  // New task creation methods
+  saveNewTask(event) {
+    event.preventDefault()
+    const input = event.currentTarget
+    const title = input.value.trim()
+    
+    if (!title) {
+      this.cancelNewTask(event)
+      return
+    }
+    
+    // Create the task
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ task: { title: title, status: 'new_task' } })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Insert the new task into the DOM
+          const wrapper = input.closest('.new-task-wrapper')
+          const tasksContainer = this.tasksListTarget
+          
+          // Create task element
+          const newTaskHtml = this.createTaskHtml(data.task)
+          const tempDiv = document.createElement('div')
+          tempDiv.innerHTML = newTaskHtml
+          const newTaskElement = tempDiv.firstChild
+          
+          // Insert before the new task input
+          tasksContainer.insertBefore(newTaskElement, wrapper)
+          
+          // Clear the input and show another new task input
+          input.value = ''
+          input.focus()
+        } else {
+          console.error('Failed to create task:', data.error)
+          alert('Failed to create task: ' + (data.error || 'Unknown error'))
+        }
+      })
+      .catch(error => {
+        console.error('Error creating task:', error)
+        alert('Failed to create task')
+      })
+  }
+  
+  cancelNewTask(event) {
+    const wrapper = event.currentTarget.closest('.new-task-wrapper')
+    if (wrapper) {
+      wrapper.remove()
+    }
+    
+    // Check if tasks list is now empty
+    const tasksList = this.tasksListTarget
+    if (tasksList.children.length === 0) {
+      tasksList.innerHTML = '<div class="empty-tasks">No tasks yet</div>'
+    }
+    
+    this.currentNewTaskInput = null
+  }
+  
+  handleNewTaskBlur(event) {
+    // Only cancel if the input is empty
+    if (!event.currentTarget.value.trim()) {
+      this.cancelNewTask(event)
+    }
+  }
+  
+  createTaskHtml(task) {
+    const statusEmojis = {
+      'new_task': '⚫',
+      'open': '⚫',
+      'in_progress': '🔵',
+      'paused': '⏸️',
+      'waiting': '⏳',
+      'successfully_completed': '☑️',
+      'cancelled': '🚫'
+    }
+    
+    const emoji = statusEmojis[task.status] || '⚫'
+    const isCompleted = task.status === 'successfully_completed'
+    
+    return `
+      <div class="task-wrapper">
+        <div class="task-item ${isCompleted ? 'completed' : ''}" 
+             draggable="true"
+             data-task-id="${task.id}" 
+             data-task-status="${task.status}" 
+             data-task-position="${task.position || 0}"
+             data-job-target="task"
+             data-action="click->job#handleTaskClick dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd">
+          <div class="task-status-container">
+            <button class="task-status-button" data-action="click->job#toggleTaskStatus">
+              <span>${emoji}</span>
+            </button>
+            <div class="task-status-dropdown hidden" data-job-target="taskStatusDropdown">
+              <!-- Status options will be populated when dropdown opens -->
+            </div>
+          </div>
+          <div class="task-content">
+            <div class="task-title">${task.title}</div>
+          </div>
+          <div class="task-right">
+            <!-- Task icons and time tracking go here -->
+          </div>
+        </div>
+      </div>
+    `
   }
 }
