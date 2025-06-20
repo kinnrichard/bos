@@ -63,6 +63,7 @@ module Views
                 },
                 title: "Click or press Enter to create a new task"
               ) do
+                span(class: "invisible-emoji") { "⚫" }
                 span(data: { job_target: "newTaskText" }) { "New task..." }
               end
             end

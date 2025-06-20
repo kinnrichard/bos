@@ -646,11 +646,19 @@ button.checkbox-circle {
   display: flex;
   align-items: center;
   padding: 12px 0;
-  padding-left: 32px; /* Align with task items */
+  padding-left: 16px; /* Reduced since we now have invisible emoji */
   color: #48484A;
   cursor: pointer;
   font-size: 17px;
   transition: color 0.2s;
+}
+
+.new-task-placeholder .invisible-emoji {
+  visibility: hidden;
+  margin-right: 12px; /* Same spacing as task status buttons */
+  font-size: 20px;
+  width: 20px;
+  display: inline-block;
 }
 
 .new-task-placeholder:hover {
