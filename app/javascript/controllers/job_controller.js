@@ -214,6 +214,15 @@ export default class extends Controller {
       return false
     }
     
+    // Escape key to deselect all tasks (only when not in input field)
+    if (event.key === 'Escape' && !isInputField) {
+      if (this.selectedTasks.size > 0) {
+        event.preventDefault()
+        this.clearSelection()
+        return false
+      }
+    }
+    
     // Return key to create new task (only when not in input field and no task selected)
     if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey && !event.altKey && !isInputField) {
       // Only create new task if no tasks are selected (otherwise Enter renames)
@@ -333,13 +342,23 @@ export default class extends Controller {
     
     // Handle input events
     input.addEventListener('keydown', (e) => this.handleRenameKeydown(e))
-    input.addEventListener('blur', () => this.finishRename())
+    input.addEventListener('blur', (e) => {
+      // Don't finish rename if we're handling a keydown event
+      if (!this.isHandlingRenameKeydown) {
+        this.finishRename()
+      }
+    })
   }
   
   handleRenameKeydown(event) {
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault()
+      this.isHandlingRenameKeydown = true
       this.finishRename()
+      // Reset flag after a short delay
+      setTimeout(() => {
+        this.isHandlingRenameKeydown = false
+      }, 100)
     } else if (event.key === 'Escape') {
       event.preventDefault()
       this.cancelRename()
@@ -348,6 +367,10 @@ export default class extends Controller {
   
   finishRename() {
     if (!this.isRenaming) return
+    
+    // Prevent duplicate processing
+    if (this.isProcessingRename) return
+    this.isProcessingRename = true
     
     const input = this.renamingTask.querySelector('.task-rename-input')
     const titleElement = this.renamingTask.querySelector('.task-title, .subtask-title')
@@ -360,6 +383,11 @@ export default class extends Controller {
     } else {
       this.cleanupRename()
     }
+    
+    // Reset flag after processing
+    setTimeout(() => {
+      this.isProcessingRename = false
+    }, 100)
   }
   
   cancelRename() {
@@ -391,14 +419,15 @@ export default class extends Controller {
       ? "Are you sure you want to delete this task?" 
       : "Are you sure you want to cancel this task?"
     
+    // Clean up rename state first to prevent any duplicate processing
+    this.cleanupRename()
+    
     if (confirm(message)) {
       if (hasDeletePermission) {
         this.deleteTaskWithoutConfirm(taskId)
       } else {
         this.cancelTask(taskId)
       }
-    } else {
-      this.cancelRename()
     }
   }
   
@@ -1562,7 +1591,7 @@ export default class extends Controller {
   
   handleArrowNavigation(direction) {
     // Get all visible tasks (including subtasks)
-    const allTasks = Array.from(document.querySelectorAll('.task-item:not(.new-task-item)'))
+    const allTasks = Array.from(document.querySelectorAll('.task-item:not(.new-task-item), .subtask-item'))
     
     if (allTasks.length === 0) return
     
