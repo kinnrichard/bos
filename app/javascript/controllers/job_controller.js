@@ -51,6 +51,10 @@ export default class extends Controller {
   }
 
   connect() {
+    // Clear any stale selections on connect
+    this.selectedTasks.clear()
+    this.lastClickedTask = null
+    
     // Start timers for task time tracking
     this.startTimers()
     
@@ -1789,6 +1793,15 @@ export default class extends Controller {
     
     if (allTasks.length === 0) return
     
+    // Clean up selectedTasks set - remove any tasks that are no longer in DOM
+    const tasksToRemove = []
+    this.selectedTasks.forEach(task => {
+      if (!document.body.contains(task)) {
+        tasksToRemove.push(task)
+      }
+    })
+    tasksToRemove.forEach(task => this.selectedTasks.delete(task))
+    
     // If no tasks are selected, select the first (for down) or last (for up) task
     if (this.selectedTasks.size === 0) {
       const taskToSelect = direction === 'down' ? allTasks[0] : allTasks[allTasks.length - 1]
@@ -1818,11 +1831,12 @@ export default class extends Controller {
         this.lastClickedTask = newTask
         newTask.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       }
+      return // Add explicit return to prevent falling through
     }
-    // If multiple tasks are selected, just clear and select the top/bottom one based on direction
-    else {
-      const selectedArray = Array.from(this.selectedTasks)
-      const indices = selectedArray.map(task => allTasks.indexOf(task)).sort((a, b) => a - b)
+    
+    // If multiple tasks are selected, move from the edge of selection
+    const selectedArray = Array.from(this.selectedTasks)
+    const indices = selectedArray.map(task => allTasks.indexOf(task)).sort((a, b) => a - b)
       
       let taskToSelect
       if (direction === 'up') {
