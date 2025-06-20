@@ -16,12 +16,20 @@ module Views
           div(class: "auth-container") do
             div(class: "auth-box") do
               div(class: "auth-logo") do
-                img(src: "/logo.png", alt: "Logo", class: "auth-logo-image")
+                img(src: asset_path("faultless_logo.png"), alt: "Logo", class: "auth-logo-image")
               end
               
               h1(class: "auth-title") { "Sign In" }
               
-              form(action: login_path, method: "post", class: "auth-form") do
+              # Display flash messages
+              if helpers.flash[:alert]
+                div(class: "alert alert-error") { helpers.flash[:alert] }
+              end
+              if helpers.flash[:notice]
+                div(class: "alert alert-success") { helpers.flash[:notice] }
+              end
+              
+              form(action: login_path, method: "post", class: "auth-form", data: { turbo: false }) do
                 input(type: "hidden", name: "authenticity_token", value: helpers.form_authenticity_token)
                 input(type: "hidden", name: "return_to", value: @return_to) if @return_to
                 
