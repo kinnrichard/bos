@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class FormErrors < Base
+  module Forms
+    class FormErrorsComponent < Components::Base
     def initialize(model:)
       @model = model
     end
@@ -9,7 +10,7 @@ module Components
     def view_template
       return unless @model && @model.errors.any?
 
-      div(class: "error-messages") do
+      div(class: "form-errors") do
         h3 { "Please correct the following errors:" }
         ul do
           @model.errors.full_messages.each do |message|
@@ -17,6 +18,7 @@ module Components
           end
         end
       end
+    end
     end
   end
 end

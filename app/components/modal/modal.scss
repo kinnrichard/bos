@@ -1,0 +1,213 @@
+/**
+ * Modal Components
+ * 
+ * Reusable modal/dialog components for confirmations, forms, etc.
+ * Currently includes DeleteConfirmationModal but can be extended.
+ * 
+ * Structure:
+ * .modal-backdrop (hidden by default)
+ *   .modal-overlay      - Dark backdrop, click to close
+ *   .modal-container    - Centered modal wrapper
+ *     .modal-content    - Modal structure
+ *       .modal-header   - Title and close button
+ *       .modal-body     - Main content
+ *       .modal-footer   - Action buttons
+ * 
+ * JavaScript:
+ * - Uses Stimulus controller for show/hide/confirm actions
+ * - Checkbox must be checked before delete button is enabled
+ * 
+ * @see app/components/modal/delete_confirmation_modal_component.rb
+ * @see app/javascript/controllers/delete_confirmation_controller.js
+ */
+
+// Modal backdrop (full screen overlay)
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  
+  &.hidden {
+    display: none;
+  }
+}
+
+// Dark overlay behind modal
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+// Modal container
+.modal-container {
+  position: relative;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  
+  // Slide in animation
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Modal content wrapper
+.modal-content {
+  display: flex;
+  flex-direction: column;
+}
+
+// Modal header
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-primary);
+  
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+}
+
+// Close button
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  
+  &:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+}
+
+// Modal body
+.modal-body {
+  padding: 20px;
+  
+  p {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+  }
+}
+
+// Checkbox container for confirmations
+.modal-checkbox-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+}
+
+.modal-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--accent-blue);
+}
+
+.modal-checkbox-label {
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+// Modal footer
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px;
+  border-top: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  
+  .button {
+    min-width: 100px;
+  }
+  
+  .button--danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 480px) {
+  .modal-container {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .modal-header {
+    padding: 16px;
+    
+    h2 {
+      font-size: 18px;
+    }
+  }
+  
+  .modal-body {
+    padding: 16px;
+    
+    p {
+      font-size: 14px;
+    }
+  }
+  
+  .modal-footer {
+    padding: 16px;
+    flex-direction: column-reverse;
+    
+    .button {
+      width: 100%;
+    }
+  }
+}

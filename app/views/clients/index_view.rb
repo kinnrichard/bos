@@ -34,7 +34,7 @@ module Views
             end
           else
             div(class: "empty-state-wrapper") do
-              render Components::GenericEmptyState.new(
+              render Components::EmptyState::GenericEmptyStateComponent.new(
                 title: "No clients yet",
                 message: "Start by searching for a client in the search bar above."
               )

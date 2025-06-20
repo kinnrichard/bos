@@ -2,7 +2,7 @@
 
 module Components
   module Jobs
-    class JobCardComponent < Base
+    class JobCardComponent < Components::Base
     include Phlex::Rails::Helpers::LinkTo
     include Phlex::Rails::Helpers::TimeAgoInWords
     include JobStatusHelper

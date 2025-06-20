@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class FormContainer < Base
+  module Forms
+    class FormContainerComponent < Components::Base
     def initialize(title: nil)
       @title = title
     end
@@ -14,6 +15,7 @@ module Components
 
         yield if block_given?
       end
+    end
     end
   end
 end

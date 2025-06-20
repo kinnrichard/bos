@@ -2,7 +2,7 @@
 
 module Components
   module Sidebar
-    class SidebarComponent < Base
+    class SidebarComponent < Components::Base
     
     def initialize(current_user:, active_section: nil, client: nil)
       @current_user = current_user

@@ -1,0 +1,118 @@
+/**
+ * Device Components Styles
+ * 
+ * Styles for device-related UI components including:
+ * - Device list views
+ * - Device detail views
+ * - Device forms and metadata
+ * 
+ * Structure:
+ * - .devices-list - Container for device items
+ * - .device-item - Individual device row
+ * - .device-detail-container - Device detail page wrapper
+ * - .device-meta - Device metadata display
+ * 
+ * @component Devices
+ */
+
+/* Device List Styles */
+.devices-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--bg-secondary);
+}
+
+.device-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.device-item:last-child {
+  border-bottom: none;
+}
+
+.device-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.device-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.device-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.device-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meta-icon {
+  font-size: 16px;
+}
+
+.meta-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* Device Detail Styles */
+.device-detail-container {
+  padding: 40px;
+}
+
+.device-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40px;
+}
+
+.device-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.device-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.device-info-section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.device-info-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 20px 0;
+}
+
+.text-link {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}

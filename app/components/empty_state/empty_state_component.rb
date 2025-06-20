@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class EmptyState < Base
+  module EmptyState
+    class EmptyStateComponent < Components::Base
     def initialize(user:)
       @user = user
     end
@@ -41,6 +42,7 @@ module Components
       when 12..17 then "Good afternoon"
       else "Good evening"
       end
+    end
     end
   end
 end

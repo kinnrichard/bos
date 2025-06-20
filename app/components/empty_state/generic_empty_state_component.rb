@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class GenericEmptyState < Base
+  module EmptyState
+    class GenericEmptyStateComponent < Components::Base
     def initialize(title:, message: nil, action_text: nil, action_path: nil, icon: nil)
       @title = title
       @message = message
@@ -23,9 +24,10 @@ module Components
         end
 
         if @action_text && @action_path
-          link_to(@action_text, @action_path, class: "btn btn-primary")
+          link_to(@action_text, @action_path, class: "button button--primary")
         end
       end
+    end
     end
   end
 end

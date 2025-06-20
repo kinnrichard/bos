@@ -1,0 +1,14 @@
+/**
+ * Generic Layer Index
+ * 
+ * This layer contains ground-zero styles like CSS resets, 
+ * normalize.css, and base box-model rules.
+ * 
+ * These styles form the foundation of our CSS architecture
+ * and should not include any cosmetic styling.
+ * 
+ * @layer Generic
+ */
+
+@forward 'reset';
+@forward 'base';

@@ -14,7 +14,7 @@ module Views
           active_section: :home
         ) do
           div(class: "empty-state-wrapper") do
-            render Components::EmptyState.new(user: @current_user)
+            render Components::EmptyState::EmptyStateComponent.new(user: @current_user)
           end
         end
       end

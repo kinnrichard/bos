@@ -17,7 +17,7 @@ module Views
           client: @client
         ) do
           div(class: "jobs-container") do
-            render Components::PageHeader.new(
+            render Components::PageHeader::PageHeaderComponent.new(
               title: "Jobs",
               action_text: "New Job",
               action_path: new_client_job_path(@client)
@@ -41,7 +41,7 @@ module Views
       
       def empty_state
         div(class: "empty-state-wrapper") do
-          render Components::GenericEmptyState.new(
+          render Components::EmptyState::GenericEmptyStateComponent.new(
             title: "No jobs yet",
             message: "Create your first job to get started.",
             action_text: "New Job",

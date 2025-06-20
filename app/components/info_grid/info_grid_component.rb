@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class InfoGrid < Base
+  module InfoGrid
+    class InfoGridComponent < Components::Base
     def initialize(items:)
       @items = items
     end
@@ -21,6 +22,7 @@ module Components
           end
         end
       end
+    end
     end
   end
 end

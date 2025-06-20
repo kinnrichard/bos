@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class FormActions < Base
+  module Forms
+    class FormActionsComponent < Components::Base
     include Phlex::Rails::Helpers::ButtonTag
     def initialize(cancel_path:, submit_text: "Save", cancel_text: "Cancel", additional_actions: nil)
       @cancel_path = cancel_path
@@ -12,14 +13,15 @@ module Components
 
     def view_template
       div(class: "form-actions") do
-        link_to(@cancel_text, @cancel_path, class: "btn btn-secondary", style: "margin-right: auto;")
+        link_to(@cancel_text, @cancel_path, class: "button button--secondary", style: "margin-right: auto;")
 
         if @additional_actions
           @additional_actions.call
         end
 
-        button_tag(@submit_text, type: "submit", class: "btn btn-primary")
+        button_tag(@submit_text, type: "submit", class: "button button--primary")
       end
+    end
     end
   end
 end

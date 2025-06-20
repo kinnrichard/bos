@@ -24,7 +24,7 @@ class Views::Base < Components::Base
   def delete_form_with_confirmation(url:, message: nil, checkbox_label: nil, &block)
     div(data: { controller: "delete-confirmation" }) do
       # Render the modal
-      render Components::DeleteConfirmationModal.new(
+      render Components::Modal::DeleteConfirmationModalComponent.new(
         message: message,
         checkbox_label: checkbox_label
       )

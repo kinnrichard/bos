@@ -1,0 +1,211 @@
+/**
+ * Form Input Component
+ * 
+ * A reusable form input component that handles various input types,
+ * labels, validation states, and helper text.
+ * 
+ * Supports:
+ * - Multiple input types (text, email, password, number, tel, url, search, textarea)
+ * - Labels with required indicators
+ * - Error states and messages
+ * - Hint/helper text
+ * - Icons
+ * - Multiple sizes
+ * 
+ * Structure:
+ * .form-input
+ *   .form-input__label
+ *   .form-input__wrapper
+ *     .form-input__icon (optional)
+ *     .form-input__field
+ *   .form-input__error (optional)
+ *   .form-input__hint (optional)
+ * 
+ * @see app/components/ui/form_input_component.rb
+ */
+
+.form-input {
+  margin-bottom: 20px;
+  
+  // Label
+  &__label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  
+  &__required {
+    color: var(--accent-red, #FF3B30);
+  }
+  
+  // Input wrapper (for icon support)
+  &__wrapper {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+  }
+  
+  // Icon
+  &__icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    font-size: 16px;
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  // Input field
+  &__field {
+    flex: 1;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.15s ease;
+    width: 100%;
+    
+    // Placeholder
+    &::placeholder {
+      color: var(--text-tertiary);
+    }
+    
+    // Focus state
+    &:focus {
+      border-color: var(--accent-blue);
+      background-color: var(--bg-secondary);
+    }
+    
+    // Disabled state
+    &:disabled {
+      background-color: var(--bg-tertiary);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    
+    // Readonly state
+    &:read-only {
+      background-color: var(--bg-tertiary);
+      cursor: default;
+    }
+  }
+  
+  // Error message
+  &__error {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--accent-red, #FF3B30);
+  }
+  
+  // Hint text
+  &__hint {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+  
+  // Size variants
+  &--small {
+    .form-input__field {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+    
+    &.form-input--with-icon .form-input__field {
+      padding-left: 32px;
+    }
+  }
+  
+  &--medium {
+    .form-input__field {
+      padding: 10px 16px;
+      font-size: 14px;
+    }
+    
+    &.form-input--with-icon .form-input__field {
+      padding-left: 40px;
+    }
+  }
+  
+  &--large {
+    .form-input__field {
+      padding: 14px 20px;
+      font-size: 16px;
+    }
+    
+    &.form-input--with-icon .form-input__field {
+      padding-left: 48px;
+    }
+  }
+  
+  // Error state
+  &--error {
+    .form-input__field {
+      border-color: var(--accent-red, #FF3B30);
+      
+      &:focus {
+        border-color: var(--accent-red, #FF3B30);
+      }
+    }
+  }
+  
+  // With icon modifier
+  &--with-icon {
+    .form-input__wrapper {
+      position: relative;
+    }
+  }
+  
+  // Full width modifier
+  &--full-width {
+    width: 100%;
+    
+    .form-input__field {
+      width: 100%;
+    }
+  }
+  
+  // Disabled modifier
+  &--disabled {
+    .form-input__label {
+      opacity: 0.6;
+    }
+  }
+}
+
+// Textarea specific styles
+textarea.form-input__field {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.5;
+}
+
+// Search input specific styles
+input[type="search"].form-input__field {
+  -webkit-appearance: none;
+  appearance: none;
+  
+  &::-webkit-search-decoration,
+  &::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+// Number input - hide spinners
+input[type="number"].form-input__field {
+  -moz-appearance: textfield;
+  
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}

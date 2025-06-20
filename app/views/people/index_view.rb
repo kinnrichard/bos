@@ -18,7 +18,7 @@ module Views
           active_section: :people,
           client: @client
         ) do
-          render Components::PageHeader.new(
+          render Components::PageHeader::PageHeaderComponent.new(
             title: "People",
             action_text: "Add Person",
             action_path: new_client_person_path(@client)
@@ -49,7 +49,7 @@ module Views
             end
           else
             div(class: "empty-state-wrapper") do
-              render Components::GenericEmptyState.new(
+              render Components::EmptyState::GenericEmptyStateComponent.new(
                 title: "No people added yet",
                 message: "Add family members, employees, or other contacts at #{@client.name}."
               )

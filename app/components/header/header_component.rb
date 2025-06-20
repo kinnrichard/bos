@@ -2,7 +2,7 @@
 
 module Components
   module Header
-    class HeaderComponent < Base
+    class HeaderComponent < Components::Base
     def initialize(current_user:, toolbar_items: nil)
       @current_user = current_user
       @toolbar_items = toolbar_items

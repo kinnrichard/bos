@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class DeleteConfirmationModal < Base
+  module Modal
+    class DeleteConfirmationModalComponent < Components::Base
     def initialize(message: nil, checkbox_label: nil)
       @message = message || "Are you sure you want to delete this item? This action cannot be undone."
       @checkbox_label = checkbox_label || "I understand this action cannot be undone"
@@ -56,13 +57,13 @@ module Components
             div(class: "modal-footer") do
               button(
                 type: "button",
-                class: "btn btn-secondary",
+                class: "button button--secondary",
                 data: { action: "click->delete-confirmation#close" }
               ) { "Cancel" }
               
               button(
                 type: "button",
-                class: "btn btn-danger",
+                class: "button button--danger",
                 disabled: true,
                 data: {
                   delete_confirmation_target: "deleteButton",
@@ -73,6 +74,7 @@ module Components
           end
         end
       end
+    end
     end
   end
 end

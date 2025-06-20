@@ -16,7 +16,7 @@ module Views
           active_section: :devices,
           client: @client
         ) do
-          render Components::PageHeader.new(
+          render Components::PageHeader::PageHeaderComponent.new(
             title: "Devices",
             action_text: "Add Device", 
             action_path: new_client_device_path(@client)
@@ -54,7 +54,7 @@ module Views
       
       def empty_state
         div(class: "empty-state-wrapper") do
-          render Components::GenericEmptyState.new(
+          render Components::EmptyState::GenericEmptyStateComponent.new(
             title: "No devices yet",
             message: "Add your first device to get started.",
             action_text: "Add Device",

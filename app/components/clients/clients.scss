@@ -1,0 +1,116 @@
+/**
+ * Client Components Styles
+ * 
+ * Styles for client-related UI components including:
+ * - Client list views
+ * - Client detail views
+ * - Client forms
+ * 
+ * Structure:
+ * - .clients-header - Page header for client list
+ * - .clients-list - Container for client items
+ * - .client-item - Individual client row
+ * - .client-detail-container - Client detail page wrapper
+ * 
+ * @component Clients
+ */
+
+/* Client List Styles */
+.clients-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.clients-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.clients-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--bg-secondary);
+}
+
+.client-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.client-item:last-child {
+  border-bottom: none;
+}
+
+.client-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.client-type-emoji {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.client-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Client Detail Styles */
+.client-detail-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+.client-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40px;
+}
+
+.client-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.client-type-badge {
+  display: inline-block;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background-color: var(--bg-tertiary);
+}
+
+.client-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.client-info-section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.client-info-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}

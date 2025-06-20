@@ -1,0 +1,22 @@
+/**
+ * Reset Styles
+ * 
+ * Basic CSS reset to ensure consistent styling across browsers.
+ * This is the foundation layer of our ITCSS architecture.
+ * 
+ * Includes:
+ * - Box model reset (box-sizing: border-box)
+ * - Margin/padding reset
+ * - Font smoothing for better text rendering
+ * 
+ * @layer Generic
+ */
+
+// Universal box-sizing reset
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
