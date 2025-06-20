@@ -22,7 +22,7 @@ module Views
               h1(class: "auth-title") { "Sign In" }
               
               form(action: login_path, method: "post", class: "auth-form") do
-                input(type: "hidden", name: "authenticity_token", value: form_authenticity_token)
+                input(type: "hidden", name: "authenticity_token", value: helpers.form_authenticity_token)
                 input(type: "hidden", name: "return_to", value: @return_to) if @return_to
                 
                 div(class: "form-group") do

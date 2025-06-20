@@ -14,6 +14,9 @@ Rails.application.routes.draw do
   post 'login', to: 'sessions#create'
   delete 'logout', to: 'sessions#destroy', as: :logout
   
+  # User management routes (superadmin only)
+  resources :users
+  
   # Client routes
   resources :clients do
     collection do

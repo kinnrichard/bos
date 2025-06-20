@@ -1,5 +1,5 @@
 class User < ApplicationRecord
-  has_secure_password
+  has_secure_password validations: false
   
   has_many :activity_logs
   has_many :assigned_jobs, class_name: 'Job', foreign_key: 'assigned_to_id'
