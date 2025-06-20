@@ -211,6 +211,15 @@ export default class extends Controller {
       }
     }
     
+    // Delete selected tasks
+    if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedTasks.size > 0 && !this.isRenaming) {
+      const activeElement = document.activeElement
+      if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+        event.preventDefault()
+        this.deleteSelectedTasks()
+      }
+    }
+    
     // Enter to rename selected task
     if (event.key === 'Enter' && this.selectedTasks.size === 1 && !this.isRenaming) {
       event.preventDefault()
@@ -423,43 +432,92 @@ export default class extends Controller {
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
       method: "DELETE",
       headers: {
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content,
+        "Accept": "application/json"
       }
-    }).then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          // Find the task wrapper to remove (handles both tasks and subtasks)
-          const wrapper = taskElement.closest('.task-wrapper') || taskElement
+    }).then(response => {
+      // Check if response is ok (2xx status)
+      if (response.ok || response.status === 204) {
+        // Task deleted successfully (204 No Content is common for DELETE)
+        // Find the task wrapper to remove (handles both tasks and subtasks)
+        const wrapper = taskElement.closest('.task-wrapper') || taskElement
+        
+        // Remove from selection if selected
+        if (this.selectedTasks.has(taskElement)) {
+          this.selectedTasks.delete(taskElement)
+        }
+        
+        // Animate removal
+        wrapper.style.transition = 'opacity 0.2s ease-out'
+        wrapper.style.opacity = '0'
+        
+        setTimeout(() => {
+          wrapper.remove()
           
-          // Remove from selection if selected
-          if (this.selectedTasks.has(taskElement)) {
-            this.selectedTasks.delete(taskElement)
-          }
-          
-          // Animate removal
-          wrapper.style.transition = 'opacity 0.2s ease-out'
-          wrapper.style.opacity = '0'
-          
-          setTimeout(() => {
-            wrapper.remove()
-            
-            // Check if tasks list is now empty
-            const remainingTasks = document.querySelectorAll('.task-item')
-            if (remainingTasks.length === 0) {
-              const tasksList = document.querySelector('[data-job-target="tasksList"]')
-              if (tasksList) {
-                tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click + to add a task.</p></div>'
-              }
+          // Check if tasks list is now empty
+          const remainingTasks = document.querySelectorAll('.task-item')
+          if (remainingTasks.length === 0) {
+            const tasksList = document.querySelector('[data-job-target="tasksList"]')
+            if (tasksList) {
+              tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click + to add a task.</p></div>'
             }
-          }, 200)
+          }
+        }, 200)
+      } else if (response.status === 404) {
+        // Task might already be deleted, remove from UI anyway
+        console.warn('Task not found on server, removing from UI')
+        const wrapper = taskElement.closest('.task-wrapper') || taskElement
+        if (wrapper) {
+          wrapper.remove()
+        }
+      } else {
+        // Try to parse JSON error message if available
+        response.text().then(text => {
+          try {
+            const data = JSON.parse(text)
+            alert(data.error || 'Failed to delete task')
+          } catch (e) {
+            alert('Failed to delete task')
+          }
+        })
+      }
+    })
+    .catch(error => {
+      console.error('Error deleting task:', error)
+      alert('Failed to delete task')
+    })
+  }
+  
+  deleteSelectedTasks() {
+    const count = this.selectedTasks.size
+    if (count === 0) return
+    
+    const hasDeletePermission = this.checkDeletePermission()
+    let message
+    
+    if (hasDeletePermission) {
+      message = count === 1 
+        ? "Are you sure you want to delete this task?" 
+        : `Are you sure you want to delete ${count} tasks?`
+    } else {
+      message = count === 1
+        ? "Are you sure you want to cancel this task?"
+        : `Are you sure you want to cancel ${count} tasks?`
+    }
+    
+    if (confirm(message)) {
+      // Convert Set to Array to avoid modification during iteration
+      const tasksToProcess = Array.from(this.selectedTasks)
+      
+      tasksToProcess.forEach(taskElement => {
+        const taskId = taskElement.dataset.taskId
+        if (hasDeletePermission) {
+          this.deleteTaskWithoutConfirm(taskId)
         } else {
-          alert(data.error || 'Failed to delete task')
+          this.cancelTask(taskId)
         }
       })
-      .catch(error => {
-        console.error('Error deleting task:', error)
-        alert('Failed to delete task')
-      })
+    }
   }
   
   cancelTask(taskId) {
