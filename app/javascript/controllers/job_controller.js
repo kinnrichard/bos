@@ -1793,6 +1793,9 @@ export default class extends Controller {
     
     if (allTasks.length === 0) return
     
+    // Debug logging
+    console.log('Arrow navigation:', direction, 'Selected tasks:', this.selectedTasks.size, 'Tasks:', Array.from(this.selectedTasks))
+    
     // Clean up selectedTasks set - remove any tasks that are no longer in DOM
     const tasksToRemove = []
     this.selectedTasks.forEach(task => {
@@ -1801,6 +1804,14 @@ export default class extends Controller {
       }
     })
     tasksToRemove.forEach(task => this.selectedTasks.delete(task))
+    
+    // Get currently selected tasks that have the selected class
+    const actuallySelected = allTasks.filter(task => task.classList.contains('selected'))
+    console.log('Actually selected (by class):', actuallySelected.length, actuallySelected)
+    
+    // Sync our set with what's actually selected
+    this.selectedTasks.clear()
+    actuallySelected.forEach(task => this.selectedTasks.add(task))
     
     // If no tasks are selected, select the first (for down) or last (for up) task
     if (this.selectedTasks.size === 0) {
