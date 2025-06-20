@@ -1,0 +1,32 @@
+/**
+ * Jobs List Component
+ * 
+ * Container styles for the jobs index page.
+ * Displays a list of job cards with a page header.
+ * 
+ * Structure:
+ * .jobs-container
+ *   PageHeader          - Title and "New Job" button
+ *   .jobs-list         - Vertical list of job cards
+ *     JobCardComponent - Individual job card
+ * 
+ * Layout:
+ * - Uses flexbox for vertical stacking
+ * - 16px gap between job cards
+ * - Inherits padding from parent content area
+ * 
+ * @see app/views/jobs/index_view.rb
+ * @see app/components/jobs/job_card_component.rb
+ */
+
+// Main container for jobs page
+.jobs-container {
+  // No specific styles needed, inherits from parent
+}
+
+// Jobs list container
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

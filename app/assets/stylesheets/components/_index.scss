@@ -10,9 +10,14 @@
 
 // Base components (no dependencies)
 @use '../../../components/sidebar/sidebar';
-// @use '../../../components/header/header';
+@use '../../../components/header/header';
 // @use '../../../components/empty_state/empty_state';
 // @use '../../../components/page_header/page_header';
+
+// Jobs components
+@use '../../../components/jobs/job_card';
+@use '../../../components/jobs/job_view';
+@use '../../../components/jobs/jobs_list';
 
 // Form components
 // @use '../../../components/form_container/form_container';

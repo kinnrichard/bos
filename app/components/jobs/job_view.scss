@@ -1,0 +1,673 @@
+/**
+ * Job View Component
+ * 
+ * The main job detail page showing a single job with its tasks.
+ * Displays the job title, status controls, and task management interface.
+ * 
+ * Structure:
+ * .job-view
+ *   .job-title-section     - Large editable job title
+ *   .tasks-container       - Scrollable task list area
+ *     .tasks-list         - Container for all tasks
+ *       .task-wrapper     - Individual task with subtasks
+ *       .new-task-wrapper - Placeholder for adding new tasks
+ *   .job-popover          - Status/assignment dropdown (positioned absolutely)
+ * 
+ * Features:
+ * - Inline editing of job title (contenteditable)
+ * - Task status management with dropdown
+ * - Drag and drop task reordering
+ * - Subtask support
+ * - Time tracking display
+ * - Assignee management
+ * 
+ * States:
+ * - Task states: new, in_progress, paused, completed, cancelled
+ * - Job priorities: critical, high, normal, low, proactive_followup
+ * 
+ * Related Components:
+ * - HeaderJobController: Manages the status bubble in toolbar
+ * - JobController: Handles all job and task interactions
+ * 
+ * @see app/views/jobs/show_view.rb
+ * @see app/javascript/controllers/job_controller.js
+ */
+
+// Main job view container
+.job-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #000000;
+}
+
+// Job title section
+.job-title-section {
+  flex: 0 0 auto; // Don't grow, prevents huge gap issue
+}
+
+// Large editable job title
+.job-title {
+  font-size: 56px;
+  font-weight: 600;
+  color: #0A84FF !important;
+  margin: 0;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  transition: opacity 0.2s;
+  outline: none;
+  display: inline-block;
+  cursor: text;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  -webkit-text-fill-color: #0A84FF !important;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+  
+  &:focus {
+    opacity: 1;
+    text-decoration: underline;
+    text-decoration-color: rgba(10, 132, 255, 0.3);
+    text-underline-offset: 4px;
+  }
+  
+  // Ensure contenteditable stays blue
+  &[contenteditable="true"] {
+    color: #0A84FF !important;
+    -webkit-text-fill-color: #0A84FF !important;
+  }
+}
+
+// Force blue color on h1 title
+h1.job-title {
+  color: #0A84FF !important;
+  -webkit-text-fill-color: #0A84FF !important;
+}
+
+// Tasks container
+.tasks-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  background-color: #000000;
+}
+
+.tasks-list {
+  max-width: 100%;
+}
+
+// Task wrapper for drag and drop
+.task-wrapper {
+  // No styles needed, just a container
+}
+
+// Task item
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 0 !important;
+  padding-top: 8px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: none !important;
+  background-color: transparent !important;
+  gap: 12px;
+  transition: opacity 0.2s;
+  animation: fadeIn 0.3s ease-out;
+  
+  &.completed {
+    opacity: 0.5;
+    
+    .task-title {
+      text-decoration: line-through;
+      color: #8E8E93;
+    }
+  }
+  
+  // New task placeholder
+  &.new-task {
+    border-bottom: none;
+    margin-bottom: 8px;
+  }
+}
+
+// Override task-item styles with higher specificity
+.job-view .task-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  padding: 12px 0 !important;
+  padding-top: 8px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: none !important;
+  background-color: transparent !important;
+  gap: 12px !important;
+}
+
+// New task wrapper
+.new-task-wrapper {
+  .task-item {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+  
+  .task-status-button {
+    pointer-events: none;
+    cursor: default;
+    
+    span {
+      opacity: 0.5 !important;
+      visibility: visible !important;
+    }
+  }
+  
+  .task-title {
+    color: #48484A !important;
+  }
+}
+
+// Task status container
+.task-status-container {
+  flex-shrink: 0;
+  padding-top: 2px;
+  position: relative;
+}
+
+// Task status button
+.task-status-button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+  
+  &:disabled {
+    cursor: default;
+  }
+}
+
+// Task content
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title {
+  font-size: 17px;
+  color: #FFFFFF;
+  margin-bottom: 2px;
+  word-wrap: break-word;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+// Task right section
+.task-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+// Time tracking display
+.task-time-tracking {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  
+  .time-value {
+    font-weight: 500;
+  }
+}
+
+// Task icons
+.task-icon {
+  font-size: 18px;
+  color: #8E8E93;
+  cursor: pointer;
+  
+  &:hover {
+    color: #AEAEB2;
+  }
+  
+  &.info-icon {
+    color: #0A84FF;
+    font-size: 20px;
+  }
+}
+
+// Task assignee icon
+.task-assignee-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .technician-initials {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+}
+
+// Add subtask button
+.add-subtask-button {
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: var(--bg-tertiary);
+  border: none;
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .task-item:hover & {
+    opacity: 1;
+  }
+  
+  &:hover {
+    background-color: var(--accent-blue);
+    color: white;
+  }
+}
+
+// Subtasks container
+.subtasks-container {
+  margin-left: 32px; // Indent subtasks
+}
+
+// Subtask item
+.subtask-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 0;
+  gap: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+  
+  &.completed {
+    opacity: 0.5;
+    
+    .subtask-title {
+      text-decoration: line-through;
+      color: #8E8E93;
+    }
+  }
+}
+
+.subtask-content {
+  flex: 1;
+}
+
+.subtask-title {
+  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.subtask-time-tracking {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  
+  .time-icon {
+    font-size: 14px;
+  }
+}
+
+.subtask-status-button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+// Task status dropdown
+.task-status-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  min-width: 200px;
+  
+  &.hidden {
+    display: none;
+  }
+}
+
+.task-status-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  font-size: 14px;
+  
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+  
+  &.active {
+    background-color: var(--accent-blue);
+    color: white;
+  }
+  
+  .status-emoji {
+    font-size: 14px;
+    width: 20px;
+    text-align: center;
+  }
+}
+
+// New task input
+.new-task-placeholder .new-task-input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 400;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  font-family: inherit;
+  
+  &::placeholder {
+    color: #48484A;
+  }
+}
+
+// Empty state
+.empty-tasks {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-tertiary);
+}
+
+// Job popover (absolute positioned)
+.job-popover {
+  position: absolute;
+  top: 100px;
+  right: 40px;
+  width: 320px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: popoverIn 0.2s ease-out;
+  overflow: visible;
+  
+  &.hidden {
+    display: none;
+  }
+}
+
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popover-arrow {
+  position: absolute;
+  top: -8px;
+  right: 120px;
+  width: 16px;
+  height: 16px;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  border-left: 1px solid var(--border-primary);
+  transform: rotate(45deg);
+}
+
+.popover-content {
+  padding: 16px;
+  max-height: 600px;
+  overflow-y: visible;
+  overflow-x: visible;
+}
+
+.popover-section {
+  margin-bottom: 20px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+  
+  h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+  
+  h4 {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin: 12px 0 8px;
+  }
+}
+
+// Status and priority options
+.status-option,
+.priority-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  text-align: left;
+  font-size: 15px;
+  width: 100%;
+  
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+  
+  &.active {
+    background-color: var(--accent-blue);
+    color: #FFF;
+  }
+}
+
+.status-emoji,
+.priority-emoji {
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+}
+
+// Assignee option
+.assignee-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  text-align: left;
+  font-size: 15px;
+  width: 100%;
+  
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+  
+  &.active {
+    background-color: var(--accent-blue);
+    color: #FFF;
+  }
+  
+  .checkmark {
+    margin-left: auto;
+    font-size: 14px;
+  }
+}
+
+// Job description
+.job-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+// Related people tags
+.person-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: var(--bg-tertiary);
+  border-radius: 16px;
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+// Popover actions section
+.popover-actions {
+  border-top: 1px solid var(--border-primary);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+// Delete button
+.btn-danger {
+  background-color: #FF3B30;
+  color: #FFF;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  
+  &:hover {
+    background-color: #FF453A;
+  }
+}
+
+// Status bubble in toolbar
+.status-bubble {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background-color: #2C2C2E;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: #3A3A3C;
+  }
+}
+
+.bubble-icon {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Technician initials badge
+.technician-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #FF9500;
+  color: #000;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Utility classes
+.hidden {
+  display: none !important;
+}

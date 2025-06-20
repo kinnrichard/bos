@@ -23,6 +23,7 @@
 
 // Import existing styles temporarily
 // These will be refactored into the appropriate layers
+@use 'job_view';
 
 // ===== TEMPORARY: Existing styles to be refactored =====
 // TODO: Move these into appropriate ITCSS layers
@@ -900,6 +901,101 @@ body {
   text-decoration: underline;
 }
 
+/* Jobs styles */
+.jobs-container {
+}
+
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.job-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.job-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.job-card-link {
+  display: block;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.job-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.job-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.job-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.job-status.open { color: #00A3FF; }
+.job-status.in_progress { color: #32D74B; }
+.job-status.paused { color: #FFD60A; }
+.job-status.waiting_for_customer { color: #FF9F0A; }
+.job-status.waiting_for_scheduled_appointment { color: #BF5AF2; }
+.job-status.successfully_completed { color: #32D74B; }
+.job-status.cancelled { color: #FF453A; }
+
+.job-priority.critical { color: #FF453A; }
+.job-priority.high { color: #FF9F0A; }
+.job-priority.normal { color: var(--text-secondary); }
+.job-priority.low { color: var(--text-tertiary); }
+
+.job-tasks-summary {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.job-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.job-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* Job detail styles */
+.job-detail-container {
+  padding: 40px;
+}
 
 .job-status-priority {
   display: flex;
@@ -2067,6 +2163,101 @@ h1.job-title,
 
 .button-secondary:hover {
   background-color: var(--bg-tertiary);
+}
+
+/* Job card inline styles for listing */
+.job-card-inline {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.job-card-inline:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-blue);
+}
+
+.job-status-emoji {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.job-name-section {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  overflow: hidden;
+}
+
+.client-name-prefix {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
+.job-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.job-right-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.job-priority-emoji {
+  font-size: 18px;
+}
+
+.technician-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background-color: var(--bg-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.job-card-header {
+  margin-bottom: 12px;
+}
+
+.job-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.job-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.client-name {
+  color: var(--accent-blue);
 }
 
 .separator {

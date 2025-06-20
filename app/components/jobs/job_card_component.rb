@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class JobCard < Base
+  module Jobs
+    class JobCardComponent < Base
     include Phlex::Rails::Helpers::LinkTo
     include Phlex::Rails::Helpers::TimeAgoInWords
     include JobStatusHelper
@@ -95,6 +96,7 @@ module Components
       when 'proactive_followup' then 'Proactive Followup'
       else priority.humanize
       end
+    end
     end
   end
 end

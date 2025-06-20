@@ -26,7 +26,7 @@ module Views
             if @jobs.any?
               div(class: "jobs-list") do
                 @jobs.each do |job|
-                  render Components::JobCard.new(job: job, show_client: false, show_description: true, client: @client)
+                  render Components::Jobs::JobCardComponent.new(job: job, show_client: false, show_description: true, client: @client)
                 end
               end
             else

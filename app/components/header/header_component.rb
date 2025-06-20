@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class Header < Base
+  module Header
+    class HeaderComponent < Base
     def initialize(current_user:, toolbar_items: nil)
       @current_user = current_user
       @toolbar_items = toolbar_items
@@ -122,6 +123,7 @@ module Components
           end
         end
       end
+    end
     end
   end
 end

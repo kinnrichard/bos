@@ -1,0 +1,248 @@
+/**
+ * COMPONENT: Header (Toolbar)
+ * PURPOSE: Top navigation bar with search, user menu, and custom toolbar items
+ * VARIANTS: Default, Mobile (reduced height)
+ * RESPONSIVE: Adapts spacing and sizes for mobile viewports
+ * 
+ * STRUCTURE:
+ * - Left section: Sidebar toggle + custom toolbar items
+ * - Right section: Search, add button, user menu
+ * 
+ * FEATURES:
+ * - Search input with icon
+ * - Icon buttons with hover states
+ * - User menu dropdown
+ * - Flexible toolbar item insertion
+ * 
+ * DEPENDENCIES:
+ * - Design tokens (colors, spacing)
+ * - Stimulus controllers: search_controller.js, dropdown_controller.js, popover_controller.js
+ * - header_job_controller.js (for job-specific actions)
+ */
+
+/* Main header container */
+.header {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  gap: 12px;
+}
+
+/* Header sections */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Icon buttons (sidebar toggle, add button, etc.) */
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: all 0.15s ease;
+  font-size: 18px;
+  
+  &:hover {
+    background-color: var(--bg-tertiary);
+    border-color: #48484A;
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Search container and input */
+.search-container {
+  position: relative;
+  width: 240px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20enable-background%3D%22new%200%200%2025%2025%22%20viewBox%3D%220%200%2025%2025%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22rgb%28134%2C134%2C139%29%22%20style%3D%22%22%3E%3Cpath%20d%3D%22m0%200h25v25h-25z%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22m20.7443%2019.542-4.5767-4.4741c-.0197-.0192-.0453-.0261-.0663-.043.8847-1.1525%201.4169-2.5898%201.4169-4.1523%200-3.7686-3.0625-6.834-6.8267-6.834s-6.8267%203.0654-6.8267%206.834%203.0625%206.8345%206.8267%206.8345c1.6033%200%203.0762-.5599%204.2425-1.4897.0176.0209.0251.0468.0451.0663l4.5767%204.4741c.1655.1616.3799.2422.5942.2422.2207%200%20.4414-.0854.6079-.2559.3282-.3359.3218-.874-.0136-1.2021zm-15.7798-8.6694c0-3.1616%202.5693-5.7344%205.7271-5.7344s5.727%202.5728%205.727%205.7344c0%203.1621-2.5693%205.7349-5.727%205.7349s-5.7271-2.5728-5.7271-5.7349z%22%2F%3E%3C%2Fsvg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 6px 0 30px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.15s ease;
+  
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+  
+  &:focus {
+    border-color: var(--accent-blue);
+    border-width: 2px;
+  }
+}
+
+/* User menu styles */
+.user-menu {
+  position: relative;
+  margin-left: 16px;
+}
+
+.user-menu-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.user-initials {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background-color: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: background-color 0.15s ease;
+}
+
+.user-menu-button:hover .user-initials {
+  background-color: var(--accent-blue);
+  color: white;
+}
+
+/* User dropdown menu */
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 240px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.dropdown-header {
+  padding: 16px;
+}
+
+.user-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.user-email {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.user-role {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--border-primary);
+  margin: 0;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 1024px) {
+  .search-container {
+    width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+    gap: 8px;
+  }
+  
+  .header-left {
+    flex: 1;
+  }
+  
+  .header-right {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    height: 50px;
+  }
+  
+  .search-container {
+    width: 140px;
+  }
+  
+  .search-input {
+    font-size: 12px;
+    height: 28px;
+  }
+  
+  .btn-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+}

@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module Components
-  class Sidebar < Base
+  module Sidebar
+    class SidebarComponent < Base
     
     def initialize(current_user:, active_section: nil, client: nil)
       @current_user = current_user
@@ -131,6 +132,7 @@ module Components
           span(class: "sidebar-item-badge") { badge.to_s }
         end
       end
+    end
     end
   end
 end

@@ -1,0 +1,105 @@
+/**
+ * Job Card Component
+ * 
+ * A clickable card that displays job information in a list view.
+ * Used in the jobs index page to show all jobs for a client.
+ * 
+ * Structure:
+ * .job-card-inline
+ *   .job-status-emoji    - Status indicator emoji
+ *   .job-name-section    - Client name (optional) and job title
+ *   .job-right-section   - Priority emoji and technician avatar
+ * 
+ * Variants:
+ * - With client name: Shows "ClientName: JobTitle"
+ * - Without client name: Shows only "JobTitle"
+ * 
+ * States:
+ * - Default: Secondary background with primary border
+ * - Hover: Tertiary background with blue border
+ * 
+ * Related Components:
+ * - JobsListComponent: Contains multiple job cards
+ * - PageHeader: Provides the page title and "New Job" action
+ * 
+ * @see app/components/jobs/job_card_component.rb
+ * @see app/views/jobs/index_view.rb
+ */
+
+.job-card-inline {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  gap: 12px;
+  
+  &:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--accent-blue);
+  }
+}
+
+// Status emoji on the left
+.job-status-emoji {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+// Center section with job name
+.job-name-section {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  overflow: hidden;
+}
+
+// Client name prefix (when shown)
+.client-name-prefix {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
+// Job title
+.job-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Right section with priority and assignee
+.job-right-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+// Priority emoji indicator
+.job-priority-emoji {
+  font-size: 18px;
+}
+
+// Technician avatar circle
+.technician-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background-color: var(--bg-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}

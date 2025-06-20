@@ -72,7 +72,7 @@ class Views::Base < Components::Base
           
           div(class: "main-container", data: { controller: controllers.join(" ") }) do
             div(class: "sidebar", data: { sidebar_target: "sidebar" }) do
-              render Components::Sidebar.new(
+              render Components::Sidebar::SidebarComponent.new(
                 current_user: current_user,
                 active_section: active_section,
                 client: client
@@ -80,7 +80,7 @@ class Views::Base < Components::Base
             end
 
             div(class: "main-content") do
-              render Components::Header.new(
+              render Components::Header::HeaderComponent.new(
                 current_user: current_user,
                 toolbar_items: toolbar_items
               )
