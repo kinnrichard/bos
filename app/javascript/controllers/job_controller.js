@@ -1005,7 +1005,7 @@ export default class extends Controller {
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault()
-        this.saveNewTask({ target: input })
+        this.saveNewTask(e)
       } else if (e.key === 'Escape') {
         e.preventDefault()
         this.cancelNewTask()
@@ -1459,12 +1459,14 @@ export default class extends Controller {
   
   // New task creation methods
   saveNewTask(event) {
-    event.preventDefault()
-    const input = event.target || event.currentTarget
+    if (event && event.preventDefault) {
+      event.preventDefault()
+    }
+    const input = event.target || event.currentTarget || this.currentNewTaskInput
     const title = input.value.trim()
     
     if (!title) {
-      this.cancelNewTask(event)
+      this.cancelNewTask()
       return
     }
     
