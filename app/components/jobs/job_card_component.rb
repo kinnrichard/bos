@@ -24,8 +24,8 @@ module Components
         # Client and job name
         span(class: "job-name-section") do
           if @show_client
-            span(class: "client-name-prefix") { "#{@job.client.name}:" }
-            span { " " }
+            span(class: "client-name-prefix") { "#{@job.client.name}" }
+            span { "" }
           end
           span(class: "job-name") { @job.title }
         end

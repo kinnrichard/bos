@@ -303,7 +303,12 @@ module Views
             div(class: "task-content") do
               div(
                 class: "task-title",
-                data: { action: "click->job#handleTaskTitleClick" }
+                contenteditable: "true",
+                data: { 
+                  action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick",
+                  task_id: task.id,
+                  original_title: task.title
+                }
               ) { task.title }
             end
             
@@ -391,7 +396,12 @@ module Views
           div(class: "subtask-content") do
             div(
               class: "subtask-title",
-              data: { action: "click->job#handleTaskTitleClick" }
+              contenteditable: "true",
+              data: { 
+                action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick",
+                task_id: subtask.id,
+                original_title: subtask.title
+              }
             ) { subtask.title }
             
             # Show time in progress if available

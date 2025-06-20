@@ -243,8 +243,15 @@
   font-weight: 400;
   line-height: 1.3;
   cursor: text;
+  outline: none;
   
   &:hover {
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.3);
+    text-underline-offset: 2px;
+  }
+  
+  &:focus {
     text-decoration: underline;
     text-decoration-color: rgba(255, 255, 255, 0.3);
     text-underline-offset: 2px;
@@ -383,8 +390,15 @@
   color: var(--text-primary);
   line-height: 1.4;
   cursor: text;
+  outline: none;
   
   &:hover {
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.3);
+    text-underline-offset: 2px;
+  }
+  
+  &:focus {
     text-decoration: underline;
     text-decoration-color: rgba(255, 255, 255, 0.3);
     text-underline-offset: 2px;
@@ -727,36 +741,6 @@
   }
 }
 
-// Task rename input - invisible like the editable h1
-.task-rename-input {
-  // Make input invisible and inherit task styling
-  background: none;
-  border: none;
-  outline: none;
-  color: inherit;
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: inherit;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  cursor: text;
-  
-  &:focus {
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 255, 255, 0.3);
-    text-underline-offset: 2px;
-  }
-}
-
-// When task is selected, style the rename input differently
-.task-item.selected .task-rename-input,
-.subtask-item.selected .task-rename-input {
-  &:focus {
-    text-decoration-color: rgba(255, 255, 255, 0.5);
-  }
-}
 
 // Utility classes
 .hidden {

@@ -15,7 +15,6 @@ export default class extends Controller {
   selectedTasks = new Set()
   lastClickedTask = null
   clickTimer = null
-  isRenaming = false
   draggedTasks = []
   activeStatusDropdown = null
   activeStatusTask = null
@@ -105,17 +104,19 @@ export default class extends Controller {
     
     // Clear selection if clicking outside tasks
     if (!event.target.closest('.task-item') && !event.target.closest('.subtask-item') && 
-        !this.isRenaming && !event.metaKey && !event.ctrlKey) {
+        !event.metaKey && !event.ctrlKey) {
       this.clearSelection()
     }
   }
   
-  // Task title click handling - immediate rename unless cmd/shift held
+  // Task title click handling - handle selection if cmd/shift held
   handleTaskTitleClick(event) {
     const taskElement = event.currentTarget.closest('.task-item, .subtask-item')
     
-    // If cmd/shift held, handle selection instead of rename
+    // If cmd/shift held, handle selection instead of just focusing
     if (event.metaKey || event.ctrlKey || event.shiftKey) {
+      // Prevent contenteditable from taking focus
+      event.preventDefault()
       // Stop event from bubbling to task click handler
       event.stopPropagation()
       
@@ -140,8 +141,7 @@ export default class extends Controller {
     this.selectTask(taskElement)
     this.lastClickedTask = taskElement
     
-    // Immediately start rename
-    this.startRename(taskElement, event)
+    // Contenteditable will handle the focus and editing automatically
   }
   
   // Task selection and renaming
@@ -283,7 +283,7 @@ export default class extends Controller {
     }
     
     // Spacebar to open status menu
-    if (event.key === ' ' && this.selectedTasks.size === 1 && !this.isRenaming && !isInputField) {
+    if (event.key === ' ' && this.selectedTasks.size === 1 && !isInputField) {
       event.preventDefault()
       this.openStatusMenuForSelectedTask()
       return false
@@ -291,7 +291,7 @@ export default class extends Controller {
     
     
     // Status change shortcuts (Cmd+Shift+...)
-    if (event.metaKey && event.shiftKey && this.selectedTasks.size > 0 && !this.isRenaming) {
+    if (event.metaKey && event.shiftKey && this.selectedTasks.size > 0) {
       const activeElement = document.activeElement
       if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
         let newStatus = null
@@ -317,7 +317,7 @@ export default class extends Controller {
     }
     
     // Delete selected tasks
-    if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedTasks.size > 0 && !this.isRenaming) {
+    if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedTasks.size > 0) {
       const activeElement = document.activeElement
       if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
         event.preventDefault()
@@ -325,152 +325,27 @@ export default class extends Controller {
       }
     }
     
-    // Enter to rename selected task
-    if (event.key === 'Enter' && this.selectedTasks.size === 1 && !this.isRenaming) {
+    // Enter to focus on task title for editing when single task selected
+    if (event.key === 'Enter' && this.selectedTasks.size === 1) {
       event.preventDefault()
       const selectedTask = Array.from(this.selectedTasks)[0]
-      this.startRename(selectedTask)
-    }
-    
-    // Escape to cancel rename
-    if (event.key === 'Escape' && this.isRenaming) {
-      event.preventDefault()
-      this.cancelRename()
+      const titleElement = selectedTask.querySelector('.task-title, .subtask-title')
+      if (titleElement) {
+        titleElement.focus()
+        // Place cursor at end of text
+        const range = document.createRange()
+        const sel = window.getSelection()
+        range.selectNodeContents(titleElement)
+        range.collapse(false)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
     }
     
     // Remove duplicate arrow key handler - already handled above
   }
   
-  // Removed navigateSelection - using handleArrowNavigation instead
-  
-  // Rename functionality
-  startRename(taskElement, clickEvent = null) {
-    if (this.isRenaming) return
-    
-    this.isRenaming = true
-    this.renamingTask = taskElement
-    
-    const titleElement = taskElement.querySelector('.task-title, .subtask-title')
-    if (!titleElement) return
-    
-    // Store original text
-    this.originalTaskTitle = titleElement.textContent.trim()
-    
-    // Create input element
-    const input = document.createElement('input')
-    input.type = 'text'
-    input.className = 'task-rename-input'
-    input.value = this.originalTaskTitle
-    
-    // Replace title with input
-    titleElement.style.display = 'none'
-    titleElement.parentNode.insertBefore(input, titleElement)
-    
-    // Set cursor position if click event provided
-    if (clickEvent) {
-      const rect = titleElement.getBoundingClientRect()
-      const x = clickEvent.clientX - rect.left
-      const charWidth = rect.width / this.originalTaskTitle.length
-      const position = Math.round(x / charWidth)
-      
-      input.focus()
-      input.setSelectionRange(position, position)
-    } else {
-      input.focus()
-      input.select()
-    }
-    
-    // Handle input events
-    input.addEventListener('keydown', (e) => this.handleRenameKeydown(e))
-    input.addEventListener('blur', (e) => {
-      // Don't finish rename if we're handling a keydown event
-      if (!this.isHandlingRenameKeydown) {
-        this.finishRename()
-      }
-    })
-  }
-  
-  handleRenameKeydown(event) {
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault()
-      this.isHandlingRenameKeydown = true
-      this.finishRename()
-      // Reset flag after a short delay
-      setTimeout(() => {
-        this.isHandlingRenameKeydown = false
-      }, 100)
-    } else if (event.key === 'Escape') {
-      event.preventDefault()
-      this.cancelRename()
-    }
-  }
-  
-  finishRename() {
-    if (!this.isRenaming) return
-    
-    // Prevent duplicate processing
-    if (this.isProcessingRename) return
-    this.isProcessingRename = true
-    
-    const input = this.renamingTask.querySelector('.task-rename-input')
-    const titleElement = this.renamingTask.querySelector('.task-title, .subtask-title')
-    const newTitle = input.value.trim()
-    
-    if (newTitle === '') {
-      this.handleEmptyRename()
-    } else if (newTitle !== this.originalTaskTitle) {
-      this.saveTaskRename(newTitle)
-    } else {
-      this.cleanupRename()
-    }
-    
-    // Reset flag after processing
-    setTimeout(() => {
-      this.isProcessingRename = false
-    }, 100)
-  }
-  
-  cancelRename() {
-    if (!this.isRenaming) return
-    
-    const titleElement = this.renamingTask.querySelector('.task-title, .subtask-title')
-    titleElement.textContent = this.originalTaskTitle
-    
-    this.cleanupRename()
-  }
-  
-  cleanupRename() {
-    const input = this.renamingTask.querySelector('.task-rename-input')
-    const titleElement = this.renamingTask.querySelector('.task-title, .subtask-title')
-    
-    if (input) input.remove()
-    if (titleElement) titleElement.style.display = ''
-    
-    this.isRenaming = false
-    this.renamingTask = null
-    this.originalTaskTitle = null
-  }
-  
-  handleEmptyRename() {
-    const taskId = this.renamingTask.dataset.taskId
-    const hasDeletePermission = this.checkDeletePermission()
-    
-    const message = hasDeletePermission 
-      ? "Are you sure you want to delete this task?" 
-      : "Are you sure you want to cancel this task?"
-    
-    // Clean up rename state first to prevent any duplicate processing
-    this.cleanupRename()
-    
-    if (confirm(message)) {
-      if (hasDeletePermission) {
-        this.deleteTaskWithoutConfirm(taskId)
-      } else {
-        this.cancelTask(taskId)
-      }
-    }
-  }
-  
+  // checkDeletePermission moved from old rename code
   checkDeletePermission() {
     // TODO: Check actual user permissions
     // For now, assume admin/superadmin can delete
@@ -479,46 +354,15 @@ export default class extends Controller {
     return role === 'admin' || role === 'superadmin'
   }
   
-  saveTaskRename(newTitle) {
-    const taskId = this.renamingTask.dataset.taskId
-    
-    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
-      },
-      body: JSON.stringify({ task: { title: newTitle } })
-    }).then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          const titleElement = this.renamingTask.querySelector('.task-title, .subtask-title')
-          titleElement.textContent = newTitle
-          this.cleanupRename()
-        } else {
-          alert(data.error || 'Failed to rename task')
-          this.cancelRename()
-        }
-      })
-      .catch(error => {
-        console.error('Error renaming task:', error)
-        this.cancelRename()
-      })
-  }
-  
   deleteTask(taskId) {
     if (!confirm("Are you sure you want to delete this task?")) return
     this.deleteTaskWithoutConfirm(taskId)
   }
   
   deleteTaskWithoutConfirm(taskId) {
-    // Store reference to task element before cleanup
-    const taskElement = this.renamingTask || document.querySelector(`[data-task-id="${taskId}"]`)
+    // Store reference to task element
+    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`)
     
-    // Clean up rename state first to prevent multiple confirmations
-    if (this.isRenaming) {
-      this.cleanupRename()
-    }
     
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
       method: "DELETE",
@@ -612,12 +456,8 @@ export default class extends Controller {
   }
   
   cancelTask(taskId) {
-    const taskElement = this.renamingTask || document.querySelector(`[data-task-id="${taskId}"]`)
+    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`)
     
-    // Clean up rename state first
-    if (this.isRenaming) {
-      this.cleanupRename()
-    }
     
     // Update status to cancelled
     const statusUpdate = { task: { status: 'cancelled' } }
@@ -1014,6 +854,80 @@ export default class extends Controller {
     this.element.querySelectorAll(".priority-option").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.priority === this.priorityValue)
     })
+  }
+
+  // Store original title on focus for comparison later
+  storeOriginalTitle(event) {
+    const titleElement = event.currentTarget
+    // Store the current content as original if not already stored
+    if (!titleElement.dataset.originalTitle) {
+      titleElement.dataset.originalTitle = titleElement.textContent.trim()
+    }
+  }
+
+  // Update task title on blur (contenteditable)
+  updateTaskTitle(event) {
+    const titleElement = event.currentTarget
+    const taskElement = titleElement.closest('.task-item, .subtask-item')
+    const taskId = titleElement.dataset.taskId
+    const newTitle = titleElement.textContent.trim()
+    
+    // Get original title from the element's data
+    const originalTitle = titleElement.dataset.originalTitle || ''
+    
+    // If title is empty, handle deletion
+    if (newTitle === '') {
+      titleElement.textContent = originalTitle // Restore original text
+      this.handleEmptyTaskRename(taskElement, taskId)
+      return
+    }
+    
+    // If title hasn't changed, just update the stored original
+    if (newTitle === originalTitle) {
+      titleElement.dataset.originalTitle = newTitle
+      return
+    }
+    
+    // Save the new title
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ task: { title: newTitle } })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Update the stored original title on success
+          titleElement.dataset.originalTitle = newTitle
+        } else {
+          alert(data.error || 'Failed to rename task')
+          titleElement.textContent = originalTitle // Restore on error
+          titleElement.dataset.originalTitle = originalTitle
+        }
+      })
+      .catch(error => {
+        console.error('Error renaming task:', error)
+        titleElement.textContent = originalTitle // Restore on error
+        titleElement.dataset.originalTitle = originalTitle
+      })
+  }
+
+  handleEmptyTaskRename(taskElement, taskId) {
+    const hasDeletePermission = this.checkDeletePermission()
+    
+    const message = hasDeletePermission 
+      ? "Are you sure you want to delete this task?" 
+      : "Are you sure you want to cancel this task?"
+    
+    if (confirm(message)) {
+      if (hasDeletePermission) {
+        this.deleteTaskWithoutConfirm(taskId)
+      } else {
+        this.cancelTask(taskId)
+      }
+    }
   }
 
   // Task management
@@ -1533,8 +1447,8 @@ export default class extends Controller {
   
   // Drag and drop handlers
   handleDragStart(event) {
-    // Prevent dragging during rename or if it's a new task
-    if (this.isRenaming || event.target.classList.contains('new-task-item')) {
+    // Prevent dragging if it's a new task
+    if (event.target.classList.contains('new-task-item')) {
       event.preventDefault()
       return
     }
