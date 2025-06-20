@@ -3,17 +3,18 @@
 module Views
   module Jobs
     class NewView < Views::Base
-      def initialize(client:, job:, people:, technicians:)
+      def initialize(client:, job:, people:, technicians:, current_user:)
         @client = client
         @job = job
         @people = people
         @technicians = technicians
+        @current_user = current_user
       end
 
       def view_template
         render_layout(
           title: "New Job - #{@client.name}",
-          current_user: current_user,
+          current_user: @current_user,
           active_section: :jobs,
           client: @client
         ) do

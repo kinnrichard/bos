@@ -64,7 +64,8 @@ class AllJobsController < ApplicationController
       available_statuses: @available_statuses,
       current_filter: params[:filter],
       selected_technician_ids: params[:technician_ids] || [],
-      selected_statuses: params[:statuses] || []
+      selected_statuses: params[:statuses] || [],
+      current_user: current_user
     )
   end
   

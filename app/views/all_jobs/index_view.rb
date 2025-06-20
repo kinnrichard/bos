@@ -3,7 +3,7 @@ module Views
     class IndexView < Views::Base
       
       def initialize(jobs:, page_title:, active_section:, technicians:, available_statuses:, 
-                     current_filter:, selected_technician_ids:, selected_statuses:)
+                     current_filter:, selected_technician_ids:, selected_statuses:, current_user:)
         @jobs = jobs
         @page_title = page_title
         @active_section = active_section
@@ -12,12 +12,13 @@ module Views
         @current_filter = current_filter
         @selected_technician_ids = selected_technician_ids
         @selected_statuses = selected_statuses
+        @current_user = current_user
       end
       
       def view_template
         render_layout(
           title: @page_title,
-          current_user: current_user,
+          current_user: @current_user,
           active_section: @active_section
         ) do
           div(class: "header-with-actions") do
@@ -28,7 +29,7 @@ module Views
               render_filter_dropdown
               
               # Add "All Jobs" link for admins
-              if (current_user.admin? || current_user.superadmin?) && @current_filter
+              if (@current_user.admin? || @current_user.superadmin?) && @current_filter
                 link_to "All Jobs", jobs_path, class: "button button-secondary"
               end
             end
@@ -118,11 +119,6 @@ module Views
         when 'cancelled' then 'Cancelled'
         else status.humanize
         end
-      end
-      
-      def current_user
-        # TODO: Replace with actual current user
-        User.first
       end
     end
   end

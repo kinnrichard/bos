@@ -3,17 +3,18 @@
 module Views
   module Jobs
     class EditView < Views::Base
-      def initialize(client:, job:, people:, technicians:)
+      def initialize(client:, job:, people:, technicians:, current_user:)
         @client = client
         @job = job
         @people = people
         @technicians = technicians
+        @current_user = current_user
       end
 
       def view_template
         render_layout(
           title: "Edit Job - #{@client.name}",
-          current_user: current_user,
+          current_user: @current_user,
           active_section: :jobs,
           client: @client
         ) do
@@ -109,7 +110,7 @@ module Views
                 link_to("Cancel", client_job_path(@client, @job), class: "btn btn-secondary", style: "margin-right: auto;")
               end
               
-              if current_user.can_delete?(@job)
+              if @current_user.can_delete?(@job)
                 div(style: "margin-top: 40px; padding-top: 40px; border-top: 1px solid var(--border-primary);") do
                   delete_form_with_confirmation(
                     url: client_job_path(@client, @job),
@@ -135,15 +136,6 @@ module Views
         Job.statuses.map do |key, _|
           [key.humanize.gsub('_', ' '), key]
         end
-      end
-      
-      def current_user
-        # TODO: Replace with actual current user from authentication
-        User.first || User.create!(
-          name: 'System User',
-          email: 'system@example.com',
-          role: :admin
-        )
       end
     end
   end

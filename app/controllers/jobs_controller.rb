@@ -5,18 +5,18 @@ class JobsController < ApplicationController
   def index
     @jobs = @client.jobs.includes(:technicians, :tasks)
                          .order(Arel.sql('due_on ASC NULLS LAST, due_time ASC NULLS LAST, priority ASC, created_at DESC'))
-    render Views::Jobs::IndexView.new(client: @client, jobs: @jobs)
+    render Views::Jobs::IndexView.new(client: @client, jobs: @jobs, current_user: current_user)
   end
   
   def show
-    render Views::Jobs::ShowView.new(client: @client, job: @job)
+    render Views::Jobs::ShowView.new(client: @client, job: @job, current_user: current_user)
   end
   
   def new
     @job = @client.jobs.build
     @people = @client.people.order(:name)
     @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
-    render Views::Jobs::NewView.new(client: @client, job: @job, people: @people, technicians: @technicians)
+    render Views::Jobs::NewView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user)
   end
   
   def create
@@ -51,14 +51,14 @@ class JobsController < ApplicationController
     else
       @people = @client.people.order(:name)
       @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
-      render Views::Jobs::NewView.new(client: @client, job: @job, people: @people, technicians: @technicians), status: :unprocessable_entity
+      render Views::Jobs::NewView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user), status: :unprocessable_entity
     end
   end
   
   def edit
     @people = @client.people.order(:name)
     @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
-    render Views::Jobs::EditView.new(client: @client, job: @job, people: @people, technicians: @technicians)
+    render Views::Jobs::EditView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user)
   end
   
   def update
@@ -92,7 +92,7 @@ class JobsController < ApplicationController
     else
       @people = @client.people.order(:name)
       @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
-      render Views::Jobs::EditView.new(client: @client, job: @job, people: @people, technicians: @technicians), status: :unprocessable_entity
+      render Views::Jobs::EditView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user), status: :unprocessable_entity
     end
   end
   

@@ -3,15 +3,16 @@
 module Views
   module Jobs
     class IndexView < Views::Base
-      def initialize(client:, jobs:)
+      def initialize(client:, jobs:, current_user:)
         @client = client
         @jobs = jobs
+        @current_user = current_user
       end
 
       def view_template
         render_layout(
           title: "Jobs - #{@client.name}",
-          current_user: current_user,
+          current_user: @current_user,
           active_section: :jobs,
           client: @client
         ) do

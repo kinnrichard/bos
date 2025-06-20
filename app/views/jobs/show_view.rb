@@ -6,15 +6,16 @@ module Views
       include Phlex::Rails::Helpers::ContentTag
       include Phlex::Rails::Helpers::FormWith
       
-      def initialize(client:, job:)
+      def initialize(client:, job:, current_user:)
         @client = client
         @job = job
+        @current_user = current_user
       end
 
       def view_template
         render_layout(
           title: "#{@job.title} - #{@client.name}",
-          current_user: current_user,
+          current_user: @current_user,
           active_section: :jobs,
           client: @client,
           toolbar_items: method(:render_toolbar_items),
@@ -202,7 +203,7 @@ module Views
                 
                 # Actions section
                 div(class: "popover-section popover-actions") do
-                  if current_user.can_delete?(@job)
+                  if @current_user.can_delete?(@job)
                     button(
                       class: "btn-danger",
                       data: { 
