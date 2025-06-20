@@ -1891,10 +1891,7 @@ h1.job-title,
 }
 
 .task-status-option:hover,
-.task-status-option.keyboard-focused {
-  background-color: var(--bg-tertiary);
-}
-
+.task-status-option.keyboard-focused,
 .task-status-option.active {
   background-color: var(--accent-blue);
   color: white;

@@ -214,7 +214,10 @@ export default class extends Controller {
     const isInputField = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA'
     
     // Handle status menu navigation if open - MUST BE FIRST
-    if (this.activeStatusDropdown && (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ' || event.key === 'Escape' || /^[a-z]$/i.test(event.key))) {
+    if (this.activeStatusDropdown) {
+      // Stop all events from bubbling when dropdown is open
+      event.stopPropagation()
+      event.stopImmediatePropagation()
       this.handleStatusMenuKeyboard(event)
       return false
     }
@@ -1371,9 +1374,9 @@ export default class extends Controller {
   selectStatusByKey(status) {
     const option = this.activeStatusDropdown.querySelector(`[data-status="${status}"]`)
     if (option) {
-      // Highlight the option
+      // Highlight the option and remove active from others
       this.activeStatusDropdown.querySelectorAll('.task-status-option').forEach(opt => {
-        opt.classList.remove('keyboard-focused')
+        opt.classList.remove('keyboard-focused', 'active')
       })
       option.classList.add('keyboard-focused')
       
@@ -1392,14 +1395,22 @@ export default class extends Controller {
     
     let newIndex
     if (currentIndex === -1) {
-      newIndex = direction === 1 ? 0 : options.length - 1
+      // Start from the active option if no keyboard focus yet
+      const activeIndex = options.findIndex(opt => opt.classList.contains('active'))
+      if (activeIndex !== -1) {
+        newIndex = activeIndex + direction
+      } else {
+        newIndex = direction === 1 ? 0 : options.length - 1
+      }
     } else {
       newIndex = currentIndex + direction
       if (newIndex < 0) newIndex = options.length - 1
       if (newIndex >= options.length) newIndex = 0
     }
     
+    // Remove active class when we start navigating
     options.forEach((opt, i) => {
+      opt.classList.remove('active')
       opt.classList.toggle('keyboard-focused', i === newIndex)
     })
   }
