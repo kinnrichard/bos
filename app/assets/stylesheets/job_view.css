@@ -646,8 +646,9 @@ button.checkbox-circle {
   display: flex;
   align-items: center;
   gap: 8px; /* Match task item gap */
-  padding: 12px 0;
-  padding-left: 16px; /* Reduced since we now have invisible emoji */
+  padding: 12px 30px; /* Match task item padding */
+  margin: 0 -30px; /* Match task item negative margins */
+  width: calc(100% + 60px); /* Match task item width calculation */
   color: #48484A;
   cursor: pointer;
   font-size: 17px;
