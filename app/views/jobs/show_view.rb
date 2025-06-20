@@ -21,11 +21,12 @@ module Views
           toolbar_items: method(:render_toolbar_items)
         ) do
           div(class: "job-view", data: { 
-            controller: "job",
+            controller: "job sortable",
             job_id: @job.id, 
             client_id: @client.id,
             job_status_value: @job.status,
-            job_priority_value: @job.priority
+            job_priority_value: @job.priority,
+            action: "task:reorder->job#handleTaskReorder subtask:reorder->job#handleSubtaskReorder"
           }) do
             # Job title
             div(class: "job-title-section") do
@@ -272,13 +273,12 @@ module Views
         div(class: "task-wrapper") do
           div(
             class: "task-item #{task.successfully_completed? ? 'completed' : ''}",
-            draggable: "true",
             data: { 
               task_id: task.id,
               task_status: task.status,
               task_position: task.position,
               job_target: "task",
-              action: "click->job#handleTaskClick dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask"
+              action: "click->job#handleTaskClick mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask"
             }.merge(time_data)
           ) do
             # Status indicator with dropdown
@@ -353,7 +353,7 @@ module Views
           
           # Render subtasks if any
           if task.has_subtasks?
-            div(class: "subtasks-container") do
+            div(class: "subtasks subtasks-container") do
               task.subtasks.order(:position).each do |subtask|
                 render_subtask_item(subtask)
               end

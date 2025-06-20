@@ -1618,18 +1618,31 @@ h1.job-title,
   cursor: move;
 }
 
-.job-view .task-item.dragging {
+/* Sortable.js drag and drop styles */
+.job-view .sortable-ghost {
   opacity: 0.4;
 }
 
-.job-view .task-item.drag-over-top {
-  border-top: 2px solid var(--accent-blue);
-  padding-top: 10px !important;
+.job-view .sortable-chosen {
+  opacity: 0.4;
 }
 
-.job-view .task-item.drag-over-bottom {
-  border-bottom: 2px solid var(--accent-blue);
-  padding-bottom: 10px !important;
+.job-view .sortable-drag {
+  opacity: 0.4;
+}
+
+/* Draggable cursor - show on task items but not on text */
+.job-view .task-item {
+  cursor: move;
+}
+
+.job-view .task-item .task-title {
+  cursor: text;
+}
+
+/* Remove old drag styles - using Sortable's built-in drag indicator */
+.job-view .task-item.dragging {
+  opacity: 0.4;
 }
 
 /* Task Selection and Multi-selection */

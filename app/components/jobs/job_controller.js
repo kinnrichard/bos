@@ -15,7 +15,6 @@ export default class extends Controller {
   selectedTasks = new Set()
   lastClickedTask = null
   clickTimer = null
-  draggedTasks = []
   activeStatusDropdown = null
   activeStatusTask = null
   
@@ -1446,105 +1445,42 @@ export default class extends Controller {
     }
   }
   
-  // Drag and drop handlers
-  handleDragStart(event) {
-    // Prevent dragging if it's a new task
-    if (event.target.classList.contains('new-task-item')) {
-      event.preventDefault()
-      return
-    }
+  // Handle Sortable.js events
+  handleTaskReorder(event) {
+    const { taskId, oldIndex, newIndex, items } = event.detail
     
-    // Check if dragging a selected task
-    const taskElement = event.target.closest('.task-item')
-    if (!taskElement) return
-    
-    if (!this.selectedTasks.has(taskElement)) {
-      // If dragging unselected task, clear selection and select only this task
-      this.clearSelection()
-      this.selectTask(taskElement)
-    }
-    
-    // Store all selected tasks
-    this.draggedTasks = Array.from(this.selectedTasks)
-    this.draggedElement = taskElement
-    
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/html', 'multiple tasks')
-    
-    // Add dragging class to all selected tasks
-    this.draggedTasks.forEach(task => task.classList.add('dragging'))
+    // Update positions on server
+    this.updateTaskPositions()
   }
   
-  handleDragOver(event) {
-    if (event.preventDefault) {
-      event.preventDefault()
-    }
-    event.dataTransfer.dropEffect = 'move'
+  handleSubtaskReorder(event) {
+    const { subtaskId, parentTaskId, oldIndex, newIndex } = event.detail
     
-    const targetElement = event.target.closest('.task-item')
-    
-    // Don't show drop indicator if target is one of the dragged tasks
-    if (targetElement && !this.draggedTasks.includes(targetElement)) {
-      const rect = targetElement.getBoundingClientRect()
-      const midpoint = rect.top + rect.height / 2
-      
-      if (event.clientY < midpoint) {
-        targetElement.classList.add('drag-over-top')
-        targetElement.classList.remove('drag-over-bottom')
-      } else {
-        targetElement.classList.add('drag-over-bottom')
-        targetElement.classList.remove('drag-over-top')
-      }
-    }
-    
-    return false
+    // Update subtask positions on server
+    this.updateSubtaskPositions(parentTaskId)
   }
   
-  handleDrop(event) {
-    if (event.stopPropagation) {
-      event.stopPropagation()
-    }
+  updateSubtaskPositions(parentTaskId) {
+    const parentTask = document.querySelector(`[data-task-id="${parentTaskId}"]`)
+    if (!parentTask) return
     
-    const targetElement = event.target.closest('.task-item')
+    const subtaskContainer = parentTask.querySelector('.subtasks')
+    if (!subtaskContainer) return
     
-    if (targetElement && !this.draggedTasks.includes(targetElement)) {
-      const rect = targetElement.getBoundingClientRect()
-      const midpoint = rect.top + rect.height / 2
-      const insertBefore = event.clientY < midpoint
-      
-      const tasksContainer = this.tasksListTarget
-      
-      // Sort dragged tasks by their current position
-      const sortedDraggedTasks = this.draggedTasks.sort((a, b) => {
-        return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
-      })
-      
-      // Insert all dragged tasks
-      sortedDraggedTasks.forEach(draggedTask => {
-        if (insertBefore) {
-          tasksContainer.insertBefore(draggedTask, targetElement)
-        } else {
-          tasksContainer.insertBefore(draggedTask, targetElement.nextSibling)
-        }
-      })
-      
-      // Update positions on server
-      this.updateTaskPositions()
-    }
+    const subtaskElements = Array.from(subtaskContainer.querySelectorAll('.subtask-item'))
+    const positions = subtaskElements.map((element, index) => ({
+      id: element.dataset.taskId,
+      position: index + 1
+    }))
     
-    return false
-  }
-  
-  handleDragEnd(event) {
-    // Remove dragging class from all dragged tasks
-    this.draggedTasks.forEach(task => task.classList.remove('dragging'))
-    
-    document.querySelectorAll('.task-item').forEach(item => {
-      item.classList.remove('drag-over-top', 'drag-over-bottom')
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${parentTaskId}/subtasks/reorder`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ positions: positions })
     })
-    
-    this.draggedElement = null
-    this.draggedTasks = []
   }
   
   updateTaskPositions() {
