@@ -213,8 +213,14 @@ export default class extends Controller {
     const activeElement = document.activeElement
     const isInputField = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA'
     
-    // Arrow key navigation (only when not in input field)
-    if (!isInputField && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+    // Handle status menu navigation if open - MUST BE FIRST
+    if (this.activeStatusDropdown && (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ' || event.key === 'Escape' || /^[a-z]$/i.test(event.key))) {
+      this.handleStatusMenuKeyboard(event)
+      return false
+    }
+    
+    // Arrow key navigation (only when not in input field and no status menu open)
+    if (!isInputField && !this.activeStatusDropdown && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
       event.preventDefault()
       this.handleArrowNavigation(event.key === 'ArrowUp' ? 'up' : 'down')
       return false
@@ -255,11 +261,6 @@ export default class extends Controller {
       return false
     }
     
-    // Handle status menu navigation if open
-    if (this.activeStatusDropdown) {
-      this.handleStatusMenuKeyboard(event)
-      return false
-    }
     
     // Status change shortcuts (Cmd+Shift+...)
     if (event.metaKey && event.shiftKey && this.selectedTasks.size > 0 && !this.isRenaming) {
@@ -309,44 +310,10 @@ export default class extends Controller {
       this.cancelRename()
     }
     
-    // Arrow key navigation
-    if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && 
-        !this.isRenaming && this.selectedTasks.size > 0) {
-      event.preventDefault()
-      this.navigateSelection(event.key === 'ArrowUp' ? -1 : 1, event.shiftKey)
-    }
+    // Remove duplicate arrow key handler - already handled above
   }
   
-  navigateSelection(direction, extend = false) {
-    const allTasks = [...document.querySelectorAll('.task-item, .subtask-item')]
-    if (allTasks.length === 0) return
-    
-    let targetIndex
-    if (this.selectedTasks.size === 0) {
-      targetIndex = direction === 1 ? 0 : allTasks.length - 1
-    } else {
-      const selectedIndices = Array.from(this.selectedTasks).map(task => allTasks.indexOf(task))
-      const currentIndex = direction === 1 ? Math.max(...selectedIndices) : Math.min(...selectedIndices)
-      targetIndex = currentIndex + direction
-      
-      if (targetIndex < 0) targetIndex = 0
-      if (targetIndex >= allTasks.length) targetIndex = allTasks.length - 1
-    }
-    
-    const targetTask = allTasks[targetIndex]
-    if (!targetTask) return
-    
-    if (extend && this.lastClickedTask) {
-      this.selectTaskRange(this.lastClickedTask, targetTask)
-    } else {
-      this.clearSelection()
-      this.selectTask(targetTask)
-      this.lastClickedTask = targetTask
-    }
-    
-    // Scroll into view if needed
-    targetTask.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }
+  // Removed navigateSelection - using handleArrowNavigation instead
   
   // Rename functionality
   startRename(taskElement, clickEvent = null) {
@@ -1779,6 +1746,11 @@ export default class extends Controller {
   }
   
   handleArrowNavigation(direction) {
+    // Close any open status menu first
+    if (this.activeStatusDropdown) {
+      this.closeStatusMenu()
+    }
+    
     // Get all visible tasks (including subtasks)
     const allTasks = Array.from(document.querySelectorAll('.task-item:not(.new-task-item), .subtask-item'))
     
