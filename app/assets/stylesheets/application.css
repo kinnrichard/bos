@@ -1400,6 +1400,9 @@ input:focus {
   border-radius: 8px;
   cursor: default;
   user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .task-status {
@@ -1459,6 +1462,9 @@ input:focus {
   position: relative;
   cursor: default;
   user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .subtask-item:before {
@@ -1789,13 +1795,16 @@ h1.job-title,
 /* Task wrapper for proper layout */
 .task-wrapper {
   position: relative;
+  margin: 0 -30px; /* Extend to content padding */
+  padding: 0 30px;
 }
 
 /* Override task-item styles for job view */
 .job-view .task-item {
   display: flex !important;
   align-items: center !important;
-  padding: 8px 0 !important;
+  padding: 8px 30px !important;
+  margin: 0 -30px !important; /* Extend to content padding */
   border: none !important;
   border-radius: 0 !important;
   background: none !important;
@@ -1803,6 +1812,7 @@ h1.job-title,
   gap: 8px !important;
   position: relative;
   min-height: 32px;
+  transition: background-color 0.15s ease;
 }
 
 /* Task status container and button */
@@ -1909,7 +1919,7 @@ h1.job-title,
 /* Task Selection and Multi-selection */
 .task-item.selected,
 .subtask-item.selected {
-  background-color: var(--accent-blue);
+  background-color: var(--accent-blue) !important;
   border-color: var(--accent-blue);
 }
 
@@ -1919,8 +1929,10 @@ h1.job-title,
 .subtask-item.selected .subtask-time-tracking,
 .task-item.selected .task-assignee-icon,
 .task-item.selected .task-status-button span,
-.subtask-item.selected .subtask-status-button span {
-  color: white;
+.subtask-item.selected .subtask-status-button span,
+.task-item.selected .time-value,
+.subtask-item.selected .time-value {
+  color: white !important;
 }
 
 .task-item.selected .task-status-container,

@@ -111,6 +111,11 @@ export default class extends Controller {
       return
     }
     
+    // Prevent text selection on shift-click
+    if (event.shiftKey) {
+      event.preventDefault()
+    }
+    
     // Handle selection
     if (event.metaKey || event.ctrlKey) {
       // Toggle selection with Cmd/Ctrl
