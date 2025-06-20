@@ -362,7 +362,7 @@ export default class extends Controller {
     
     if (confirm(message)) {
       if (hasDeletePermission) {
-        this.deleteTask(taskId)
+        this.deleteTaskWithoutConfirm(taskId)
       } else {
         this.cancelTask(taskId)
       }
@@ -408,6 +408,17 @@ export default class extends Controller {
   
   deleteTask(taskId) {
     if (!confirm("Are you sure you want to delete this task?")) return
+    this.deleteTaskWithoutConfirm(taskId)
+  }
+  
+  deleteTaskWithoutConfirm(taskId) {
+    // Store reference to task element before cleanup
+    const taskElement = this.renamingTask || document.querySelector(`[data-task-id="${taskId}"]`)
+    
+    // Clean up rename state first to prevent multiple confirmations
+    if (this.isRenaming) {
+      this.cleanupRename()
+    }
     
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
       method: "DELETE",
@@ -417,18 +428,48 @@ export default class extends Controller {
     }).then(response => response.json())
       .then(data => {
         if (data.status === 'success') {
-          this.renamingTask.remove()
-          this.clearSelection()
-          this.cleanupRename()
+          // Find the task wrapper to remove (handles both tasks and subtasks)
+          const wrapper = taskElement.closest('.task-wrapper') || taskElement
+          
+          // Remove from selection if selected
+          if (this.selectedTasks.has(taskElement)) {
+            this.selectedTasks.delete(taskElement)
+          }
+          
+          // Animate removal
+          wrapper.style.transition = 'opacity 0.2s ease-out'
+          wrapper.style.opacity = '0'
+          
+          setTimeout(() => {
+            wrapper.remove()
+            
+            // Check if tasks list is now empty
+            const remainingTasks = document.querySelectorAll('.task-item')
+            if (remainingTasks.length === 0) {
+              const tasksList = document.querySelector('[data-job-target="tasksList"]')
+              if (tasksList) {
+                tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click + to add a task.</p></div>'
+              }
+            }
+          }, 200)
         } else {
           alert(data.error || 'Failed to delete task')
-          this.cancelRename()
         }
+      })
+      .catch(error => {
+        console.error('Error deleting task:', error)
+        alert('Failed to delete task')
       })
   }
   
   cancelTask(taskId) {
-    this.cleanupRename()
+    const taskElement = this.renamingTask || document.querySelector(`[data-task-id="${taskId}"]`)
+    
+    // Clean up rename state first
+    if (this.isRenaming) {
+      this.cleanupRename()
+    }
+    
     // Update status to cancelled
     const statusUpdate = { task: { status: 'cancelled' } }
     
@@ -442,8 +483,26 @@ export default class extends Controller {
     }).then(response => response.json())
       .then(data => {
         if (data.status === 'success') {
-          location.reload() // Reload to show updated status
+          // Update UI immediately
+          taskElement.dataset.taskStatus = 'cancelled'
+          
+          // Update status button
+          const statusButton = taskElement.querySelector('.task-status-button span, .subtask-status-button span')
+          if (statusButton) {
+            statusButton.textContent = '❌'
+          }
+          
+          // Clear selection if task was selected
+          if (this.selectedTasks.has(taskElement)) {
+            this.deselectTask(taskElement)
+          }
+        } else {
+          alert(data.error || 'Failed to cancel task')
         }
+      })
+      .catch(error => {
+        console.error('Error cancelling task:', error)
+        alert('Failed to cancel task')
       })
   }
 
