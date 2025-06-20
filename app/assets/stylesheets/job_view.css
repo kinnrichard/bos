@@ -641,27 +641,28 @@ button.checkbox-circle {
   border-color: #0A84FF !important;
 }
 
-/* New Task - Styled like a task but with invisible emoji */
-.task-item.new-task {
+/* New Task - Styled like a task but with faded appearance */
+.new-task-wrapper .task-item {
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
-.task-item.new-task:hover {
+.new-task-wrapper .task-item:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-.task-item.new-task .task-status-button {
+.new-task-wrapper .task-status-button {
   pointer-events: none; /* Prevent button interaction */
   cursor: default;
 }
 
-.task-item.new-task .task-status-button span {
-  visibility: hidden; /* Make emoji invisible but maintain space */
+.new-task-wrapper .task-status-button span {
+  opacity: 0.5 !important; /* 50% opacity for the emoji */
+  visibility: visible !important; /* Ensure it's visible */
 }
 
-.task-item.new-task .task-title {
-  color: #48484A;
+.new-task-wrapper .task-title {
+  color: #48484A !important; /* Gray text */
 }
 
 

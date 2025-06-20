@@ -54,7 +54,7 @@ module Views
                 end
                 
                 # New task placeholder with same structure as regular tasks
-                div(class: "task-wrapper") do
+                div(class: "task-wrapper new-task-wrapper") do
                   div(
                     class: "task-item new-task",
                     data: { 
