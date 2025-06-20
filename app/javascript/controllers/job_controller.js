@@ -1170,12 +1170,34 @@ export default class extends Controller {
     const taskElement = event.target.closest(".task-item") || event.target.closest(".subtask-item")
     const dropdown = taskElement.querySelector(".task-status-dropdown")
     
-    // Close all other dropdowns
+    // Close all other dropdowns and clear active dropdown
     document.querySelectorAll(".task-status-dropdown").forEach(d => {
-      if (d !== dropdown) d.classList.add("hidden")
+      if (d !== dropdown) {
+        d.classList.add("hidden")
+      }
     })
     
+    // If there was a previously active dropdown, close it
+    if (this.activeStatusDropdown && this.activeStatusDropdown !== dropdown) {
+      this.closeStatusMenu()
+    }
+    
+    // Toggle this dropdown
     dropdown.classList.toggle("hidden")
+    
+    // If we're opening the dropdown, set it as active and focus it
+    if (!dropdown.classList.contains("hidden")) {
+      this.activeStatusDropdown = dropdown
+      this.activeStatusTask = taskElement
+      
+      // Focus on the dropdown for keyboard navigation
+      dropdown.setAttribute('tabindex', '-1')
+      dropdown.focus()
+    } else {
+      // If closing, clear the active dropdown
+      this.activeStatusDropdown = null
+      this.activeStatusTask = null
+    }
   }
   
   toggleSubtaskStatus(event) {
