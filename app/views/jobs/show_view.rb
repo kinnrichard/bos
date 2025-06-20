@@ -52,19 +52,19 @@ module Views
                     p { "No tasks yet. Click below to add a task." }
                   end
                 end
-              end
-              
-              # New task clickable area / input
-              div(
-                class: "new-task-placeholder",
-                data: { 
-                  action: "click->job#showNewTaskInput",
-                  job_target: "newTaskPlaceholder" 
-                },
-                title: "Click or press Enter to create a new task"
-              ) do
-                span(class: "invisible-emoji", style: "font-size: 20px;") { "⚫" }
-                span(data: { job_target: "newTaskText" }) { "New task..." }
+                
+                # New task clickable area / input
+                div(
+                  class: "new-task-placeholder",
+                  data: { 
+                    action: "click->job#showNewTaskInput",
+                    job_target: "newTaskPlaceholder" 
+                  },
+                  title: "Click or press Enter to create a new task"
+                ) do
+                  span(class: "invisible-emoji", style: "font-size: 20px;") { "⚫" }
+                  span(data: { job_target: "newTaskText" }) { "New task..." }
+                end
               end
             end
             
