@@ -1,0 +1,32 @@
+/**
+ * Component Styles Index
+ * 
+ * This file imports all component-specific styles from their co-located directories.
+ * Components are loaded in a specific order to manage dependencies and specificity.
+ * 
+ * IMPORTANT: When adding new components, maintain alphabetical order within each section
+ * unless there's a specific dependency requirement.
+ */
+
+// Base components (no dependencies)
+@use '../../../components/sidebar/sidebar';
+// @use '../../../components/header/header';
+// @use '../../../components/empty_state/empty_state';
+// @use '../../../components/page_header/page_header';
+
+// Form components
+// @use '../../../components/form_container/form_container';
+// @use '../../../components/form_actions/form_actions';
+// @use '../../../components/form_errors/form_errors';
+
+// Data display components  
+// @use '../../../components/job_card/job_card';
+// @use '../../../components/info_grid/info_grid';
+
+// Modal components (higher specificity needed)
+// @use '../../../components/delete_confirmation_modal/delete_confirmation_modal';
+
+// Generic/utility components
+// @use '../../../components/generic_empty_state/generic_empty_state';
+
+// Legacy components (to be refactored)

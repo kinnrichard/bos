@@ -1,0 +1,210 @@
+/**
+ * COMPONENT: Sidebar Navigation
+ * PURPOSE: Primary navigation sidebar for the application
+ * VARIANTS: Default (expanded), Hidden (collapsed)
+ * RESPONSIVE: Hides on mobile by default, toggleable via hamburger menu
+ * 
+ * STRUCTURE:
+ * - Logo section at top
+ * - Scrollable navigation area
+ * - Fixed bottom section for settings/logs
+ * 
+ * FEATURES:
+ * - Custom scrollbar styling
+ * - Active state highlighting
+ * - Badge support for counts
+ * - Client-specific navigation when in client context
+ * 
+ * DEPENDENCIES:
+ * - Design tokens (colors, spacing, shadows)
+ * - CSS custom properties
+ * - Stimulus controller: sidebar_controller.js
+ */
+
+/* Main sidebar container */
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  flex-shrink: 0;
+  margin: 12px;
+  margin-right: 0;
+  height: calc(100vh - 24px);
+  overflow: hidden;
+  transition: transform 0.3s ease, opacity 0.3s ease, margin 0.3s ease, width 0.3s ease;
+  
+  /* Hidden state - used when sidebar is toggled off */
+  &.sidebar-hidden {
+    width: 0;
+    min-width: 0;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+}
+
+/* Logo and optional client header section */
+.sidebar-logo {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+  .logo-image {
+    height: 40px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+  }
+}
+
+/* Client-specific header when in client context */
+.sidebar-client-header {
+  margin-top: 12px;
+  padding: 0 4px;
+  text-align: center;
+  
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+}
+
+/* Scrollable navigation container */
+.sidebar-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    
+    &:hover {
+      background-color: var(--text-tertiary);
+    }
+  }
+}
+
+/* Navigation sections */
+.sidebar-section {
+  padding: 0 0 16px 0;
+  
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.sidebar-section-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 16px;
+  margin-bottom: 4px;
+}
+
+/* Individual navigation items */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: 8px;
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: default;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+  
+  &.active {
+    background-color: var(--accent-blue);
+    color: white;
+    
+    .sidebar-item-badge {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+  }
+}
+
+.sidebar-item-icon {
+  width: 20px;
+  margin-right: 12px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.sidebar-item-text {
+  flex: 1;
+  font-size: 13px;
+}
+
+.sidebar-item-badge {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: auto;
+}
+
+/* Responsive behavior */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    margin: 0;
+    height: 100vh;
+    z-index: 999;
+    transform: translateX(-100%);
+    border-radius: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    width: 260px;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s ease;
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-top: none;
+    border-bottom: none;
+    
+    &.open {
+      left: 0;
+    }
+  }
+}
