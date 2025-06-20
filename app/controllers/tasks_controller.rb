@@ -15,7 +15,10 @@ class TasksController < ApplicationController
       })
       
       respond_to do |format|
-        format.json { render json: { status: 'success', task: @task } }
+        format.json { render json: { 
+          status: 'success', 
+          task: @task.as_json(only: [:id, :title, :status, :position])
+        } }
         format.html { redirect_to client_job_path(@client, @job), notice: 'Task was successfully created.' }
       end
     else

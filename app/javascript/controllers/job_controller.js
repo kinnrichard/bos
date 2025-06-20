@@ -1020,47 +1020,6 @@ export default class extends Controller {
     this.currentNewTaskInput = input
   }
   
-  saveNewTask(event) {
-    event.preventDefault()
-    const input = event.target
-    const title = input.value.trim()
-    
-    if (!title) {
-      // If empty, just show another new task input
-      this.cancelNewTask()
-      this.showNewTaskInput()
-      return
-    }
-
-    // Save the task
-    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
-      },
-      body: JSON.stringify({ task: { title: title } })
-    }).then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          // Remove the input wrapper
-          const wrapper = input.closest('.new-task-wrapper')
-          wrapper.remove()
-          
-          // Add the new task to the list
-          this.addTaskToList(data.task)
-          
-          // Show another new task input
-          this.showNewTaskInput()
-        } else {
-          alert(data.error || 'Failed to create task')
-        }
-      })
-      .catch(error => {
-        console.error('Error creating task:', error)
-        alert('Failed to create task')
-      })
-  }
 
   cancelNewTask(event) {
     const wrapper = document.querySelector('.new-task-wrapper')
@@ -1310,8 +1269,16 @@ export default class extends Controller {
   
   // Drag and drop handlers
   handleDragStart(event) {
+    // Prevent dragging during rename or if it's a new task
+    if (this.isRenaming || event.target.classList.contains('new-task-item')) {
+      event.preventDefault()
+      return
+    }
+    
     // Check if dragging a selected task
-    const taskElement = event.target
+    const taskElement = event.target.closest('.task-item')
+    if (!taskElement) return
+    
     if (!this.selectedTasks.has(taskElement)) {
       // If dragging unselected task, clear selection and select only this task
       this.clearSelection()
@@ -1479,7 +1446,7 @@ export default class extends Controller {
   // New task creation methods
   saveNewTask(event) {
     event.preventDefault()
-    const input = event.currentTarget
+    const input = event.target || event.currentTarget
     const title = input.value.trim()
     
     if (!title) {
@@ -1569,7 +1536,7 @@ export default class extends Controller {
              data-task-status="${task.status}" 
              data-task-position="${task.position || 0}"
              data-job-target="task"
-             data-action="click->job#handleTaskClick dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd">
+             data-action="click->job#handleTaskClick dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask">
           <div class="task-status-container">
             <button class="task-status-button" data-action="click->job#toggleTaskStatus">
               <span>${emoji}</span>
