@@ -57,8 +57,15 @@ module Views
               end
               
               div(class: "form-actions") do
-                link_to("Cancel", client_devices_path(@client), class: "btn btn-link", style: "margin-right: auto;")
-                f.submit("Save", class: "btn btn-primary")
+                render Components::Ui::ButtonComponent.new(
+                  href: client_devices_path(@client),
+                  variant: :ghost,
+                  html_options: { style: "margin-right: auto;" }
+                ) { "Cancel" }
+                render Components::Ui::ButtonComponent.new(
+                  type: :submit,
+                  variant: :primary
+                ) { "Save" }
               end
             end
           end

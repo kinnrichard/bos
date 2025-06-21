@@ -42,8 +42,14 @@ module Views
                   end
 
                   div(class: "form-actions") do
-                    f.submit "Save Settings", class: "btn btn-primary"
-                    link_to "Cancel", root_path, class: "btn btn-secondary"
+                    render Components::Ui::ButtonComponent.new(
+                      type: :submit,
+                      variant: :primary
+                    ) { "Save Settings" }
+                    render Components::Ui::ButtonComponent.new(
+                      href: root_path,
+                      variant: :secondary
+                    ) { "Cancel" }
                   end
                 end
               end

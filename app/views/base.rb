@@ -32,9 +32,9 @@ class Views::Base < Components::Base
 
       # Render the form with the trigger
       form_with(url: url, method: :delete, data: { turbo: false }) do |f|
-        button_tag(
-          type: "button",
-          class: "btn btn-danger",
+        render Components::Ui::ButtonComponent.new(
+          type: :button,
+          variant: :danger,
           data: {
             action: "click->delete-confirmation#open",
             delete_confirmation_message_value: message,

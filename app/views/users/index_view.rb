@@ -17,7 +17,10 @@ module Views
           div(class: "users-container") do
             div(class: "page-header") do
               h1 { "Users" }
-              link_to "New User", new_user_path, class: "btn btn-primary"
+              render Components::Ui::ButtonComponent.new(
+                href: new_user_path,
+                variant: :primary
+              ) { "New User" }
             end
             
             if @users.any?
@@ -60,7 +63,10 @@ module Views
           td { user.created_at.strftime("%B %-d, %Y") }
           td(class: "actions-column") do
             div(class: "action-buttons") do
-              link_to "Edit", edit_user_path(user), class: "btn btn-sm"
+              render Components::Ui::ButtonComponent.new(
+                href: edit_user_path(user),
+                size: :small
+              ) { "Edit" }
               
               if user != @current_user
                 delete_form_with_confirmation(

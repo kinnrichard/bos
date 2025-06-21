@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Components
-  module UI
+  module Ui
     class ButtonComponent < Components::Base
       def initialize(
         variant: :primary,  # :primary, :secondary, :danger, :ghost
@@ -13,8 +13,7 @@ module Components
         icon: nil,
         href: nil,          # Makes it a link styled as button
         data: {},
-        html_options: {},
-        &content
+        html_options: {}
       )
         @variant = variant
         @size = size
@@ -26,10 +25,9 @@ module Components
         @href = href
         @data = data
         @html_options = html_options
-        @content = content
       end
 
-      def view_template
+      def view_template(&block)
         if @href
           a(
             href: @href,
@@ -37,7 +35,7 @@ module Components
             data: @data,
             **@html_options
           ) do
-            render_button_content
+            render_button_content(&block)
           end
         else
           button(
@@ -47,7 +45,7 @@ module Components
             data: @data,
             **@html_options
           ) do
-            render_button_content
+            render_button_content(&block)
           end
         end
       end
@@ -73,15 +71,16 @@ module Components
         end
       end
 
-      def render_button_content
+      def render_button_content(&block)
         if @icon && @loading
-          span(class: "button__spinner") { "⏳" } # Could be replaced with spinner component
+          span(class: "button__spinner") { "⏳" }
         elsif @icon
           span(class: "button__icon") { @icon }
         end
         
-        if @content
-          span(class: "button__text", &@content)
+        # Call the block if provided
+        if block
+          span(class: "button__text", &block)
         end
       end
     end

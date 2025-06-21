@@ -18,7 +18,10 @@ module Views
         ) do
           div(class: "clients-header") do
             h1 { "Clients" }
-            link_to "New Client", new_client_path, class: "btn btn-primary"
+            render Components::Ui::ButtonComponent.new(
+              href: new_client_path,
+              variant: :primary
+            ) { "New Client" }
           end
           
           if @clients.any?

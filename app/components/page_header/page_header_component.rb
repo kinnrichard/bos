@@ -16,7 +16,10 @@ module Components
         h1 { @title }
 
         if @action_text && @action_path
-          link_to(@action_text, @action_path, class: "button button--primary")
+          render Components::Ui::ButtonComponent.new(
+            href: @action_path,
+            variant: :primary
+          ) { @action_text }
         end
 
         if @additional_content

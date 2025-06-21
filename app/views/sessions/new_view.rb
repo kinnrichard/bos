@@ -62,7 +62,11 @@ module Views
                   )
                 end
                 
-                button(type: "submit", class: "btn btn-primary btn-full") { "Sign In" }
+                render Components::Ui::ButtonComponent.new(
+                  type: :submit,
+                  variant: :primary,
+                  full_width: true
+                ) { "Sign In" }
               end
             end
           end

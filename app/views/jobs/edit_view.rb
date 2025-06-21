@@ -106,8 +106,16 @@ module Views
               end
               
               div(class: "form-actions") do
-                f.submit("Save Changes", class: "btn btn-primary", style: "margin-left: auto;")
-                link_to("Cancel", client_job_path(@client, @job), class: "btn btn-link", style: "margin-right: auto;")
+                render Components::Ui::ButtonComponent.new(
+                  href: client_job_path(@client, @job),
+                  variant: :ghost,
+                  html_options: { style: "margin-right: auto;" }
+                ) { "Cancel" }
+                render Components::Ui::ButtonComponent.new(
+                  type: :submit,
+                  variant: :primary,
+                  html_options: { style: "margin-left: auto;" }
+                ) { "Save Changes" }
               end
               
               if @current_user.can_delete?(@job)

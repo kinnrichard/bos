@@ -20,7 +20,10 @@ module Views
             div(class: "device-header") do
               h1 { @device.name }
               div(class: "device-actions") do
-                link_to("Edit", edit_client_device_path(@client, @device), class: "btn btn-secondary")
+                render Components::Ui::ButtonComponent.new(
+                  href: edit_client_device_path(@client, @device),
+                  variant: :secondary
+                ) { "Edit" }
                 if @current_user.can_delete?(@device)
                   delete_form_with_confirmation(
                     url: client_device_path(@client, @device),

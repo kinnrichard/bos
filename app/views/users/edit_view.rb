@@ -79,8 +79,14 @@ module Views
           end
           
           div(class: "form-actions") do
-            f.submit "Update User", class: "btn btn-primary"
-            link_to "Cancel", users_path, class: "btn btn-link"
+            render Components::Ui::ButtonComponent.new(
+              type: :submit,
+              variant: :primary
+            ) { "Update User" }
+            render Components::Ui::ButtonComponent.new(
+              href: users_path,
+              variant: :ghost
+            ) { "Cancel" }
           end
         end
       end

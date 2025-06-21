@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Components
-  module UI
+  module Ui
     class BadgeComponent < Components::Base
       def initialize(
         text: nil,

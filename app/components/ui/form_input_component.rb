@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Components
-  module UI
+  module Ui
     class FormInputComponent < Components::Base
       include Phlex::Rails::Helpers::FieldsFor
       

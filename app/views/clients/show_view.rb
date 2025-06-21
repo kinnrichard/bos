@@ -24,9 +24,11 @@ module Views
               end
               
               div(class: "client-actions") do
-                link_to "Edit", edit_client_path(@client), 
-                  class: "btn btn-secondary",
+                render Components::Ui::ButtonComponent.new(
+                  href: edit_client_path(@client),
+                  variant: :secondary,
                   data: { action: "click->client#showDelete" }
+                ) { "Edit" }
                 div(style: "display: none;", data: { "client-target": "deleteButton" }) do
                   delete_form_with_confirmation(
                     url: client_path(@client),

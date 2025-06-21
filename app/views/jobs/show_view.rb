@@ -213,8 +213,8 @@ module Views
                 # Actions section
                 div(class: "popover-section popover-actions") do
                   if @current_user.can_delete?(@job)
-                    button(
-                      class: "btn-danger",
+                    render Components::Ui::ButtonComponent.new(
+                      variant: :danger,
                       data: { 
                         action: "click->job#confirmDelete"
                       }

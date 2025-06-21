@@ -53,9 +53,10 @@ module Views
                     contact_method_fields(nil, 0)
                   end
                 end
-                button(
-                  type: "button",
-                  class: "btn btn-secondary btn-sm",
+                render Components::Ui::ButtonComponent.new(
+                  type: :button,
+                  variant: :secondary,
+                  size: :small,
                   data: { action: "click->person-form#addContactMethod" }
                 ) { "+ Add Contact Method" }
               end
@@ -73,8 +74,15 @@ module Views
               
               # Form actions
               div(class: "form-actions") do
-                a(href: client_people_path(@client), class: "btn btn-link", style: "margin-right: auto;") { "Cancel" }
-                button(type: "submit", class: "btn btn-primary") { "Save" }
+                render Components::Ui::ButtonComponent.new(
+                  href: client_people_path(@client),
+                  variant: :ghost,
+                  html_options: { style: "margin-right: auto;" }
+                ) { "Cancel" }
+                render Components::Ui::ButtonComponent.new(
+                  type: :submit,
+                  variant: :primary
+                ) { "Save" }
               end
             end
           end
@@ -95,9 +103,10 @@ module Views
           if contact&.persisted?
             input(type: "hidden", name: "person[contact_methods_attributes][#{index}][id]", value: contact.id)
           end
-          button(
-            type: "button",
-            class: "btn btn-danger btn-sm",
+          render Components::Ui::ButtonComponent.new(
+            type: :button,
+            variant: :danger,
+            size: :small,
             data: { action: "click->person-form#removeContactMethod" }
           ) { "Remove" }
         end

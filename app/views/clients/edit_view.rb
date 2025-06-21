@@ -76,8 +76,15 @@ module Views
               
               # Form actions
               div(class: "form-actions") do
-                a(href: "/clients/#{@client.id}", class: "btn btn-link", style: "margin-right: auto;") { "Cancel" }
-                button(type: "submit", class: "btn btn-primary") { "Save" }
+                render Components::Ui::ButtonComponent.new(
+                  href: "/clients/#{@client.id}",
+                  variant: :ghost,
+                  html_options: { style: "margin-right: auto;" }
+                ) { "Cancel" }
+                render Components::Ui::ButtonComponent.new(
+                  type: :submit,
+                  variant: :primary
+                ) { "Save" }
               end
             end
             

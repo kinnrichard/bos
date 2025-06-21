@@ -25,7 +25,10 @@ module Views
               end
               
               div(class: "person-actions") do
-                link_to "Edit", edit_client_person_path(@client, @person), class: "btn btn-secondary"
+                render Components::Ui::ButtonComponent.new(
+                  href: edit_client_person_path(@client, @person),
+                  variant: :secondary
+                ) { "Edit" }
                 delete_form_with_confirmation(
                   url: client_person_path(@client, @person),
                   message: "Are you sure you want to delete #{@person.name}? This will also remove all contact methods and device associations.",
