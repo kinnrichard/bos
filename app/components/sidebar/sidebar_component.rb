@@ -58,7 +58,8 @@ module Components
         #nav_item("Invoices", href: client_invoices_path(@client), icon: "🧾", active: @active_section == :invoices)
         
         div(style: "margin-top: 24px; margin-bottom: 12px;") do
-          nav_item("Client Info", href: client_path(@client), icon: "ℹ️", active: @active_section == :client_info)
+          client_icon = @client.business? ? "🏢" : "🏠"
+          nav_item("Client Info", href: client_path(@client), icon: client_icon, active: @active_section == :client_info)
           nav_item("Client Logs", href: logs_client_path(@client), icon: "📜", active: @active_section == :client_logs)
         end
         
