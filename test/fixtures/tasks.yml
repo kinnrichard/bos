@@ -1,14 +1,14 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  case: one
+  job: one
   title: MyString
   status: 1
   position: 1
   assigned_to: one
 
 two:
-  case: two
+  job: two
   title: MyString
   status: 1
   position: 1

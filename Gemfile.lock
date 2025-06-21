@@ -178,6 +178,10 @@ GEM
       net-smtp
     marcel (1.0.4)
     matrix (0.4.3)
+    mime-types (3.7.0)
+      logger
+      mime-types-data (~> 3.2025, >= 3.2025.0507)
+    mime-types-data (3.2025.0617)
     mini_mime (1.1.5)
     minitest (5.25.5)
     motion (0.7.1)
@@ -226,6 +230,9 @@ GEM
       phlex (~> 2.3.0)
       railties (>= 7.1, < 9)
       zeitwerk (~> 2.7)
+    playwright-ruby-client (1.52.0)
+      concurrent-ruby (>= 1.1.6)
+      mime-types (>= 3.0)
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
@@ -418,6 +425,7 @@ DEPENDENCIES
   motion (~> 0.5)
   pg (~> 1.1)
   phlex-rails (~> 2.0)
+  playwright-ruby-client
   propshaft
   puma (>= 5.0)
   rails (~> 8.0.2)
