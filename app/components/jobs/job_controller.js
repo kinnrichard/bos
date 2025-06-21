@@ -65,6 +65,10 @@ export default class extends Controller {
     // Use capture phase to intercept before browser default
     document.addEventListener("keydown", this.handleKeydown, true)
     
+    // Listen for task reorder events from Sortable
+    this.handleTaskReorder = this.handleTaskReorder.bind(this)
+    this.element.addEventListener('task:reorder', this.handleTaskReorder)
+    
     // Store controller reference for debugging
     if (this.element) {
       this.element._jobController = this
@@ -75,6 +79,7 @@ export default class extends Controller {
     this.stopTimers()
     document.removeEventListener("click", this.handleOutsideClick)
     document.removeEventListener("keydown", this.handleKeydown, true)
+    this.element.removeEventListener('task:reorder', this.handleTaskReorder)
     
     if (this.element && this.element._jobController === this) {
       delete this.element._jobController
@@ -1148,6 +1153,59 @@ export default class extends Controller {
     }
   }
   
+  async handleTaskReorder(event) {
+    const { taskId, oldIndex, newIndex } = event.detail
+    
+    // Get all task wrappers
+    const taskWrappers = Array.from(this.element.querySelectorAll('.tasks-list > .task-wrapper:not(.new-task-wrapper)'))
+    
+    // Calculate new position based on surrounding tasks
+    let newPosition
+    if (newIndex === 0) {
+      // Moved to top
+      const nextTask = taskWrappers[1]?.querySelector('.task-item')
+      const nextPosition = nextTask ? parseInt(nextTask.dataset.taskPosition) : 1000
+      newPosition = Math.max(nextPosition - 1000, 100)
+    } else if (newIndex === taskWrappers.length - 1) {
+      // Moved to bottom
+      const prevTask = taskWrappers[newIndex - 1]?.querySelector('.task-item')
+      const prevPosition = prevTask ? parseInt(prevTask.dataset.taskPosition) : 0
+      newPosition = prevPosition + 1000
+    } else {
+      // Moved between two tasks
+      const prevTask = taskWrappers[newIndex - 1]?.querySelector('.task-item')
+      const nextTask = taskWrappers[newIndex + 1]?.querySelector('.task-item')
+      const prevPosition = prevTask ? parseInt(prevTask.dataset.taskPosition) : 0
+      const nextPosition = nextTask ? parseInt(nextTask.dataset.taskPosition) : prevPosition + 2000
+      newPosition = Math.floor((prevPosition + nextPosition) / 2)
+    }
+    
+    // Update position in the DOM immediately for responsiveness
+    const movedTaskItem = taskWrappers[newIndex].querySelector('.task-item')
+    if (movedTaskItem) {
+      movedTaskItem.dataset.taskPosition = newPosition
+    }
+    
+    // Send update to server
+    try {
+      const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}/reorder`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ position: newPosition })
+      })
+      
+      if (!response.ok) {
+        console.error('Failed to update task position')
+        // Could revert the DOM change here if needed
+      }
+    } catch (error) {
+      console.error('Error updating task position:', error)
+    }
+  }
+  
   handleNewTaskBlur(event) {
     // Don't cancel if we're tabbing to save another task
     if (event.relatedTarget && event.relatedTarget.classList.contains('new-task-input')) {
@@ -1368,7 +1426,103 @@ export default class extends Controller {
         
         // Hide dropdown
         dropdown.classList.add("hidden")
+        
+        // Check if we should resort tasks
+        if (this.shouldResortTasks()) {
+          this.resortTasksByStatus()
+        }
       })
+  }
+  
+  shouldResortTasks() {
+    // Check the user setting from the body data attribute
+    const resortSetting = document.body.dataset.resortTasksOnStatusChange
+    return resortSetting === 'true'
+  }
+  
+  resortTasksByStatus() {
+    // Define the sort order for task statuses
+    const statusOrder = {
+      'in_progress': 1,
+      'paused': 2,
+      'new_task': 3,
+      'successfully_completed': 4,
+      'cancelled': 5
+    }
+    
+    // Get the tasks list container
+    const tasksList = this.element.querySelector('.tasks-list')
+    if (!tasksList) return
+    
+    // Get all task wrappers (excluding new task placeholder)
+    const taskWrappers = Array.from(tasksList.querySelectorAll('.task-wrapper:not(.new-task-wrapper)'))
+    
+    // Sort task wrappers by status order, then by position
+    taskWrappers.sort((a, b) => {
+      const taskA = a.querySelector('.task-item')
+      const taskB = b.querySelector('.task-item')
+      
+      const statusA = taskA?.dataset.taskStatus || 'new_task'
+      const statusB = taskB?.dataset.taskStatus || 'new_task'
+      
+      const orderA = statusOrder[statusA] || 999
+      const orderB = statusOrder[statusB] || 999
+      
+      // First sort by status
+      if (orderA !== orderB) {
+        return orderA - orderB
+      }
+      
+      // Then by position within the same status
+      const positionA = parseInt(taskA?.dataset.taskPosition || 0)
+      const positionB = parseInt(taskB?.dataset.taskPosition || 0)
+      
+      return positionA - positionB
+    })
+    
+    // Find the new task placeholder
+    const newTaskWrapper = tasksList.querySelector('.new-task-wrapper')
+    
+    // Reorder the DOM with animation
+    taskWrappers.forEach((wrapper, index) => {
+      // Calculate the target position
+      const currentIndex = Array.from(tasksList.children).indexOf(wrapper)
+      
+      if (currentIndex !== index) {
+        // Add a transition for smooth movement
+        wrapper.style.transition = 'transform 0.3s ease-in-out'
+        
+        // Calculate translation needed
+        const rect = wrapper.getBoundingClientRect()
+        const targetElement = tasksList.children[index]
+        const targetRect = targetElement?.getBoundingClientRect()
+        
+        if (targetRect) {
+          const translateY = targetRect.top - rect.top
+          wrapper.style.transform = `translateY(${translateY}px)`
+          
+          // After animation, update DOM and remove transform
+          setTimeout(() => {
+            wrapper.style.transition = ''
+            wrapper.style.transform = ''
+            
+            // Insert at the correct position
+            if (index === 0) {
+              tasksList.insertBefore(wrapper, tasksList.firstChild)
+            } else {
+              tasksList.insertBefore(wrapper, tasksList.children[index])
+            }
+          }, 300)
+        }
+      }
+    })
+    
+    // Make sure new task placeholder stays at the end
+    if (newTaskWrapper) {
+      setTimeout(() => {
+        tasksList.appendChild(newTaskWrapper)
+      }, 350)
+    }
   }
   
   // Update status for all selected tasks
@@ -1416,6 +1570,13 @@ export default class extends Controller {
           console.error('Error updating task status:', error)
         })
     })
+    
+    // Resort after all updates are done
+    if (this.shouldResortTasks()) {
+      setTimeout(() => {
+        this.resortTasksByStatus()
+      }, 100)
+    }
   }
   
   // Open status menu for selected task

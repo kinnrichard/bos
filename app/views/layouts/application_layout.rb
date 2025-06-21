@@ -24,12 +24,22 @@ module Views
             end
           end
 
-          body do
+          body(data: body_data_attributes) do
             div(class: "main-container") do
               yield
             end
           end
         end
+      end
+      
+      private
+      
+      def body_data_attributes
+        attrs = {}
+        if helpers.current_user
+          attrs[:resort_tasks_on_status_change] = helpers.current_user.resort_tasks_on_status_change
+        end
+        attrs
       end
     end
   end

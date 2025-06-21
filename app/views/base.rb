@@ -62,7 +62,10 @@ class Views::Base < Components::Base
         script(src: asset_path("search.js"), defer: true)
       end
 
-      body(data: { current_user_role: current_user&.role }) do
+      body(data: { 
+        current_user_role: current_user&.role,
+        resort_tasks_on_status_change: current_user&.resort_tasks_on_status_change&.to_s
+      }) do
         if hide_sidebar
           # Simple layout without sidebar/header for auth pages
           yield

@@ -71,10 +71,14 @@ module Components
 
     def bottom_sections
       div(style: "margin-top: auto;") do
-        # Settings section for superadmins
-        if @current_user&.superadmin?
-          div(class: "sidebar-section", style: "margin-bottom: 12px;") do
-            div(class: "sidebar-section-header") { "Settings" }
+        # Settings section
+        div(class: "sidebar-section", style: "margin-bottom: 12px;") do
+          div(class: "sidebar-section-header") { "Settings" }
+          # User settings (available to all users)
+          nav_item("My Settings", href: settings_user_path(@current_user), icon: "⚙️", active: @active_section == :user_settings)
+          
+          # User management (superadmins only)
+          if @current_user&.superadmin?
             nav_item("Users", href: users_path, icon: "👥", active: @active_section == :settings)
           end
         end

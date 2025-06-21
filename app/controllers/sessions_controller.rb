@@ -2,8 +2,11 @@ class SessionsController < ApplicationController
   skip_before_action :require_login, only: [:new, :create]
   
   def new
-    redirect_to root_path if logged_in?
-    render Views::Sessions::NewView.new(return_to: params[:return_to])
+    if logged_in?
+      redirect_to root_path
+    else
+      render Views::Sessions::NewView.new(return_to: params[:return_to])
+    end
   end
 
   def create

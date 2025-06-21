@@ -157,8 +157,8 @@ class Task < ApplicationRecord
       'in_progress' => 1,
       'paused' => 2,
       'new_task' => 3,
-      'cancelled' => 4,
-      'successfully_completed' => 5
+      'successfully_completed' => 4,
+      'cancelled' => 5
     }
     
     # Get all sibling tasks (same parent_id)

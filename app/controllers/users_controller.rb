@@ -59,6 +59,20 @@ class UsersController < ApplicationController
     end
   end
 
+  def settings
+    @user = current_user
+    render Views::Users::SettingsView.new(user: @user, current_user: current_user)
+  end
+  
+  def update_settings
+    @user = current_user
+    if @user.update(settings_params)
+      redirect_to settings_user_path(@user), notice: "Settings updated successfully."
+    else
+      render Views::Users::SettingsView.new(user: @user, current_user: current_user), status: :unprocessable_entity
+    end
+  end
+  
   def destroy
     user_name = @user.name
     user_email = @user.email
@@ -92,6 +106,10 @@ class UsersController < ApplicationController
 
   def user_params
     params.require(:user).permit(:name, :email, :password, :password_confirmation, :role)
+  end
+  
+  def settings_params
+    params.require(:user).permit(:resort_tasks_on_status_change)
   end
   
   def require_superadmin

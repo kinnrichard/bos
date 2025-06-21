@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_20_032343) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_21_012509) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -142,6 +142,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_20_032343) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "password_digest"
+    t.boolean "resort_tasks_on_status_change", default: true, null: false
   end
 
   add_foreign_key "activity_logs", "clients"

@@ -45,7 +45,13 @@ module Views
               # Existing tasks (only root tasks)
               div(class: "tasks-list", data: { job_target: "tasksList" }) do
                 if @job.tasks.root_tasks.any?
-                  @job.tasks.root_tasks.order(:position).each do |task|
+                  @job.tasks.root_tasks.order(Arel.sql("CASE 
+                    WHEN status = 1 THEN 1
+                    WHEN status = 2 THEN 2
+                    WHEN status = 0 THEN 3
+                    WHEN status = 3 THEN 4
+                    WHEN status = 4 THEN 5
+                    END, position ASC")).each do |task|
                     render_task_item(task)
                   end
                 else

@@ -49,12 +49,21 @@ class TasksController < ApplicationController
   end
   
   def reorder
-    params[:positions].each do |position_data|
-      task = @job.tasks.find(position_data[:id])
-      task.update(position: position_data[:position])
-    end
+    @task = @job.tasks.find(params[:id])
     
-    render json: { status: 'success' }
+    if params[:position]
+      @task.update(position: params[:position])
+      render json: { status: 'success' }
+    elsif params[:positions]
+      # Handle batch reordering (legacy)
+      params[:positions].each do |position_data|
+        task = @job.tasks.find(position_data[:id])
+        task.update(position: position_data[:position])
+      end
+      render json: { status: 'success' }
+    else
+      render json: { error: 'Position parameter required' }, status: :unprocessable_entity
+    end
   end
   
   private

@@ -15,7 +15,12 @@ Rails.application.routes.draw do
   delete 'logout', to: 'sessions#destroy', as: :logout
   
   # User management routes (superadmin only)
-  resources :users
+  resources :users do
+    member do
+      get :settings
+      patch :update_settings
+    end
+  end
   
   # Client routes
   resources :clients do
@@ -27,7 +32,7 @@ Rails.application.routes.draw do
     resources :devices
     resources :jobs do
       resources :tasks do
-        collection do
+        member do
           patch :reorder
         end
       end
