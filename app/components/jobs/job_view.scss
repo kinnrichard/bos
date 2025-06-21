@@ -114,17 +114,15 @@
   
   &.completed {
     // Don't apply opacity to the entire task to avoid affecting dropdown
-    .task-status-button,
     .task-title,
     .task-content,
     .task-assignee,
     .task-time-tracking,
     .add-subtask-button {
-      opacity: 0.5;
+      opacity: 0.75;
     }
     
     .task-title {
-      text-decoration: line-through;
       color: #8E8E93;
     }
   }
@@ -385,11 +383,10 @@
     .subtask-status-button,
     .subtask-title,
     .subtask-content {
-      opacity: 0.5;
+      opacity: 0.75;
     }
     
     .subtask-title {
-      text-decoration: line-through;
       color: #8E8E93;
     }
   }
@@ -533,7 +530,8 @@
   font-family: inherit;
   
   &::placeholder {
-    color: #48484A;
+    color: #FFF;
+	opacity: 0.75;
   }
 }
 
