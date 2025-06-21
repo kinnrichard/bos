@@ -12,6 +12,11 @@ class Components::Base < Phlex::HTML
   register_output_helper :csp_meta_tag  
   register_output_helper :stylesheet_link_tag
   register_output_helper :javascript_importmap_tags
+  register_value_helper :form_authenticity_token
+  register_value_helper :flash
+  register_value_helper :current_user
+  register_value_helper :content_for
+  register_value_helper :content_for?
 
   if Rails.env.development?
     def before_template

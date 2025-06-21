@@ -26,15 +26,15 @@ module Views
               h1(class: "auth-title") { "Sign In" }
               
               # Display flash messages
-              if helpers.flash[:alert]
-                div(class: "alert alert-error") { helpers.flash[:alert] }
+              if flash[:alert]
+                div(class: "alert alert-error") { flash[:alert] }
               end
-              if helpers.flash[:notice]
-                div(class: "alert alert-success") { helpers.flash[:notice] }
+              if flash[:notice]
+                div(class: "alert alert-success") { flash[:notice] }
               end
               
               form(action: login_path, method: "post", class: "auth-form", data: { turbo: false }) do
-                input(type: "hidden", name: "authenticity_token", value: helpers.form_authenticity_token)
+                input(type: "hidden", name: "authenticity_token", value: form_authenticity_token)
                 input(type: "hidden", name: "return_to", value: @return_to) if @return_to
                 
                 div(class: "form-group") do
