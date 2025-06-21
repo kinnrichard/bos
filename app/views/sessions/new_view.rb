@@ -19,8 +19,7 @@ module Views
                 img(
                   src: asset_path("faultless_logo.png"), 
                   alt: "Logo", 
-                  class: "auth-logo-image",
-                  style: "height: 48px; width: auto; max-height: 48px;"
+                  class: "auth-logo-image"
                 )
               end
               

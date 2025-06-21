@@ -1101,7 +1101,11 @@ export default class extends Controller {
       })
       
       if (response.ok) {
-        const task = await response.json()
+        const responseData = await response.json()
+        console.log('Task created response:', responseData)
+        
+        // The response might wrap the task in a data object
+        const task = responseData.task || responseData
         
         // Replace the temporary element with the real task HTML
         const taskWrapper = titleElement.closest('.task-wrapper')
@@ -1241,7 +1245,11 @@ export default class extends Controller {
             </div>
           </div>
           <div class="task-content">
-            <div class="task-title">${task.title}</div>
+            <div class="task-title" 
+                 contenteditable="true"
+                 data-action="focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick"
+                 data-task-id="${task.id}"
+                 data-original-title="${task.title || task.name || ''}">${task.title || task.name || ''}</div>
           </div>
           <div class="task-right">
             <!-- Task icons and time tracking go here -->
@@ -1777,12 +1785,11 @@ export default class extends Controller {
     return `
       <div class="task-wrapper">
         <div class="task-item ${isCompleted ? 'completed' : ''}" 
-             draggable="true"
              data-task-id="${task.id}" 
              data-task-status="${task.status}" 
              data-task-position="${task.position || 0}"
              data-job-target="task"
-             data-action="click->job#handleTaskClick dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask">
+             data-action="click->job#handleTaskClick mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask">
           <div class="task-status-container">
             <button class="task-status-button" data-action="click->job#toggleTaskStatus">
               <span>${emoji}</span>
@@ -1792,7 +1799,11 @@ export default class extends Controller {
             </div>
           </div>
           <div class="task-content">
-            <div class="task-title">${task.title}</div>
+            <div class="task-title" 
+                 contenteditable="true"
+                 data-action="focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick"
+                 data-task-id="${task.id}"
+                 data-original-title="${task.title || task.name || ''}">${task.title || task.name || ''}</div>
           </div>
           <div class="task-right">
             <!-- Task icons and time tracking go here -->

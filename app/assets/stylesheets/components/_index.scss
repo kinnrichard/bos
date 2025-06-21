@@ -20,6 +20,9 @@
 @use '../../../components/empty_state/empty_state';
 @use '../../../components/popover/popover';
 
+// Auth components
+@use 'auth';
+
 // Clients components
 @use '../../../components/clients/clients';
 
