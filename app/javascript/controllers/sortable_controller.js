@@ -17,82 +17,41 @@ export default class extends Controller {
       return;
     }
     
-    // Initialize Sortable with nested support
+    // Initialize Sortable
     this.sortable = Sortable.create(tasksList, {
-      group: {
-        name: 'tasks',
-        pull: true,
-        put: true
-      },
+      group: 'tasks',
       animation: 150,
-      fallbackOnBody: true,
-      swapThreshold: 0.65,
       draggable: '.task-wrapper',
       handle: '.task-item',
       filter: '.task-title, .new-task-wrapper',
       preventOnFilter: false,
       
       // Touch support
-      delay: 300, // 300ms delay for touch devices
+      delay: 300,
       delayOnTouchOnly: true,
-      touchStartThreshold: 5, // Prevent accidental drags
       
-      // Called when drag starts
       onStart: (evt) => {
         window.getSelection().removeAllRanges()
         evt.item.classList.add('dragging')
         this.createDropIndicator()
+        this.setupDragOverHandlers()
       },
       
-      // Called when dragging over a potential drop zone
-      onMove: (evt) => {
-        const draggedEl = evt.dragged
-        const targetEl = evt.related
-        const targetWrapper = targetEl.closest('.task-wrapper')
-        
-        // Clear any existing highlights
-        this.clearHighlights()
-        
-        if (!targetWrapper || targetWrapper === draggedEl) {
-          return
-        }
-        
-        // Check if we're over the middle 50% of the target (drop as subtask)
-        const rect = targetWrapper.getBoundingClientRect()
-        const y = evt.originalEvent.clientY
-        const height = rect.height
-        const relativeY = y - rect.top
-        const threshold = 0.25 // 25% from top/bottom
-        
-        if (relativeY > height * threshold && relativeY < height * (1 - threshold)) {
-          // Dropping ON the task - highlight for subtask
-          const targetTask = targetWrapper.querySelector('.task-item')
-          if (targetTask && !this.wouldCreateCircularReference(draggedEl, targetWrapper)) {
-            targetTask.classList.add('drop-target')
-            this.hideDropIndicator()
-            return false // Allow drop
-          }
-        } else {
-          // Dropping BETWEEN tasks - show blue line
-          this.positionDropIndicator(targetWrapper, relativeY < height * 0.5)
-        }
-      },
-      
-      // Called when drop happens
       onEnd: (evt) => {
         evt.item.classList.remove('dragging')
         this.clearHighlights()
         this.hideDropIndicator()
+        this.removeDragOverHandlers()
         
+        // Handle the drop based on what was highlighted
+        const dropTarget = document.querySelector('.task-item.drop-target')
         const draggedWrapper = evt.item
         const draggedTask = draggedWrapper.querySelector('.task-item')
         const draggedId = draggedTask?.dataset.taskId
         
-        // Check if we dropped on a task (making it a subtask)
-        const dropTarget = document.querySelector('.task-item.drop-target')
-        
-        if (dropTarget) {
-          // Make it a subtask
+        if (dropTarget && draggedId) {
+          // Dropped on a task - make it a subtask
+          evt.preventDefault()
           const parentId = dropTarget.dataset.taskId
           this.makeSubtask(draggedId, parentId, draggedWrapper)
         } else {
@@ -106,6 +65,58 @@ export default class extends Controller {
     this.initializeSubtaskSortables()
   }
   
+  setupDragOverHandlers() {
+    this.dragOverHandler = (e) => {
+      const taskWrapper = e.target.closest('.task-wrapper')
+      if (!taskWrapper || taskWrapper.classList.contains('dragging') || taskWrapper.classList.contains('new-task-wrapper')) {
+        return
+      }
+      
+      const rect = taskWrapper.getBoundingClientRect()
+      const y = e.clientY
+      const height = rect.height
+      const relativeY = y - rect.top
+      const threshold = 0.3 // 30% from top/bottom
+      
+      // Clear previous highlights
+      this.clearHighlights()
+      
+      if (relativeY > height * threshold && relativeY < height * (1 - threshold)) {
+        // Middle zone - highlight for subtask
+        const targetTask = taskWrapper.querySelector('.task-item')
+        if (targetTask) {
+          targetTask.classList.add('drop-target')
+          this.hideDropIndicator()
+        }
+      } else {
+        // Edge zones - show line for reorder
+        this.positionDropIndicator(taskWrapper, relativeY < height * 0.5)
+      }
+    }
+    
+    this.dragLeaveHandler = (e) => {
+      const taskWrapper = e.target.closest('.task-wrapper')
+      if (taskWrapper && !taskWrapper.contains(e.relatedTarget)) {
+        const targetTask = taskWrapper.querySelector('.task-item')
+        if (targetTask) {
+          targetTask.classList.remove('drop-target')
+        }
+      }
+    }
+    
+    document.addEventListener('dragover', this.dragOverHandler)
+    document.addEventListener('dragleave', this.dragLeaveHandler)
+  }
+  
+  removeDragOverHandlers() {
+    if (this.dragOverHandler) {
+      document.removeEventListener('dragover', this.dragOverHandler)
+    }
+    if (this.dragLeaveHandler) {
+      document.removeEventListener('dragleave', this.dragLeaveHandler)
+    }
+  }
+  
   initializeSubtaskSortables() {
     const subtaskContainers = this.element.querySelectorAll('.subtasks-container')
     
@@ -114,11 +125,7 @@ export default class extends Controller {
       if (container._sortable) return
       
       Sortable.create(container, {
-        group: {
-          name: 'tasks',
-          pull: true,
-          put: true
-        },
+        group: 'tasks',
         animation: 150,
         draggable: '.task-wrapper',
         handle: '.subtask-item',
@@ -126,10 +133,6 @@ export default class extends Controller {
         preventOnFilter: false,
         delay: 300,
         delayOnTouchOnly: true,
-        
-        onMove: (evt) => {
-          return this.onMove ? this.onMove(evt) : true
-        },
         
         onEnd: (evt) => {
           this.handleReorder(evt)
@@ -329,5 +332,6 @@ export default class extends Controller {
     if (this.dropIndicator && this.dropIndicator.parentNode) {
       this.dropIndicator.parentNode.removeChild(this.dropIndicator)
     }
+    this.removeDragOverHandlers()
   }
 }

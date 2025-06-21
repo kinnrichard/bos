@@ -49,20 +49,28 @@ class TasksController < ApplicationController
   end
   
   def reorder
-    @task = @job.tasks.find(params[:id])
-    
-    if params[:position]
-      @task.update(position: params[:position])
-      render json: { status: 'success' }
-    elsif params[:positions]
-      # Handle batch reordering (legacy)
-      params[:positions].each do |position_data|
-        task = @job.tasks.find(position_data[:id])
-        task.update(position: position_data[:position])
+    # Check if this is a member action (has :id) or collection action
+    if params[:id]
+      # Member action - single task reorder
+      @task = @job.tasks.find(params[:id])
+      
+      if params[:position]
+        @task.update(position: params[:position])
+        render json: { status: 'success' }
+      else
+        render json: { error: 'Position parameter required' }, status: :unprocessable_entity
       end
-      render json: { status: 'success' }
     else
-      render json: { error: 'Position parameter required' }, status: :unprocessable_entity
+      # Collection action - batch reorder
+      if params[:positions]
+        params[:positions].each do |position_data|
+          task = @job.tasks.find(position_data[:id])
+          task.update(position: position_data[:position])
+        end
+        render json: { status: 'success' }
+      else
+        render json: { error: 'Positions parameter required' }, status: :unprocessable_entity
+      end
     end
   end
   

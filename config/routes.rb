@@ -35,6 +35,9 @@ Rails.application.routes.draw do
         member do
           patch :reorder
         end
+        collection do
+          patch :reorder
+        end
       end
       resources :notes
     end
