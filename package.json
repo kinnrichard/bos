@@ -15,7 +15,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@dnd-kit/dom": "^0.1.19",
     "puppeteer": "^24.10.2"
   }
 }
