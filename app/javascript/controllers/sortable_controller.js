@@ -6,6 +6,8 @@ export default class extends Controller {
   
   connect() {
     this.dropIndicator = null
+    this.currentDropMode = null
+    this.currentDropTarget = null
     this.initializeSortable()
   }
   
@@ -25,10 +27,39 @@ export default class extends Controller {
       handle: '.task-item',
       filter: '.task-title, .new-task-wrapper',
       preventOnFilter: false,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
       
       // Touch support
       delay: 300,
       delayOnTouchOnly: true,
+      
+      // Control when items can be moved
+      onMove: (evt) => {
+        const draggedEl = evt.dragged
+        const targetEl = evt.related
+        
+        if (!targetEl) return true
+        
+        const targetWrapper = targetEl.closest('.task-wrapper')
+        if (!targetWrapper || targetWrapper.classList.contains('new-task-wrapper')) {
+          return true
+        }
+        
+        // Get mouse position relative to target
+        const rect = targetWrapper.getBoundingClientRect()
+        const y = evt.originalEvent.clientY
+        const relativeY = y - rect.top
+        const height = rect.height
+        const threshold = 0.3 // 30% from top/bottom
+        
+        // If we're in the middle zone, prevent the move (we'll handle it as a subtask drop)
+        if (relativeY > height * threshold && relativeY < height * (1 - threshold)) {
+          return false // Prevent the move
+        }
+        
+        return true // Allow the move for edge zones
+      },
       
       onStart: (evt) => {
         window.getSelection().removeAllRanges()
@@ -43,21 +74,24 @@ export default class extends Controller {
         this.hideDropIndicator()
         this.removeDragOverHandlers()
         
-        // Handle the drop based on what was highlighted
-        const dropTarget = document.querySelector('.task-item.drop-target')
         const draggedWrapper = evt.item
         const draggedTask = draggedWrapper.querySelector('.task-item')
         const draggedId = draggedTask?.dataset.taskId
         
-        if (dropTarget && draggedId) {
+        // Use the stored drop mode and target
+        if (this.currentDropMode === 'subtask' && this.currentDropTarget && draggedId) {
           // Dropped on a task - make it a subtask
           evt.preventDefault()
-          const parentId = dropTarget.dataset.taskId
+          const parentId = this.currentDropTarget.dataset.taskId
           this.makeSubtask(draggedId, parentId, draggedWrapper)
         } else {
           // Regular reorder
           this.handleReorder(evt)
         }
+        
+        // Reset state
+        this.currentDropMode = null
+        this.currentDropTarget = null
       }
     })
     
@@ -67,8 +101,15 @@ export default class extends Controller {
   
   setupDragOverHandlers() {
     this.dragOverHandler = (e) => {
+      e.preventDefault() // Allow drop
+      
       const taskWrapper = e.target.closest('.task-wrapper')
-      if (!taskWrapper || taskWrapper.classList.contains('dragging') || taskWrapper.classList.contains('new-task-wrapper')) {
+      if (!taskWrapper || taskWrapper.classList.contains('sortable-ghost') || taskWrapper.classList.contains('new-task-wrapper')) {
+        return
+      }
+      
+      // Don't process if this is the dragged element
+      if (taskWrapper.classList.contains('sortable-chosen')) {
         return
       }
       
@@ -80,17 +121,21 @@ export default class extends Controller {
       
       // Clear previous highlights
       this.clearHighlights()
+      this.hideDropIndicator()
       
       if (relativeY > height * threshold && relativeY < height * (1 - threshold)) {
         // Middle zone - highlight for subtask
         const targetTask = taskWrapper.querySelector('.task-item')
         if (targetTask) {
           targetTask.classList.add('drop-target')
-          this.hideDropIndicator()
+          this.currentDropMode = 'subtask'
+          this.currentDropTarget = targetTask
         }
       } else {
         // Edge zones - show line for reorder
         this.positionDropIndicator(taskWrapper, relativeY < height * 0.5)
+        this.currentDropMode = 'reorder'
+        this.currentDropTarget = null
       }
     }
     
