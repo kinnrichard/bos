@@ -240,7 +240,7 @@ export default class extends Controller {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
       },
       body: JSON.stringify({ 
         task: { parent_id: parentId }
@@ -283,22 +283,29 @@ export default class extends Controller {
       parentWrapper.appendChild(subtasksContainer)
     }
     
-    // Update the task's classes from task-item to subtask-item
-    const taskItem = taskWrapper.querySelector('.task-item')
+    // Update the task's classes to subtask classes
+    const taskItem = taskWrapper.querySelector('.task-item, .subtask-item')
     if (taskItem) {
+      // Always ensure it has subtask-item class
       taskItem.classList.remove('task-item')
       taskItem.classList.add('subtask-item')
       
-      // Update other classes
-      taskWrapper.querySelectorAll('.task-title').forEach(el => {
-        el.classList.remove('task-title')
-        el.classList.add('subtask-title')
-      })
+      // Update parent_id data attribute
+      taskItem.dataset.parentId = parentId
       
-      taskWrapper.querySelectorAll('.task-content').forEach(el => {
-        el.classList.remove('task-content')
-        el.classList.add('subtask-content')
-      })
+      // Update title classes
+      const titleEl = taskWrapper.querySelector('.task-title, .subtask-title')
+      if (titleEl) {
+        titleEl.classList.remove('task-title')
+        titleEl.classList.add('subtask-title')
+      }
+      
+      // Update content classes
+      const contentEl = taskWrapper.querySelector('.task-content, .subtask-content')
+      if (contentEl) {
+        contentEl.classList.remove('task-content')
+        contentEl.classList.add('subtask-content')
+      }
     }
     
     // Move to subtasks container
@@ -333,10 +340,56 @@ export default class extends Controller {
     if (!targetWrapper || targetWrapper === draggedWrapper) return
     
     const container = targetWrapper.parentElement
+    const draggedTask = draggedWrapper.querySelector('.task-item, .subtask-item')
+    const targetTask = targetWrapper.querySelector('.task-item, .subtask-item')
+    
+    // Check if we're dropping into a subtask container
+    const isTargetInSubtaskContainer = container.classList.contains('subtasks-container')
+    const isDraggedFromSubtaskContainer = draggedWrapper.parentElement.classList.contains('subtasks-container')
+    
+    // Determine the parent ID based on the container
+    let newParentId = null
+    if (isTargetInSubtaskContainer) {
+      // Find the parent task of this subtask container
+      const parentTaskWrapper = container.closest('.task-wrapper')
+      if (parentTaskWrapper) {
+        const parentTask = parentTaskWrapper.querySelector('.task-item, .subtask-item')
+        newParentId = parentTask?.dataset.taskId
+      }
+    }
     
     // Store current state for validation
     const originalParent = draggedWrapper.parentElement
     const originalNext = draggedWrapper.nextElementSibling
+    const draggedId = draggedTask?.dataset.taskId
+    
+    // If we're moving to a different parent level, update the server first
+    if (draggedId && ((isTargetInSubtaskContainer && !isDraggedFromSubtaskContainer) || 
+                      (!isTargetInSubtaskContainer && isDraggedFromSubtaskContainer) ||
+                      (isTargetInSubtaskContainer && isDraggedFromSubtaskContainer && newParentId !== draggedTask.dataset.parentId))) {
+      
+      // Update parent_id on server
+      this.updateTaskParent(draggedId, newParentId, () => {
+        // After server update, perform the DOM move
+        this.performReorderMove(draggedWrapper, targetWrapper, container)
+      })
+    } else {
+      // Same parent level, just reorder
+      this.performReorderMove(draggedWrapper, targetWrapper, container)
+    }
+  }
+  
+  performReorderMove(draggedWrapper, targetWrapper, container) {
+    // Check if we need to update task classes
+    const isMovingToRootLevel = container.classList.contains('tasks-list')
+    const isMovingToSubtaskLevel = container.classList.contains('subtasks-container')
+    
+    // Update task classes if moving between levels
+    if (isMovingToRootLevel) {
+      this.convertToRootTask(draggedWrapper)
+    } else if (isMovingToSubtaskLevel) {
+      // Already handled by makeSubtask logic
+    }
     
     // Use the precise position determined during dragover
     let insertBefore = null
@@ -346,34 +399,19 @@ export default class extends Controller {
       insertBefore = targetWrapper.nextElementSibling
     }
     
-    // Only move if it's actually a different position
-    const isAlreadyInPosition = (
-      originalParent === container &&
-      ((insertBefore === null && originalNext === null) ||
-       (insertBefore === originalNext))
-    )
-    
-    if (!isAlreadyInPosition) {
-      // Remove from original position
-      if (draggedWrapper.parentElement) {
-        draggedWrapper.parentElement.removeChild(draggedWrapper)
-      }
-      
-      // Insert in new position
-      if (insertBefore && insertBefore.parentElement === container) {
-        container.insertBefore(draggedWrapper, insertBefore)
-      } else {
-        container.appendChild(draggedWrapper)
-      }
-      
-      // Ensure the element is properly attached
-      if (!draggedWrapper.parentElement) {
-        console.error('Failed to attach element to new position')
-        return
-      }
+    // Remove from original position
+    if (draggedWrapper.parentElement) {
+      draggedWrapper.parentElement.removeChild(draggedWrapper)
     }
     
-    // Calculate new positions after DOM move
+    // Insert in new position
+    if (insertBefore && insertBefore.parentElement === container) {
+      container.insertBefore(draggedWrapper, insertBefore)
+    } else {
+      container.appendChild(draggedWrapper)
+    }
+    
+    // Update positions for all items in the container
     const items = Array.from(container.children).filter(el => 
       el.classList.contains('task-wrapper') && !el.classList.contains('new-task-wrapper')
     )
@@ -389,6 +427,78 @@ export default class extends Controller {
       bubbles: true
     })
     this.element.dispatchEvent(reorderEvent)
+    
+    // Update subtask counts if needed
+    this.updateAllSubtaskCounts()
+    
+    // Refresh drag handlers
+    this.refresh()
+  }
+  
+  convertToRootTask(taskWrapper) {
+    const taskItem = taskWrapper.querySelector('.task-item, .subtask-item')
+    if (taskItem) {
+      // Convert to root task classes
+      taskItem.classList.remove('subtask-item')
+      taskItem.classList.add('task-item')
+      
+      // Clear parent_id data attribute
+      delete taskItem.dataset.parentId
+      
+      // Update title classes
+      const titleEl = taskWrapper.querySelector('.task-title, .subtask-title')
+      if (titleEl) {
+        titleEl.classList.remove('subtask-title')
+        titleEl.classList.add('task-title')
+      }
+      
+      // Update content classes
+      const contentEl = taskWrapper.querySelector('.task-content, .subtask-content')
+      if (contentEl) {
+        contentEl.classList.remove('subtask-content')
+        contentEl.classList.add('task-content')
+      }
+    }
+  }
+  
+  updateTaskParent(taskId, newParentId, callback) {
+    const jobController = this.element.closest('[data-controller*="job"]')
+    const jobId = jobController?.dataset.jobId
+    const clientId = jobController?.dataset.clientId
+    
+    if (!jobId || !clientId) return
+    
+    fetch(`/clients/${clientId}/jobs/${jobId}/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+      },
+      body: JSON.stringify({ 
+        task: { parent_id: newParentId }
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        if (callback) callback()
+      }
+    })
+    .catch(error => {
+      console.error('Error updating task parent:', error)
+    })
+  }
+  
+  updateAllSubtaskCounts() {
+    // Update counts for all tasks with subtasks
+    const tasksWithSubtasks = this.element.querySelectorAll('.task-wrapper')
+    tasksWithSubtasks.forEach(wrapper => {
+      const task = wrapper.querySelector('.task-item, .subtask-item')
+      if (task) {
+        const taskId = task.dataset.taskId
+        this.updateSubtaskCount(taskId)
+      }
+    })
   }
   
   refresh() {

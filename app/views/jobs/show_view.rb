@@ -370,53 +370,72 @@ module Views
       end
       
       def render_subtask_item(subtask)
-        div(
-          class: "subtask-item #{subtask.successfully_completed? ? 'completed' : ''}",
-          data: { 
-            task_id: subtask.id,
-            task_status: subtask.status,
-            parent_id: subtask.parent_id,
-            action: "click->job#handleTaskClick"
-          }
-        ) do
-          # Status button container
-          div(class: "task-status-container") do
-            button(
-              class: "subtask-status-button",
-              data: { 
-                action: "click->job#toggleTaskStatus",
-                job_target: "taskStatusButton"
-              }
-            ) do
-              span { subtask.status_emoji || "⚫" }
+        # Wrap subtask in task-wrapper for drag-and-drop
+        div(class: "task-wrapper") do
+          div(
+            class: "subtask-item #{subtask.successfully_completed? ? 'completed' : ''}",
+            data: { 
+              task_id: subtask.id,
+              task_status: subtask.status,
+              parent_id: subtask.parent_id,
+              action: "click->job#handleTaskClick"
+            }
+          ) do
+            # Status button container
+            div(class: "task-status-container") do
+              button(
+                class: "subtask-status-button",
+                data: { 
+                  action: "click->job#toggleTaskStatus",
+                  job_target: "taskStatusButton"
+                }
+              ) do
+                span { subtask.status_emoji || "⚫" }
+              end
+              
+              # Status dropdown (hidden by default)
+              div(
+                class: "task-status-dropdown hidden",
+                data: { job_target: "taskStatusDropdown" }
+              ) do
+                render_task_status_options(subtask)
+              end
             end
             
-            # Status dropdown (hidden by default)
-            div(
-              class: "task-status-dropdown hidden",
-              data: { job_target: "taskStatusDropdown" }
-            ) do
-              render_task_status_options(subtask)
+            # Subtask content
+            div(class: "subtask-content") do
+              div(
+                class: "subtask-title",
+                contenteditable: "true",
+                data: { 
+                  action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown",
+                  task_id: subtask.id,
+                  original_title: subtask.title
+                }
+              ) { subtask.title }
+              
+              # Show subtask count if any
+              if subtask.has_subtasks?
+                span(class: "subtask-count", style: "font-size: 13px; color: #8E8E93; margin-left: 8px;") do
+                  "(#{subtask.subtasks.count} subtask#{subtask.subtasks.count == 1 ? '' : 's'})"
+                end
+              end
+              
+              # Show time in progress if available
+              if subtask.formatted_time_in_progress.present?
+                div(class: "subtask-time-tracking") do
+                  span(class: "time-icon") { "⏱️" }
+                  span(class: "time-value") { subtask.formatted_time_in_progress }
+                end
+              end
             end
           end
           
-          # Subtask content
-          div(class: "subtask-content") do
-            div(
-              class: "subtask-title",
-              contenteditable: "true",
-              data: { 
-                action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown",
-                task_id: subtask.id,
-                original_title: subtask.title
-              }
-            ) { subtask.title }
-            
-            # Show time in progress if available
-            if subtask.formatted_time_in_progress.present?
-              div(class: "subtask-time-tracking") do
-                span(class: "time-icon") { "⏱️" }
-                span(class: "time-value") { subtask.formatted_time_in_progress }
+          # Render sub-subtasks if any
+          if subtask.has_subtasks?
+            div(class: "subtasks subtasks-container") do
+              subtask.subtasks.order(:position).each do |sub_subtask|
+                render_subtask_item(sub_subtask)
               end
             end
           end

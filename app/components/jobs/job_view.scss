@@ -374,6 +374,11 @@
 // Subtasks container
 .subtasks-container {
   margin-left: 32px; // Indent subtasks
+  
+  // Nested subtasks get additional indentation
+  .subtasks-container {
+    margin-left: 32px; // Additional indent for sub-subtasks
+  }
 }
 
 // Subtask item
