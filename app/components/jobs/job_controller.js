@@ -1815,6 +1815,14 @@ export default class extends Controller {
     .then(response => response.json())
     .then(data => {
       if (data.status === 'success') {
+        // Update DOM attributes with new positions to ensure fresh data for resort
+        positions.forEach(positionData => {
+          const taskElement = this.element.querySelector(`[data-task-id="${positionData.id}"]`)
+          if (taskElement) {
+            taskElement.dataset.taskPosition = positionData.position
+          }
+        })
+        
         // Optionally trigger resort if enabled
         if (this.shouldResortTasks()) {
           this.resortTasksByStatus()
