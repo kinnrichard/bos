@@ -188,10 +188,6 @@
   cursor: default;
   transition: background-color 0.15s ease;
   
-  &:hover {
-    background-color: var(--bg-tertiary);
-  }
-  
   &.active {
     background-color: var(--accent-blue);
     color: white;

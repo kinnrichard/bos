@@ -57,8 +57,8 @@ module Views
               end
               
               div(class: "form-actions") do
+                link_to("Cancel", client_devices_path(@client), class: "btn btn-link", style: "margin-right: auto;")
                 f.submit("Save", class: "btn btn-primary")
-                link_to("Cancel", client_devices_path(@client), class: "btn btn-link")
               end
             end
           end
