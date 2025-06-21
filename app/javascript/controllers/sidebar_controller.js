@@ -1,1 +1,0 @@
-../../components/sidebar/sidebar_controller.js
