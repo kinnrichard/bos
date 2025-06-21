@@ -16,7 +16,12 @@ module Views
           div(class: "auth-container") do
             div(class: "auth-box") do
               div(class: "auth-logo") do
-                img(src: asset_path("faultless_logo.png"), alt: "Logo", class: "auth-logo-image")
+                img(
+                  src: asset_path("faultless_logo.png"), 
+                  alt: "Logo", 
+                  class: "auth-logo-image",
+                  style: "height: 48px; width: auto; max-height: 48px;"
+                )
               end
               
               h1(class: "auth-title") { "Sign In" }

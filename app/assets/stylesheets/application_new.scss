@@ -2385,8 +2385,9 @@ h1.job-title,
 }
 
 .auth-logo-image {
-  height: 48px;
-  width: auto;
+  height: 48px !important;
+  width: auto !important;
+  max-height: 48px !important;
 }
 
 .auth-title {

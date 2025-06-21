@@ -337,21 +337,12 @@ export default class extends Controller {
       }
     }
     
-    // Enter to focus on task title for editing when single task selected
-    if (event.key === 'Enter' && this.selectedTasks.size === 1) {
+    // Enter to create new task below selected task
+    if (event.key === 'Enter' && this.selectedTasks.size === 1 && !isInputField) {
       event.preventDefault()
       const selectedTask = Array.from(this.selectedTasks)[0]
-      const titleElement = selectedTask.querySelector('.task-title, .subtask-title')
-      if (titleElement) {
-        titleElement.focus()
-        // Place cursor at end of text
-        const range = document.createRange()
-        const sel = window.getSelection()
-        range.selectNodeContents(titleElement)
-        range.collapse(false)
-        sel.removeAllRanges()
-        sel.addRange(range)
-      }
+      this.createNewTaskBelow(selectedTask)
+      return false
     }
     
     // Remove duplicate arrow key handler - already handled above
@@ -1026,6 +1017,130 @@ export default class extends Controller {
       if (tasksList && !tasksList.querySelector('.empty-tasks')) {
         tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click below to add a task.</p></div>'
       }
+    }
+  }
+  
+  createNewTaskBelow(selectedTask) {
+    // Clear selection
+    this.clearSelection()
+    
+    // Create a new task element that matches the existing task structure
+    const newTaskWrapper = document.createElement('div')
+    newTaskWrapper.className = 'task-wrapper'
+    
+    const newTaskItem = document.createElement('div')
+    newTaskItem.className = 'task-item new-inline-task'
+    newTaskItem.dataset.jobTarget = 'task'
+    newTaskItem.dataset.action = 'click->job#handleTaskClick'
+    
+    // Status button container
+    const statusContainer = document.createElement('div')
+    statusContainer.className = 'task-status-container'
+    
+    const statusButton = document.createElement('button')
+    statusButton.className = 'task-status-button'
+    statusButton.dataset.action = 'click->job#toggleTaskStatus'
+    statusButton.innerHTML = '<span>⚫</span>'
+    statusContainer.appendChild(statusButton)
+    
+    // Task content
+    const taskContent = document.createElement('div')
+    taskContent.className = 'task-content'
+    
+    const taskTitle = document.createElement('div')
+    taskTitle.className = 'task-title'
+    taskTitle.contentEditable = 'true'
+    taskTitle.dataset.action = 'focus->job#storeOriginalTitle blur->job#saveNewInlineTask keydown->job#handleNewTaskKeydown'
+    taskTitle.dataset.originalTitle = ''
+    taskContent.appendChild(taskTitle)
+    
+    // Assemble the task
+    newTaskItem.appendChild(statusContainer)
+    newTaskItem.appendChild(taskContent)
+    newTaskWrapper.appendChild(newTaskItem)
+    
+    // Insert after the selected task
+    const selectedWrapper = selectedTask.closest('.task-wrapper')
+    if (selectedWrapper && selectedWrapper.nextSibling) {
+      selectedWrapper.parentNode.insertBefore(newTaskWrapper, selectedWrapper.nextSibling)
+    } else if (selectedWrapper) {
+      selectedWrapper.parentNode.appendChild(newTaskWrapper)
+    }
+    
+    // Focus the new task title for immediate editing
+    taskTitle.focus()
+  }
+  
+  async saveNewInlineTask(event) {
+    const titleElement = event.currentTarget
+    const newTitle = titleElement.textContent.trim()
+    
+    // If empty, remove the task element
+    if (newTitle === '') {
+      const taskWrapper = titleElement.closest('.task-wrapper')
+      if (taskWrapper) {
+        taskWrapper.remove()
+      }
+      return
+    }
+    
+    // Create the task via API
+    const formData = new FormData()
+    formData.append('task[title]', newTitle)
+    formData.append('task[job_id]', this.jobIdValue)
+    formData.append('task[status]', 'new_task')
+    
+    try {
+      const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Accept': 'application/json'
+        },
+        body: formData
+      })
+      
+      if (response.ok) {
+        const task = await response.json()
+        
+        // Replace the temporary element with the real task HTML
+        const taskWrapper = titleElement.closest('.task-wrapper')
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = this.createTaskHtml(task)
+        const newTaskElement = tempDiv.firstElementChild
+        
+        if (taskWrapper && newTaskElement) {
+          taskWrapper.replaceWith(newTaskElement)
+          
+          // Reinitialize Sortable if needed
+          if (this.hasSortableTarget && this.sortableTarget) {
+            const sortableController = this.application.getControllerForElementAndIdentifier(
+              this.sortableTarget, 
+              'sortable'
+            )
+            if (sortableController && sortableController.initializeSortable) {
+              sortableController.initializeSortable()
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error creating task:', error)
+      // Show error to user
+      alert('Failed to create task. Please try again.')
+    }
+  }
+  
+  handleNewTaskKeydown(event) {
+    if (event.key === 'Escape') {
+      // Remove the new task element
+      const taskWrapper = event.currentTarget.closest('.task-wrapper')
+      if (taskWrapper) {
+        taskWrapper.remove()
+      }
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      event.currentTarget.blur() // This will trigger the save
     }
   }
   
