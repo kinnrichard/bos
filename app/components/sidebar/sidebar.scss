@@ -40,7 +40,7 @@
   
   /* Hidden state - slides sidebar off screen to the left */
   &.sidebar-hidden {
-    transform: translateX(-100%);
+    transform: translateX(calc(-100% - 12px)); /* Extra 12px to account for margin */
     pointer-events: none;
     margin-right: -280px; /* Negative width to allow content to fill space */
   }
