@@ -1148,14 +1148,24 @@ export default class extends Controller {
         // The response might wrap the task in a data object
         const task = responseData.task || responseData
         
-        // Replace the temporary element with the real task HTML
+        // Insert the new task before the NEW TASK placeholder
         const taskWrapper = titleElement.closest('.task-wrapper')
         const tempDiv = document.createElement('div')
         tempDiv.innerHTML = this.createTaskHtml(task)
         const newTaskElement = tempDiv.firstElementChild
         
         if (taskWrapper && newTaskElement) {
-          taskWrapper.replaceWith(newTaskElement)
+          // Insert the new task before the placeholder
+          taskWrapper.parentElement.insertBefore(newTaskElement, taskWrapper)
+          
+          // Reset the NEW TASK placeholder to its original state
+          titleElement.textContent = 'New task...'
+          titleElement.blur()
+          
+          // Remove the temporary inline task wrapper if it's not the main placeholder
+          if (!taskWrapper.classList.contains('new-task-wrapper')) {
+            taskWrapper.remove()
+          }
           
           // Reinitialize Sortable if needed
           if (this.hasSortableTarget && this.sortableTarget) {
@@ -1951,8 +1961,16 @@ export default class extends Controller {
           // Create task element HTML
           const newTaskHtml = this.createTaskHtml(data.task)
           
-          // Insert the new task at the end of the tasks list
-          tasksContainer.insertAdjacentHTML('beforeend', newTaskHtml)
+          // Find the NEW TASK placeholder
+          const newTaskPlaceholder = tasksContainer.querySelector('.new-task-wrapper')
+          
+          if (newTaskPlaceholder) {
+            // Insert the new task before the NEW TASK placeholder
+            newTaskPlaceholder.insertAdjacentHTML('beforebegin', newTaskHtml)
+          } else {
+            // Fallback: insert at the end if placeholder not found
+            tasksContainer.insertAdjacentHTML('beforeend', newTaskHtml)
+          }
           
           // Clear the input and keep focus for another task
           input.value = ''
