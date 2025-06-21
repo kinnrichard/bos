@@ -169,6 +169,14 @@ export default class extends Controller {
       return
     }
     
+    // Don't handle clicks on task-content that aren't on the title
+    // This prevents the large content area from being clickable
+    const taskContent = event.target.closest('.task-content, .subtask-content')
+    if (taskContent && !event.target.closest('.task-title, .subtask-title')) {
+      // Just do selection, don't trigger rename
+      event.preventDefault()
+    }
+    
     // Prevent text selection on shift-click
     if (event.shiftKey) {
       event.preventDefault()
@@ -972,47 +980,28 @@ export default class extends Controller {
       emptyMessage.remove()
     }
     
-    // Transform the placeholder into an input
+    // Transform the placeholder into contenteditable
     const placeholder = this.newTaskPlaceholderTarget
     if (!placeholder) return
     
-    // Create input element
-    const input = document.createElement('input')
-    input.type = 'text'
-    input.className = 'new-task-input'
-    input.placeholder = 'What needs to be done?'
+    // Find the task-title div and make it editable
+    const taskTitle = placeholder.querySelector('.task-title')
+    if (!taskTitle) return
     
-    // Find the task-content div and replace its contents
-    const taskContent = placeholder.querySelector('.task-content')
-    if (taskContent) {
-      taskContent.innerHTML = ''
-      taskContent.appendChild(input)
-    } else {
-      // Fallback - replace the text div
-      const textDiv = placeholder.querySelector('[data-job-target="newTaskText"]')
-      if (textDiv) {
-        textDiv.replaceWith(input)
-      }
-    }
+    // Clear the placeholder text
+    taskTitle.textContent = ''
     
-    // Add event listeners
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        this.saveNewTask(e)
-      } else if (e.key === 'Escape') {
-        e.preventDefault()
-        this.cancelNewTask()
-      }
-    })
+    // Set up the contenteditable with proper event handlers
+    taskTitle.dataset.action = 'blur->job#saveNewTaskFromContentEditable keydown->job#handleNewTaskKeydown'
+    taskTitle.dataset.originalTitle = ''
     
-    input.addEventListener('blur', (e) => this.handleNewTaskBlur(e))
+    // Focus the contenteditable div
+    taskTitle.focus()
     
-    // Focus the input
-    input.focus()
-    this.currentNewTaskInput = input
+    // Store reference for later use
+    this.currentNewTaskElement = taskTitle
     
-    // Remove click handler temporarily
+    // Remove click handler temporarily from the parent
     placeholder.dataset.action = ''
   }
   
@@ -1020,19 +1009,18 @@ export default class extends Controller {
   cancelNewTask(event) {
     // Restore the placeholder
     const placeholder = this.newTaskPlaceholderTarget
-    if (placeholder && this.currentNewTaskInput) {
-      // Find the task-content div and restore its original content
-      const taskContent = placeholder.querySelector('.task-content')
-      if (taskContent) {
-        taskContent.innerHTML = ''
-        const textDiv = document.createElement('div')
-        textDiv.className = 'task-title'
-        textDiv.setAttribute('data-job-target', 'newTaskText')
-        textDiv.textContent = 'New task...'
-        taskContent.appendChild(textDiv)
-      }
+    if (placeholder && this.currentNewTaskElement) {
+      const taskTitle = this.currentNewTaskElement
+      
+      // Restore original text and handlers
+      taskTitle.textContent = 'New task...'
+      taskTitle.dataset.action = ''
+      taskTitle.blur()
+      
+      // Restore click handler on the parent
       placeholder.dataset.action = 'click->job#showNewTaskInput'
-      this.currentNewTaskInput = null
+      
+      this.currentNewTaskElement = null
     }
     
     // Check if tasks list is empty
@@ -1188,14 +1176,92 @@ export default class extends Controller {
   
   handleNewTaskKeydown(event) {
     if (event.key === 'Escape') {
-      // Remove the new task element
+      event.preventDefault()
+      // Check if this is the main NEW TASK placeholder
       const taskWrapper = event.currentTarget.closest('.task-wrapper')
-      if (taskWrapper) {
+      if (taskWrapper && taskWrapper.classList.contains('new-task-wrapper')) {
+        // It's the main placeholder, just cancel
+        this.cancelNewTask()
+      } else {
+        // It's an inline new task, remove it
         taskWrapper.remove()
       }
     } else if (event.key === 'Enter') {
       event.preventDefault()
       event.currentTarget.blur() // This will trigger the save
+    }
+  }
+  
+  async saveNewTaskFromContentEditable(event) {
+    const titleElement = event.currentTarget
+    const newTitle = titleElement.textContent.trim()
+    
+    // If empty, cancel the new task
+    if (newTitle === '') {
+      this.cancelNewTask()
+      return
+    }
+    
+    // Create the task
+    try {
+      const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        },
+        body: JSON.stringify({ task: { title: newTitle, status: 'new_task' } })
+      })
+      
+      const data = await response.json()
+      
+      if (data.status === 'success') {
+        // Remove empty tasks message if present
+        const emptyMessage = this.tasksListTarget.querySelector('.empty-tasks')
+        if (emptyMessage) {
+          emptyMessage.remove()
+        }
+        
+        // Get the tasks container
+        const tasksContainer = this.tasksListTarget
+        
+        // Create task element HTML
+        const newTaskHtml = this.createTaskHtml(data.task)
+        
+        // Find the NEW TASK placeholder
+        const newTaskPlaceholder = tasksContainer.querySelector('.new-task-wrapper')
+        
+        if (newTaskPlaceholder) {
+          // Insert the new task before the NEW TASK placeholder
+          newTaskPlaceholder.insertAdjacentHTML('beforebegin', newTaskHtml)
+        } else {
+          // Fallback: insert at the end if placeholder not found
+          tasksContainer.insertAdjacentHTML('beforeend', newTaskHtml)
+        }
+        
+        // Reset the NEW TASK placeholder for another task
+        titleElement.textContent = ''
+        titleElement.focus()
+        
+        // Refresh sortable controller to set up drag handlers on new task
+        const sortableController = this.application.getControllerForElementAndIdentifier(
+          this.element,
+          'sortable'
+        )
+        if (sortableController && sortableController.refresh) {
+          sortableController.refresh()
+        }
+      } else {
+        console.error('Failed to create task:', data.error)
+        alert('Failed to create task: ' + (data.error || 'Unknown error'))
+        // Restore focus to allow retry
+        titleElement.focus()
+      }
+    } catch (error) {
+      console.error('Error creating task:', error)
+      alert('Failed to create task')
+      // Restore focus to allow retry
+      titleElement.focus()
     }
   }
   
@@ -1329,7 +1395,7 @@ export default class extends Controller {
           <div class="task-content">
             <div class="task-title" 
                  contenteditable="true"
-                 data-action="focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick"
+                 data-action="focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown"
                  data-task-id="${task.id}"
                  data-original-title="${task.title || task.name || ''}">${task.title || task.name || ''}</div>
           </div>
@@ -1978,6 +2044,15 @@ export default class extends Controller {
           
           // Store reference to the current input
           this.currentNewTaskInput = input
+          
+          // Refresh sortable controller to set up drag handlers on new task
+          const sortableController = this.application.getControllerForElementAndIdentifier(
+            this.element,
+            'sortable'
+          )
+          if (sortableController && sortableController.refresh) {
+            sortableController.refresh()
+          }
         } else {
           console.error('Failed to create task:', data.error)
           alert('Failed to create task: ' + (data.error || 'Unknown error'))
@@ -2038,7 +2113,7 @@ export default class extends Controller {
           <div class="task-content">
             <div class="task-title" 
                  contenteditable="true"
-                 data-action="focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick"
+                 data-action="focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown"
                  data-task-id="${task.id}"
                  data-original-title="${task.title || task.name || ''}">${task.title || task.name || ''}</div>
           </div>

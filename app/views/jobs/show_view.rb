@@ -79,7 +79,11 @@ module Views
                       end
                     end
                     div(class: "task-content") do
-                      div(class: "task-title", data: { job_target: "newTaskText" }) { "New task..." }
+                      div(
+                        class: "task-title", 
+                        contenteditable: "true",
+                        data: { job_target: "newTaskText" }
+                      ) { "New task..." }
                     end
                   end
                 end

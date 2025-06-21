@@ -82,9 +82,7 @@
   cursor: text;
   
   &:focus {
-    text-decoration: underline;
-    text-decoration-color: rgba(10, 132, 255, 0.3);
-    text-underline-offset: 4px;
+    // No underline, just ibeam cursor
   }
 }
 
@@ -227,6 +225,10 @@
   
   .task-title {
     color: #48484A !important;
+    
+    &:focus {
+      color: #FFFFFF !important; // Full opacity when active
+    }
   }
 }
 
@@ -264,6 +266,9 @@
 .task-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .task-title {
@@ -283,15 +288,11 @@
   user-select: text;
   
   &:hover {
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 255, 255, 0.3);
-    text-underline-offset: 2px;
+    // No underline, just ibeam cursor
   }
   
   &:focus {
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 255, 255, 0.3);
-    text-underline-offset: 2px;
+    // No underline, just ibeam cursor
   }
 }
 
@@ -424,6 +425,10 @@
 
 .subtask-content {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .subtask-title {
@@ -440,15 +445,11 @@
   user-select: text;
   
   &:hover {
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 255, 255, 0.3);
-    text-underline-offset: 2px;
+    // No underline, just ibeam cursor
   }
   
   &:focus {
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 255, 255, 0.3);
-    text-underline-offset: 2px;
+    // No underline, just ibeam cursor
   }
 }
 
@@ -532,24 +533,8 @@
   }
 }
 
-// New task input
-.new-task-placeholder .new-task-input {
-  flex: 1;
-  background: none;
-  border: none;
-  color: #FFFFFF;
-  font-size: 17px;
-  font-weight: 400;
-  padding: 0;
-  margin: 0;
-  outline: none;
-  font-family: inherit;
-  
-  &::placeholder {
-    color: #FFF;
-	opacity: 0.75;
-  }
-}
+// New task placeholder uses contenteditable task-title
+// No special input styles needed
 
 // Empty state
 .empty-tasks {

@@ -1,16 +1,18 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
+  client: client_seven
   person: one
-  name: MyString
+  name: Device One
   model: MyString
   serial_number: MyString
   location: MyString
   notes: MyText
 
 two:
+  client: client_seven
   person: two
-  name: MyString
+  name: Device Two
   model: MyString
   serial_number: MyString
   location: MyString
