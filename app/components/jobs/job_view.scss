@@ -481,6 +481,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 100;
   min-width: 200px;
+  outline: none;
   
   &.hidden {
     display: none;
@@ -492,6 +493,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
+  border-radius: 8px;
   background: none;
   border: none;
   color: var(--text-primary);
