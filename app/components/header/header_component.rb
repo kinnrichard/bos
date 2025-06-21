@@ -12,12 +12,13 @@ module Components
       header(class: "header", data: { controller: "header-job" }) do
         # Left side toolbar items
         div(class: "header-left") do
-          # Sidebar toggle button (always visible)
+          # Sidebar toggle button (only visible when sidebar is hidden)
           button(
             type: "button",
-            class: "btn-icon sidebar-toggle-btn",
-            data: { action: "click->sidebar#toggle" },
-            title: "Toggle sidebar"
+            class: "btn-icon sidebar-toggle-btn show-sidebar-btn",
+            data: { action: "click->sidebar#show" },
+            title: "Show sidebar",
+            style: "display: none;"
           ) { "☰" }
           
           # Custom toolbar items from views

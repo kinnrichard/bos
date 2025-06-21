@@ -10,6 +10,11 @@ export default class extends Controller {
     if (isHidden) {
       // Hide immediately without animation on initial load
       this.hideImmediately()
+    } else {
+      // Ensure toggle button is hidden when sidebar is visible
+      document.querySelectorAll(".show-sidebar-btn").forEach(btn => {
+        btn.style.display = "none"
+      })
     }
   }
 
