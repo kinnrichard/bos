@@ -76,7 +76,12 @@ class Views::Base < Components::Base
           controllers += extra_controllers if extra_controllers
           
           div(class: "main-container", data: { controller: controllers.join(" ") }) do
-            div(class: "sidebar", data: { sidebar_target: "sidebar" }) do
+            # Check cookie to determine initial sidebar state
+            sidebar_hidden = cookies[:sidebar_hidden] == 'true'
+            sidebar_classes = ["sidebar"]
+            sidebar_classes << "sidebar-hidden" if sidebar_hidden
+            
+            div(class: sidebar_classes.join(" "), data: { sidebar_target: "sidebar" }) do
               render Components::Sidebar::SidebarComponent.new(
                 current_user: current_user,
                 active_section: active_section,

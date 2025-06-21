@@ -5,11 +5,30 @@ export default class extends Controller {
   static targets = ["sidebar"]
 
   connect() {
-    // Check if sidebar was previously hidden
+    // Sync localStorage with cookie on page load
+    const cookieValue = this.getCookie('sidebar_hidden')
+    const localStorageValue = localStorage.getItem("sidebarHidden")
+    
+    // If cookie and localStorage disagree, localStorage wins (most recent interaction)
+    if (localStorageValue && cookieValue !== localStorageValue) {
+      this.setCookie('sidebar_hidden', localStorageValue)
+    } else if (cookieValue && !localStorageValue) {
+      // If only cookie exists, sync to localStorage
+      localStorage.setItem("sidebarHidden", cookieValue)
+    }
+    
+    // Check if sidebar was previously hidden (from either cookie or localStorage)
     const isHidden = localStorage.getItem("sidebarHidden") === "true"
     if (isHidden) {
-      // Hide immediately without animation on initial load
-      this.hideImmediately()
+      // If server already rendered it hidden (via cookie), just update buttons
+      if (this.sidebarTarget.classList.contains("sidebar-hidden")) {
+        document.querySelectorAll(".show-sidebar-btn").forEach(btn => {
+          btn.style.display = "flex"
+        })
+      } else {
+        // Otherwise hide immediately without animation
+        this.hideImmediately()
+      }
     } else {
       // Ensure toggle button is hidden when sidebar is visible
       document.querySelectorAll(".show-sidebar-btn").forEach(btn => {
@@ -32,6 +51,7 @@ export default class extends Controller {
       btn.style.display = "none"
     })
     localStorage.setItem("sidebarHidden", "false")
+    this.setCookie('sidebar_hidden', 'false')
   }
   
   hide() {
@@ -40,6 +60,7 @@ export default class extends Controller {
       btn.style.display = "flex"
     })
     localStorage.setItem("sidebarHidden", "true")
+    this.setCookie('sidebar_hidden', 'true')
   }
   
   hideImmediately() {
@@ -59,5 +80,19 @@ export default class extends Controller {
       btn.style.display = "flex"
     })
     localStorage.setItem("sidebarHidden", "true")
+    this.setCookie('sidebar_hidden', 'true')
+  }
+  
+  // Cookie helper methods
+  getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+    return match ? match[2] : null
+  }
+  
+  setCookie(name, value) {
+    // Set cookie for 1 year
+    const date = new Date()
+    date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000))
+    document.cookie = `${name}=${value};path=/;expires=${date.toUTCString()}`
   }
 }

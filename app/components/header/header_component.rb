@@ -13,12 +13,13 @@ module Components
         # Left side toolbar items
         div(class: "header-left") do
           # Sidebar toggle button (only visible when sidebar is hidden)
+          sidebar_hidden = helpers.cookies[:sidebar_hidden] == 'true'
           button(
             type: "button",
             class: "btn-icon sidebar-toggle-btn show-sidebar-btn",
             data: { action: "click->sidebar#show" },
             title: "Show sidebar",
-            style: "display: none;"
+            style: sidebar_hidden ? "display: flex;" : "display: none;"
           ) { "☰" }
           
           # Custom toolbar items from views

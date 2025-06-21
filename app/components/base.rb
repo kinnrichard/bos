@@ -17,6 +17,7 @@ class Components::Base < Phlex::HTML
   register_value_helper :current_user
   register_value_helper :content_for
   register_value_helper :content_for?
+  register_value_helper :cookies
 
   if Rails.env.development?
     def before_template

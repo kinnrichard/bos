@@ -45,7 +45,7 @@
     margin-right: -280px; /* Negative width to allow content to fill space */
   }
   
-  /* No transition class for immediate hiding on page load */
+  /* No transition class for immediate hiding on page load - kept for backward compatibility */
   &.no-transition {
     transition: none !important;
   }
