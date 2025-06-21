@@ -40,17 +40,29 @@
   flex-direction: column;
   background-color: #000000;
   
-  // Sortable.js cursor styles
+  // @dnd-kit drag cursor styles
   .task-wrapper {
-    cursor: move !important;
+    cursor: grab;
+    
+    &.dragging {
+      cursor: grabbing;
+    }
   }
   
   .task-item {
-    cursor: move !important;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    
+    &:active {
+      cursor: grabbing;
+    }
   }
   
   .task-title {
     cursor: text !important;
+    pointer-events: none; // Prevent dragging on text
+    user-select: text;
   }
 }
 
@@ -267,6 +279,8 @@
   min-width: 75px;
   width: fit-content;
   max-width: 100%; // Prevent overflow
+  pointer-events: auto; // Re-enable for text editing
+  user-select: text;
   
   &:hover {
     text-decoration: underline;
@@ -422,6 +436,8 @@
   min-width: 75px;
   width: fit-content;
   max-width: 100%; // Prevent overflow
+  pointer-events: auto; // Re-enable for text editing
+  user-select: text;
   
   &:hover {
     text-decoration: underline;
@@ -776,12 +792,14 @@
 }
 
 
-// Drag and drop visual feedback
+// @dnd-kit drag and drop visual feedback
 .task-item.drop-target {
   background-color: var(--accent-blue) !important;
   border-radius: 8px !important;
   padding: 10px 16px !important;
   margin: 0 -16px !important;
+  transform: scale(1.02);
+  transition: all 200ms cubic-bezier(0.18, 0.89, 0.32, 1.28);
   
   .task-title {
     color: #FFFFFF !important;
@@ -796,24 +814,46 @@
   }
 }
 
+// Dragging state
 .task-wrapper.dragging {
   opacity: 0.5;
+  transform: scale(0.98);
+  transition: all 200ms ease-out;
 }
 
-// Sortable.js ghost element (placeholder)
-.sortable-ghost {
-  opacity: 0.4;
-  background-color: var(--bg-tertiary);
-  border: 2px dashed var(--border-secondary);
-  
-  * {
-    visibility: hidden;
+.task-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+  transition: all 200ms ease-out;
+}
+
+// Drop indicator line
+.drop-indicator {
+  height: 2px;
+  background-color: var(--accent-blue);
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+  transition: all 150ms ease-out;
+}
+
+// Touch-specific styles for mobile
+@media (hover: none) {
+  .task-item {
+    cursor: grab;
+    
+    &:active {
+      transform: scale(0.98);
+      transition: transform 150ms ease-out;
+    }
   }
-}
-
-// Chosen element (being dragged)
-.sortable-chosen {
-  opacity: 0.8;
+  
+  .task-wrapper {
+    cursor: grab;
+    
+    &.dragging {
+      opacity: 0.7;
+    }
+  }
 }
 
 // Utility classes
