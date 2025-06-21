@@ -81,18 +81,23 @@ export default class extends Controller {
     this.isDragging = false
     const wrapper = e.target.closest('.task-wrapper')
     
-    // Remove visual feedback
-    wrapper.classList.remove('dragging')
+    // Remove visual feedback but don't interfere with reordering
+    if (wrapper) {
+      wrapper.classList.remove('dragging')
+    }
     e.target.style.opacity = '1'
     
-    this.clearHighlights()
-    this.hideDropIndicator()
-    
-    // Reset state
-    this.currentDropMode = null
-    this.currentDropTarget = null
-    this.dropPosition = null
-    this.draggedElement = null
+    // Clear highlights but don't reset state immediately (let drop handler finish)
+    setTimeout(() => {
+      this.clearHighlights()
+      this.hideDropIndicator()
+      
+      // Reset state after any pending operations
+      this.currentDropMode = null
+      this.currentDropTarget = null
+      this.dropPosition = null
+      this.draggedElement = null
+    }, 50)
   }
   
   handleDragOver(e) {
@@ -154,6 +159,7 @@ export default class extends Controller {
   
   handleDrop(e) {
     e.preventDefault()
+    e.stopPropagation() // Prevent event bubbling
     
     if (!this.draggedElement || !this.currentDropTarget) return
     
@@ -168,8 +174,10 @@ export default class extends Controller {
         this.makeSubtask(draggedId, parentId, draggedWrapper)
       }
     } else if (this.currentDropMode === 'reorder') {
-      // Handle reorder
-      this.handleReorder(draggedWrapper, this.currentDropTarget)
+      // Handle reorder - defer to avoid conflicts with drag end
+      setTimeout(() => {
+        this.handleReorder(draggedWrapper, this.currentDropTarget)
+      }, 10)
     }
     
     this.clearHighlights()
@@ -326,6 +334,10 @@ export default class extends Controller {
     
     const container = targetWrapper.parentElement
     
+    // Store current state for validation
+    const originalParent = draggedWrapper.parentElement
+    const originalNext = draggedWrapper.nextElementSibling
+    
     // Use the precise position determined during dragover
     let insertBefore = null
     if (this.dropPosition === 'before') {
@@ -335,18 +347,29 @@ export default class extends Controller {
     }
     
     // Only move if it's actually a different position
-    const currentNext = draggedWrapper.nextElementSibling
     const isAlreadyInPosition = (
-      (insertBefore === null && currentNext === null) ||
-      (insertBefore === currentNext)
+      originalParent === container &&
+      ((insertBefore === null && originalNext === null) ||
+       (insertBefore === originalNext))
     )
     
     if (!isAlreadyInPosition) {
-      // Move the element in DOM immediately for visual feedback
-      if (insertBefore) {
+      // Remove from original position
+      if (draggedWrapper.parentElement) {
+        draggedWrapper.parentElement.removeChild(draggedWrapper)
+      }
+      
+      // Insert in new position
+      if (insertBefore && insertBefore.parentElement === container) {
         container.insertBefore(draggedWrapper, insertBefore)
       } else {
         container.appendChild(draggedWrapper)
+      }
+      
+      // Ensure the element is properly attached
+      if (!draggedWrapper.parentElement) {
+        console.error('Failed to attach element to new position')
+        return
       }
     }
     
