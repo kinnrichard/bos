@@ -51,29 +51,17 @@ module Views
               end
             end
             
-            render_advanced_popover
-          end
-        end
-        
-        private
-        
-        def has_active_filters?
-          @selected_technician_ids.any? || @selected_statuses.any?
-        end
-        
-        def render_advanced_popover
-          div(
-            class: "advanced-filter-popover hidden",
-            data: { advanced_filter_target: "popover" }
-          ) do
-            # Arrow pointer
-            div(class: "popover-arrow")
-            
-            # Popover content
-            div(class: "popover-wrapper") do
+            # Job-style popover
+            div(
+              class: "job-popover filter-popover hidden",
+              data: { advanced_filter_target: "popover" }
+            ) do
+              # Arrow
+              div(class: "popover-arrow")
+              
               # Header
               div(class: "popover-header") do
-                h3(class: "popover-title") { "Filter Jobs" }
+                h3 { "Filter Jobs" }
                 button(
                   type: "button",
                   class: "popover-close-btn",
@@ -97,40 +85,37 @@ module Views
                 end
               end
               
-              # Form content
-              form_with(
-                url: jobs_path,
-                method: :get,
-                local: true,
-                class: "filter-form",
-                data: { advanced_filter_target: "form" }
-              ) do |f|
-                f.hidden_field :filter, value: @current_filter
-                
-                div(class: "popover-body") do
-                  # Status dropdown
-                  div(class: "filter-field") do
-                    label(class: "filter-label") { "STATUS" }
-                    div(
-                      class: "multiselect-dropdown",
-                      data: { 
-                        controller: "multiselect",
-                        multiselect_selected_value: @selected_statuses.to_json
-                      }
-                    ) do
+              div(class: "popover-content") do
+                form_with(
+                  url: jobs_path,
+                  method: :get,
+                  local: true,
+                  data: { advanced_filter_target: "form" }
+                ) do |f|
+                  f.hidden_field :filter, value: @current_filter
+                  
+                  # Status section
+                  div(class: "popover-section") do
+                    h3 { "Status" }
+                    div(class: "dropdown-container", data: { controller: "dropdown" }) do
                       button(
                         type: "button",
-                        class: "dropdown-trigger",
+                        class: "dropdown-button",
                         data: { 
-                          action: "click->multiselect#toggle",
-                          multiselect_target: "trigger"
+                          action: "click->dropdown#toggle",
+                          dropdown_target: "button"
                         }
                       ) do
-                        div(class: "dropdown-value") do
+                        span(class: "dropdown-value") do
                           if @selected_statuses.any?
-                            span(class: "selected-count") { "#{@selected_statuses.size} selected" }
+                            if @selected_statuses.size == 1
+                              span(class: "status-emoji") { status_emoji(@selected_statuses.first) }
+                              span { status_label(@selected_statuses.first) }
+                            else
+                              span { "#{@selected_statuses.size} selected" }
+                            end
                           else
-                            span(class: "placeholder") { "Select status" }
+                            span { "All statuses" }
                           end
                         end
                         span(class: "dropdown-arrow") { "▼" }
@@ -138,50 +123,48 @@ module Views
                       
                       div(
                         class: "dropdown-menu hidden",
-                        data: { multiselect_target: "menu" }
+                        data: { dropdown_target: "menu" }
                       ) do
                         @available_statuses.each do |status|
-                          label(class: "dropdown-option") do
+                          label(class: "status-option") do
                             input(
                               type: "checkbox",
                               name: "statuses[]",
                               value: status,
                               checked: @selected_statuses.include?(status),
-                              data: { action: "change->multiselect#updateSelection" }
+                              class: "status-checkbox"
                             )
-                            span(class: "option-content") do
-                              span(class: "status-indicator #{status_color_class(status)}")
-                              span(class: "option-label") { status_label(status) }
-                            end
+                            span(class: "status-emoji") { status_emoji(status) }
+                            span { status_label(status) }
                           end
                         end
                       end
                     end
                   end
                   
-                  # Assigned to dropdown
-                  div(class: "filter-field") do
-                    label(class: "filter-label") { "ASSIGNED TO" }
-                    div(
-                      class: "multiselect-dropdown",
-                      data: { 
-                        controller: "multiselect",
-                        multiselect_selected_value: @selected_technician_ids.to_json
-                      }
-                    ) do
+                  # Assigned to section
+                  div(class: "popover-section") do
+                    h3 { "Assigned to" }
+                    div(class: "dropdown-container", data: { controller: "dropdown" }) do
                       button(
                         type: "button",
-                        class: "dropdown-trigger",
+                        class: "dropdown-button",
                         data: { 
-                          action: "click->multiselect#toggle",
-                          multiselect_target: "trigger"
+                          action: "click->dropdown#toggle",
+                          dropdown_target: "button"
                         }
                       ) do
-                        div(class: "dropdown-value") do
+                        span(class: "dropdown-value") do
                           if @selected_technician_ids.any?
-                            render_selected_technicians
+                            selected = @technicians.select { |t| @selected_technician_ids.include?(t.id.to_s) }
+                            if selected.size == 1
+                              technician_icon(selected.first)
+                              span { selected.first.name }
+                            else
+                              span { "#{selected.size} selected" }
+                            end
                           else
-                            span(class: "placeholder") { "Select technicians" }
+                            span { "All technicians" }
                           end
                         end
                         span(class: "dropdown-arrow") { "▼" }
@@ -189,70 +172,72 @@ module Views
                       
                       div(
                         class: "dropdown-menu hidden",
-                        data: { multiselect_target: "menu" }
+                        data: { dropdown_target: "menu" }
                       ) do
                         @technicians.each do |technician|
-                          label(class: "dropdown-option") do
+                          label(class: "status-option") do
                             input(
                               type: "checkbox",
                               name: "technician_ids[]",
                               value: technician.id,
                               checked: @selected_technician_ids.include?(technician.id.to_s),
-                              data: { action: "change->multiselect#updateSelection" }
+                              class: "status-checkbox"
                             )
-                            span(class: "option-content") do
-                              span(class: "user-avatar") do
-                                technician.name.split.map(&:first).join.upcase[0..1]
-                              end
-                              span(class: "option-label") { technician.name }
-                            end
+                            technician_icon(technician)
+                            span { technician.name }
                           end
                         end
                       end
                     end
                   end
-                end
-                
-                # Actions
-                div(class: "popover-footer") do
-                  button(
-                    type: "button",
-                    class: "btn-secondary",
-                    data: { action: "click->advanced-filter#clear" }
-                  ) { "Clear All" }
                   
-                  f.submit "Apply Filters", class: "btn-primary"
+                  # Actions section
+                  div(class: "popover-actions") do
+                    button(
+                      type: "button",
+                      class: "delete-button",
+                      data: { action: "click->advanced-filter#clear" }
+                    ) { "Clear Filters" }
+                    
+                    f.submit "Apply", class: "apply-button"
+                  end
                 end
               end
             end
           end
         end
         
-        def render_selected_technicians
-          selected = @technicians.select { |t| @selected_technician_ids.include?(t.id.to_s) }
-          
-          if selected.size == 1
-            div(class: "selected-single") do
-              span(class: "user-avatar small") do
-                selected.first.name.split.map(&:first).join.upcase[0..1]
-              end
-              span { selected.first.name }
-            end
-          else
-            span(class: "selected-count") { "#{selected.size} selected" }
+        private
+        
+        def has_active_filters?
+          @selected_technician_ids.any? || @selected_statuses.any?
+        end
+        
+        def technician_icon(user)
+          span(
+            class: "assignee-icon",
+            style: "background-color: #{user_color(user)};"
+          ) do
+            user.name.split.map(&:first).join.upcase[0..1]
           end
         end
         
-        def status_color_class(status)
+        def user_color(user)
+          # Generate consistent color based on user name
+          colors = ["#FF9500", "#FF5E5B", "#FFCC00", "#34C759", "#007AFF", "#5856D6", "#AF52DE", "#FF2D55"]
+          colors[user.name.sum % colors.length]
+        end
+        
+        def status_emoji(status)
           case status
-          when 'open' then 'status-new'
-          when 'in_progress' then 'status-in-progress'
-          when 'paused' then 'status-paused'
-          when 'waiting_for_customer' then 'status-waiting'
-          when 'waiting_for_scheduled_appointment' then 'status-scheduled'
-          when 'successfully_completed' then 'status-completed'
-          when 'cancelled' then 'status-cancelled'
-          else 'status-default'
+          when 'open' then '⚫'
+          when 'in_progress' then '🟢'
+          when 'paused' then '🟡'
+          when 'waiting_for_customer' then '🟣'
+          when 'waiting_for_scheduled_appointment' then '🔵'
+          when 'successfully_completed' then '✅'
+          when 'cancelled' then '❌'
+          else '⚪'
           end
         end
         

@@ -3,6 +3,11 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static targets = ["trigger", "popover", "form"]
   
+  initialize() {
+    // Ensure we're targeting the correct popover
+    this.popoverSelector = '.job-popover.filter-popover'
+  }
+  
   connect() {
     this.isOpen = false
     this.boundClickOutside = this.clickOutside.bind(this)
@@ -62,43 +67,15 @@ export default class extends Controller {
     const popover = this.popoverTarget
     const triggerRect = trigger.getBoundingClientRect()
     
-    // Calculate position relative to viewport
-    let top = triggerRect.bottom + 8
-    let right = window.innerWidth - triggerRect.right
+    // Position below the trigger button
+    const top = triggerRect.bottom + 8
+    const right = window.innerWidth - triggerRect.right
     
-    // Ensure minimum spacing from edges
-    const minSpacing = 20
-    
-    // Get popover dimensions after making visible
-    popover.style.visibility = 'hidden'
-    popover.style.display = 'block'
-    const popoverRect = popover.getBoundingClientRect()
-    popover.style.visibility = ''
-    popover.style.display = ''
-    
-    // Adjust horizontal position if needed
-    if (right < minSpacing) {
-      right = minSpacing
-    } else if (right + popoverRect.width > window.innerWidth - minSpacing) {
-      right = window.innerWidth - popoverRect.width - minSpacing
-    }
-    
-    // Adjust vertical position if popover would go off bottom
-    if (top + popoverRect.height > window.innerHeight - minSpacing) {
-      // Position above the trigger
-      top = triggerRect.top - popoverRect.height - 8
-      popover.classList.add("above")
-    } else {
-      popover.classList.remove("above")
-    }
-    
-    // Ensure popover doesn't go above viewport
-    if (top < minSpacing) {
-      top = minSpacing
-    }
-    
+    // Apply positioning
+    popover.style.position = 'fixed'
     popover.style.top = `${top}px`
     popover.style.right = `${right}px`
+    popover.style.left = 'auto'
   }
   
   clickOutside(event) {
