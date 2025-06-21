@@ -84,7 +84,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    cursor: default;
     opacity: 0;
     transition: all 0.2s ease;
     
@@ -93,8 +93,7 @@
       color: var(--text-tertiary);
       font-weight: 300;
       line-height: 1;
-      opacity: 0;
-      transition: opacity 0.2s ease;
+      transition: color 0.2s ease;
     }
   }
   
@@ -105,12 +104,11 @@
     border-color: var(--border-primary);
   }
   
-  /* Show the X when hovering the button itself */
+  /* Darken the button on direct hover */
   .sidebar-close-btn:hover {
     background-color: rgba(142, 142, 147, 0.3); /* Slightly darker gray */
     
     .close-icon {
-      opacity: 1;
       color: var(--text-primary);
     }
   }
