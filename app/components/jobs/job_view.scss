@@ -776,6 +776,30 @@
 }
 
 
+// Drag and drop visual feedback
+.task-item.drop-target {
+  background-color: var(--accent-blue) !important;
+  border-radius: 8px !important;
+  padding: 10px 16px !important;
+  margin: 0 -16px !important;
+  
+  .task-title {
+    color: #FFFFFF !important;
+  }
+  
+  .task-assignee {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+  
+  .task-time-tracking {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+}
+
+.task-wrapper.dragging {
+  opacity: 0.5;
+}
+
 // Utility classes
 .hidden {
   display: none !important;

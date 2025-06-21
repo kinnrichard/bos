@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["title", "statusBubble", "popover", "tasksContainer", "tasksList", 
-                    "newTaskPlaceholder", "newTaskText", "searchInput", "task", "taskTimer", "addSubtaskButton"]
+                    "newTaskPlaceholder", "newTaskText", "searchInput", "task", "taskTimer"]
   
   static values = { 
     jobId: Number,
@@ -65,9 +65,13 @@ export default class extends Controller {
     // Use capture phase to intercept before browser default
     document.addEventListener("keydown", this.handleKeydown, true)
     
-    // Listen for task reorder events from Sortable
+    // Listen for events from Sortable controller
     this.handleTaskReorder = this.handleTaskReorder.bind(this)
+    this.handleTasksReorder = this.handleTasksReorder.bind(this)
+    this.handleTaskParentChanged = this.handleTaskParentChanged.bind(this)
     this.element.addEventListener('task:reorder', this.handleTaskReorder)
+    this.element.addEventListener('tasks:reorder', this.handleTasksReorder)
+    this.element.addEventListener('task:parent-changed', this.handleTaskParentChanged)
     
     // Store controller reference for debugging
     if (this.element) {
@@ -80,6 +84,8 @@ export default class extends Controller {
     document.removeEventListener("click", this.handleOutsideClick)
     document.removeEventListener("keydown", this.handleKeydown, true)
     this.element.removeEventListener('task:reorder', this.handleTaskReorder)
+    this.element.removeEventListener('tasks:reorder', this.handleTasksReorder)
+    this.element.removeEventListener('task:parent-changed', this.handleTaskParentChanged)
     
     if (this.element && this.element._jobController === this) {
       delete this.element._jobController
@@ -1029,14 +1035,21 @@ export default class extends Controller {
     // Clear selection
     this.clearSelection()
     
+    // Check if this is a subtask
+    const isSubtask = selectedTask.classList.contains('subtask-item')
+    const parentId = isSubtask ? selectedTask.dataset.parentId : null
+    
     // Create a new task element that matches the existing task structure
     const newTaskWrapper = document.createElement('div')
     newTaskWrapper.className = 'task-wrapper'
     
     const newTaskItem = document.createElement('div')
-    newTaskItem.className = 'task-item new-inline-task'
+    newTaskItem.className = isSubtask ? 'subtask-item new-inline-task' : 'task-item new-inline-task'
     newTaskItem.dataset.jobTarget = 'task'
     newTaskItem.dataset.action = 'click->job#handleTaskClick'
+    if (parentId) {
+      newTaskItem.dataset.parentId = parentId
+    }
     
     // Status button container
     const statusContainer = document.createElement('div')
@@ -1050,13 +1063,16 @@ export default class extends Controller {
     
     // Task content
     const taskContent = document.createElement('div')
-    taskContent.className = 'task-content'
+    taskContent.className = isSubtask ? 'subtask-content' : 'task-content'
     
     const taskTitle = document.createElement('div')
-    taskTitle.className = 'task-title'
+    taskTitle.className = isSubtask ? 'subtask-title' : 'task-title'
     taskTitle.contentEditable = 'true'
     taskTitle.dataset.action = 'focus->job#storeOriginalTitle blur->job#saveNewInlineTask keydown->job#handleNewTaskKeydown'
     taskTitle.dataset.originalTitle = ''
+    if (parentId) {
+      taskTitle.dataset.parentId = parentId
+    }
     taskContent.appendChild(taskTitle)
     
     // Assemble the task
@@ -1094,6 +1110,12 @@ export default class extends Controller {
     formData.append('task[title]', newTitle)
     formData.append('task[job_id]', this.jobIdValue)
     formData.append('task[status]', 'new_task')
+    
+    // Add parent_id if this is a subtask
+    const parentId = titleElement.dataset.parentId
+    if (parentId) {
+      formData.append('task[parent_id]', parentId)
+    }
     
     try {
       const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
@@ -1221,28 +1243,6 @@ export default class extends Controller {
     }, 200)
   }
   
-  addSubtask(event) {
-    const parentTaskId = event.currentTarget.dataset.parentTaskId
-    const title = prompt("Enter subtask title:")
-    
-    if (!title || !title.trim()) return
-    
-    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
-      },
-      body: JSON.stringify({ task: { title: title.trim(), parent_id: parentTaskId } })
-    }).then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          location.reload() // Reload to show the new subtask
-        } else {
-          alert(data.error || 'Failed to create subtask')
-        }
-      })
-  }
 
   addTaskToList(task) {
     const taskHtml = this.renderTask(task)
@@ -1285,7 +1285,7 @@ export default class extends Controller {
              data-task-status="${task.status}" 
              data-task-position="${task.position || 0}"
              data-job-target="task"
-             data-action="click->job#handleTaskClick dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask">
+             data-action="click->job#handleTaskClick dragstart->job#handleDragStart dragover->job#handleDragOver drop->job#handleDrop dragend->job#handleDragEnd">
           <div class="task-status-container">
             <button class="task-status-button" data-action="click->job#toggleTaskStatus">
               <span>${emoji}</span>
@@ -1799,6 +1799,51 @@ export default class extends Controller {
     })
   }
   
+  // Handle batch reorder from new sortable controller
+  handleTasksReorder(event) {
+    const { positions } = event.detail
+    
+    // Send batch update to server
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/reorder`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ positions: positions })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        // Optionally trigger resort if enabled
+        if (this.shouldResortTasks()) {
+          this.resortTasksByStatus()
+        }
+      }
+    })
+  }
+  
+  // Handle parent change from drag and drop
+  handleTaskParentChanged(event) {
+    const { taskId, parentId } = event.detail
+    
+    // Update the DOM to reflect the change
+    const taskWrapper = this.element.querySelector(`.task-item[data-task-id="${taskId}"]`)?.closest('.task-wrapper')
+    if (taskWrapper) {
+      // Update data attributes
+      const taskItem = taskWrapper.querySelector('.task-item')
+      if (taskItem) {
+        taskItem.dataset.parentId = parentId
+      }
+    }
+    
+    // Refresh sortable if needed
+    const sortableController = this.application.getControllerForElementAndIdentifier(this.element, 'sortable')
+    if (sortableController) {
+      sortableController.refresh()
+    }
+  }
+  
   // Timer management
   startTimers() {
     this.updateAllTimers()
@@ -1846,15 +1891,6 @@ export default class extends Controller {
     } else {
       return `${minutes}m`
     }
-  }
-  
-  // Show/hide add subtask button on hover
-  showAddSubtask(event) {
-    // Handled by CSS now
-  }
-  
-  hideAddSubtask(event) {
-    // Handled by CSS now
   }
   
   // New task creation methods
@@ -1950,7 +1986,7 @@ export default class extends Controller {
              data-task-status="${task.status}" 
              data-task-position="${task.position || 0}"
              data-job-target="task"
-             data-action="click->job#handleTaskClick mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask">
+             data-action="click->job#handleTaskClick">
           <div class="task-status-container">
             <button class="task-status-button" data-action="click->job#toggleTaskStatus">
               <span>${emoji}</span>

@@ -284,7 +284,7 @@ module Views
               task_status: task.status,
               task_position: task.position,
               job_target: "task",
-              action: "click->job#handleTaskClick mouseenter->job#showAddSubtask mouseleave->job#hideAddSubtask"
+              action: "click->job#handleTaskClick"
             }.merge(time_data)
           ) do
             # Status indicator with dropdown
@@ -316,6 +316,13 @@ module Views
                   original_title: task.title
                 }
               ) { task.title }
+              
+              # Show subtask count if any
+              if task.has_subtasks?
+                span(class: "subtask-count", style: "font-size: 13px; color: #8E8E93; margin-left: 8px;") do
+                  "(#{task.subtasks.count} subtask#{task.subtasks.count == 1 ? '' : 's'})"
+                end
+              end
             end
             
             # Right side section
@@ -344,16 +351,6 @@ module Views
                 end
               end
               
-              # Add subtask button (hidden by default)
-              button(
-                class: "add-subtask-button",
-                data: { 
-                  action: "click->job#addSubtask",
-                  parent_task_id: task.id,
-                  job_target: "addSubtaskButton"
-                },
-                title: "Add subtask"
-              ) { "+" }
             end
           end
           
@@ -374,6 +371,7 @@ module Views
           data: { 
             task_id: subtask.id,
             task_status: subtask.status,
+            parent_id: subtask.parent_id,
             action: "click->job#handleTaskClick"
           }
         ) do
