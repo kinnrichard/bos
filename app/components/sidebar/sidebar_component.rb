@@ -86,7 +86,7 @@ module Components
         div(class: "sidebar-section", style: "margin-bottom: 12px;") do
           div(class: "sidebar-section-header") { "Settings" }
           # User settings (available to all users)
-          nav_item("My Settings", href: settings_user_path(@current_user), icon: "⚙️", active: @active_section == :user_settings)
+          nav_item("My Settings", href: settings_path, icon: "⚙️", active: @active_section == :user_settings)
           
           # User management (superadmins only)
           if @current_user&.superadmin?

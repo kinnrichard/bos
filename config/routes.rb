@@ -14,13 +14,12 @@ Rails.application.routes.draw do
   post 'login', to: 'sessions#create'
   delete 'logout', to: 'sessions#destroy', as: :logout
   
+  # User settings route (accessible to all users)
+  get 'settings', to: 'users#settings', as: :settings
+  patch 'settings', to: 'users#update_settings', as: :update_settings
+  
   # User management routes (superadmin only)
-  resources :users do
-    member do
-      get :settings
-      patch :update_settings
-    end
-  end
+  resources :users
   
   # Client routes
   resources :clients do

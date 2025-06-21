@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :require_superadmin
+  before_action :require_superadmin, except: [:settings, :update_settings]
   before_action :set_user, only: [:edit, :update, :destroy]
   
   def index
@@ -67,7 +67,7 @@ class UsersController < ApplicationController
   def update_settings
     @user = current_user
     if @user.update(settings_params)
-      redirect_to settings_user_path(@user), notice: "Settings updated successfully."
+      redirect_to settings_path, notice: "Settings updated successfully."
     else
       render Views::Users::SettingsView.new(user: @user, current_user: current_user), status: :unprocessable_entity
     end

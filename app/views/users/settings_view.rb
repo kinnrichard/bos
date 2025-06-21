@@ -12,7 +12,7 @@ module Views
         render_layout(
           title: "Settings",
           current_user: @current_user,
-          active_section: :settings
+          active_section: :user_settings
         ) do
           div(class: "page-container") do
             div(class: "page-content") do
@@ -21,7 +21,7 @@ module Views
               )
 
               div(class: "form-container") do
-                form_with(model: @user, url: update_settings_user_path(@user), method: :patch) do |f|
+                form_with(model: @user, url: update_settings_path, method: :patch) do |f|
                   div(class: "form-section") do
                     h3(class: "form-section-title") { "Task Management" }
                     
