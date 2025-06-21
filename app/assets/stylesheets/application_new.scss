@@ -2077,51 +2077,7 @@ h1.job-title,
   gap: 12px;
 }
 
-/* Filter dropdown styles */
-.filter-dropdown {
-  position: relative;
-}
-
-.filter-dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  min-width: 320px;
-  max-height: 500px;
-  overflow-y: auto;
-  z-index: 1000;
-}
-
-.filter-section {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-primary);
-}
-
-.filter-section:last-child {
-  border-bottom: none;
-}
-
-.filter-section h4 {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 12px;
-}
-
-.filter-actions {
-  padding: 16px;
-  display: flex;
-  gap: 12px;
-  background-color: var(--bg-primary);
-  border-top: 1px solid var(--border-primary);
-}
+/* Old filter styles removed - see components/advanced_filter.scss */
 
 /* Button styles */
 .button {

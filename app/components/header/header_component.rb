@@ -91,11 +91,10 @@ module Components
           
           # User menu
           if @current_user
-            div(class: "user-menu") do
+            div(class: "user-menu", data: { controller: "dropdown" }) do
               button(
                 class: "user-menu-button",
                 data: { 
-                  controller: "dropdown",
                   action: "click->dropdown#toggle",
                   dropdown_target: "button"
                 }
