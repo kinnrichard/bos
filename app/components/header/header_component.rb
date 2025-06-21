@@ -96,7 +96,8 @@ module Components
                 class: "user-menu-button",
                 data: { 
                   controller: "dropdown",
-                  action: "click->dropdown#toggle"
+                  action: "click->dropdown#toggle",
+                  dropdown_target: "button"
                 }
               ) do
                 span(class: "user-initials") do
@@ -114,6 +115,11 @@ module Components
                   div(class: "user-role") { @current_user.role.humanize }
                 end
                 div(class: "dropdown-divider")
+                link_to(
+                  "Settings",
+                  settings_path,
+                  class: "dropdown-item"
+                )
                 button_to(
                   "Sign Out",
                   logout_path,
