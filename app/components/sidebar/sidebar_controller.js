@@ -8,7 +8,8 @@ export default class extends Controller {
     // Check if sidebar was previously hidden
     const isHidden = localStorage.getItem("sidebarHidden") === "true"
     if (isHidden) {
-      this.hide()
+      // Hide immediately without animation on initial load
+      this.hideImmediately()
     }
   }
 
@@ -30,6 +31,25 @@ export default class extends Controller {
   
   hide() {
     this.sidebarTarget.classList.add("sidebar-hidden")
+    document.querySelectorAll(".show-sidebar-btn").forEach(btn => {
+      btn.style.display = "flex"
+    })
+    localStorage.setItem("sidebarHidden", "true")
+  }
+  
+  hideImmediately() {
+    // Add no-transition class temporarily to prevent animation
+    this.sidebarTarget.classList.add("no-transition")
+    this.sidebarTarget.classList.add("sidebar-hidden")
+    
+    // Force a reflow to ensure the no-transition takes effect
+    void this.sidebarTarget.offsetHeight
+    
+    // Remove the no-transition class after a frame
+    requestAnimationFrame(() => {
+      this.sidebarTarget.classList.remove("no-transition")
+    })
+    
     document.querySelectorAll(".show-sidebar-btn").forEach(btn => {
       btn.style.display = "flex"
     })

@@ -30,6 +30,16 @@ module Components
           img(src: asset_path("faultless_logo.png"), alt: "Faultless", class: "logo-image")
         end
         
+        # Close button that appears on hover
+        button(
+          type: "button",
+          class: "sidebar-close-btn",
+          data: { action: "click->sidebar#hide" },
+          title: "Hide sidebar"
+        ) do
+          span(class: "close-icon") { "×" }
+        end
+        
         if @client
           div(class: "sidebar-client-header") do
             h3 { @client.name }

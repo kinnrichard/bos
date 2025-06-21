@@ -13,7 +13,7 @@ module Components
 
     def view_template
       div(class: "form-actions") do
-        link_to(@cancel_text, @cancel_path, class: "button button--secondary", style: "margin-right: auto;")
+        link_to(@cancel_text, @cancel_path, class: "button button--link", style: "margin-right: auto;")
 
         if @additional_actions
           @additional_actions.call

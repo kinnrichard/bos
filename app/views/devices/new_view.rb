@@ -58,7 +58,7 @@ module Views
               
               div(class: "form-actions") do
                 f.submit("Save", class: "btn btn-primary")
-                link_to("Cancel", client_devices_path(@client), class: "btn btn-secondary")
+                link_to("Cancel", client_devices_path(@client), class: "btn btn-link")
               end
             end
           end

@@ -75,7 +75,7 @@ module Views
           
           div(class: "form-actions") do
             f.submit "Create User", class: "btn btn-primary"
-            link_to "Cancel", users_path, class: "btn btn-secondary"
+            link_to "Cancel", users_path, class: "btn btn-link"
           end
         end
       end

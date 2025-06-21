@@ -107,7 +107,7 @@ module Views
               
               div(class: "form-actions") do
                 f.submit("Save Changes", class: "btn btn-primary", style: "margin-left: auto;")
-                link_to("Cancel", client_job_path(@client, @job), class: "btn btn-secondary", style: "margin-right: auto;")
+                link_to("Cancel", client_job_path(@client, @job), class: "btn btn-link", style: "margin-right: auto;")
               end
               
               if @current_user.can_delete?(@job)

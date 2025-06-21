@@ -47,6 +47,11 @@
     pointer-events: none;
     overflow: hidden;
   }
+  
+  /* No transition class for immediate hiding on page load */
+  &.no-transition {
+    transition: none !important;
+  }
 }
 
 /* Logo and optional client header section */
@@ -57,12 +62,57 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
   
   .logo-image {
     height: 40px;
     width: auto;
     max-width: 100%;
     object-fit: contain;
+  }
+  
+  /* Close button that appears on hover */
+  .sidebar-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: transparent;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    
+    .close-icon {
+      font-size: 20px;
+      color: var(--text-tertiary);
+      font-weight: 300;
+      line-height: 1;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+  }
+  
+  /* Show the gray circle on logo area hover */
+  &:hover .sidebar-close-btn {
+    opacity: 1;
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-primary);
+  }
+  
+  /* Show the X when hovering the button itself */
+  .sidebar-close-btn:hover {
+    background-color: rgba(142, 142, 147, 0.3); /* Slightly darker gray */
+    
+    .close-icon {
+      opacity: 1;
+      color: var(--text-primary);
+    }
   }
 }
 

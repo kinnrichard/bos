@@ -73,7 +73,7 @@ module Views
               
               # Form actions
               div(class: "form-actions") do
-                a(href: client_people_path(@client), class: "btn btn-secondary", style: "margin-right: auto;") { "Cancel" }
+                a(href: client_people_path(@client), class: "btn btn-link", style: "margin-right: auto;") { "Cancel" }
                 button(type: "submit", class: "btn btn-primary") { "Save" }
               end
             end

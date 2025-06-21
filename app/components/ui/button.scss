@@ -130,6 +130,24 @@
     }
   }
   
+  &--link {
+    background: none;
+    border: none;
+    color: var(--accent-blue);
+    padding: 8px 16px;
+    text-decoration: none;
+    
+    &:hover:not(.button--disabled) {
+      text-decoration: underline;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    &:active:not(.button--disabled) {
+      transform: none;
+    }
+  }
+  
   // State modifiers
   &--disabled {
     opacity: 0.5;
