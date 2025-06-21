@@ -18,6 +18,16 @@ module Views
             stylesheet_link_tag("application", "data-turbo-track": "reload")
             javascript_importmap_tags
             
+            # Prevent sidebar flash on page load when hidden
+            script do
+              unsafe_raw <<~JS
+                // Check sidebar state before page renders to prevent flash
+                if (localStorage.getItem('sidebarHidden') === 'true') {
+                  document.documentElement.classList.add('sidebar-initially-hidden');
+                }
+              JS
+            end
+            
             # Allow additional head content
             if content_for?(:head)
               unsafe_raw(content_for(:head))

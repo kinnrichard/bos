@@ -18,6 +18,7 @@ class Views::Base < Components::Base
   include Phlex::Rails::Helpers::NumberToHumanSize
   include Phlex::Rails::Helpers::CheckBoxTag
   include Phlex::Rails::Helpers::TimeAgoInWords
+  
 
   private
 
@@ -57,6 +58,7 @@ class Views::Base < Components::Base
 
         stylesheet_link_tag "application"
         javascript_importmap_tags
+        
 
         # Additional JavaScript
         script(src: asset_path("search.js"), defer: true)
