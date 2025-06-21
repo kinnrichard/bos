@@ -7,6 +7,7 @@ export default class extends Controller {
     this.dropIndicator = null
     this.currentDropMode = null
     this.currentDropTarget = null
+    this.dropPosition = null
     this.isDragging = false
     this.draggedElement = null
     this.initializeCustomDragDrop()
@@ -90,6 +91,7 @@ export default class extends Controller {
     // Reset state
     this.currentDropMode = null
     this.currentDropTarget = null
+    this.dropPosition = null
     this.draggedElement = null
   }
   
@@ -119,13 +121,16 @@ export default class extends Controller {
       taskItem.classList.add('drop-target')
       this.currentDropMode = 'subtask'
       this.currentDropTarget = taskItem
+      this.dropPosition = null // Not applicable for subtask creation
     } else {
       // Edge zones - show line for reorder
       const wrapper = taskItem.closest('.task-wrapper')
       if (wrapper) {
-        this.positionDropIndicator(wrapper, relativeY < height * 0.5)
+        const insertBefore = relativeY < height * 0.5
+        this.positionDropIndicator(wrapper, insertBefore)
         this.currentDropMode = 'reorder'
         this.currentDropTarget = taskItem
+        this.dropPosition = insertBefore ? 'before' : 'after'
       }
     }
   }
@@ -314,33 +319,38 @@ export default class extends Controller {
   }
   
   handleReorder(draggedWrapper, targetTaskItem) {
-    if (!draggedWrapper || !targetTaskItem) return
+    if (!draggedWrapper || !targetTaskItem || !this.dropPosition) return
     
     const targetWrapper = targetTaskItem.closest('.task-wrapper')
+    if (!targetWrapper || targetWrapper === draggedWrapper) return
+    
     const container = targetWrapper.parentElement
     
-    // Determine position based on drop indicator position
-    const rect = targetTaskItem.getBoundingClientRect()
-    const dropIndicatorTop = parseFloat(this.dropIndicator.style.top)
-    const targetTop = rect.top + window.pageYOffset
-    
+    // Use the precise position determined during dragover
     let insertBefore = null
-    if (dropIndicatorTop <= targetTop) {
-      // Insert before target
+    if (this.dropPosition === 'before') {
       insertBefore = targetWrapper
     } else {
-      // Insert after target
       insertBefore = targetWrapper.nextElementSibling
     }
     
-    // Move the element
-    if (insertBefore) {
-      container.insertBefore(draggedWrapper, insertBefore)
-    } else {
-      container.appendChild(draggedWrapper)
+    // Only move if it's actually a different position
+    const currentNext = draggedWrapper.nextElementSibling
+    const isAlreadyInPosition = (
+      (insertBefore === null && currentNext === null) ||
+      (insertBefore === currentNext)
+    )
+    
+    if (!isAlreadyInPosition) {
+      // Move the element in DOM immediately for visual feedback
+      if (insertBefore) {
+        container.insertBefore(draggedWrapper, insertBefore)
+      } else {
+        container.appendChild(draggedWrapper)
+      }
     }
     
-    // Calculate new positions
+    // Calculate new positions after DOM move
     const items = Array.from(container.children).filter(el => 
       el.classList.contains('task-wrapper') && !el.classList.contains('new-task-wrapper')
     )
@@ -350,7 +360,7 @@ export default class extends Controller {
       position: index + 1
     })).filter(p => p.id)
     
-    // Dispatch reorder event
+    // Dispatch reorder event to update server
     const reorderEvent = new CustomEvent('tasks:reorder', {
       detail: { positions },
       bubbles: true
