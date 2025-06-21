@@ -107,7 +107,7 @@ module Components
         div(class: "sidebar-section-header") { header_text }
         nav_item("My Jobs", href: "/jobs?filter=mine", icon: "👤", badge: my_jobs_count, active: @active_section == :my_jobs)
         nav_item("Unassigned", href: "/jobs?filter=unassigned", icon: "❓", badge: unassigned_count, active: @active_section == :unassigned)
-        nav_item("Assignedd to Others", href: "/jobs?filter=others", icon: "👥", badge: others_count, active: @active_section == :others)
+        nav_item("Assigned to Others", href: "/jobs?filter=others", icon: "👥", badge: others_count, active: @active_section == :others)
         nav_item("Closed", href: "/jobs?filter=closed", icon: "☑️", badge: closed_count, active: @active_section == :closed)
       end
     end
