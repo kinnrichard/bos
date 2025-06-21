@@ -931,6 +931,20 @@ export default class extends Controller {
       })
   }
 
+  // Handle keydown events on task titles
+  handleTaskTitleKeydown(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault() // Prevent line break in contenteditable
+      event.currentTarget.blur() // Trigger blur to save the title
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      const titleElement = event.currentTarget
+      const originalTitle = titleElement.dataset.originalTitle || ''
+      titleElement.textContent = originalTitle // Restore original text
+      titleElement.blur() // Exit edit mode
+    }
+  }
+
   handleEmptyTaskRename(taskElement, taskId) {
     const hasDeletePermission = this.checkDeletePermission()
     

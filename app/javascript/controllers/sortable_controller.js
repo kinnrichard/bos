@@ -231,8 +231,8 @@ export default class extends Controller {
     
     // Send request to update parent_id
     const jobController = this.element.closest('[data-controller*="job"]')
-    const jobId = jobController?.dataset.jobIdValue
-    const clientId = jobController?.dataset.clientIdValue
+    const jobId = jobController?.dataset.jobId
+    const clientId = jobController?.dataset.clientId
     
     if (!jobId || !clientId) return
     

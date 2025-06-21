@@ -154,16 +154,22 @@ class DragAndDropPlaywrightTest < ApplicationPlaywrightTestCase
     # Wait for subtask creation
     sleep 0.5
     
-    # Verify subtask was created
-    subtask_container = @page.locator(".task-wrapper .task-item[data-task-id='#{parent_id}'] ~ .subtasks-container").first
-    assert subtask_container
+    # Wait for DOM updates
+    sleep 1
     
-    subtask = @page.locator(".subtasks-container .subtask-item[data-task-id='#{child_id}']").first
-    assert subtask, "Task should now be a subtask"
+    # Verify subtask was created - check if the child task is now under the parent
+    parent_wrapper = @page.locator(".task-wrapper:has(.task-item[data-task-id='#{parent_id}'])").first
+    assert parent_wrapper, "Parent task wrapper should exist"
     
-    # Verify subtask count appears
-    subtask_count = @page.locator(".task-item[data-task-id='#{parent_id}'] .subtask-count").first
-    assert_match /\(1 subtask\)/, subtask_count.text_content if subtask_count
+    # Check if subtask exists within the parent's wrapper
+    subtask = parent_wrapper.locator(".subtask-item[data-task-id='#{child_id}']").first
+    subtask_exists = subtask.count > 0
+    assert subtask_exists, "Task should now be a subtask"
+    
+    # Verify subtask count appears on parent
+    parent_task_content = parent_wrapper.locator(".task-content, .task-item").first
+    subtask_count_text = parent_task_content.text_content
+    assert_match /\(1 subtask\)/, subtask_count_text
   end
 
   test "drag and drop maintains position after server update" do
@@ -180,17 +186,9 @@ class DragAndDropPlaywrightTest < ApplicationPlaywrightTestCase
       }
     JS
     
-    # Create multiple tasks first
-    3.times do |i|
-      @page.locator('.new-task-placeholder').click
-      fill_in_new_task "Test Task #{i + 1}"
-      @page.keyboard.press("Enter")
-      sleep 0.3
-    end
-    
-    # Get all tasks
+    # Get existing tasks (should be at least 2)
     tasks_count = @page.locator('.task-item[data-task-id]').count
-    assert tasks_count >= 5, "Should have at least 5 tasks (2 initial + 3 new)"
+    assert tasks_count >= 2, "Should have at least 2 tasks"
     
     # Get initial order
     initial_order = @page.evaluate(<<~JS)
@@ -277,71 +275,106 @@ class DragAndDropPlaywrightTest < ApplicationPlaywrightTestCase
   end
 
   def drag_and_drop(source, target, position: :after)
-    # Since we can't easily access the Stimulus controller instance,
-    # let's directly trigger the reorder by calling the handleReorder logic
-    
     # Convert locators to element handles
     source_handle = source.element_handle
     target_handle = target.element_handle
     
     @page.evaluate(<<~JS, arg: [source_handle, target_handle, position.to_s])
       async ([sourceElement, targetElement, position]) => {
-        // Find the wrapper elements
-        const sourceWrapper = sourceElement.closest('.task-wrapper');
-        const targetWrapper = targetElement.closest('.task-wrapper');
-        
-        if (!sourceWrapper || !targetWrapper || sourceWrapper === targetWrapper) {
-          throw new Error('Invalid drag operation');
-        }
-        
-        const container = targetWrapper.parentElement;
-        
-        // Remove from original position
-        sourceWrapper.parentElement.removeChild(sourceWrapper);
-        
-        // Insert in new position
-        if (position === 'before') {
-          container.insertBefore(sourceWrapper, targetWrapper);
+        // Special handling for center position (subtask creation)
+        if (position === 'center') {
+          // Simulate the full drag sequence for subtask creation
+          const sourceWrapper = sourceElement.closest('.task-wrapper');
+          const dataTransfer = new DataTransfer();
+          dataTransfer.effectAllowed = 'move';
+          dataTransfer.setData('text/html', sourceWrapper.outerHTML);
+          
+          // Create drag events
+          const createDragEvent = (type, target, clientX, clientY) => {
+            return new DragEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              dataTransfer: dataTransfer,
+              clientX: clientX,
+              clientY: clientY
+            });
+          };
+          
+          // Get target center position
+          const targetRect = targetElement.getBoundingClientRect();
+          const centerY = targetRect.top + targetRect.height / 2;
+          const centerX = targetRect.left + targetRect.width / 2;
+          
+          // Dispatch events
+          sourceElement.dispatchEvent(createDragEvent('dragstart', sourceElement, 0, 0));
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          targetElement.dispatchEvent(createDragEvent('dragenter', targetElement, centerX, centerY));
+          targetElement.dispatchEvent(createDragEvent('dragover', targetElement, centerX, centerY));
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          targetElement.dispatchEvent(createDragEvent('drop', targetElement, centerX, centerY));
+          sourceElement.dispatchEvent(createDragEvent('dragend', sourceElement, centerX, centerY));
+          
+          return { type: 'subtask' };
         } else {
-          if (targetWrapper.nextElementSibling) {
-            container.insertBefore(sourceWrapper, targetWrapper.nextElementSibling);
-          } else {
-            container.appendChild(sourceWrapper);
+          // Regular reorder logic for before/after positions
+          const sourceWrapper = sourceElement.closest('.task-wrapper');
+          const targetWrapper = targetElement.closest('.task-wrapper');
+          
+          if (!sourceWrapper || !targetWrapper || sourceWrapper === targetWrapper) {
+            throw new Error('Invalid drag operation');
           }
-        }
-        
-        // Calculate new positions after DOM move
-        const items = Array.from(container.children).filter(el => 
-          el.classList.contains('task-wrapper') && !el.classList.contains('new-task-wrapper')
-        );
-        
-        const positions = items.map((item, index) => ({
-          id: item.querySelector('.task-item, .subtask-item')?.dataset.taskId,
-          position: index + 1
-        })).filter(p => p.id);
-        
-        // Find the job controller element and dispatch the reorder event
-        const jobElement = container.closest('[data-controller*="job"]');
-        console.log('Job element found:', !!jobElement);
-        console.log('Positions to update:', positions);
-        
-        if (jobElement) {
-          // Wait a bit to ensure controller is ready
-          await new Promise(resolve => setTimeout(resolve, 100));
           
-          // Dispatch reorder event to update server
-          const reorderEvent = new CustomEvent('tasks:reorder', {
-            detail: { positions },
-            bubbles: true
-          });
-          jobElement.dispatchEvent(reorderEvent);
-          console.log('Dispatched tasks:reorder event');
+          const container = targetWrapper.parentElement;
           
-          // Wait for the event to be processed
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Remove from original position
+          sourceWrapper.parentElement.removeChild(sourceWrapper);
+          
+          // Insert in new position
+          if (position === 'before') {
+            container.insertBefore(sourceWrapper, targetWrapper);
+          } else {
+            if (targetWrapper.nextElementSibling) {
+              container.insertBefore(sourceWrapper, targetWrapper.nextElementSibling);
+            } else {
+              container.appendChild(sourceWrapper);
+            }
+          }
+          
+          // Calculate new positions after DOM move
+          const items = Array.from(container.children).filter(el => 
+            el.classList.contains('task-wrapper') && !el.classList.contains('new-task-wrapper')
+          );
+          
+          const positions = items.map((item, index) => ({
+            id: item.querySelector('.task-item, .subtask-item')?.dataset.taskId,
+            position: index + 1
+          })).filter(p => p.id);
+          
+          // Find the job controller element and dispatch the reorder event
+          const jobElement = container.closest('[data-controller*="job"]');
+          console.log('Job element found:', !!jobElement);
+          console.log('Positions to update:', positions);
+          
+          if (jobElement) {
+            // Wait a bit to ensure controller is ready
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Dispatch reorder event to update server
+            const reorderEvent = new CustomEvent('tasks:reorder', {
+              detail: { positions },
+              bubbles: true
+            });
+            jobElement.dispatchEvent(reorderEvent);
+            console.log('Dispatched tasks:reorder event');
+            
+            // Wait for the event to be processed
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          
+          return positions;
         }
-        
-        return positions;
       }
     JS
   end

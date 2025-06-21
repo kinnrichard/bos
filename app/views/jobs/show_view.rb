@@ -311,7 +311,7 @@ module Views
                 class: "task-title",
                 contenteditable: "true",
                 data: { 
-                  action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick",
+                  action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown",
                   task_id: task.id,
                   original_title: task.title
                 }
@@ -402,7 +402,7 @@ module Views
               class: "subtask-title",
               contenteditable: "true",
               data: { 
-                action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick",
+                action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown",
                 task_id: subtask.id,
                 original_title: subtask.title
               }
