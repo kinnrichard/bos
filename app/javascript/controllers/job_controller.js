@@ -1036,6 +1036,43 @@ export default class extends Controller {
     placeholder.dataset.action = ''
   }
   
+  clearNewTaskPlaceholder(event) {
+    const element = event.target
+    // Only clear if the text is still the placeholder
+    if (element.textContent === 'New task...') {
+      element.textContent = ''
+      
+      // Set up the contenteditable with proper event handlers
+      element.dataset.action = 'blur->job#saveNewTaskFromContentEditable keydown->job#handleNewTaskKeydown'
+      element.dataset.originalTitle = ''
+      
+      // Store reference for later use
+      this.currentNewTaskElement = element
+      
+      // Remove click handler temporarily from the parent
+      const placeholder = this.newTaskPlaceholderTarget
+      if (placeholder) {
+        placeholder.dataset.action = ''
+      }
+    }
+  }
+  
+  handleTasksContainerClick(event) {
+    // Only proceed if clicked on the container itself or empty space
+    // Not on a task or other interactive element
+    if (event.target === event.currentTarget || 
+        event.target.classList.contains('tasks-list') ||
+        event.target.classList.contains('tasks-container')) {
+      
+      // Find the new task field and focus it
+      const newTaskField = this.newTaskTextTarget
+      if (newTaskField && newTaskField.contentEditable === 'true') {
+        newTaskField.focus()
+        // The focus event will trigger clearNewTaskPlaceholder
+      }
+    }
+  }
+  
 
   cancelNewTask(event) {
     // Restore the placeholder

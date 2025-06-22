@@ -27,7 +27,14 @@ module Views
               end
             end
             div(class: "task-content") do
-              div(class: "task-title", contenteditable: "true", data: { job_target: "newTaskText" }) do
+              div(
+                class: "task-title",
+                contenteditable: "true",
+                data: {
+                  job_target: "newTaskText",
+                  action: "focus->job#clearNewTaskPlaceholder"
+                }
+              ) do
                 "New task..."
               end
             end

@@ -42,7 +42,13 @@ module Views
             end
 
             # Tasks list
-            div(class: "tasks-container", data: { job_target: "tasksContainer" }) do
+            div(
+              class: "tasks-container",
+              data: {
+                job_target: "tasksContainer",
+                action: "click->job#handleTasksContainerClick"
+              }
+            ) do
               sorting_service = ::TaskSortingService.new(@job)
               tasks_tree = sorting_service.get_ordered_tasks
 

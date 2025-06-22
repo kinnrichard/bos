@@ -43,9 +43,14 @@ jobs:
       - name: Create Kamal secrets file
         run: |
           mkdir -p .kamal
-          echo "KAMAL_REGISTRY_PASSWORD=${{ secrets.GITHUB_TOKEN }}" > .kamal/secrets.development
-          echo "RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY_DEV }}" >> .kamal/secrets.development
-          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD_DEV }}" >> .kamal/secrets.development
+          cat > .kamal/secrets.development << EOF
+          KAMAL_REGISTRY_PASSWORD=${{ secrets.GITHUB_TOKEN }}
+          RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY_DEV }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD_DEV }}
+          EOF
+          # Debug: Check if secrets file was created properly
+          echo "Secrets file contents:"
+          cat .kamal/secrets.development
 
       - name: Deploy with Kamal
         run: |
