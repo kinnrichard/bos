@@ -41,9 +41,8 @@
   overflow: visible !important;
 }
 
-/* Assignee and other option styles */
-.assignee-option,
-.priority-option {
+/* Generic dropdown option styles */
+.dropdown-option {
   display: flex;
   align-items: center;
   width: 100%;
@@ -62,42 +61,54 @@
   
   &.active {
     background-color: var(--bg-tertiary);
-    
-    .checkmark {
-      display: inline;
-    }
+  }
+  
+  /* For single-select dropdowns in popovers */
+  .popover &.selected {
+    background-color: var(--accent-blue);
+    color: #FFFFFF;
   }
 }
 
-.technician-initials {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: var(--accent-blue);
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  margin-right: 8px;
-  flex-shrink: 0;
-}
 
-.priority-emoji {
+/* Generic dropdown elements */
+.dropdown-icon {
   width: 20px;
   text-align: center;
   margin-right: 8px;
+  flex-shrink: 0;
+  
+  /* For initials badges */
+  &.dropdown-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--accent-blue);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+  }
 }
 
-.checkmark {
+.dropdown-label {
+  flex: 1;
+}
+
+.dropdown-check {
   margin-left: auto;
   color: var(--accent-blue);
   font-weight: bold;
   display: none;
+  
+  .dropdown-option.active & {
+    display: inline;
+  }
 }
 
-/* Hidden checkbox for form submission */
-.hidden-checkbox {
+/* Hidden elements for form submission */
+.dropdown-value {
   display: none !important;
 }

@@ -104,7 +104,8 @@ module Components
               label(class: "form-label") { "Type" }
               div(class: "dropdown-container", data: { 
                 controller: "dropdown",
-                dropdown_positioning_value: "fixed"
+                dropdown_positioning_value: "fixed",
+                action: "dropdown:select->schedule-popover#typeSelected"
               }) do
                 button(
                   type: "button",
@@ -114,8 +115,8 @@ module Components
                     dropdown_target: "button"
                   }
                 ) do
-                  span(class: "dropdown-value", data: { schedule_popover_target: "typeDisplay" }) do
-                    span { "Scheduled Work" } # Default to first option
+                  span(data: { dropdown_target: "display", schedule_popover_target: "typeDisplay" }) do
+                    "Scheduled Work" # Default to first option
                   end
                   span(class: "dropdown-arrow") { "▼" }
                 end
@@ -126,21 +127,21 @@ module Components
                   ScheduledDateTime.scheduled_types.each do |value, label|
                     button(
                       type: "button",
-                      class: "type-option",
+                      class: "dropdown-option",
                       data: { 
-                        action: "click->schedule-popover#selectType",
-                        type_value: value,
-                        type_label: label
+                        action: "click->dropdown#select",
+                        value: value,
+                        label: label
                       }
                     ) do
-                      span { label }
+                      span(class: "dropdown-label") { label }
                     end
                   end
                 end
                 # Hidden input for form value
                 input(
                   type: "hidden",
-                  data: { schedule_popover_target: "typeSelect" },
+                  data: { dropdown_target: "value", schedule_popover_target: "typeSelect" },
                   value: "scheduled_work" # Default value
                 )
               end
@@ -174,9 +175,13 @@ module Components
             div(class: "form-group") do
               label(class: "form-label") { "Assign Technicians (optional)" }
               div(class: "dropdown-container", data: { 
-        controller: "dropdown",
-        dropdown_positioning_value: "fixed"  # Use fixed positioning for dropdown in scrollable popover
-      }) do
+                controller: "dropdown",
+                dropdown_positioning_value: "fixed",
+                dropdown_mode_value: "multi",
+                dropdown_close_on_select_value: false,
+                placeholder: "Select technicians...",
+                action: "dropdown:select->schedule-popover#techniciansSelected"
+              }) do
                 button(
                   type: "button",
                   class: "dropdown-button",
@@ -185,28 +190,30 @@ module Components
                     dropdown_target: "button"
                   }
                 ) do
-                  span(class: "dropdown-value", data: { schedule_popover_target: "technicianDisplay" }) do
-                    span { "Select technicians..." }
+                  span(data: { dropdown_target: "display", schedule_popover_target: "technicianDisplay" }) do
+                    "Select technicians..."
                   end
                   span(class: "dropdown-arrow") { "▼" }
                 end
                 div(
-                  class: "dropdown-menu multi-select-dropdown hidden",
+                  class: "dropdown-menu hidden",
                   data: { dropdown_target: "menu" }
                 ) do
                   User.where(role: [:technician, :admin, :owner]).order(:name).each do |user|
-                    div(
-                      class: "assignee-option",
+                    button(
+                      type: "button",
+                      class: "dropdown-option",
                       data: { 
-                        action: "click->schedule-popover#toggleTechnician",
-                        technician_id: user.id
+                        action: "click->dropdown#select",
+                        value: user.id,
+                        label: user.name
                       }
                     ) do
-                      technician_icon(user)
-                      span { user.name }
+                      span(class: "dropdown-icon dropdown-badge") { user.name.split.map(&:first).join.upcase[0..1] }
+                      span(class: "dropdown-label") { user.name }
                       input(
                         type: "checkbox",
-                        class: "hidden-checkbox",
+                        class: "dropdown-value",
                         value: user.id,
                         data: { schedule_popover_target: "userCheckbox" }
                       )
@@ -227,12 +234,6 @@ module Components
           end
         end
       end
-    end
-    
-    def technician_icon(technician)
-      # For now, use initials. Could be replaced with actual avatars
-      initials = technician.name.split.map(&:first).join.upcase[0..1]
-      span(class: "technician-initials") { initials }
     end
   end
 end

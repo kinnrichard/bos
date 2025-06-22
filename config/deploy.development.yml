@@ -1,0 +1,114 @@
+# Development deployment configuration
+service: bos-dev
+
+# Docker image for development
+image: your-dockerhub-username/bos-dev
+
+# Deploy to development server
+servers:
+  web:
+    - YOUR_DEV_DROPLET_IP
+
+# SSL configuration for development
+proxy:
+  ssl: true
+  host: dev.yourdomain.com
+  # Optionally use a subdomain like: bos-dev.yourdomain.com
+
+# Container registry credentials
+registry:
+  # For Docker Hub (default):
+  username: your-dockerhub-username
+  
+  # For GitHub Container Registry:
+  # server: ghcr.io
+  # username: your-github-username
+  
+  # For DigitalOcean Container Registry:
+  # server: registry.digitalocean.com
+  # username: your-do-registry-username
+  
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# Environment variables
+env:
+  secret:
+    - RAILS_MASTER_KEY
+  clear:
+    # Development environment
+    RAILS_ENV: development
+    
+    # Enable debug logging
+    RAILS_LOG_LEVEL: debug
+    
+    # Show detailed error pages
+    RAILS_SERVE_STATIC_FILES: true
+    
+    # Disable forced SSL for easier development
+    FORCE_SSL: false
+    
+    # Run Solid Queue in Puma for single-server setup
+    SOLID_QUEUE_IN_PUMA: true
+    
+    # Optional: External database connection
+    # DB_HOST: your-dev-db-host
+    
+    # Optional: Redis connection
+    # REDIS_URL: redis://your-dev-redis:6379/0
+
+# Development-specific aliases
+aliases:
+  console: app exec --interactive --reuse "bin/rails console"
+  shell: app exec --interactive --reuse "bash"
+  logs: app logs -f
+  dbc: app exec --interactive --reuse "bin/rails dbconsole"
+  
+  # Development helpers
+  routes: app exec "bin/rails routes"
+  migrate: app exec "bin/rails db:migrate"
+  seed: app exec "bin/rails db:seed"
+  reset: app exec "bin/rails db:reset"
+
+# Persistent storage for development
+volumes:
+  - "bos_dev_storage:/rails/storage"
+
+# Asset bridging (optional for dev, but useful)
+asset_path: /rails/public/assets
+
+# Builder configuration
+builder:
+  # Remove arch specification unless needed
+  # arch: amd64
+  
+  # Build arguments
+  args:
+    RAILS_ENV: development
+
+# SSH configuration (if not using root)
+# ssh:
+#   user: deploy
+
+# Optional: Development accessories
+# accessories:
+#   # Local PostgreSQL for development
+#   postgres:
+#     image: postgres:16
+#     host: YOUR_DEV_DROPLET_IP
+#     port: "127.0.0.1:5432:5432"
+#     env:
+#       clear:
+#         POSTGRES_DB: bos_development
+#       secret:
+#         - POSTGRES_PASSWORD
+#     directories:
+#       - data:/var/lib/postgresql/data
+#   
+#   # Local Redis for development
+#   redis:
+#     image: redis:7-alpine
+#     host: YOUR_DEV_DROPLET_IP
+#     port: "127.0.0.1:6379:6379"
+#     directories:
+#       - data:/data

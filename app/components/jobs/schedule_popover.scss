@@ -199,56 +199,6 @@
         margin-left: 8px;
       }
       
-      .multi-select-dropdown {
-        max-height: 200px;
-        overflow-y: auto;
-        
-        .assignee-option {
-          display: flex;
-          align-items: center;
-          padding: 8px 12px;
-          cursor: pointer;
-          
-          &:hover {
-            background-color: var(--bg-secondary);
-          }
-          
-          &.active {
-            background-color: var(--bg-tertiary);
-          }
-          
-          .technician-icon {
-            margin-right: 8px;
-          }
-          
-          .checkmark {
-            margin-left: auto;
-            color: var(--accent-blue);
-            font-weight: bold;
-          }
-          
-          .hidden-checkbox {
-            display: none;
-          }
-        }
-      }
-      
-      .type-option {
-        display: block;
-        width: 100%;
-        padding: 8px 12px;
-        background: none;
-        border: none;
-        color: var(--text-primary);
-        font-size: 14px;
-        text-align: left;
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-        
-        &:hover {
-          background-color: var(--bg-tertiary);
-        }
-      }
     }
     
     .form-actions {

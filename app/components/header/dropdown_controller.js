@@ -26,11 +26,13 @@ import { Controller } from "@hotwired/stimulus"
 //
 // Connects to data-controller="dropdown"
 export default class extends Controller {
-  static targets = ["button", "menu"]
+  static targets = ["button", "menu", "display", "value"]
   static values = {
     zIndex: { type: Number, default: 9999 }, // Higher than popovers
     position: { type: String, default: "bottom" }, // bottom, top, left, right
-    positioning: { type: String, default: "absolute" } // "absolute" | "fixed" - use fixed for dropdowns in scrollable containers
+    positioning: { type: String, default: "absolute" }, // "absolute" | "fixed" - use fixed for dropdowns in scrollable containers
+    mode: { type: String, default: "single" }, // "single" | "multi" - single select or multi select
+    closeOnSelect: { type: Boolean, default: true } // Whether to close dropdown after selection
   }
   
   connect() {
@@ -198,5 +200,85 @@ export default class extends Controller {
     if (this.isOpen) {
       this.positionMenu()
     }
+  }
+  
+  // Generic selection handler
+  select(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    
+    const option = event.currentTarget
+    const value = option.dataset.value
+    const label = option.dataset.label || option.textContent.trim()
+    
+    if (this.modeValue === 'multi') {
+      this.handleMultiSelect(option, value, label)
+    } else {
+      this.handleSingleSelect(option, value, label)
+    }
+  }
+  
+  handleSingleSelect(option, value, label) {
+    // Update hidden input if exists
+    if (this.hasValueTarget) {
+      this.valueTarget.value = value
+    }
+    
+    // Update display if exists
+    if (this.hasDisplayTarget) {
+      this.displayTarget.textContent = label
+    }
+    
+    // Update visual state
+    this.menuTarget.querySelectorAll('.dropdown-option').forEach(opt => {
+      opt.classList.remove('active', 'selected')
+    })
+    option.classList.add('active', 'selected')
+    
+    // Dispatch custom event for parent controllers
+    this.dispatch('select', { detail: { value, label } })
+    
+    // Close dropdown if configured
+    if (this.closeOnSelectValue) {
+      this.close()
+    }
+  }
+  
+  handleMultiSelect(option, value, label) {
+    // Find checkbox within option
+    const checkbox = option.querySelector('input[type="checkbox"]')
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked
+    }
+    
+    // Toggle visual state
+    option.classList.toggle('active')
+    
+    // Update check mark
+    const checkmark = option.querySelector('.dropdown-check')
+    if (!checkmark && option.classList.contains('active')) {
+      option.insertAdjacentHTML('beforeend', '<span class="dropdown-check">✓</span>')
+    } else if (checkmark && !option.classList.contains('active')) {
+      checkmark.remove()
+    }
+    
+    // Collect all selected values
+    const selectedOptions = Array.from(this.menuTarget.querySelectorAll('.dropdown-option.active'))
+    const selectedValues = selectedOptions.map(opt => opt.dataset.value)
+    const selectedLabels = selectedOptions.map(opt => opt.dataset.label || opt.textContent.trim())
+    
+    // Update display
+    if (this.hasDisplayTarget) {
+      if (selectedOptions.length === 0) {
+        this.displayTarget.textContent = this.element.dataset.placeholder || 'Select...'
+      } else if (selectedOptions.length === 1) {
+        this.displayTarget.textContent = selectedLabels[0]
+      } else {
+        this.displayTarget.textContent = `${selectedOptions.length} selected`
+      }
+    }
+    
+    // Dispatch custom event
+    this.dispatch('select', { detail: { values: selectedValues, labels: selectedLabels } })
   }
 }

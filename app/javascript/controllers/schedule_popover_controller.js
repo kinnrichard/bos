@@ -161,69 +161,16 @@ export default class extends Controller {
     }
   }
   
-  toggleTechnician(event) {
-    event.preventDefault()
-    event.stopPropagation()
-    
-    const option = event.currentTarget
-    const checkbox = option.querySelector('.hidden-checkbox')
-    const technicianId = option.dataset.technicianId
-    
-    // Toggle the checkbox
-    checkbox.checked = !checkbox.checked
-    
-    // Toggle visual state
-    option.classList.toggle('active')
-    
-    // Add/remove checkmark
-    let checkmark = option.querySelector('.checkmark')
-    if (checkbox.checked) {
-      if (!checkmark) {
-        option.insertAdjacentHTML('beforeend', '<span class="checkmark">✓</span>')
-      }
-    } else {
-      if (checkmark) {
-        checkmark.remove()
-      }
-    }
-    
-    // Update the display
-    this.updateTechnicianDisplay()
+  techniciansSelected(event) {
+    // The dropdown controller already updated the display
+    // We just need to handle any custom logic here if needed
+    console.log('Technicians selected:', event.detail)
   }
   
-  updateTechnicianDisplay() {
-    const selectedCheckboxes = this.userCheckboxTargets.filter(cb => cb.checked)
-    const display = this.technicianDisplayTarget
-    
-    if (selectedCheckboxes.length === 0) {
-      display.innerHTML = '<span>Select technicians...</span>'
-    } else if (selectedCheckboxes.length === 1) {
-      const option = selectedCheckboxes[0].closest('.assignee-option')
-      const name = option.querySelector('span').textContent
-      display.innerHTML = `<span>${name}</span>`
-    } else {
-      display.innerHTML = `<span>${selectedCheckboxes.length} technicians selected</span>`
-    }
-  }
-  
-  selectType(event) {
-    event.preventDefault()
-    const button = event.currentTarget
-    const value = button.dataset.typeValue
-    const label = button.dataset.typeLabel
-    
-    // Update the hidden input value
-    this.typeSelectTarget.value = value
-    
-    // Update the display
-    this.typeDisplayTarget.innerHTML = `<span>${label}</span>`
-    
-    // Close the dropdown
-    const dropdown = button.closest('[data-controller~="dropdown"]')
-    const dropdownController = this.application.getControllerForElementAndIdentifier(dropdown, 'dropdown')
-    if (dropdownController) {
-      dropdownController.close()
-    }
+  typeSelected(event) {
+    // The dropdown controller already updated the display and value
+    // We just need to handle any custom logic here if needed
+    console.log('Type selected:', event.detail)
   }
 
   async addDate(event) {
