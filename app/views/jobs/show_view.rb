@@ -45,13 +45,7 @@ module Views
               # Existing tasks (only root tasks)
               div(class: "tasks-list", data: { job_target: "tasksList" }) do
                 if @job.tasks.root_tasks.any?
-                  @job.tasks.root_tasks.order(Arel.sql("CASE 
-                    WHEN status = 1 THEN 1
-                    WHEN status = 2 THEN 2
-                    WHEN status = 0 THEN 3
-                    WHEN status = 3 THEN 4
-                    WHEN status = 4 THEN 5
-                    END, position ASC")).each do |task|
+                  @job.tasks.root_tasks.ordered_by_status.each do |task|
                     render_task_item(task)
                   end
                 else
@@ -382,7 +376,7 @@ module Views
           # Render subtasks if any
           if task.has_subtasks?
             div(class: "subtasks subtasks-container") do
-              task.subtasks.order(:position).each do |subtask|
+              task.subtasks.ordered_by_status.each do |subtask|
                 render_subtask_item(subtask)
               end
             end
@@ -455,7 +449,7 @@ module Views
           # Render sub-subtasks if any
           if subtask.has_subtasks?
             div(class: "subtasks subtasks-container") do
-              subtask.subtasks.order(:position).each do |sub_subtask|
+              subtask.subtasks.ordered_by_status.each do |sub_subtask|
                 render_subtask_item(sub_subtask)
               end
             end

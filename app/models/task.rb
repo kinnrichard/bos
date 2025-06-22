@@ -29,6 +29,17 @@ class Task < ApplicationRecord
   scope :root_tasks, -> { where(parent_id: nil) }
   scope :subtasks_of, ->(task) { where(parent_id: task.id) }
   
+  # Consistent ordering by status - cancelled tasks go to the bottom
+  scope :ordered_by_status, -> {
+    order(Arel.sql("CASE 
+      WHEN status = 1 THEN 1
+      WHEN status = 2 THEN 2
+      WHEN status = 0 THEN 3
+      WHEN status = 3 THEN 4
+      WHEN status = 4 THEN 5
+      END, position ASC"))
+  }
+  
   # Set defaults
   after_initialize :set_defaults, if: :new_record?
   
@@ -152,28 +163,27 @@ class Task < ApplicationRecord
   end
   
   def reorder_by_status
-    # Define status priority order
-    status_priority = {
-      'in_progress' => 1,
-      'paused' => 2,
-      'new_task' => 3,
-      'successfully_completed' => 4,
-      'cancelled' => 5
-    }
+    return unless resort_enabled?
     
-    # Get all sibling tasks (same parent_id)
+    # Get all sibling tasks (same parent_id) ordered by status
     siblings = Task.where(job_id: job_id, parent_id: parent_id)
-                   .order(Arel.sql("CASE 
-                     WHEN status = 0 THEN #{status_priority['new_task']}
-                     WHEN status = 1 THEN #{status_priority['in_progress']}
-                     WHEN status = 2 THEN #{status_priority['paused']}
-                     WHEN status = 3 THEN #{status_priority['successfully_completed']}
-                     WHEN status = 4 THEN #{status_priority['cancelled']}
-                     END, position ASC"))
+                   .ordered_by_status
     
-    # Update positions to reflect new order
-    siblings.each_with_index do |task, index|
-      task.update_column(:position, index + 1) if task.position != index + 1
+    # Temporarily disable acts_as_list callbacks to avoid conflicts
+    Task.acts_as_list_no_update do
+      siblings.each_with_index do |task, index|
+        new_position = index + 1
+        if task.position != new_position
+          task.update_column(:position, new_position)
+        end
+      end
     end
+  end
+  
+  private
+  
+  def resort_enabled?
+    # Check if the user has resort enabled
+    job&.created_by&.resort_tasks_on_status_change
   end
 end

@@ -2,12 +2,12 @@
 service: bos-dev
 
 # Docker image for development
-image: your-dockerhub-username/bos-dev
+image: ghcr.io/fluffyx/bos-dev
 
 # Deploy to development server
 servers:
   web:
-    - YOUR_DEV_DROPLET_IP
+    - 134.199.194.133
 
 # SSL configuration for development
 proxy:
@@ -17,16 +17,9 @@ proxy:
 
 # Container registry credentials
 registry:
-  # For Docker Hub (default):
-  username: your-dockerhub-username
-  
-  # For GitHub Container Registry:
-  # server: ghcr.io
-  # username: your-github-username
-  
-  # For DigitalOcean Container Registry:
-  # server: registry.digitalocean.com
-  # username: your-do-registry-username
+  # GitHub Container Registry
+  server: ghcr.io
+  username: fluffyx
   
   password:
     - KAMAL_REGISTRY_PASSWORD
