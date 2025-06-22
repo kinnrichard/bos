@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
-  before_action :require_owner, except: [:settings, :update_settings]
-  before_action :set_user, only: [:edit, :update, :destroy]
-  
+  before_action :require_owner, except: [ :settings, :update_settings ]
+  before_action :set_user, only: [ :edit, :update, :destroy ]
+
   def index
     @users = User.order(:name)
     render Views::Users::IndexView.new(users: @users, current_user: current_user)
@@ -14,16 +14,16 @@ class UsersController < ApplicationController
 
   def create
     @user = User.new(user_params)
-    
+
     if @user.save
       ActivityLog.create!(
         user: current_user,
-        action: 'created',
+        action: "created",
         loggable: @user,
-        metadata: { 
-          user_name: @user.name, 
+        metadata: {
+          user_name: @user.name,
           user_email: @user.email,
-          user_role: @user.role 
+          user_role: @user.role
         }
       )
       redirect_to users_path, notice: "User #{@user.name} was successfully created."
@@ -42,15 +42,15 @@ class UsersController < ApplicationController
       params[:user].delete(:password)
       params[:user].delete(:password_confirmation)
     end
-    
+
     if @user.update(user_params)
       ActivityLog.create!(
         user: current_user,
-        action: 'updated',
+        action: "updated",
         loggable: @user,
-        metadata: { 
+        metadata: {
           user_name: @user.name,
-          changes: @user.saved_changes.except('updated_at', 'password_digest')
+          changes: @user.saved_changes.except("updated_at", "password_digest")
         }
       )
       redirect_to users_path, notice: "User #{@user.name} was successfully updated."
@@ -63,7 +63,7 @@ class UsersController < ApplicationController
     @user = current_user
     render Views::Users::SettingsView.new(user: @user, current_user: current_user)
   end
-  
+
   def update_settings
     @user = current_user
     if @user.update(settings_params)
@@ -72,29 +72,29 @@ class UsersController < ApplicationController
       render Views::Users::SettingsView.new(user: @user, current_user: current_user), status: :unprocessable_entity
     end
   end
-  
+
   def destroy
     user_name = @user.name
     user_email = @user.email
-    
+
     if @user == current_user
       redirect_to users_path, alert: "You cannot delete your own account."
       return
     end
-    
+
     @user.destroy
-    
+
     ActivityLog.create!(
       user: current_user,
-      action: 'deleted',
-      loggable_type: 'User',
+      action: "deleted",
+      loggable_type: "User",
       loggable_id: @user.id,
-      metadata: { 
+      metadata: {
         user_name: user_name,
         user_email: user_email
       }
     )
-    
+
     redirect_to users_path, notice: "User #{user_name} was successfully deleted."
   end
 
@@ -107,11 +107,11 @@ class UsersController < ApplicationController
   def user_params
     params.require(:user).permit(:name, :email, :password, :password_confirmation, :role)
   end
-  
+
   def settings_params
     params.require(:user).permit(:resort_tasks_on_status_change)
   end
-  
+
   def require_owner
     unless current_user&.owner?
       redirect_to root_path, alert: "You don't have permission to access this page."

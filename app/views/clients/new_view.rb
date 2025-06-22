@@ -3,7 +3,6 @@
 module Views
   module Clients
     class NewView < Views::Base
-      
       def initialize(client:, current_user:, authenticity_token: nil)
         @client = client
         @current_user = current_user
@@ -17,11 +16,10 @@ module Views
           active_section: :clients
         ) do
           render Components::Forms::FormContainerComponent.new(title: "New Client") do
-            
             form(action: "/clients", method: "post", class: "client-form") do
               # CSRF token
               input(type: "hidden", name: "authenticity_token", value: @authenticity_token)
-              
+
               # Name field
               div(class: "form-group") do
                 label(for: "client_name", class: "form-label") { "Name" }
@@ -35,7 +33,7 @@ module Views
                   autofocus: true
                 )
               end
-              
+
               # Client type selection
               div(class: "form-group") do
                 label(class: "form-label") { "Client Type" }
@@ -49,11 +47,11 @@ module Views
                       class: "client-type-radio"
                     )
                     span(class: "client-type-label") do
-                      span(class: "client-type-icon") { client_type_icon('residential') }
+                      span(class: "client-type-icon") { client_type_icon("residential") }
                       span { "Residential" }
                     end
                   end
-                  
+
                   label(class: "client-type-option") do
                     input(
                       type: "radio",
@@ -63,13 +61,13 @@ module Views
                       class: "client-type-radio"
                     )
                     span(class: "client-type-label") do
-                      span(class: "client-type-icon") { client_type_icon('business') }
+                      span(class: "client-type-icon") { client_type_icon("business") }
                       span { "Business" }
                     end
                   end
                 end
               end
-              
+
               # Form actions
               render Components::Forms::FormActionsComponent.new(
                 cancel_path: "/clients",

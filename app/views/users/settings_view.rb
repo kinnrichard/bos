@@ -24,13 +24,13 @@ module Views
                 form_with(model: @user, url: update_settings_path, method: :patch) do |f|
                   div(class: "form-section") do
                     h3(class: "form-section-title") { "Task Management" }
-                    
+
                     div(class: "form-group") do
                       div(class: "checkbox-group") do
-                        f.check_box :resort_tasks_on_status_change, 
+                        f.check_box :resort_tasks_on_status_change,
                           class: "form-checkbox",
                           id: "resort_tasks"
-                        f.label :resort_tasks_on_status_change, 
+                        f.label :resort_tasks_on_status_change,
                           "Automatically re-sort tasks when status changes",
                           for: "resort_tasks",
                           class: "checkbox-label"

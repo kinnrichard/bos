@@ -9,8 +9,8 @@ class CreateScheduledDateTimes < ActiveRecord::Migration[8.0]
 
       t.timestamps
     end
-    
-    add_index :scheduled_date_times, [:schedulable_type, :schedulable_id, :scheduled_type], 
+
+    add_index :scheduled_date_times, [ :schedulable_type, :schedulable_id, :scheduled_type ],
               name: 'index_scheduled_date_times_on_schedulable_and_type'
     add_index :scheduled_date_times, :scheduled_date
     add_index :scheduled_date_times, :scheduled_type

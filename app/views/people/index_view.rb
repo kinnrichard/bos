@@ -4,7 +4,7 @@ module Views
   module People
     class IndexView < Views::Base
       include Phlex::Rails::Helpers::Routes
-      
+
       def initialize(client:, people:, current_user:)
         @client = client
         @people = people
@@ -23,14 +23,14 @@ module Views
             action_text: "Add Person",
             action_path: new_client_person_path(@client)
           )
-          
+
           if @people.any?
             div(class: "people-list") do
               @people.each do |person|
                 link_to client_person_path(@client, person), class: "person-item" do
                   div(class: "person-info") do
                     span(class: "person-name") { person.name }
-                    
+
                     # Show missing contact methods
                     missing_types = missing_contact_types(person)
                     if missing_types.any?
@@ -53,27 +53,27 @@ module Views
             else
               "Add family members, contacts, and even pets at #{@client.name}!"
             end
-            
+
             div(class: "empty-state-wrapper") do
               render Components::EmptyState::GenericEmptyStateComponent.new(
                 title: "No people added yet",
                 message: message
               )
-              
+
               render Components::Ui::ButtonComponent.new(
                 href: new_client_person_path(@client),
                 variant: :primary
-              ) { 'Add a Person' }              
+              ) { "Add a Person" }
             end
           end
         end
       end
-      
+
       private
-      
-      
+
+
       def missing_contact_types(person)
-        all_types = ['phone', 'email', 'address']
+        all_types = [ "phone", "email", "address" ]
         existing_types = person.contact_methods.pluck(:contact_type)
         all_types - existing_types
       end

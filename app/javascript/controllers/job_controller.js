@@ -1510,45 +1510,60 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json", 
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content,
+        "Accept": "text/vnd.turbo-stream.html, application/json"
       },
       body: JSON.stringify({ 
         task: { 
           status: newStatus 
         } 
       })
-    }).then(response => response.json())
-      .then(data => {
-        // Update the task element
-        taskElement.dataset.taskStatus = data.task.status
-        taskElement.classList.toggle("completed", data.task.status === "successfully_completed")
-        
-        // Update the status button emoji
-        const statusEmojis = {
-          'new_task': '⚫',
-          'in_progress': '🟢',
-          'paused': '⏸️',
-          'successfully_completed': '☑️',
-          'cancelled': '❌'
-        }
-        const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
-        if (statusButton) {
-          statusButton.textContent = statusEmojis[data.task.status] || '⚫'
-        }
-        
-        // Update active state in dropdown
-        taskElement.querySelectorAll(".task-status-option").forEach(opt => {
-          opt.classList.toggle("active", opt.dataset.status === data.task.status)
+    }).then(response => {
+      // Hide dropdown immediately
+      dropdown.classList.add("hidden")
+      
+      // Check if response is Turbo Stream
+      if (response.headers.get('content-type').includes('turbo-stream')) {
+        return response.text().then(html => {
+          // Turbo should already be available from our imports
+          if (window.Turbo) {
+            window.Turbo.renderStreamMessage(html)
+          } else {
+            console.error('Turbo not available for stream rendering')
+          }
         })
-        
-        // Hide dropdown
-        dropdown.classList.add("hidden")
-        
-        // Check if we should resort tasks
-        if (this.shouldResortTasks()) {
-          this.resortTasksByStatus()
-        }
-      })
+      } else {
+        // Fallback to JSON response
+        return response.json().then(data => {
+          // Update the task element
+          taskElement.dataset.taskStatus = data.task.status
+          taskElement.classList.toggle("completed", data.task.status === "successfully_completed")
+          
+          // Update the status button emoji
+          const statusEmojis = {
+            'new_task': '⚫',
+            'in_progress': '🟢',
+            'paused': '⏸️',
+            'successfully_completed': '☑️',
+            'cancelled': '❌'
+          }
+          const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
+          if (statusButton) {
+            statusButton.textContent = statusEmojis[data.task.status] || '⚫'
+          }
+          
+          // Update active state in dropdown
+          taskElement.querySelectorAll(".task-status-option").forEach(opt => {
+            opt.classList.toggle("active", opt.dataset.status === data.task.status)
+          })
+          
+          // Check if we should resort tasks
+          if (this.shouldResortTasks()) {
+            this.resortTasksByStatus()
+          }
+        })
+      }
+    })
   }
   
   shouldResortTasks() {

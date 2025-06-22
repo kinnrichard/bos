@@ -4,7 +4,7 @@ module Views
   module People
     class ShowView < Views::Base
       include Phlex::Rails::Helpers::Routes
-      
+
       def initialize(client:, person:, current_user:)
         @client = client
         @person = person
@@ -23,7 +23,7 @@ module Views
               div do
                 h1 { @person.name }
               end
-              
+
               div(class: "person-actions") do
                 render Components::Ui::ButtonComponent.new(
                   href: edit_client_person_path(@client, @person),
@@ -36,10 +36,10 @@ module Views
                 ) { "Delete" }
               end
             end
-            
+
             div(class: "person-info-section") do
               h2 { "Contact Information" }
-              
+
               if @person.contact_methods.any?
                 div(class: "contact-methods-list") do
                   @person.contact_methods.each do |contact|
@@ -53,7 +53,7 @@ module Views
                 p(class: "text-muted") { "No contact information added." }
               end
             end
-            
+
             if @person.notes.present?
               div(class: "person-info-section") do
                 h2 { "Notes" }
@@ -62,7 +62,7 @@ module Views
                 end
               end
             end
-            
+
             if @person.devices.any?
               div(class: "person-info-section") do
                 h2 { "Devices" }
@@ -84,14 +84,14 @@ module Views
           end
         end
       end
-      
+
       private
-      
+
       def contact_type_label(type)
         case type
-        when 'phone' then "Phone"
-        when 'email' then "Email"
-        when 'address' then "Address"
+        when "phone" then "Phone"
+        when "email" then "Email"
+        when "address" then "Address"
         else type.to_s.capitalize
         end
       end

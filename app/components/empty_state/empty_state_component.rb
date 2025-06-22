@@ -12,18 +12,18 @@ module Components
         h1 do
           "#{greeting}, #{@user.name || 'Oliver'}!"
         end
-        
+
         p do
           plain "Get started by opening "
           a(href: "/jobs?filter=mine") { "My Jobs" }
           plain "."
         end
-        
+
         p do
           plain "You can also "
           a(
             href: "#",
-            data: { 
+            data: {
               action: "click->empty-state#focusSearch"
             }
           ) { "search" }

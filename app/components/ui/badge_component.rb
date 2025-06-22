@@ -27,8 +27,8 @@ module Components
 
       def view_template
         element = @clickable ? :button : :span
-        
-        send(element, 
+
+        send(element,
           class: badge_classes,
           data: @data,
           **@html_options
@@ -36,7 +36,7 @@ module Components
           if @icon
             span(class: "badge__icon") { @icon }
           end
-          
+
           if @text || @content
             span(class: "badge__text") do
               @content ? @content.call : @text

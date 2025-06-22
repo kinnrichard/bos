@@ -4,7 +4,7 @@ Client.where(name: "Test Client DnD").destroy_all
 # Find or create user
 user = User.find_by(email: "test@example.com") || User.create!(
   name: "Test User",
-  email: "test@example.com", 
+  email: "test@example.com",
   password: "secret123",
   role: "admin"
 )

@@ -3,7 +3,6 @@
 module Components
   module Sidebar
     class SidebarComponent < Components::Base
-    
     def initialize(current_user:, active_section: nil, client: nil)
       @current_user = current_user
       @active_section = active_section
@@ -29,7 +28,7 @@ module Components
         link_to(root_path) do
           img(src: asset_path("faultless_logo.png"), alt: "Faultless", class: "logo-image")
         end
-        
+
         # Close button that appears on hover
         button(
           type: "button",
@@ -39,12 +38,12 @@ module Components
         ) do
           span(class: "close-icon") { "×" }
         end
-        
-        #if @client
+
+        # if @client
         #  div(class: "sidebar-client-header") do
         #    h3 { @client.name }
         #  end
-        #end
+        # end
       end
     end
 
@@ -54,21 +53,21 @@ module Components
         div(style: "margin-top: 24px; margin-bottom: 12px;") do
           nav_item(@client.name, href: client_path(@client), icon: @client.icon, active: @active_section == :client_info)
         end
-        
+
         div(style: "margin-top: 24px; margin-bottom: 12px;") do
           nav_item("People", href: client_people_path(@client), icon: "👤", active: @active_section == :people)
           nav_item("Devices", href: client_devices_path(@client), icon: "💻", active: @active_section == :devices)
           nav_item("Jobs", href: client_jobs_path(@client), icon: "💼", badge: @client.jobs.count, active: @active_section == :jobs)
-          #nav_item("Schedule", href: schedule_client_path(@client), icon: "🗓️", badge: scheduled_count, active: @active_section == :schedule)
-          #nav_item("Invoices", href: client_invoices_path(@client), icon: "🧾", active: @active_section == :invoices)
+          # nav_item("Schedule", href: schedule_client_path(@client), icon: "🗓️", badge: scheduled_count, active: @active_section == :schedule)
+          # nav_item("Invoices", href: client_invoices_path(@client), icon: "🧾", active: @active_section == :invoices)
         end
-        
-        #div(style: "margin-top: 24px; margin-bottom: 12px;") do
+
+        # div(style: "margin-top: 24px; margin-bottom: 12px;") do
         #  nav_item("Client Logs", href: logs_client_path(@client), icon: "📜", active: @active_section == :client_logs)
-        #end
-        
+        # end
+
         # All Jobs section
-        #render_jobs_section(header_text: "All Jobs", margin_top: "24px")
+        # render_jobs_section(header_text: "All Jobs", margin_top: "24px")
       end
     end
 
@@ -87,22 +86,22 @@ module Components
     def bottom_sections
       div(style: "margin-top: auto;") do
         # Settings section
-        #div(class: "sidebar-section", style: "margin-bottom: 12px;") do
+        # div(class: "sidebar-section", style: "margin-bottom: 12px;") do
         #  div(class: "sidebar-section-header") { "Settings" }
         #  # User settings (available to all users)
         #  nav_item("My Settings", href: settings_path, icon: "⚙️", active: @active_section == :user_settings)
-        #  
+        #
         #  # User management (owners only)
         #  if @current_user&.owner?
         #    nav_item("Users", href: users_path, icon: "👥", active: @active_section == :settings)
         #  end
-        #end
-        
+        # end
+
         # Bottom links
         if @client
-          nav_item("#{@client.name } Logs", href: logs_client_path(@client), icon: "📜", active: @active_section == :client_logs) 
+          nav_item("#{@client.name } Logs", href: logs_client_path(@client), icon: "📜", active: @active_section == :client_logs)
         else
-          nav_item("Logs", href: logs_path, icon: "📜", active: @active_section == :logs) 
+          nav_item("Logs", href: logs_path, icon: "📜", active: @active_section == :logs)
         end
       end
     end
@@ -110,7 +109,7 @@ module Components
     def render_jobs_section(header_text:, margin_top: nil)
       div_attrs = { class: "sidebar-section" }
       div_attrs[:style] = "margin-top: #{margin_top};" if margin_top
-      
+
       div(**div_attrs) do
         div(class: "sidebar-section-header") { header_text }
         nav_item("My Jobs", href: "/jobs?filter=mine", icon: "👤", badge: my_jobs_count, active: @active_section == :my_jobs)
@@ -127,18 +126,18 @@ module Components
     def unassigned_count
       Job.left_joins(:job_assignments).where(job_assignments: { id: nil }).count
     end
-    
+
     def others_count
       Job.joins(:job_assignments)
          .where.not(job_assignments: { user_id: @current_user.id })
          .distinct
          .count
     end
-    
+
     def closed_count
-      Job.where(status: ['successfully_completed', 'cancelled']).count
+      Job.where(status: [ "successfully_completed", "cancelled" ]).count
     end
-    
+
     def scheduled_count
       return 0 unless @client
       # TODO: Replace with actual count from database

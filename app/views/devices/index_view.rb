@@ -18,23 +18,23 @@ module Views
         ) do
           render Components::PageHeader::PageHeaderComponent.new(
             title: "Devices",
-            action_text: "Add Device", 
+            action_text: "Add Device",
             action_path: new_client_device_path(@client)
           )
-          
+
           if @devices.any?
             div(class: "devices-list") do
               @devices.each do |device|
                 link_to client_device_path(@client, device), class: "device-item" do
                   div(class: "device-info") do
                     span(class: "device-name") { device.name }
-                    
+
                     div(class: "device-meta") do
                       if device.person
                         span(class: "meta-icon") { "👤" }
                         span(class: "meta-text") { device.person.name }
                       end
-                      
+
                       if device.display_location?
                         span(class: "meta-icon") { "📍" }
                         span(class: "meta-text") { device.location }
@@ -49,9 +49,9 @@ module Views
           end
         end
       end
-      
+
       private
-      
+
       def empty_state
         div(class: "empty-state-wrapper") do
           render Components::EmptyState::GenericEmptyStateComponent.new(
@@ -62,7 +62,6 @@ module Views
           )
         end
       end
-      
     end
   end
 end

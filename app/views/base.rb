@@ -18,7 +18,7 @@ class Views::Base < Components::Base
   include Phlex::Rails::Helpers::NumberToHumanSize
   include Phlex::Rails::Helpers::CheckBoxTag
   include Phlex::Rails::Helpers::TimeAgoInWords
-  
+
 
   private
 
@@ -58,13 +58,13 @@ class Views::Base < Components::Base
 
         stylesheet_link_tag "application"
         javascript_importmap_tags
-        
+
 
         # Additional JavaScript
         script(src: asset_path("search.js"), defer: true)
       end
 
-      body(data: { 
+      body(data: {
         current_user_role: current_user&.role,
         resort_tasks_on_status_change: current_user&.resort_tasks_on_status_change&.to_s
       }) do
@@ -72,15 +72,15 @@ class Views::Base < Components::Base
           # Simple layout without sidebar/header for auth pages
           yield
         else
-          controllers = ["sidebar"]
+          controllers = [ "sidebar" ]
           controllers += extra_controllers if extra_controllers
-          
+
           div(class: "main-container", data: { controller: controllers.join(" ") }) do
             # Check cookie to determine initial sidebar state
-            sidebar_hidden = cookies[:sidebar_hidden] == 'true'
-            sidebar_classes = ["sidebar"]
+            sidebar_hidden = cookies[:sidebar_hidden] == "true"
+            sidebar_classes = [ "sidebar" ]
             sidebar_classes << "sidebar-hidden" if sidebar_hidden
-            
+
             div(class: sidebar_classes.join(" "), data: { sidebar_target: "sidebar" }) do
               render Components::Sidebar::SidebarComponent.new(
                 current_user: current_user,

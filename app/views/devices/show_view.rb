@@ -33,16 +33,16 @@ module Views
                 end
               end
             end
-            
+
             div(class: "device-info-section") do
               h2 { "Device Information" }
-              
+
               div(class: "info-grid") do
                 div(class: "info-item") do
                   div(class: "info-label") { "DEVICE NAME" }
                   div(class: "info-value") { @device.name }
                 end
-                
+
                 if @device.person
                   div(class: "info-item") do
                     div(class: "info-label") { "OWNER" }
@@ -51,7 +51,7 @@ module Views
                     end
                   end
                 end
-                
+
                 if @device.display_location?
                   div(class: "info-item") do
                     div(class: "info-label") { "LOCATION" }
@@ -59,7 +59,7 @@ module Views
                   end
                 end
               end
-              
+
               if @device.display_notes?
                 div(class: "notes-section", style: "margin-top: 24px;") do
                   h3(class: "info-label", style: "margin-bottom: 8px;") { "NOTES" }
@@ -70,7 +70,7 @@ module Views
           end
         end
       end
-      
+
       private
     end
   end

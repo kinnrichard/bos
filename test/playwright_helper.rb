@@ -4,10 +4,10 @@ require "playwright"
 # Helper for Playwright-based tests
 module PlaywrightHelper
   extend ActiveSupport::Concern
-  
+
   included do
     attr_accessor :playwright, :browser, :context, :page
-    
+
     # Set up Playwright before running tests
     setup do
       setup_playwright
@@ -25,19 +25,19 @@ module PlaywrightHelper
     # Start Playwright in a non-block mode
     @playwright_execution = Playwright.create(playwright_cli_executable_path: "./node_modules/.bin/playwright")
     @playwright = @playwright_execution.playwright
-    
+
     @browser = @playwright.chromium.launch(
       headless: !ENV["PLAYWRIGHT_HEADFUL"],
-      args: ENV["CI"] ? ["--no-sandbox", "--disable-setuid-sandbox"] : []
+      args: ENV["CI"] ? [ "--no-sandbox", "--disable-setuid-sandbox" ] : []
     )
-    
+
     @context = @browser.new_context(
       viewport: { width: 1400, height: 900 },
       ignoreHTTPSErrors: true
     )
-    
+
     @page = @context.new_page
-    
+
     # Set up console message logging in development
     unless ENV["CI"]
       @page.on("console", ->(msg) { puts "[Browser Console] #{msg.text}" })

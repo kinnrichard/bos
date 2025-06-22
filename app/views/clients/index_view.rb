@@ -4,7 +4,7 @@ module Views
   module Clients
     class IndexView < Views::Base
       include Phlex::Rails::Helpers::Routes
-      
+
       def initialize(clients:, current_user:)
         @clients = clients
         @current_user = current_user
@@ -23,7 +23,7 @@ module Views
               variant: :primary
             ) { "New Client" }
           end
-          
+
           if @clients.any?
             div(class: "clients-list") do
               @clients.each do |client|

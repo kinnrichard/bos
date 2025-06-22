@@ -6,7 +6,7 @@ module Views
       include Phlex::Rails::Helpers::ContentTag
       include Phlex::Rails::Helpers::FormWith
       include Phlex::Rails::Helpers::TurboFrameTag
-      
+
       def initialize(client:, job:, current_user:)
         @client = client
         @job = job
@@ -21,9 +21,9 @@ module Views
           client: @client,
           toolbar_items: method(:render_toolbar_items)
         ) do
-          div(class: "job-view", data: { 
+          div(class: "job-view", data: {
             controller: "job sortable flip",
-            job_id: @job.id, 
+            job_id: @job.id,
             client_id: @client.id,
             job_status_value: @job.status,
             job_priority_value: @job.priority,
@@ -34,18 +34,18 @@ module Views
               h1(
                 class: "job-title",
                 contenteditable: "true",
-                data: { 
+                data: {
                   action: "blur->job#updateTitle keydown.enter->job#handleTitleEnter",
                   job_target: "title"
                 }
               ) { @job.title }
             end
-            
+
             # Tasks list
             div(class: "tasks-container", data: { job_target: "tasksContainer" }) do
               sorting_service = ::TaskSortingService.new(@job)
               tasks_tree = sorting_service.get_ordered_tasks
-              
+
               # Render the task list inline (without turbo-frame for now)
               div(id: "tasks-list", class: "tasks-list", data: { flip_target: "container", job_target: "tasksList", turbo_frame: "tasks-frame" }) do
                 if tasks_tree.any?
@@ -57,14 +57,14 @@ module Views
                     p { "No tasks yet. Click below to add a task." }
                   end
                 end
-                
+
                 # New task placeholder with same structure as regular tasks
                 div(class: "task-wrapper new-task-wrapper") do
                   div(
                     class: "task-item new-task",
-                    data: { 
+                    data: {
                       action: "click->job#showNewTaskInput",
-                      job_target: "newTaskPlaceholder" 
+                      job_target: "newTaskPlaceholder"
                     },
                     title: "Click or press Enter to create a new task"
                   ) do
@@ -78,7 +78,7 @@ module Views
                     end
                     div(class: "task-content") do
                       div(
-                        class: "task-title", 
+                        class: "task-title",
                         contenteditable: "true",
                         data: { job_target: "newTaskText" }
                       ) { "New task..." }
@@ -87,11 +87,11 @@ module Views
                 end
               end
             end
-            
+
             # Status/Assignment Popover
             div(
               class: "popover job-popover hidden",
-              data: { 
+              data: {
                 job_target: "popover",
                 controller: "job-popover",
                 job_popover_job_id_value: @job.id,
@@ -100,7 +100,7 @@ module Views
             ) do
               # Arrow pointer
               div(class: "popover-arrow")
-              
+
               div(class: "popover-content") do
                 # Status section
                 div(class: "popover-section") do
@@ -108,7 +108,7 @@ module Views
                   div(class: "dropdown-container", data: { controller: "dropdown" }) do
                     button(
                       class: "dropdown-button",
-                      data: { 
+                      data: {
                         action: "click->dropdown#toggle",
                         dropdown_target: "button"
                       }
@@ -127,14 +127,14 @@ module Views
                     end
                   end
                 end
-                
+
                 # Assignee section (moved to second position)
                 div(class: "popover-section") do
                   h3 { "Assigned to" }
                   div(class: "dropdown-container", data: { controller: "dropdown" }) do
                     button(
                       class: "dropdown-button",
-                      data: { 
+                      data: {
                         action: "click->dropdown#toggle",
                         dropdown_target: "button"
                       }
@@ -162,14 +162,14 @@ module Views
                     end
                   end
                 end
-                
+
                 # Priority section (moved to third position)
                 div(class: "popover-section") do
                   h3 { "Priority" }
                   div(class: "dropdown-container", data: { controller: "dropdown" }) do
                     button(
                       class: "dropdown-button",
-                      data: { 
+                      data: {
                         action: "click->dropdown#toggle",
                         dropdown_target: "button"
                       }
@@ -190,18 +190,18 @@ module Views
                     end
                   end
                 end
-                
+
                 # Job details section
                 if @job.description.present? || @job.people.any?
                   div(class: "popover-section") do
                     h3 { "Details" }
-                    
+
                     if @job.description.present?
                       div(class: "job-description") do
                         p { @job.description }
                       end
                     end
-                    
+
                     if @job.people.any?
                       div(class: "related-people") do
                         h4 { "Related People" }
@@ -212,13 +212,13 @@ module Views
                     end
                   end
                 end
-                
+
                 # Actions section
                 div(class: "popover-section popover-actions") do
                   if @current_user.can_delete?(@job)
                     render Components::Ui::ButtonComponent.new(
                       variant: :danger,
-                      data: { 
+                      data: {
                         action: "click->job#confirmDelete"
                       }
                     ) { "Delete Job" }
@@ -226,7 +226,7 @@ module Views
                 end
               end
             end
-            
+
             # Schedule Popover
             render Components::Jobs::SchedulePopoverComponent.new(
               job: @job,
@@ -235,12 +235,12 @@ module Views
           end
         end
       end
-      
+
       private
-      
+
       def render_task_with_subtasks(task_node, depth = 0)
         task = task_node[:task]
-        
+
         div(class: "task-wrapper", data: { task_id: task.id, flip_item: true }) do
           div(
             class: depth == 0 ? "task-item" : "subtask-item",
@@ -259,8 +259,16 @@ module Views
               ) do
                 span { task.status_emoji }
               end
+
+              # Status dropdown (hidden by default)
+              div(
+                class: "task-status-dropdown hidden",
+                data: { job_target: "taskStatusDropdown" }
+              ) do
+                render_task_status_options(task)
+              end
             end
-            
+
             div(class: depth == 0 ? "task-content" : "subtask-content") do
               div(
                 class: depth == 0 ? "task-title" : "subtask-title",
@@ -271,13 +279,13 @@ module Views
                   job_target: "task"
                 }
               ) { task.title }
-              
+
               if task.formatted_time_in_progress.present?
                 span(class: "task-timer", data: { job_target: "taskTimer" }) { task.formatted_time_in_progress }
               end
             end
           end
-          
+
           if task_node[:subtasks].any?
             div(class: "subtasks subtasks-container") do
               task_node[:subtasks].each do |subtask_node|
@@ -287,35 +295,35 @@ module Views
           end
         end
       end
-      
+
       def render_toolbar_items(view)
         # Calendar button for scheduling
         view.button(
           type: "button",
           class: "btn-icon",
-          data: { 
+          data: {
             action: "click->header-job#toggleSchedulePopover"
           },
           title: "Schedule dates and times"
         ) { "📅" }
-        
+
         # Status bubble with assignee and status
         view.button(
           class: "status-bubble job-status-bubble",
-          data: { 
+          data: {
             action: "click->header-job#toggleJobPopover"
           }
         ) do
           render_status_bubble
         end
       end
-      
+
       def render_status_bubble
         # Status icon
         span(class: "bubble-icon status-icon") do
           job_status_emoji(@job.status)
         end
-        
+
         # Assignee or unassigned icon
         span(class: "bubble-icon assignee-icon") do
           if @job.technicians.any?
@@ -325,34 +333,34 @@ module Views
             "❓"
           end
         end
-        
+
         # Priority emoji (if not normal)
-        if @job.priority != 'normal'
+        if @job.priority != "normal"
           span(class: "bubble-icon priority-icon") do
             priority_emoji(@job.priority)
           end
         end
       end
-      
+
       def render_task_item(task)
         # Get time tracking data for in-progress tasks
         time_data = {}
         if task.in_progress?
           # Get the last time it went into progress
           last_start = task.activity_logs
-            .where(action: 'status_changed')
-            .where("metadata->>'new_status' = ?", 'in_progress')
+            .where(action: "status_changed")
+            .where("metadata->>'new_status' = ?", "in_progress")
             .order(:created_at)
             .last&.created_at
-          
+
           time_data[:in_progress_since] = last_start.iso8601 if last_start
           time_data[:accumulated_seconds] = task.time_in_progress
         end
-        
+
         div(class: "task-wrapper") do
           div(
             class: "task-item #{task.successfully_completed? ? 'completed' : ''}",
-            data: { 
+            data: {
               task_id: task.id,
               task_status: task.status,
               task_position: task.position,
@@ -368,7 +376,7 @@ module Views
               ) do
                 span { task.status_emoji || "⚫" }
               end
-              
+
               # Status dropdown (hidden by default)
               div(
                 class: "task-status-dropdown hidden",
@@ -377,19 +385,19 @@ module Views
                 render_task_status_options(task)
               end
             end
-            
+
             # Task content
             div(class: "task-content") do
               div(
                 class: "task-title",
                 contenteditable: "true",
-                data: { 
+                data: {
                   action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown",
                   task_id: task.id,
                   original_title: task.title
                 }
               ) { task.title }
-              
+
               # Show subtask count if any
               # if task.has_subtasks?
               #   span(class: "subtask-count", style: "font-size: 13px; color: #8E8E93; margin-left: 8px;") do
@@ -397,14 +405,14 @@ module Views
               #   end
               # end
             end
-            
+
             # Right side section
             div(class: "task-right") do
               # Time tracking (if in progress)
               if task.in_progress? || task.formatted_time_in_progress.present?
                 div(
                   class: "task-time-tracking",
-                  data: { 
+                  data: {
                     job_target: "taskTimer",
                     task_id: task.id
                   }
@@ -412,21 +420,20 @@ module Views
                   span(class: "time-value") { task.formatted_time_in_progress || "0m" }
                 end
               end
-              
+
               # Icons
               if task.notes.any?
                 span(class: "task-icon info-icon", title: "#{task.notes.count} notes") { "ⓘ" }
               end
-              
+
               if task.assigned_to
                 div(class: "task-assignee-icon", title: task.assigned_to.name) do
                   technician_icon(task.assigned_to)
                 end
               end
-              
             end
           end
-          
+
           # Render subtasks if any
           if task.has_subtasks?
             div(class: "subtasks subtasks-container") do
@@ -437,13 +444,13 @@ module Views
           end
         end
       end
-      
+
       def render_subtask_item(subtask)
         # Wrap subtask in task-wrapper for drag-and-drop
         div(class: "task-wrapper") do
           div(
             class: "subtask-item #{subtask.successfully_completed? ? 'completed' : ''}",
-            data: { 
+            data: {
               task_id: subtask.id,
               task_status: subtask.status,
               parent_id: subtask.parent_id,
@@ -454,14 +461,14 @@ module Views
             div(class: "task-status-container") do
               button(
                 class: "subtask-status-button",
-                data: { 
+                data: {
                   action: "click->job#toggleTaskStatus",
                   job_target: "taskStatusButton"
                 }
               ) do
                 span { subtask.status_emoji || "⚫" }
               end
-              
+
               # Status dropdown (hidden by default)
               div(
                 class: "task-status-dropdown hidden",
@@ -470,26 +477,26 @@ module Views
                 render_task_status_options(subtask)
               end
             end
-            
+
             # Subtask content
             div(class: "subtask-content") do
               div(
                 class: "subtask-title",
                 contenteditable: "true",
-                data: { 
+                data: {
                   action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown",
                   task_id: subtask.id,
                   original_title: subtask.title
                 }
               ) { subtask.title }
-              
+
               # Show subtask count if any
               if subtask.has_subtasks?
                 span(class: "subtask-count", style: "font-size: 13px; color: #8E8E93; margin-left: 8px;") do
                   "(#{subtask.subtasks.count} subtask#{subtask.subtasks.count == 1 ? '' : 's'})"
                 end
               end
-              
+
               # Show time in progress if available
               if subtask.formatted_time_in_progress.present?
                 div(class: "subtask-time-tracking") do
@@ -499,7 +506,7 @@ module Views
               end
             end
           end
-          
+
           # Render sub-subtasks if any
           if subtask.has_subtasks?
             div(class: "subtasks subtasks-container") do
@@ -510,20 +517,20 @@ module Views
           end
         end
       end
-      
+
       def render_status_options
         statuses = {
-          'open' => { emoji: '⚫', label: 'New' },
-          'in_progress' => { emoji: '🟢', label: 'In Progress' },
-          'paused' => { emoji: '⏸️', label: 'Paused' },
-          'successfully_completed' => { emoji: '☑️', label: 'Successfully Completed' },
-          'cancelled' => { emoji: '❌', label: 'Cancelled' }
+          "open" => { emoji: "⚫", label: "New" },
+          "in_progress" => { emoji: "🟢", label: "In Progress" },
+          "paused" => { emoji: "⏸️", label: "Paused" },
+          "successfully_completed" => { emoji: "☑️", label: "Successfully Completed" },
+          "cancelled" => { emoji: "❌", label: "Cancelled" }
         }
-        
+
         statuses.each do |status, info|
           button(
             class: "status-option #{@job.status == status ? 'active' : ''}",
-            data: { 
+            data: {
               action: "click->job#updateStatus",
               status: status
             }
@@ -533,20 +540,20 @@ module Views
           end
         end
       end
-      
+
       def render_priority_options
         priorities = {
-          'critical' => { emoji: '🔥', label: 'Critical' },
-          'high' => { emoji: '❗', label: 'High' },
-          'normal' => { emoji: '', label: 'Normal' },
-          'low' => { emoji: '➖', label: 'Low' },
-          'proactive_followup' => { emoji: '💬', label: 'Proactive Followup' }
+          "critical" => { emoji: "🔥", label: "Critical" },
+          "high" => { emoji: "❗", label: "High" },
+          "normal" => { emoji: "", label: "Normal" },
+          "low" => { emoji: "➖", label: "Low" },
+          "proactive_followup" => { emoji: "💬", label: "Proactive Followup" }
         }
-        
+
         priorities.each do |priority, info|
           button(
             class: "priority-option #{@job.priority == priority ? 'active' : ''}",
-            data: { 
+            data: {
               action: "click->job#updatePriority",
               priority: priority
             }
@@ -560,70 +567,70 @@ module Views
           end
         end
       end
-      
+
       def priority_emoji(priority)
         case priority
-        when 'critical' then '🔥'
-        when 'high' then '❗'
-        when 'low' then '➖'
-        when 'proactive_followup' then '💬'
-        else ''
+        when "critical" then "🔥"
+        when "high" then "❗"
+        when "low" then "➖"
+        when "proactive_followup" then "💬"
+        else ""
         end
       end
-      
+
       def job_status_emoji(status)
         case status
-        when 'open' then '⚫'
-        when 'in_progress' then '🟢'
-        when 'paused' then '⏸️'
-        when 'successfully_completed' then '☑️'
-        when 'cancelled' then '❌'
-        else '❓'
+        when "open" then "⚫"
+        when "in_progress" then "🟢"
+        when "paused" then "⏸️"
+        when "successfully_completed" then "☑️"
+        when "cancelled" then "❌"
+        else "❓"
         end
       end
-      
+
       def status_label(status)
         case status
-        when 'open' then 'New'
-        when 'in_progress' then 'In Progress'
-        when 'paused' then 'Paused'
-        when 'successfully_completed' then 'Successfully Completed'
-        when 'cancelled' then 'Cancelled'
+        when "open" then "New"
+        when "in_progress" then "In Progress"
+        when "paused" then "Paused"
+        when "successfully_completed" then "Successfully Completed"
+        when "cancelled" then "Cancelled"
         else status.humanize
         end
       end
-      
+
       def priority_label(priority)
         case priority
-        when 'proactive_followup' then 'Proactive Followup'
-        else priority&.humanize || 'Normal'
+        when "proactive_followup" then "Proactive Followup"
+        else priority&.humanize || "Normal"
         end
       end
-      
+
       def technician_icon(technician)
         # For now, use initials. Could be replaced with actual avatars
         initials = technician.name.split.map(&:first).join.upcase[0..1]
         span(class: "technician-initials") { initials }
       end
-      
+
       def render_assignee_options
         # Unassigned option
         button(
           class: "assignee-option #{@job.technicians.empty? ? 'active' : ''}",
-          data: { 
+          data: {
             action: "click->job#setUnassigned"
           }
         ) do
           span { "❓" }
           span { "Unassigned" }
         end
-        
+
         # Get all available technicians
-        User.where(role: [:technician, :admin]).order(:name).each do |tech|
+        User.where(role: [ :technician, :admin ]).order(:name).each do |tech|
           is_assigned = @job.technicians.include?(tech)
           button(
             class: "assignee-option #{is_assigned ? 'active' : ''}",
-            data: { 
+            data: {
               action: "click->job#toggleAssignee",
               technician_id: tech.id
             }
@@ -636,20 +643,20 @@ module Views
           end
         end
       end
-      
+
       def render_task_status_options(task)
         task_statuses = {
-          'new_task' => { emoji: '⚫', label: 'New' },
-          'in_progress' => { emoji: '🟢', label: 'In Progress' },
-          'paused' => { emoji: '⏸️', label: 'Paused' },
-          'successfully_completed' => { emoji: '☑️', label: 'Successfully Completed' },
-          'cancelled' => { emoji: '❌', label: 'Cancelled' }
+          "new_task" => { emoji: "⚫", label: "New" },
+          "in_progress" => { emoji: "🟢", label: "In Progress" },
+          "paused" => { emoji: "⏸️", label: "Paused" },
+          "successfully_completed" => { emoji: "☑️", label: "Successfully Completed" },
+          "cancelled" => { emoji: "❌", label: "Cancelled" }
         }
-        
+
         task_statuses.each do |status, info|
           button(
             class: "task-status-option #{task.status == status ? 'active' : ''}",
-            data: { 
+            data: {
               action: "click->job#updateTaskStatus",
               task_id: task.id,
               status: status

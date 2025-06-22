@@ -22,7 +22,7 @@ module Views
                 variant: :primary
               ) { "New User" }
             end
-            
+
             if @users.any?
               div(class: "users-table-container") do
                 table(class: "users-table") do
@@ -50,9 +50,9 @@ module Views
           end
         end
       end
-      
+
       private
-      
+
       def render_user_row(user)
         tr(class: "user-row") do
           td { user.name }
@@ -67,7 +67,7 @@ module Views
                 href: edit_user_path(user),
                 size: :small
               ) { "Edit" }
-              
+
               if user != @current_user
                 delete_form_with_confirmation(
                   url: user_path(user),

@@ -1,9 +1,9 @@
 class Job < ApplicationRecord
   include Loggable
-  
+
   belongs_to :client
-  belongs_to :created_by, class_name: 'User'
-  
+  belongs_to :created_by, class_name: "User"
+
   has_many :job_assignments, dependent: :destroy
   has_many :technicians, through: :job_assignments, source: :user
   has_many :job_people, dependent: :destroy
@@ -11,7 +11,7 @@ class Job < ApplicationRecord
   has_many :tasks, dependent: :destroy
   has_many :notes, as: :notable, dependent: :destroy
   has_many :scheduled_date_times, as: :schedulable, dependent: :destroy
-  
+
   enum :status, {
     open: 0,
     in_progress: 1,
@@ -21,7 +21,7 @@ class Job < ApplicationRecord
     successfully_completed: 5,
     cancelled: 6
   }
-  
+
   enum :priority, {
     critical: 0,
     high: 1,
@@ -29,26 +29,26 @@ class Job < ApplicationRecord
     low: 3,
     proactive_followup: 4
   }
-  
+
   validates :title, presence: true
   validates :status, presence: true
   validates :priority, presence: true
-  
+
   # Scopes
   scope :my_jobs, ->(user) { joins(:job_assignments).where(job_assignments: { user_id: user.id }) }
   scope :unassigned, -> { left_joins(:job_assignments).where(job_assignments: { id: nil }) }
-  scope :assigned_to_others, ->(user) { 
+  scope :assigned_to_others, ->(user) {
     joins(:job_assignments)
     .where.not(job_assignments: { user_id: user.id })
-    .distinct 
+    .distinct
   }
-  scope :closed, -> { where(status: [:successfully_completed, :cancelled]) }
-  scope :overdue, -> { where('due_on < ?', Date.current).or(where(due_on: Date.current, due_time: ...Time.current)) }
-  scope :upcoming, -> { where('due_on >= ?', Date.current) }
-  
+  scope :closed, -> { where(status: [ :successfully_completed, :cancelled ]) }
+  scope :overdue, -> { where("due_on < ?", Date.current).or(where(due_on: Date.current, due_time: ...Time.current)) }
+  scope :upcoming, -> { where("due_on >= ?", Date.current) }
+
   # Set defaults
   after_initialize :set_defaults, if: :new_record?
-  
+
   # Computed datetime methods
   def due_at
     return nil unless due_on
@@ -58,7 +58,7 @@ class Job < ApplicationRecord
       due_on.to_datetime
     end
   end
-  
+
   def start_at
     return nil unless start_on
     if start_time
@@ -67,40 +67,40 @@ class Job < ApplicationRecord
       start_on.to_datetime
     end
   end
-  
+
   def overdue?
     return false unless due_at
     due_at < Time.current
   end
-  
+
   def days_until_due
     return nil unless due_on
     (due_on - Date.current).to_i
   end
-  
+
   # Scheduled DateTime helpers
   def due_date
     scheduled_date_times.due_dates.first
   end
-  
+
   def start_date
     scheduled_date_times.start_dates.first
   end
-  
+
   def followup_dates
     scheduled_date_times.followup_dates
   end
-  
+
   def upcoming_scheduled_dates
     scheduled_date_times.upcoming
   end
-  
+
   def has_scheduled_dates?
     scheduled_date_times.any?
   end
-  
+
   private
-  
+
   def set_defaults
     self.status ||= :open
     self.priority ||= :normal

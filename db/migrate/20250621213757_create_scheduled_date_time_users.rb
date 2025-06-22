@@ -6,8 +6,8 @@ class CreateScheduledDateTimeUsers < ActiveRecord::Migration[8.0]
 
       t.timestamps
     end
-    
-    add_index :scheduled_date_time_users, [:scheduled_date_time_id, :user_id], 
+
+    add_index :scheduled_date_time_users, [ :scheduled_date_time_id, :user_id ],
               unique: true, name: 'index_scheduled_date_time_users_unique'
   end
 end

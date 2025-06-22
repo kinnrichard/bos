@@ -4,7 +4,7 @@ module Components
   module Ui
     class FormInputComponent < Components::Base
       include Phlex::Rails::Helpers::FieldsFor
-      
+
       def initialize(
         form: nil,
         attribute: nil,
@@ -57,13 +57,13 @@ module Components
               end
             end
           end
-          
+
           # Input wrapper (for icon support)
           div(class: "form-input__wrapper") do
             if @icon
               span(class: "form-input__icon") { @icon }
             end
-            
+
             # Input field
             if @type == :textarea
               render_textarea
@@ -71,12 +71,12 @@ module Components
               render_input
             end
           end
-          
+
           # Error message
           if @error
             div(class: "form-input__error") { @error }
           end
-          
+
           # Hint text
           if @hint
             div(class: "form-input__hint") { @hint }
@@ -95,7 +95,7 @@ module Components
           ("form-input--error" if @error),
           ("form-input--disabled" if @disabled)
         ].compact.join(" ")
-        
+
         if @wrapper_html[:class]
           "#{classes} #{@wrapper_html[:class]}"
         else

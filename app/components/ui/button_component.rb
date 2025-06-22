@@ -62,7 +62,7 @@ module Components
           ("button--disabled" if @disabled),
           ("button--with-icon" if @icon)
         ].compact.join(" ")
-        
+
         # Add any custom classes from html_options
         if @html_options[:class]
           "#{classes} #{@html_options[:class]}"
@@ -77,7 +77,7 @@ module Components
         elsif @icon
           span(class: "button__icon") { @icon }
         end
-        
+
         # Call the block if provided
         if block
           span(class: "button__text", &block)

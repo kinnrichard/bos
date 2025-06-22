@@ -32,11 +32,11 @@ module Components
                 data: { action: "click->delete-confirmation#close" }
               ) { "×" }
             end
-            
+
             # Body
             div(class: "modal-body") do
               p(data: { delete_confirmation_target: "message" }) { @message }
-              
+
               div(class: "modal-checkbox-container") do
                 input(
                   type: "checkbox",
@@ -52,7 +52,7 @@ module Components
                 end
               end
             end
-            
+
             # Footer
             div(class: "modal-footer") do
               button(
@@ -60,7 +60,7 @@ module Components
                 class: "button button--secondary",
                 data: { action: "click->delete-confirmation#close" }
               ) { "Cancel" }
-              
+
               button(
                 type: "button",
                 class: "button button--danger",

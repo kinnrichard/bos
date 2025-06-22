@@ -4,7 +4,7 @@ module Views
   module People
     class NewView < Views::Base
       include Phlex::Rails::Helpers::Routes
-      
+
       def initialize(client:, person:, current_user:, authenticity_token:)
         @client = client
         @person = person
@@ -21,10 +21,10 @@ module Views
         ) do
           div(class: "form-container") do
             h1(class: "form-title") { "Add Person" }
-            
+
             form(action: client_people_path(@client), method: "post", class: "person-form", data: { controller: "person-form" }) do
               input(type: "hidden", name: "authenticity_token", value: @authenticity_token)
-              
+
               # Name field
               div(class: "form-group") do
                 label(for: "person_name", class: "form-label") { "Name" }
@@ -38,7 +38,7 @@ module Views
                   autofocus: true
                 )
               end
-              
+
               # Contact Methods
               div(class: "form-group") do
                 label(class: "form-label") { "Contact Information" }
@@ -60,7 +60,7 @@ module Views
                   data: { action: "click->person-form#addContactMethod" }
                 ) { "+ Add Contact Method" }
               end
-              
+
               # Notes field
               div(class: "form-group") do
                 label(for: "person_notes", class: "form-label") { "Notes" }
@@ -71,7 +71,7 @@ module Views
                   rows: 4
                 ) { @person.notes }
               end
-              
+
               # Form actions
               div(class: "form-actions") do
                 render Components::Ui::ButtonComponent.new(
@@ -88,9 +88,9 @@ module Views
           end
         end
       end
-      
+
       private
-      
+
       def contact_method_fields(contact, index)
         div(class: "contact-method-field", data: { person_form_target: "contactMethod" }) do
           input(

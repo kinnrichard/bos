@@ -22,7 +22,7 @@ module Views
               action_text: "New Job",
               action_path: new_client_job_path(@client)
             )
-            
+
             if @jobs.any?
               div(class: "jobs-list") do
                 @jobs.each do |job|
@@ -35,10 +35,10 @@ module Views
           end
         end
       end
-      
+
       private
-      
-      
+
+
       def empty_state
         div(class: "empty-state-wrapper") do
           render Components::EmptyState::GenericEmptyStateComponent.new(
@@ -49,7 +49,6 @@ module Views
           )
         end
       end
-      
     end
   end
 end

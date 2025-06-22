@@ -12,7 +12,7 @@ module Components
       def view_template
         div(
           class: "popover job-popover schedule-popover hidden",
-          data: { 
+          data: {
             job_target: "schedulePopover",
             controller: "schedule-popover",
             schedule_popover_job_id_value: @job.id
@@ -20,7 +20,7 @@ module Components
         ) do
           # Arrow
           div(class: "popover-arrow")
-          
+
           # Content
           div(class: "popover-content") do
             render_header
@@ -37,7 +37,7 @@ module Components
 
       def render_existing_dates
         return if @scheduled_dates.empty?
-        
+
         div(class: "popover-section") do
           @scheduled_dates.group_by(&:scheduled_type).each do |type, dates|
             render_date_group(type, dates)
@@ -48,7 +48,7 @@ module Components
       def render_date_group(type, dates)
         div(class: "schedule-group") do
           h4 { ScheduledDateTime.scheduled_types[type.to_sym] }
-          
+
           dates.each do |date|
             render_scheduled_date_item(date)
           end
@@ -59,7 +59,7 @@ module Components
         div(class: "scheduled-date-item", data: { scheduled_date_id: scheduled_date.id }) do
           div(class: "date-info") do
             span(class: "date-text") { scheduled_date.display_datetime }
-            
+
             if scheduled_date.users.any?
               div(class: "assigned-users") do
                 scheduled_date.users.each do |user|
@@ -67,12 +67,12 @@ module Components
                 end
               end
             end
-            
+
             if scheduled_date.notes.present?
               div(class: "date-notes") { scheduled_date.notes }
             end
           end
-          
+
           div(class: "date-actions") do
             button(
               type: "button",
@@ -80,7 +80,7 @@ module Components
               data: { action: "click->schedule-popover#editDate" },
               title: "Edit"
             ) { "✏️" }
-            
+
             button(
               type: "button",
               class: "btn-icon btn-sm btn-danger",
@@ -94,12 +94,12 @@ module Components
       def render_add_new_section
         div(class: "popover-section add-schedule-section") do
           h4 { "Add New Date" }
-          
+
           div(class: "schedule-form", data: { schedule_popover_target: "form" }) do
             # Type selector
             div(class: "form-group") do
               label(class: "form-label") { "Type" }
-              div(class: "dropdown-container", data: { 
+              div(class: "dropdown-container", data: {
                 controller: "dropdown",
                 dropdown_positioning_value: "fixed",
                 action: "dropdown:select->schedule-popover#typeSelected"
@@ -107,7 +107,7 @@ module Components
                 button(
                   type: "button",
                   class: "dropdown-button",
-                  data: { 
+                  data: {
                     action: "click->dropdown#toggle",
                     dropdown_target: "button"
                   }
@@ -125,7 +125,7 @@ module Components
                     button(
                       type: "button",
                       class: "dropdown-option",
-                      data: { 
+                      data: {
                         action: "click->dropdown#select",
                         value: value,
                         label: label
@@ -143,21 +143,21 @@ module Components
                 )
               end
             end
-            
+
             # Date input
             div(class: "form-group") do
               label(class: "form-label") { "Date" }
               input(
                 type: "date",
                 class: "form-input",
-                data: { 
+                data: {
                   schedule_popover_target: "dateInput",
                   action: "change->schedule-popover#dateChanged"
                 },
                 required: true
               )
             end
-            
+
             # Time input (optional) - hidden until date is selected
             div(class: "form-group hidden", data: { schedule_popover_target: "timeGroup" }) do
               label(class: "form-label") { "Time" }
@@ -167,11 +167,11 @@ module Components
                 data: { schedule_popover_target: "timeInput" }
               )
             end
-            
+
             # User assignment
             div(class: "form-group") do
               label(class: "form-label") { "Technician(s)" }
-              div(class: "dropdown-container", data: { 
+              div(class: "dropdown-container", data: {
                 controller: "dropdown",
                 dropdown_positioning_value: "fixed",
                 dropdown_mode_value: "multi",
@@ -182,7 +182,7 @@ module Components
                 button(
                   type: "button",
                   class: "dropdown-button",
-                  data: { 
+                  data: {
                     action: "click->dropdown#toggle",
                     dropdown_target: "button"
                   }
@@ -196,11 +196,11 @@ module Components
                   class: "dropdown-menu hidden",
                   data: { dropdown_target: "menu" }
                 ) do
-                  User.where(role: [:technician, :admin, :owner]).order(:name).each do |user|
+                  User.where(role: [ :technician, :admin, :owner ]).order(:name).each do |user|
                     button(
                       type: "button",
                       class: "dropdown-option",
-                      data: { 
+                      data: {
                         action: "click->dropdown#select",
                         value: user.id,
                         label: user.name
@@ -219,7 +219,7 @@ module Components
                 end
               end
             end
-            
+
             # Actions
             div(class: "form-actions") do
               button(

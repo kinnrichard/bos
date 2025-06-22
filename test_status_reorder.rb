@@ -6,7 +6,7 @@ job = Job.find(21)
 parent_b = job.tasks.find_by(title: 'parent task B')
 if parent_b
   puts "Parent task B id: #{parent_b.id}"
-  
+
   # Get a non-cancelled subtask
   first_subtask = parent_b.subtasks.where.not(status: 'cancelled').first
   if first_subtask
@@ -14,10 +14,10 @@ if parent_b
     parent_b.subtasks.ordered_by_status.each do |st|
       puts "  #{st.title}: position #{st.position}, status #{st.status}"
     end
-    
+
     puts "\nChanging '#{first_subtask.title}' to cancelled..."
     first_subtask.update!(status: 'cancelled')
-    
+
     puts "\nAfter status change:"
     parent_b.subtasks.ordered_by_status.each do |st|
       puts "  #{st.title}: position #{st.position}, status #{st.status}"

@@ -14,10 +14,10 @@ module Views
             meta(name: "view-transition", content: "same-origin")
             csrf_meta_tags
             csp_meta_tag
-            
+
             stylesheet_link_tag("application", "data-turbo-track": "reload")
             javascript_importmap_tags
-            
+
             # Prevent sidebar flash on page load when hidden
             script do
               unsafe_raw <<~JS
@@ -27,7 +27,7 @@ module Views
                 }
               JS
             end
-            
+
             # Allow additional head content
             if content_for?(:head)
               unsafe_raw(content_for(:head))
@@ -41,9 +41,9 @@ module Views
           end
         end
       end
-      
+
       private
-      
+
       def body_data_attributes
         attrs = {}
         if current_user

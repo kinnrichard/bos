@@ -6,26 +6,26 @@ class ApplicationPlaywrightTestCase < ActiveSupport::TestCase
 
   # Use transactional fixtures for database cleanup
   self.use_transactional_tests = true
-  
+
   # Don't load all fixtures by default for Playwright tests
   # Tests can explicitly load fixtures if needed
 
   # Class-level server management
   class << self
     attr_accessor :test_server_app
-    
+
     def start_test_server
       return if @test_server_app
-      
+
       # Use Capybara to manage the test server
       require "capybara/rails"
-      
+
       # Configure Capybara
       Capybara.server = :puma, { Silent: true }
-      
+
       # Start the server
       @test_server_app = Capybara::Server.new(Rails.application).boot
-      
+
       puts "Test server started at http://#{@test_server_app.host}:#{@test_server_app.port}"
     end
   end

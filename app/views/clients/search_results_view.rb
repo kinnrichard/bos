@@ -30,7 +30,7 @@ module Views
             end
           end
         end
-        
+
         # Always show "New Client" option
         div(class: "search-section") do
           h3 { "Actions" }
@@ -43,12 +43,12 @@ module Views
           end
         end
       end
-      
+
       private
-      
+
       def format_name(name)
         return name if name.blank?
-        
+
         # If the name is all lowercase, convert to title case
         if name == name.downcase
           name.split.map(&:capitalize).join(" ")

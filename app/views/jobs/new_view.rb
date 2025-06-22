@@ -19,44 +19,44 @@ module Views
           client: @client
         ) do
           render Components::Forms::FormContainerComponent.new(title: "New Job") do
-            form_with(model: [@client, @job], class: "job-form") do |f|
+            form_with(model: [ @client, @job ], class: "job-form") do |f|
               render Components::Forms::FormErrorsComponent.new(model: @job)
-              
+
               div(class: "form-group") do
                 f.label(:title, "Title", class: "form-label")
                 f.text_field(:title, class: "form-input", placeholder: "Brief description of the issue")
               end
-              
+
               div(class: "form-group") do
                 f.label(:description, "Description", class: "form-label")
                 f.text_area(:description, class: "form-input", rows: 4, placeholder: "Detailed description of the problem, symptoms, and any relevant information...")
               end
-              
+
               div(class: "form-row") do
                 div(class: "form-group form-col") do
                   f.label(:priority, "Priority", class: "form-label")
-                  f.select(:priority, 
+                  f.select(:priority,
                     options_for_priority,
                     { selected: @job.priority },
                     class: "form-input"
                   )
                 end
-                
+
                 div(class: "form-group form-col") do
                   f.label(:status, "Status", class: "form-label")
-                  f.select(:status, 
+                  f.select(:status,
                     options_for_status,
                     { selected: @job.status },
                     class: "form-input"
                   )
                 end
               end
-              
+
               div(class: "form-group") do
                 f.label(:start_on_date, "Scheduled Date (Optional)", class: "form-label")
                 f.date_field(:start_on_date, class: "form-input")
               end
-              
+
               div(class: "form-group") do
                 label(class: "form-label") { "Assign Technicians (Optional)" }
                 div(class: "checkbox-group") do
@@ -76,7 +76,7 @@ module Views
                   end
                 end
               end
-              
+
               div(class: "form-group") do
                 label(class: "form-label") { "Related People (Optional)" }
                 div(class: "checkbox-group") do
@@ -93,7 +93,7 @@ module Views
                   end
                 end
               end
-              
+
               render Components::Forms::FormActionsComponent.new(
                 cancel_path: client_jobs_path(@client),
                 submit_text: "Create Job"
@@ -102,21 +102,20 @@ module Views
           end
         end
       end
-      
+
       private
-      
+
       def options_for_priority
         Job.priorities.map do |key, _|
-          [key.humanize, key]
+          [ key.humanize, key ]
         end
       end
-      
+
       def options_for_status
         Job.statuses.map do |key, _|
-          [key.humanize.gsub('_', ' '), key]
+          [ key.humanize.gsub("_", " "), key ]
         end
       end
-      
     end
   end
 end

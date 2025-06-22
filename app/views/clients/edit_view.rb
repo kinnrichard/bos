@@ -4,7 +4,7 @@ module Views
   module Clients
     class EditView < Views::Base
       include Phlex::Rails::Helpers::Routes
-      
+
       def initialize(client:, current_user:, authenticity_token: nil)
         @client = client
         @current_user = current_user
@@ -20,12 +20,12 @@ module Views
         ) do
           div(class: "form-container") do
             h1(class: "form-title") { "Edit Client" }
-            
+
             form(action: "/clients/#{@client.id}", method: "post", class: "client-form") do
               # CSRF token
               input(type: "hidden", name: "authenticity_token", value: @authenticity_token)
               input(type: "hidden", name: "_method", value: "patch")
-              
+
               # Name field
               div(class: "form-group") do
                 label(for: "client_name", class: "form-label") { "Name" }
@@ -39,7 +39,7 @@ module Views
                   autofocus: true
                 )
               end
-              
+
               # Client type selection
               div(class: "form-group") do
                 label(class: "form-label") { "Client Type" }
@@ -57,7 +57,7 @@ module Views
                       span { "Residential" }
                     end
                   end
-                  
+
                   label(class: "client-type-option") do
                     input(
                       type: "radio",
@@ -73,7 +73,7 @@ module Views
                   end
                 end
               end
-              
+
               # Form actions
               div(class: "form-actions") do
                 render Components::Ui::ButtonComponent.new(
@@ -87,7 +87,7 @@ module Views
                 ) { "Save" }
               end
             end
-            
+
             # Delete button at the bottom
             div(style: "margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;") do
               delete_form_with_confirmation(

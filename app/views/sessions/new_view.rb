@@ -17,14 +17,14 @@ module Views
             div(class: "auth-box") do
               div(class: "auth-logo") do
                 img(
-                  src: asset_path("faultless_logo.png"), 
-                  alt: "Logo", 
+                  src: asset_path("faultless_logo.png"),
+                  alt: "Logo",
                   class: "auth-logo-image"
                 )
               end
-              
+
               h1(class: "auth-title") { "Sign In" }
-              
+
               # Display flash messages
               if flash[:alert]
                 div(class: "alert alert-error") { flash[:alert] }
@@ -32,11 +32,11 @@ module Views
               if flash[:notice]
                 div(class: "alert alert-success") { flash[:notice] }
               end
-              
+
               form(action: login_path, method: "post", class: "auth-form", data: { turbo: false }) do
                 input(type: "hidden", name: "authenticity_token", value: form_authenticity_token)
                 input(type: "hidden", name: "return_to", value: @return_to) if @return_to
-                
+
                 div(class: "form-group") do
                   label(for: "email", class: "form-label") { "Email" }
                   input(
@@ -49,7 +49,7 @@ module Views
                     placeholder: "your@email.com"
                   )
                 end
-                
+
                 div(class: "form-group") do
                   label(for: "password", class: "form-label") { "Password" }
                   input(
@@ -61,7 +61,7 @@ module Views
                     placeholder: "••••••••"
                   )
                 end
-                
+
                 render Components::Ui::ButtonComponent.new(
                   type: :submit,
                   variant: :primary,
