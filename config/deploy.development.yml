@@ -11,8 +11,8 @@ servers:
 
 # SSL configuration for development
 proxy:
-  ssl: true
-  host: dev.yourdomain.com
+  ssl: false
+  host: 134.199.194.133
   # Optionally use a subdomain like: bos-dev.yourdomain.com
 
 # Container registry credentials
@@ -72,8 +72,11 @@ asset_path: /rails/public/assets
 
 # Builder configuration
 builder:
-  # Remove arch specification unless needed
-  # arch: amd64
+  # Build for ARM64 natively (faster on M1/M2 Macs)
+  arch: arm64
+  # Enable multi-arch via registry
+  cache:
+    type: registry
   
   # Build arguments
   args:
