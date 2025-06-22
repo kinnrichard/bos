@@ -43,14 +43,16 @@ jobs:
       - name: Create Kamal secrets file
         run: |
           mkdir -p .kamal
-          cat > .kamal/secrets.development << EOF
+          # Create both files to ensure Kamal finds the secrets
+          cat > .kamal/secrets << EOF
           KAMAL_REGISTRY_PASSWORD=${{ secrets.GITHUB_TOKEN }}
           RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY_DEV }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD_DEV }}
           EOF
+          cp .kamal/secrets .kamal/secrets.development
           # Debug: Check if secrets file was created properly
           echo "Secrets file contents:"
-          cat .kamal/secrets.development
+          cat .kamal/secrets
 
       - name: Deploy with Kamal
         run: |
@@ -73,5 +75,6 @@ jobs:
       - name: Clean up
         if: always()
         run: |
+          rm -f .kamal/secrets
           rm -f .kamal/secrets.development
           rm -f ~/.ssh/id_ed25519
