@@ -46,43 +46,13 @@ module Views
               sorting_service = ::TaskSortingService.new(@job)
               tasks_tree = sorting_service.get_ordered_tasks
 
-              # Render the task list inline (without turbo-frame for now)
+              # Render the task list using the new ListComponent
               div(id: "tasks-list", class: "tasks-list", data: { flip_target: "container", job_target: "tasksList", turbo_frame: "tasks-frame" }) do
                 if tasks_tree.any?
-                  tasks_tree.each do |task_node|
-                    render_task_with_subtasks(task_node)
-                  end
+                  render Views::Tasks::ListComponent.new(job: @job, tasks_tree: tasks_tree)
                 else
                   div(class: "empty-tasks") do
                     p { "No tasks yet. Click below to add a task." }
-                  end
-                end
-
-                # New task placeholder with same structure as regular tasks
-                div(class: "task-wrapper new-task-wrapper") do
-                  div(
-                    class: "task-item new-task",
-                    data: {
-                      action: "click->job#showNewTaskInput",
-                      job_target: "newTaskPlaceholder"
-                    },
-                    title: "Click or press Enter to create a new task"
-                  ) do
-                    div(class: "task-status-container") do
-                      button(
-                        class: "task-status-button",
-                        disabled: true
-                      ) do
-                        span { "⚫" }
-                      end
-                    end
-                    div(class: "task-content") do
-                      div(
-                        class: "task-title",
-                        contenteditable: "true",
-                        data: { job_target: "newTaskText" }
-                      ) { "New task..." }
-                    end
                   end
                 end
               end
