@@ -1019,9 +1019,6 @@ export default class extends Controller {
     const taskTitle = placeholder.querySelector('.task-title')
     if (!taskTitle) return
     
-    // Clear the placeholder text
-    taskTitle.textContent = ''
-    
     // Set up the contenteditable with proper event handlers
     taskTitle.dataset.action = 'blur->job#saveNewTaskFromContentEditable keydown->job#handleNewTaskKeydown'
     taskTitle.dataset.originalTitle = ''
@@ -1036,26 +1033,6 @@ export default class extends Controller {
     placeholder.dataset.action = ''
   }
   
-  clearNewTaskPlaceholder(event) {
-    const element = event.target
-    // Only clear if the text is still the placeholder
-    if (element.textContent === 'New task...') {
-      element.textContent = ''
-      
-      // Set up the contenteditable with proper event handlers
-      element.dataset.action = 'blur->job#saveNewTaskFromContentEditable keydown->job#handleNewTaskKeydown'
-      element.dataset.originalTitle = ''
-      
-      // Store reference for later use
-      this.currentNewTaskElement = element
-      
-      // Remove click handler temporarily from the parent
-      const placeholder = this.newTaskPlaceholderTarget
-      if (placeholder) {
-        placeholder.dataset.action = ''
-      }
-    }
-  }
   
   handleTasksContainerClick(event) {
     // Only proceed if clicked on the container itself or empty space
@@ -1080,8 +1057,8 @@ export default class extends Controller {
     if (placeholder && this.currentNewTaskElement) {
       const taskTitle = this.currentNewTaskElement
       
-      // Restore original text and handlers
-      taskTitle.textContent = 'New task...'
+      // Clear content and handlers
+      taskTitle.textContent = ''
       taskTitle.dataset.action = ''
       taskTitle.blur()
       

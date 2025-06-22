@@ -224,7 +224,14 @@
   }
   
   .task-title {
-    color: #48484A !important;
+    color: #FFFFFF !important;
+    
+    // Show placeholder text when empty
+    &.new-task-placeholder:empty::before {
+      content: attr(data-placeholder);
+      color: #48484A !important;
+      pointer-events: none;
+    }
     
     &:focus {
       color: #FFFFFF !important; // Full opacity when active
