@@ -35,6 +35,9 @@ env:
     # Enable debug logging
     RAILS_LOG_LEVEL: debug
     
+    # Use SQLite for development deployment
+    DATABASE_URL: sqlite3:///rails/storage/development.sqlite3
+    
     # Show detailed error pages
     RAILS_SERVE_STATIC_FILES: true
     
