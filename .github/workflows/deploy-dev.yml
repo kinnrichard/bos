@@ -45,6 +45,7 @@ jobs:
           mkdir -p .kamal
           echo "KAMAL_REGISTRY_PASSWORD=${{ secrets.GITHUB_TOKEN }}" > .kamal/secrets.development
           echo "RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY_DEV }}" >> .kamal/secrets.development
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD_DEV }}" >> .kamal/secrets.development
 
       - name: Deploy with Kamal
         run: |

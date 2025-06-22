@@ -44,8 +44,8 @@ env:
     # Run Solid Queue in Puma for single-server setup
     SOLID_QUEUE_IN_PUMA: true
     
-    # Optional: External database connection
-    # DB_HOST: your-dev-db-host
+    # Database connection (using accessory)
+    DB_HOST: bos-dev-postgres
     
     # Optional: Redis connection
     # REDIS_URL: redis://your-dev-redis:6379/0
@@ -86,25 +86,18 @@ builder:
 # ssh:
 #   user: deploy
 
-# Optional: Development accessories
-# accessories:
-#   # Local PostgreSQL for development
-#   postgres:
-#     image: postgres:16
-#     host: YOUR_DEV_DROPLET_IP
-#     port: "127.0.0.1:5432:5432"
-#     env:
-#       clear:
-#         POSTGRES_DB: bos_development
-#       secret:
-#         - POSTGRES_PASSWORD
-#     directories:
-#       - data:/var/lib/postgresql/data
-#   
-#   # Local Redis for development
-#   redis:
-#     image: redis:7-alpine
-#     host: YOUR_DEV_DROPLET_IP
-#     port: "127.0.0.1:6379:6379"
-#     directories:
-#       - data:/data
+# Development accessories
+accessories:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16-alpine
+    host: 134.199.194.133
+    port: "127.0.0.1:5432:5432"
+    env:
+      clear:
+        POSTGRES_DB: bos_development
+        POSTGRES_USER: bos
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - data:/var/lib/postgresql/data
