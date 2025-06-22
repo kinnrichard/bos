@@ -29,7 +29,7 @@ jobs:
           # GitHub Container Registry
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_PAT }}
 
       - name: Setup SSH
         run: |
@@ -41,17 +41,17 @@ jobs:
       - name: Create Kamal secrets file
         run: |
           mkdir -p .kamal
-          echo "KAMAL_REGISTRY_PASSWORD=${{ secrets.GITHUB_TOKEN }}" > .kamal/secrets.development
+          echo "KAMAL_REGISTRY_PASSWORD=${{ secrets.GHCR_PAT }}" > .kamal/secrets.development
           echo "RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY_DEV }}" >> .kamal/secrets.development
 
       - name: Deploy with Kamal
         run: |
-          export KAMAL_REGISTRY_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
+          export KAMAL_REGISTRY_PASSWORD="${{ secrets.GHCR_PAT }}"
           export RAILS_MASTER_KEY="${{ secrets.RAILS_MASTER_KEY_DEV }}"
           bin/kamal deploy -c config/deploy.development.yml
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY_DEV }}
-          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GHCR_PAT }}
 
       - name: Clean up
         if: always()

@@ -1487,8 +1487,7 @@ export default class extends Controller {
     // Save initial status for reverting on error
     const initialStatus = taskElement.dataset.taskStatus
     
-    // Hide dropdown immediately
-    dropdown.classList.add("hidden")
+    // The dropdown controller will handle closing via the click->dropdown#close action
     
     // Optimistic UI update - update immediately before server response
     const statusEmojis = {
