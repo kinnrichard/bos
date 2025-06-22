@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["content", "form", "typeSelect", "dateInput", "timeInput", "timeGroup", "userCheckbox", "technicianDisplay"]
+  static targets = ["content", "form", "typeSelect", "typeDisplay", "dateInput", "timeInput", "timeGroup", "userCheckbox", "technicianDisplay"]
   static values = { 
     closeOnClickOutside: { type: Boolean, default: true },
     zIndex: { type: Number, default: 1000 },
@@ -203,6 +203,26 @@ export default class extends Controller {
       display.innerHTML = `<span>${name}</span>`
     } else {
       display.innerHTML = `<span>${selectedCheckboxes.length} technicians selected</span>`
+    }
+  }
+  
+  selectType(event) {
+    event.preventDefault()
+    const button = event.currentTarget
+    const value = button.dataset.typeValue
+    const label = button.dataset.typeLabel
+    
+    // Update the hidden input value
+    this.typeSelectTarget.value = value
+    
+    // Update the display
+    this.typeDisplayTarget.innerHTML = `<span>${label}</span>`
+    
+    // Close the dropdown
+    const dropdown = button.closest('[data-controller~="dropdown"]')
+    const dropdownController = this.application.getControllerForElementAndIdentifier(dropdown, 'dropdown')
+    if (dropdownController) {
+      dropdownController.close()
     }
   }
 

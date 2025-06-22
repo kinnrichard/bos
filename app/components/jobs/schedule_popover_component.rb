@@ -102,13 +102,47 @@ module Components
             # Type selector
             div(class: "form-group") do
               label(class: "form-label") { "Type" }
-              select(
-                class: "form-input",
-                data: { schedule_popover_target: "typeSelect" }
-              ) do
-                ScheduledDateTime.scheduled_types.each do |value, label|
-                  option(value: value) { label }
+              div(class: "dropdown-container", data: { 
+                controller: "dropdown",
+                dropdown_positioning_value: "fixed"
+              }) do
+                button(
+                  type: "button",
+                  class: "dropdown-button",
+                  data: { 
+                    action: "click->dropdown#toggle",
+                    dropdown_target: "button"
+                  }
+                ) do
+                  span(class: "dropdown-value", data: { schedule_popover_target: "typeDisplay" }) do
+                    span { "Scheduled Work" } # Default to first option
+                  end
+                  span(class: "dropdown-arrow") { "▼" }
                 end
+                div(
+                  class: "dropdown-menu hidden",
+                  data: { dropdown_target: "menu" }
+                ) do
+                  ScheduledDateTime.scheduled_types.each do |value, label|
+                    button(
+                      type: "button",
+                      class: "type-option",
+                      data: { 
+                        action: "click->schedule-popover#selectType",
+                        type_value: value,
+                        type_label: label
+                      }
+                    ) do
+                      span { label }
+                    end
+                  end
+                end
+                # Hidden input for form value
+                input(
+                  type: "hidden",
+                  data: { schedule_popover_target: "typeSelect" },
+                  value: "scheduled_work" # Default value
+                )
               end
             end
             

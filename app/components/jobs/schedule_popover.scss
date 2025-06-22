@@ -232,6 +232,23 @@
           }
         }
       }
+      
+      .type-option {
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        font-size: 14px;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        
+        &:hover {
+          background-color: var(--bg-tertiary);
+        }
+      }
     }
     
     .form-actions {
