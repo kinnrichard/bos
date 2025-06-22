@@ -50,6 +50,9 @@ jobs:
         run: |
           export KAMAL_REGISTRY_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
           export RAILS_MASTER_KEY="${{ secrets.RAILS_MASTER_KEY_DEV }}"
+          # Release any existing locks from failed deployments
+          bin/kamal lock release -c config/deploy.development.yml || true
+          # Deploy the application
           bin/kamal deploy -c config/deploy.development.yml
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY_DEV }}
