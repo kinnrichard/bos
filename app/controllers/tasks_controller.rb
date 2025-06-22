@@ -129,10 +129,9 @@ class TasksController < ApplicationController
     sorting_service = TaskSortingService.new(@job)
     @tasks_tree = sorting_service.get_ordered_tasks
 
-    render turbo_stream: turbo_stream.update(
-      "tasks-list",
-      partial: "tasks/task_list",
-      locals: { tasks_tree: @tasks_tree, job: @job }
-    )
+    # Render the Phlex component
+    html_content = Views::Tasks::ListComponent.new(job: @job, tasks_tree: @tasks_tree).call
+
+    render turbo_stream: turbo_stream.update("tasks-list", html_content)
   end
 end

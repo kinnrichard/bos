@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { Turbo } from "@hotwired/turbo-rails"
 
 export default class extends Controller {
   static targets = ["title", "statusBubble", "popover", "tasksContainer", "tasksList", 
@@ -1506,6 +1507,34 @@ export default class extends Controller {
     const taskElement = event.target.closest(".task-item") || event.target.closest(".subtask-item")
     const dropdown = taskElement.querySelector(".task-status-dropdown")
     
+    // Hide dropdown immediately
+    dropdown.classList.add("hidden")
+    
+    // Optimistic UI update - update immediately before server response
+    const statusEmojis = {
+      'new_task': '⚫',
+      'in_progress': '🟢',
+      'paused': '⏸️',
+      'successfully_completed': '☑️',
+      'cancelled': '❌'
+    }
+    
+    // Update the status button emoji immediately
+    const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
+    if (statusButton) {
+      statusButton.textContent = statusEmojis[newStatus] || '⚫'
+    }
+    
+    // Update data attributes
+    taskElement.dataset.taskStatus = newStatus
+    taskElement.classList.toggle("completed", newStatus === "successfully_completed")
+    
+    // Update active state in dropdown
+    taskElement.querySelectorAll(".task-status-option").forEach(opt => {
+      opt.classList.toggle("active", opt.dataset.status === newStatus)
+    })
+    
+    // Send request to server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
       method: "PATCH",
       headers: {
@@ -1519,45 +1548,34 @@ export default class extends Controller {
         } 
       })
     }).then(response => {
-      // Hide dropdown immediately
-      dropdown.classList.add("hidden")
       
       // Check if response is Turbo Stream
       if (response.headers.get('content-type').includes('turbo-stream')) {
         return response.text().then(html => {
-          // Turbo should already be available from our imports
-          if (window.Turbo) {
-            window.Turbo.renderStreamMessage(html)
-          } else {
-            console.error('Turbo not available for stream rendering')
-          }
+          // Use the imported Turbo
+          Turbo.renderStreamMessage(html)
         })
       } else {
-        // Fallback to JSON response
+        // Fallback to JSON response - UI already updated optimistically
         return response.json().then(data => {
-          // Update the task element
-          taskElement.dataset.taskStatus = data.task.status
-          taskElement.classList.toggle("completed", data.task.status === "successfully_completed")
-          
-          // Update the status button emoji
-          const statusEmojis = {
-            'new_task': '⚫',
-            'in_progress': '🟢',
-            'paused': '⏸️',
-            'successfully_completed': '☑️',
-            'cancelled': '❌'
+          // Only update if server returned a different status than what we set
+          if (data.task.status !== newStatus) {
+            console.warn('Server returned different status:', data.task.status, 'vs', newStatus)
+            // Revert to server's status
+            taskElement.dataset.taskStatus = data.task.status
+            taskElement.classList.toggle("completed", data.task.status === "successfully_completed")
+            
+            const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
+            if (statusButton) {
+              statusButton.textContent = statusEmojis[data.task.status] || '⚫'
+            }
+            
+            taskElement.querySelectorAll(".task-status-option").forEach(opt => {
+              opt.classList.toggle("active", opt.dataset.status === data.task.status)
+            })
           }
-          const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
-          if (statusButton) {
-            statusButton.textContent = statusEmojis[data.task.status] || '⚫'
-          }
           
-          // Update active state in dropdown
-          taskElement.querySelectorAll(".task-status-option").forEach(opt => {
-            opt.classList.toggle("active", opt.dataset.status === data.task.status)
-          })
-          
-          // Check if we should resort tasks
+          // Check if we should resort tasks locally (fallback when no Turbo Stream)
           if (this.shouldResortTasks()) {
             this.resortTasksByStatus()
           }

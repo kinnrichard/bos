@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Task Status Update Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Task Status Update Test</h1>
+  
+  <div class="test-section">
+    <h2>Instructions:</h2>
+    <ol>
+      <li>Open browser developer tools (F12)</li>
+      <li>Go to Network tab</li>
+      <li>Navigate to: <a href="http://localhost:3000/clients/5/jobs/21" target="_blank">http://localhost:3000/clients/5/jobs/21</a></li>
+      <li>Login if needed (test@example.com / testpassword)</li>
+      <li>Click on a task's status button</li>
+      <li>Select a new status</li>
+      <li>Observe:
+        <ul>
+          <li>Does the emoji update immediately? ✓</li>
+          <li>Does the dropdown close immediately? ✓</li>
+          <li>Check Network tab - is a PATCH request sent?</li>
+          <li>Check the request headers - does it include "Accept: text/vnd.turbo-stream.html"?</li>
+          <li>What's the response? (JSON or Turbo Stream?)</li>
+          <li>Do tasks reorder after status change?</li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+
+  <div class="test-section">
+    <h2>Expected Behavior:</h2>
+    <ol>
+      <li><span class="success">✓</span> Immediate UI update (emoji changes instantly)</li>
+      <li><span class="success">✓</span> Dropdown closes immediately</li>
+      <li>Server request sent with Turbo Stream accept header</li>
+      <li>Server responds with Turbo Stream</li>
+      <li>Tasks reorder smoothly if status affects order</li>
+    </ol>
+  </div>
+
+  <div class="test-section">
+    <h2>Console Commands for Testing:</h2>
+    <div class="result">
+// Check if Turbo is loaded
+console.log('Turbo available:', typeof window.Turbo !== 'undefined');
+
+// Check current task statuses
+document.querySelectorAll('.task-item').forEach((task, i) => {
+  console.log(`Task ${i+1}: ${task.dataset.taskStatus}`);
+});
+
+// Monitor Turbo Stream events
+document.addEventListener('turbo:before-stream-render', (e) => {
+  console.log('Turbo Stream received:', e.detail);
+});
+    </div>
+  </div>
+</body>
+</html>
