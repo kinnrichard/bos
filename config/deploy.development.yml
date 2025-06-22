@@ -55,12 +55,6 @@ env:
     # Optional: Redis connection
     # REDIS_URL: redis://your-dev-redis:6379/0
 
-# Health check without database
-healthcheck:
-  path: /up
-  port: 3000
-  max_attempts: 10
-
 # Development-specific aliases
 aliases:
   console: app exec --interactive --reuse "bin/rails console"
