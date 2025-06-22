@@ -30,6 +30,13 @@ class TasksController < ApplicationController
   end
 
   def update
+    Rails.logger.info "=== TasksController#update ==="
+    Rails.logger.info "Request format: #{request.format}"
+    Rails.logger.info "Request format symbol: #{request.format.symbol}"
+    Rails.logger.info "Is Turbo Stream?: #{request.format.turbo_stream?}"
+    Rails.logger.info "Accept header: #{request.headers['Accept']}"
+    Rails.logger.info "Params: #{params[:task].inspect}"
+
     # Handle position separately if provided with parent_id change
     if params[:task][:position].present? && params[:task][:parent_id].present?
       # First update parent_id
@@ -39,10 +46,13 @@ class TasksController < ApplicationController
         # Then insert at the specific position
         @task.insert_at(params[:task][:position].to_i)
 
-        respond_to do |format|
-          format.json { render json: { status: "success", task: @task, timestamp: @task.reordered_at } }
-          format.html { redirect_to client_job_path(@client, @job), notice: "Task was successfully updated." }
-          format.turbo_stream { render_task_list_update }
+        if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
+          render_task_list_update
+        else
+          respond_to do |format|
+            format.json { render json: { status: "success", task: @task, timestamp: @task.reordered_at } }
+            format.html { redirect_to client_job_path(@client, @job), notice: "Task was successfully updated." }
+          end
         end
       else
         respond_to do |format|
@@ -51,10 +61,14 @@ class TasksController < ApplicationController
         end
       end
     elsif @task.update(task_params)
-      respond_to do |format|
-        format.json { render json: { status: "success", task: @task, timestamp: @task.reordered_at } }
-        format.html { redirect_to client_job_path(@client, @job), notice: "Task was successfully updated." }
-        format.turbo_stream { render_task_list_update }
+      # Check if client wants Turbo Stream response
+      if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
+        render_task_list_update
+      else
+        respond_to do |format|
+          format.json { render json: { status: "success", task: @task, timestamp: @task.reordered_at } }
+          format.html { redirect_to client_job_path(@client, @job), notice: "Task was successfully updated." }
+        end
       end
     else
       respond_to do |format|
@@ -78,9 +92,10 @@ class TasksController < ApplicationController
       if params[:position]
         @task.insert_at(params[:position].to_i)
 
-        respond_to do |format|
-          format.json { render json: { status: "success", timestamp: @task.reload.reordered_at } }
-          format.turbo_stream { render_task_list_update }
+        if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
+          render_task_list_update
+        else
+          render json: { status: "success", timestamp: @task.reload.reordered_at }
         end
       else
         render json: { error: "Position parameter required" }, status: :unprocessable_entity
@@ -93,9 +108,10 @@ class TasksController < ApplicationController
           task.insert_at(position_data[:position].to_i)
         end
 
-        respond_to do |format|
-          format.json { render json: { status: "success", timestamp: Time.current } }
-          format.turbo_stream { render_task_list_update }
+        if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
+          render_task_list_update
+        else
+          render json: { status: "success", timestamp: Time.current }
         end
       else
         render json: { error: "Positions parameter required" }, status: :unprocessable_entity
@@ -125,13 +141,34 @@ class TasksController < ApplicationController
     request.format.json?
   end
 
+  def json_or_turbo_stream_request?
+    request.format.json? || request.format.turbo_stream?
+  end
+
   def render_task_list_update
+    Rails.logger.info "=== render_task_list_update called ==="
+
     sorting_service = TaskSortingService.new(@job)
     @tasks_tree = sorting_service.get_ordered_tasks
+
+    Rails.logger.info "Tasks tree has #{@tasks_tree.size} root tasks"
 
     # Render the Phlex component
     html_content = Views::Tasks::ListComponent.new(job: @job, tasks_tree: @tasks_tree).call
 
-    render turbo_stream: turbo_stream.update("tasks-list", html_content)
+    Rails.logger.info "Rendered HTML length: #{html_content.length}"
+
+    # Create the Turbo Stream response manually
+    turbo_stream_html = <<~HTML
+      <turbo-stream action="update" target="tasks-list">
+        <template>
+          #{html_content}
+        </template>
+      </turbo-stream>
+    HTML
+
+    Rails.logger.info "Turbo Stream response: #{turbo_stream_html[0..200]}..."
+
+    render plain: turbo_stream_html, content_type: "text/vnd.turbo-stream.html"
   end
 end

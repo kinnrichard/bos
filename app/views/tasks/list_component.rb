@@ -6,7 +6,7 @@ module Views
         @tasks_tree = tasks_tree
       end
 
-      def template
+      def view_template
         @tasks_tree.each do |task_node|
           render_task_with_subtasks(task_node)
         end

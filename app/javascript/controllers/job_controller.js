@@ -1507,6 +1507,9 @@ export default class extends Controller {
     const taskElement = event.target.closest(".task-item") || event.target.closest(".subtask-item")
     const dropdown = taskElement.querySelector(".task-status-dropdown")
     
+    // Save initial status for reverting on error
+    const initialStatus = taskElement.dataset.taskStatus
+    
     // Hide dropdown immediately
     dropdown.classList.add("hidden")
     
@@ -1535,6 +1538,8 @@ export default class extends Controller {
     })
     
     // Send request to server
+    console.log(`Updating task ${taskId} status to ${newStatus}`)
+    
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
       method: "PATCH",
       headers: {
@@ -1548,18 +1553,34 @@ export default class extends Controller {
         } 
       })
     }).then(response => {
+      const contentType = response.headers.get('content-type')
+      console.log('Response received:', {
+        status: response.status,
+        contentType: contentType,
+        ok: response.ok
+      })
       
       // Check if response is Turbo Stream
-      if (response.headers.get('content-type').includes('turbo-stream')) {
+      if (contentType && contentType.includes('text/vnd.turbo-stream.html')) {
+        console.log('Processing Turbo Stream response...')
         return response.text().then(html => {
+          console.log('Turbo Stream HTML:', html.substring(0, 200) + '...')
           // Use the imported Turbo
           Turbo.renderStreamMessage(html)
+          console.log('Turbo Stream processed')
+        }).catch(error => {
+          console.error('Error processing Turbo Stream:', error)
+          console.error('Response was:', response)
         })
       } else {
+        console.log('Not a Turbo Stream response, trying JSON...')
         // Fallback to JSON response - UI already updated optimistically
-        return response.json().then(data => {
-          // Only update if server returned a different status than what we set
-          if (data.task.status !== newStatus) {
+        return response.text().then(text => {
+          console.log('Response text:', text.substring(0, 200))
+          try {
+            const data = JSON.parse(text)
+            // Only update if server returned a different status than what we set
+            if (data.task && data.task.status !== newStatus) {
             console.warn('Server returned different status:', data.task.status, 'vs', newStatus)
             // Revert to server's status
             taskElement.dataset.taskStatus = data.task.status
@@ -1575,11 +1596,25 @@ export default class extends Controller {
             })
           }
           
-          // Check if we should resort tasks locally (fallback when no Turbo Stream)
-          if (this.shouldResortTasks()) {
-            this.resortTasksByStatus()
+            // Check if we should resort tasks locally (fallback when no Turbo Stream)
+            if (this.shouldResortTasks()) {
+              this.resortTasksByStatus()
+            }
+          } catch (e) {
+            console.error('Failed to parse JSON response:', e)
+            console.error('Response was:', text)
           }
         })
+      }
+    }).catch(error => {
+      console.error('Fetch error:', error)
+      // Revert UI on error
+      taskElement.dataset.taskStatus = initialStatus
+      taskElement.classList.toggle("completed", initialStatus === "successfully_completed")
+      
+      const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
+      if (statusButton) {
+        statusButton.textContent = statusEmojis[initialStatus] || '⚫'
       }
     })
   }
