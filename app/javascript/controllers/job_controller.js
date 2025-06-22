@@ -4,7 +4,7 @@ import { Turbo } from "@hotwired/turbo-rails"
 export default class extends Controller {
   static targets = ["title", "statusBubble", "popover", "tasksContainer", "tasksList", 
                     "newTaskPlaceholder", "newTaskText", "searchInput", "task", "taskTimer",
-                    "scheduleButton", "schedulePopover"]
+                    "scheduleButton", "schedulePopover", "subtasksContainer", "disclosureTriangle"]
   
   static values = { 
     jobId: Number,
@@ -79,6 +79,9 @@ export default class extends Controller {
     if (this.element) {
       this.element._jobController = this
     }
+    
+    // Restore collapsed state of subtasks
+    this.restoreCollapsedState()
   }
 
   disconnect() {
@@ -115,7 +118,7 @@ export default class extends Controller {
     }
     
     // Clear selection if clicking outside tasks
-    if (!event.target.closest('.task-item') && !event.target.closest('.subtask-item') && 
+    if (!event.target.closest('.task-item') && 
         !event.metaKey && !event.ctrlKey) {
       this.clearSelection()
     }
@@ -123,7 +126,7 @@ export default class extends Controller {
   
   // Task title click handling - handle selection if cmd/shift held
   handleTaskTitleClick(event) {
-    const taskElement = event.currentTarget.closest('.task-item, .subtask-item')
+    const taskElement = event.currentTarget.closest('.task-item')
     
     // If cmd/shift held, handle selection instead of just focusing
     if (event.metaKey || event.ctrlKey || event.shiftKey) {
@@ -157,24 +160,24 @@ export default class extends Controller {
   // Task selection and renaming
   handleTaskClick(event) {
     const taskElement = event.currentTarget
-    const isSubtask = taskElement.classList.contains('subtask-item')
     
     // Don't handle clicks on interactive elements
     if (event.target.closest('.task-status-container') || 
         event.target.closest('.add-subtask-button') ||
+        event.target.closest('.disclosure-triangle') ||
         event.target.closest('input')) {
       return
     }
     
     // Don't handle clicks on task title text (handled separately)
-    if (event.target.closest('.task-title, .subtask-title')) {
+    if (event.target.closest('.task-title')) {
       return
     }
     
     // Don't handle clicks on task-content that aren't on the title
     // This prevents the large content area from being clickable
-    const taskContent = event.target.closest('.task-content, .subtask-content')
-    if (taskContent && !event.target.closest('.task-title, .subtask-title')) {
+    const taskContent = event.target.closest('.task-content')
+    if (taskContent && !event.target.closest('.task-title')) {
       // Just do selection, don't trigger rename
       event.preventDefault()
     }
@@ -229,7 +232,7 @@ export default class extends Controller {
   }
   
   selectTaskRange(fromTask, toTask) {
-    const allTasks = [...document.querySelectorAll('.task-item, .subtask-item')]
+    const allTasks = [...document.querySelectorAll('.task-item:not(.new-task)')]
     const fromIndex = allTasks.indexOf(fromTask)
     const toIndex = allTasks.indexOf(toTask)
     
@@ -245,7 +248,7 @@ export default class extends Controller {
   }
   
   selectAllTasks() {
-    const allTasks = document.querySelectorAll('.task-item, .subtask-item')
+    const allTasks = document.querySelectorAll('.task-item:not(.new-task)')
     this.clearSelection()
     allTasks.forEach(task => this.selectTask(task))
   }
@@ -500,7 +503,7 @@ export default class extends Controller {
           taskElement.dataset.taskStatus = 'cancelled'
           
           // Update status button
-          const statusButton = taskElement.querySelector('.task-status-button span, .subtask-status-button span')
+          const statusButton = taskElement.querySelector('.task-status-button span')
           if (statusButton) {
             statusButton.textContent = '❌'
           }
@@ -921,7 +924,7 @@ export default class extends Controller {
   // Update task title on blur (contenteditable)
   updateTaskTitle(event) {
     const titleElement = event.currentTarget
-    const taskElement = titleElement.closest('.task-item, .subtask-item')
+    const taskElement = titleElement.closest('.task-item')
     const taskId = titleElement.dataset.taskId
     const newTitle = titleElement.textContent.trim()
     
@@ -1065,8 +1068,8 @@ export default class extends Controller {
     // Clear selection
     this.clearSelection()
     
-    // Check if this is a subtask
-    const isSubtask = selectedTask.classList.contains('subtask-item')
+    // Check if this is a subtask (has a parent)
+    const isSubtask = selectedTask.dataset.parentId
     const parentId = isSubtask ? selectedTask.dataset.parentId : null
     
     // Create a new task element that matches the existing task structure
@@ -1074,7 +1077,7 @@ export default class extends Controller {
     newTaskWrapper.className = 'task-wrapper'
     
     const newTaskItem = document.createElement('div')
-    newTaskItem.className = isSubtask ? 'subtask-item new-inline-task' : 'task-item new-inline-task'
+    newTaskItem.className = 'task-item new-inline-task'
     newTaskItem.dataset.jobTarget = 'task'
     newTaskItem.dataset.action = 'click->job#handleTaskClick'
     if (parentId) {
@@ -1093,10 +1096,10 @@ export default class extends Controller {
     
     // Task content
     const taskContent = document.createElement('div')
-    taskContent.className = isSubtask ? 'subtask-content' : 'task-content'
+    taskContent.className = 'task-content'
     
     const taskTitle = document.createElement('div')
-    taskTitle.className = isSubtask ? 'subtask-title' : 'task-title'
+    taskTitle.className = 'task-title'
     taskTitle.contentEditable = 'true'
     taskTitle.dataset.action = 'focus->job#storeOriginalTitle blur->job#saveNewInlineTask keydown->job#handleNewTaskKeydown'
     taskTitle.dataset.originalTitle = ''
@@ -1435,77 +1438,51 @@ export default class extends Controller {
     `
   }
 
-  toggleTaskStatus(event) {
+  // Toggle subtasks visibility
+  toggleSubtasks(event) {
     event.stopPropagation()
-    // Find the task element - could be either task-item or subtask-item
-    const taskElement = event.target.closest(".task-item") || event.target.closest(".subtask-item")
-    const dropdown = taskElement.querySelector(".task-status-dropdown")
+    const taskId = event.currentTarget.dataset.taskId
+    const taskWrapper = event.currentTarget.closest('.task-wrapper')
+    const subtasksContainer = taskWrapper.querySelector('.subtasks-container')
+    const triangle = event.currentTarget
     
-    // Close all other dropdowns and clear active dropdown
-    document.querySelectorAll(".task-status-dropdown").forEach(d => {
-      if (d !== dropdown) {
-        d.classList.add("hidden")
-      }
-    })
-    
-    // If there was a previously active dropdown, close it
-    if (this.activeStatusDropdown && this.activeStatusDropdown !== dropdown) {
-      this.closeStatusMenu()
-    }
-    
-    // Toggle this dropdown
-    dropdown.classList.toggle("hidden")
-    
-    // If we're opening the dropdown, set it as active and focus it
-    if (!dropdown.classList.contains("hidden")) {
-      this.activeStatusDropdown = dropdown
-      this.activeStatusTask = taskElement
+    if (subtasksContainer) {
+      subtasksContainer.classList.toggle('collapsed')
+      triangle.classList.toggle('expanded')
       
-      // Focus on the dropdown for keyboard navigation
-      dropdown.setAttribute('tabindex', '-1')
-      dropdown.focus()
-    } else {
-      // If closing, clear the active dropdown
-      this.activeStatusDropdown = null
-      this.activeStatusTask = null
+      // Save state in localStorage for persistence
+      const collapsedTasks = JSON.parse(localStorage.getItem('collapsedTasks') || '{}')
+      if (subtasksContainer.classList.contains('collapsed')) {
+        collapsedTasks[taskId] = true
+      } else {
+        delete collapsedTasks[taskId]
+      }
+      localStorage.setItem('collapsedTasks', JSON.stringify(collapsedTasks))
     }
   }
   
-  toggleSubtaskStatus(event) {
-    event.stopPropagation()
-    const subtaskItem = event.currentTarget.closest('.subtask-item')
-    const taskId = subtaskItem.dataset.taskId
-    const currentStatus = subtaskItem.dataset.taskStatus
-    
-    // Simple toggle between new_task and successfully_completed for subtasks
-    const newStatus = currentStatus === 'successfully_completed' ? 'new_task' : 'successfully_completed'
-    const newStatusLabel = newStatus === 'successfully_completed' ? 'Successfully Completed' : 'New'
-    
-    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
-      },
-      body: JSON.stringify({ task: { status: newStatus } })
-    }).then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          // Update UI
-          subtaskItem.dataset.taskStatus = newStatus
-          subtaskItem.classList.toggle('completed', newStatus === 'successfully_completed')
-          event.currentTarget.querySelector('span').textContent = newStatus === 'successfully_completed' ? '☑️' : '⚫️'
+  // Restore collapsed state on page load
+  restoreCollapsedState() {
+    const collapsedTasks = JSON.parse(localStorage.getItem('collapsedTasks') || '{}')
+    Object.keys(collapsedTasks).forEach(taskId => {
+      const taskWrapper = document.querySelector(`[data-task-id="${taskId}"]`)
+      if (taskWrapper) {
+        const subtasksContainer = taskWrapper.querySelector('.subtasks-container')
+        const triangle = taskWrapper.querySelector('.disclosure-triangle')
+        if (subtasksContainer && triangle) {
+          subtasksContainer.classList.add('collapsed')
+          triangle.classList.remove('expanded')
         }
-      })
+      }
+    })
   }
   
   updateTaskStatus(event) {
     event.stopPropagation()
     const taskId = event.currentTarget.dataset.taskId
     const newStatus = event.currentTarget.dataset.status
-    // Find the task element - could be either task-item or subtask-item
-    const taskElement = event.target.closest(".task-item") || event.target.closest(".subtask-item")
-    const dropdown = taskElement.querySelector(".task-status-dropdown")
+    // Find the task element
+    const taskElement = event.target.closest(".task-item")
     
     // Save initial status for reverting on error
     const initialStatus = taskElement.dataset.taskStatus
@@ -1523,7 +1500,7 @@ export default class extends Controller {
     }
     
     // Update the status button emoji immediately
-    const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
+    const statusButton = taskElement.querySelector(".task-status-button span")
     if (statusButton) {
       statusButton.textContent = statusEmojis[newStatus] || '⚫'
     }
@@ -1586,7 +1563,7 @@ export default class extends Controller {
             taskElement.dataset.taskStatus = data.task.status
             taskElement.classList.toggle("completed", data.task.status === "successfully_completed")
             
-            const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
+            const statusButton = taskElement.querySelector(".task-status-button span")
             if (statusButton) {
               statusButton.textContent = statusEmojis[data.task.status] || '⚫'
             }
@@ -1741,7 +1718,7 @@ export default class extends Controller {
               'successfully_completed': '☑️',
               'cancelled': '❌'
             }
-            const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
+            const statusButton = taskElement.querySelector(".task-status-button span")
             if (statusButton) {
               statusButton.textContent = statusEmojis[newStatus] || '⚫'
             }

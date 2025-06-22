@@ -103,7 +103,7 @@
   // No styles needed, just a container
 }
 
-// Task item
+// Task item - unified for all tasks regardless of depth
 .task-item {
   display: flex;
   align-items: flex-start;
@@ -127,7 +127,7 @@
     .task-title,
     .task-content,
     .task-assignee,
-    .task-time-tracking,
+    .task-timer,
     .add-subtask-button {
       opacity: 0.75;
     }
@@ -152,7 +152,7 @@
       color: rgba(255, 255, 255, 0.8) !important;
     }
     
-    .task-time-tracking {
+    .task-timer {
       color: rgba(255, 255, 255, 0.8) !important;
     }
   }
@@ -196,7 +196,7 @@
       color: rgba(255, 255, 255, 0.8) !important;
     }
     
-    .task-time-tracking {
+    .task-timer {
       color: rgba(255, 255, 255, 0.8) !important;
     }
   }
@@ -305,13 +305,24 @@
 }
 
 // Time tracking display
-.task-time-tracking {
+.task-timer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
   color: var(--text-tertiary);
-  font-variant-numeric: tabular-nums;
   
-  .time-value {
+  .timer-icon {
+    font-size: 14px;
+  }
+  
+  .timer-display {
+    font-variant-numeric: tabular-nums;
     font-weight: 500;
+  }
+  
+  &.active {
+    color: var(--accent-blue);
   }
 }
 
@@ -373,168 +384,85 @@
 
 // Subtasks container
 .subtasks-container {
-  margin-left: 32px; // Indent subtasks
+  padding-left: 32px; // Indent subtasks
+  overflow: visible; // Ensure dropdowns can escape
   
-  // Nested subtasks get additional indentation
-  .subtasks-container {
-    margin-left: 32px; // Additional indent for sub-subtasks
+  // Transition for collapse/expand
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+  
+  &.collapsed {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
   }
 }
 
-// Subtask item
-.subtask-item {
+// Disclosure triangle for collapsing subtasks
+.disclosure-triangle {
   display: flex;
-  align-items: flex-start;
-  padding: 8px 0;
-  gap: 12px;
-  cursor: default;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  transition: background-color 0.15s;
-  
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.02);
-  }
-  
-  &.completed {
-    // Don't apply opacity to the entire subtask to avoid affecting dropdown
-    .subtask-status-button,
-    .subtask-title,
-    .subtask-content {
-      opacity: 0.75;
-    }
-    
-    .subtask-title {
-      color: #8E8E93;
-    }
-  }
-  
-  // Selected state for subtask highlighting
-  &.selected {
-    background-color: var(--accent-blue) !important;
-    border-radius: 8px;
-    padding: 8px 16px !important;
-    margin: 0 -16px;
-    
-    .subtask-title {
-      color: #FFFFFF !important;
-    }
-    
-    .subtask-time-tracking {
-      color: rgba(255, 255, 255, 0.8) !important;
-    }
-  }
-}
-
-.subtask-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.subtask-title {
-  font-size: 15px;
-  color: var(--text-primary);
-  line-height: 1.4;
-  cursor: text;
-  outline: none;
-  display: inline-block;
-  min-width: 75px;
-  width: fit-content;
-  max-width: 100%; // Prevent overflow
-  pointer-events: auto; // Re-enable for text editing
-  user-select: text;
-  
-  &:hover {
-    // No underline, just ibeam cursor
-  }
-  
-  &:focus {
-    // No underline, just ibeam cursor
-  }
-}
-
-.subtask-time-tracking {
-  display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 4px;
-  
-  .time-icon {
-    font-size: 14px;
-  }
-}
-
-.subtask-status-button {
-  width: 18px;
-  height: 18px;
-  padding: 0;
+  padding: 4px 8px;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12px;
-  display: flex;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+  }
+  
+  .triangle-icon {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+  }
+  
+  &.expanded .triangle-icon {
+    transform: rotate(90deg);
+  }
+  
+  .subtask-count {
+    font-weight: 500;
+  }
+}
+
+// Task indicators
+.note-indicator,
+.assignee-indicator {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  
-  &:hover {
-    opacity: 0.8;
-  }
 }
 
-// Task status dropdown
-.task-status-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  min-width: 200px;
-  outline: none;
-  
-  &.hidden {
-    display: none;
-  }
+.note-indicator {
+  font-size: 16px;
 }
 
-.task-status-option {
-  display: flex;
+.assignee-initials {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--accent-blue);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.15s;
-  font-size: 14px;
-  
-  &:hover {
-    background-color: var(--bg-tertiary);
-  }
-  
-  &.active {
-    background-color: var(--accent-blue);
-    color: white;
-  }
-  
+  justify-content: center;
+}
+
+// Task status dropdown is now handled by the dropdown controller
+// Only task-specific option styling remains here
+.task-status-option {
   .status-emoji {
     font-size: 14px;
     width: 20px;
     text-align: center;
+    flex-shrink: 0;
   }
 }
 
@@ -799,7 +727,7 @@
     color: rgba(255, 255, 255, 0.8) !important;
   }
   
-  .task-time-tracking {
+  .task-timer {
     color: rgba(255, 255, 255, 0.8) !important;
   }
 }

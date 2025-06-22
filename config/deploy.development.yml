@@ -2,7 +2,7 @@
 service: bos-dev
 
 # Docker image for development
-image: ghcr.io/fluffyx/bos-dev
+image: fluffyx/bos-dev
 
 # Deploy to development server
 servers:
