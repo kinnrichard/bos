@@ -6,6 +6,12 @@ if [ -z "${LD_PRELOAD+x}" ]; then
     export LD_PRELOAD
 fi
 
+# Debug: Print environment variables
+echo "DEBUG: DB_PASSWORD=${DB_PASSWORD}"
+echo "DEBUG: POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
+echo "DEBUG: DB_HOST=${DB_HOST}"
+echo "DEBUG: DB_USER=${DB_USER}"
+
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
   ./bin/rails db:prepare
