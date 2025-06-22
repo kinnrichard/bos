@@ -18,19 +18,19 @@ module Components
             type: "button",
             class: "btn-icon sidebar-toggle-btn",
             style: @sidebar_hidden ? "display: flex;" : "display: none;",
-            data: { 
+            data: {
               action: "click->sidebar#toggle",
               sidebar_target: "toggleButton"
             },
             title: "Toggle sidebar"
           ) { "☰" }
-          
+
           # Custom toolbar items from views
           if @toolbar_items
             @toolbar_items.call(self)
           end
         end
-        
+
         # Right side standard items
         div(class: "header-right") do
           # Add note button with popover
@@ -41,7 +41,7 @@ module Components
               data: { action: "click->popover#toggle" },
               style: "line-height: 30px;"
             ) { "+" }
-            
+
             # Popover will be added later with Motion
             div(
               class: "hidden popover",
@@ -62,15 +62,15 @@ module Components
 
           # Search box with autocomplete
           div(
-            class: "search-container", 
-            data: { 
+            class: "search-container",
+            data: {
               controller: "search",
               search_url_value: "/clients/search"
             }
           ) do
             # Magnifying glass icon
             span(class: "search-icon")
-            
+
             input(
               type: "search",
               class: "search-input",
@@ -80,7 +80,7 @@ module Components
                 action: "input->search#search"
               }
             )
-            
+
             # Search dropdown
             div(
               class: "search-dropdown hidden",
@@ -91,13 +91,13 @@ module Components
               ) { "" }
             end
           end
-          
+
           # User menu
           if @current_user
             div(class: "user-menu", data: { controller: "dropdown" }) do
               button(
                 class: "user-menu-button",
-                data: { 
+                data: {
                   action: "click->dropdown#toggle",
                   dropdown_target: "button"
                 }
@@ -106,7 +106,7 @@ module Components
                   @current_user.name.split.map(&:first).join.upcase[0..1]
                 end
               end
-              
+
               div(
                 class: "dropdown-menu user-dropdown hidden",
                 data: { dropdown_target: "menu" }
