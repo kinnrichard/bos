@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_21_012509) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_21_213757) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -120,6 +120,31 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_21_012509) do
     t.index ["client_id"], name: "index_people_on_client_id"
   end
 
+  create_table "scheduled_date_time_users", force: :cascade do |t|
+    t.bigint "scheduled_date_time_id", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["scheduled_date_time_id", "user_id"], name: "index_scheduled_date_time_users_unique", unique: true
+    t.index ["scheduled_date_time_id"], name: "index_scheduled_date_time_users_on_scheduled_date_time_id"
+    t.index ["user_id"], name: "index_scheduled_date_time_users_on_user_id"
+  end
+
+  create_table "scheduled_date_times", force: :cascade do |t|
+    t.string "schedulable_type", null: false
+    t.bigint "schedulable_id", null: false
+    t.string "scheduled_type", null: false
+    t.date "scheduled_date", null: false
+    t.time "scheduled_time"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["schedulable_type", "schedulable_id", "scheduled_type"], name: "index_scheduled_date_times_on_schedulable_and_type"
+    t.index ["schedulable_type", "schedulable_id"], name: "index_scheduled_date_times_on_schedulable"
+    t.index ["scheduled_date"], name: "index_scheduled_date_times_on_scheduled_date"
+    t.index ["scheduled_type"], name: "index_scheduled_date_times_on_scheduled_type"
+  end
+
   create_table "tasks", force: :cascade do |t|
     t.bigint "job_id", null: false
     t.string "title"
@@ -158,6 +183,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_21_012509) do
   add_foreign_key "jobs", "users", column: "created_by_id"
   add_foreign_key "notes", "users"
   add_foreign_key "people", "clients"
+  add_foreign_key "scheduled_date_time_users", "scheduled_date_times"
+  add_foreign_key "scheduled_date_time_users", "users"
   add_foreign_key "tasks", "jobs"
   add_foreign_key "tasks", "tasks", column: "parent_id"
   add_foreign_key "tasks", "users", column: "assigned_to_id"

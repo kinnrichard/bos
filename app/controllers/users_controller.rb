@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :require_superadmin, except: [:settings, :update_settings]
+  before_action :require_owner, except: [:settings, :update_settings]
   before_action :set_user, only: [:edit, :update, :destroy]
   
   def index
@@ -112,8 +112,8 @@ class UsersController < ApplicationController
     params.require(:user).permit(:resort_tasks_on_status_change)
   end
   
-  def require_superadmin
-    unless current_user&.superadmin?
+  def require_owner
+    unless current_user&.owner?
       redirect_to root_path, alert: "You don't have permission to access this page."
     end
   end

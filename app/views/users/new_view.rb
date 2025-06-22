@@ -67,7 +67,7 @@ module Views
                 ['Admin', 'admin'],
                 ['Technician', 'technician'],
                 ['Customer Specialist', 'customer_specialist'],
-                ['Superadmin', 'superadmin']
+                ['Owner', 'owner']
               ],
               { selected: @user.role },
               class: "form-input"

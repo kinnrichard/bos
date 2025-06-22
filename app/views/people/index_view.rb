@@ -48,11 +48,22 @@ module Views
               end
             end
           else
+            message = if @client.business?
+              "Add employees and other people at #{@client.name} we might work with."
+            else
+              "Add family members, contacts, and even pets at #{@client.name}!"
+            end
+            
             div(class: "empty-state-wrapper") do
               render Components::EmptyState::GenericEmptyStateComponent.new(
                 title: "No people added yet",
-                message: "Add family members, employees, or other contacts at #{@client.name}."
+                message: message
               )
+              
+              render Components::Ui::ButtonComponent.new(
+                href: new_client_person_path(@client),
+                variant: :primary
+              ) { 'Add a Person' }              
             end
           end
         end

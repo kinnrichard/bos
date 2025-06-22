@@ -20,6 +20,7 @@
 @use '../../../components/page_header/page_header';
 @use '../../../components/empty_state/empty_state';
 @use '../../../components/popover/popover';
+@use 'dropdown';
 
 // Auth components
 @use 'auth';
@@ -37,6 +38,7 @@
 @use '../../../components/jobs/job_card';
 @use '../../../components/jobs/job_view';
 @use '../../../components/jobs/jobs_list';
+@use '../../../components/jobs/schedule_popover';
 
 // Form components
 @use '../../../components/forms/forms'; // General form styles

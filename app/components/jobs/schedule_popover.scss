@@ -1,0 +1,243 @@
+.schedule-popover {
+  // Specific positioning for schedule popover
+  position: absolute;
+  top: 60px;
+  right: 200px; // Position it next to the status popover
+  width: 400px;
+  
+  .popover-content {
+    max-height: 500px;
+    overflow-y: auto; // Allow vertical scroll for long content
+    overflow-x: visible; // But allow dropdowns to extend horizontally
+    position: relative; // Establish positioning context
+  }
+  
+  // Allow dropdowns to extend beyond popover bounds
+  overflow: visible;
+  
+  .schedule-group {
+    margin-bottom: 20px;
+    
+    h4 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+  }
+  
+  .scheduled-date-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: var(--bg-primary);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    
+    &:hover {
+      background-color: var(--bg-tertiary);
+    }
+  }
+  
+  .date-info {
+    flex: 1;
+    
+    .date-text {
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 500;
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    .assigned-users {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    
+    .user-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background-color: var(--accent-blue);
+      color: white;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    
+    .date-notes {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+  }
+  
+  .date-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: 12px;
+    
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+    
+    .btn-danger {
+      opacity: 0.7;
+      
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+  
+  .empty-state-text {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: 20px;
+    font-size: 14px;
+  }
+  
+  .add-schedule-section {
+    border-top: 1px solid var(--border-primary);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  
+  .schedule-form {
+    .form-group {
+      margin-bottom: 16px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      &.hidden {
+        display: none;
+      }
+    }
+    
+    .form-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: block;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 14px;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-primary);
+      border-radius: 6px;
+      color: var(--text-primary);
+      
+      &:focus {
+        border-color: var(--accent-blue);
+        outline: none;
+      }
+    }
+    
+    select.form-input {
+      cursor: pointer;
+    }
+    
+    textarea.form-input {
+      resize: vertical;
+      min-height: 60px;
+    }
+    
+    .dropdown-container {
+      position: relative;
+      
+      .dropdown-menu {
+        // Positioning handled by JavaScript based on data-dropdown-positioning-value
+        margin-top: 4px;
+        min-width: 300px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      
+      .dropdown-button {
+        width: 100%;
+        padding: 8px 12px;
+        font-size: 14px;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: 6px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        
+        &:hover {
+          background-color: var(--bg-secondary);
+        }
+        
+        &:focus {
+          border-color: var(--accent-blue);
+          outline: none;
+        }
+      }
+      
+      .dropdown-value {
+        flex: 1;
+        text-align: left;
+      }
+      
+      .dropdown-arrow {
+        font-size: 10px;
+        color: var(--text-secondary);
+        margin-left: 8px;
+      }
+      
+      .multi-select-dropdown {
+        max-height: 200px;
+        overflow-y: auto;
+        
+        .assignee-option {
+          display: flex;
+          align-items: center;
+          padding: 8px 12px;
+          cursor: pointer;
+          
+          &:hover {
+            background-color: var(--bg-secondary);
+          }
+          
+          &.active {
+            background-color: var(--bg-tertiary);
+          }
+          
+          .technician-icon {
+            margin-right: 8px;
+          }
+          
+          .checkmark {
+            margin-left: auto;
+            color: var(--accent-blue);
+            font-weight: bold;
+          }
+          
+          .hidden-checkbox {
+            display: none;
+          }
+        }
+      }
+    }
+    
+    .form-actions {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+}

@@ -24,7 +24,7 @@ class AllJobsController < ApplicationController
       @active_section = :closed
     else
       # All jobs - only for admins
-      if current_user.admin? || current_user.superadmin?
+      if current_user.admin? || current_user.owner?
         @page_title = "All Jobs"
         @active_section = :all_jobs
       else
@@ -53,7 +53,7 @@ class AllJobsController < ApplicationController
     @jobs = @jobs.order(Arel.sql('due_on ASC NULLS LAST, due_time ASC NULLS LAST, priority ASC, created_at DESC'))
     
     # Get all technicians and statuses for filter dropdown
-    @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
+    @technicians = User.where(role: [:technician, :admin, :owner]).order(:name)
     @available_statuses = Job.statuses.keys
     
     render Views::AllJobs::IndexView.new(

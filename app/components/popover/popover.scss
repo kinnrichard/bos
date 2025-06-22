@@ -15,16 +15,16 @@
 
 /* Main popover container */
 .popover {
-  position: fixed;
-  top: 60px;
-  right: 20px;
-  margin-top: 8px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-primary);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  min-width: 320px;
   z-index: 1000;
+  
+  /* Default positioning - can be overridden */
+  position: absolute;
+  min-width: 280px;
+  overflow: visible; /* Allow children to extend outside */
 }
 
 .popover-header {
@@ -40,6 +40,8 @@
 
 .popover-content {
   padding: 16px;
+  overflow: visible; /* Allow dropdowns to extend beyond popover bounds */
+  position: relative; /* Create stacking context */
 }
 
 .popover-input {
@@ -171,16 +173,10 @@
 
 /* Job popover specific styles */
 .job-popover {
-  position: absolute;
+  /* Specific positioning */
   top: 40px;
   right: 0;
-  min-width: 280px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  overflow: visible;
+  margin-top: 0;
 }
 
 .popover-arrow {

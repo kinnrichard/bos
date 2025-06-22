@@ -88,8 +88,8 @@ module Components
           # User settings (available to all users)
           nav_item("My Settings", href: settings_path, icon: "⚙️", active: @active_section == :user_settings)
           
-          # User management (superadmins only)
-          if @current_user&.superadmin?
+          # User management (owners only)
+          if @current_user&.owner?
             nav_item("Users", href: users_path, icon: "👥", active: @active_section == :settings)
           end
         end

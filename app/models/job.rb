@@ -10,6 +10,7 @@ class Job < ApplicationRecord
   has_many :people, through: :job_people
   has_many :tasks, dependent: :destroy
   has_many :notes, as: :notable, dependent: :destroy
+  has_many :scheduled_date_times, as: :schedulable, dependent: :destroy
   
   enum :status, {
     open: 0,
@@ -75,6 +76,27 @@ class Job < ApplicationRecord
   def days_until_due
     return nil unless due_on
     (due_on - Date.current).to_i
+  end
+  
+  # Scheduled DateTime helpers
+  def due_date
+    scheduled_date_times.due_dates.first
+  end
+  
+  def start_date
+    scheduled_date_times.start_dates.first
+  end
+  
+  def followup_dates
+    scheduled_date_times.followup_dates
+  end
+  
+  def upcoming_scheduled_dates
+    scheduled_date_times.upcoming
+  end
+  
+  def has_scheduled_dates?
+    scheduled_date_times.any?
   end
   
   private

@@ -15,7 +15,7 @@ class JobsController < ApplicationController
   def new
     @job = @client.jobs.build
     @people = @client.people.order(:name)
-    @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
+    @technicians = User.where(role: [:technician, :admin, :owner]).order(:name)
     render Views::Jobs::NewView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user)
   end
   
@@ -50,14 +50,14 @@ class JobsController < ApplicationController
       redirect_to client_job_path(@client, @job), notice: 'Job was successfully created.'
     else
       @people = @client.people.order(:name)
-      @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
+      @technicians = User.where(role: [:technician, :admin, :owner]).order(:name)
       render Views::Jobs::NewView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user), status: :unprocessable_entity
     end
   end
   
   def edit
     @people = @client.people.order(:name)
-    @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
+    @technicians = User.where(role: [:technician, :admin, :owner]).order(:name)
     render Views::Jobs::EditView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user)
   end
   
@@ -91,7 +91,7 @@ class JobsController < ApplicationController
       redirect_to client_job_path(@client, @job), notice: 'Job was successfully updated.'
     else
       @people = @client.people.order(:name)
-      @technicians = User.where(role: [:technician, :admin, :superadmin]).order(:name)
+      @technicians = User.where(role: [:technician, :admin, :owner]).order(:name)
       render Views::Jobs::EditView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user), status: :unprocessable_entity
     end
   end

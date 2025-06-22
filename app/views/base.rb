@@ -92,7 +92,8 @@ class Views::Base < Components::Base
             div(class: "main-content") do
               render Components::Header::HeaderComponent.new(
                 current_user: current_user,
-                toolbar_items: toolbar_items
+                toolbar_items: toolbar_items,
+                sidebar_hidden: sidebar_hidden
               )
 
               div(class: "content", &content)

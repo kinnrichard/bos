@@ -3,9 +3,10 @@
 module Components
   module Header
     class HeaderComponent < Components::Base
-    def initialize(current_user:, toolbar_items: nil)
+    def initialize(current_user:, toolbar_items: nil, sidebar_hidden: false)
       @current_user = current_user
       @toolbar_items = toolbar_items
+      @sidebar_hidden = sidebar_hidden
     end
 
     def view_template
@@ -13,13 +14,15 @@ module Components
         # Left side toolbar items
         div(class: "header-left") do
           # Sidebar toggle button (only visible when sidebar is hidden)
-          sidebar_hidden = helpers.cookies[:sidebar_hidden] == 'true'
           button(
             type: "button",
-            class: "btn-icon sidebar-toggle-btn show-sidebar-btn",
-            data: { action: "click->sidebar#show" },
-            title: "Show sidebar",
-            style: sidebar_hidden ? "display: flex;" : "display: none;"
+            class: "btn-icon sidebar-toggle-btn",
+            style: @sidebar_hidden ? "display: flex;" : "display: none;",
+            data: { 
+              action: "click->sidebar#toggle",
+              sidebar_target: "toggleButton"
+            },
+            title: "Toggle sidebar"
           ) { "☰" }
           
           # Custom toolbar items from views

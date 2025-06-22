@@ -1,0 +1,103 @@
+/**
+ * Global Dropdown Styles
+ * 
+ * Base styles for all dropdown menus to ensure consistent behavior
+ * and proper z-index layering above popovers.
+ */
+
+/* Ensure dropdowns in popovers can extend beyond bounds */
+.popover .dropdown-container {
+  position: relative;
+  overflow: visible !important;
+}
+
+/* Dropdown menus should appear above popovers */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  z-index: 1100; /* Higher than popover's 1000 */
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 100%;
+  
+  /* When position is fixed (set by JS), don't use min-width */
+  &[style*="position: fixed"] {
+    min-width: 0 !important;
+  }
+  
+  /* When inside a popover, ensure it can escape bounds */
+  .popover & {
+    z-index: 1200;
+  }
+}
+
+/* Ensure dropdown containers don't clip their menus */
+.dropdown-container {
+  position: relative;
+  overflow: visible !important;
+}
+
+/* Assignee and other option styles */
+.assignee-option,
+.priority-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+  
+  &.active {
+    background-color: var(--bg-tertiary);
+    
+    .checkmark {
+      display: inline;
+    }
+  }
+}
+
+.technician-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--accent-blue);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.priority-emoji {
+  width: 20px;
+  text-align: center;
+  margin-right: 8px;
+}
+
+.checkmark {
+  margin-left: auto;
+  color: var(--accent-blue);
+  font-weight: bold;
+  display: none;
+}
+
+/* Hidden checkbox for form submission */
+.hidden-checkbox {
+  display: none !important;
+}

@@ -92,8 +92,13 @@ module Views
             
             # Status/Assignment Popover
             div(
-              class: "job-popover hidden",
-              data: { job_target: "popover" }
+              class: "popover job-popover hidden",
+              data: { 
+                job_target: "popover",
+                controller: "job-popover",
+                job_popover_job_id_value: @job.id,
+                job_popover_client_id_value: @client.id
+              }
             ) do
               # Arrow pointer
               div(class: "popover-arrow")
@@ -223,6 +228,12 @@ module Views
                 end
               end
             end
+            
+            # Schedule Popover
+            render Components::Jobs::SchedulePopoverComponent.new(
+              job: @job,
+              current_user: @current_user
+            )
           end
         end
       end
@@ -230,6 +241,16 @@ module Views
       private
       
       def render_toolbar_items(view)
+        # Calendar button for scheduling
+        view.button(
+          type: "button",
+          class: "btn-icon",
+          data: { 
+            action: "click->header-job#toggleSchedulePopover"
+          },
+          title: "Schedule dates and times"
+        ) { "📅" }
+        
         # Status bubble with assignee and status
         view.button(
           class: "status-bubble job-status-bubble",

@@ -18,7 +18,7 @@ Rails.application.routes.draw do
   get 'settings', to: 'users#settings', as: :settings
   patch 'settings', to: 'users#update_settings', as: :update_settings
   
-  # User management routes (superadmin only)
+  # User management routes (owner only)
   resources :users
   
   # Client routes
@@ -39,6 +39,7 @@ Rails.application.routes.draw do
         end
       end
       resources :notes
+      resources :scheduled_date_times, only: [:create, :update, :destroy]
     end
     member do
       get :schedule

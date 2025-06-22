@@ -55,7 +55,7 @@ class DevicesController < ApplicationController
   end
   
   def destroy
-    # Only superadmins can delete devices
+    # Only owners can delete devices
     unless current_user.can_delete?(@device)
       redirect_to client_devices_path(@client), alert: 'You do not have permission to delete this device.'
       return

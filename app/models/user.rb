@@ -6,12 +6,14 @@ class User < ApplicationRecord
   has_many :assigned_tasks, class_name: 'Task', foreign_key: 'assigned_to_id'
   has_many :technician_jobs, through: :job_technicians, source: :job
   has_many :job_technicians
+  has_many :scheduled_date_time_users, dependent: :destroy
+  has_many :scheduled_date_times, through: :scheduled_date_time_users
   
   enum :role, {
     admin: 0,
     technician: 1,
     customer_specialist: 2,
-    superadmin: 3
+    owner: 3
   }
   
   validates :name, presence: true
@@ -25,7 +27,7 @@ class User < ApplicationRecord
   thread_cattr_accessor :current_user
   
   def can_delete?(resource)
-    return true if superadmin?
+    return true if owner?
     return false unless technician? || customer_specialist? || admin?
     
     # Technicians can delete their own resources within 5 minutes

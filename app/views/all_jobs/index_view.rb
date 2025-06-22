@@ -35,7 +35,7 @@ module Views
             
             div(class: "header-actions") do
               # Add "All Jobs" link for admins
-              if (@current_user.admin? || @current_user.superadmin?) && @current_filter
+              if (@current_user.admin? || @current_user.owner?) && @current_filter
                 link_to "All Jobs", jobs_path, class: "button button-secondary"
               end
             end
