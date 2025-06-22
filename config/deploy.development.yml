@@ -47,7 +47,9 @@ env:
     
     # Database connection (using accessory)
     DB_HOST: bos-dev-postgres
+    DB_NAME: bos_development
     DB_USER: bos
+    DB_PORT: 5432
     
     # Optional: Redis connection
     # REDIS_URL: redis://your-dev-redis:6379/0
