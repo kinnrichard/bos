@@ -6,14 +6,7 @@ if [ -z "${LD_PRELOAD+x}" ]; then
     export LD_PRELOAD
 fi
 
-# Skip database preparation in development - will be done separately
-if [ "$RAILS_ENV" = "development" ]; then
-  echo "Skipping automatic database preparation in development environment"
-else
-  # If running the rails server then create or migrate existing database
-  if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
-    ./bin/rails db:prepare
-  fi
-fi
+# Always skip automatic database preparation - it should be done separately via CI/CD
+echo "Skipping automatic database preparation"
 
 exec "${@}"
