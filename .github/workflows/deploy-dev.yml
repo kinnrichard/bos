@@ -48,6 +48,7 @@ jobs:
           KAMAL_REGISTRY_PASSWORD=${{ secrets.GITHUB_TOKEN }}
           RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY_DEV }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD_DEV }}
+          DB_PASSWORD=${{ secrets.POSTGRES_PASSWORD_DEV }}
           EOF
           cp .kamal/secrets .kamal/secrets.development
           # Debug: Check if secrets file was created properly

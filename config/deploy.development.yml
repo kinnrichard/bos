@@ -29,6 +29,7 @@ env:
   secret:
     - RAILS_MASTER_KEY
     - POSTGRES_PASSWORD
+    - DB_PASSWORD
   clear:
     # Development environment
     RAILS_ENV: development
