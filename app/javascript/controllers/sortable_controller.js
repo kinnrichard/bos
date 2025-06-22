@@ -229,7 +229,15 @@ export default class extends Controller {
   makeSubtask(taskId, parentId, taskWrapper) {
     if (!taskId || !parentId) return
     
-    // Send request to update parent_id
+    // Calculate target position before moving (last position in subtasks)
+    const parentWrapper = this.element.querySelector(`.task-item[data-task-id="${parentId}"], .subtask-item[data-task-id="${parentId}"]`)?.closest('.task-wrapper')
+    let targetPosition = 1
+    if (parentWrapper) {
+      const existingSubtasks = parentWrapper.querySelectorAll('.subtask-item')
+      targetPosition = existingSubtasks.length + 1
+    }
+    
+    // Send request to update parent_id AND position
     const jobController = this.element.closest('[data-controller*="job"]')
     const jobId = jobController?.dataset.jobId
     const clientId = jobController?.dataset.clientId
@@ -243,14 +251,17 @@ export default class extends Controller {
         'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
       },
       body: JSON.stringify({ 
-        task: { parent_id: parentId }
+        task: { 
+          parent_id: parentId,
+          position: targetPosition
+        }
       })
     })
     .then(response => response.json())
     .then(data => {
       if (data.status === 'success') {
         // Move the task element to the parent's subtask container
-        const targetPosition = this.moveToSubtaskContainer(taskWrapper, parentId)
+        this.moveToSubtaskContainer(taskWrapper, parentId)
         
         // Update subtask count
         this.updateSubtaskCount(parentId)
@@ -258,12 +269,7 @@ export default class extends Controller {
         // Reinitialize drag drop for the moved items
         this.refresh()
         
-        // Dispatch event for job controller with position
-        const event = new CustomEvent('task:parent-changed', {
-          detail: { taskId, parentId, targetPosition },
-          bubbles: true
-        })
-        this.element.dispatchEvent(event)
+        // No need to dispatch parent-changed event with position since we handled it
       }
     })
     .catch(error => {
@@ -371,12 +377,22 @@ export default class extends Controller {
                       (!isTargetInSubtaskContainer && isDraggedFromSubtaskContainer) ||
                       (isTargetInSubtaskContainer && isDraggedFromSubtaskContainer && newParentId !== draggedTask.dataset.parentId))) {
       
-      // When changing parent, let acts_as_list handle positions
-      // Just update parent_id and move DOM, don't send position updates
-      this.updateTaskParent(draggedId, newParentId, () => {
+      // Calculate target position in the new container
+      const allWrappers = Array.from(container.querySelectorAll('.task-wrapper:not(.new-task-wrapper)'))
+      let targetPosition = 1
+      
+      if (this.dropPosition === 'before') {
+        const targetIndex = allWrappers.indexOf(targetWrapper)
+        targetPosition = targetIndex + 1
+      } else {
+        const targetIndex = allWrappers.indexOf(targetWrapper)
+        targetPosition = targetIndex + 2
+      }
+      
+      // Update parent and position together
+      this.updateTaskParentAndPosition(draggedId, newParentId, targetPosition, () => {
         // Move DOM element to new container
         this.moveToNewParent(draggedWrapper, targetWrapper, container, newParentId)
-        // Don't send position updates - acts_as_list handles this
       })
     } else {
       // Same parent level, just reorder
@@ -525,6 +541,37 @@ export default class extends Controller {
     })
   }
   
+  updateTaskParentAndPosition(taskId, newParentId, position, callback) {
+    const jobController = this.element.closest('[data-controller*="job"]')
+    const jobId = jobController?.dataset.jobId
+    const clientId = jobController?.dataset.clientId
+    
+    if (!jobId || !clientId) return
+    
+    fetch(`/clients/${clientId}/jobs/${jobId}/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+      },
+      body: JSON.stringify({ 
+        task: { 
+          parent_id: newParentId,
+          position: position
+        }
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        if (callback) callback()
+      }
+    })
+    .catch(error => {
+      console.error('Error updating task parent and position:', error)
+    })
+  }
+  
   updateAllSubtaskCounts() {
     // Update counts for all tasks with subtasks
     const tasksWithSubtasks = this.element.querySelectorAll('.task-wrapper')
@@ -588,25 +635,13 @@ export default class extends Controller {
       container.appendChild(draggedWrapper)
     }
     
-    // Calculate new position based on DOM order
-    const newPosition = this.calculatePositionInContainer(draggedWrapper, container)
-    
     // Update subtask counts
     this.updateAllSubtaskCounts()
     
     // Refresh drag handlers
     this.refresh()
     
-    // Dispatch parent changed event with position info
-    const event = new CustomEvent('task:parent-changed', {
-      detail: { 
-        taskId: draggedTaskId, 
-        parentId: newParentId,
-        targetPosition: newPosition  // Include desired position
-      },
-      bubbles: true
-    })
-    this.element.dispatchEvent(event)
+    // No need to dispatch events - position was already handled in updateTaskParentAndPosition
   }
   
   calculatePositionInContainer(taskWrapper, container) {

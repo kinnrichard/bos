@@ -30,7 +30,26 @@ class TasksController < ApplicationController
   end
   
   def update
-    if @task.update(task_params)
+    # Handle position separately if provided with parent_id change
+    if params[:task][:position].present? && params[:task][:parent_id].present?
+      # First update parent_id
+      @task.parent_id = params[:task][:parent_id]
+      
+      if @task.save
+        # Then insert at the specific position
+        @task.insert_at(params[:task][:position].to_i)
+        
+        respond_to do |format|
+          format.json { render json: { status: 'success', task: @task } }
+          format.html { redirect_to client_job_path(@client, @job), notice: 'Task was successfully updated.' }
+        end
+      else
+        respond_to do |format|
+          format.json { render json: { error: @task.errors.full_messages.join(', ') }, status: :unprocessable_entity }
+          format.html { render :edit }
+        end
+      end
+    elsif @task.update(task_params)
       respond_to do |format|
         format.json { render json: { status: 'success', task: @task } }
         format.html { redirect_to client_job_path(@client, @job), notice: 'Task was successfully updated.' }
@@ -55,7 +74,7 @@ class TasksController < ApplicationController
       @task = @job.tasks.find(params[:id])
       
       if params[:position]
-        @task.update(position: params[:position])
+        @task.insert_at(params[:position].to_i)
         render json: { status: 'success' }
       else
         render json: { error: 'Position parameter required' }, status: :unprocessable_entity
@@ -65,7 +84,7 @@ class TasksController < ApplicationController
       if params[:positions]
         params[:positions].each do |position_data|
           task = @job.tasks.find(position_data[:id])
-          task.update(position: position_data[:position])
+          task.insert_at(position_data[:position].to_i)
         end
         render json: { status: 'success' }
       else
@@ -89,7 +108,7 @@ class TasksController < ApplicationController
   end
   
   def task_params
-    params.require(:task).permit(:title, :status, :assigned_to_id, :parent_id)
+    params.require(:task).permit(:title, :status, :assigned_to_id, :parent_id, :position)
   end
   
   def json_request?
