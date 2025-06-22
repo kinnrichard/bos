@@ -33,9 +33,6 @@ module Components
       private
 
       def render_header
-        div(class: "popover-section") do
-          h3 { "Schedule Dates & Times" }
-        end
       end
 
       def render_existing_dates
@@ -163,7 +160,7 @@ module Components
             
             # Time input (optional) - hidden until date is selected
             div(class: "form-group hidden", data: { schedule_popover_target: "timeGroup" }) do
-              label(class: "form-label") { "Time (optional)" }
+              label(class: "form-label") { "Time" }
               input(
                 type: "time",
                 class: "form-input",
@@ -173,7 +170,7 @@ module Components
             
             # User assignment
             div(class: "form-group") do
-              label(class: "form-label") { "Assign Technicians (optional)" }
+              label(class: "form-label") { "Technician(s)" }
               div(class: "dropdown-container", data: { 
                 controller: "dropdown",
                 dropdown_positioning_value: "fixed",

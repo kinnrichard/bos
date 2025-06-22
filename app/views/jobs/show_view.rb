@@ -343,11 +343,11 @@ module Views
               ) { task.title }
               
               # Show subtask count if any
-              if task.has_subtasks?
-                span(class: "subtask-count", style: "font-size: 13px; color: #8E8E93; margin-left: 8px;") do
-                  "(#{task.subtasks.count} subtask#{task.subtasks.count == 1 ? '' : 's'})"
-                end
-              end
+              # if task.has_subtasks?
+              #   span(class: "subtask-count", style: "font-size: 13px; color: #8E8E93; margin-left: 8px;") do
+              #     "(#{task.subtasks.count} subtask#{task.subtasks.count == 1 ? '' : 's'})"
+              #   end
+              # end
             end
             
             # Right side section

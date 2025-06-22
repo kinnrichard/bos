@@ -4,7 +4,17 @@ class JobsController < ApplicationController
   
   def index
     @jobs = @client.jobs.includes(:technicians, :tasks)
-                         .order(Arel.sql('due_on ASC NULLS LAST, due_time ASC NULLS LAST, priority ASC, created_at DESC'))
+                         .order(Arel.sql("
+                           CASE status
+                             WHEN 1 THEN 1  -- in_progress
+                             WHEN 2 THEN 2  -- paused
+                             WHEN 0 THEN 3  -- open (new)
+                             WHEN 5 THEN 4  -- successfully_completed
+                             WHEN 6 THEN 5  -- cancelled
+                             ELSE 6         -- other statuses
+                           END,
+                           created_at DESC
+                         "))
     render Views::Jobs::IndexView.new(client: @client, jobs: @jobs, current_user: current_user)
   end
   

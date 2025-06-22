@@ -388,7 +388,35 @@ export default class extends Controller {
     if (isMovingToRootLevel) {
       this.convertToRootTask(draggedWrapper)
     } else if (isMovingToSubtaskLevel) {
-      // Already handled by makeSubtask logic
+      // Convert to subtask classes when moving into a subtask container
+      const draggedTask = draggedWrapper.querySelector('.task-item, .subtask-item')
+      if (draggedTask) {
+        // Find the parent task ID from the container
+        const parentTaskWrapper = container.closest('.task-wrapper')
+        const parentTask = parentTaskWrapper?.querySelector('.task-item, .subtask-item')
+        const parentId = parentTask?.dataset.taskId
+        
+        if (parentId) {
+          // Convert to subtask classes
+          draggedTask.classList.remove('task-item')
+          draggedTask.classList.add('subtask-item')
+          draggedTask.dataset.parentId = parentId
+          
+          // Update title classes
+          const titleEl = draggedWrapper.querySelector('.task-title, .subtask-title')
+          if (titleEl) {
+            titleEl.classList.remove('task-title')
+            titleEl.classList.add('subtask-title')
+          }
+          
+          // Update content classes
+          const contentEl = draggedWrapper.querySelector('.task-content, .subtask-content')
+          if (contentEl) {
+            contentEl.classList.remove('task-content')
+            contentEl.classList.add('subtask-content')
+          }
+        }
+      }
     }
     
     // Use the precise position determined during dragover
