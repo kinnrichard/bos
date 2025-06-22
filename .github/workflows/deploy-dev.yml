@@ -41,16 +41,17 @@ jobs:
       - name: Create Kamal secrets file
         run: |
           mkdir -p .kamal
-          cat > .kamal/secrets.development << EOF
-          KAMAL_REGISTRY_PASSWORD=${{ secrets.GITHUB_TOKEN }}
-          RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY_DEV }}
-          EOF
+          echo "KAMAL_REGISTRY_PASSWORD=${{ secrets.GITHUB_TOKEN }}" > .kamal/secrets.development
+          echo "RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY_DEV }}" >> .kamal/secrets.development
 
       - name: Deploy with Kamal
         run: |
+          export KAMAL_REGISTRY_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
+          export RAILS_MASTER_KEY="${{ secrets.RAILS_MASTER_KEY_DEV }}"
           bin/kamal deploy -c config/deploy.development.yml
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY_DEV }}
+          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clean up
         if: always()
