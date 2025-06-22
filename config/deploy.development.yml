@@ -67,7 +67,7 @@ aliases:
   migrate: app exec "bin/rails db:migrate"
   seed: app exec "bin/rails db:seed"
   reset: app exec "bin/rails db:reset"
-  setup: app exec "bin/rails db:prepare"
+  dbsetup: app exec "bin/rails db:prepare"
 
 # Persistent storage for development
 volumes:
