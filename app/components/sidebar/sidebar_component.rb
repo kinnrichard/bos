@@ -99,7 +99,11 @@ module Components
         #end
         
         # Bottom links
-        nav_item("Logs", href: logs_client_path(@client), icon: "📜", active: @active_section == :client_logs)
+        if @client
+          nav_item("#{@client.name } Logs", href: logs_client_path(@client), icon: "📜", active: @active_section == :client_logs) 
+        else
+          nav_item("Logs", href: logs_path, icon: "📜", active: @active_section == :logs) 
+        end
       end
     end
 

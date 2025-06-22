@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { Turbo } from "@hotwired/turbo-rails"
 
 export default class extends Controller {
   static targets = ["list"]
@@ -10,6 +11,8 @@ export default class extends Controller {
     this.dropPosition = null
     this.isDragging = false
     this.draggedElement = null
+    this.requestQueue = []
+    this.processingRequest = false
     this.initializeCustomDragDrop()
   }
   
@@ -237,44 +240,50 @@ export default class extends Controller {
       targetPosition = existingSubtasks.length + 1
     }
     
-    // Send request to update parent_id AND position
-    const jobController = this.element.closest('[data-controller*="job"]')
-    const jobId = jobController?.dataset.jobId
-    const clientId = jobController?.dataset.clientId
-    
-    if (!jobId || !clientId) return
-    
-    fetch(`/clients/${clientId}/jobs/${jobId}/tasks/${taskId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
-      },
-      body: JSON.stringify({ 
-        task: { 
-          parent_id: parentId,
-          position: targetPosition
+    // Queue the request
+    this.queueRequest(() => {
+      const jobController = this.element.closest('[data-controller*="job"]')
+      const jobId = jobController?.dataset.jobId
+      const clientId = jobController?.dataset.clientId
+      
+      if (!jobId || !clientId) return Promise.reject('Missing IDs')
+      
+      // Send request with Turbo Stream format
+      return fetch(`/clients/${clientId}/jobs/${jobId}/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '',
+          'Accept': 'text/vnd.turbo-stream.html, application/json'
+        },
+        body: JSON.stringify({ 
+          task: { 
+            parent_id: parentId,
+            position: targetPosition
+          }
+        })
+      })
+      .then(response => {
+        if (response.headers.get('content-type').includes('turbo-stream')) {
+          return response.text().then(html => {
+            Turbo.renderStreamMessage(html)
+          })
+        } else {
+          return response.json().then(data => {
+            if (data.status === 'success') {
+              // Fallback for JSON response
+              this.moveToSubtaskContainer(taskWrapper, parentId)
+              this.updateSubtaskCount(parentId)
+              this.refresh()
+            }
+          })
         }
       })
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === 'success') {
-        // Move the task element to the parent's subtask container
-        this.moveToSubtaskContainer(taskWrapper, parentId)
-        
-        // Update subtask count
-        this.updateSubtaskCount(parentId)
-        
-        // Reinitialize drag drop for the moved items
-        this.refresh()
-        
-        // No need to dispatch parent-changed event with position since we handled it
-      }
-    })
-    .catch(error => {
-      console.error('Error making subtask:', error)
-    })
+    
+    // Optimistic update
+    this.moveToSubtaskContainer(taskWrapper, parentId)
+    this.updateSubtaskCount(parentId)
   }
   
   moveToSubtaskContainer(taskWrapper, parentId) {
@@ -470,15 +479,31 @@ export default class extends Controller {
       position: index + 1
     })).filter(p => p.id)
     
-    // Dispatch reorder event to update server
-    const reorderEvent = new CustomEvent('tasks:reorder', {
-      detail: { 
-        positions,
-        isSubtaskReorder: container.classList.contains('subtasks-container')
-      },
-      bubbles: true
+    // Queue the reorder request
+    this.queueRequest(() => {
+      const jobController = this.element.closest('[data-controller*="job"]')
+      const jobId = jobController?.dataset.jobId
+      const clientId = jobController?.dataset.clientId
+      
+      if (!jobId || !clientId) return Promise.reject('Missing IDs')
+      
+      return fetch(`/clients/${clientId}/jobs/${jobId}/tasks/reorder`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '',
+          'Accept': 'text/vnd.turbo-stream.html, application/json'
+        },
+        body: JSON.stringify({ positions })
+      })
+      .then(response => {
+        if (response.headers.get('content-type').includes('turbo-stream')) {
+          return response.text().then(html => {
+            Turbo.renderStreamMessage(html)
+          })
+        }
+      })
     })
-    this.element.dispatchEvent(reorderEvent)
     
     // Update subtask counts if needed
     this.updateAllSubtaskCounts()
@@ -542,34 +567,45 @@ export default class extends Controller {
   }
   
   updateTaskParentAndPosition(taskId, newParentId, position, callback) {
-    const jobController = this.element.closest('[data-controller*="job"]')
-    const jobId = jobController?.dataset.jobId
-    const clientId = jobController?.dataset.clientId
-    
-    if (!jobId || !clientId) return
-    
-    fetch(`/clients/${clientId}/jobs/${jobId}/tasks/${taskId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
-      },
-      body: JSON.stringify({ 
-        task: { 
-          parent_id: newParentId,
-          position: position
+    this.queueRequest(() => {
+      const jobController = this.element.closest('[data-controller*="job"]')
+      const jobId = jobController?.dataset.jobId
+      const clientId = jobController?.dataset.clientId
+      
+      if (!jobId || !clientId) return Promise.reject('Missing IDs')
+      
+      return fetch(`/clients/${clientId}/jobs/${jobId}/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '',
+          'Accept': 'text/vnd.turbo-stream.html, application/json'
+        },
+        body: JSON.stringify({ 
+          task: { 
+            parent_id: newParentId,
+            position: position
+          }
+        })
+      })
+      .then(response => {
+        if (response.headers.get('content-type').includes('turbo-stream')) {
+          return response.text().then(html => {
+            Turbo.renderStreamMessage(html)
+            if (callback) callback()
+          })
+        } else {
+          return response.json().then(data => {
+            if (data.status === 'success' && callback) {
+              callback()
+            }
+          })
         }
       })
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === 'success') {
-        if (callback) callback()
-      }
-    })
-    .catch(error => {
-      console.error('Error updating task parent and position:', error)
-    })
+    
+    // Optimistic update
+    if (callback) callback()
   }
   
   updateAllSubtaskCounts() {
@@ -653,6 +689,30 @@ export default class extends Controller {
   refresh() {
     // Reinitialize all draggable items
     this.setupDraggableItems()
+  }
+  
+  queueRequest(requestFn) {
+    this.requestQueue.push(requestFn)
+    this.processQueue()
+  }
+  
+  async processQueue() {
+    if (this.processingRequest || this.requestQueue.length === 0) return
+    
+    this.processingRequest = true
+    const request = this.requestQueue.shift()
+    
+    try {
+      await request()
+    } catch (error) {
+      console.error('Request failed:', error)
+    } finally {
+      this.processingRequest = false
+      // Process next request in queue
+      if (this.requestQueue.length > 0) {
+        this.processQueue()
+      }
+    }
   }
   
   disconnect() {

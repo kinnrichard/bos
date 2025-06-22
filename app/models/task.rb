@@ -46,6 +46,9 @@ class Task < ApplicationRecord
   # Automatically reorder tasks when status changes
   after_update :reorder_by_status, if: :saved_change_to_status?
   
+  # Update reordered_at when position or parent changes
+  before_save :update_reordered_at, if: -> { position_changed? || parent_id_changed? }
+  
   # Status emoji helpers
   def status_emoji
     case status
@@ -180,10 +183,12 @@ class Task < ApplicationRecord
     end
   end
   
-  private
-  
   def resort_enabled?
     # Check if the user has resort enabled
     job&.created_by&.resort_tasks_on_status_change
+  end
+
+  def update_reordered_at
+    self.reordered_at = Time.current
   end
 end

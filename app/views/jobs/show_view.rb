@@ -5,6 +5,7 @@ module Views
     class ShowView < Views::Base
       include Phlex::Rails::Helpers::ContentTag
       include Phlex::Rails::Helpers::FormWith
+      include Phlex::Rails::Helpers::TurboFrameTag
       
       def initialize(client:, job:, current_user:)
         @client = client
@@ -21,7 +22,7 @@ module Views
           toolbar_items: method(:render_toolbar_items)
         ) do
           div(class: "job-view", data: { 
-            controller: "job sortable",
+            controller: "job sortable flip",
             job_id: @job.id, 
             client_id: @client.id,
             job_status_value: @job.status,
@@ -42,11 +43,14 @@ module Views
             
             # Tasks list
             div(class: "tasks-container", data: { job_target: "tasksContainer" }) do
-              # Existing tasks (only root tasks)
-              div(class: "tasks-list", data: { job_target: "tasksList" }) do
-                if @job.tasks.root_tasks.any?
-                  @job.tasks.root_tasks.ordered_by_status.each do |task|
-                    render_task_item(task)
+              sorting_service = ::TaskSortingService.new(@job)
+              tasks_tree = sorting_service.get_ordered_tasks
+              
+              # Render the task list inline (without turbo-frame for now)
+              div(id: "tasks-list", class: "tasks-list", data: { flip_target: "container", job_target: "tasksList", turbo_frame: "tasks-frame" }) do
+                if tasks_tree.any?
+                  tasks_tree.each do |task_node|
+                    render_task_with_subtasks(task_node)
                   end
                 else
                   div(class: "empty-tasks") do
@@ -233,6 +237,56 @@ module Views
       end
       
       private
+      
+      def render_task_with_subtasks(task_node, depth = 0)
+        task = task_node[:task]
+        
+        div(class: "task-wrapper", data: { task_id: task.id, flip_item: true }) do
+          div(
+            class: depth == 0 ? "task-item" : "subtask-item",
+            data: {
+              task_id: task.id,
+              parent_id: task.parent_id,
+              status: task.status,
+              reordered_at: task.reordered_at.to_i
+            }
+          ) do
+            div(class: "task-status-container") do
+              button(
+                class: "task-status-button",
+                data: { action: "click->job#toggleTaskStatus" },
+                aria_label: "Task status: #{task.status.humanize}"
+              ) do
+                span { task.status_emoji }
+              end
+            end
+            
+            div(class: depth == 0 ? "task-content" : "subtask-content") do
+              div(
+                class: depth == 0 ? "task-title" : "subtask-title",
+                contenteditable: "true",
+                data: {
+                  task_id: task.id,
+                  action: "blur->job#updateTaskTitle keydown.enter->job#handleTaskTitleEnter click->job#handleTaskClick",
+                  job_target: "task"
+                }
+              ) { task.title }
+              
+              if task.formatted_time_in_progress.present?
+                span(class: "task-timer", data: { job_target: "taskTimer" }) { task.formatted_time_in_progress }
+              end
+            end
+          end
+          
+          if task_node[:subtasks].any?
+            div(class: "subtasks subtasks-container") do
+              task_node[:subtasks].each do |subtask_node|
+                render_task_with_subtasks(subtask_node, depth + 1)
+              end
+            end
+          end
+        end
+      end
       
       def render_toolbar_items(view)
         # Calendar button for scheduling

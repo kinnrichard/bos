@@ -40,8 +40,9 @@ class TasksController < ApplicationController
         @task.insert_at(params[:task][:position].to_i)
         
         respond_to do |format|
-          format.json { render json: { status: 'success', task: @task } }
+          format.json { render json: { status: 'success', task: @task, timestamp: @task.reordered_at } }
           format.html { redirect_to client_job_path(@client, @job), notice: 'Task was successfully updated.' }
+          format.turbo_stream { render_task_list_update }
         end
       else
         respond_to do |format|
@@ -51,8 +52,9 @@ class TasksController < ApplicationController
       end
     elsif @task.update(task_params)
       respond_to do |format|
-        format.json { render json: { status: 'success', task: @task } }
+        format.json { render json: { status: 'success', task: @task, timestamp: @task.reordered_at } }
         format.html { redirect_to client_job_path(@client, @job), notice: 'Task was successfully updated.' }
+        format.turbo_stream { render_task_list_update }
       end
     else
       respond_to do |format|
@@ -75,7 +77,11 @@ class TasksController < ApplicationController
       
       if params[:position]
         @task.insert_at(params[:position].to_i)
-        render json: { status: 'success' }
+        
+        respond_to do |format|
+          format.json { render json: { status: 'success', timestamp: @task.reload.reordered_at } }
+          format.turbo_stream { render_task_list_update }
+        end
       else
         render json: { error: 'Position parameter required' }, status: :unprocessable_entity
       end
@@ -86,7 +92,11 @@ class TasksController < ApplicationController
           task = @job.tasks.find(position_data[:id])
           task.insert_at(position_data[:position].to_i)
         end
-        render json: { status: 'success' }
+        
+        respond_to do |format|
+          format.json { render json: { status: 'success', timestamp: Time.current } }
+          format.turbo_stream { render_task_list_update }
+        end
       else
         render json: { error: 'Positions parameter required' }, status: :unprocessable_entity
       end
@@ -113,5 +123,16 @@ class TasksController < ApplicationController
   
   def json_request?
     request.format.json?
+  end
+  
+  def render_task_list_update
+    sorting_service = TaskSortingService.new(@job)
+    @tasks_tree = sorting_service.get_ordered_tasks
+    
+    render turbo_stream: turbo_stream.update(
+      "tasks-list",
+      partial: "tasks/task_list",
+      locals: { tasks_tree: @tasks_tree, job: @job }
+    )
   end
 end

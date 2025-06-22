@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_21_213757) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_22_153057) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -155,9 +155,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_21_213757) do
     t.datetime "updated_at", null: false
     t.bigint "parent_id"
     t.integer "subtasks_count", default: 0
+    t.datetime "reordered_at", default: -> { "CURRENT_TIMESTAMP" }
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
     t.index ["job_id"], name: "index_tasks_on_job_id"
     t.index ["parent_id"], name: "index_tasks_on_parent_id"
+    t.index ["reordered_at"], name: "index_tasks_on_reordered_at"
   end
 
   create_table "users", force: :cascade do |t|
