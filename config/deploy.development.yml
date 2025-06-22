@@ -72,8 +72,8 @@ asset_path: /rails/public/assets
 
 # Builder configuration
 builder:
-  # Build for ARM64 natively (faster on M1/M2 Macs)
-  arch: arm64
+  # Build for AMD64 (Intel/AMD processors)
+  arch: amd64
   # Enable multi-arch via registry
   cache:
     type: registry
