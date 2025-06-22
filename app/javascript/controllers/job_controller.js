@@ -1571,8 +1571,9 @@ export default class extends Controller {
     const tasksList = this.element.querySelector('.tasks-list')
     if (!tasksList) return
     
-    // Get all task wrappers (excluding new task placeholder)
-    const taskWrappers = Array.from(tasksList.querySelectorAll('.task-wrapper:not(.new-task-wrapper)'))
+    // IMPORTANT: Only get root-level task wrappers, not subtasks
+    // Use direct children selector to avoid selecting nested subtasks
+    const taskWrappers = Array.from(tasksList.querySelectorAll(':scope > .task-wrapper:not(.new-task-wrapper)'))
     
     // Sort task wrappers by status order, then by position
     taskWrappers.sort((a, b) => {
@@ -1920,6 +1921,14 @@ export default class extends Controller {
   handleTasksReorder(event) {
     const { positions } = event.detail
     
+    // Check if we're only reordering subtasks (all have same parent_id)
+    const taskElements = positions.map(p => 
+      this.element.querySelector(`[data-task-id="${p.id}"]`)
+    ).filter(el => el)
+    
+    const parentIds = new Set(taskElements.map(el => el.dataset.parentId || 'root'))
+    const isSubtaskOnlyReorder = parentIds.size === 1 && !parentIds.has('root')
+    
     // Send batch update to server
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/reorder`, {
       method: "PATCH",
@@ -1940,8 +1949,8 @@ export default class extends Controller {
           }
         })
         
-        // Optionally trigger resort if enabled
-        if (this.shouldResortTasks()) {
+        // Only trigger resort if enabled AND we're not just reordering subtasks
+        if (this.shouldResortTasks() && !isSubtaskOnlyReorder) {
           this.resortTasksByStatus()
         }
       }
@@ -1950,16 +1959,24 @@ export default class extends Controller {
   
   // Handle parent change from drag and drop
   handleTaskParentChanged(event) {
-    const { taskId, parentId } = event.detail
+    const { taskId, parentId, targetPosition } = event.detail
     
     // Update the DOM to reflect the change
-    const taskWrapper = this.element.querySelector(`.task-item[data-task-id="${taskId}"]`)?.closest('.task-wrapper')
+    const taskWrapper = this.element.querySelector(`[data-task-id="${taskId}"]`)?.closest('.task-wrapper')
     if (taskWrapper) {
       // Update data attributes
-      const taskItem = taskWrapper.querySelector('.task-item')
+      const taskItem = taskWrapper.querySelector('.task-item, .subtask-item')
       if (taskItem) {
         taskItem.dataset.parentId = parentId
       }
+    }
+    
+    // If we have a target position, update it after parent change completes
+    if (targetPosition && taskId) {
+      // Wait a moment for acts_as_list to process the parent change
+      setTimeout(() => {
+        this.updateTaskPosition(taskId, targetPosition)
+      }, 100)
     }
     
     // Refresh sortable if needed
@@ -1967,6 +1984,33 @@ export default class extends Controller {
     if (sortableController) {
       sortableController.refresh()
     }
+  }
+  
+  // Update a single task's position
+  updateTaskPosition(taskId, position) {
+    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/reorder`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+      },
+      body: JSON.stringify({ 
+        positions: [{ id: taskId, position: position }]
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        // Position updated successfully
+        const taskElement = this.element.querySelector(`[data-task-id="${taskId}"]`)
+        if (taskElement) {
+          taskElement.dataset.taskPosition = position
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Error updating task position:', error)
+    })
   }
   
   // Timer management

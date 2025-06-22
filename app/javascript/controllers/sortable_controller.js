@@ -250,7 +250,7 @@ export default class extends Controller {
     .then(data => {
       if (data.status === 'success') {
         // Move the task element to the parent's subtask container
-        this.moveToSubtaskContainer(taskWrapper, parentId)
+        const targetPosition = this.moveToSubtaskContainer(taskWrapper, parentId)
         
         // Update subtask count
         this.updateSubtaskCount(parentId)
@@ -258,9 +258,9 @@ export default class extends Controller {
         // Reinitialize drag drop for the moved items
         this.refresh()
         
-        // Dispatch event for job controller
+        // Dispatch event for job controller with position
         const event = new CustomEvent('task:parent-changed', {
-          detail: { taskId, parentId },
+          detail: { taskId, parentId, targetPosition },
           bubbles: true
         })
         this.element.dispatchEvent(event)
@@ -308,8 +308,11 @@ export default class extends Controller {
       }
     }
     
-    // Move to subtasks container
+    // Move to subtasks container (always append for middle drop)
     subtasksContainer.appendChild(taskWrapper)
+    
+    // Return the position (last position when dropping in middle)
+    return this.calculatePositionInContainer(taskWrapper, subtasksContainer)
   }
   
   updateSubtaskCount(parentId) {
@@ -368,10 +371,12 @@ export default class extends Controller {
                       (!isTargetInSubtaskContainer && isDraggedFromSubtaskContainer) ||
                       (isTargetInSubtaskContainer && isDraggedFromSubtaskContainer && newParentId !== draggedTask.dataset.parentId))) {
       
-      // Update parent_id on server
+      // When changing parent, let acts_as_list handle positions
+      // Just update parent_id and move DOM, don't send position updates
       this.updateTaskParent(draggedId, newParentId, () => {
-        // After server update, perform the DOM move
-        this.performReorderMove(draggedWrapper, targetWrapper, container)
+        // Move DOM element to new container
+        this.moveToNewParent(draggedWrapper, targetWrapper, container, newParentId)
+        // Don't send position updates - acts_as_list handles this
       })
     } else {
       // Same parent level, just reorder
@@ -451,7 +456,10 @@ export default class extends Controller {
     
     // Dispatch reorder event to update server
     const reorderEvent = new CustomEvent('tasks:reorder', {
-      detail: { positions },
+      detail: { 
+        positions,
+        isSubtaskReorder: container.classList.contains('subtasks-container')
+      },
       bubbles: true
     })
     this.element.dispatchEvent(reorderEvent)
@@ -527,6 +535,84 @@ export default class extends Controller {
         this.updateSubtaskCount(taskId)
       }
     })
+  }
+  
+  moveToNewParent(draggedWrapper, targetWrapper, container, newParentId) {
+    const draggedTask = draggedWrapper.querySelector('.task-item, .subtask-item')
+    const draggedTaskId = draggedTask?.dataset.taskId
+    
+    // Update task classes based on new parent
+    if (newParentId) {
+      // Moving to subtask container
+      if (draggedTask) {
+        draggedTask.classList.remove('task-item')
+        draggedTask.classList.add('subtask-item')
+        draggedTask.dataset.parentId = newParentId
+        
+        // Update title classes
+        const titleEl = draggedWrapper.querySelector('.task-title, .subtask-title')
+        if (titleEl) {
+          titleEl.classList.remove('task-title')
+          titleEl.classList.add('subtask-title')
+        }
+        
+        // Update content classes
+        const contentEl = draggedWrapper.querySelector('.task-content, .subtask-content')
+        if (contentEl) {
+          contentEl.classList.remove('task-content')
+          contentEl.classList.add('subtask-content')
+        }
+      }
+    } else {
+      // Moving to root level
+      this.convertToRootTask(draggedWrapper)
+    }
+    
+    // Move DOM element based on drop position
+    let insertBefore = null
+    if (this.dropPosition === 'before') {
+      insertBefore = targetWrapper
+    } else {
+      insertBefore = targetWrapper.nextElementSibling
+    }
+    
+    // Remove from original position
+    if (draggedWrapper.parentElement) {
+      draggedWrapper.parentElement.removeChild(draggedWrapper)
+    }
+    
+    // Insert in new position
+    if (insertBefore && insertBefore.parentElement === container) {
+      container.insertBefore(draggedWrapper, insertBefore)
+    } else {
+      container.appendChild(draggedWrapper)
+    }
+    
+    // Calculate new position based on DOM order
+    const newPosition = this.calculatePositionInContainer(draggedWrapper, container)
+    
+    // Update subtask counts
+    this.updateAllSubtaskCounts()
+    
+    // Refresh drag handlers
+    this.refresh()
+    
+    // Dispatch parent changed event with position info
+    const event = new CustomEvent('task:parent-changed', {
+      detail: { 
+        taskId: draggedTaskId, 
+        parentId: newParentId,
+        targetPosition: newPosition  // Include desired position
+      },
+      bubbles: true
+    })
+    this.element.dispatchEvent(event)
+  }
+  
+  calculatePositionInContainer(taskWrapper, container) {
+    const allWrappers = Array.from(container.querySelectorAll('.task-wrapper:not(.new-task-wrapper)'))
+    const index = allWrappers.indexOf(taskWrapper)
+    return index + 1  // Position is 1-based
   }
   
   refresh() {
