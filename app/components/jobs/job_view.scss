@@ -458,12 +458,22 @@
 // Task status dropdown is now handled by the dropdown controller
 // Only task-specific option styling remains here
 .task-status-option {
+  white-space: nowrap; // Prevent text wrapping
+  min-width: 200px; // Ensure minimum width for content
+  
   .status-emoji {
     font-size: 14px;
     width: 20px;
     text-align: center;
     flex-shrink: 0;
   }
+}
+
+// Task status dropdown specific width
+.task-status-container .dropdown-menu {
+  min-width: 220px; // Wide enough for "Successfully Completed"
+  width: max-content; // Grow to fit content
+  max-width: 300px; // But not too wide
 }
 
 // New task placeholder uses contenteditable task-title

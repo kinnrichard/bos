@@ -28,6 +28,7 @@ registry:
 env:
   secret:
     - RAILS_MASTER_KEY
+    - POSTGRES_PASSWORD
   clear:
     # Development environment
     RAILS_ENV: development
@@ -46,6 +47,7 @@ env:
     
     # Database connection (using accessory)
     DB_HOST: bos-dev-postgres
+    DB_USER: bos
     
     # Optional: Redis connection
     # REDIS_URL: redis://your-dev-redis:6379/0

@@ -152,7 +152,11 @@ export default class extends Controller {
       
       // Horizontal positioning
       menuStyle.left = `${buttonRect.left}px`
-      menuStyle.width = `${buttonRect.width}px` // Match button width exactly
+      
+      // Only set width if not explicitly disabled
+      if (!this.element.dataset.dropdownAutoWidth) {
+        menuStyle.width = `${buttonRect.width}px` // Match button width exactly
+      }
       
       // After setting initial position, check bounds
       // Need to force a reflow to get accurate measurements
@@ -167,7 +171,11 @@ export default class extends Controller {
       // Absolute positioning - default behavior
       menuStyle.position = 'absolute'
       menuStyle.zIndex = this.zIndexValue
-      menuStyle.width = `${buttonRect.width}px` // Also set width for absolute positioning
+      
+      // Only set width if not explicitly disabled
+      if (!this.element.dataset.dropdownAutoWidth) {
+        menuStyle.width = `${buttonRect.width}px` // Also set width for absolute positioning
+      }
     }
   }
   

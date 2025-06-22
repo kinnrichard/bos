@@ -95,7 +95,8 @@ module Views
             data: {
               controller: "dropdown",
               dropdown_positioning_value: "fixed",
-              dropdown_z_index_value: "1100"
+              dropdown_z_index_value: "1100",
+              dropdown_auto_width: "true"
             }
           ) do
             button(
