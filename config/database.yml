@@ -15,8 +15,8 @@ default: &default
 development:
   <<: *default
   database: <%= ENV.fetch("DB_NAME", "bos_development") %>
-  username: <%= ENV.fetch("DB_USER", "bos") %>
-  password: <%= ENV.fetch("DB_PASSWORD", ENV["POSTGRES_PASSWORD"]) %>
+  username: <%= ENV.fetch("DB_USER", ENV['USER'] || ENV['USERNAME']) %>
+  password: <%= ENV.fetch("DB_PASSWORD", "") %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".

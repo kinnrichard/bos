@@ -5,7 +5,8 @@ export default class extends Controller {
   static values = { 
     closeOnClickOutside: { type: Boolean, default: true },
     zIndex: { type: Number, default: 1000 },
-    jobId: Number 
+    jobId: Number,
+    clientId: Number 
   }
 
   connect() {
@@ -201,7 +202,7 @@ export default class extends Controller {
     })
     
     try {
-      const response = await fetch(`/jobs/${this.jobIdValue}/scheduled_date_times`, {
+      const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/scheduled_date_times`, {
         method: "POST",
         headers: {
           "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
@@ -240,7 +241,7 @@ export default class extends Controller {
     const dateId = item.dataset.scheduledDateId
     
     try {
-      const response = await fetch(`/jobs/${this.jobIdValue}/scheduled_date_times/${dateId}`, {
+      const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/scheduled_date_times/${dateId}`, {
         method: "DELETE",
         headers: {
           "X-CSRF-Token": document.querySelector("[name='csrf-token']").content

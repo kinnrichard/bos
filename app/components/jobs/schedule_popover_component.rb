@@ -15,7 +15,8 @@ module Components
           data: {
             job_target: "schedulePopover",
             controller: "schedule-popover",
-            schedule_popover_job_id_value: @job.id
+            schedule_popover_job_id_value: @job.id,
+            schedule_popover_client_id_value: @job.client_id
           }
         ) do
           # Arrow
