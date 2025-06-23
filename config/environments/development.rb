@@ -18,7 +18,7 @@ Rails.application.configure do
   # Allow requests from any host in development
   config.hosts.clear
 
-  # Skip migration check for health endpoint
+  # Skip migration check - we'll run migrations after deployment
   config.active_record.migration_error = false
 
   # Enable/disable Action Controller caching. By default Action Controller caching is disabled.
