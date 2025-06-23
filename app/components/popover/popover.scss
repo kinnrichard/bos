@@ -25,6 +25,36 @@
   position: absolute;
   min-width: 280px;
   overflow: visible; /* Allow children to extend outside */
+  
+  /* Animation properties */
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0.2s;
+  
+  /* Visible state - default */
+  &:not(.hidden) {
+    animation: popoverFadeIn 0.2s ease-out;
+  }
+  
+  /* Hidden state with animation */
+  &.hidden {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95) !important;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+/* Fade in animation */
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .popover-header {

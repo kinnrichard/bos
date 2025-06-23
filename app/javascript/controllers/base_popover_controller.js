@@ -5,12 +5,14 @@ export default class extends Controller {
   static targets = ["content"]
   static values = { 
     closeOnClickOutside: { type: Boolean, default: true },
-    zIndex: { type: Number, default: 1000 }
+    zIndex: { type: Number, default: 1000 },
+    animationDuration: { type: Number, default: 200 } // milliseconds
   }
   
   connect() {
     // Bind event handlers
     this.handleOutsideClick = this.handleOutsideClick.bind(this)
+    this.handleResize = this.handleResize.bind(this)
     
     // Add to global popover tracker
     this.registerPopover()
@@ -57,6 +59,7 @@ export default class extends Controller {
   }
   
   hide() {
+    // Add hidden class which triggers CSS transition
     this.element.classList.add('hidden')
     
     // Track closed state
@@ -64,6 +67,13 @@ export default class extends Controller {
     
     // Stop listening for outside clicks
     document.removeEventListener("click", this.handleOutsideClick, true)
+    
+    // Stop listening for resize/scroll
+    window.removeEventListener('resize', this.handleResize)
+    window.removeEventListener('scroll', this.handleResize, true)
+    
+    // Clear trigger element reference
+    this.triggerElement = null
     
     // Close any open dropdowns within this popover
     this.closeChildDropdowns()
@@ -85,6 +95,104 @@ export default class extends Controller {
     }
   }
   
+  toggleWithTrigger(triggerElement) {
+    if (this.isOpen) {
+      this.hide()
+    } else {
+      this.showWithTrigger(triggerElement)
+    }
+  }
+  
+  showWithTrigger(triggerElement) {
+    // Store the trigger element
+    this.triggerElement = triggerElement
+    
+    // First show the popover
+    this.show()
+    
+    // Position after a brief delay to ensure proper dimensions
+    requestAnimationFrame(() => {
+      this.positionRelativeToTrigger(triggerElement)
+    })
+    
+    // Listen for window resize
+    window.addEventListener('resize', this.handleResize)
+    window.addEventListener('scroll', this.handleResize, true)
+  }
+  
+  positionRelativeToTrigger(triggerElement) {
+    if (!triggerElement) return
+    
+    const triggerRect = triggerElement.getBoundingClientRect()
+    const popoverRect = this.element.getBoundingClientRect()
+    const arrowElement = this.element.querySelector('.popover-arrow')
+    
+    // Calculate positions
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    
+    // Default positioning below the trigger
+    let top = triggerRect.bottom + 8 // 8px gap
+    let left = this.calculateHorizontalPosition(triggerRect, popoverRect, viewportWidth)
+    
+    // Check if popover would go off the bottom
+    if (top + popoverRect.height > viewportHeight - 10) {
+      // Position above the trigger instead
+      top = triggerRect.top - popoverRect.height - 8
+      
+      // Move arrow to bottom
+      if (arrowElement) {
+        arrowElement.style.top = 'auto'
+        arrowElement.style.bottom = '-6px'
+        arrowElement.style.transform = 'rotate(180deg)'
+      }
+    } else {
+      // Reset arrow to top
+      if (arrowElement) {
+        arrowElement.style.top = '-6px'
+        arrowElement.style.bottom = 'auto'
+        arrowElement.style.transform = 'none'
+      }
+    }
+    
+    // Position arrow horizontally to point at trigger
+    if (arrowElement) {
+      const arrowLeft = triggerRect.left + (triggerRect.width / 2) - left - 6 // 6px is half arrow width
+      arrowElement.style.left = `${Math.max(10, Math.min(arrowLeft, popoverRect.width - 20))}px`
+      arrowElement.style.right = 'auto'
+    }
+    
+    // Apply positioning
+    this.element.style.position = 'fixed'
+    this.element.style.top = `${top}px`
+    this.element.style.left = `${left}px`
+    this.element.style.right = 'auto'
+  }
+  
+  // Override in subclasses for different alignment strategies
+  calculateHorizontalPosition(triggerRect, popoverRect, viewportWidth) {
+    // Default: center-aligned
+    let left = triggerRect.left + (triggerRect.width / 2) - (popoverRect.width / 2)
+    
+    // Check if popover would go off the right edge
+    if (left + popoverRect.width > viewportWidth - 10) {
+      left = viewportWidth - popoverRect.width - 10
+    }
+    
+    // Check if popover would go off the left edge
+    if (left < 10) {
+      left = 10
+    }
+    
+    return left
+  }
+  
+  handleResize() {
+    if (this.triggerElement && this.isOpen) {
+      this.positionRelativeToTrigger(this.triggerElement)
+    }
+  }
+  
   get isOpen() {
     return !this.element.classList.contains('hidden')
   }
@@ -95,9 +203,8 @@ export default class extends Controller {
       return
     }
     
-    // Don't close if clicking on the trigger that opened this popover
-    const trigger = event.target.closest('[data-action*="toggle"]')
-    if (trigger && trigger.dataset.action.includes(this.identifier)) {
+    // Don't close if clicking on the trigger button - let the toggle method handle it
+    if (this.triggerElement && (this.triggerElement === event.target || this.triggerElement.contains(event.target))) {
       return
     }
     
