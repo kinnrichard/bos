@@ -172,9 +172,8 @@ export default class extends Controller {
       return
     }
     
-    // Don't close if clicking on the trigger that opened this popover
-    const trigger = event.target.closest('[data-action*="toggle"]')
-    if (trigger && trigger.dataset.action.includes(this.identifier)) {
+    // Don't close if clicking on the trigger button - let the toggle method handle it
+    if (this.triggerElement && (this.triggerElement === event.target || this.triggerElement.contains(event.target))) {
       return
     }
     
