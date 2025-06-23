@@ -127,6 +127,7 @@ export default class extends Controller {
   // Task title click handling - handle selection if cmd/shift held
   handleTaskTitleClick(event) {
     const taskElement = event.currentTarget.closest('.task-item')
+    const titleElement = event.currentTarget
     
     // If cmd/shift held, handle selection instead of just focusing
     if (event.metaKey || event.ctrlKey || event.shiftKey) {
@@ -151,10 +152,11 @@ export default class extends Controller {
     // Stop event from bubbling to task click handler
     event.stopPropagation()
     
-    // Don't select the task when clicking to edit - just clear any existing selection
-    // The focus event handler will clear selection when contenteditable gets focus
+    // Make the element editable before focusing
+    titleElement.contentEditable = 'true'
     
-    // Contenteditable will handle the focus and editing automatically
+    // Focus will be handled by the browser's contenteditable behavior
+    // The focus event handler will clear selection when contenteditable gets focus
   }
   
   // Task selection and renaming
@@ -920,6 +922,9 @@ export default class extends Controller {
     const taskId = titleElement.dataset.taskId
     const newTitle = titleElement.textContent.trim()
     
+    // Set contenteditable back to false
+    titleElement.contentEditable = 'false'
+    
     // Get original title from the element's data
     const originalTitle = titleElement.dataset.originalTitle || ''
     
@@ -1014,6 +1019,9 @@ export default class extends Controller {
     // Set up the contenteditable with proper event handlers
     taskTitle.dataset.action = 'blur->job#saveNewTaskFromContentEditable keydown->job#handleNewTaskKeydown'
     taskTitle.dataset.originalTitle = ''
+    
+    // Make it editable
+    taskTitle.contentEditable = 'true'
     
     // Focus the contenteditable div
     taskTitle.focus()
@@ -1232,6 +1240,9 @@ export default class extends Controller {
   async saveNewTaskFromContentEditable(event) {
     const titleElement = event.currentTarget
     const newTitle = titleElement.textContent.trim()
+    
+    // Set contenteditable back to false
+    titleElement.contentEditable = 'false'
     
     // If empty, cancel the new task
     if (newTitle === '') {

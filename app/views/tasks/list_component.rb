@@ -29,7 +29,7 @@ module Views
             div(class: "task-content") do
               div(
                 class: "task-title new-task-placeholder",
-                contenteditable: "true",
+                contenteditable: "false",
                 data: {
                   job_target: "newTaskText",
                   placeholder: "New task..."
@@ -128,7 +128,7 @@ module Views
           div(class: "task-content") do
             div(
               class: "task-title",
-              contenteditable: "true",
+              contenteditable: "false",
               data: {
                 action: "focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown",
                 task_id: task.id,
