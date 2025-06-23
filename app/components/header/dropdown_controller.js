@@ -42,7 +42,8 @@ export default class extends Controller {
     this.handleRepositioning = this.handleRepositioning.bind(this)
     
     // Determine if we should auto-detect fixed positioning
-    if (this.positioningValue === "absolute" && this.isInScrollableContainer()) {
+    // But don't switch to fixed if we're inside a fixed-position element (like a popover)
+    if (this.positioningValue === "absolute" && this.isInScrollableContainer() && !this.isInFixedPositionElement()) {
       console.log('Auto-detected scrollable container, switching to fixed positioning')
       this.positioningValue = "fixed"
     }
@@ -181,9 +182,18 @@ export default class extends Controller {
       menuStyle.position = 'absolute'
       menuStyle.zIndex = this.zIndexValue
       
+      // Position below button
+      menuStyle.top = '100%'
+      menuStyle.left = '0'
+      menuStyle.right = 'auto'
+      menuStyle.bottom = 'auto'
+      menuStyle.marginTop = '4px'
+      
       // Only set width if not explicitly disabled
       if (!this.element.dataset.dropdownAutoWidth) {
-        menuStyle.width = `${buttonRect.width}px` // Also set width for absolute positioning
+        // Use button width or container width, whichever is larger
+        const containerWidth = this.element.offsetWidth
+        menuStyle.width = `${Math.max(buttonRect.width, containerWidth)}px`
       }
     }
   }
@@ -195,6 +205,18 @@ export default class extends Controller {
       const style = window.getComputedStyle(element)
       if (style.overflow === 'auto' || style.overflow === 'scroll' || 
           style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        return true
+      }
+      element = element.parentElement
+    }
+    return false
+  }
+  
+  isInFixedPositionElement() {
+    let element = this.element.parentElement
+    while (element && element !== document.body) {
+      const style = window.getComputedStyle(element)
+      if (style.position === 'fixed') {
         return true
       }
       element = element.parentElement
