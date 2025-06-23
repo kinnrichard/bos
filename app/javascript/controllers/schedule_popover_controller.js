@@ -11,30 +11,9 @@ export default class extends BasePopoverController {
   }
 
   childConnect() {
-    console.log("Schedule popover controller connected", this.jobIdValue)
+    // Schedule popover controller connected
   }
   
-  // Override base class to handle dropdown menus
-  handleOutsideClick(event) {
-    // Check if clicking on a dropdown menu
-    const clickedDropdown = event.target.closest('.dropdown-menu')
-    if (clickedDropdown) {
-      return
-    }
-    
-    // Check if there are open dropdowns in this popover
-    const openDropdowns = this.element.querySelectorAll('.dropdown-menu:not(.hidden)')
-    if (openDropdowns.length > 0) {
-      // Close dropdowns first
-      openDropdowns.forEach(dropdown => {
-        dropdown.classList.add('hidden')
-      })
-      return
-    }
-    
-    // Call parent implementation
-    super.handleOutsideClick(event)
-  }
   
   dateChanged(event) {
     // Show time field when a date is selected
@@ -49,13 +28,11 @@ export default class extends BasePopoverController {
   techniciansSelected(event) {
     // The dropdown controller already updated the display
     // We just need to handle any custom logic here if needed
-    console.log('Technicians selected:', event.detail)
   }
   
   typeSelected(event) {
     // The dropdown controller already updated the display and value
     // We just need to handle any custom logic here if needed
-    console.log('Type selected:', event.detail)
   }
 
   async addDate(event) {

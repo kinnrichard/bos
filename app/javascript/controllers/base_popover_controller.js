@@ -208,19 +208,23 @@ export default class extends Controller {
       return
     }
     
-    // Check if clicking on a dropdown menu
-    const clickedDropdown = event.target.closest('.dropdown-menu')
-    if (clickedDropdown) {
+    // Check if clicking on a dropdown element (button or menu) - let the dropdown controller handle it
+    const clickedDropdownElement = event.target.closest('[data-controller~="dropdown"]')
+    if (clickedDropdownElement && this.element.contains(clickedDropdownElement)) {
+      return
+    }
+    
+    // Check if clicking on a dropdown menu that might be outside its container
+    const clickedDropdownMenu = event.target.closest('.dropdown-menu')
+    if (clickedDropdownMenu) {
       return
     }
     
     // Check if there are open dropdowns in this popover
     const openDropdowns = this.element.querySelectorAll('.dropdown-menu:not(.hidden)')
     if (openDropdowns.length > 0) {
-      // Close dropdowns first
-      openDropdowns.forEach(dropdown => {
-        dropdown.classList.add('hidden')
-      })
+      // Close dropdowns properly through their controllers
+      this.closeChildDropdowns()
       return
     }
     

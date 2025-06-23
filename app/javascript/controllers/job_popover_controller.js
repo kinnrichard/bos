@@ -12,7 +12,7 @@ export default class extends BasePopoverController {
   }
   
   childConnect() {
-    console.log('Job popover controller connected')
+    // Job popover controller connected
   }
   
   onShow() {
@@ -20,27 +20,6 @@ export default class extends BasePopoverController {
     this.updateDropdownDisplays()
   }
   
-  // Override base class to handle dropdown menus
-  handleOutsideClick(event) {
-    // Check if clicking on a dropdown menu
-    const clickedDropdown = event.target.closest('.dropdown-menu')
-    if (clickedDropdown) {
-      return
-    }
-    
-    // Check if there are open dropdowns in this popover
-    const openDropdowns = this.element.querySelectorAll('.dropdown-menu:not(.hidden)')
-    if (openDropdowns.length > 0) {
-      // Close dropdowns first
-      openDropdowns.forEach(dropdown => {
-        dropdown.classList.add('hidden')
-      })
-      return
-    }
-    
-    // Call parent implementation
-    super.handleOutsideClick(event)
-  }
   
   updateDropdownDisplays() {
     // Get the job controller to access current values

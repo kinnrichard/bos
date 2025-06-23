@@ -6,7 +6,7 @@ export default class extends BasePopoverController {
   // Inherit values from base controller
   
   childConnect() {
-    console.log('User menu popover controller connected')
+    // User menu popover controller connected
   }
   
   // Override for right-aligned positioning

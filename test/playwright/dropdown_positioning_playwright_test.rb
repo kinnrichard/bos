@@ -277,4 +277,124 @@ class DropdownPositioningPlaywrightTest < ApplicationPlaywrightTestCase
     assert alignment_info["isFixed"], "Dropdown should use fixed positioning"
     assert_equal 0, alignment_info["leftDiff"].to_i, "Dropdown should remain aligned after scrolling"
   end
+
+  test "dropdown toggle behavior - clicking button again closes dropdown" do
+    # Open the schedule popover
+    @page.click('button[data-action="click->header-job#toggleSchedulePopover"]')
+    sleep 0.3 # Wait for popover animation
+
+    # Click the Type dropdown to open it
+    @page.click("text=Due Date")
+    sleep 0.2 # Wait for dropdown to open
+
+    # Verify dropdown is open
+    open_state = @page.evaluate(<<~JS)
+      (() => {
+        const menu = document.querySelector('.dropdown-menu:not(.hidden)');
+        return !!menu;
+      })()
+    JS
+
+    assert open_state, "Dropdown should be open after first click"
+
+    # Click the button again to close it
+    @page.click("text=Due Date")
+    sleep 0.2 # Wait for dropdown to close
+
+    # Verify dropdown is closed
+    closed_state = @page.evaluate(<<~JS)
+      (() => {
+        const menu = document.querySelector('.dropdown-menu:not(.hidden)');
+        return !!menu;
+      })()
+    JS
+
+    assert_not closed_state, "Dropdown should be closed after second click"
+
+    # Test with technician dropdown too
+    @page.click("text=Select technicians...")
+    sleep 0.2
+
+    tech_open = @page.evaluate(<<~JS)
+      (() => {
+        const menus = document.querySelectorAll('.dropdown-menu:not(.hidden)');
+        return menus.length;
+      })()
+    JS
+
+    assert_equal 1, tech_open, "Technician dropdown should be open"
+
+    # Click again to close
+    @page.click("text=Select technicians...")
+    sleep 0.2
+
+    tech_closed = @page.evaluate(<<~JS)
+      (() => {
+        const menus = document.querySelectorAll('.dropdown-menu:not(.hidden)');
+        return menus.length;
+      })()
+    JS
+
+    assert_equal 0, tech_closed, "All dropdowns should be closed"
+  end
+
+  test "dropdown toggle works in job status popover" do
+    # Open the job status popover
+    @page.click('button[data-action="click->header-job#toggleJobPopover"]')
+    sleep 0.3 # Wait for popover animation
+
+    # Test Status dropdown toggle
+    status_button = @page.locator('.job-popover button:has-text("New")').first
+
+    # Click to open
+    status_button.click
+    sleep 0.2
+
+    status_open = @page.evaluate(<<~JS)
+      (() => {
+        return !!document.querySelector('.dropdown-menu:not(.hidden)');
+      })()
+    JS
+
+    assert status_open, "Status dropdown should be open after first click"
+
+    # Click again to close
+    status_button.click
+    sleep 0.2
+
+    status_closed = @page.evaluate(<<~JS)
+      (() => {
+        return !document.querySelector('.dropdown-menu:not(.hidden)');
+      })()
+    JS
+
+    assert status_closed, "Status dropdown should be closed after second click"
+
+    # Test Assigned To dropdown toggle
+    assigned_button = @page.locator('.job-popover button:has-text("Unassigned")').first
+
+    # Click to open
+    assigned_button.click
+    sleep 0.2
+
+    assigned_open = @page.evaluate(<<~JS)
+      (() => {
+        return !!document.querySelector('.dropdown-menu:not(.hidden)');
+      })()
+    JS
+
+    assert assigned_open, "Assigned To dropdown should be open"
+
+    # Click again to close
+    assigned_button.click
+    sleep 0.2
+
+    assigned_closed = @page.evaluate(<<~JS)
+      (() => {
+        return !document.querySelector('.dropdown-menu:not(.hidden)');
+      })()
+    JS
+
+    assert assigned_closed, "Assigned To dropdown should be closed"
+  end
 end

@@ -36,15 +36,16 @@ export default class extends Controller {
   }
   
   connect() {
-    console.log(`Dropdown controller connected! Positioning: ${this.positioningValue}`)
     // Bind event handlers
     this.handleOutsideClick = this.handleOutsideClick.bind(this)
     this.handleRepositioning = this.handleRepositioning.bind(this)
     
+    // Track if we're currently toggling to prevent race conditions
+    this._isToggling = false
+    
     // Determine if we should auto-detect fixed positioning
     // But don't switch to fixed if we're inside a fixed-position element (like a popover)
     if (this.positioningValue === "absolute" && this.isInScrollableContainer() && !this.isInFixedPositionElement()) {
-      console.log('Auto-detected scrollable container, switching to fixed positioning')
       this.positioningValue = "fixed"
     }
   }
@@ -55,20 +56,26 @@ export default class extends Controller {
   }
   
   toggle(event) {
-    console.log('Dropdown toggle clicked')
     event.preventDefault()
     event.stopPropagation()
+    
+    // Set toggling flag to prevent race conditions
+    this._isToggling = true
     
     if (this.isOpen) {
       this.close()
     } else {
       this.open()
     }
+    
+    // Clear the flag after a short delay
+    setTimeout(() => {
+      this._isToggling = false
+    }, 50)
   }
   
   open() {
     if (this.hasMenuTarget) {
-      console.log('Opening dropdown menu')
       // Show the menu
       this.menuTarget.classList.remove('hidden')
       
@@ -86,6 +93,7 @@ export default class extends Controller {
       }
       
       // Start listening for outside clicks
+      // Use a longer delay to avoid conflicts with the current click event
       setTimeout(() => {
         document.addEventListener("click", this.handleOutsideClick, true)
       }, 10)
@@ -97,7 +105,6 @@ export default class extends Controller {
   
   close() {
     if (this.hasMenuTarget) {
-      console.log('Closing dropdown menu')
       // Hide the menu
       this.menuTarget.classList.add('hidden')
       
@@ -118,8 +125,23 @@ export default class extends Controller {
   }
   
   handleOutsideClick(event) {
-    // Don't close if clicking inside the dropdown
-    if (this.element.contains(event.target) || this.menuTarget.contains(event.target)) {
+    // Don't handle clicks during toggle operations
+    if (this._isToggling) {
+      return
+    }
+    
+    // Check if the click is on the toggle button
+    if (this.hasButtonTarget && (this.buttonTarget === event.target || this.buttonTarget.contains(event.target))) {
+      return
+    }
+    
+    // Don't close if clicking inside the dropdown element (including button and menu)
+    if (this.element.contains(event.target)) {
+      return
+    }
+    
+    // Don't close if clicking inside the menu (in case it's positioned outside the element)
+    if (this.hasMenuTarget && this.menuTarget.contains(event.target)) {
       return
     }
     
@@ -146,11 +168,6 @@ export default class extends Controller {
     
     const menuStyle = this.menuTarget.style
     
-    console.log(`Positioning menu - mode: ${this.positioningValue}`)
-    console.log('Button element:', button.tagName, button.className)
-    console.log('Button rect:', buttonRect)
-    console.log('Container rect:', containerRect)
-    console.log('Using rect:', rect)
     
     if (this.positioningValue === "fixed") {
       // Fixed positioning - good for dropdowns in scrollable containers
