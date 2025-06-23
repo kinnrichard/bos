@@ -15,6 +15,15 @@ export default class extends Controller {
     this.processingRequest = false
     this.boundHandlers = new WeakMap() // Track bound handlers for cleanup
     this.initializeCustomDragDrop()
+    
+    // Listen for Turbo Stream updates to reinitialize draggable items
+    this.turboStreamHandler = (event) => {
+      // Use requestAnimationFrame to ensure DOM is updated
+      requestAnimationFrame(() => {
+        this.refresh()
+      })
+    }
+    document.addEventListener('turbo:before-stream-render', this.turboStreamHandler)
   }
   
   initializeCustomDragDrop() {
@@ -758,6 +767,11 @@ export default class extends Controller {
       this.element.removeEventListener('dragenter', this.dragEnterHandler)
       this.element.removeEventListener('dragleave', this.dragLeaveHandler)
       this.element.removeEventListener('drop', this.dropHandler)
+    }
+    
+    // Remove Turbo Stream listener
+    if (this.turboStreamHandler) {
+      document.removeEventListener('turbo:before-stream-render', this.turboStreamHandler)
     }
     
     if (this.dropIndicator && this.dropIndicator.parentNode) {
