@@ -6,13 +6,4 @@ if [ -z "${LD_PRELOAD+x}" ]; then
     export LD_PRELOAD
 fi
 
-# If running the rails server (either directly or via thrust) then prepare the database first
-if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
-  echo "Preparing database..."
-  ./bin/rails db:prepare
-elif [ "${1}" == "./bin/thrust" ] && [ "${2}" == "./bin/rails" ] && [ "${3}" == "server" ]; then
-  echo "Preparing database..."
-  ./bin/rails db:prepare
-fi
-
 exec "${@}"
