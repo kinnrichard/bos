@@ -409,11 +409,11 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
         (() => {
           const popover = document.querySelector('.job-popover');
           if (!popover) return { popoverFound: false };
-        #{'  '}
+
           const buttons = popover.querySelectorAll('button');
           const buttonTexts = Array.from(buttons).map(btn => btn.textContent.trim());
           const hasDeleteButton = buttonTexts.some(text => text.includes('Delete Job'));
-        #{'  '}
+
           return {
             popoverFound: true,
             buttonCount: buttons.length,
@@ -479,6 +479,265 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
     assert_not_nil activity, "Activity log should be created for job deletion"
     assert_equal job_title, activity.metadata["job_title"]
     assert_equal @client.name, activity.metadata["client_name"]
+  end
+
+  # SERVER-SIDE ENFORCEMENT TESTS
+
+  test "server enforces admin cannot delete job created by others" do
+    sign_in_as(@admin)
+    job_id = @job_by_owner.id
+
+    visit "/clients/#{@client.id}/jobs/#{job_id}"
+    sleep 0.5
+
+    # Try to delete via direct API call
+    response = @page.evaluate(<<~JS)
+      (async () => {
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+          const response = await fetch('/clients/#{@client.id}/jobs/#{job_id}', {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'text/html'
+            },
+            redirect: 'manual'
+          });
+          return {
+            status: response.status,
+            redirected: response.type === 'opaqueredirect',
+            url: response.url
+          };
+        } catch (error) {
+          return { error: error.message };
+        }
+      })()
+    JS
+
+    sleep 0.5
+
+    # Should be redirected with permission error
+    assert response["redirected"] || response["status"] == 302, "Request should be redirected due to lack of permission"
+
+    # Verify job still exists
+    assert Job.exists?(job_id), "Job should not be deleted when admin tries to delete job created by others"
+  end
+
+  test "server enforces customer specialist cannot delete job created by others" do
+    sign_in_as(@customer_specialist)
+    job_id = @job_by_admin.id
+
+    visit "/clients/#{@client.id}/jobs/#{job_id}"
+    sleep 0.5
+
+    # Try to delete via direct API call
+    response = @page.evaluate(<<~JS)
+      (async () => {
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+          const response = await fetch('/clients/#{@client.id}/jobs/#{job_id}', {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'text/html'
+            },
+            redirect: 'manual'
+          });
+          return {
+            status: response.status,
+            redirected: response.type === 'opaqueredirect'
+          };
+        } catch (error) {
+          return { error: error.message };
+        }
+      })()
+    JS
+
+    sleep 0.5
+
+    # Should be redirected with permission error
+    assert response["redirected"] || response["status"] == 302, "Request should be redirected due to lack of permission"
+
+    # Verify job still exists
+    assert Job.exists?(job_id), "Job should not be deleted when customer specialist tries to delete job created by others"
+  end
+
+  test "server enforces technician cannot delete own old job" do
+    sign_in_as(@technician)
+    job_id = @job_by_technician.id  # This is an old job (created 1 hour ago)
+
+    visit "/clients/#{@client.id}/jobs/#{job_id}"
+    sleep 0.5
+
+    # Try to delete via direct API call
+    response = @page.evaluate(<<~JS)
+      (async () => {
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+          const response = await fetch('/clients/#{@client.id}/jobs/#{job_id}', {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'text/html'
+            },
+            redirect: 'manual'
+          });
+          return {
+            status: response.status,
+            redirected: response.type === 'opaqueredirect'
+          };
+        } catch (error) {
+          return { error: error.message };
+        }
+      })()
+    JS
+
+    sleep 0.5
+
+    # Should be redirected with permission error
+    assert response["redirected"] || response["status"] == 302, "Request should be redirected due to lack of permission"
+
+    # Verify job still exists
+    assert Job.exists?(job_id), "Job should not be deleted when technician tries to delete own old job"
+  end
+
+  test "server enforces admin cannot delete own old job" do
+    sign_in_as(@admin)
+    job_id = @job_by_admin.id  # This is an old job (created 1 hour ago)
+
+    visit "/clients/#{@client.id}/jobs/#{job_id}"
+    sleep 0.5
+
+    # Try to delete via direct API call
+    response = @page.evaluate(<<~JS)
+      (async () => {
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+          const response = await fetch('/clients/#{@client.id}/jobs/#{job_id}', {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'text/html'
+            },
+            redirect: 'manual'
+          });
+          return {
+            status: response.status,
+            redirected: response.type === 'opaqueredirect'
+          };
+        } catch (error) {
+          return { error: error.message };
+        }
+      })()
+    JS
+
+    sleep 0.5
+
+    # Should be redirected with permission error
+    assert response["redirected"] || response["status"] == 302, "Request should be redirected due to lack of permission"
+
+    # Verify job still exists
+    assert Job.exists?(job_id), "Job should not be deleted when admin tries to delete own old job"
+  end
+
+  test "server enforces customer specialist cannot delete own old job" do
+    sign_in_as(@customer_specialist)
+    job_id = @job_by_cs.id  # This is an old job (created 1 hour ago)
+
+    visit "/clients/#{@client.id}/jobs/#{job_id}"
+    sleep 0.5
+
+    # Try to delete via direct API call
+    response = @page.evaluate(<<~JS)
+      (async () => {
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+          const response = await fetch('/clients/#{@client.id}/jobs/#{job_id}', {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'text/html'
+            },
+            redirect: 'manual'
+          });
+          return {
+            status: response.status,
+            redirected: response.type === 'opaqueredirect'
+          };
+        } catch (error) {
+          return { error: error.message };
+        }
+      })()
+    JS
+
+    sleep 0.5
+
+    # Should be redirected with permission error
+    assert response["redirected"] || response["status"] == 302, "Request should be redirected due to lack of permission"
+
+    # Verify job still exists
+    assert Job.exists?(job_id), "Job should not be deleted when customer specialist tries to delete own old job"
+  end
+
+  test "server allows owner to delete any job via API" do
+    sign_in_as(@owner)
+    # Create a new job for this specific test to avoid conflicts
+    job_to_delete = Job.create!(
+      client: @client,
+      title: "Job to Delete by Owner",
+      status: "open",
+      priority: "normal",
+      created_by: @admin,
+      created_at: 1.hour.ago
+    )
+    job_id = job_to_delete.id
+
+    visit "/clients/#{@client.id}/jobs/#{job_id}"
+    sleep 0.5
+
+    # Verify job exists before deletion
+    assert Job.exists?(job_id), "Job should exist before deletion"
+
+    # Try to delete via direct API call
+    response = @page.evaluate(<<~JS)
+      (async () => {
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+          const response = await fetch('/clients/#{@client.id}/jobs/#{job_id}', {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'application/json, text/html'
+            },
+            redirect: 'manual'
+          });
+      #{'    '}
+          // For successful deletion, Rails will redirect
+          if (response.type === 'opaqueredirect' || response.status === 302) {
+            return {
+              status: 'success',
+              redirected: true
+            };
+          }
+      #{'    '}
+          return {
+            status: response.status,
+            redirected: false
+          };
+        } catch (error) {
+          return { error: error.message };
+        }
+      })()
+    JS
+
+    sleep 1
+
+    # Should be redirected after successful deletion
+    assert response["redirected"], "Owner should be able to delete any job (request should redirect)"
+    assert_equal "success", response["status"], "Deletion should be successful"
+
+    # Verify job was deleted
+    assert_not Job.exists?(job_id), "Job should be deleted when owner deletes it"
   end
 
   private
