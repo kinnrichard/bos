@@ -92,14 +92,6 @@ builder:
 # ssh:
 #   user: deploy
 
-# Healthcheck configuration
-healthcheck:
-  # Use custom health check that doesn't require database/migrations
-  path: /health
-  # Increase timeout to allow for initial boot
-  max_attempts: 10
-  interval: 3s
-
 # Development accessories
 accessories:
   # PostgreSQL database
