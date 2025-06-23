@@ -170,6 +170,9 @@ export default class extends Controller {
     const draggedTask = this.draggedElement
     const draggedId = draggedTask?.dataset.taskId
     
+    // Capture positions before any changes for FLIP animation
+    this.captureFlipPositions()
+    
     if (this.currentDropMode === 'subtask' && draggedId) {
       // Create subtask
       const parentId = this.currentDropTarget.dataset.taskId
@@ -248,6 +251,10 @@ export default class extends Controller {
       
       if (!jobId || !clientId) return Promise.reject('Missing IDs')
       
+      // Temporarily hide the task to prevent flash
+      taskWrapper.style.opacity = '0.5'
+      taskWrapper.style.transition = 'opacity 0.2s'
+      
       // Send request with Turbo Stream format
       return fetch(`/clients/${clientId}/jobs/${jobId}/tasks/${taskId}`, {
         method: 'PATCH',
@@ -265,10 +272,12 @@ export default class extends Controller {
       })
       .then(response => {
         if (response.headers.get('content-type').includes('turbo-stream')) {
+          // Turbo Stream will replace the DOM, so don't do optimistic updates
           return response.text().then(html => {
             Turbo.renderStreamMessage(html)
           })
         } else {
+          // Only do optimistic update for JSON response
           return response.json().then(data => {
             if (data.status === 'success') {
               // Fallback for JSON response
@@ -278,6 +287,11 @@ export default class extends Controller {
             }
           })
         }
+      })
+      .catch(error => {
+        // Restore opacity on error
+        taskWrapper.style.opacity = '1'
+        console.error('Error updating task:', error)
       })
     })
     
@@ -457,12 +471,11 @@ export default class extends Controller {
       insertBefore = targetWrapper.nextElementSibling
     }
     
-    // Remove from original position
+    // Optimistically move DOM element
     if (draggedWrapper.parentElement) {
       draggedWrapper.parentElement.removeChild(draggedWrapper)
     }
     
-    // Insert in new position
     if (insertBefore && insertBefore.parentElement === container) {
       container.insertBefore(draggedWrapper, insertBefore)
     } else {
@@ -478,6 +491,12 @@ export default class extends Controller {
       id: item.querySelector('.task-item, .subtask-item')?.dataset.taskId,
       position: index + 1
     })).filter(p => p.id)
+    
+    // Temporarily fade items being reordered to prevent flash
+    items.forEach(item => {
+      item.style.opacity = '0.7'
+      item.style.transition = 'opacity 0.2s'
+    })
     
     // Queue the reorder request
     this.queueRequest(() => {
@@ -498,18 +517,30 @@ export default class extends Controller {
       })
       .then(response => {
         if (response.headers.get('content-type').includes('turbo-stream')) {
+          // Let Turbo Stream handle the DOM update with FLIP animations
           return response.text().then(html => {
             Turbo.renderStreamMessage(html)
           })
+        } else {
+          // Only update DOM for non-Turbo Stream responses
+          // Update subtask counts if needed
+          this.updateAllSubtaskCounts()
+          // Refresh drag handlers
+          this.refresh()
+          // Restore opacity
+          items.forEach(item => {
+            item.style.opacity = '1'
+          })
         }
       })
+      .catch(error => {
+        // Restore opacity on error
+        items.forEach(item => {
+          item.style.opacity = '1'
+        })
+        console.error('Reorder failed:', error)
+      })
     })
-    
-    // Update subtask counts if needed
-    this.updateAllSubtaskCounts()
-    
-    // Refresh drag handlers
-    this.refresh()
   }
   
   convertToRootTask(taskWrapper) {
@@ -718,6 +749,15 @@ export default class extends Controller {
   disconnect() {
     if (this.dropIndicator && this.dropIndicator.parentNode) {
       this.dropIndicator.parentNode.removeChild(this.dropIndicator)
+    }
+  }
+  
+  captureFlipPositions() {
+    // Trigger the flip controller to capture positions
+    const flipController = this.element.closest('[data-controller*="flip"]')
+    if (flipController) {
+      const event = new CustomEvent('turbo:before-stream-render', { bubbles: true })
+      flipController.dispatchEvent(event)
     }
   }
 }

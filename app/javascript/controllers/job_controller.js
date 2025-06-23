@@ -2104,7 +2104,10 @@ export default class extends Controller {
         const totalSeconds = accumulatedSeconds + currentSessionSeconds
         
         // Format and display
-        timerElement.querySelector('.time-value').textContent = this.formatTime(totalSeconds)
+        const displayElement = timerElement.querySelector('.timer-display')
+        if (displayElement) {
+          displayElement.textContent = this.formatTime(totalSeconds)
+        }
       }
     })
   }

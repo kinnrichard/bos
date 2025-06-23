@@ -115,7 +115,7 @@
   background-color: transparent !important;
   gap: 12px;
   transition: opacity 0.2s;
-  animation: fadeIn 0.3s ease-out;
+  // Removed fadeIn animation to prevent initial page load animation
   cursor: default;
   user-select: none;
   -webkit-user-select: none;
@@ -715,16 +715,7 @@
 }
 
 // Animations
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+// Removed fadeIn animation that was causing tasks to animate on initial page load
 
 
 // @dnd-kit drag and drop visual feedback

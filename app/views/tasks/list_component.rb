@@ -91,7 +91,8 @@ module Views
             task_position: task.position,
             parent_id: task.parent_id,
             job_target: "task",
-            action: "click->job#handleTaskClick"
+            action: "click->job#handleTaskClick",
+            flip_item: true  # Enable FLIP animations
           }.merge(time_data)
         ) do
           # Status dropdown using the existing dropdown controller

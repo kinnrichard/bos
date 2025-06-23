@@ -8,13 +8,19 @@ export default class extends Controller {
     this.capturePositions()
     
     // Listen for Turbo Stream updates
-    document.addEventListener('turbo:before-stream-render', this.beforeStreamRender.bind(this))
-    document.addEventListener('turbo:render', this.animateChanges.bind(this))
+    this.beforeStreamRenderHandler = this.beforeStreamRender.bind(this)
+    this.animateChangesHandler = this.animateChanges.bind(this)
+    
+    document.addEventListener('turbo:before-stream-render', this.beforeStreamRenderHandler)
+    document.addEventListener('turbo:render', this.animateChangesHandler)
+    // Also listen for after stream render
+    document.addEventListener('turbo:after-stream-render', this.animateChangesHandler)
   }
   
   disconnect() {
-    document.removeEventListener('turbo:before-stream-render', this.beforeStreamRender)
-    document.removeEventListener('turbo:render', this.animateChanges)
+    document.removeEventListener('turbo:before-stream-render', this.beforeStreamRenderHandler)
+    document.removeEventListener('turbo:render', this.animateChangesHandler)
+    document.removeEventListener('turbo:after-stream-render', this.animateChangesHandler)
   }
   
   beforeStreamRender(event) {
@@ -43,8 +49,10 @@ export default class extends Controller {
   animateChanges() {
     if (!this.positions || this.positions.size === 0) return
     
-    const items = this.element.querySelectorAll('[data-flip-item]')
-    const animations = []
+    // Small delay to ensure DOM is fully updated
+    requestAnimationFrame(() => {
+      const items = this.element.querySelectorAll('[data-flip-item]')
+      const animations = []
     
     items.forEach(item => {
       const taskId = item.dataset.taskId
@@ -88,9 +96,10 @@ export default class extends Controller {
       )
     })
     
-    // Clear positions after all animations complete
-    Promise.all(animations).then(() => {
-      this.positions.clear()
+      // Clear positions after all animations complete
+      Promise.all(animations).then(() => {
+        this.positions.clear()
+      })
     })
   }
 }
