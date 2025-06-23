@@ -174,16 +174,6 @@ export default class extends Controller {
       return
     }
     
-    // Don't handle clicks on task-content that aren't on the title
-    // This prevents the large content area from being clickable
-    const taskContent = event.target.closest('.task-content')
-    if (taskContent && !event.target.closest('.task-title')) {
-      // Just do selection, don't trigger rename
-      event.preventDefault()
-      event.stopPropagation()
-      return
-    }
-    
     // Prevent text selection on shift-click
     if (event.shiftKey) {
       event.preventDefault()
