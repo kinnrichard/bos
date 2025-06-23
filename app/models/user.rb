@@ -30,11 +30,11 @@ class User < ApplicationRecord
     return true if owner?
     return false unless technician? || customer_specialist? || admin?
 
-    # Technicians can delete their own resources within 5 minutes
+    # Technicians, customer specialists, and admins can delete their own resources within 5 minutes
     if resource.respond_to?(:created_by_id) && resource.created_by_id == id
       resource.created_at > 5.minutes.ago
     else
-      admin?
+      false
     end
   end
 

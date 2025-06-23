@@ -98,11 +98,19 @@ class JobsController < ApplicationController
         metadata: { job_title: @job.title, client_name: @client.name }
       )
 
-      redirect_to client_job_path(@client, @job), notice: "Job was successfully updated."
+      respond_to do |format|
+        format.html { redirect_to client_job_path(@client, @job), notice: "Job was successfully updated." }
+        format.json { render json: { status: "success", job: @job.as_json(include: :technicians) } }
+      end
     else
-      @people = @client.people.order(:name)
-      @technicians = User.where(role: [ :technician, :admin, :owner ]).order(:name)
-      render Views::Jobs::EditView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user), status: :unprocessable_entity
+      respond_to do |format|
+        format.html do
+          @people = @client.people.order(:name)
+          @technicians = User.where(role: [ :technician, :admin, :owner ]).order(:name)
+          render Views::Jobs::EditView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user), status: :unprocessable_entity
+        end
+        format.json { render json: { status: "error", errors: @job.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 

@@ -49,6 +49,12 @@ export default class extends Controller {
     const jobView = document.querySelector('.job-view')
     return jobView ? parseInt(jobView.dataset[dataName]) || jobView.dataset[dataName] : null
   }
+  
+  getCsrfToken() {
+    const tokenElement = document.querySelector("[name='csrf-token']") || 
+                        document.querySelector("meta[name='csrf-token']")
+    return tokenElement ? tokenElement.content : ''
+  }
 
   connect() {
     // Clear any stale selections on connect
@@ -388,7 +394,7 @@ export default class extends Controller {
     fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
       method: "DELETE",
       headers: {
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content,
+        "X-CSRF-Token": this.getCsrfToken(),
         "Accept": "application/json"
       }
     }).then(response => {
@@ -487,7 +493,7 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify(statusUpdate)
     }).then(response => response.json())
@@ -554,7 +560,7 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ job: { title: newTitle } })
     })
@@ -647,7 +653,8 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "Accept": "application/json",
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ job: { status: newStatus } })
     }).then(response => response.json())
@@ -706,7 +713,8 @@ export default class extends Controller {
       method: "PATCH", 
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "Accept": "application/json",
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ job: { priority: newPriority } })
     }).then(response => response.json())
@@ -811,7 +819,8 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "Accept": "application/json",
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ job: { technician_ids: [] } })
     }).then(response => response.json())
@@ -882,7 +891,8 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "Accept": "application/json",
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ job: { technician_ids: currentTechIds } })
     }).then(response => response.json())
@@ -946,7 +956,7 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ task: { title: newTitle } })
     }).then(response => response.json())
@@ -1168,7 +1178,7 @@ export default class extends Controller {
       const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
         method: 'POST',
         headers: {
-          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'X-CSRF-Token': this.getCsrfToken(),
           'Accept': 'application/json'
         },
         body: formData
@@ -1256,7 +1266,7 @@ export default class extends Controller {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+          "X-CSRF-Token": this.getCsrfToken()
         },
         body: JSON.stringify({ task: { title: newTitle, status: 'new_task' } })
       })
@@ -1352,7 +1362,7 @@ export default class extends Controller {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+          'X-CSRF-Token': this.getCsrfToken()
         },
         body: JSON.stringify({ position: newPosition })
       })
@@ -1537,7 +1547,7 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json", 
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content,
+        "X-CSRF-Token": this.getCsrfToken(),
         "Accept": "text/vnd.turbo-stream.html, application/json"
       },
       body: JSON.stringify({ 
@@ -1716,7 +1726,7 @@ export default class extends Controller {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+          "X-CSRF-Token": this.getCsrfToken()
         },
         body: JSON.stringify({ task: { status: newStatus } })
       }).then(response => response.json())
@@ -1900,7 +1910,7 @@ export default class extends Controller {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ technician_id: technicianId })
     }).then(() => {
@@ -1915,7 +1925,7 @@ export default class extends Controller {
       fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
         method: "DELETE",
         headers: {
-          "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+          "X-CSRF-Token": this.getCsrfToken()
         }
       }).then(() => {
         window.location.href = `/clients/${this.clientIdValue}/jobs`
@@ -1955,7 +1965,7 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ positions: positions })
     })
@@ -1972,7 +1982,7 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ positions: positions })
     })
@@ -1995,7 +2005,7 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ positions: positions })
     })
@@ -2053,7 +2063,7 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ 
         positions: [{ id: taskId, position: position }]
@@ -2144,7 +2154,7 @@ export default class extends Controller {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "X-CSRF-Token": this.getCsrfToken()
       },
       body: JSON.stringify({ task: { title: title, status: 'new_task' } })
     }).then(response => response.json())
