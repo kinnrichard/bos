@@ -1,0 +1,17 @@
+#!/bin/sh
+# Pre-deploy hook to run database migrations before deployment
+
+echo "Running database migrations before deployment..."
+
+# Get the current version that will be deployed
+VERSION=$KAMAL_VERSION
+
+# Run migrations on the primary server using the new version
+if [ -n "$VERSION" ]; then
+  echo "Running migrations for version $VERSION..."
+  $KAMAL app exec --primary --version=$VERSION "./bin/rails db:migrate"
+else
+  echo "Warning: KAMAL_VERSION not set, skipping migrations"
+fi
+
+echo "Pre-deploy migrations completed."
