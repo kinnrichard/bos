@@ -61,7 +61,6 @@
   
   .task-title {
     cursor: text !important;
-    pointer-events: none; // Prevent dragging on text
     user-select: text;
   }
 }

@@ -180,6 +180,8 @@ export default class extends Controller {
     if (taskContent && !event.target.closest('.task-title')) {
       // Just do selection, don't trigger rename
       event.preventDefault()
+      event.stopPropagation()
+      return
     }
     
     // Prevent text selection on shift-click

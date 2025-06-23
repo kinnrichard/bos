@@ -13,6 +13,7 @@ export default class extends Controller {
     this.draggedElement = null
     this.requestQueue = []
     this.processingRequest = false
+    this.boundHandlers = new WeakMap() // Track bound handlers for cleanup
     this.initializeCustomDragDrop()
   }
   
@@ -24,9 +25,67 @@ export default class extends Controller {
       return
     }
     
-    // Setup drag and drop on all task items
+    // Setup event delegation for drag and drop
+    this.setupEventDelegation()
     this.setupDraggableItems()
     this.createDropIndicator()
+  }
+  
+  setupEventDelegation() {
+    // Use event delegation on the container to avoid duplicate listeners
+    // Only set up if not already done
+    if (this.dragStartHandler) return
+    
+    // Store bound handlers for cleanup
+    this.dragStartHandler = this.handleDelegatedDragStart.bind(this)
+    this.dragEndHandler = this.handleDelegatedDragEnd.bind(this)
+    this.dragOverHandler = this.handleDelegatedDragOver.bind(this)
+    this.dragEnterHandler = this.handleDelegatedDragEnter.bind(this)
+    this.dragLeaveHandler = this.handleDelegatedDragLeave.bind(this)
+    this.dropHandler = this.handleDelegatedDrop.bind(this)
+    
+    this.element.addEventListener('dragstart', this.dragStartHandler)
+    this.element.addEventListener('dragend', this.dragEndHandler)
+    this.element.addEventListener('dragover', this.dragOverHandler)
+    this.element.addEventListener('dragenter', this.dragEnterHandler)
+    this.element.addEventListener('dragleave', this.dragLeaveHandler)
+    this.element.addEventListener('drop', this.dropHandler)
+  }
+  
+  handleDelegatedDragStart(e) {
+    const taskItem = e.target.closest('.task-item, .subtask-item')
+    if (!taskItem || taskItem.closest('.new-task-wrapper')) return
+    this.handleDragStart(e)
+  }
+  
+  handleDelegatedDragEnd(e) {
+    const taskItem = e.target.closest('.task-item, .subtask-item')
+    if (!taskItem) return
+    this.handleDragEnd(e)
+  }
+  
+  handleDelegatedDragOver(e) {
+    const taskItem = e.target.closest('.task-item, .subtask-item')
+    if (!taskItem || taskItem.closest('.new-task-wrapper')) return
+    this.handleDragOver(e)
+  }
+  
+  handleDelegatedDragEnter(e) {
+    const taskItem = e.target.closest('.task-item, .subtask-item')
+    if (!taskItem || taskItem.closest('.new-task-wrapper')) return
+    this.handleDragEnter(e)
+  }
+  
+  handleDelegatedDragLeave(e) {
+    const taskItem = e.target.closest('.task-item, .subtask-item')
+    if (!taskItem) return
+    this.handleDragLeave(e)
+  }
+  
+  handleDelegatedDrop(e) {
+    const taskItem = e.target.closest('.task-item, .subtask-item')
+    if (!taskItem || taskItem.closest('.new-task-wrapper')) return
+    this.handleDrop(e)
   }
   
   setupDraggableItems() {
@@ -49,22 +108,17 @@ export default class extends Controller {
         textEl.style.userSelect = 'text'
       })
       
-      // Add drag event listeners
-      taskItem.addEventListener('dragstart', this.handleDragStart.bind(this))
-      taskItem.addEventListener('dragend', this.handleDragEnd.bind(this))
-      
-      // Add drop zone listeners
-      taskItem.addEventListener('dragover', this.handleDragOver.bind(this))
-      taskItem.addEventListener('dragenter', this.handleDragEnter.bind(this))
-      taskItem.addEventListener('dragleave', this.handleDragLeave.bind(this))
-      taskItem.addEventListener('drop', this.handleDrop.bind(this))
+      // No need to add event listeners here - using event delegation
     })
   }
   
   handleDragStart(e) {
+    const taskItem = e.target.closest('.task-item, .subtask-item')
+    if (!taskItem) return
+    
     this.isDragging = true
-    this.draggedElement = e.target
-    const wrapper = e.target.closest('.task-wrapper')
+    this.draggedElement = taskItem
+    const wrapper = taskItem.closest('.task-wrapper')
     
     // Add visual feedback
     wrapper.classList.add('dragging')
@@ -82,7 +136,9 @@ export default class extends Controller {
   
   handleDragEnd(e) {
     this.isDragging = false
-    const wrapper = e.target.closest('.task-wrapper')
+    const taskItem = e.target.closest('.task-item, .subtask-item')
+    if (!taskItem) return
+    const wrapper = taskItem.closest('.task-wrapper')
     
     // Remove visual feedback but don't interfere with reordering
     if (wrapper) {
@@ -694,6 +750,16 @@ export default class extends Controller {
   }
   
   disconnect() {
+    // Remove delegated event listeners using stored handlers
+    if (this.dragStartHandler) {
+      this.element.removeEventListener('dragstart', this.dragStartHandler)
+      this.element.removeEventListener('dragend', this.dragEndHandler)
+      this.element.removeEventListener('dragover', this.dragOverHandler)
+      this.element.removeEventListener('dragenter', this.dragEnterHandler)
+      this.element.removeEventListener('dragleave', this.dragLeaveHandler)
+      this.element.removeEventListener('drop', this.dropHandler)
+    }
+    
     if (this.dropIndicator && this.dropIndicator.parentNode) {
       this.dropIndicator.parentNode.removeChild(this.dropIndicator)
     }
