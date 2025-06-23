@@ -102,7 +102,6 @@ module Components
               label(class: "form-label") { "Type" }
               div(class: "dropdown-container", data: {
                 controller: "dropdown",
-                dropdown_positioning_value: "fixed",
                 action: "dropdown:select->schedule-popover#typeSelected"
               }) do
                 button(
@@ -174,7 +173,6 @@ module Components
               label(class: "form-label") { "Technician(s)" }
               div(class: "dropdown-container", data: {
                 controller: "dropdown",
-                dropdown_positioning_value: "fixed",
                 dropdown_mode_value: "multi",
                 dropdown_close_on_select_value: false,
                 placeholder: "Select technicians...",
