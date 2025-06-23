@@ -94,40 +94,16 @@ module Components
 
           # User menu
           if @current_user
-            div(class: "user-menu", data: { controller: "dropdown" }) do
+            div(class: "user-menu") do
               button(
                 class: "user-menu-button",
                 data: {
-                  action: "click->dropdown#toggle",
-                  dropdown_target: "button"
+                  action: "click->header-job#toggleUserMenuPopover"
                 }
               ) do
                 span(class: "user-initials") do
                   @current_user.name.split.map(&:first).join.upcase[0..1]
                 end
-              end
-
-              div(
-                class: "dropdown-menu user-dropdown hidden",
-                data: { dropdown_target: "menu" }
-              ) do
-                div(class: "dropdown-header") do
-                  div(class: "user-name") { @current_user.name }
-                  div(class: "user-email") { @current_user.email }
-                  div(class: "user-role") { @current_user.role.humanize }
-                end
-                div(class: "dropdown-divider")
-                link_to(
-                  "Settings",
-                  settings_path,
-                  class: "dropdown-item"
-                )
-                button_to(
-                  "Sign Out",
-                  logout_path,
-                  method: :delete,
-                  class: "dropdown-item"
-                )
               end
             end
           end

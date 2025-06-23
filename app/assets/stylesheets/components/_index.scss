@@ -16,6 +16,7 @@
 // Base components (no dependencies)
 @use '../../../components/sidebar/sidebar';
 @use '../../../components/header/header';
+@use '../../../components/header/user_menu_popover';
 @use 'user-dropdown';
 @use '../../../components/page_header/page_header';
 @use '../../../components/empty_state/empty_state';

@@ -98,6 +98,47 @@ class Views::Base < Components::Base
 
               div(class: "content", &content)
             end
+
+            # User menu popover (rendered outside of header for proper positioning)
+            if current_user
+              div(
+                class: "popover user-menu-popover hidden",
+                data: { controller: "user-menu-popover" }
+              ) do
+                # Arrow pointer
+                div(class: "popover-arrow")
+
+                div(class: "popover-content") do
+                  # User info section
+                  div(class: "popover-section") do
+                    div(class: "user-info") do
+                      div(class: "user-name") { current_user.name }
+                      div(class: "user-email") { current_user.email }
+                      div(class: "user-role") { current_user.role.humanize }
+                    end
+                  end
+
+                  # Menu items
+                  div(class: "popover-section popover-menu-items") do
+                    link_to(
+                      "Settings",
+                      settings_path,
+                      class: "popover-menu-item"
+                    )
+                  end
+
+                  # Sign out button
+                  div(class: "popover-section popover-actions") do
+                    button_to(
+                      "Sign Out",
+                      logout_path,
+                      method: :delete,
+                      class: "button button--secondary button--full-width"
+                    )
+                  end
+                end
+              end
+            end
           end
         end
       end

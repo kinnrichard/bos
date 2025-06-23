@@ -36,4 +36,22 @@ export default class extends Controller {
       }
     }
   }
+  
+  toggleUserMenuPopover(event) {
+    event.stopPropagation()
+    const triggerButton = event.currentTarget
+    // Find the user menu popover controller
+    const popoverElement = document.querySelector('.user-menu-popover')
+    if (popoverElement) {
+      const controller = this.application.getControllerForElementAndIdentifier(popoverElement, 'user-menu-popover')
+      if (controller) {
+        // Close other popovers
+        window.popoverManager?.closeAllExcept(controller)
+        controller.toggleWithTrigger(triggerButton)
+      } else {
+        // Fallback for elements not yet using the new controller
+        popoverElement.classList.toggle('hidden')
+      }
+    }
+  }
 }
