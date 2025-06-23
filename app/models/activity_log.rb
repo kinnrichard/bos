@@ -19,7 +19,7 @@ class ActivityLog < ApplicationRecord
     when "created"
       "#{user_name} created #{loggable_type_emoji} #{loggable_name}"
     when "viewed"
-      "#{user_name} viewed #{loggable_name}"
+      "#{user_name} viewed #{loggable_type_emoji} #{loggable_name}"
     when "renamed"
       "#{user_name} renamed #{metadata['old_name']} to #{metadata['new_name']}"
     when "updated"
@@ -50,6 +50,8 @@ class ActivityLog < ApplicationRecord
   private
 
   def loggable_name
+    return "no metadata" if not metadata
+
     return metadata["name"] if metadata["name"].present?
 
     case loggable_type
@@ -59,9 +61,22 @@ class ActivityLog < ApplicationRecord
       loggable&.title || "Unknown Job"
     when "Task"
       loggable&.title || "Unknown Task"
+    when "Person"
+      person_name = (loggable&.name || "Unknown Person")
+      "#{person_name} #{with_client_loggable_name}"
     else
       loggable_type
     end
+  end
+
+  def with_client_loggable_name
+    "with #{client_loggable_name}"
+  end
+
+  def client_loggable_name
+    c = loggable.client
+    e = c&.business? ? "🏢" : "🏠"
+    "#{e} #{c.name}"
   end
 
   def loggable_type_emoji
@@ -72,6 +87,8 @@ class ActivityLog < ApplicationRecord
       "💼"
     when "Task"
       "☑️"
+    when "Person"
+      "👤"
     else
       ""
     end

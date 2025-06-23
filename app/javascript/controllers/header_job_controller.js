@@ -3,6 +3,7 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   toggleJobPopover(event) {
     event.stopPropagation()
+    const triggerButton = event.currentTarget
     // Find the job popover controller
     const popoverElement = document.querySelector('.job-popover:not(.schedule-popover)')
     if (popoverElement) {
@@ -10,7 +11,7 @@ export default class extends Controller {
       if (controller) {
         // Close other popovers
         window.popoverManager?.closeAllExcept(controller)
-        controller.toggle()
+        controller.toggleWithTrigger(triggerButton)
       } else {
         // Fallback for elements not yet using the new controller
         popoverElement.classList.toggle('hidden')
@@ -20,6 +21,7 @@ export default class extends Controller {
   
   toggleSchedulePopover(event) {
     event.stopPropagation()
+    const triggerButton = event.currentTarget
     // Find the schedule popover controller
     const popoverElement = document.querySelector('.schedule-popover')
     if (popoverElement) {
@@ -27,7 +29,7 @@ export default class extends Controller {
       if (controller) {
         // Close other popovers
         window.popoverManager?.closeAllExcept(controller)
-        controller.toggle()
+        controller.toggleWithTrigger(triggerButton)
       } else {
         // Fallback for elements not yet using the new controller
         popoverElement.classList.toggle('hidden')

@@ -1,8 +1,5 @@
 .schedule-popover {
-  // Specific positioning for schedule popover
-  position: absolute;
-  top: 60px;
-  right: 200px; // Position it next to the status popover
+  // Positioning will be set dynamically by JavaScript
   width: 400px;
   
   .popover-content {
