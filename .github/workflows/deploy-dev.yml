@@ -67,11 +67,8 @@ jobs:
           bin/kamal accessory boot postgres -c config/deploy.development.yml || true
           # Wait for PostgreSQL to be ready
           sleep 10
-          # Deploy the application
+          # Deploy the application (post-deploy hook will run migrations)
           bin/kamal deploy -c config/deploy.development.yml
-          # Run database setup after deployment
-          echo "Running database setup..."
-          bin/kamal app exec -c config/deploy.development.yml "bin/rails db:prepare"
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY_DEV }}
           KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

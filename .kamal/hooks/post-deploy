@@ -1,0 +1,9 @@
+#!/bin/sh
+# Kamal post-deploy hook to run database migrations
+
+echo "Running database migrations..."
+
+# Run migrations
+$KAMAL app exec "bin/rails db:migrate"
+
+echo "Database migrations completed."

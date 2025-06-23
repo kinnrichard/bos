@@ -337,11 +337,7 @@ export default class extends Controller {
         if (response.headers.get('content-type').includes('turbo-stream')) {
           // Turbo Stream will replace the DOM, so don't do optimistic updates
           return response.text().then(html => {
-            Turbo.renderStreamMessage(html)
-            // Refresh after Turbo updates the DOM
-            requestAnimationFrame(() => {
-              this.refresh()
-            })
+            Bos.renderTurboStreamMessage(html)
           })
         } else {
           // Only do optimistic update for JSON response
@@ -559,11 +555,7 @@ export default class extends Controller {
         if (response.headers.get('content-type').includes('turbo-stream')) {
           // Let Turbo Stream handle the DOM update with FLIP animations
           return response.text().then(html => {
-            Turbo.renderStreamMessage(html)
-            // Refresh after Turbo updates the DOM
-            requestAnimationFrame(() => {
-              this.refresh()
-            })
+            Bos.renderTurboStreamMessage(html)
           })
         } else {
           // Only update DOM for non-Turbo Stream responses

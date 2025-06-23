@@ -1558,8 +1558,8 @@ export default class extends Controller {
         console.log('Processing Turbo Stream response...')
         return response.text().then(html => {
           console.log('Turbo Stream HTML:', html.substring(0, 200) + '...')
-          // Use the imported Turbo
-          Turbo.renderStreamMessage(html)
+          // Use our custom renderer that refreshes sortable controllers
+          Bos.renderTurboStreamMessage(html)
           console.log('Turbo Stream processed')
         }).catch(error => {
           console.error('Error processing Turbo Stream:', error)
