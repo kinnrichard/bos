@@ -251,9 +251,7 @@ export default class extends Controller {
       
       if (!jobId || !clientId) return Promise.reject('Missing IDs')
       
-      // Temporarily hide the task to prevent flash
-      taskWrapper.style.opacity = '0.5'
-      taskWrapper.style.transition = 'opacity 0.2s'
+      // No visual feedback - keep it fully optimistic
       
       // Send request with Turbo Stream format
       return fetch(`/clients/${clientId}/jobs/${jobId}/tasks/${taskId}`, {
@@ -289,15 +287,12 @@ export default class extends Controller {
         }
       })
       .catch(error => {
-        // Restore opacity on error
-        taskWrapper.style.opacity = '1'
         console.error('Error updating task:', error)
       })
     })
     
     // Optimistic update
     this.moveToSubtaskContainer(taskWrapper, parentId)
-    this.updateSubtaskCount(parentId)
   }
   
   moveToSubtaskContainer(taskWrapper, parentId) {
@@ -344,26 +339,6 @@ export default class extends Controller {
     return this.calculatePositionInContainer(taskWrapper, subtasksContainer)
   }
   
-  updateSubtaskCount(parentId) {
-    const parentWrapper = this.element.querySelector(`.task-item[data-task-id="${parentId}"], .subtask-item[data-task-id="${parentId}"]`)?.closest('.task-wrapper')
-    if (!parentWrapper) return
-    
-    const subtaskCount = parentWrapper.querySelectorAll('.subtask-item').length
-    const taskContent = parentWrapper.querySelector('.task-content, .subtask-content')
-    
-    // Remove existing count
-    const existingCount = taskContent?.querySelector('.subtask-count')
-    if (existingCount) existingCount.remove()
-    
-    // Add new count if there are subtasks
-    if (subtaskCount > 0 && taskContent) {
-      const countSpan = document.createElement('span')
-      countSpan.className = 'subtask-count'
-      countSpan.style.cssText = 'font-size: 13px; color: #8E8E93; margin-left: 8px;'
-      countSpan.textContent = `(${subtaskCount} subtask${subtaskCount === 1 ? '' : 's'})`
-      taskContent.appendChild(countSpan)
-    }
-  }
   
   handleReorder(draggedWrapper, targetTaskItem) {
     if (!draggedWrapper || !targetTaskItem || !this.dropPosition) return
@@ -492,11 +467,7 @@ export default class extends Controller {
       position: index + 1
     })).filter(p => p.id)
     
-    // Temporarily fade items being reordered to prevent flash
-    items.forEach(item => {
-      item.style.opacity = '0.7'
-      item.style.transition = 'opacity 0.2s'
-    })
+    // No visual feedback - keep it fully optimistic
     
     // Queue the reorder request
     this.queueRequest(() => {
@@ -523,21 +494,11 @@ export default class extends Controller {
           })
         } else {
           // Only update DOM for non-Turbo Stream responses
-          // Update subtask counts if needed
-          this.updateAllSubtaskCounts()
           // Refresh drag handlers
           this.refresh()
-          // Restore opacity
-          items.forEach(item => {
-            item.style.opacity = '1'
-          })
         }
       })
       .catch(error => {
-        // Restore opacity on error
-        items.forEach(item => {
-          item.style.opacity = '1'
-        })
         console.error('Reorder failed:', error)
       })
     })
@@ -639,17 +600,6 @@ export default class extends Controller {
     if (callback) callback()
   }
   
-  updateAllSubtaskCounts() {
-    // Update counts for all tasks with subtasks
-    const tasksWithSubtasks = this.element.querySelectorAll('.task-wrapper')
-    tasksWithSubtasks.forEach(wrapper => {
-      const task = wrapper.querySelector('.task-item, .subtask-item')
-      if (task) {
-        const taskId = task.dataset.taskId
-        this.updateSubtaskCount(taskId)
-      }
-    })
-  }
   
   moveToNewParent(draggedWrapper, targetWrapper, container, newParentId) {
     const draggedTask = draggedWrapper.querySelector('.task-item, .subtask-item')
@@ -701,9 +651,6 @@ export default class extends Controller {
     } else {
       container.appendChild(draggedWrapper)
     }
-    
-    // Update subtask counts
-    this.updateAllSubtaskCounts()
     
     // Refresh drag handlers
     this.refresh()
