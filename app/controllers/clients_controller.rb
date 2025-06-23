@@ -63,9 +63,9 @@ class ClientsController < ApplicationController
 
   def logs
     @logs = ActivityLog.for_client(@client)
-                      .includes(:user, :loggable)
+                      .includes(:user, :client, :job)
                       .recent
-                      .limit(100)
+                      .limit(500)
                       .reject { |log| log.action == "updated" && log.metadata["changes"]&.keys == [ "position" ] }
 
     render Views::Clients::LogsView.new(
