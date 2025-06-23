@@ -161,6 +161,12 @@
   max-height: 221px;
   overflow-y: auto;
   min-width: 200px;
+  
+  /* Reset positioning when controlled by JavaScript */
+  &[style*="position: fixed"] {
+    top: auto !important;
+    left: auto !important;
+  }
 }
 
 
