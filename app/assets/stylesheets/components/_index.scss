@@ -58,5 +58,8 @@
 
 // Legacy components (to be refactored)
 
+// Logs components
+@use '../../../components/logs/logs';
+
 // Filter components
 @use "advanced_filter";

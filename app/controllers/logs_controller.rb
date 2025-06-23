@@ -3,7 +3,7 @@ class LogsController < ApplicationController
     @logs = ActivityLog.includes(:user)
                       .recent
                       .where.not(action: "updated", metadata: { changes: { position: [] } })
-                      .limit(100)
+                      .limit(500)  # Increased limit for better history view
                       .reject { |log| log.action == "updated" && log.metadata["changes"]&.keys == [ "position" ] }
 
     render Views::Logs::IndexView.new(logs: @logs, current_user: current_user)

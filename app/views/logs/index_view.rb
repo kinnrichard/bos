@@ -14,15 +14,27 @@ module Views
           current_user: @current_user,
           active_section: :logs
         ) do
-          div(class: "logs-container") do
+          div(class: "logs-container", data: { controller: "logs-scroll" }) do
             div(class: "page-header") do
               h1 { "Activity Logs" }
             end
 
             if @logs.any?
-              div(class: "logs-list") do
-                @logs.each do |log|
-                  render_log_item(log)
+              div(class: "logs-table-container") do
+                table(class: "logs-table") do
+                  thead do
+                    tr do
+                      th(class: "logs-table__user") { "User" }
+                      th(class: "logs-table__action") { "Action" }
+                      th(class: "logs-table__time") { "Time" }
+                    end
+                  end
+                  tbody do
+                    # Reverse the logs so newest are at bottom
+                    @logs.reverse.each_with_index do |log, index|
+                      render_log_row(log, index)
+                    end
+                  end
                 end
               end
             else
@@ -55,18 +67,35 @@ module Views
         end
       end
 
-      def render_log_item(log)
-        div(class: "log-item") do
-          div(class: "log-message") do
+      def render_log_row(log, index)
+        tr(class: "logs-table__row #{'logs-table__row--alt' if index.odd?}") do
+          # User column with avatar
+          td(class: "logs-table__user-cell") do
+            div(class: "user-info") do
+              div(class: "user-avatar") do
+                get_user_initials(log.user)
+              end
+              span(class: "user-name") { log.user&.name || "System" }
+            end
+          end
+
+          # Action column
+          td(class: "logs-table__action-cell") do
             plain log.message
           end
 
-          div(class: "log-timestamp") do
+          # Time column
+          td(class: "logs-table__time-cell") do
             time(datetime: log.created_at.iso8601, title: log.created_at.to_s) do
               format_log_timestamp(log.created_at)
             end
           end
         end
+      end
+
+      def get_user_initials(user)
+        return "S" unless user
+        user.name.split.map(&:first).join.upcase[0..1]
       end
     end
   end
