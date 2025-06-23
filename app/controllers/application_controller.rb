@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
   allow_browser versions: :modern
 
   before_action :require_login
+  around_action :set_time_zone
 
   private
 
@@ -25,4 +26,12 @@ class ApplicationController < ActionController::Base
   end
 
   helper_method :current_user, :logged_in?
+
+  def set_time_zone(&block)
+    time_zone = cookies[:user_timezone] || "UTC"
+    Time.use_zone(time_zone, &block)
+  rescue ArgumentError
+    # Invalid timezone, fallback to UTC
+    Time.use_zone("UTC", &block)
+  end
 end

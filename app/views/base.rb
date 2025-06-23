@@ -65,6 +65,7 @@ class Views::Base < Components::Base
       end
 
       body(data: {
+        controller: "timezone",
         current_user_role: current_user&.role,
         resort_tasks_on_status_change: current_user&.resort_tasks_on_status_change&.to_s
       }) do

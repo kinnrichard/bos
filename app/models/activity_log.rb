@@ -2,6 +2,7 @@ class ActivityLog < ApplicationRecord
   belongs_to :user
   belongs_to :loggable, polymorphic: true, optional: true
   belongs_to :client, optional: true
+  belongs_to :job, optional: true
 
   validates :action, presence: true
 
@@ -13,41 +14,60 @@ class ActivityLog < ApplicationRecord
 
   # Generate human-readable log messages
   def message
-    user_name = user&.name || "System"
-
     case action
     when "created"
-      "#{user_name} created #{loggable_type_emoji} #{loggable_name}"
+      if loggable_type == "Task" && loggable.respond_to?(:job) && loggable.job
+        "created #{loggable_type_emoji} #{loggable_name} in 💼 #{loggable.job.title}"
+      else
+        "created #{loggable_type_emoji} #{loggable_name}"
+      end
     when "viewed"
-      "#{user_name} viewed #{loggable_type_emoji} #{loggable_name}"
+      "viewed #{loggable_type_emoji} #{loggable_name}"
     when "renamed"
-      "#{user_name} renamed #{metadata['old_name']} to #{metadata['new_name']}"
+      "renamed #{metadata['old_name']} to #{metadata['new_name']}"
     when "updated"
       if metadata["changes"].present?
         changes_text = metadata["changes"].map { |field, values|
           "#{field} from '#{values[0]}' to '#{values[1]}'"
         }.join(", ")
-        "#{user_name} updated #{loggable_name}: #{changes_text}"
+        "updated #{loggable_name}: #{changes_text}"
       else
-        "#{user_name} updated #{loggable_name}"
+        "updated #{loggable_name}"
       end
     when "deleted"
-      "#{user_name} deleted #{loggable_type_emoji} #{loggable_name}"
+      "deleted #{loggable_type_emoji} #{loggable_name}"
     when "assigned"
-      "#{user_name} assigned #{loggable_type_emoji} #{loggable_name} to #{metadata['assigned_to']}"
+      "assigned #{loggable_type_emoji} #{loggable_name} to #{metadata['assigned_to']}"
     when "unassigned"
-      "#{user_name} unassigned #{metadata['unassigned_from']} from #{loggable_type_emoji} #{loggable_name}"
+      "unassigned #{metadata['unassigned_from']} from #{loggable_type_emoji} #{loggable_name}"
     when "status_changed"
       status_emoji = get_status_emoji(metadata["new_status"])
-      "#{user_name} marked #{loggable_type_emoji} #{loggable_name} #{status_emoji} #{metadata['new_status_label']}"
+      "marked #{loggable_type_emoji} #{loggable_name} #{status_emoji} #{metadata['new_status_label']}"
     when "added"
-      "#{user_name} added #{loggable_type_emoji} #{loggable_name} to #{metadata['parent_type']} #{metadata['parent_name']}"
+      "added #{loggable_type_emoji} #{loggable_name} to #{metadata['parent_type']} #{metadata['parent_name']}"
+    when "logged_in"
+      "signed into bŏs"
+    when "logged_out"
+      "signed out of bŏs"
     else
-      "#{user_name} #{action} #{loggable_name}"
+      "••• #{action} #{loggable_name}"
     end
   end
 
-  private
+  def loggable_type_emoji
+    case loggable_type
+    when "Client"
+      loggable&.business? ? "🏢" : "🏠"
+    when "Job"
+      "💼"
+    when "Task"
+      "☑️"
+    when "Person"
+      "👤"
+    else
+      ""
+    end
+  end
 
   def loggable_name
     return "no metadata" if not metadata
@@ -69,6 +89,8 @@ class ActivityLog < ApplicationRecord
     end
   end
 
+  private
+
   def with_client_loggable_name
     "with #{client_loggable_name}"
   end
@@ -77,21 +99,6 @@ class ActivityLog < ApplicationRecord
     c = loggable.client
     e = c&.business? ? "🏢" : "🏠"
     "#{e} #{c.name}"
-  end
-
-  def loggable_type_emoji
-    case loggable_type
-    when "Client"
-      loggable&.business? ? "🏢" : "🏠"
-    when "Job"
-      "💼"
-    when "Task"
-      "☑️"
-    when "Person"
-      "👤"
-    else
-      ""
-    end
   end
 
   def get_status_emoji(status)

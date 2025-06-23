@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_22_210212) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_23_034116) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,8 +23,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_22_210212) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "client_id"
+    t.bigint "job_id"
     t.index ["client_id", "created_at"], name: "index_activity_logs_on_client_id_and_created_at"
+    t.index ["client_id", "job_id"], name: "index_activity_logs_on_client_id_and_job_id"
     t.index ["client_id"], name: "index_activity_logs_on_client_id"
+    t.index ["job_id"], name: "index_activity_logs_on_job_id"
     t.index ["loggable_type", "loggable_id"], name: "index_activity_logs_on_loggable"
     t.index ["user_id"], name: "index_activity_logs_on_user_id"
   end
@@ -315,6 +318,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_22_210212) do
   end
 
   add_foreign_key "activity_logs", "clients"
+  add_foreign_key "activity_logs", "jobs"
   add_foreign_key "activity_logs", "users"
   add_foreign_key "contact_methods", "people"
   add_foreign_key "devices", "clients"

@@ -8,12 +8,6 @@ class TasksController < ApplicationController
     @task = @job.tasks.build(task_params)
 
     if @task.save
-      # Log task creation with parent job info
-      @task.log_action("added", user: current_user, metadata: {
-        parent_type: "💼",
-        parent_name: @job.title
-      })
-
       respond_to do |format|
         format.json { render json: {
           status: "success",

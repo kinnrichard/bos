@@ -19,6 +19,7 @@ module Loggable
       action: action,
       loggable: self,
       client: associated_client,
+      job: associated_job,
       metadata: metadata
     )
   end
@@ -71,6 +72,19 @@ module Loggable
       job&.client
     when Note
       notable.respond_to?(:associated_client) ? notable.associated_client : nil
+    else
+      nil
+    end
+  end
+
+  def associated_job
+    case self
+    when Job
+      self
+    when Task
+      job
+    when Note
+      notable.respond_to?(:associated_job) ? notable.associated_job : nil
     else
       nil
     end
