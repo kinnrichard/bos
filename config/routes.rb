@@ -1,8 +1,7 @@
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
-  # Simple health check that doesn't check migrations
-  get "up" => "health#show", as: :rails_health_check
+  # Health check is handled in config.ru to bypass Rails middleware
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
