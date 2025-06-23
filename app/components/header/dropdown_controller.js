@@ -126,6 +126,9 @@ export default class extends Controller {
   positionMenu() {
     if (!this.hasMenuTarget || !this.hasButtonTarget) return
     
+    // Force layout to ensure button dimensions are calculated
+    this.buttonTarget.offsetHeight
+    
     const buttonRect = this.buttonTarget.getBoundingClientRect()
     const menuStyle = this.menuTarget.style
     
@@ -155,7 +158,13 @@ export default class extends Controller {
       
       // Only set width if not explicitly disabled
       if (!this.element.dataset.dropdownAutoWidth) {
-        menuStyle.width = `${buttonRect.width}px` // Match button width exactly
+        // If button width is 0 or very small, use container width
+        if (buttonRect.width < 50) {
+          const containerRect = this.element.getBoundingClientRect()
+          menuStyle.width = `${Math.max(containerRect.width, 200)}px`
+        } else {
+          menuStyle.width = `${buttonRect.width}px`
+        }
       }
       
       // After setting initial position, check bounds

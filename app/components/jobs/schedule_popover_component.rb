@@ -114,7 +114,7 @@ module Components
                   }
                 ) do
                   span(data: { dropdown_target: "display", schedule_popover_target: "typeDisplay" }) do
-                    "Scheduled Work" # Default to first option
+                    "Due Date" # Default to first option
                   end
                   span(class: "dropdown-arrow") { "▼" }
                 end
