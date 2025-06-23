@@ -75,8 +75,10 @@ export default class extends Controller {
       // Track open state
       this.element.dataset.dropdownOpen = "true"
       
-      // Position the menu
-      this.positionMenu()
+      // Position the menu after a frame to ensure popover is fully rendered
+      requestAnimationFrame(() => {
+        this.positionMenu()
+      })
       
       // Add positioning listeners if using fixed positioning
       if (this.positioningValue === "fixed") {
@@ -127,45 +129,62 @@ export default class extends Controller {
   positionMenu() {
     if (!this.hasMenuTarget || !this.hasButtonTarget) return
     
-    // Force layout to ensure button dimensions are calculated
-    this.buttonTarget.offsetHeight
+    // Get the actual dropdown container for better positioning
+    const container = this.element
+    const button = this.buttonTarget
     
-    const buttonRect = this.buttonTarget.getBoundingClientRect()
+    // Force layout to ensure dimensions are calculated
+    container.offsetHeight
+    button.offsetHeight
+    
+    // Use container rect if button rect seems wrong
+    const buttonRect = button.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
+    
+    // If button width is 0 or very small, use container dimensions
+    const rect = (buttonRect.width === 0 || buttonRect.width < 10) ? containerRect : buttonRect
+    
     const menuStyle = this.menuTarget.style
     
-    console.log(`Positioning menu - mode: ${this.positioningValue}, button width: ${buttonRect.width}`)
+    console.log(`Positioning menu - mode: ${this.positioningValue}`)
+    console.log('Button element:', button.tagName, button.className)
+    console.log('Button rect:', buttonRect)
+    console.log('Container rect:', containerRect)
+    console.log('Using rect:', rect)
     
     if (this.positioningValue === "fixed") {
       // Fixed positioning - good for dropdowns in scrollable containers
       menuStyle.position = 'fixed'
       menuStyle.zIndex = this.zIndexValue
       
+      // Clear any CSS positioning that might interfere
+      menuStyle.transform = 'none'
+      menuStyle.margin = '0'
+      menuStyle.top = 'auto'
+      menuStyle.left = 'auto'
+      menuStyle.right = 'auto'
+      menuStyle.bottom = 'auto'
+      
       // Calculate position based on button location
-      const spaceBelow = window.innerHeight - buttonRect.bottom
-      const spaceAbove = buttonRect.top
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
       const menuHeight = this.menuTarget.offsetHeight || 200 // Estimate if not rendered
       
       // Position below button by default, above if not enough space
       if (spaceBelow >= menuHeight || spaceBelow > spaceAbove) {
-        menuStyle.top = `${buttonRect.bottom + 4}px`
+        menuStyle.top = `${rect.bottom + 4}px`
         menuStyle.bottom = 'auto'
       } else {
-        menuStyle.bottom = `${window.innerHeight - buttonRect.top + 4}px`
+        menuStyle.bottom = `${window.innerHeight - rect.top + 4}px`
         menuStyle.top = 'auto'
       }
       
       // Horizontal positioning
-      menuStyle.left = `${buttonRect.left}px`
+      menuStyle.left = `${rect.left}px`
       
       // Only set width if not explicitly disabled
       if (!this.element.dataset.dropdownAutoWidth) {
-        // If button width is 0 or very small, use container width
-        if (buttonRect.width < 50) {
-          const containerRect = this.element.getBoundingClientRect()
-          menuStyle.width = `${Math.max(containerRect.width, 200)}px`
-        } else {
-          menuStyle.width = `${buttonRect.width}px`
-        }
+        menuStyle.width = `${rect.width}px`
       }
       
       // After setting initial position, check bounds
@@ -193,7 +212,7 @@ export default class extends Controller {
       if (!this.element.dataset.dropdownAutoWidth) {
         // Use button width or container width, whichever is larger
         const containerWidth = this.element.offsetWidth
-        menuStyle.width = `${Math.max(buttonRect.width, containerWidth)}px`
+        menuStyle.width = `${Math.max(rect.width, containerWidth)}px`
       }
     }
   }
