@@ -75,7 +75,17 @@ module Views
               }
             ) do
               # Arrow pointer
-              div(class: "popover-arrow")
+              div(class: "popover-arrow") do
+                svg(xmlns: "http://www.w3.org/2000/svg", width: "14", height: "7", viewBox: "0 0 14 7") do |s|
+                  s.path(
+                    d: "M0 7 L7 0 L14 7 L13 7 L7 1 L1 7 Z",
+                    fill: "var(--bg-secondary)",
+                    stroke: "var(--border-primary)",
+                    stroke_width: "1",
+                    stroke_linejoin: "miter"
+                  )
+                end
+              end
 
               div(class: "popover-content") do
                 # Status section

@@ -185,20 +185,14 @@
 
 .popover-arrow {
   position: absolute;
-  top: -5px;
+  top: -7px;
   right: 20px;
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 7px;
   
-  &::before {
-    content: '';
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: var(--bg-secondary);
-    border-left: 1px solid var(--border-primary);
-    border-top: 1px solid var(--border-primary);
-    transform: rotate(45deg);
-    // No shadow - the arrow is part of the popover, not floating
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 }
