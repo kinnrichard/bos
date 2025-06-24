@@ -4,42 +4,38 @@ class PeopleController < ApplicationController
 
   def index
     @people = @client.people.includes(:contact_methods)
-    @current_user = OpenStruct.new(name: "Oliver Chen", role: "admin")
     render Views::People::IndexView.new(
       client: @client,
       people: @people,
-      current_user: @current_user
+      current_user: current_user
     )
   end
 
   def show
-    @current_user = OpenStruct.new(name: "Oliver Chen", role: "admin")
     render Views::People::ShowView.new(
       client: @client,
       person: @person,
-      current_user: @current_user
+      current_user: current_user
     )
   end
 
   def new
     @person = @client.people.build
-    @current_user = OpenStruct.new(name: "Oliver Chen", role: "admin")
     render Views::People::NewView.new(
       client: @client,
       person: @person,
-      current_user: @current_user,
+      current_user: current_user,
       authenticity_token: form_authenticity_token
     )
   end
 
   def create
     @person = @client.people.build(person_params)
-    @current_user = OpenStruct.new(name: "Oliver Chen", role: "admin")
 
     if @person.save
       # Log the action
       ActivityLog.create!(
-        user: User.first || User.create!(name: "System", email: "system@faultless.com", role: "admin"),
+        user: current_user,
         action: "created",
         loggable: @person,
         metadata: { client_name: @client.name }
@@ -50,29 +46,26 @@ class PeopleController < ApplicationController
       render Views::People::NewView.new(
         client: @client,
         person: @person,
-        current_user: @current_user,
+        current_user: current_user,
         authenticity_token: form_authenticity_token
       )
     end
   end
 
   def edit
-    @current_user = OpenStruct.new(name: "Oliver Chen", role: "admin")
     render Views::People::EditView.new(
       client: @client,
       person: @person,
-      current_user: @current_user,
+      current_user: current_user,
       authenticity_token: form_authenticity_token
     )
   end
 
   def update
-    @current_user = OpenStruct.new(name: "Oliver Chen", role: "admin")
-
     if @person.update(person_params)
       # Log the action
       ActivityLog.create!(
-        user: User.first || User.create!(name: "System", email: "system@faultless.com", role: "admin"),
+        user: current_user,
         action: "updated",
         loggable: @person,
         metadata: { changes: @person.saved_changes.except("updated_at") }
@@ -83,22 +76,29 @@ class PeopleController < ApplicationController
       render Views::People::EditView.new(
         client: @client,
         person: @person,
-        current_user: @current_user,
+        current_user: current_user,
         authenticity_token: form_authenticity_token
       )
     end
   end
 
   def destroy
+    # Only owners and admins can delete people
+    unless current_user.can_delete?(@person)
+      redirect_to client_people_path(@client), alert: "You do not have permission to delete this person."
+      return
+    end
+
+    person_name = @person.name
     @person.destroy
 
     # Log the action
     ActivityLog.create!(
-      user: User.first || User.create!(name: "System", email: "system@faultless.com", role: "admin"),
+      user: current_user,
       action: "deleted",
       loggable: nil,
       loggable_type: "Person",
-      metadata: { name: @person.name, client_name: @client.name }
+      metadata: { name: person_name, client_name: @client.name }
     )
 
     redirect_to client_people_path(@client), notice: "Person deleted successfully."

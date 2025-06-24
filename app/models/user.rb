@@ -27,14 +27,33 @@ class User < ApplicationRecord
   thread_cattr_accessor :current_user
 
   def can_delete?(resource)
-    return true if owner?
-    return false unless technician? || customer_specialist? || admin?
+    case resource
+    when Device, Person
+      # Only owners and admins can delete devices and people
+      owner? || admin?
+    when Job
+      # Owners can delete any job
+      return true if owner?
 
-    # Technicians, customer specialists, and admins can delete their own resources within 5 minutes
-    if resource.respond_to?(:created_by_id) && resource.created_by_id == id
-      resource.created_at > 5.minutes.ago
+      # Other roles can only delete their own jobs within 5 minutes
+      return false unless technician? || customer_specialist? || admin?
+
+      if resource.respond_to?(:created_by_id) && resource.created_by_id == id
+        resource.created_at > 5.minutes.ago
+      else
+        false
+      end
     else
-      false
+      # Default behavior for other resources
+      return true if owner?
+      return false unless technician? || customer_specialist? || admin?
+
+      # Can delete their own resources within 5 minutes
+      if resource.respond_to?(:created_by_id) && resource.created_by_id == id
+        resource.created_at > 5.minutes.ago
+      else
+        false
+      end
     end
   end
 

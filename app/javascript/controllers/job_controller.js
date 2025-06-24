@@ -1921,7 +1921,7 @@ export default class extends Controller {
 
   // Delete job
   confirmDelete(event) {
-    if (confirm("Are you sure you want to delete this job? This will also delete all associated tasks and notes.")) {
+    if (confirm("Are you sure you want to delete this cancelled job? This will also delete all associated tasks and notes.")) {
       fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
         method: "DELETE",
         headers: {

@@ -189,9 +189,9 @@ module Views
                   end
                 end
 
-                # Actions section
-                div(class: "popover-section popover-actions") do
-                  if @current_user.can_delete?(@job)
+                # Actions section - only show if there are actions available
+                if @current_user.can_delete?(@job) && @job.status == "cancelled"
+                  div(class: "popover-section popover-actions") do
                     render Components::Ui::ButtonComponent.new(
                       variant: :danger,
                       data: {

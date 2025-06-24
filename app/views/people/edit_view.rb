@@ -86,12 +86,14 @@ module Views
             end
 
             # Delete button at the bottom
-            div(style: "margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;") do
-              delete_form_with_confirmation(
-                url: client_person_path(@client, @person),
-                message: "Are you sure you want to delete #{@person.name}? This will also remove all contact methods and device associations.",
-                checkbox_label: "I understand this person will be permanently deleted"
-              ) { "Delete Person" }
+            if @current_user.can_delete?(@person)
+              div(style: "margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;") do
+                delete_form_with_confirmation(
+                  url: client_person_path(@client, @person),
+                  message: "Are you sure you want to delete #{@person.name}? This will also remove all contact methods and device associations.",
+                  checkbox_label: "I understand this person will be permanently deleted"
+                ) { "Delete Person" }
+              end
             end
           end
         end

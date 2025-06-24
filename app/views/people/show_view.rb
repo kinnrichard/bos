@@ -29,11 +29,13 @@ module Views
                   href: edit_client_person_path(@client, @person),
                   variant: :secondary
                 ) { "Edit" }
-                delete_form_with_confirmation(
-                  url: client_person_path(@client, @person),
-                  message: "Are you sure you want to delete #{@person.name}? This will also remove all contact methods and device associations.",
-                  checkbox_label: "I understand this person will be permanently deleted"
-                ) { "Delete" }
+                if @current_user.can_delete?(@person)
+                  delete_form_with_confirmation(
+                    url: client_person_path(@client, @person),
+                    message: "Are you sure you want to delete #{@person.name}? This will also remove all contact methods and device associations.",
+                    checkbox_label: "I understand this person will be permanently deleted"
+                  ) { "Delete" }
+                end
               end
             end
 

@@ -120,6 +120,11 @@ class JobsController < ApplicationController
       return
     end
 
+    unless @job.status == "cancelled"
+      redirect_to client_job_path(@client, @job), alert: "Jobs must be cancelled before they can be deleted."
+      return
+    end
+
     job_title = @job.title
     @job.destroy
 

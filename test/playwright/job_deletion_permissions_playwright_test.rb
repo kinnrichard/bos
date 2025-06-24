@@ -42,7 +42,7 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
     @job_by_owner = Job.create!(
       client: @client,
       title: "Job Created by Owner",
-      status: "open",
+      status: "cancelled",
       priority: "normal",
       created_by: @owner,
       created_at: 1.hour.ago
@@ -51,7 +51,7 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
     @job_by_admin = Job.create!(
       client: @client,
       title: "Job Created by Admin",
-      status: "open",
+      status: "cancelled",
       priority: "normal",
       created_by: @admin,
       created_at: 1.hour.ago
@@ -60,7 +60,7 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
     @job_by_technician = Job.create!(
       client: @client,
       title: "Job Created by Technician",
-      status: "open",
+      status: "cancelled",
       priority: "normal",
       created_by: @technician,
       created_at: 1.hour.ago
@@ -69,7 +69,7 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
     @recent_job_by_technician = Job.create!(
       client: @client,
       title: "Recent Job Created by Technician",
-      status: "open",
+      status: "cancelled",
       priority: "normal",
       created_by: @technician,
       created_at: 2.minutes.ago
@@ -78,7 +78,7 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
     @job_by_cs = Job.create!(
       client: @client,
       title: "Job Created by Customer Specialist",
-      status: "open",
+      status: "cancelled",
       priority: "normal",
       created_by: @customer_specialist,
       created_at: 1.hour.ago
@@ -159,7 +159,7 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
     recent_job_by_admin = Job.create!(
       client: @client,
       title: "Recent Job by Admin",
-      status: "open",
+      status: "cancelled",
       priority: "normal",
       created_by: @admin,
       created_at: 2.minutes.ago
@@ -343,7 +343,7 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
     recent_job_by_cs = Job.create!(
       client: @client,
       title: "Recent Job by CS",
-      status: "open",
+      status: "cancelled",
       priority: "normal",
       created_by: @customer_specialist,
       created_at: 2.minutes.ago
@@ -685,7 +685,7 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
     job_to_delete = Job.create!(
       client: @client,
       title: "Job to Delete by Owner",
-      status: "open",
+      status: "cancelled",
       priority: "normal",
       created_by: @admin,
       created_at: 1.hour.ago
@@ -738,6 +738,92 @@ class JobDeletionPermissionsPlaywrightTest < ApplicationPlaywrightTestCase
 
     # Verify job was deleted
     assert_not Job.exists?(job_id), "Job should be deleted when owner deletes it"
+  end
+
+  test "delete button hidden for non-cancelled jobs" do
+    # Create a non-cancelled job
+    active_job = Job.create!(
+      client: @client,
+      title: "Active Job",
+      status: "in_progress",
+      priority: "normal",
+      created_by: @owner,
+      created_at: 1.hour.ago
+    )
+
+    sign_in_as(@owner)
+
+    visit "/clients/#{@client.id}/jobs/#{active_job.id}"
+    sleep 0.5
+
+    # Open the job popover
+    @page.click('button[data-action="click->header-job#toggleJobPopover"]')
+    sleep 0.3
+
+    # Verify delete button does NOT exist even for owner
+    delete_button_exists = @page.evaluate(<<~JS)
+      (() => {
+        const popover = document.querySelector('.job-popover');
+        if (!popover) return false;
+        const buttons = popover.querySelectorAll('button');
+        return Array.from(buttons).some(btn => btn.textContent.includes('Delete Job'));
+      })()
+    JS
+
+    assert_not delete_button_exists, "Owner should not see delete button for non-cancelled job"
+  end
+
+  test "server enforces job must be cancelled before deletion" do
+    # Create a non-cancelled job
+    active_job = Job.create!(
+      client: @client,
+      title: "Active Job to Try Deleting",
+      status: "in_progress",
+      priority: "normal",
+      created_by: @owner,
+      created_at: 1.hour.ago
+    )
+    job_id = active_job.id
+
+    sign_in_as(@owner)
+
+    visit "/clients/#{@client.id}/jobs/#{job_id}"
+    sleep 0.5
+
+    # Try to delete via direct API call
+    response = @page.evaluate(<<~JS)
+      (async () => {
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+          const response = await fetch('/clients/#{@client.id}/jobs/#{job_id}', {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'text/html'
+            },
+            redirect: 'manual'
+          });
+          return {
+            status: response.status,
+            redirected: response.type === 'opaqueredirect'
+          };
+        } catch (error) {
+          return { error: error.message };
+        }
+      })()
+    JS
+
+    sleep 0.5
+
+    # Should be redirected with error message
+    assert response["redirected"] || response["status"] == 302, "Request should be redirected"
+
+    # Verify job still exists
+    assert Job.exists?(job_id), "Job should not be deleted when it's not cancelled"
+
+    # Verify job status hasn't changed
+    active_job.reload
+    assert_equal "in_progress", active_job.status, "Job status should remain unchanged"
   end
 
   private

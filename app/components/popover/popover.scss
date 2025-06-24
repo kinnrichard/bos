@@ -185,23 +185,20 @@
 
 .popover-arrow {
   position: absolute;
-  top: -6px;
+  top: -5px;
   right: 20px;
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 6px solid var(--border-primary);
-}
-
-.popover-arrow::after {
-  content: '';
-  position: absolute;
-  top: 1px;
-  left: -5px;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 5px solid var(--bg-secondary);
+  width: 10px;
+  height: 10px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-primary);
+    border-top: 1px solid var(--border-primary);
+    transform: rotate(45deg);
+    // No shadow - the arrow is part of the popover, not floating
+  }
 }
