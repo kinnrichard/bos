@@ -1,4 +1,4 @@
-require "check_digit"
+require_relative "concerns/fx_checksum"
 
 class UniqueId < ApplicationRecord
   # Polymorphic association
@@ -14,6 +14,28 @@ class UniqueId < ApplicationRecord
   # Class method to generate a new unique ID and save it
   def self.generate(options = {})
     create!(options)
+  end
+
+  # Calculate checksum for a base number
+  def self.calculate_checksum(base_number)
+    FxChecksum.calculate(base_number.to_s)
+  end
+
+  # Validate if a full number has correct checksum
+  # Optionally pass a UniqueId record to use its prefix/suffix
+  def self.valid_checksum?(full_number, unique_id_record: nil)
+    if unique_id_record
+      FxChecksum.valid?(full_number.to_s, prefix: unique_id_record.prefix, suffix: unique_id_record.suffix)
+    else
+      # Try to find the record by generated_id
+      record = find_by(generated_id: full_number)
+      if record
+        FxChecksum.valid?(full_number.to_s, prefix: record.prefix, suffix: record.suffix)
+      else
+        # Fallback: no prefix/suffix removal
+        FxChecksum.valid?(full_number.to_s)
+      end
+    end
   end
 
   # Instance method to regenerate the ID (useful if needed)
@@ -72,7 +94,7 @@ class UniqueId < ApplicationRecord
 
     # Build the final ID
     if use_checksum
-      checksum = CheckDigit::Verhoeff.checksum(rand_num.to_s)
+      checksum = FxChecksum.calculate(rand_num.to_s)
       "#{prefix}#{rand_num}#{checksum}#{suffix}"
     else
       "#{prefix}#{rand_num}#{suffix}"
