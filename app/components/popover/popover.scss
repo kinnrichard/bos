@@ -189,6 +189,9 @@
   right: 20px;
   width: 14px;
   height: 7px;
+  // Remove any default styling that might cause shading
+  background: transparent;
+  border: none;
   
   svg {
     display: block;

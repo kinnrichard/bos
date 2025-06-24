@@ -21,13 +21,18 @@ module Components
         ) do
           # Arrow
           div(class: "popover-arrow") do
-            svg(xmlns: "http://www.w3.org/2000/svg", width: "14", height: "7", viewBox: "0 0 14 7") do |s|
+            svg(xmlns: "http://www.w3.org/2000/svg", width: "14", height: "7", viewBox: "0 0 14 7", style: "display: block;") do |s|
+              # Draw the arrow with precise path - outline first, then fill
               s.path(
-                d: "M0 7 L7 0 L14 7 L13 7 L7 1 L1 7 Z",
-                fill: "var(--bg-secondary)",
+                d: "M0.5 7 L7 0.5 L13.5 7",
+                fill: "none",
                 stroke: "var(--border-primary)",
-                stroke_width: "1",
-                stroke_linejoin: "miter"
+                stroke_width: "1"
+              )
+              s.path(
+                d: "M1.5 7 L7 1.5 L12.5 7 Z",
+                fill: "var(--bg-secondary)",
+                stroke: "none"
               )
             end
           end
