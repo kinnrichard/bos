@@ -23,6 +23,9 @@ gem "jbuilder"
 # For drag-and-drop ordering
 gem "acts_as_list"
 
+# Check digit calculations for unique IDs
+gem "check_digit"
+
 # Browser testing
 gem "playwright-ruby-client"
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_23_034116) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_24_121535) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -305,6 +305,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_23_034116) do
     t.index ["job_id"], name: "index_tasks_on_job_id"
     t.index ["parent_id"], name: "index_tasks_on_parent_id"
     t.index ["reordered_at"], name: "index_tasks_on_reordered_at"
+  end
+
+  create_table "unique_ids", force: :cascade do |t|
+    t.string "prefix"
+    t.string "suffix"
+    t.integer "minimum_length", default: 5
+    t.boolean "use_checksum", default: true
+    t.string "generated_id", null: false
+    t.string "identifiable_type"
+    t.bigint "identifiable_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["generated_id"], name: "index_unique_ids_on_generated_id", unique: true
+    t.index ["identifiable_type", "identifiable_id"], name: "index_unique_ids_on_identifiable"
   end
 
   create_table "users", force: :cascade do |t|

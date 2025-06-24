@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  prefix: MyString
+  suffix: MyString
+  minimum_length: 1
+  use_checksum: false
+
+two:
+  prefix: MyString
+  suffix: MyString
+  minimum_length: 1
+  use_checksum: false
