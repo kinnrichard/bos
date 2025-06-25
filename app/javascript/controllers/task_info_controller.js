@@ -91,28 +91,54 @@ class BasePopoverController extends Controller {
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
     
-    let top = triggerRect.bottom + 8
-    let left = this.calculateHorizontalPosition(triggerRect, popoverRect, viewportWidth)
+    // Position to the left of the trigger by default
+    let left = triggerRect.left - popoverRect.width - 8
+    let top = triggerRect.top + (triggerRect.height / 2) - (popoverRect.height / 2)
     
-    if (top + popoverRect.height > viewportHeight - 10) {
-      top = triggerRect.top - popoverRect.height - 8
-      if (arrowElement) {
-        arrowElement.style.top = 'auto'
-        arrowElement.style.bottom = '-6px'
-        arrowElement.style.transform = 'rotate(180deg)'
-      }
-    } else {
-      if (arrowElement) {
-        arrowElement.style.top = '-6px'
+    // Position arrow based on popover position
+    let arrowOnRight = true // Arrow on right side by default (popover to left of button)
+    
+    // If popover would go off the left edge, position to the right instead
+    if (left < 10) {
+      left = triggerRect.right + 8
+      arrowOnRight = false // Arrow should be on left side
+    }
+    
+    // Position arrow
+    if (arrowElement) {
+      // Calculate vertical position of arrow relative to trigger
+      const arrowTop = triggerRect.top + (triggerRect.height / 2) - top
+      
+      if (arrowOnRight) {
+        // Arrow on right side pointing right (to the button)
+        arrowElement.style.left = 'auto'
+        arrowElement.style.right = '-6px'
+        arrowElement.style.top = `${arrowTop}px`
         arrowElement.style.bottom = 'auto'
-        arrowElement.style.transform = 'none'
+        arrowElement.style.transform = 'translateY(-50%) rotate(90deg)'
+      } else {
+        // Arrow on left side pointing left (to the button)
+        arrowElement.style.left = '-6px'
+        arrowElement.style.right = 'auto'
+        arrowElement.style.top = `${arrowTop}px`
+        arrowElement.style.bottom = 'auto'
+        arrowElement.style.transform = 'translateY(-50%) rotate(-90deg)'
       }
     }
     
-    if (arrowElement) {
-      const arrowLeft = triggerRect.left + (triggerRect.width / 2) - left - 6
-      arrowElement.style.left = `${Math.max(10, Math.min(arrowLeft, popoverRect.width - 20))}px`
-      arrowElement.style.right = 'auto'
+    // Ensure popover doesn't go off the top
+    if (top < 10) {
+      top = 10
+    }
+    
+    // Ensure popover doesn't go off the bottom
+    if (top + popoverRect.height > viewportHeight - 10) {
+      top = viewportHeight - popoverRect.height - 10
+    }
+    
+    // Ensure popover doesn't go off the right
+    if (left + popoverRect.width > viewportWidth - 10) {
+      left = viewportWidth - popoverRect.width - 10
     }
     
     this.element.style.position = 'fixed'
