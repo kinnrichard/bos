@@ -1,10 +1,22 @@
 class JobsController < ApplicationController
   before_action :set_client
+  before_action :authorize_client_access!
   before_action :set_job, only: [ :show, :edit, :update, :destroy ]
 
   def index
     @jobs = @client.jobs.includes(:technicians, :tasks)
-                         .order(Arel.sql("
+
+    # Apply search filter if provided
+    if params[:q].present?
+      @jobs = @jobs.where("title ILIKE ?", "%#{params[:q]}%")
+    end
+
+    # Apply status filter if provided
+    if params[:status].present?
+      @jobs = @jobs.where(status: params[:status])
+    end
+
+    @jobs = @jobs.order(Arel.sql("
                            CASE status
                              WHEN 1 THEN 1  -- in_progress
                              WHEN 2 THEN 2  -- paused
@@ -15,11 +27,36 @@ class JobsController < ApplicationController
                            END,
                            created_at DESC
                          "))
-    render Views::Jobs::IndexView.new(client: @client, jobs: @jobs, current_user: current_user)
+
+    respond_to do |format|
+      format.html { render Views::Jobs::IndexView.new(client: @client, jobs: @jobs, current_user: current_user) }
+      format.json do
+        # Apply pagination for JSON responses
+        per_page = (params[:per_page] || 25).to_i
+        per_page = 50 if per_page > 50 # Max 50 per page
+        page = (params[:page] || 1).to_i
+
+        @jobs = @jobs.limit(per_page).offset((page - 1) * per_page)
+        total_count = @jobs.except(:limit, :offset).count
+
+        render json: {
+          jobs: @jobs.as_json(include: [ :technicians, :tasks ]),
+          pagination: {
+            current_page: page,
+            per_page: per_page,
+            total_pages: (total_count.to_f / per_page).ceil,
+            total_count: total_count
+          }
+        }
+      end
+    end
   end
 
   def show
-    render Views::Jobs::ShowView.new(client: @client, job: @job, current_user: current_user)
+    respond_to do |format|
+      format.html { render Views::Jobs::ShowView.new(client: @client, job: @job, current_user: current_user) }
+      format.json { render json: { job: @job.as_json(include: [ :technicians, :tasks ]) } }
+    end
   end
 
   def new
@@ -32,6 +69,10 @@ class JobsController < ApplicationController
   def create
     @job = @client.jobs.build(job_params)
     @job.created_by = current_user
+
+    # Sanitize HTML in title and description
+    @job.title = ActionController::Base.helpers.sanitize(@job.title, tags: [])
+    @job.description = ActionController::Base.helpers.sanitize(@job.description, tags: []) if @job.description
 
     if @job.save
       # Assign technicians if any were selected
@@ -57,11 +98,19 @@ class JobsController < ApplicationController
         metadata: { job_title: @job.title, client_name: @client.name }
       )
 
-      redirect_to client_job_path(@client, @job), notice: "Job was successfully created."
+      respond_to do |format|
+        format.html { redirect_to client_job_path(@client, @job), notice: "Job was successfully created." }
+        format.json { render json: { status: "success", job: @job.as_json(include: :technicians) }, status: :created }
+      end
     else
-      @people = @client.people.order(:name)
-      @technicians = User.where(role: [ :technician, :admin, :owner ]).order(:name)
-      render Views::Jobs::NewView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user), status: :unprocessable_entity
+      respond_to do |format|
+        format.html do
+          @people = @client.people.order(:name)
+          @technicians = User.where(role: [ :technician, :admin, :owner ]).order(:name)
+          render Views::Jobs::NewView.new(client: @client, job: @job, people: @people, technicians: @technicians, current_user: current_user), status: :unprocessable_entity
+        end
+        format.json { render json: { error: @job.errors.full_messages.join(", ") }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -116,12 +165,18 @@ class JobsController < ApplicationController
 
   def destroy
     unless current_user.can_delete?(@job)
-      redirect_to client_jobs_path(@client), alert: "You do not have permission to delete this job."
+      respond_to do |format|
+        format.html { redirect_to client_jobs_path(@client), alert: "You do not have permission to delete this job." }
+        format.json { render json: { error: "You do not have permission to delete this job." }, status: :forbidden }
+      end
       return
     end
 
     unless @job.status == "cancelled"
-      redirect_to client_job_path(@client, @job), alert: "Jobs must be cancelled before they can be deleted."
+      respond_to do |format|
+        format.html { redirect_to client_job_path(@client, @job), alert: "Jobs must be cancelled before they can be deleted." }
+        format.json { render json: { error: "Jobs must be cancelled before they can be deleted." }, status: :unprocessable_entity }
+      end
       return
     end
 
@@ -136,17 +191,30 @@ class JobsController < ApplicationController
       metadata: { job_title: job_title, client_name: @client.name }
     )
 
-    redirect_to client_jobs_path(@client), notice: "Job was successfully deleted."
+    respond_to do |format|
+      format.html { redirect_to client_jobs_path(@client), notice: "Job was successfully deleted." }
+      format.json { render json: { status: "success", message: "Job was successfully deleted." } }
+    end
   end
 
   private
 
   def set_client
     @client = Client.find(params[:client_id])
+  rescue ActiveRecord::RecordNotFound
+    respond_to do |format|
+      format.html { render file: "#{Rails.root}/public/404.html", status: :not_found, layout: false }
+      format.json { render json: { error: "Client not found" }, status: :not_found }
+    end
   end
 
   def set_job
     @job = @client.jobs.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    respond_to do |format|
+      format.html { render file: "#{Rails.root}/public/404.html", status: :not_found, layout: false }
+      format.json { render json: { error: "Job not found" }, status: :not_found }
+    end
   end
 
   def job_params

@@ -1,6 +1,7 @@
 class TasksController < ApplicationController
   skip_before_action :verify_authenticity_token, if: :json_request?
   before_action :set_client
+  before_action :authorize_client_access!
   before_action :set_job
   before_action :set_task, only: [ :update, :destroy ]
 
@@ -75,12 +76,19 @@ class TasksController < ApplicationController
   def destroy
     # Check if user has permission to delete tasks (same as job deletion permissions)
     unless current_user.can_delete?(@job)
-      redirect_to client_job_path(@client, @job), alert: "You do not have permission to delete this task."
+      respond_to do |format|
+        format.html { redirect_to client_job_path(@client, @job), alert: "You do not have permission to delete this task." }
+        format.json { render json: { error: "You do not have permission to delete this task." }, status: :forbidden }
+      end
       return
     end
 
     @task.destroy
-    redirect_to client_job_path(@client, @job), notice: "Task was successfully deleted."
+
+    respond_to do |format|
+      format.html { redirect_to client_job_path(@client, @job), notice: "Task was successfully deleted." }
+      format.json { render json: { status: "success", message: "Task was successfully deleted." } }
+    end
   end
 
   def reorder
@@ -90,7 +98,10 @@ class TasksController < ApplicationController
       @task = @job.tasks.find(params[:id])
 
       if params[:position]
-        @task.insert_at(params[:position].to_i)
+        position = params[:position].to_i
+        position = 1 if position < 1  # Ensure position is at least 1
+
+        @task.insert_at(position)
 
         if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
           render_task_list_update
@@ -123,14 +134,29 @@ class TasksController < ApplicationController
 
   def set_client
     @client = Client.find(params[:client_id])
+  rescue ActiveRecord::RecordNotFound
+    respond_to do |format|
+      format.html { render file: "#{Rails.root}/public/404.html", status: :not_found, layout: false }
+      format.json { render json: { error: "Client not found" }, status: :not_found }
+    end
   end
 
   def set_job
     @job = @client.jobs.find(params[:job_id])
+  rescue ActiveRecord::RecordNotFound
+    respond_to do |format|
+      format.html { render file: "#{Rails.root}/public/404.html", status: :not_found, layout: false }
+      format.json { render json: { error: "Job not found" }, status: :not_found }
+    end
   end
 
   def set_task
     @task = @job.tasks.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    respond_to do |format|
+      format.html { render file: "#{Rails.root}/public/404.html", status: :not_found, layout: false }
+      format.json { render json: { error: "Task not found" }, status: :not_found }
+    end
   end
 
   def task_params
