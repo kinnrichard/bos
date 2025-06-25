@@ -565,6 +565,28 @@
   }
 }
 
+// Disclosure container for subtasks
+.disclosure-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// Subtask count badge
+.subtask-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  min-width: 14px;
+  text-align: right;
+  transition: opacity 0.2s ease;
+  
+  // Selected state
+  .task-item.selected & {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
 // Disclosure triangle for collapsing subtasks
 .disclosure-triangle {
   display: flex;
@@ -577,23 +599,47 @@
   border: none;
   cursor: pointer;
   color: var(--text-tertiary);
-  transition: all 0.2s ease;
-  border-radius: 4px;
+  transition: color 0.2s ease;
   
-  &:hover {
-    color: var(--text-primary);
-    background-color: var(--bg-tertiary);
+  // No hover effect - just cursor change
+  
+  // Chevron styling
+  svg {
+    transition: opacity 0.2s ease;
   }
   
-  .triangle-icon {
-    font-size: 10px;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    // Default state is expanded (pointing down)
+  .chevron-down,
+  .chevron-right {
+    color: inherit;
   }
   
-  // Collapsed state - rotate to point right
-  &[aria-expanded="false"] .triangle-icon {
-    transform: rotate(-90deg);
+  // Default state - show down chevron
+  .chevron-down {
+    display: block;
+  }
+  
+  .chevron-right {
+    display: none;
+  }
+  
+  // When expanded (default)
+  &[aria-expanded="true"] {
+    .chevron-down {
+      display: block !important;
+    }
+    .chevron-right {
+      display: none !important;
+    }
+  }
+  
+  // When collapsed
+  &[aria-expanded="false"] {
+    .chevron-down {
+      display: none !important;
+    }
+    .chevron-right {
+      display: block !important;
+    }
   }
 }
 

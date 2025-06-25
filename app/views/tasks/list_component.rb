@@ -204,18 +204,56 @@ module Views
 
             # Disclosure triangle for subtasks
             if has_subtasks
-              button(
-                class: "disclosure-triangle",
-                data: {
-                  action: "click->job#toggleSubtasks",
-                  task_id: task.id,
-                  job_target: "disclosureTriangle"
-                },
-                title: "#{task.subtasks_count} subtask#{'s' if task.subtasks_count > 1}",
-                aria_expanded: "true",
-                aria_label: "Toggle subtasks"
-              ) do
-                span(class: "triangle-icon") { "▼" }
+              div(class: "disclosure-container") do
+                # Subtask count (visible when collapsed)
+                span(
+                  class: "subtask-count",
+                  data: {
+                    disclosure_target: "count",
+                    task_id: task.id
+                  },
+                  style: "display: none;"
+                ) { task.subtasks_count.to_s }
+
+                button(
+                  class: "disclosure-triangle",
+                  data: {
+                    action: "click->job#toggleSubtasks",
+                    task_id: task.id,
+                    job_target: "disclosureTriangle"
+                  },
+                  title: "#{task.subtasks_count} subtask#{'s' if task.subtasks_count > 1}",
+                  aria_expanded: "true",
+                  aria_label: "Toggle subtasks"
+                ) do
+                  # Chevron down (expanded state)
+                  svg(
+                    xmlns: "http://www.w3.org/2000/svg",
+                    viewBox: "0 0 17.3242 10.4004",
+                    width: "12",
+                    height: "8",
+                    class: "chevron-down"
+                  ) do |s|
+                    s.path(
+                      d: "M8.48633 10.4004C8.73047 10.4004 8.97461 10.3027 9.14062 10.1172L16.6992 2.37305C16.8652 2.20703 16.9629 1.99219 16.9629 1.74805C16.9629 1.24023 16.582 0.849609 16.0742 0.849609C15.8301 0.849609 15.6055 0.947266 15.4395 1.10352L7.95898 8.75L9.00391 8.75L1.52344 1.10352C1.36719 0.947266 1.14258 0.849609 0.888672 0.849609C0.380859 0.849609 0 1.24023 0 1.74805C0 1.99219 0.0976562 2.20703 0.263672 2.38281L7.82227 10.1172C8.00781 10.3027 8.23242 10.4004 8.48633 10.4004Z",
+                      fill: "currentColor"
+                    )
+                  end
+
+                  # Chevron right (collapsed state)
+                  svg(
+                    xmlns: "http://www.w3.org/2000/svg",
+                    viewBox: "0 0 11.6895 16.9629",
+                    width: "8",
+                    height: "12",
+                    class: "chevron-right"
+                  ) do |s|
+                    s.path(
+                      d: "M11.6895 8.47656C11.6895 8.23242 11.5918 8.00781 11.4062 7.83203L3.67188 0.253906C3.49609 0.0878906 3.28125 0 3.02734 0C2.5293 0 2.13867 0.380859 2.13867 0.888672C2.13867 1.13281 2.23633 1.35742 2.39258 1.52344L9.50195 8.47656L2.39258 15.4297C2.23633 15.5957 2.13867 15.8105 2.13867 16.0645C2.13867 16.5723 2.5293 16.9531 3.02734 16.9531C3.28125 16.9531 3.49609 16.8652 3.67188 16.6895L11.4062 9.12109C11.5918 8.93555 11.6895 8.7207 11.6895 8.47656Z",
+                      fill: "currentColor"
+                    )
+                  end
+                end
               end
             end
           end

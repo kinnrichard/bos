@@ -1533,6 +1533,8 @@ export default class extends Controller {
     const taskWrapper = event.currentTarget.closest('.task-wrapper')
     const subtasksContainer = taskWrapper.querySelector('.subtasks-container')
     const triangle = event.currentTarget
+    const disclosureContainer = triangle.closest('.disclosure-container')
+    const subtaskCount = disclosureContainer?.querySelector('.subtask-count')
     
     if (subtasksContainer) {
       const isCollapsed = subtasksContainer.classList.contains('collapsed')
@@ -1547,6 +1549,11 @@ export default class extends Controller {
       
       // Update aria-expanded attribute (inverse of collapsed)
       triangle.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false')
+      
+      // Toggle subtask count visibility
+      if (subtaskCount) {
+        subtaskCount.style.display = isCollapsed ? 'none' : 'inline-block'
+      }
       
       // Save state in localStorage for persistence
       const collapsedTasks = JSON.parse(localStorage.getItem('collapsedTasks') || '{}')
@@ -1574,9 +1581,17 @@ export default class extends Controller {
       if (taskWrapper) {
         const subtasksContainer = taskWrapper.querySelector('.subtasks-container')
         const triangle = taskWrapper.querySelector('.disclosure-triangle')
+        const disclosureContainer = taskWrapper.querySelector('.disclosure-container')
+        const subtaskCount = disclosureContainer?.querySelector('.subtask-count')
+        
         if (subtasksContainer && triangle) {
           subtasksContainer.classList.add('collapsed')
           triangle.setAttribute('aria-expanded', 'false')
+          
+          // Show subtask count when collapsed
+          if (subtaskCount) {
+            subtaskCount.style.display = 'inline-block'
+          }
         }
       }
     })
