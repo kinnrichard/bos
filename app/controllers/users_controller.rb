@@ -82,18 +82,17 @@ class UsersController < ApplicationController
       return
     end
 
-    @user.destroy
-
     ActivityLog.create!(
       user: current_user,
       action: "deleted",
-      loggable_type: "User",
-      loggable_id: @user.id,
+      loggable: @user,
       metadata: {
         user_name: user_name,
         user_email: user_email
       }
     )
+
+    @user.destroy
 
     redirect_to users_path, notice: "User #{user_name} was successfully deleted."
   end

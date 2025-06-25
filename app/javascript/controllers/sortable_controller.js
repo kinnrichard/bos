@@ -235,8 +235,8 @@ export default class extends Controller {
     const draggedTask = this.draggedElement
     const draggedId = draggedTask?.dataset.taskId
     
-    // Capture positions before any changes for FLIP animation
-    this.captureFlipPositions()
+    // Trigger FLIP capture before DOM changes
+    this.triggerFlipCapture()
     
     if (this.currentDropMode === 'subtask' && draggedId) {
       // Create subtask
@@ -248,6 +248,10 @@ export default class extends Controller {
       // Handle reorder - defer to avoid conflicts with drag end
       setTimeout(() => {
         this.handleReorder(draggedWrapper, this.currentDropTarget)
+        // Trigger FLIP animation after DOM changes
+        setTimeout(() => {
+          this.triggerFlipAnimate()
+        }, 10)
       }, 10)
     }
     
@@ -464,6 +468,9 @@ export default class extends Controller {
   }
   
   performReorderMove(draggedWrapper, targetWrapper, container) {
+    // Trigger FLIP capture before DOM changes
+    this.triggerFlipCapture()
+    
     // Check if we need to update task classes
     const isMovingToRootLevel = container.classList.contains('tasks-list')
     const isMovingToSubtaskLevel = container.classList.contains('subtasks-container')
@@ -521,6 +528,11 @@ export default class extends Controller {
     } else {
       container.appendChild(draggedWrapper)
     }
+    
+    // Trigger FLIP animation after DOM changes
+    requestAnimationFrame(() => {
+      this.triggerFlipAnimate()
+    })
     
     // Update positions for all items in the container
     const items = Array.from(container.children).filter(el => 
@@ -783,11 +795,20 @@ export default class extends Controller {
     }
   }
   
-  captureFlipPositions() {
+  triggerFlipCapture() {
     // Trigger the flip controller to capture positions
     const flipController = this.element.closest('[data-controller*="flip"]')
     if (flipController) {
-      const event = new CustomEvent('turbo:before-stream-render', { bubbles: true })
+      const event = new CustomEvent('flip:capture', { bubbles: true })
+      flipController.dispatchEvent(event)
+    }
+  }
+  
+  triggerFlipAnimate() {
+    // Trigger the flip controller to animate
+    const flipController = this.element.closest('[data-controller*="flip"]')
+    if (flipController) {
+      const event = new CustomEvent('flip:animate', { bubbles: true })
       flipController.dispatchEvent(event)
     }
   }

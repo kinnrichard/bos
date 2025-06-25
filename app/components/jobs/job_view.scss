@@ -113,13 +113,18 @@
   background: none !important;
   background-color: transparent !important;
   gap: 12px;
-  transition: opacity 0.2s;
-  // Removed fadeIn animation to prevent initial page load animation
+  transition: opacity 0.2s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: default;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  will-change: transform; // Optimize for animations
+  
+  // Smooth transitions for FLIP animations
+  &[data-flip-animating="true"] {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
   
   &.completed {
     // Don't apply opacity to the entire task to avoid affecting dropdown
@@ -310,6 +315,32 @@
   flex-shrink: 0;
 }
 
+// Task info button
+.task-info-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  color: var(--accent-blue);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  opacity: 0.7;
+  
+  &:hover {
+    opacity: 1;
+    background-color: var(--bg-tertiary);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
 // Time tracking display
 .task-timer {
   display: flex;
@@ -393,13 +424,23 @@
   padding-left: 32px; // Indent subtasks
   overflow: visible; // Ensure dropdowns can escape
   
-  // Transition for collapse/expand
-  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+  // Smooth transition for collapse/expand
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 5000px; // Large enough for most task lists
+  opacity: 1;
   
   &.collapsed {
     max-height: 0;
     opacity: 0;
     overflow: hidden;
+  }
+  
+  // Smooth transitions for FLIP animations on subtasks
+  .task-item, .subtask-item {
+    &[data-flip-animating="true"] {
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
   }
 }
 
@@ -407,32 +448,31 @@
 .disclosure-triangle {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-tertiary);
-  font-size: 13px;
   transition: all 0.2s ease;
+  border-radius: 4px;
   
   &:hover {
     color: var(--text-primary);
     background-color: var(--bg-tertiary);
-    border-radius: 4px;
   }
   
   .triangle-icon {
     font-size: 10px;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    // Default state is expanded (pointing down)
   }
   
-  &.expanded .triangle-icon {
-    transform: rotate(90deg);
-  }
-  
-  .subtask-count {
-    font-weight: 500;
+  // Collapsed state - rotate to point right
+  &[aria-expanded="false"] .triangle-icon {
+    transform: rotate(-90deg);
   }
 }
 
@@ -527,11 +567,16 @@
   top: -8px;
   right: 120px;
   width: 16px;
-  height: 16px;
-  background-color: var(--bg-secondary);
-  border-top: 1px solid var(--border-primary);
-  border-left: 1px solid var(--border-primary);
-  transform: rotate(45deg);
+  height: 8px;
+  overflow: visible;
+  background: transparent;
+  border: none;
+  
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .popover-content {
@@ -717,8 +762,9 @@
 // Removed fadeIn animation that was causing tasks to animate on initial page load
 
 
-// @dnd-kit drag and drop visual feedback
-.task-item.drop-target {
+// Drag and drop visual feedback
+.task-item.drop-target,
+.subtask-item.drop-target {
   background-color: var(--accent-blue) !important;
   border-radius: 8px !important;
   padding: 10px 16px !important;
@@ -726,11 +772,13 @@
   transform: scale(1.02);
   transition: all 200ms cubic-bezier(0.18, 0.89, 0.32, 1.28);
   
-  .task-title {
+  .task-title,
+  .subtask-title {
     color: #FFFFFF !important;
   }
   
-  .task-assignee {
+  .task-assignee,
+  .assignee-indicator {
     color: rgba(255, 255, 255, 0.8) !important;
   }
   
@@ -744,9 +792,16 @@
   opacity: 0.5;
   transform: scale(0.98);
   transition: all 200ms ease-out;
+  z-index: 1000; // Ensure dragged item is on top
+  
+  .task-item,
+  .subtask-item {
+    cursor: grabbing !important;
+  }
 }
 
-.task-item.dragging {
+.task-item.dragging,
+.subtask-item.dragging {
   opacity: 0.5;
   transform: scale(0.98);
   transition: all 200ms ease-out;
@@ -759,11 +814,24 @@
   border-radius: 1px;
   box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
   transition: all 150ms ease-out;
+  animation: dropIndicatorPulse 1s ease-in-out infinite;
+}
+
+@keyframes dropIndicatorPulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1.05);
+  }
 }
 
 // Touch-specific styles for mobile
 @media (hover: none) {
-  .task-item {
+  .task-item,
+  .subtask-item {
     cursor: grab;
     
     &:active {
@@ -778,6 +846,29 @@
     &.dragging {
       opacity: 0.7;
     }
+  }
+}
+
+// FLIP animation classes
+.flip-animating {
+  will-change: transform;
+  pointer-events: none; // Prevent interaction during animation
+}
+
+.flip-container {
+  position: relative;
+  
+  // Ensure smooth scrolling during animations
+  &[data-flip-active="true"] {
+    overflow-y: hidden;
+  }
+}
+
+// Batch animation optimization
+.tasks-list[data-flip-batch="true"] {
+  .task-wrapper {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition-delay: calc(var(--flip-index, 0) * 20ms);
   }
 }
 

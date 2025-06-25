@@ -1,9 +1,11 @@
 module Views
   module Tasks
     class ListComponent < Phlex::HTML
-      def initialize(job:, tasks_tree:)
+      def initialize(job:, tasks_tree:, last_status_changes: nil, time_in_progress: nil)
         @job = job
         @tasks_tree = tasks_tree
+        @last_status_changes = last_status_changes || {}
+        @time_in_progress = time_in_progress || {}
       end
 
       def view_template
@@ -73,14 +75,10 @@ module Views
         # Get time tracking data for in-progress tasks
         time_data = {}
         if task.in_progress?
-          last_start = task.activity_logs
-            .where(action: "status_changed")
-            .where("metadata->>'new_status' = ?", "in_progress")
-            .order(:created_at)
-            .last&.created_at
+          last_start = @last_status_changes[task.id]
 
           time_data[:in_progress_since] = last_start.iso8601 if last_start
-          time_data[:accumulated_seconds] = task.time_in_progress
+          time_data[:accumulated_seconds] = @time_in_progress[task.id] || 0
         end
 
         div(
@@ -91,8 +89,9 @@ module Views
             task_position: task.position,
             parent_id: task.parent_id,
             job_target: "task",
+            flip_target: "item",
             action: "click->job#handleTaskClick",
-            flip_item: true  # Enable FLIP animations
+            flip_item: task.id.to_s  # Unique identifier for FLIP
           }.merge(time_data)
         ) do
           # Status dropdown using the existing dropdown controller
@@ -139,13 +138,24 @@ module Views
 
           # Task right section (icons, time tracking, disclosure)
           div(class: "task-right") do
+            # Info button
+            button(
+              class: "task-info-button",
+              data: {
+                action: "click->job#showTaskInfo",
+                task_id: task.id
+              },
+              title: "Task details",
+              aria_label: "Show task details"
+            ) { "ℹ️" }
+
             # Notes indicator
-            if task.notes.any?
+            if task.association(:notes).loaded? && task.notes.any?
               span(class: "note-indicator", title: "Has notes") { "📝" }
             end
 
             # Assignee indicator
-            if task.assigned_to
+            if task.association(:assigned_to).loaded? && task.assigned_to
               span(class: "assignee-indicator", title: "Assigned to #{task.assigned_to.name}") do
                 initials = task.assigned_to.name.split.map(&:first).join.upcase[0..1]
                 span(class: "assignee-initials") { initials }
@@ -153,6 +163,7 @@ module Views
             end
 
             # Time tracking display
+            time_seconds = @time_in_progress[task.id] || 0
             if task.in_progress?
               div(
                 class: "task-timer active",
@@ -162,12 +173,12 @@ module Views
                 }
               ) do
                 span(class: "timer-icon") { "⏱️" }
-                span(class: "timer-display") { task.formatted_time_in_progress || "0m" }
+                span(class: "timer-display") { format_time_duration(time_seconds) || "0m" }
               end
-            elsif task.time_in_progress > 0
+            elsif time_seconds > 0
               div(class: "task-timer") do
                 span(class: "timer-icon") { "⏱️" }
-                span(class: "timer-display") { task.formatted_time_in_progress }
+                span(class: "timer-display") { format_time_duration(time_seconds) }
               end
             end
 
@@ -180,10 +191,11 @@ module Views
                   task_id: task.id,
                   job_target: "disclosureTriangle"
                 },
-                title: "#{task.subtasks_count} subtask#{'s' if task.subtasks_count > 1}"
+                title: "#{task.subtasks_count} subtask#{'s' if task.subtasks_count > 1}",
+                aria_expanded: "true",
+                aria_label: "Toggle subtasks"
               ) do
-                span(class: "triangle-icon") { "▶" }
-                span(class: "subtask-count") { task.subtasks_count }
+                span(class: "triangle-icon") { "▼" }
               end
             end
           end
@@ -211,6 +223,21 @@ module Views
             span(class: "status-emoji") { info[:emoji] }
             span { info[:label] }
           end
+        end
+      end
+
+      private
+
+      def format_time_duration(seconds)
+        return nil if seconds == 0
+
+        hours = seconds / 3600
+        minutes = (seconds % 3600) / 60
+
+        if hours > 0
+          "#{hours}h #{minutes}m"
+        else
+          "#{minutes}m"
         end
       end
     end

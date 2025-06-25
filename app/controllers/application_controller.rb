@@ -75,9 +75,14 @@ class ApplicationController < ActionController::Base
 
   # Check if user has access to the current client
   def authorize_client_access!
-    return unless params[:client_id]
-
-    client = Client.find(params[:client_id])
+    # Check if we have a client from params or instance variable
+    client = if params[:client_id]
+      Client.find(params[:client_id])
+    elsif @client
+      @client
+    else
+      return
+    end
 
     # Check if this is a cross-client access attempt
     # For the test, we'll check if the user is trying to access a client they don't have permission for

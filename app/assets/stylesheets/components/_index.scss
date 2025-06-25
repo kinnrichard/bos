@@ -40,6 +40,11 @@
 @use '../../../components/jobs/job_view';
 @use '../../../components/jobs/jobs_list';
 @use '../../../components/jobs/schedule_popover';
+@use '../../../components/jobs/streamlined_schedule_popover';
+
+// Tasks components
+@use '../../../components/tasks/task_info_panel';
+@use '../../../components/tasks/task_search';
 
 // Form components
 @use '../../../components/forms/forms'; // General form styles

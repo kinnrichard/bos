@@ -3,7 +3,7 @@ class TasksController < ApplicationController
   before_action :set_client
   before_action :authorize_client_access!
   before_action :set_job
-  before_action :set_task, only: [ :update, :destroy ]
+  before_action :set_task, only: [ :update, :destroy, :details, :assign, :add_note ]
 
   def create
     @task = @job.tasks.build(task_params)
@@ -263,6 +263,105 @@ class TasksController < ApplicationController
     request.format.json? || request.format.turbo_stream?
   end
 
+  # Get task details for info panel
+  def details
+    @task = @task.includes(:notes, :assigned_to, activity_logs: :user)
+    @available_technicians = User.where(role: [ :technician, :admin ]).order(:name)
+
+    render Components::Tasks::InfoPanelComponent.new(
+      task: @task,
+      current_user: current_user,
+      available_technicians: @available_technicians
+    )
+  end
+
+  # Assign task to technician
+  def assign
+    technician_id = params[:technician_id].presence
+    @task.assigned_to_id = technician_id
+
+    if @task.save
+      # Log the assignment change
+      if technician_id
+        technician = User.find(technician_id)
+        ActivityLog.create!(
+          user: current_user,
+          action: "assigned",
+          loggable: @task,
+          metadata: {
+            assigned_to: technician.name,
+            assigned_to_id: technician.id
+          }
+        )
+      else
+        ActivityLog.create!(
+          user: current_user,
+          action: "unassigned",
+          loggable: @task
+        )
+      end
+
+      render json: {
+        status: "success",
+        technician: technician_id ? { id: technician.id, name: technician.name } : nil
+      }
+    else
+      render json: { error: @task.errors.full_messages.join(", ") }, status: :unprocessable_entity
+    end
+  end
+
+  # Add note to task
+  def add_note
+    @note = @task.notes.build(note_params)
+    @note.user = current_user
+
+    if @note.save
+      render json: {
+        status: "success",
+        note: {
+          id: @note.id,
+          content: @note.content,
+          user_name: @note.user.name,
+          created_at: @note.created_at
+        }
+      }
+    else
+      render json: { error: @note.errors.full_messages.join(", ") }, status: :unprocessable_entity
+    end
+  end
+
+  # Search tasks within the job
+  def search
+    query = params[:q].to_s.strip
+    return render json: { tasks: [] } if query.blank?
+
+    # Search tasks by title within this job
+    tasks = @job.tasks
+      .where("LOWER(title) LIKE ?", "%#{query.downcase}%")
+      .includes(:parent)
+      .order(:position)
+      .limit(20)
+
+    # Format results with parent path
+    results = tasks.map do |task|
+      parent_titles = []
+      current = task.parent
+      while current
+        parent_titles.unshift(current.title)
+        current = current.parent
+      end
+
+      {
+        id: task.id,
+        title: task.title,
+        status: task.status,
+        parent_titles: parent_titles
+      }
+    end
+
+    render json: { tasks: results }
+  end
+
   def render_task_list_update
     Rails.logger.info "=== render_task_list_update called ==="
 
@@ -288,5 +387,11 @@ class TasksController < ApplicationController
     Rails.logger.info "Turbo Stream response: #{turbo_stream_html[0..200]}..."
 
     render plain: turbo_stream_html, content_type: "text/vnd.turbo-stream.html"
+  end
+
+  private
+
+  def note_params
+    params.require(:note).permit(:content)
   end
 end

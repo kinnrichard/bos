@@ -2,104 +2,242 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["container", "item"]
+  static values = {
+    duration: { type: Number, default: 300 },
+    stagger: { type: Number, default: 30 },
+    easing: { type: String, default: "cubic-bezier(0.4, 0, 0.2, 1)" }
+  }
+  
+  // Track positions for FLIP animation
+  positions = new Map()
+  animationFrame = null
+  pendingAnimations = []
   
   connect() {
-    // Store positions before any Turbo Stream updates
-    this.capturePositions()
+    this.captureInitialPositions()
+    
+    // Listen for custom events from sortable controller
+    this.element.addEventListener('flip:capture', this.handleFlipCapture.bind(this))
+    this.element.addEventListener('flip:animate', this.handleFlipAnimate.bind(this))
     
     // Listen for Turbo Stream updates
-    this.beforeStreamRenderHandler = this.beforeStreamRender.bind(this)
-    this.animateChangesHandler = this.animateChanges.bind(this)
+    document.addEventListener('turbo:before-stream-render', this.handleTurboBeforeRender.bind(this))
+    document.addEventListener('turbo:after-stream-render', this.handleTurboAfterRender.bind(this))
     
-    document.addEventListener('turbo:before-stream-render', this.beforeStreamRenderHandler)
-    document.addEventListener('turbo:render', this.animateChangesHandler)
-    // Also listen for after stream render
-    document.addEventListener('turbo:after-stream-render', this.animateChangesHandler)
+    // Observe DOM changes for non-Turbo updates
+    this.observer = new MutationObserver((mutations) => {
+      this.handleMutations(mutations)
+    })
+    
+    this.observer.observe(this.containerTarget, {
+      childList: true,
+      subtree: true,
+      attributes: false // Don't observe attributes to reduce overhead
+    })
   }
   
   disconnect() {
-    document.removeEventListener('turbo:before-stream-render', this.beforeStreamRenderHandler)
-    document.removeEventListener('turbo:render', this.animateChangesHandler)
-    document.removeEventListener('turbo:after-stream-render', this.animateChangesHandler)
+    if (this.observer) {
+      this.observer.disconnect()
+    }
+    
+    if (this.animationFrame) {
+      cancelAnimationFrame(this.animationFrame)
+    }
+    
+    document.removeEventListener('turbo:before-stream-render', this.handleTurboBeforeRender.bind(this))
+    document.removeEventListener('turbo:after-stream-render', this.handleTurboAfterRender.bind(this))
   }
   
-  beforeStreamRender(event) {
-    // Capture current positions right before the DOM update
-    this.capturePositions()
-  }
-  
-  capturePositions() {
-    this.positions = new Map()
-    
-    const items = this.element.querySelectorAll('[data-flip-item]')
-    items.forEach(item => {
-      const taskId = item.dataset.taskId
-      if (taskId) {
-        const rect = item.getBoundingClientRect()
-        this.positions.set(taskId, {
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height
-        })
-      }
-    })
-  }
-  
-  animateChanges() {
-    if (!this.positions || this.positions.size === 0) return
-    
-    // Small delay to ensure DOM is fully updated
-    requestAnimationFrame(() => {
-      const items = this.element.querySelectorAll('[data-flip-item]')
-      const animations = []
-    
-    items.forEach(item => {
-      const taskId = item.dataset.taskId
-      if (!taskId) return
-      
-      const oldPos = this.positions.get(taskId)
-      if (!oldPos) return // New item, no animation needed
-      
-      const newRect = item.getBoundingClientRect()
-      const deltaX = oldPos.left - newRect.left
-      const deltaY = oldPos.top - newRect.top
-      
-      // Skip if no movement
-      if (deltaX === 0 && deltaY === 0) return
-      
-      // Apply inverse transform to start from old position
-      item.style.transform = `translate(${deltaX}px, ${deltaY}px)`
-      item.style.transition = 'none'
-      
-      // Force reflow
-      item.offsetHeight
-      
-      // Animate to new position
-      item.style.transition = 'transform 300ms ease-out'
-      item.style.transform = 'translate(0, 0)'
-      
-      // Store animation promise
-      animations.push(
-        new Promise(resolve => {
-          const handleTransitionEnd = () => {
-            item.style.transition = ''
-            item.style.transform = ''
-            item.removeEventListener('transitionend', handleTransitionEnd)
-            resolve()
-          }
-          item.addEventListener('transitionend', handleTransitionEnd)
-          
-          // Fallback in case transition doesn't fire
-          setTimeout(handleTransitionEnd, 350)
-        })
-      )
-    })
-    
-      // Clear positions after all animations complete
-      Promise.all(animations).then(() => {
-        this.positions.clear()
+  captureInitialPositions() {
+    this.itemTargets.forEach(item => {
+      const rect = item.getBoundingClientRect()
+      this.positions.set(this.getItemId(item), {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height
       })
     })
+  }
+  
+  handleMutations(mutations) {
+    // Debounce mutations to avoid multiple animations
+    if (this.mutationTimeout) {
+      clearTimeout(this.mutationTimeout)
+    }
+    
+    this.mutationTimeout = setTimeout(() => {
+      // Check if this is a reorder operation
+      const isReorder = mutations.some(mutation => 
+        mutation.type === 'childList' && 
+        (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)
+      )
+      
+      if (isReorder && !this.isAnimating) {
+        this.animateReorder()
+      }
+    }, 50)
+  }
+  
+  animateReorder() {
+    if (this.isAnimating) return
+    this.isAnimating = true
+    
+    // First: capture current positions
+    const first = new Map()
+    this.itemTargets.forEach(item => {
+      const rect = item.getBoundingClientRect()
+      first.set(this.getItemId(item), {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+        element: item
+      })
+    })
+    
+    // Last: get previous positions
+    const last = this.positions
+    
+    // Invert: calculate the delta
+    const animations = []
+    first.forEach((firstPos, id) => {
+      const lastPos = last.get(id)
+      if (lastPos) {
+        const deltaX = lastPos.x - firstPos.x
+        const deltaY = lastPos.y - firstPos.y
+        
+        if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+          animations.push({
+            element: firstPos.element,
+            deltaX,
+            deltaY
+          })
+        }
+      }
+    })
+    
+    // Play: animate to final positions
+    this.playAnimations(animations)
+    
+    // Update stored positions for next animation
+    setTimeout(() => {
+      this.captureInitialPositions()
+      this.isAnimating = false
+    }, this.durationValue + 100)
+  }
+  
+  playAnimations(animations) {
+    if (animations.length === 0) {
+      this.isAnimating = false
+      return
+    }
+    
+    // Mark container as animating
+    this.containerTarget.dataset.flipActive = 'true'
+    
+    animations.forEach((animation, index) => {
+      const { element, deltaX, deltaY } = animation
+      
+      // Add animating flag
+      element.dataset.flipAnimating = 'true'
+      
+      // Set initial transform
+      element.style.transform = `translate(${deltaX}px, ${deltaY}px)`
+      element.style.transition = 'none'
+      
+      // Force reflow
+      void element.offsetHeight
+      
+      // Animate with stagger
+      this.animationFrame = requestAnimationFrame(() => {
+        setTimeout(() => {
+          element.style.transform = ''
+          element.style.transition = `transform ${this.durationValue}ms ${this.easingValue}`
+          
+          // Clean up after animation
+          setTimeout(() => {
+            element.style.transition = ''
+            element.dataset.flipAnimating = 'false'
+            
+            // Clean up container flag after last animation
+            if (index === animations.length - 1) {
+              this.containerTarget.dataset.flipActive = 'false'
+            }
+          }, this.durationValue)
+        }, index * this.staggerValue)
+      })
+    })
+  }
+  
+  // Manual trigger for programmatic reorders
+  animate() {
+    this.animateReorder()
+  }
+  
+  getItemId(element) {
+    return element.dataset.taskId || element.dataset.flipItem || element.id
+  }
+  
+  // Event handlers for custom events
+  handleFlipCapture(event) {
+    this.captureInitialPositions()
+  }
+  
+  handleFlipAnimate(event) {
+    this.animateReorder()
+  }
+  
+  // Turbo Stream handlers
+  handleTurboBeforeRender(event) {
+    // Capture positions before Turbo updates the DOM
+    this.captureInitialPositions()
+  }
+  
+  handleTurboAfterRender(event) {
+    // Animate after Turbo updates the DOM
+    requestAnimationFrame(() => {
+      this.animateReorder()
+    })
+  }
+  
+  // Batch animation for multiple items
+  animateBatch(items) {
+    const animations = []
+    const first = new Map()
+    
+    // Capture current positions
+    items.forEach(item => {
+      const rect = item.getBoundingClientRect()
+      const id = this.getItemId(item)
+      first.set(id, {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+        element: item
+      })
+    })
+    
+    // Calculate deltas
+    first.forEach((firstPos, id) => {
+      const lastPos = this.positions.get(id)
+      if (lastPos) {
+        const deltaX = lastPos.x - firstPos.x
+        const deltaY = lastPos.y - firstPos.y
+        
+        if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+          animations.push({
+            element: firstPos.element,
+            deltaX,
+            deltaY
+          })
+        }
+      }
+    })
+    
+    // Play animations
+    this.playAnimations(animations)
   }
 }

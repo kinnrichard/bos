@@ -3,10 +3,11 @@
 module Components
   module Jobs
     class SchedulePopoverComponent < Components::Base
-      def initialize(job:, current_user:)
+      def initialize(job:, current_user:, scheduled_dates: nil, available_technicians: nil)
         @job = job
         @current_user = current_user
-        @scheduled_dates = @job.scheduled_date_times.includes(:users).order(:scheduled_date, :scheduled_time)
+        @scheduled_dates = scheduled_dates || []
+        @available_technicians = available_technicians || []
       end
 
       def view_template
@@ -21,18 +22,15 @@ module Components
         ) do
           # Arrow
           div(class: "popover-arrow") do
-            svg(xmlns: "http://www.w3.org/2000/svg", width: "14", height: "7", viewBox: "0 0 14 7", style: "display: block;") do |s|
-              # Draw the arrow with precise path - outline first, then fill
+            svg(xmlns: "http://www.w3.org/2000/svg", width: "16", height: "8", viewBox: "0 0 16 8", style: "display: block; overflow: visible;") do |s|
+              # Create clean triangle with crisp edges
               s.path(
-                d: "M0.5 7 L7 0.5 L13.5 7",
-                fill: "none",
-                stroke: "var(--border-primary)",
-                stroke_width: "1"
-              )
-              s.path(
-                d: "M1.5 7 L7 1.5 L12.5 7 Z",
+                d: "M7 1 L1 8 L15 8 Z",
                 fill: "var(--bg-secondary)",
-                stroke: "none"
+                stroke: "var(--border-primary)",
+                stroke_width: "1",
+                stroke_linejoin: "miter",
+                vector_effect: "non-scaling-stroke"
               )
             end
           end
@@ -52,7 +50,7 @@ module Components
       end
 
       def render_existing_dates
-        return if @scheduled_dates.empty?
+        return if !@scheduled_dates.is_a?(Array) || @scheduled_dates.empty?
 
         div(class: "popover-section") do
           @scheduled_dates.group_by(&:scheduled_type).each do |type, dates|
@@ -210,7 +208,7 @@ module Components
                   class: "dropdown-menu hidden",
                   data: { dropdown_target: "menu" }
                 ) do
-                  User.where(role: [ :technician, :admin, :owner ]).order(:name).each do |user|
+                  @available_technicians.each do |user|
                     button(
                       type: "button",
                       class: "dropdown-option",

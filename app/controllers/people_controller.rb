@@ -1,13 +1,19 @@
 class PeopleController < ApplicationController
   before_action :set_client
+  before_action :authorize_client_access!
   before_action :set_person, only: [ :show, :edit, :update, :destroy ]
 
   def index
     @people = @client.people.includes(:contact_methods)
+    view_data = ViewDataService.people_index_data(people: @people)
+    sidebar_stats = SidebarStatsService.new(user: current_user, client: @client).calculate
+
     render Views::People::IndexView.new(
       client: @client,
-      people: @people,
-      current_user: current_user
+      people: view_data[:people],
+      contact_types_by_person: view_data[:contact_types_by_person],
+      current_user: current_user,
+      sidebar_stats: sidebar_stats
     )
   end
 
@@ -90,16 +96,16 @@ class PeopleController < ApplicationController
     end
 
     person_name = @person.name
-    @person.destroy
 
-    # Log the action
+    # Log the action before deletion
     ActivityLog.create!(
       user: current_user,
       action: "deleted",
-      loggable: nil,
-      loggable_type: "Person",
+      loggable: @person,
       metadata: { name: person_name, client_name: @client.name }
     )
+
+    @person.destroy
 
     redirect_to client_people_path(@client), notice: "Person deleted successfully."
   end

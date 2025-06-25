@@ -7,10 +7,14 @@ module Views
       include Phlex::Rails::Helpers::FormWith
       include Phlex::Rails::Helpers::TurboFrameTag
 
-      def initialize(client:, job:, current_user:)
+      def initialize(client:, job:, current_user:, available_technicians: nil, sidebar_stats: nil, tasks_tree: nil, task_list_data: nil)
         @client = client
         @job = job
         @current_user = current_user
+        @available_technicians = available_technicians || []
+        @sidebar_stats = sidebar_stats
+        @tasks_tree = tasks_tree || []
+        @task_list_data = task_list_data || {}
       end
 
       def view_template
@@ -19,7 +23,8 @@ module Views
           current_user: @current_user,
           active_section: :jobs,
           client: @client,
-          toolbar_items: method(:render_toolbar_items)
+          toolbar_items: method(:render_toolbar_items),
+          sidebar_stats: @sidebar_stats
         ) do
           div(class: "job-view", data: {
             controller: "job sortable flip",
@@ -28,18 +33,26 @@ module Views
             job_status_value: @job.status,
             job_priority_value: @job.priority,
             lock_version: @job.lock_version,
-            action: "task:reorder->job#handleTaskReorder subtask:reorder->job#handleSubtaskReorder"
+            flip_duration_value: 400,
+            flip_stagger_value: 20,
+            flip_easing_value: "cubic-bezier(0.4, 0, 0.2, 1)",
+            action: "task:reorder->job#handleTaskReorder subtask:reorder->job#handleSubtaskReorder flip:connect->job#registerFlipController"
           }) do
-            # Job title
+            # Job title and search
             div(class: "job-title-section") do
-              h1(
-                class: "job-title",
-                contenteditable: "true",
-                data: {
-                  action: "blur->job#updateTitle keydown.enter->job#handleTitleEnter",
-                  job_target: "title"
-                }
-              ) { @job.title }
+              div(class: "title-row") do
+                h1(
+                  class: "job-title",
+                  contenteditable: "true",
+                  data: {
+                    action: "blur->job#updateTitle keydown.enter->job#handleTitleEnter",
+                    job_target: "title"
+                  }
+                ) { @job.title }
+
+                # Task search
+                render Components::Tasks::SearchComponent.new(job: @job)
+              end
             end
 
             # Tasks list
@@ -50,13 +63,16 @@ module Views
                 action: "click->job#handleTasksContainerClick"
               }
             ) do
-              sorting_service = ::TaskSortingService.new(@job)
-              tasks_tree = sorting_service.get_ordered_tasks
-
+              # Use pre-loaded task data from controller
               # Render the task list using the new ListComponent
               div(id: "tasks-list", class: "tasks-list", data: { flip_target: "container", job_target: "tasksList", turbo_frame: "tasks-frame" }) do
-                if tasks_tree.any?
-                  render Views::Tasks::ListComponent.new(job: @job, tasks_tree: tasks_tree)
+                if @tasks_tree.any?
+                  render Views::Tasks::ListComponent.new(
+                    job: @job,
+                    tasks_tree: @tasks_tree,
+                    last_status_changes: @task_list_data[:last_status_changes],
+                    time_in_progress: @task_list_data[:time_in_progress]
+                  )
                 else
                   div(class: "empty-tasks") do
                     p { "No tasks yet. Click below to add a task." }
@@ -77,18 +93,15 @@ module Views
             ) do
               # Arrow pointer
               div(class: "popover-arrow") do
-                svg(xmlns: "http://www.w3.org/2000/svg", width: "14", height: "7", viewBox: "0 0 14 7", style: "display: block;") do |s|
-                  # Draw the arrow with precise path - outline first, then fill
+                svg(xmlns: "http://www.w3.org/2000/svg", width: "16", height: "8", viewBox: "0 0 16 8", style: "display: block; overflow: visible;") do |s|
+                  # Create clean triangle with crisp edges
                   s.path(
-                    d: "M0.5 7 L7 0.5 L13.5 7",
-                    fill: "none",
-                    stroke: "var(--border-primary)",
-                    stroke_width: "1"
-                  )
-                  s.path(
-                    d: "M1.5 7 L7 1.5 L12.5 7 Z",
+                    d: "M7 1 L1 8 L15 8 Z",
                     fill: "var(--bg-secondary)",
-                    stroke: "none"
+                    stroke: "var(--border-primary)",
+                    stroke_width: "1",
+                    stroke_linejoin: "miter",
+                    vector_effect: "non-scaling-stroke"
                   )
                 end
               end
@@ -133,11 +146,11 @@ module Views
                     ) do
                       span(class: "dropdown-value") do
                         if @job.technicians.any?
-                          if @job.technicians.count == 1
+                          if @job.technicians.size == 1
                             technician_icon(@job.technicians.first)
                             span { @job.technicians.first.name }
                           else
-                            span { "#{@job.technicians.count} assigned" }
+                            span { "#{@job.technicians.size} assigned" }
                           end
                         else
                           span { "❓" }
@@ -219,10 +232,13 @@ module Views
               end
             end
 
-            # Schedule Popover
-            render Components::Jobs::SchedulePopoverComponent.new(
+            # Schedule Popover - Streamlined version
+            # Use pre-loaded scheduled_date_times from the job
+            render Components::Jobs::StreamlinedSchedulePopoverComponent.new(
               job: @job,
-              current_user: @current_user
+              current_user: @current_user,
+              scheduled_dates: @job.scheduled_date_times.to_a,
+              available_technicians: @available_technicians
             )
           end
         end
@@ -386,8 +402,8 @@ module Views
           span { "Unassigned" }
         end
 
-        # Get all available technicians
-        User.where(role: [ :technician, :admin ]).order(:name).each do |tech|
+        # Use provided technicians data instead of querying database
+        @available_technicians.each do |tech|
           is_assigned = @job.technicians.include?(tech)
           button(
             class: "assignee-option #{is_assigned ? 'active' : ''}",

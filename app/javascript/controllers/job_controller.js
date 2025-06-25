@@ -109,6 +109,42 @@ export default class extends Controller {
       delete this.element._jobController
     }
   }
+  
+  // Show task info panel
+  async showTaskInfo(event) {
+    event.stopPropagation()
+    const taskId = event.currentTarget.dataset.taskId
+    
+    try {
+      // Fetch task details with all associations
+      const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}/details`, {
+        headers: {
+          'Accept': 'text/html',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        }
+      })
+      
+      if (response.ok) {
+        const html = await response.text()
+        // Remove existing panel if any
+        const existingPanel = document.querySelector('.task-info-panel')
+        if (existingPanel) {
+          existingPanel.remove()
+        }
+        // Add new panel
+        document.body.insertAdjacentHTML('beforeend', html)
+        // Show panel with animation
+        requestAnimationFrame(() => {
+          const panel = document.querySelector('.task-info-panel')
+          if (panel) {
+            panel.classList.remove('hidden')
+          }
+        })
+      }
+    } catch (error) {
+      console.error('Error loading task info:', error)
+    }
+  }
 
   handleOutsideClick(event) {
     // Handle job popover
@@ -1499,17 +1535,34 @@ export default class extends Controller {
     const triangle = event.currentTarget
     
     if (subtasksContainer) {
+      const isCollapsed = subtasksContainer.classList.contains('collapsed')
+      
+      // Trigger FLIP animation for smooth collapse/expand
+      if (window.flipController) {
+        window.flipController.captureInitialPositions()
+      }
+      
+      // Toggle collapsed state
       subtasksContainer.classList.toggle('collapsed')
-      triangle.classList.toggle('expanded')
+      
+      // Update aria-expanded attribute (inverse of collapsed)
+      triangle.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false')
       
       // Save state in localStorage for persistence
       const collapsedTasks = JSON.parse(localStorage.getItem('collapsedTasks') || '{}')
-      if (subtasksContainer.classList.contains('collapsed')) {
+      if (!isCollapsed) {
         collapsedTasks[taskId] = true
       } else {
         delete collapsedTasks[taskId]
       }
       localStorage.setItem('collapsedTasks', JSON.stringify(collapsedTasks))
+      
+      // Trigger FLIP animation after state change
+      if (window.flipController) {
+        requestAnimationFrame(() => {
+          window.flipController.animateReorder()
+        })
+      }
     }
   }
   
@@ -1523,7 +1576,7 @@ export default class extends Controller {
         const triangle = taskWrapper.querySelector('.disclosure-triangle')
         if (subtasksContainer && triangle) {
           subtasksContainer.classList.add('collapsed')
-          triangle.classList.remove('expanded')
+          triangle.setAttribute('aria-expanded', 'false')
         }
       }
     })
@@ -2408,5 +2461,13 @@ export default class extends Controller {
         this.taskLockVersions.set(taskId, parseInt(lockVersion))
       }
     })
+  }
+  
+  // Register the flip controller globally for access
+  registerFlipController(event) {
+    const flipController = event.target
+    if (flipController && flipController.stimulusController) {
+      window.flipController = flipController.stimulusController
+    }
   }
 }

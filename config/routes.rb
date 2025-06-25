@@ -31,10 +31,14 @@ Rails.application.routes.draw do
       resources :tasks do
         member do
           patch :reorder
+          get :details
+          patch :assign
         end
         collection do
           patch :reorder
+          get :search
         end
+        resources :notes, only: [ :create ]
       end
       resources :notes
       resources :scheduled_date_times, only: [ :create, :update, :destroy ]

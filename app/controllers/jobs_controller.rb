@@ -54,7 +54,28 @@ class JobsController < ApplicationController
 
   def show
     respond_to do |format|
-      format.html { render Views::Jobs::ShowView.new(client: @client, job: @job, current_user: current_user) }
+      format.html do
+        # Prepare view data to avoid queries in views
+        view_data = ViewDataService.job_assignment_data
+        sidebar_stats = SidebarStatsService.new(user: current_user, client: @client).calculate
+
+        # Get ordered tasks
+        sorting_service = TaskSortingService.new(@job)
+        tasks_tree = sorting_service.get_ordered_tasks
+
+        # Prepare task list data
+        task_list_data = ViewDataService.task_list_data(tasks_tree: tasks_tree)
+
+        render Views::Jobs::ShowView.new(
+          client: @client,
+          job: @job,
+          current_user: current_user,
+          available_technicians: view_data[:available_technicians],
+          sidebar_stats: sidebar_stats,
+          tasks_tree: tasks_tree,
+          task_list_data: task_list_data
+        )
+      end
       format.json { render json: { job: @job.as_json(include: [ :technicians, :tasks ]) } }
     end
   end
@@ -209,7 +230,10 @@ class JobsController < ApplicationController
   end
 
   def set_job
-    @job = @client.jobs.find(params[:id])
+    @job = @client.jobs
+                  .includes(:technicians, :people, :notes, :scheduled_date_times,
+                           tasks: [ :notes, :assigned_to, :activity_logs ])
+                  .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     respond_to do |format|
       format.html { render file: "#{Rails.root}/public/404.html", status: :not_found, layout: false }

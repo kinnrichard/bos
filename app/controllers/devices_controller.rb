@@ -1,5 +1,6 @@
 class DevicesController < ApplicationController
   before_action :set_client
+  before_action :authorize_client_access!
   before_action :set_device, only: [ :show, :edit, :update, :destroy ]
 
   def index
@@ -62,15 +63,15 @@ class DevicesController < ApplicationController
     end
 
     device_name = @device.name
-    @device.destroy
 
     ActivityLog.create!(
       user: current_user,
       action: "deleted",
-      loggable_type: "Device",
-      loggable_id: @device.id,
+      loggable: @device,
       metadata: { device_name: device_name, client_name: @client.name }
     )
+
+    @device.destroy
 
     redirect_to client_devices_path(@client), notice: "Device was successfully deleted."
   end

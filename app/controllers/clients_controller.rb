@@ -1,5 +1,6 @@
 class ClientsController < ApplicationController
   before_action :set_client, only: [ :show, :edit, :update, :destroy, :logs ]
+  before_action :authorize_client_access!, only: [ :show, :edit, :update, :destroy, :logs ]
 
   def index
     @clients = Client.search(params[:q])

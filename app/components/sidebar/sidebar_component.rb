@@ -3,10 +3,11 @@
 module Components
   module Sidebar
     class SidebarComponent < Components::Base
-    def initialize(current_user:, active_section: nil, client: nil)
+    def initialize(current_user:, active_section: nil, client: nil, stats: nil)
       @current_user = current_user
       @active_section = active_section
       @client = client
+      @stats = stats || fetch_stats
     end
 
     def view_template
@@ -57,7 +58,7 @@ module Components
         div(style: "margin-top: 24px; margin-bottom: 12px;") do
           nav_item("People", href: client_people_path(@client), icon: "👤", active: @active_section == :people)
           nav_item("Devices", href: client_devices_path(@client), icon: "💻", active: @active_section == :devices)
-          nav_item("Jobs", href: client_jobs_path(@client), icon: "💼", badge: @client.jobs.count, active: @active_section == :jobs)
+          nav_item("Jobs", href: client_jobs_path(@client), icon: "💼", active: @active_section == :jobs)
           # nav_item("Schedule", href: schedule_client_path(@client), icon: "🗓️", badge: scheduled_count, active: @active_section == :schedule)
           # nav_item("Invoices", href: client_invoices_path(@client), icon: "🧾", active: @active_section == :invoices)
         end
@@ -120,28 +121,23 @@ module Components
     end
 
     def my_jobs_count
-      Job.active.joins(:job_assignments).where(job_assignments: { user_id: @current_user.id }).count
+      @stats[:my_jobs] || 0
     end
 
     def unassigned_count
-      Job.active.left_joins(:job_assignments).where(job_assignments: { id: nil }).count
+      @stats[:unassigned] || 0
     end
 
     def others_count
-      Job.active.joins(:job_assignments)
-         .where.not(job_assignments: { user_id: @current_user.id })
-         .distinct
-         .count
+      @stats[:others] || 0
     end
 
     def closed_count
-      Job.closed.count
+      @stats[:closed] || 0
     end
 
     def scheduled_count
-      return 0 unless @client
-      # TODO: Replace with actual count from database
-      @client.jobs.where.not(start_on_date: nil).count
+      @stats[:scheduled] || 0
     end
 
     def nav_item(text, href:, icon:, badge: nil, active: false)
@@ -154,6 +150,13 @@ module Components
           span(class: "sidebar-item-badge") { badge.to_s }
         end
       end
+    end
+
+    private
+
+    def fetch_stats
+      # Use the service to get stats if not provided
+      SidebarStatsService.new(user: @current_user, client: @client).calculate
     end
     end
   end

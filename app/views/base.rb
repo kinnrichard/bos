@@ -47,7 +47,7 @@ class Views::Base < Components::Base
     end
   end
 
-  def render_layout(title:, current_user: nil, active_section: nil, client: nil, toolbar_items: nil, extra_controllers: nil, hide_sidebar: false, &content)
+  def render_layout(title:, current_user: nil, active_section: nil, client: nil, toolbar_items: nil, extra_controllers: nil, hide_sidebar: false, sidebar_stats: nil, &content)
     doctype
     html(lang: "en") do
       head do
@@ -86,7 +86,8 @@ class Views::Base < Components::Base
               render Components::Sidebar::SidebarComponent.new(
                 current_user: current_user,
                 active_section: active_section,
-                client: client
+                client: client,
+                stats: sidebar_stats
               )
             end
 

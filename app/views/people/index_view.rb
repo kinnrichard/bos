@@ -5,10 +5,12 @@ module Views
     class IndexView < Views::Base
       include Phlex::Rails::Helpers::Routes
 
-      def initialize(client:, people:, current_user:)
+      def initialize(client:, people:, current_user:, contact_types_by_person: nil, sidebar_stats: nil)
         @client = client
         @people = people
         @current_user = current_user
+        @contact_types_by_person = contact_types_by_person || {}
+        @sidebar_stats = sidebar_stats
       end
 
       def view_template
@@ -16,7 +18,8 @@ module Views
           title: "People - #{@client.name} - Faultless",
           current_user: @current_user,
           active_section: :people,
-          client: @client
+          client: @client,
+          sidebar_stats: @sidebar_stats
         ) do
           render Components::PageHeader::PageHeaderComponent.new(
             title: "People",
@@ -74,7 +77,7 @@ module Views
 
       def missing_contact_types(person)
         all_types = [ "phone", "email", "address" ]
-        existing_types = person.contact_methods.pluck(:contact_type)
+        existing_types = @contact_types_by_person[person.id] || []
         all_types - existing_types
       end
     end
