@@ -25,7 +25,7 @@ export default class extends Controller {
     // Find the schedule popover controller
     const popoverElement = document.querySelector('.schedule-popover')
     if (popoverElement) {
-      const controller = this.application.getControllerForElementAndIdentifier(popoverElement, 'schedule-popover')
+      const controller = this.application.getControllerForElementAndIdentifier(popoverElement, 'streamlined-schedule')
       if (controller) {
         // Close other popovers
         window.popoverManager?.closeAllExcept(controller)
