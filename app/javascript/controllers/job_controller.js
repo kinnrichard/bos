@@ -113,7 +113,20 @@ export default class extends Controller {
   // Show task info panel
   async showTaskInfo(event) {
     event.stopPropagation()
-    const taskId = event.currentTarget.dataset.taskId
+    const button = event.currentTarget
+    const taskId = button.dataset.taskId
+    
+    // Check if popover already exists for this task
+    let popover = document.querySelector(`.task-info-popover[data-task-info-task-id-value="${taskId}"]`)
+    
+    if (popover) {
+      // Popover exists, toggle it
+      const controller = this.application.getControllerForElementAndIdentifier(popover, 'task-info')
+      if (controller) {
+        controller.toggleWithTrigger(button)
+      }
+      return
+    }
     
     try {
       // Fetch task details with all associations
@@ -126,18 +139,18 @@ export default class extends Controller {
       
       if (response.ok) {
         const html = await response.text()
-        // Remove existing panel if any
-        const existingPanel = document.querySelector('.task-info-panel')
-        if (existingPanel) {
-          existingPanel.remove()
-        }
-        // Add new panel
+        
+        // Add new popover
         document.body.insertAdjacentHTML('beforeend', html)
-        // Show panel with animation
+        
+        // Get the popover and show it with trigger
         requestAnimationFrame(() => {
-          const panel = document.querySelector('.task-info-panel')
-          if (panel) {
-            panel.classList.remove('hidden')
+          popover = document.querySelector(`.task-info-popover[data-task-info-task-id-value="${taskId}"]`)
+          if (popover) {
+            const controller = this.application.getControllerForElementAndIdentifier(popover, 'task-info')
+            if (controller) {
+              controller.showWithTrigger(button)
+            }
           }
         })
       }

@@ -182,25 +182,6 @@ module Views
               end
             end
 
-            # Time tracking display
-            time_seconds = @time_in_progress[task.id] || 0
-            if task.in_progress?
-              div(
-                class: "task-timer active",
-                data: {
-                  job_target: "taskTimer",
-                  task_id: task.id
-                }
-              ) do
-                span(class: "timer-icon") { "⏱️" }
-                span(class: "timer-display") { format_time_duration(time_seconds) || "0 min" }
-              end
-            elsif time_seconds > 0
-              div(class: "task-timer") do
-                span(class: "timer-icon") { "⏱️" }
-                span(class: "timer-display") { format_time_duration(time_seconds) }
-              end
-            end
 
             # Disclosure triangle for subtasks
             if has_subtasks

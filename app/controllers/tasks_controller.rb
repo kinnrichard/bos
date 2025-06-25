@@ -263,12 +263,12 @@ class TasksController < ApplicationController
     request.format.json? || request.format.turbo_stream?
   end
 
-  # Get task details for info panel
+  # Get task details for info popover
   def details
-    @task = @task.includes(:notes, :assigned_to, activity_logs: :user)
+    @task = @job.tasks.includes(:notes, :assigned_to, activity_logs: :user).find(params[:id])
     @available_technicians = User.where(role: [ :technician, :admin ]).order(:name)
 
-    render Components::Tasks::InfoPanelComponent.new(
+    render Components::Tasks::InfoPopoverComponent.new(
       task: @task,
       current_user: current_user,
       available_technicians: @available_technicians

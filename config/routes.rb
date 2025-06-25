@@ -33,12 +33,12 @@ Rails.application.routes.draw do
           patch :reorder
           get :details
           patch :assign
+          post :notes, action: :add_note
         end
         collection do
           patch :reorder
           get :search
         end
-        resources :notes, only: [ :create ]
       end
       resources :notes
       resources :scheduled_date_times, only: [ :create, :update, :destroy ]

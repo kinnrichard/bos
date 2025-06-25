@@ -415,6 +415,12 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  pointer-events: none; // Allow clicks to pass through the container
+  
+  // But enable pointer events on children
+  > * {
+    pointer-events: auto;
+  }
 }
 
 // Task info button

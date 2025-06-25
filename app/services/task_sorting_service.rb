@@ -30,8 +30,11 @@ class TaskSortingService
   end
 
   def get_ordered_tasks
-    # Get root tasks with proper ordering
-    root_tasks = @job.tasks.root_tasks.ordered_by_status
+    # Get root tasks with proper ordering and preload associations
+    root_tasks = @job.tasks
+      .includes(:notes, :assigned_to, subtasks: [ :notes, :assigned_to ])
+      .root_tasks
+      .ordered_by_status
 
     # Build complete task tree
     tasks_tree = []
