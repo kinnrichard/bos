@@ -120,6 +120,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: nowrap; // Default to no wrapping
   }
 
   .timeline-content {
@@ -161,14 +162,32 @@
     }
   }
 
-  // When content is too long, wrap time to new line for notes
-  .timeline-item--note .timeline-row {
-    flex-wrap: wrap;
+  // Note-specific styling
+  .timeline-item--note {
+    .timeline-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: nowrap; // Prevent wrapping by default
+    }
+    
+    .timeline-content {
+      flex: 1 1 auto;
+      min-width: 0; // Allow content to shrink
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    
+    .timeline-note {
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
     
     .timeline-time {
-      flex-basis: 100%;
-      margin-left: 28px; // Align with content (emoji width + gap)
-      margin-top: 4px;
+      flex-shrink: 0; // Never shrink the time
+      margin-left: 12px; // Ensure consistent spacing
     }
   }
 
