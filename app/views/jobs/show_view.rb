@@ -27,6 +27,7 @@ module Views
             client_id: @client.id,
             job_status_value: @job.status,
             job_priority_value: @job.priority,
+            lock_version: @job.lock_version,
             action: "task:reorder->job#handleTaskReorder subtask:reorder->job#handleSubtaskReorder"
           }) do
             # Job title

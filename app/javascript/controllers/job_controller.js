@@ -18,6 +18,10 @@ export default class extends Controller {
   lastClickedTask = null
   clickTimer = null
   activeStatusDropdown = null
+  
+  // Track lock versions for optimistic locking
+  taskLockVersions = new Map()
+  jobLockVersion = null
   activeStatusTask = null
   
   
@@ -88,6 +92,9 @@ export default class extends Controller {
     
     // Restore collapsed state of subtasks
     this.restoreCollapsedState()
+    
+    // Initialize lock versions for optimistic locking
+    this.initializeLockVersions()
   }
 
   disconnect() {
@@ -1356,18 +1363,36 @@ export default class extends Controller {
       movedTaskItem.dataset.taskPosition = newPosition
     }
     
-    // Send update to server
+    // Send update to server with lock version
     try {
+      const body = { position: newPosition }
+      
+      // Include lock version if we have it
+      const lockVersion = this.taskLockVersions.get(taskId)
+      if (lockVersion !== undefined) {
+        body.lock_version = lockVersion
+      }
+      
       const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}/reorder`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': this.getCsrfToken()
         },
-        body: JSON.stringify({ position: newPosition })
+        body: JSON.stringify(body)
       })
       
-      if (!response.ok) {
+      if (response.status === 409) {
+        // Conflict - another user modified the task
+        const data = await response.json()
+        this.handleReorderConflict(data)
+      } else if (response.ok) {
+        // Update lock version from response
+        const data = await response.json()
+        if (data.lock_version !== undefined) {
+          this.taskLockVersions.set(taskId, data.lock_version)
+        }
+      } else {
         console.error('Failed to update task position')
         // Could revert the DOM change here if needed
       }
@@ -2338,5 +2363,50 @@ export default class extends Controller {
       this.lastClickedTask = newTask
       newTask.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
+  }
+  
+  handleReorderConflict(conflictData) {
+    // Show user-friendly error message
+    const message = conflictData.error || "The tasks have been modified by another user. The page will refresh with the latest changes."
+    
+    // Show alert or toast notification
+    alert(message)
+    
+    // Update lock versions from server response
+    if (conflictData.current_state) {
+      if (conflictData.current_state.job_lock_version !== undefined) {
+        this.jobLockVersion = conflictData.current_state.job_lock_version
+      }
+      
+      if (conflictData.current_state.tasks) {
+        conflictData.current_state.tasks.forEach(task => {
+          if (task.lock_version !== undefined) {
+            this.taskLockVersions.set(task.id, task.lock_version)
+          }
+        })
+      }
+    }
+    
+    // Refresh the page to get latest state
+    // In a more sophisticated implementation, we could update the UI without a full reload
+    Turbo.visit(window.location.href, { action: 'replace' })
+  }
+  
+  // Initialize lock versions from data attributes on page load
+  initializeLockVersions() {
+    // Get job lock version if available
+    const jobElement = this.element
+    if (jobElement.dataset.lockVersion) {
+      this.jobLockVersion = parseInt(jobElement.dataset.lockVersion)
+    }
+    
+    // Get task lock versions
+    this.taskTargets.forEach(taskElement => {
+      const taskId = parseInt(taskElement.dataset.taskId)
+      const lockVersion = taskElement.dataset.lockVersion
+      if (lockVersion !== undefined) {
+        this.taskLockVersions.set(taskId, parseInt(lockVersion))
+      }
+    })
   }
 }

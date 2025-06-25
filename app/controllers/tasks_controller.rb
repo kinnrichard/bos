@@ -95,42 +95,134 @@ class TasksController < ApplicationController
     # Check if this is a member action (has :id) or collection action
     if params[:id]
       # Member action - single task reorder
-      @task = @job.tasks.find(params[:id])
-
-      if params[:position]
-        position = params[:position].to_i
-        position = 1 if position < 1  # Ensure position is at least 1
-
-        @task.insert_at(position)
-
-        if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
-          render_task_list_update
-        else
-          render json: { status: "success", timestamp: @task.reload.reordered_at }
-        end
-      else
-        render json: { error: "Position parameter required" }, status: :unprocessable_entity
-      end
+      handle_single_task_reorder
     else
       # Collection action - batch reorder
-      if params[:positions]
-        params[:positions].each do |position_data|
-          task = @job.tasks.find(position_data[:id])
-          task.insert_at(position_data[:position].to_i)
-        end
+      handle_batch_task_reorder
+    end
+  rescue ActiveRecord::StaleObjectError => e
+    # Handle optimistic locking conflict
+    handle_reorder_conflict(e)
+  end
 
-        if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
-          render_task_list_update
-        else
-          render json: { status: "success", timestamp: Time.current }
-        end
-      else
-        render json: { error: "Positions parameter required" }, status: :unprocessable_entity
+  def handle_single_task_reorder
+    @task = @job.tasks.find(params[:id])
+
+    if params[:position].blank?
+      render json: { error: "Position parameter required" }, status: :unprocessable_entity
+      return
+    end
+
+    position = params[:position].to_i
+    position = 1 if position < 1  # Ensure position is at least 1
+
+    # Handle optimistic locking
+    if params[:lock_version]
+      # Reload task with lock check
+      current_lock_version = @task.lock_version
+      expected_lock_version = params[:lock_version].to_i
+
+      if current_lock_version != expected_lock_version
+        # Lock version mismatch - someone else updated the task
+        raise ActiveRecord::StaleObjectError.new(@task, "lock_version")
       end
+    end
+
+    @task.insert_at(position)
+
+    if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
+      render_task_list_update
+    else
+      render json: {
+        status: "success",
+        timestamp: @task.reload.reordered_at,
+        lock_version: @task.lock_version
+      }
     end
   end
 
-  private
+  def handle_batch_task_reorder
+    if params[:positions].blank?
+      render json: { error: "Positions parameter required" }, status: :unprocessable_entity
+      return
+    end
+
+    # Use a transaction to ensure all updates succeed or all fail
+    Task.transaction do
+      # If job lock_version is provided, verify it hasn't changed
+      if params[:job_lock_version]
+        expected_job_lock = params[:job_lock_version].to_i
+        if @job.lock_version != expected_job_lock
+          raise ActiveRecord::StaleObjectError.new(@job, "lock_version")
+        end
+      end
+
+      params[:positions].each do |position_data|
+        task = @job.tasks.find(position_data[:id])
+
+        # Check lock_version if provided
+        if position_data[:lock_version]
+          expected_lock = position_data[:lock_version].to_i
+          if task.lock_version != expected_lock
+            raise ActiveRecord::StaleObjectError.new(task, "lock_version")
+          end
+        end
+
+        task.insert_at(position_data[:position].to_i)
+      end
+    end
+
+    if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
+      render_task_list_update
+    else
+      render json: {
+        status: "success",
+        timestamp: Time.current,
+        job_lock_version: @job.reload.lock_version,
+        tasks: @job.tasks.map { |t| { id: t.id, lock_version: t.lock_version } }
+      }
+    end
+  end
+
+  def handle_reorder_conflict(error)
+    # Reload to get current state
+    @job.reload
+
+    # Get fresh task data
+    tasks_data = @job.tasks.includes(:parent).map do |task|
+      {
+        id: task.id,
+        title: task.title,
+        position: task.position,
+        parent_id: task.parent_id,
+        status: task.status,
+        lock_version: task.lock_version
+      }
+    end
+
+    respond_to do |format|
+      format.json do
+        render json: {
+          error: "The tasks have been modified by another user. Please refresh and try again.",
+          conflict: true,
+          current_state: {
+            job_lock_version: @job.lock_version,
+            tasks: tasks_data
+          }
+        }, status: :conflict
+      end
+
+      format.html do
+        if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
+          # Send turbo stream update with current state
+          render_task_list_update
+        else
+          redirect_to client_job_path(@client, @job),
+            alert: "The tasks have been modified by another user. The page has been refreshed with the latest changes."
+        end
+      end
+    end
+  end
 
   def set_client
     @client = Client.find(params[:client_id])

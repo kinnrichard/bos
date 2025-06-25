@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_24_121535) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_25_035005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -99,8 +99,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_24_121535) do
     t.time "due_time"
     t.date "start_on"
     t.time "start_time"
+    t.integer "lock_version", default: 0, null: false
     t.index ["client_id"], name: "index_jobs_on_client_id"
     t.index ["created_by_id"], name: "index_jobs_on_created_by_id"
+    t.index ["lock_version"], name: "index_jobs_on_lock_version"
   end
 
   create_table "notes", force: :cascade do |t|
@@ -301,8 +303,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_24_121535) do
     t.bigint "parent_id"
     t.integer "subtasks_count", default: 0
     t.datetime "reordered_at", default: -> { "CURRENT_TIMESTAMP" }
+    t.integer "lock_version", default: 0, null: false
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
     t.index ["job_id"], name: "index_tasks_on_job_id"
+    t.index ["lock_version"], name: "index_tasks_on_lock_version"
     t.index ["parent_id"], name: "index_tasks_on_parent_id"
     t.index ["reordered_at"], name: "index_tasks_on_reordered_at"
   end
