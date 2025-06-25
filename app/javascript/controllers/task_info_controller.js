@@ -258,10 +258,6 @@ export default class extends BasePopoverController {
     }
   }
   
-  close() {
-    this.hide()
-  }
-  
   onHide() {
     // Clear timer when hiding
     if (this.timerInterval) {
@@ -327,22 +323,40 @@ export default class extends BasePopoverController {
   }
   
   prependNote(note) {
-    // Add note to timeline
-    const noteHtml = `
-      <div class="timeline-item timeline-item--note" data-note-id="${note.id}">
-        <div class="timeline-content">
-          <span class="timeline-emoji">📝</span>
-          <span class="timeline-note">${this.escapeHtml(note.content)}</span>
+    // Check if we need a new header
+    const lastItem = this.timelineContainerTarget.lastElementChild
+    const needsHeader = !lastItem || !lastItem.classList.contains('timeline-header') || 
+                       !lastItem.textContent.includes(note.user_name) || 
+                       !lastItem.textContent.includes('Today')
+    
+    let html = ''
+    if (needsHeader) {
+      html += `
+        <div class="timeline-header">
+          <span class="timeline-header-user">${note.user_name}</span>
+          <span class="timeline-header-separator">, </span>
+          <span class="timeline-header-date">Today</span>
         </div>
-        <div class="timeline-meta">
-          <span>${note.user_name}, </span>
-          <span>today at ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+      `
+    }
+    
+    // Add note to timeline
+    html += `
+      <div class="timeline-item timeline-item--note" data-note-id="${note.id}">
+        <div class="timeline-row">
+          <div class="timeline-content">
+            <span class="timeline-emoji">📝</span>
+            <span class="timeline-note">${this.escapeHtml(note.content)}</span>
+          </div>
+          <div class="timeline-time">
+            <span>${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+          </div>
         </div>
       </div>
     `
     
     // Insert at the end of timeline (newest items at bottom)
-    this.timelineContainerTarget.insertAdjacentHTML('beforeend', noteHtml)
+    this.timelineContainerTarget.insertAdjacentHTML('beforeend', html)
     
     // Scroll to bottom to show new note
     const timelineSection = this.timelineContainerTarget.closest('.timeline-section')

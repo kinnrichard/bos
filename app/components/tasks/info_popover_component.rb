@@ -35,21 +35,14 @@ module Components
 
           # Popover content
           div(class: "popover-content") do
-            # Header with close button
+            # Header
             div(class: "popover-header") do
               h3 { "Task Info" }
-              button(
-                class: "close-button",
-                data: { action: "click->task-info#close" },
-                aria_label: "Close popover"
-              ) { "✕" }
+              render_header_duration
             end
 
             # Main content area
             div(class: "popover-body") do
-              # Duration section
-              render_duration_section
-
               # Timeline section (notes and status changes combined)
               render_timeline
 
@@ -62,19 +55,16 @@ module Components
 
       private
 
-      def render_duration_section
-        div(class: "duration-section") do
-          if @task.in_progress?
-            div(class: "timer active") do
+      def render_header_duration
+        if @task.in_progress? || @task.time_in_progress > 0
+          div(class: "header-duration") do
+            if @task.in_progress?
               span(class: "timer-icon") { "⏱️" }
-              span(class: "timer-display", data: {
+              span(class: "timer-display active", data: {
                 task_info_target: "timer",
                 duration: @task.time_in_progress
               }) { @task.formatted_time_in_progress || "0 min" }
-              span(class: "timer-status") { "Running" }
-            end
-          elsif @task.time_in_progress > 0
-            div(class: "timer") do
+            else
               span(class: "timer-icon") { "⏱️" }
               span(class: "timer-display") { @task.formatted_time_in_progress }
             end
@@ -89,11 +79,10 @@ module Components
             timeline_items = get_timeline_items
 
             if timeline_items.any?
-              timeline_items.each do |item|
-                render_timeline_item(item)
-              end
+              render_grouped_timeline_items(timeline_items)
             else
               # Always show created as first item
+              render_timeline_header(nil, @task.created_at)
               render_timeline_item({
                 type: :created,
                 timestamp: @task.created_at,
@@ -154,6 +143,45 @@ module Components
         items.sort_by { |item| item[:timestamp] }
       end
 
+      def render_grouped_timeline_items(items)
+        current_user = nil
+        current_date = nil
+
+        items.each do |item|
+          # Check if we need a new header
+          item_date = item[:timestamp].to_date
+          item_user = item[:user]
+
+          if current_user != item_user || current_date != item_date
+            render_timeline_header(item_user, item[:timestamp])
+            current_user = item_user
+            current_date = item_date
+          end
+
+          render_timeline_item(item)
+        end
+      end
+
+      def render_timeline_header(user, timestamp)
+        div(class: "timeline-header") do
+          span(class: "timeline-header-user") { user&.name || "System" }
+          span(class: "timeline-header-separator") { ", " }
+          span(class: "timeline-header-date") { format_header_date(timestamp) }
+        end
+      end
+
+      def format_header_date(timestamp)
+        if timestamp.today?
+          "Today"
+        elsif timestamp.yesterday?
+          "Yesterday"
+        elsif timestamp.year == Time.current.year
+          timestamp.strftime("%b %d")
+        else
+          timestamp.strftime("%b %d, %Y")
+        end
+      end
+
       def render_timeline_item(item)
         case item[:type]
         when :created
@@ -167,43 +195,42 @@ module Components
 
       def render_created_item(item)
         div(class: "timeline-item") do
-          div(class: "timeline-content") do
-            span(class: "timeline-emoji") { "⚫" }
-            span(class: "timeline-label") { "Created" }
-          end
-          div(class: "timeline-meta") do
-            if item[:user]
-              span { "#{item[:user].name}, " }
+          div(class: "timeline-row") do
+            div(class: "timeline-content") do
+              span(class: "timeline-emoji") { "⚫" }
+              span(class: "timeline-label") { "Created" }
             end
-            span { format_timestamp(item[:timestamp]) }
+            div(class: "timeline-time") do
+              span { format_time_only(item[:timestamp]) }
+            end
           end
         end
       end
 
       def render_status_change_item(item)
         div(class: "timeline-item") do
-          div(class: "timeline-content") do
-            span(class: "timeline-emoji") { status_emoji(item[:status]) }
-            span(class: "timeline-label") { status_label(item[:status]) }
-          end
-          div(class: "timeline-meta") do
-            if item[:user]
-              span { "#{item[:user].name}, " }
+          div(class: "timeline-row") do
+            div(class: "timeline-content") do
+              span(class: "timeline-emoji") { status_emoji(item[:status]) }
+              span(class: "timeline-label") { status_label(item[:status]) }
             end
-            span { format_timestamp(item[:timestamp]) }
+            div(class: "timeline-time") do
+              span { format_time_only(item[:timestamp]) }
+            end
           end
         end
       end
 
       def render_note_item(item)
         div(class: "timeline-item timeline-item--note", data: { note_id: item[:note]&.id }) do
-          div(class: "timeline-content") do
-            span(class: "timeline-emoji") { "📝" }
-            span(class: "timeline-note") { item[:content] }
-          end
-          div(class: "timeline-meta") do
-            span { "#{item[:user].name}, " }
-            span { format_timestamp(item[:timestamp]) }
+          div(class: "timeline-row") do
+            div(class: "timeline-content") do
+              span(class: "timeline-emoji") { "📝" }
+              span(class: "timeline-note") { item[:content] }
+            end
+            div(class: "timeline-time") do
+              span { format_time_only(item[:timestamp]) }
+            end
           end
         end
       end
@@ -221,10 +248,9 @@ module Components
           )
           div(class: "note-actions") do
             button(
-              class: "button button--primary button--sm",
+              class: "button button--primary",
               data: { action: "click->task-info#addNote" }
             ) { "Add Note" }
-            span(class: "hint") { "Cmd+Enter to add" }
           end
         end
       end
@@ -261,6 +287,10 @@ module Components
         else
           timestamp.strftime("%b %d, %Y at %l:%M %p").strip
         end
+      end
+
+      def format_time_only(timestamp)
+        timestamp.strftime("%l:%M %p").strip
       end
     end
   end
