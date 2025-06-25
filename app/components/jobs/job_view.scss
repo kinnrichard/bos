@@ -104,7 +104,13 @@
 
 // Task wrapper for drag and drop
 .task-wrapper {
-  // No styles needed, just a container
+  position: relative;
+  z-index: auto; // Don't create stacking context by default
+  
+  // When contains a task with open dropdown, lift it above others
+  &:has([data-dropdown-open="true"]) {
+    z-index: 1000 !important;
+  }
 }
 
 // Task item - unified for all tasks regardless of depth
@@ -126,7 +132,12 @@
   -ms-user-select: none;
   will-change: transform; // Optimize for animations
   position: relative;
-  z-index: auto; // Don't create unnecessary stacking contexts
+  z-index: 1; // Base z-index for all tasks
+  
+  // When this task has an open dropdown, lift it above others
+  &:has([data-dropdown-open="true"]) {
+    z-index: 1000 !important;
+  }
   
   // Smooth transitions for FLIP animations
   &[data-flip-animating="true"] {
@@ -191,6 +202,13 @@
   -webkit-user-select: none !important;
   -moz-user-select: none !important;
   -ms-user-select: none !important;
+  position: relative !important;
+  z-index: 1 !important;
+  
+  // When this task has an open dropdown, lift it above others
+  &:has([data-dropdown-open="true"]) {
+    z-index: 1000 !important;
+  }
   
   // Selected state with higher specificity
   &.selected {
@@ -256,6 +274,11 @@
   padding-top: 2px;
   position: relative;
   z-index: auto; // Don't create stacking context
+  
+  // When dropdown is open, ensure it's above everything
+  &[data-dropdown-open="true"] {
+    z-index: 1001 !important;
+  }
 }
 
 // Task status button
@@ -536,6 +559,8 @@
     background-color: var(--bg-secondary) !important;
     border: 1px solid var(--border-primary) !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
   }
 }
 
