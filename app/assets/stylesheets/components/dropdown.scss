@@ -33,6 +33,11 @@
   .popover & {
     z-index: 1200;
   }
+  
+  /* Task status dropdowns need extra high z-index */
+  .task-status-container & {
+    z-index: 10000 !important;
+  }
 }
 
 /* Ensure dropdown containers don't clip their menus */

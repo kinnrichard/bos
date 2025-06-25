@@ -120,6 +120,8 @@
   -moz-user-select: none;
   -ms-user-select: none;
   will-change: transform; // Optimize for animations
+  position: relative;
+  z-index: 1; // Base z-index for task items
   
   // Smooth transitions for FLIP animations
   &[data-flip-animating="true"] {
@@ -248,6 +250,7 @@
   flex-shrink: 0;
   padding-top: 2px;
   position: relative;
+  z-index: 2; // Higher than task items to ensure dropdowns work
 }
 
 // Task status button
@@ -515,11 +518,17 @@
   }
 }
 
-// Task status dropdown specific width
-.task-status-container .dropdown-menu {
-  min-width: 220px; // Wide enough for "Successfully Completed"
-  width: max-content; // Grow to fit content
-  max-width: 300px; // But not too wide
+// Task status dropdown specific width and z-index
+.task-status-container {
+  z-index: 1; // Ensure container has base z-index
+  
+  .dropdown-menu {
+    min-width: 220px; // Wide enough for "Successfully Completed"
+    width: max-content; // Grow to fit content
+    max-width: 300px; // But not too wide
+    z-index: 10000 !important; // Ensure dropdown appears above everything
+    position: fixed !important; // Force fixed positioning
+  }
 }
 
 // New task placeholder uses contenteditable task-title
@@ -792,7 +801,7 @@
   opacity: 0.5;
   transform: scale(0.98);
   transition: all 200ms ease-out;
-  z-index: 1000; // Ensure dragged item is on top
+  z-index: 100; // Dragged item above others but below dropdowns
   
   .task-item,
   .subtask-item {
