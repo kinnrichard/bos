@@ -15,11 +15,15 @@
 
 /* Main popover container */
 .popover {
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-secondary, #1C1C1D); /* Fallback to solid dark color */
   border: 1px solid var(--border-primary);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   z-index: 1000;
+  
+  /* Ensure solid background - no transparency */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   
   /* Default positioning - can be overridden */
   position: absolute;
@@ -27,12 +31,12 @@
   overflow: visible; /* Allow children to extend outside */
   
   /* Animation properties */
-  opacity: 1;
   transform: translateY(0) scale(1);
   transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0.2s;
   
   /* Visible state - default */
   &:not(.hidden) {
+    opacity: 1 !important; /* Ensure fully opaque when visible */
     animation: popoverFadeIn 0.2s ease-out;
   }
   

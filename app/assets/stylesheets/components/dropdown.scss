@@ -13,11 +13,16 @@
   left: 0;
   margin-top: 4px;
   z-index: 1100; /* Higher than popover's 1000 */
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-secondary, #1C1C1D); /* Fallback to solid dark color */
   border: 1px solid var(--border-primary);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 100%;
+  
+  /* Ensure solid background - no transparency */
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   
   /* When inside a popover, ensure it can escape bounds */
   .popover & {
@@ -71,7 +76,7 @@
   align-items: center;
   width: 100%;
   padding: 8px 12px;
-  background: none;
+  background: transparent; /* Explicitly transparent, will inherit parent background */
   border: none;
   color: var(--text-primary);
   font-size: 14px;
