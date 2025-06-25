@@ -193,7 +193,7 @@ module Views
                 }
               ) do
                 span(class: "timer-icon") { "⏱️" }
-                span(class: "timer-display") { format_time_duration(time_seconds) || "0m" }
+                span(class: "timer-display") { format_time_duration(time_seconds) || "0 min" }
               end
             elsif time_seconds > 0
               div(class: "task-timer") do
@@ -289,13 +289,15 @@ module Views
       def format_time_duration(seconds)
         return nil if seconds == 0
 
-        hours = seconds / 3600
+        hours = seconds / 3600.0
         minutes = (seconds % 3600) / 60
 
-        if hours > 0
-          "#{hours}h #{minutes}m"
+        if hours >= 1.0
+          # Show only hours with exactly 1 decimal place
+          "#{format('%.1f', hours)} hr"
         else
-          "#{minutes}m"
+          # Show only minutes, rounded down
+          "#{minutes.floor} min"
         end
       end
     end

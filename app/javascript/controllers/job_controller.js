@@ -2219,13 +2219,15 @@ export default class extends Controller {
   }
   
   formatTime(totalSeconds) {
-    const hours = Math.floor(totalSeconds / 3600)
+    const hours = totalSeconds / 3600
     const minutes = Math.floor((totalSeconds % 3600) / 60)
     
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`
+    if (hours >= 1.0) {
+      // Show only hours with exactly 1 decimal place
+      return `${hours.toFixed(1)} hr`
     } else {
-      return `${minutes}m`
+      // Show only minutes, rounded down
+      return `${minutes} min`
     }
   }
   
