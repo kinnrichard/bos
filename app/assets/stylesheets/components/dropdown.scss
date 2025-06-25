@@ -5,6 +5,11 @@
  * and proper z-index layering above popovers.
  */
 
+/* Force all dropdowns to highest z-index layer */
+.dropdown-menu[style*="position: fixed"] {
+  z-index: 10000 !important;
+}
+
 /* Ensure dropdowns in popovers can extend beyond bounds */
 .popover .dropdown-container {
   position: relative;
@@ -37,6 +42,7 @@
   /* Task status dropdowns need extra high z-index */
   .task-status-container & {
     z-index: 10000 !important;
+    position: fixed !important; // Force fixed positioning
   }
 }
 
@@ -44,6 +50,7 @@
 .dropdown-container {
   position: relative;
   overflow: visible !important;
+  z-index: auto !important; // Don't create new stacking context
 }
 
 /* Generic dropdown option styles */

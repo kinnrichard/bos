@@ -89,12 +89,17 @@
 .tasks-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: visible; // Allow dropdowns to extend horizontally
   padding: 24px 32px;
   background-color: #000000;
+  position: relative;
+  z-index: auto; // Don't create stacking context
 }
 
 .tasks-list {
   max-width: 100%;
+  position: relative;
+  z-index: auto; // Don't create stacking context
 }
 
 // Task wrapper for drag and drop
@@ -121,7 +126,7 @@
   -ms-user-select: none;
   will-change: transform; // Optimize for animations
   position: relative;
-  z-index: 1; // Base z-index for task items
+  z-index: auto; // Don't create unnecessary stacking contexts
   
   // Smooth transitions for FLIP animations
   &[data-flip-animating="true"] {
@@ -250,7 +255,7 @@
   flex-shrink: 0;
   padding-top: 2px;
   position: relative;
-  z-index: 2; // Higher than task items to ensure dropdowns work
+  z-index: auto; // Don't create stacking context
 }
 
 // Task status button
@@ -518,9 +523,9 @@
   }
 }
 
-// Task status dropdown specific width and z-index
+// Task status dropdown specific styling
 .task-status-container {
-  z-index: 1; // Ensure container has base z-index
+  // Don't set z-index here to avoid creating stacking context
   
   .dropdown-menu {
     min-width: 220px; // Wide enough for "Successfully Completed"
@@ -528,6 +533,9 @@
     max-width: 300px; // But not too wide
     z-index: 10000 !important; // Ensure dropdown appears above everything
     position: fixed !important; // Force fixed positioning
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-primary) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
   }
 }
 
