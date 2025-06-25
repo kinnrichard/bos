@@ -45,14 +45,17 @@ module Components
               ) { "✕" }
             end
 
-            # Duration section (moved from inline)
-            render_duration_section
+            # Main content area
+            div(class: "popover-body") do
+              # Duration section
+              render_duration_section
 
-            # Notes section
-            render_notes_section
+              # Timeline section (notes and status changes combined)
+              render_timeline
 
-            # Status history
-            render_status_history
+              # Add note form at the bottom
+              render_add_note_form
+            end
           end
         end
       end
@@ -60,139 +63,168 @@ module Components
       private
 
       def render_duration_section
-        div(class: "popover-section") do
-          h5 do
-            span(class: "section-icon") { "⏱️" }
-            span { "Duration" }
+        div(class: "duration-section") do
+          if @task.in_progress?
+            div(class: "timer active") do
+              span(class: "timer-icon") { "⏱️" }
+              span(class: "timer-display", data: {
+                task_info_target: "timer",
+                duration: @task.time_in_progress
+              }) { @task.formatted_time_in_progress || "0 min" }
+              span(class: "timer-status") { "Running" }
+            end
+          elsif @task.time_in_progress > 0
+            div(class: "timer") do
+              span(class: "timer-icon") { "⏱️" }
+              span(class: "timer-display") { @task.formatted_time_in_progress }
+            end
           end
+        end
+      end
 
-          div(class: "duration-info") do
-            if @task.in_progress?
-              div(class: "timer active") do
-                span(class: "timer-display", data: {
-                  task_info_target: "timer",
-                  duration: @task.time_in_progress
-                }) { @task.formatted_time_in_progress || "0 min" }
-              end
-              p(class: "timer-status") { "Timer running..." }
-            elsif @task.time_in_progress > 0
-              div(class: "timer") do
-                span(class: "timer-display") { @task.formatted_time_in_progress }
+      def render_timeline
+        div(class: "timeline-section") do
+          div(class: "timeline-container", data: { task_info_target: "timelineContainer" }) do
+            # Get all timeline items
+            timeline_items = get_timeline_items
+
+            if timeline_items.any?
+              timeline_items.each do |item|
+                render_timeline_item(item)
               end
             else
-              p(class: "text-muted") { "No time tracked" }
+              # Always show created as first item
+              render_timeline_item({
+                type: :created,
+                timestamp: @task.created_at,
+                user: nil
+              })
             end
           end
         end
       end
 
-      def render_notes_section
-        div(class: "popover-section") do
-          h5 do
-            span(class: "section-icon") { "📝" }
-            span { "Notes" }
-          end
+      def get_timeline_items
+        items = []
 
-          # Add note form at the top
-          div(class: "add-note-form") do
-            textarea(
-              class: "note-input",
-              placeholder: "Add a note...",
-              rows: 2,
-              data: {
-                task_info_target: "noteInput",
-                action: "keydown.cmd+enter->task-info#addNote keydown.ctrl+enter->task-info#addNote"
-              }
-            )
-            div(class: "note-actions") do
-              button(
-                class: "button button--primary button--sm",
-                data: { action: "click->task-info#addNote" }
-              ) { "Add Note" }
-              span(class: "hint") { "Cmd+Enter to add" }
-            end
-          end
+        # Add created log
+        created_log = @task.activity_logs.find_by(action: "created")
+        if created_log
+          items << {
+            type: :created,
+            timestamp: created_log.created_at,
+            user: created_log.user,
+            log: created_log
+          }
+        else
+          items << {
+            type: :created,
+            timestamp: @task.created_at,
+            user: nil
+          }
+        end
 
-          # Notes list
-          div(class: "notes-container", data: { task_info_target: "notesContainer" }) do
-            if @task.notes.any?
-              @task.notes.order(created_at: :desc).each do |note|
-                render_note(note)
-              end
-            else
-              p(class: "text-muted no-notes") { "No notes yet" }
+        # Add status changes
+        status_logs = @task.activity_logs
+          .where(action: "status_changed")
+          .includes(:user)
+
+        status_logs.each do |log|
+          items << {
+            type: :status_change,
+            timestamp: log.created_at,
+            user: log.user,
+            status: log.metadata["new_status"],
+            log: log
+          }
+        end
+
+        # Add notes
+        @task.notes.includes(:user).each do |note|
+          items << {
+            type: :note,
+            timestamp: note.created_at,
+            user: note.user,
+            content: note.content,
+            note: note
+          }
+        end
+
+        # Sort by timestamp (oldest first)
+        items.sort_by { |item| item[:timestamp] }
+      end
+
+      def render_timeline_item(item)
+        case item[:type]
+        when :created
+          render_created_item(item)
+        when :status_change
+          render_status_change_item(item)
+        when :note
+          render_note_item(item)
+        end
+      end
+
+      def render_created_item(item)
+        div(class: "timeline-item") do
+          div(class: "timeline-content") do
+            span(class: "timeline-emoji") { "⚫" }
+            span(class: "timeline-label") { "Created" }
+          end
+          div(class: "timeline-meta") do
+            if item[:user]
+              span { "#{item[:user].name}, " }
             end
+            span { format_timestamp(item[:timestamp]) }
           end
         end
       end
 
-      def render_note(note)
-        div(class: "note-item", data: { note_id: note.id }) do
-          div(class: "note-header") do
-            span(class: "note-author") { note.user.name }
-            span(class: "note-time") { time_ago_in_words(note.created_at) + " ago" }
+      def render_status_change_item(item)
+        div(class: "timeline-item") do
+          div(class: "timeline-content") do
+            span(class: "timeline-emoji") { status_emoji(item[:status]) }
+            span(class: "timeline-label") { status_label(item[:status]) }
           end
-          div(class: "note-content") { note.content }
-        end
-      end
-
-      def render_status_history
-        div(class: "popover-section") do
-          h5 do
-            span(class: "section-icon") { "📊" }
-            span { "Status History" }
-          end
-
-          status_logs = @task.activity_logs
-            .where(action: [ "status_changed", "created" ])
-            .order(created_at: :desc)
-            .limit(10)
-
-          if status_logs.any?
-            div(class: "status-history") do
-              status_logs.each_with_index do |log, index|
-                is_last = (index == status_logs.length - 1)
-                render_status_change(log, is_last)
-              end
+          div(class: "timeline-meta") do
+            if item[:user]
+              span { "#{item[:user].name}, " }
             end
-          else
-            # If no logs, show created status
-            div(class: "status-history") do
-              div(class: "status-change-item") do
-                div(class: "status-change-info") do
-                  span(class: "status-emoji") { "⚫" }
-                  span(class: "status-label") { "Created" }
-                end
-                div(class: "status-change-meta") do
-                  span(class: "status-time") { @task.created_at.strftime("%b %d, %l:%M %p") }
-                end
-              end
-            end
+            span { format_timestamp(item[:timestamp]) }
           end
         end
       end
 
-      def render_status_change(log, is_last = false)
-        div(class: "status-change-item") do
-          if log.action == "created"
-            div(class: "status-change-info") do
-              span(class: "status-emoji") { "⚫" }
-              span(class: "status-label") { "Created" }
-            end
-            div(class: "status-change-meta") do
-              span(class: "status-time") { log.created_at.strftime("%b %d, %l:%M %p") }
-            end
-          else
-            div(class: "status-change-info") do
-              span(class: "status-emoji") { status_emoji(log.metadata["new_status"]) }
-              span(class: "status-label") { status_label(log.metadata["new_status"]) }
-              unless is_last
-                span(class: "status-arrow") { "→" }
-              end
-            end
-            div(class: "status-change-meta") do
-              span(class: "status-time") { log.created_at.strftime("%b %d, %l:%M %p") }
-            end
+      def render_note_item(item)
+        div(class: "timeline-item timeline-item--note", data: { note_id: item[:note]&.id }) do
+          div(class: "timeline-content") do
+            span(class: "timeline-emoji") { "📝" }
+            span(class: "timeline-note") { item[:content] }
+          end
+          div(class: "timeline-meta") do
+            span { "#{item[:user].name}, " }
+            span { format_timestamp(item[:timestamp]) }
+          end
+        end
+      end
+
+      def render_add_note_form
+        div(class: "add-note-section") do
+          textarea(
+            class: "note-input",
+            placeholder: "Add a note...",
+            rows: 2,
+            data: {
+              task_info_target: "noteInput",
+              action: "keydown.cmd+enter->task-info#addNote keydown.ctrl+enter->task-info#addNote"
+            }
+          )
+          div(class: "note-actions") do
+            button(
+              class: "button button--primary button--sm",
+              data: { action: "click->task-info#addNote" }
+            ) { "Add Note" }
+            span(class: "hint") { "Cmd+Enter to add" }
           end
         end
       end
@@ -219,13 +251,15 @@ module Components
         end
       end
 
-      def time_ago_in_words(time)
-        seconds = Time.current - time
-        case seconds
-        when 0..59 then "#{seconds.to_i}s"
-        when 60..3599 then "#{(seconds / 60).to_i}m"
-        when 3600..86399 then "#{(seconds / 3600).to_i}h"
-        else "#{(seconds / 86400).to_i}d"
+      def format_timestamp(timestamp)
+        if timestamp.today?
+          "today at #{timestamp.strftime("%l:%M %p").strip}"
+        elsif timestamp.yesterday?
+          "yesterday at #{timestamp.strftime("%l:%M %p").strip}"
+        elsif timestamp.year == Time.current.year
+          timestamp.strftime("%b %d at %l:%M %p").strip
+        else
+          timestamp.strftime("%b %d, %Y at %l:%M %p").strip
         end
       end
     end

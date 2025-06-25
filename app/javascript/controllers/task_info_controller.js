@@ -236,7 +236,7 @@ class BasePopoverController extends Controller {
 }
 
 export default class extends BasePopoverController {
-  static targets = ["notesContainer", "noteInput", "timer"]
+  static targets = ["timelineContainer", "noteInput", "timer"]
   static values = { 
     taskId: Number,
     clientId: Number,
@@ -327,23 +327,28 @@ export default class extends BasePopoverController {
   }
   
   prependNote(note) {
-    // Remove "no notes" message if it exists
-    const noNotes = this.notesContainerTarget.querySelector('.no-notes')
-    if (noNotes) {
-      noNotes.remove()
-    }
-    
+    // Add note to timeline
     const noteHtml = `
-      <div class="note-item" data-note-id="${note.id}">
-        <div class="note-header">
-          <span class="note-author">${note.user_name}</span>
-          <span class="note-time">0s ago</span>
+      <div class="timeline-item timeline-item--note" data-note-id="${note.id}">
+        <div class="timeline-content">
+          <span class="timeline-emoji">📝</span>
+          <span class="timeline-note">${this.escapeHtml(note.content)}</span>
         </div>
-        <div class="note-content">${this.escapeHtml(note.content)}</div>
+        <div class="timeline-meta">
+          <span>${note.user_name}, </span>
+          <span>today at ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+        </div>
       </div>
     `
     
-    this.notesContainerTarget.insertAdjacentHTML('afterbegin', noteHtml)
+    // Insert at the end of timeline (newest items at bottom)
+    this.timelineContainerTarget.insertAdjacentHTML('beforeend', noteHtml)
+    
+    // Scroll to bottom to show new note
+    const timelineSection = this.timelineContainerTarget.closest('.timeline-section')
+    if (timelineSection) {
+      timelineSection.scrollTop = timelineSection.scrollHeight
+    }
   }
   
   updateAssignmentDisplay(technician) {
