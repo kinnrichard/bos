@@ -13,6 +13,7 @@ class TaskSortingService
       # Update parent if changed
       if update[:parent_id] != task.parent_id
         task.parent_id = update[:parent_id]
+        task.save! # Save parent change before position update
       end
 
       # Update position if provided

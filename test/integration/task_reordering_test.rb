@@ -176,7 +176,8 @@ class TaskReorderingTest < ActionDispatch::IntegrationTest
     assert_match "<template>", response.body
 
     # Verify task order in rendered HTML
-    assert_match /Task 3.*Task 1.*Task 2/m, response.body
+    # Task 2 (in_progress) will appear first due to status ordering, then Task 3 and Task 1 (both new_task)
+    assert_match /Task 2.*Task 3.*Task 1/m, response.body
   end
 
   test "invalid position handling" do
