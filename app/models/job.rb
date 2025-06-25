@@ -43,6 +43,7 @@ class Job < ApplicationRecord
     .distinct
   }
   scope :closed, -> { where(status: [ :successfully_completed, :cancelled ]) }
+  scope :active, -> { where.not(status: [ :successfully_completed, :cancelled ]) }
   scope :overdue, -> { where("due_on < ?", Date.current).or(where(due_on: Date.current, due_time: ...Time.current)) }
   scope :upcoming, -> { where("due_on >= ?", Date.current) }
 

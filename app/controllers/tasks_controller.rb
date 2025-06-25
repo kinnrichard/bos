@@ -73,6 +73,12 @@ class TasksController < ApplicationController
   end
 
   def destroy
+    # Check if user has permission to delete tasks (same as job deletion permissions)
+    unless current_user.can_delete?(@job)
+      redirect_to client_job_path(@client, @job), alert: "You do not have permission to delete this task."
+      return
+    end
+
     @task.destroy
     redirect_to client_job_path(@client, @job), notice: "Task was successfully deleted."
   end

@@ -120,22 +120,22 @@ module Components
     end
 
     def my_jobs_count
-      Job.joins(:job_assignments).where(job_assignments: { user_id: @current_user.id }).count
+      Job.active.joins(:job_assignments).where(job_assignments: { user_id: @current_user.id }).count
     end
 
     def unassigned_count
-      Job.left_joins(:job_assignments).where(job_assignments: { id: nil }).count
+      Job.active.left_joins(:job_assignments).where(job_assignments: { id: nil }).count
     end
 
     def others_count
-      Job.joins(:job_assignments)
+      Job.active.joins(:job_assignments)
          .where.not(job_assignments: { user_id: @current_user.id })
          .distinct
          .count
     end
 
     def closed_count
-      Job.where(status: [ "successfully_completed", "cancelled" ]).count
+      Job.closed.count
     end
 
     def scheduled_count

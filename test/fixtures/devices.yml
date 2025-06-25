@@ -1,19 +1,28 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Devices associated with clients and people
 
-one:
-  client: one
-  person: one
-  name: Device One
-  model: MyString
-  serial_number: MyString
-  location: MyString
-  notes: MyText
+john_laptop:
+  client: acme
+  person: john_doe
+  name: John's Laptop
+  model: MacBook Pro 14"
+  serial_number: SN123456
+  location: Remote
+  notes: Primary work device
 
-two:
-  client: two
-  person: two
-  name: Device Two
-  model: MyString
-  serial_number: MyString
-  location: MyString
-  notes: MyText
+jane_desktop:
+  client: acme
+  person: jane_smith
+  name: Jane's Desktop
+  model: iMac 24"
+  serial_number: SN789012
+  location: Office
+  notes: Main office workstation
+
+bob_laptop:
+  client: techstartup
+  person: bob_wilson
+  name: Bob's Laptop
+  model: MacBook Air M2
+  serial_number: SN345678
+  location: Remote
+  notes: Development machine

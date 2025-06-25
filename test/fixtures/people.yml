@@ -1,11 +1,21 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# People associated with clients
 
-one:
-  client: one
-  name: MyString
-  notes: MyText
+john_doe:
+  client: acme
+  name: John Doe
+  notes: Primary technical contact
 
-two:
-  client: two
-  name: MyString
-  notes: MyText
+jane_smith:
+  client: acme
+  name: Jane Smith
+  notes: IT Manager
+
+bob_wilson:
+  client: techstartup
+  name: Bob Wilson
+  notes: CTO
+
+alice_johnson:
+  client: individual_client
+  name: Alice Johnson
+  notes: Owner

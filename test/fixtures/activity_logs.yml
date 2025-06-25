@@ -1,15 +1,18 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Activity logs for testing
 
-one:
-  user: one
-  action: MyString
-  loggable: one
-  loggable_type: Loggable
-  metadata: 
+client_created:
+  user: admin
+  action: created
+  loggable: acme (Client)
+  client: acme
+  metadata: {}
 
-two:
-  user: two
-  action: MyString
-  loggable: two
-  loggable_type: Loggable
+job_updated:
+  user: technician
+  action: updated
+  loggable: open_job (Job)
+  client: acme
+  job: open_job
   metadata: 
+    changes:
+      status: [0, 1]

@@ -1,9 +1,17 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Job assignments linking jobs to technicians
 
-one:
-  job: one
-  user: one
+open_job_tech:
+  job: open_job
+  user: technician
 
-two:
-  job: two
-  user: two
+in_progress_job_tech:
+  job: in_progress_job
+  user: technician
+
+urgent_job_admin:
+  job: urgent_job
+  user: admin
+
+urgent_job_owner:
+  job: urgent_job
+  user: owner

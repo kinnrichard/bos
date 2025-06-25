@@ -1,13 +1,21 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Notes attached to various notables
 
-one:
-  notable: one
-  notable_type: Notable
-  user: one
-  content: MyText
+job_note:
+  notable: open_job (Job)
+  user: admin
+  content: "Initial assessment shows hardware failure"
 
-two:
-  notable: two
-  notable_type: Notable
-  user: two
-  content: MyText
+client_note:
+  notable: acme (Client)
+  user: technician
+  content: "Prefer email communication"
+
+task_note:
+  notable: parent_task (Task)
+  user: admin
+  content: "Waiting for parts to arrive"
+
+person_note:
+  notable: john_doe (Person)
+  user: technician
+  content: "Primary contact for technical issues"

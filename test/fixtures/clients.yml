@@ -1,9 +1,21 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Test clients with normalized names
 
-one:
-  name: MyString
-  client_type: MyString
+acme:
+  name: Acme Corporation
+  client_type: business
+  name_normalized: acme corporation
 
-two:
-  name: MyString
-  client_type: MyString
+techstartup:
+  name: TechStartup Inc
+  client_type: business
+  name_normalized: techstartup inc
+
+individual_client:
+  name: John Doe Consulting
+  client_type: individual
+  name_normalized: john doe consulting
+
+inactive_client:
+  name: Old Client Co
+  client_type: business
+  name_normalized: old client co

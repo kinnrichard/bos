@@ -1,19 +1,51 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Test jobs with various statuses and priorities
 
-one:
-  client: one
-  title: MyString
-  status: 1
-  priority: 1
-  due_date: 2025-06-19 04:09:01
-  start_on_date: 2025-06-19 04:09:01
-  created_by: one
+open_job:
+  client: acme
+  title: Fix Server Issues
+  description: Server is running slow
+  status: 0  # open
+  priority: 2  # normal
+  created_by: admin
+  due_on: <%= 3.days.from_now.to_date %>
+  due_time: "14:00:00"
 
-two:
-  client: two
-  title: MyString
-  status: 1
-  priority: 1
-  due_date: 2025-06-19 04:09:01
-  start_on_date: 2025-06-19 04:09:01
-  created_by: two
+in_progress_job:
+  client: acme
+  title: Install Updates
+  description: Monthly security updates
+  status: 1  # in_progress
+  priority: 1  # high
+  created_by: admin
+  start_on: <%= Date.current %>
+  start_time: "09:00:00"
+
+urgent_job:
+  client: techstartup
+  title: Emergency Database Recovery
+  description: Database corruption detected
+  status: 1  # in_progress
+  priority: 0  # critical
+  created_by: owner
+  due_on: <%= Date.current %>
+  due_time: "17:00:00"
+
+completed_job:
+  client: individual_client
+  title: Setup New Workstation
+  description: Configure development environment
+  status: 5  # successfully_completed
+  priority: 2  # normal
+  created_by: technician
+  start_on: <%= 2.days.ago.to_date %>
+  start_time: "10:00:00"
+
+overdue_job:
+  client: acme
+  title: Overdue Maintenance
+  description: This should have been done yesterday
+  status: 0  # open
+  priority: 1  # high
+  created_by: admin
+  due_on: <%= 2.days.ago.to_date %>
+  due_time: "15:00:00"

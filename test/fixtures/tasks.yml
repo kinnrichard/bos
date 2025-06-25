@@ -1,15 +1,80 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Test tasks with various statuses and assignments
 
-one:
-  job: one
-  title: MyString
-  status: 1
-  position: 1
-  assigned_to: one
+# Tasks for open_job
+open_task_1:
+  job: open_job
+  title: Check server logs
+  status: 0  # pending
+  position: 10
+  assigned_to: technician
 
-two:
-  job: two
-  title: MyString
-  status: 1
-  position: 1
-  assigned_to: two
+open_task_2:
+  job: open_job
+  title: Analyze performance metrics
+  status: 0  # pending
+  position: 20
+  assigned_to: technician
+
+open_task_3:
+  job: open_job
+  title: Apply optimizations
+  status: 0  # pending
+  position: 30
+
+# Tasks for in_progress_job
+progress_task_1:
+  job: in_progress_job
+  title: Download updates
+  status: 2  # completed
+  position: 10
+  assigned_to: technician
+
+progress_task_2:
+  job: in_progress_job
+  title: Install updates
+  status: 1  # in_progress
+  position: 20
+  assigned_to: technician
+
+progress_task_3:
+  job: in_progress_job
+  title: Verify installation
+  status: 0  # pending
+  position: 30
+
+# Tasks for urgent_job
+urgent_task_1:
+  job: urgent_job
+  title: Stop database service
+  status: 2  # completed
+  position: 10
+  assigned_to: admin
+
+urgent_task_2:
+  job: urgent_job
+  title: Run recovery tool
+  status: 1  # in_progress
+  position: 20
+  assigned_to: admin
+
+# Tasks with subtasks
+parent_task:
+  job: in_progress_job
+  title: Complex task with subtasks
+  status: 0  # pending
+  position: 40
+  subtasks_count: 2
+
+subtask_1:
+  job: in_progress_job
+  title: Subtask one
+  status: 0  # pending
+  position: 50
+  parent: parent_task
+
+subtask_2:
+  job: in_progress_job
+  title: Subtask two
+  status: 0  # pending
+  position: 60
+  parent: parent_task

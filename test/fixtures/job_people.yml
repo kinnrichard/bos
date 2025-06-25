@@ -1,9 +1,13 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Job-person associations
 
-one:
-  job: one
-  person: one
+open_job_john:
+  job: open_job
+  person: john_doe
 
-two:
-  job: two
-  person: two
+in_progress_job_jane:
+  job: in_progress_job
+  person: jane_smith
+
+urgent_job_bob:
+  job: urgent_job
+  person: bob_wilson
