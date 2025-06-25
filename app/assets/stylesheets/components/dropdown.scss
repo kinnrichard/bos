@@ -5,19 +5,9 @@
  * and proper z-index layering above popovers.
  */
 
-/* Force all dropdowns to highest z-index layer */
-.dropdown-menu[style*="position: fixed"] {
-  z-index: 10000 !important;
-}
-
-/* Ensure dropdowns in popovers can extend beyond bounds */
-.popover .dropdown-container {
-  position: relative;
-  overflow: visible !important;
-}
-
-/* Dropdown menus should appear above popovers */
+/* Force all dropdowns to highest z-index layer and use portal pattern */
 .dropdown-menu {
+  /* Default styles */
   position: absolute;
   top: 100%;
   left: 0;
@@ -29,21 +19,31 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 100%;
   
-  /* When position is fixed (set by JS), don't use min-width */
-  &[style*="position: fixed"] {
-    min-width: 0 !important;
-  }
-  
   /* When inside a popover, ensure it can escape bounds */
   .popover & {
     z-index: 1200;
   }
-  
-  /* Task status dropdowns need extra high z-index */
-  .task-status-container & {
-    z-index: 10000 !important;
-    position: fixed !important; // Force fixed positioning
-  }
+}
+
+/* Fixed positioned dropdowns (set by JS) - CRITICAL for escaping overflow containers */
+.dropdown-menu[style*="position: fixed"] {
+  z-index: 10000 !important;
+  min-width: 0 !important;
+  /* Ensure it's not clipped by any parent */
+  pointer-events: auto !important;
+}
+
+/* Task status dropdowns specifically */
+.task-status-container .dropdown-menu {
+  z-index: 10000 !important;
+}
+
+/* Ensure dropdown containers allow overflow */
+.popover .dropdown-container,
+.task-status-container,
+.dropdown-container {
+  position: relative;
+  overflow: visible !important;
 }
 
 /* Ensure dropdown containers don't clip their menus */
@@ -51,6 +51,18 @@
   position: relative;
   overflow: visible !important;
   z-index: auto !important; // Don't create new stacking context
+}
+
+/* Override any parent overflow hidden when dropdown is open */
+[data-dropdown-open="true"] {
+  overflow: visible !important;
+}
+
+/* Ensure dropdown menus are always visible and clickable */
+.dropdown-menu:not(.hidden) {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* Generic dropdown option styles */

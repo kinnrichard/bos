@@ -44,9 +44,14 @@ export default class extends Controller {
     this._isToggling = false
     
     // Determine if we should auto-detect fixed positioning
-    // But don't switch to fixed if we're inside a fixed-position element (like a popover)
-    if (this.positioningValue === "absolute" && this.isInScrollableContainer() && !this.isInFixedPositionElement()) {
-      this.positioningValue = "fixed"
+    // Use fixed positioning if:
+    // 1. We're in a scrollable container OR
+    // 2. We're in a container with overflow hidden OR
+    // 3. We're specifically configured to use fixed
+    if (this.positioningValue === "absolute") {
+      if (this.isInScrollableContainer() || this.isInOverflowHiddenContainer()) {
+        this.positioningValue = "fixed"
+      }
     }
   }
   
@@ -172,7 +177,7 @@ export default class extends Controller {
     if (this.positioningValue === "fixed") {
       // Fixed positioning - good for dropdowns in scrollable containers
       menuStyle.position = 'fixed'
-      menuStyle.zIndex = this.zIndexValue
+      menuStyle.zIndex = '10000' // Force highest z-index
       
       // Clear any CSS positioning that might interfere
       menuStyle.transform = 'none'
@@ -181,6 +186,9 @@ export default class extends Controller {
       menuStyle.left = 'auto'
       menuStyle.right = 'auto'
       menuStyle.bottom = 'auto'
+      
+      // Ensure pointer events work
+      menuStyle.pointerEvents = 'auto'
       
       // Calculate position based on button location
       const spaceBelow = window.innerHeight - rect.bottom
@@ -241,6 +249,18 @@ export default class extends Controller {
       const style = window.getComputedStyle(element)
       if (style.overflow === 'auto' || style.overflow === 'scroll' || 
           style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        return true
+      }
+      element = element.parentElement
+    }
+    return false
+  }
+  
+  isInOverflowHiddenContainer() {
+    let element = this.element.parentElement
+    while (element && element !== document.body) {
+      const style = window.getComputedStyle(element)
+      if (style.overflow === 'hidden' || style.overflowX === 'hidden' || style.overflowY === 'hidden') {
         return true
       }
       element = element.parentElement

@@ -101,7 +101,8 @@ module Views
               controller: "dropdown",
               dropdown_positioning_value: "fixed",
               dropdown_z_index_value: "10000",
-              dropdown_auto_width: "true"
+              dropdown_auto_width: "true",
+              dropdown_close_on_select_value: "true"
             }
           ) do
             button(
