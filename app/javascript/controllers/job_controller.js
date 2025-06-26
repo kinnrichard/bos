@@ -1,6 +1,22 @@
 import { Controller } from "@hotwired/stimulus"
 import { Turbo } from "@hotwired/turbo-rails"
 import { taskStatusEmoji, jobStatusEmoji, jobPriorityEmoji, noteIconSVG, infoIconSVG } from "shared/icons"
+import { ApiClient } from "shared/api_helpers"
+import { SelectionManager } from "shared/selection_manager"
+import { TaskRenderer } from "shared/task_renderer"
+import { 
+  ANIMATION, 
+  POSITIONING, 
+  KEYBOARD_SHORTCUTS, 
+  TASK_STATUSES,
+  JOB_STATUSES,
+  PRIORITIES,
+  CLASSES,
+  DATA_ATTRS,
+  STORAGE_KEYS,
+  API_FIELDS,
+  ERRORS
+} from "shared/constants"
 
 export default class extends Controller {
   static targets = ["title", "statusBubble", "popover", "tasksContainer", "tasksList", 
@@ -15,8 +31,6 @@ export default class extends Controller {
   }
   
   timerInterval = null
-  selectedTasks = new Set()
-  lastClickedTask = null
   clickTimer = null
   activeStatusDropdown = null
   
@@ -24,6 +38,11 @@ export default class extends Controller {
   taskLockVersions = new Map()
   jobLockVersion = null
   activeStatusTask = null
+  
+  // Initialize helpers
+  api = null
+  selectionManager = null
+  taskRenderer = null
   
   
   get jobIdValue() {
@@ -62,9 +81,13 @@ export default class extends Controller {
   }
 
   connect() {
+    // Initialize helpers
+    this.api = new ApiClient(this)
+    this.selectionManager = new SelectionManager(this)
+    this.taskRenderer = new TaskRenderer(this)
+    
     // Clear any stale selections on connect
-    this.selectedTasks.clear()
-    this.lastClickedTask = null
+    this.selectionManager.clearAll()
     
     // Start timers for task time tracking
     this.startTimers()
@@ -245,63 +268,32 @@ export default class extends Controller {
     }
     
     // Handle selection
-    if (event.metaKey || event.ctrlKey) {
-      // Toggle selection with Cmd/Ctrl
-      this.toggleTaskSelection(taskElement)
-    } else if (event.shiftKey && this.lastClickedTask) {
-      // Range select with Shift
-      this.selectTaskRange(this.lastClickedTask, taskElement)
-    } else {
-      // Regular click on task row (not on text) - just select
-      this.clearSelection()
-      this.selectTask(taskElement)
-    }
-    
-    this.lastClickedTask = taskElement
+    this.selectionManager.handleClick(taskElement, event)
   }
   
+  // Selection methods delegated to SelectionManager
   selectTask(taskElement) {
-    this.selectedTasks.add(taskElement)
-    taskElement.classList.add('selected')
-    taskElement.setAttribute('aria-selected', 'true')
+    this.selectionManager.select(taskElement)
   }
   
   deselectTask(taskElement) {
-    this.selectedTasks.delete(taskElement)
-    taskElement.classList.remove('selected')
-    taskElement.setAttribute('aria-selected', 'false')
+    this.selectionManager.deselect(taskElement)
   }
   
   toggleTaskSelection(taskElement) {
-    if (this.selectedTasks.has(taskElement)) {
-      this.deselectTask(taskElement)
-    } else {
-      this.selectTask(taskElement)
-    }
+    this.selectionManager.toggle(taskElement)
   }
   
   clearSelection() {
-    this.selectedTasks.forEach(task => {
-      task.classList.remove('selected')
-      task.setAttribute('aria-selected', 'false')
-    })
-    this.selectedTasks.clear()
+    this.selectionManager.clearAll()
   }
   
   selectTaskRange(fromTask, toTask) {
-    const allTasks = [...document.querySelectorAll('.task-item:not(.new-task)')]
-    const fromIndex = allTasks.indexOf(fromTask)
-    const toIndex = allTasks.indexOf(toTask)
-    
-    if (fromIndex === -1 || toIndex === -1) return
-    
-    const start = Math.min(fromIndex, toIndex)
-    const end = Math.max(fromIndex, toIndex)
-    
-    this.clearSelection()
-    for (let i = start; i <= end; i++) {
-      this.selectTask(allTasks[i])
-    }
+    this.selectionManager.selectRange(fromTask, toTask)
+  }
+  
+  selectAllTasks() {
+    this.selectionManager.selectAll()
   }
   
   selectAllTasks() {
@@ -347,7 +339,7 @@ export default class extends Controller {
         return false
       }
       // Otherwise, deselect all tasks (only when not in input field)
-      else if (!isInputField && this.selectedTasks.size > 0) {
+      else if (!isInputField && this.selectionManager.hasSelection()) {
         event.preventDefault()
         this.clearSelection()
         return false
@@ -376,7 +368,7 @@ export default class extends Controller {
     }
     
     // Spacebar to open status menu
-    if (event.key === ' ' && this.selectedTasks.size === 1 && !isInputField) {
+    if (event.key === ' ' && this.selectionManager.hasSelection() && this.selectionManager.selectedTasks.size === 1 && !isInputField) {
       event.preventDefault()
       this.openStatusMenuForSelectedTask()
       return false
@@ -384,22 +376,10 @@ export default class extends Controller {
     
     
     // Status change shortcuts (Cmd+Shift+...)
-    if (event.metaKey && event.shiftKey && this.selectedTasks.size > 0) {
+    if (event.metaKey && event.shiftKey && this.selectionManager.hasSelection()) {
       const activeElement = document.activeElement
       if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
-        let newStatus = null
-        
-        switch(event.key.toLowerCase()) {
-          case 'p': // In Progress
-            newStatus = 'in_progress'
-            break
-          case 'n': // New
-            newStatus = 'new_task'
-            break
-          case 'c': // Completed Successfully
-            newStatus = 'successfully_completed'
-            break
-        }
+        const newStatus = KEYBOARD_SHORTCUTS.STATUS[event.key.toLowerCase()]
         
         if (newStatus) {
           event.preventDefault()
@@ -467,7 +447,7 @@ export default class extends Controller {
         }
         
         // Animate removal
-        wrapper.style.transition = 'opacity 0.2s ease-out'
+        wrapper.style.transition = `opacity ${ANIMATION.BLUR_DELAY}ms ease-out`
         wrapper.style.opacity = '0'
         
         setTimeout(() => {
@@ -481,7 +461,7 @@ export default class extends Controller {
               tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click + to add a task.</p></div>'
             }
           }
-        }, 200)
+        }, ANIMATION.BLUR_DELAY)
       } else if (response.status === 404) {
         // Task might already be deleted, remove from UI anyway
         console.warn('Task not found on server, removing from UI')
@@ -690,17 +670,13 @@ export default class extends Controller {
     this.updateStatusBubble()
     
     // Update the server
-    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-CSRF-Token": this.getCsrfToken()
-      },
-      body: JSON.stringify({ job: { status: newStatus } })
-    }).then(response => response.json())
+    this.api.updateResource('job', this.jobIdValue, 'status', newStatus)
       .then(data => {
         // Status already updated above
+      })
+      .catch(error => {
+        console.error('Failed to update status:', error)
+        // Optionally revert the optimistic update
       })
   }
 
@@ -736,17 +712,13 @@ export default class extends Controller {
     this.updateStatusBubble()
     
     // Update the server
-    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}`, {
-      method: "PATCH", 
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-CSRF-Token": this.getCsrfToken()
-      },
-      body: JSON.stringify({ job: { priority: newPriority } })
-    }).then(response => response.json())
+    this.api.updateResource('job', this.jobIdValue, 'priority', newPriority)
       .then(data => {
         // Priority already updated above
+      })
+      .catch(error => {
+        console.error('Failed to update priority:', error)
+        // Optionally revert the optimistic update
       })
   }
 
@@ -1758,43 +1730,31 @@ export default class extends Controller {
   }
   
   // Update status for all selected tasks
-  updateSelectedTasksStatus(newStatus) {
-    const tasksToUpdate = Array.from(this.selectedTasks)
+  async updateSelectedTasksStatus(newStatus) {
+    const tasksToUpdate = this.selectionManager.getSelectedElements()
     
     // Update each selected task
-    tasksToUpdate.forEach(taskElement => {
+    const updates = tasksToUpdate.map(async taskElement => {
       const taskId = taskElement.dataset.taskId
       
-      fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks/${taskId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": this.getCsrfToken()
-        },
-        body: JSON.stringify({ task: { status: newStatus } })
-      }).then(response => response.json())
-        .then(data => {
-          if (data.status === 'success') {
-            // Update the task element
-            taskElement.dataset.taskStatus = newStatus
-            taskElement.classList.toggle("completed", newStatus === "successfully_completed")
-            
-            // Update the status button emoji
-            const statusButton = taskElement.querySelector(".task-status-button span")
-            if (statusButton) {
-              statusButton.textContent = taskStatusEmoji(newStatus)
-            }
-            
-            // Update active state in dropdown if open
-            taskElement.querySelectorAll(".task-status-option").forEach(opt => {
-              opt.classList.toggle("active", opt.dataset.status === newStatus)
-            })
-          }
-        })
-        .catch(error => {
-          console.error('Error updating task status:', error)
-        })
+      try {
+        const data = await this.api.updateResource('task', taskId, 'status', newStatus)
+        
+        if (data.status === 'success') {
+          // Update the task element using TaskRenderer
+          this.taskRenderer.updateTaskElement(taskElement, { status: newStatus })
+          
+          // Update active state in dropdown if open
+          taskElement.querySelectorAll(".task-status-option").forEach(opt => {
+            opt.classList.toggle("active", opt.dataset.status === newStatus)
+          })
+        }
+      } catch (error) {
+        console.error('Error updating task status:', error)
+      }
     })
+    
+    await Promise.all(updates)
     
     // Resort after all updates are done
     if (this.shouldResortTasks()) {
@@ -2264,45 +2224,14 @@ export default class extends Controller {
   }
   
   createTaskHtml(task) {
-    const emoji = taskStatusEmoji(task.status)
-    const isCompleted = task.status === 'successfully_completed'
+    const taskElement = this.taskRenderer.createTaskElement(task)
     
-    return `
-      <div class="task-wrapper">
-        <div class="task-item ${isCompleted ? 'completed' : ''}" 
-             data-task-id="${task.id}" 
-             data-task-status="${task.status}" 
-             data-task-position="${task.position || 0}"
-             data-job-target="task"
-             data-action="click->job#handleTaskClick">
-          <div class="task-status-container">
-            <button class="task-status-button" data-action="click->job#toggleTaskStatus">
-              <span>${emoji}</span>
-            </button>
-            <div class="task-status-dropdown hidden" data-job-target="taskStatusDropdown">
-              <!-- Status options will be populated when dropdown opens -->
-            </div>
-          </div>
-          <div class="task-content">
-            <div class="task-title" 
-                 contenteditable="true"
-                 data-action="focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown"
-                 data-task-id="${task.id}"
-                 data-original-title="${task.title || task.name || ''}">${task.title || task.name || ''}</div>
-          </div>
-          <div class="task-right">
-            <!-- Info button -->
-            <button class="task-info-button" 
-                    data-action="click->job#showTaskInfo"
-                    data-task-id="${task.id}"
-                    title="Task details"
-                    aria-label="Show task details">
-              ${infoIconSVG(16, 16)}
-            </button>
-          </div>
-        </div>
-      </div>
-    `
+    // Wrap in task-wrapper div
+    const wrapper = document.createElement('div')
+    wrapper.className = 'task-wrapper'
+    wrapper.appendChild(taskElement)
+    
+    return wrapper.outerHTML
   }
   
   handleArrowNavigation(direction) {

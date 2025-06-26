@@ -1,6 +1,7 @@
 module Views
   module Tasks
     class ListComponent < Phlex::HTML
+      include IconsHelper
       def initialize(job:, tasks_tree:, last_status_changes: nil, time_in_progress: nil)
         @job = job
         @tasks_tree = tasks_tree
@@ -25,7 +26,7 @@ module Views
           ) do
             div(class: "task-status-container") do
               button(class: "task-status-button", disabled: true) do
-                span { "⚫" }
+                span { task_status_emoji("new_task") }
               end
             end
             div(class: "task-content") do
@@ -112,7 +113,7 @@ module Views
                 action: "click->dropdown#toggle"
               }
             ) do
-              span { task.status_emoji || "⚫" }
+              span { task_status_emoji(task.status) }
             end
 
             # Status dropdown menu
@@ -270,15 +271,7 @@ module Views
       end
 
       def render_task_status_options(task)
-        task_statuses = {
-          "new_task" => { emoji: "⚫", label: "New" },
-          "in_progress" => { emoji: "🟢", label: "In Progress" },
-          "paused" => { emoji: "⏸️", label: "Paused" },
-          "successfully_completed" => { emoji: "☑️", label: "Successfully Completed" },
-          "cancelled" => { emoji: "❌", label: "Cancelled" }
-        }
-
-        task_statuses.each do |status, info|
+        TASK_STATUSES.each do |status|
           button(
             class: "dropdown-option task-status-option #{task.status == status ? 'active' : ''}",
             data: {
@@ -287,8 +280,8 @@ module Views
               status: status
             }
           ) do
-            span(class: "status-emoji") { info[:emoji] }
-            span { info[:label] }
+            span(class: "status-emoji") { task_status_emoji(status) }
+            span { task_status_label(status) }
           end
         end
       end

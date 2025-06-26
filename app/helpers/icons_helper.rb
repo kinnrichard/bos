@@ -1,4 +1,10 @@
 module IconsHelper
+  # Status lists
+  TASK_STATUSES = [ "new_task", "in_progress", "successfully_completed", "cancelled" ]
+  JOB_STATUSES = [ "open", "in_progress", "paused", "successfully_completed", "cancelled" ]
+
+  # Priority lists
+  PRIORITIES = [ "critical", "high", "normal", "low", "proactive_followup" ]
   # SVG Icons
   def note_icon_svg(width: 16, height: 16, css_class: nil)
     svg_attrs = {

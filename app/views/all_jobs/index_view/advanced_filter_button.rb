@@ -113,7 +113,7 @@ module Views
                         span(class: "dropdown-value") do
                           if @selected_statuses.any?
                             if @selected_statuses.size == 1
-                              span(class: "status-emoji") { status_emoji(@selected_statuses.first) }
+                              span(class: "status-emoji") { job_status_emoji(@selected_statuses.first) }
                               span { status_label(@selected_statuses.first) }
                             else
                               span { "#{@selected_statuses.size} selected" }
@@ -138,7 +138,7 @@ module Views
                               checked: @selected_statuses.include?(status),
                               class: "status-checkbox"
                             )
-                            span(class: "status-emoji") { status_emoji(status) }
+                            span(class: "status-emoji") { job_status_emoji(status) }
                             span { status_label(status) }
                           end
                         end
@@ -232,18 +232,7 @@ module Views
           colors[user.name.sum % colors.length]
         end
 
-        def status_emoji(status)
-          case status
-          when "open" then "⚫"
-          when "in_progress" then "🟢"
-          when "paused" then "🟡"
-          when "waiting_for_customer" then "🟣"
-          when "waiting_for_scheduled_appointment" then "🔵"
-          when "successfully_completed" then "✅"
-          when "cancelled" then "❌"
-          else "⚪"
-          end
-        end
+        # Remove duplicate method - now using IconsHelper
 
         def status_label(status)
           case status

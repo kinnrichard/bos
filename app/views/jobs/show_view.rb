@@ -153,7 +153,7 @@ module Views
                             span { "#{@job.technicians.size} assigned" }
                           end
                         else
-                          span { "❓" }
+                          span { unassigned_icon }
                           span { "Unassigned" }
                         end
                       end
@@ -294,14 +294,14 @@ module Views
             # Show first technician's initial or emoji
             technician_icon(@job.technicians.first)
           else
-            "❓"
+            unassigned_icon
           end
         end
 
         # Priority emoji (if not normal)
         if @job.priority != "normal"
           span(class: "bubble-icon priority-icon") do
-            priority_emoji(@job.priority)
+            job_priority_emoji(@job.priority)
           end
         end
       end
@@ -309,15 +309,7 @@ module Views
 
 
       def render_status_options
-        statuses = {
-          "open" => { emoji: "⚫", label: "New" },
-          "in_progress" => { emoji: "🟢", label: "In Progress" },
-          "paused" => { emoji: "⏸️", label: "Paused" },
-          "successfully_completed" => { emoji: "☑️", label: "Successfully Completed" },
-          "cancelled" => { emoji: "❌", label: "Cancelled" }
-        }
-
-        statuses.each do |status, info|
+        JOB_STATUSES.each do |status|
           button(
             class: "status-option #{@job.status == status ? 'active' : ''}",
             data: {
@@ -325,22 +317,16 @@ module Views
               status: status
             }
           ) do
-            span(class: "status-emoji") { info[:emoji] }
-            span { info[:label] }
+            span(class: "status-emoji") { job_status_emoji(status) }
+            span { job_status_label(status) }
           end
         end
       end
 
       def render_priority_options
-        priorities = {
-          "critical" => { emoji: "🔥", label: "Critical" },
-          "high" => { emoji: "❗", label: "High" },
-          "normal" => { emoji: "", label: "Normal" },
-          "low" => { emoji: "➖", label: "Low" },
-          "proactive_followup" => { emoji: "💬", label: "Proactive Followup" }
-        }
-
-        priorities.each do |priority, info|
+        PRIORITIES.each do |priority|
+          emoji = job_priority_emoji(priority)
+          label = priority_label(priority)
           button(
             class: "priority-option #{@job.priority == priority ? 'active' : ''}",
             data: {
@@ -348,25 +334,17 @@ module Views
               priority: priority
             }
           ) do
-            if info[:emoji].present?
-              span(class: "priority-emoji") { info[:emoji] }
+            if emoji.present?
+              span(class: "priority-emoji") { emoji }
             else
               span(class: "priority-emoji") { "&nbsp;".html_safe }
             end
-            span { info[:label] }
+            span { label }
           end
         end
       end
 
-      def priority_emoji(priority)
-        case priority
-        when "critical" then "🔥"
-        when "high" then "❗"
-        when "low" then "➖"
-        when "proactive_followup" then "💬"
-        else ""
-        end
-      end
+      # Remove duplicate method - now using IconsHelper
 
       def job_status_emoji(status)
         case status
