@@ -114,7 +114,7 @@ module Views
                           if @selected_statuses.any?
                             if @selected_statuses.size == 1
                               span(class: "status-emoji") { job_status_emoji(@selected_statuses.first) }
-                              span { status_label(@selected_statuses.first) }
+                              span { job_status_label(@selected_statuses.first) }
                             else
                               span { "#{@selected_statuses.size} selected" }
                             end
@@ -139,7 +139,7 @@ module Views
                               class: "status-checkbox"
                             )
                             span(class: "status-emoji") { job_status_emoji(status) }
-                            span { status_label(status) }
+                            span { job_status_label(status) }
                           end
                         end
                       end
@@ -234,18 +234,7 @@ module Views
 
         # Remove duplicate method - now using IconsHelper
 
-        def status_label(status)
-          case status
-          when "open" then "New"
-          when "in_progress" then "In Progress"
-          when "paused" then "Paused"
-          when "waiting_for_customer" then "Waiting for customer"
-          when "waiting_for_scheduled_appointment" then "Waiting for scheduled appointment"
-          when "successfully_completed" then "Successfully Completed"
-          when "cancelled" then "Cancelled"
-          else status.humanize
-          end
-        end
+        # Remove duplicate status_label method - now using IconsHelper
       end
     end
   end

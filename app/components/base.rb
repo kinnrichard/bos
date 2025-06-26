@@ -6,6 +6,7 @@ class Components::Base < Phlex::HTML
   include Phlex::Rails::Helpers::AssetPath
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ButtonTo
+  include IconsHelper
 
   # Register Rails helpers
   register_output_helper :csrf_meta_tags
