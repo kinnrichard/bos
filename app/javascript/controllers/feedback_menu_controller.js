@@ -15,7 +15,10 @@ export default class extends Controller {
     await new Promise(resolve => setTimeout(resolve, 250))
     
     // Navigate to bug report page
-    window.location.href = event.currentTarget.href
+    const link = event.currentTarget || event.target.closest('a')
+    if (link && link.href) {
+      window.location.href = link.href
+    }
   }
   
   requestFeature(event) {

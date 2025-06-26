@@ -1,9 +1,21 @@
 module Views
   module Feedback
     class BugReportView < Views::Base
-      def page_title
-        "Report a Bug"
+      def initialize(current_user:)
+        @current_user = current_user
       end
+
+      def view_template
+        render_layout(
+          title: "Report a Bug - Faultless",
+          current_user: @current_user,
+          hide_sidebar: true
+        ) do
+          main_content
+        end
+      end
+
+      private
 
       def main_content
         div(class: "feedback-container", data: {

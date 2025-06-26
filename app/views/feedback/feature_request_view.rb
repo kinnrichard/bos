@@ -1,9 +1,21 @@
 module Views
   module Feedback
     class FeatureRequestView < Views::Base
-      def page_title
-        "Request a Feature"
+      def initialize(current_user:)
+        @current_user = current_user
       end
+
+      def view_template
+        render_layout(
+          title: "Request a Feature - Faultless",
+          current_user: @current_user,
+          hide_sidebar: true
+        ) do
+          main_content
+        end
+      end
+
+      private
 
       def main_content
         div(class: "feedback-container", data: { controller: "feature-request" }) do

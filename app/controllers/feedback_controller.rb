@@ -4,9 +4,9 @@ class FeedbackController < ApplicationController
   def new
     case @feedback_type
     when "bug"
-      render Views::Feedback::BugReportView.new
+      render Views::Feedback::BugReportView.new(current_user: current_user)
     when "feature"
-      render Views::Feedback::FeatureRequestView.new
+      render Views::Feedback::FeatureRequestView.new(current_user: current_user)
     else
       redirect_to root_path, alert: "Invalid feedback type"
     end
@@ -67,10 +67,20 @@ class FeedbackController < ApplicationController
 
   def format_bug_report_body
     # Parse console logs
-    console_logs = begin
-      JSON.parse(params[:console_logs] || "{}")
-    rescue JSON::ParserError
-      { entries: [], capturedAt: Time.current.iso8601 }
+    console_logs = if params[:console_logs].is_a?(String)
+      begin
+        parsed = JSON.parse(params[:console_logs])
+        # Handle both array format (from test) and object format (from JS)
+        if parsed.is_a?(Array)
+          { "entries" => parsed, "capturedAt" => Time.current.iso8601 }
+        else
+          parsed
+        end
+      rescue JSON::ParserError
+        { "entries" => [], "capturedAt" => Time.current.iso8601 }
+      end
+    else
+      { "entries" => [], "capturedAt" => Time.current.iso8601 }
     end
 
     <<~MARKDOWN
@@ -86,7 +96,7 @@ class FeedbackController < ApplicationController
       - Viewport: #{params[:viewport_size]}
 
       <details>
-      <summary>Console Logs (#{console_logs['entries']&.length || 0} entries)</summary>
+      <summary>Console Logs (#{console_logs["entries"]&.length || 0} entries)</summary>
 
       ```json
       #{JSON.pretty_generate(console_logs)}
