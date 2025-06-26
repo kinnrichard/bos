@@ -56,6 +56,9 @@ Rails.application.routes.draw do
   # Logs routes
   resources :logs, only: [ :index ]
 
+  # Feedback routes
+  resource :feedback, only: [ :new, :create ], controller: "feedback"
+
   # Defines the root path route ("/")
   root "home#show"
 end

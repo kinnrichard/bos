@@ -128,6 +128,22 @@ class Views::Base < Components::Base
                     )
                   end
 
+                  # Feedback section
+                  div(class: "popover-section popover-menu-items") do
+                    link_to(
+                      helpers.raw("🐛 Report a Bug"),
+                      new_feedback_path(type: "bug"),
+                      class: "popover-menu-item",
+                      data: { turbo: false }
+                    )
+                    link_to(
+                      helpers.raw("✨ Request a Feature"),
+                      new_feedback_path(type: "feature"),
+                      class: "popover-menu-item",
+                      data: { turbo: false }
+                    )
+                  end
+
                   # Sign out button
                   div(class: "popover-section popover-actions") do
                     button_to(
