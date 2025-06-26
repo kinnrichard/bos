@@ -100,6 +100,24 @@ class Job < ApplicationRecord
     scheduled_date_times.any?
   end
 
+  # Value object integration
+  def status_object
+    @status_object ||= JobStatus.new(status)
+  end
+
+  def priority_object
+    @priority_object ||= JobPriority.new(priority)
+  end
+
+  # Delegate display methods to value objects
+  delegate :emoji, :label, :color, :with_emoji,
+           to: :status_object,
+           prefix: :status
+
+  delegate :emoji, :label, :color, :with_emoji, :sort_order,
+           to: :priority_object,
+           prefix: :priority
+
   private
 
   def set_defaults

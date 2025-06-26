@@ -130,7 +130,7 @@ module IconsHelper
   # Job Status Emojis
   def job_status_emoji(status)
     case status.to_s
-    when "open" then "🔵"
+    when "open" then "⚫"
     when "in_progress" then "🟢"
     when "paused" then "⏸️"
     when "waiting_for_customer" then "⏳"
@@ -194,6 +194,7 @@ module IconsHelper
     else "❓"
     end
   end
+  alias_method :client_type_icon, :client_type_emoji
 
   def client_icon(client)
     client_type_emoji(client.client_type)
@@ -235,6 +236,13 @@ module IconsHelper
 
   def check_emoji
     "✓"
+  end
+
+  # Technician/User Icons
+  def technician_icon(technician)
+    # For now, use initials. Could be replaced with actual avatars
+    initials = technician.name.split.map(&:first).join.upcase[0..1]
+    span(class: "technician-initials") { initials }
   end
 
   # Helper methods

@@ -119,8 +119,8 @@ module Views
                       }
                     ) do
                       span(class: "dropdown-value") do
-                        span(class: "status-emoji") { job_status_emoji(@job.status) }
-                        span { status_label(@job.status) }
+                        span(class: "status-emoji") { @job.status_emoji }
+                        span { @job.status_label }
                       end
                       span(class: "dropdown-arrow") { "▼" }
                     end
@@ -180,10 +180,10 @@ module Views
                       }
                     ) do
                       span(class: "dropdown-value") do
-                        if priority_emoji(@job.priority).present?
-                          span(class: "priority-emoji") { priority_emoji(@job.priority) }
+                        if @job.priority_emoji.present?
+                          span(class: "priority-emoji") { @job.priority_emoji }
                         end
-                        span { priority_label(@job.priority) }
+                        span { @job.priority_label }
                       end
                       span(class: "dropdown-arrow") { "▼" }
                     end
@@ -285,7 +285,7 @@ module Views
       def render_status_bubble
         # Status icon
         span(class: "bubble-icon status-icon") do
-          job_status_emoji(@job.status)
+          @job.status_emoji
         end
 
         # Assignee or unassigned icon
@@ -301,7 +301,7 @@ module Views
         # Priority emoji (if not normal)
         if @job.priority != "normal"
           span(class: "bubble-icon priority-icon") do
-            job_priority_emoji(@job.priority)
+            @job.priority_emoji
           end
         end
       end
@@ -309,60 +309,40 @@ module Views
 
 
       def render_status_options
-        JOB_STATUSES.each do |status|
+        JobStatus.all.each do |status|
           button(
-            class: "status-option #{@job.status == status ? 'active' : ''}",
+            class: "status-option #{@job.status == status.key.to_s ? 'active' : ''}",
             data: {
               action: "click->job#updateStatus",
-              status: status
+              status: status.key
             }
           ) do
-            span(class: "status-emoji") { job_status_emoji(status) }
-            span { job_status_label(status) }
+            span(class: "status-emoji") { status.emoji }
+            span { status.label }
           end
         end
       end
 
       def render_priority_options
-        PRIORITIES.each do |priority|
-          emoji = job_priority_emoji(priority)
-          label = priority_label(priority)
+        JobPriority.all.each do |priority|
           button(
-            class: "priority-option #{@job.priority == priority ? 'active' : ''}",
+            class: "priority-option #{@job.priority == priority.key.to_s ? 'active' : ''}",
             data: {
               action: "click->job#updatePriority",
-              priority: priority
+              priority: priority.key
             }
           ) do
-            if emoji.present?
-              span(class: "priority-emoji") { emoji }
+            if priority.emoji.present?
+              span(class: "priority-emoji") { priority.emoji }
             else
               span(class: "priority-emoji") { "&nbsp;".html_safe }
             end
-            span { label }
+            span { priority.label }
           end
         end
       end
 
-      # Remove duplicate method - now using IconsHelper
-
-      def status_label(status)
-        case status
-        when "open" then "New"
-        when "in_progress" then "In Progress"
-        when "paused" then "Paused"
-        when "successfully_completed" then "Successfully Completed"
-        when "cancelled" then "Cancelled"
-        else status.humanize
-        end
-      end
-
-      def priority_label(priority)
-        case priority
-        when "proactive_followup" then "Proactive Followup"
-        else priority&.humanize || "Normal"
-        end
-      end
+      # Removed duplicate methods - now using IconsHelper
 
 
       def render_assignee_options

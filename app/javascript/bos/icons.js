@@ -24,7 +24,7 @@ export const taskStatusLabel = (status) => {
 // Job Status Emojis
 export const jobStatusEmoji = (status) => {
   switch (status) {
-    case "open": return "🔵"
+    case "open": return "⚫"
     case "in_progress": return "🟢"
     case "paused": return "⏸️"
     case "waiting_for_customer": return "⏳"

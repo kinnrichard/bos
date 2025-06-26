@@ -139,6 +139,16 @@ class Task < ApplicationRecord
     (completed.to_f / total * 100).round
   end
 
+  # Value object integration
+  def status_object
+    @status_object ||= TaskStatus.new(status)
+  end
+
+  # Delegate display methods to value objects
+  delegate :emoji, :label, :color, :with_emoji,
+           to: :status_object,
+           prefix: :status
+
   private
 
   def set_defaults
