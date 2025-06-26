@@ -2,7 +2,7 @@
 
 class Views::Base < Components::Base
   include JobStatusHelper
-  include IconHelper
+  include IconsHelper
   # The `Views::Base` is an abstract class for all your views.
 
   # By default, it inherits from `Components::Base`, but you

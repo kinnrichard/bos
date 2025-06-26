@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { Turbo } from "@hotwired/turbo-rails"
+import { taskStatusEmoji, jobStatusEmoji, jobPriorityEmoji, noteIconSVG, infoIconSVG } from "shared/icons"
 
 export default class extends Controller {
   static targets = ["title", "statusBubble", "popover", "tasksContainer", "tasksList", 
@@ -561,7 +562,7 @@ export default class extends Controller {
           // Update status button
           const statusButton = taskElement.querySelector('.task-status-button span')
           if (statusButton) {
-            statusButton.textContent = '❌'
+            statusButton.textContent = taskStatusEmoji('cancelled')
           }
           
           // Clear selection if task was selected
@@ -670,28 +671,12 @@ export default class extends Controller {
     }
     
     // Update the dropdown button text immediately
-    const statusEmojis = {
-      'open': '⚫',
-      'new': '⚫',
-      'in_progress': '🟢',
-      'paused': '⏸️',
-      'successfully_completed': '☑️',
-      'cancelled': '❌'
-    }
-    const statusLabels = {
-      'open': 'New',
-      'new': 'New',
-      'in_progress': 'In Progress',
-      'paused': 'Paused',
-      'successfully_completed': 'Successfully Completed',
-      'cancelled': 'Cancelled'
-    }
     
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
     if (dropdownValue) {
       dropdownValue.innerHTML = `
-        <span class="status-emoji">${statusEmojis[newStatus] || '⚫'}</span>
-        <span>${statusLabels[newStatus] || newStatus}</span>
+        <span class="status-emoji">${taskStatusEmoji(newStatus)}</span>
+        <span>${newStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
       `
     }
     
@@ -731,25 +716,11 @@ export default class extends Controller {
     }
     
     // Update the dropdown button text immediately
-    const priorityEmojis = {
-      'critical': '🔥',
-      'high': '❗',
-      'normal': '',
-      'low': '➖',
-      'proactive_followup': '💬'
-    }
-    const priorityLabels = {
-      'critical': 'Critical',
-      'high': 'High',
-      'normal': 'Normal',
-      'low': 'Low',
-      'proactive_followup': 'Proactive Followup'
-    }
     
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
     if (dropdownValue) {
-      const emoji = priorityEmojis[newPriority] || ''
-      const label = priorityLabels[newPriority] || newPriority
+      const emoji = jobPriorityEmoji(newPriority)
+      const label = newPriority.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
       dropdownValue.innerHTML = emoji ? 
         `<span class="priority-emoji">${emoji}</span><span>${label}</span>` :
         `<span>${label}</span>`
@@ -792,17 +763,9 @@ export default class extends Controller {
     
     // Add status icon
     const currentStatus = this.statusValue || this.getValueFromJobView('jobStatusValue')
-    const statusEmojis = {
-      'open': '⚫',
-      'new': '⚫',
-      'in_progress': '🟢',
-      'paused': '⏸️',
-      'successfully_completed': '☑️',
-      'cancelled': '❌'
-    }
     const statusIcon = document.createElement('span')
     statusIcon.className = 'bubble-icon status-icon'
-    statusIcon.textContent = statusEmojis[currentStatus] || '⚫'
+    statusIcon.textContent = jobStatusEmoji(currentStatus)
     statusBubble.appendChild(statusIcon)
     
     // Add assignee icon
@@ -1171,7 +1134,7 @@ export default class extends Controller {
     const statusButton = document.createElement('button')
     statusButton.className = 'task-status-button'
     statusButton.dataset.action = 'click->job#toggleTaskStatus'
-    statusButton.innerHTML = '<span>⚫</span>'
+    statusButton.innerHTML = `<span>${taskStatusEmoji('new_task')}</span>`
     statusContainer.appendChild(statusButton)
     
     // Task content
@@ -1478,25 +1441,7 @@ export default class extends Controller {
   }
 
   renderTask(task) {
-    const statusEmojis = {
-      'new_task': '⚫',
-      'in_progress': '🟢',
-      'paused': '⏸️',
-      'successfully_completed': '☑️',
-      'cancelled': '❌'
-    }
-    
-    const statusLabels = {
-      'new_task': 'New',
-      'open': 'New',
-      'in_progress': 'In Progress',
-      'paused': 'Paused',
-      'waiting': 'Waiting',
-      'successfully_completed': 'Successfully Completed',
-      'cancelled': 'Cancelled'
-    }
-    
-    const emoji = statusEmojis[task.status] || '⚫'
+    const emoji = taskStatusEmoji(task.status)
     const isCompleted = task.status === 'successfully_completed'
     
     return `
@@ -1513,13 +1458,13 @@ export default class extends Controller {
               <span>${emoji}</span>
             </button>
             <div class="task-status-dropdown hidden" data-job-target="taskStatusDropdown">
-              ${Object.entries(statusEmojis).map(([status, emoji]) => `
+              ${['new_task', 'in_progress', 'paused', 'successfully_completed', 'cancelled'].map(status => `
                 <button class="task-status-option ${task.status === status ? 'active' : ''}" 
                         data-action="click->job#updateTaskStatus" 
                         data-task-id="${task.id}" 
                         data-status="${status}">
-                  <span class="status-emoji">${emoji}</span>
-                  <span>${statusLabels[status]}</span>
+                  <span class="status-emoji">${taskStatusEmoji(status)}</span>
+                  <span>${status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
                 </button>
               `).join('')}
             </div>
@@ -1623,18 +1568,10 @@ export default class extends Controller {
     // The dropdown controller will handle closing via the click->dropdown#close action
     
     // Optimistic UI update - update immediately before server response
-    const statusEmojis = {
-      'new_task': '⚫',
-      'in_progress': '🟢',
-      'paused': '⏸️',
-      'successfully_completed': '☑️',
-      'cancelled': '❌'
-    }
-    
     // Update the status button emoji immediately
     const statusButton = taskElement.querySelector(".task-status-button span")
     if (statusButton) {
-      statusButton.textContent = statusEmojis[newStatus] || '⚫'
+      statusButton.textContent = taskStatusEmoji(newStatus)
     }
     
     // Update data attributes
@@ -1697,7 +1634,7 @@ export default class extends Controller {
             
             const statusButton = taskElement.querySelector(".task-status-button span")
             if (statusButton) {
-              statusButton.textContent = statusEmojis[data.task.status] || '⚫'
+              statusButton.textContent = taskStatusEmoji(data.task.status)
             }
             
             taskElement.querySelectorAll(".task-status-option").forEach(opt => {
@@ -1723,7 +1660,7 @@ export default class extends Controller {
       
       const statusButton = taskElement.querySelector(".task-status-button span, .subtask-status-button span")
       if (statusButton) {
-        statusButton.textContent = statusEmojis[initialStatus] || '⚫'
+        statusButton.textContent = taskStatusEmoji(initialStatus)
       }
     })
   }
@@ -1843,16 +1780,9 @@ export default class extends Controller {
             taskElement.classList.toggle("completed", newStatus === "successfully_completed")
             
             // Update the status button emoji
-            const statusEmojis = {
-              'new_task': '⚫',
-              'in_progress': '🟢',
-              'paused': '⏸️',
-              'successfully_completed': '☑️',
-              'cancelled': '❌'
-            }
             const statusButton = taskElement.querySelector(".task-status-button span")
             if (statusButton) {
-              statusButton.textContent = statusEmojis[newStatus] || '⚫'
+              statusButton.textContent = taskStatusEmoji(newStatus)
             }
             
             // Update active state in dropdown if open
@@ -2334,17 +2264,7 @@ export default class extends Controller {
   }
   
   createTaskHtml(task) {
-    const statusEmojis = {
-      'new_task': '⚫',
-      'open': '⚫',
-      'in_progress': '🟢',
-      'paused': '⏸️',
-      'waiting': '⏳',
-      'successfully_completed': '☑️',
-      'cancelled': '❌'
-    }
-    
-    const emoji = statusEmojis[task.status] || '⚫'
+    const emoji = taskStatusEmoji(task.status)
     const isCompleted = task.status === 'successfully_completed'
     
     return `
@@ -2377,10 +2297,7 @@ export default class extends Controller {
                     data-task-id="${task.id}"
                     title="Task details"
                     aria-label="Show task details">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20.2832 19.9316" width="16" height="16" style="display: block;">
-                <path d="M9.96094 19.9219C15.459 19.9219 19.9219 15.459 19.9219 9.96094C19.9219 4.46289 15.459 0 9.96094 0C4.46289 0 0 4.46289 0 9.96094C0 15.459 4.46289 19.9219 9.96094 19.9219ZM9.96094 18.2617C5.37109 18.2617 1.66016 14.5508 1.66016 9.96094C1.66016 5.37109 5.37109 1.66016 9.96094 1.66016C14.5508 1.66016 18.2617 5.37109 18.2617 9.96094C18.2617 14.5508 14.5508 18.2617 9.96094 18.2617Z" fill="currentColor"/>
-                <path d="M8.25195 15.4297L12.2266 15.4297C12.627 15.4297 12.9395 15.1367 12.9395 14.7363C12.9395 14.3555 12.627 14.0527 12.2266 14.0527L11.0156 14.0527L11.0156 9.08203C11.0156 8.55469 10.752 8.20312 10.2539 8.20312L8.41797 8.20312C8.01758 8.20312 7.70508 8.50586 7.70508 8.88672C7.70508 9.28711 8.01758 9.58008 8.41797 9.58008L9.46289 9.58008L9.46289 14.0527L8.25195 14.0527C7.85156 14.0527 7.53906 14.3555 7.53906 14.7363C7.53906 15.1367 7.85156 15.4297 8.25195 15.4297ZM9.87305 6.58203C10.5859 6.58203 11.1426 6.01562 11.1426 5.30273C11.1426 4.58984 10.5859 4.02344 9.87305 4.02344C9.16992 4.02344 8.60352 4.58984 8.60352 5.30273C8.60352 6.01562 9.16992 6.58203 9.87305 6.58203Z" fill="currentColor"/>
-              </svg>
+              ${infoIconSVG(16, 16)}
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import BasePopoverController from "controllers/base_popover_controller"
+import BasePopoverController from "shared/base_popover_controller"
 
 // Connects to data-controller="job-popover"
 export default class extends BasePopoverController {

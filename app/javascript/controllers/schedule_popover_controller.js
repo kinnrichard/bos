@@ -1,4 +1,4 @@
-import BasePopoverController from "controllers/base_popover_controller"
+import BasePopoverController from "shared/base_popover_controller"
 
 export default class extends BasePopoverController {
   static targets = ["content", "form", "typeSelect", "typeDisplay", "dateInput", "timeInput", "timeGroup", "userCheckbox", "technicianDisplay"]

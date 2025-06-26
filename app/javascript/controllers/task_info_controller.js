@@ -1,86 +1,17 @@
-// Import BasePopoverController
-import { Controller } from "@hotwired/stimulus"
+import BasePopoverController from "shared/base_popover_controller"
+import { noteIconSVG } from "shared/icons"
 
-// Copy BasePopoverController methods inline for now to fix module loading issue
-class BasePopoverController extends Controller {
-  static targets = ["content"]
+export default class extends BasePopoverController {
+  static targets = ["timelineContainer", "noteInput", "timer"]
   static values = { 
-    closeOnClickOutside: { type: Boolean, default: true },
-    zIndex: { type: Number, default: 1000 },
-    animationDuration: { type: Number, default: 200 }
+    taskId: Number,
+    clientId: Number,
+    jobId: Number
   }
   
-  connect() {
-    this.handleOutsideClick = this.handleOutsideClick.bind(this)
-    this.handleResize = this.handleResize.bind(this)
-    this.registerPopover()
-    if (this.childConnect) {
-      this.childConnect()
-    }
-  }
+  timerInterval = null
   
-  disconnect() {
-    this.unregisterPopover()
-    if (this.childDisconnect) {
-      this.childDisconnect()
-    }
-  }
-  
-  show() {
-    window.popoverManager?.closeAllExcept(this)
-    this.element.classList.remove('hidden')
-    this.element.dataset.popoverOpen = "true"
-    setTimeout(() => {
-      if (this.closeOnClickOutsideValue) {
-        document.addEventListener("click", this.handleOutsideClick, true)
-      }
-    }, 50)
-    window.popoverManager?.popoverOpened(this)
-    if (this.onShow) {
-      this.onShow()
-    }
-  }
-  
-  hide() {
-    this.element.classList.add('hidden')
-    this.element.dataset.popoverOpen = "false"
-    document.removeEventListener("click", this.handleOutsideClick, true)
-    window.removeEventListener('resize', this.handleResize)
-    window.removeEventListener('scroll', this.handleResize, true)
-    this.triggerElement = null
-    this.closeChildDropdowns()
-    window.popoverManager?.popoverClosed(this)
-    if (this.onHide) {
-      this.onHide()
-    }
-  }
-  
-  toggle() {
-    if (this.isOpen) {
-      this.hide()
-    } else {
-      this.show()
-    }
-  }
-  
-  toggleWithTrigger(triggerElement) {
-    if (this.isOpen) {
-      this.hide()
-    } else {
-      this.showWithTrigger(triggerElement)
-    }
-  }
-  
-  showWithTrigger(triggerElement) {
-    this.triggerElement = triggerElement
-    this.show()
-    requestAnimationFrame(() => {
-      this.positionRelativeToTrigger(triggerElement)
-    })
-    window.addEventListener('resize', this.handleResize)
-    window.addEventListener('scroll', this.handleResize, true)
-  }
-  
+  // Override positioning for left/right placement instead of top/bottom
   positionRelativeToTrigger(triggerElement) {
     if (!triggerElement) return
     
@@ -146,104 +77,6 @@ class BasePopoverController extends Controller {
     this.element.style.left = `${left}px`
     this.element.style.right = 'auto'
   }
-  
-  calculateHorizontalPosition(triggerRect, popoverRect, viewportWidth) {
-    let left = triggerRect.left + (triggerRect.width / 2) - (popoverRect.width / 2)
-    if (left + popoverRect.width > viewportWidth - 10) {
-      left = viewportWidth - popoverRect.width - 10
-    }
-    if (left < 10) {
-      left = 10
-    }
-    return left
-  }
-  
-  handleResize() {
-    if (this.triggerElement && this.isOpen) {
-      this.positionRelativeToTrigger(this.triggerElement)
-    }
-  }
-  
-  get isOpen() {
-    return !this.element.classList.contains('hidden')
-  }
-  
-  handleOutsideClick(event) {
-    if (this.element.contains(event.target)) {
-      return
-    }
-    if (this.triggerElement && (this.triggerElement === event.target || this.triggerElement.contains(event.target))) {
-      return
-    }
-    const clickedDropdownElement = event.target.closest('[data-controller~="dropdown"]')
-    if (clickedDropdownElement && this.element.contains(clickedDropdownElement)) {
-      return
-    }
-    const clickedDropdownMenu = event.target.closest('.dropdown-menu')
-    if (clickedDropdownMenu) {
-      return
-    }
-    const openDropdowns = this.element.querySelectorAll('.dropdown-menu:not(.hidden)')
-    if (openDropdowns.length > 0) {
-      this.closeChildDropdowns()
-      return
-    }
-    this.hide()
-  }
-  
-  closeChildDropdowns() {
-    const dropdowns = this.element.querySelectorAll('[data-controller~="dropdown"]')
-    dropdowns.forEach(dropdown => {
-      const controller = this.application.getControllerForElementAndIdentifier(dropdown, 'dropdown')
-      if (controller && controller.close) {
-        controller.close()
-      }
-    })
-  }
-  
-  registerPopover() {
-    if (!window.popoverManager) {
-      window.popoverManager = {
-        popovers: new Set(),
-        dropdowns: new Set(),
-        popoverOpened(popover) {
-          this.popovers.add(popover)
-        },
-        popoverClosed(popover) {
-          this.popovers.delete(popover)
-        },
-        dropdownOpened(dropdown) {
-          this.dropdowns.add(dropdown)
-        },
-        dropdownClosed(dropdown) {
-          this.dropdowns.delete(dropdown)
-        },
-        closeAllExcept(keepOpen) {
-          this.popovers.forEach(popover => {
-            if (popover !== keepOpen && popover.hide) {
-              popover.hide()
-            }
-          })
-        }
-      }
-    }
-    window.popoverManager.popovers.add(this)
-  }
-  
-  unregisterPopover() {
-    window.popoverManager?.popovers.delete(this)
-  }
-}
-
-export default class extends BasePopoverController {
-  static targets = ["timelineContainer", "noteInput", "timer"]
-  static values = { 
-    taskId: Number,
-    clientId: Number,
-    jobId: Number
-  }
-  
-  timerInterval = null
   
   childConnect() {
     // Start timer if task is in progress
@@ -366,12 +199,7 @@ export default class extends BasePopoverController {
         <div class="timeline-row">
           <div class="timeline-content">
             <span class="timeline-emoji">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.8242 17.998" width="18" height="18" style="display: block;">
-                <path d="M3.06641 17.998L16.4062 17.998C18.4473 17.998 19.4629 16.9824 19.4629 14.9707L19.4629 3.04688C19.4629 1.03516 18.4473 0.0195312 16.4062 0.0195312L3.06641 0.0195312C1.02539 0.0195312 0 1.02539 0 3.04688L0 14.9707C0 16.9922 1.02539 17.998 3.06641 17.998ZM2.91992 16.4258C2.05078 16.4258 1.57227 15.9668 1.57227 15.0586L1.57227 5.84961C1.57227 4.95117 2.05078 4.48242 2.91992 4.48242L16.5332 4.48242C17.4023 4.48242 17.8906 4.95117 17.8906 5.84961L17.8906 15.0586C17.8906 15.9668 17.4023 16.4258 16.5332 16.4258Z" fill="currentColor" fill-opacity="0.85"/>
-                <path d="M4.61914 8.11523L14.873 8.11523C15.2148 8.11523 15.4785 7.8418 15.4785 7.5C15.4785 7.16797 15.2148 6.91406 14.873 6.91406L4.61914 6.91406C4.25781 6.91406 4.00391 7.16797 4.00391 7.5C4.00391 7.8418 4.25781 8.11523 4.61914 8.11523Z" fill="currentColor" fill-opacity="0.85"/>
-                <path d="M4.61914 11.0547L14.873 11.0547C15.2148 11.0547 15.4785 10.8008 15.4785 10.4688C15.4785 10.1172 15.2148 9.85352 14.873 9.85352L4.61914 9.85352C4.25781 9.85352 4.00391 10.1172 4.00391 10.4688C4.00391 10.8008 4.25781 11.0547 4.61914 11.0547Z" fill="currentColor" fill-opacity="0.85"/>
-                <path d="M4.61914 13.9941L11.1328 13.9941C11.4746 13.9941 11.7383 13.7402 11.7383 13.4082C11.7383 13.0664 11.4746 12.793 11.1328 12.793L4.61914 12.793C4.25781 12.793 4.00391 13.0664 4.00391 13.4082C4.00391 13.7402 4.25781 13.9941 4.61914 13.9941Z" fill="currentColor" fill-opacity="0.85"/>
-              </svg>
+              ${noteIconSVG(18, 18)}
             </span>
             <span class="timeline-note">${this.escapeHtml(note.content)}</span>
           </div>
@@ -425,12 +253,7 @@ export default class extends BasePopoverController {
       const infoButton = taskRight.querySelector('.task-info-button')
       const noteIndicatorSvg = `
         <span class="note-indicator" title="Has notes">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.8242 17.998" width="16" height="16">
-            <path d="M3.06641 17.998L16.4062 17.998C18.4473 17.998 19.4629 16.9824 19.4629 14.9707L19.4629 3.04688C19.4629 1.03516 18.4473 0.0195312 16.4062 0.0195312L3.06641 0.0195312C1.02539 0.0195312 0 1.02539 0 3.04688L0 14.9707C0 16.9922 1.02539 17.998 3.06641 17.998ZM2.91992 16.4258C2.05078 16.4258 1.57227 15.9668 1.57227 15.0586L1.57227 5.84961C1.57227 4.95117 2.05078 4.48242 2.91992 4.48242L16.5332 4.48242C17.4023 4.48242 17.8906 4.95117 17.8906 5.84961L17.8906 15.0586C17.8906 15.9668 17.4023 16.4258 16.5332 16.4258Z" fill="currentColor" fill-opacity="0.85"/>
-            <path d="M4.61914 8.11523L14.873 8.11523C15.2148 8.11523 15.4785 7.8418 15.4785 7.5C15.4785 7.16797 15.2148 6.91406 14.873 6.91406L4.61914 6.91406C4.25781 6.91406 4.00391 7.16797 4.00391 7.5C4.00391 7.8418 4.25781 8.11523 4.61914 8.11523Z" fill="currentColor" fill-opacity="0.85"/>
-            <path d="M4.61914 11.0547L14.873 11.0547C15.2148 11.0547 15.4785 10.8008 15.4785 10.4688C15.4785 10.1172 15.2148 9.85352 14.873 9.85352L4.61914 9.85352C4.25781 9.85352 4.00391 10.1172 4.00391 10.4688C4.00391 10.8008 4.25781 11.0547 4.61914 11.0547Z" fill="currentColor" fill-opacity="0.85"/>
-            <path d="M4.61914 13.9941L11.1328 13.9941C11.4746 13.9941 11.7383 13.7402 11.7383 13.4082C11.7383 13.0664 11.4746 12.793 11.1328 12.793L4.61914 12.793C4.25781 12.793 4.00391 13.0664 4.00391 13.4082C4.00391 13.7402 4.25781 13.9941 4.61914 13.9941Z" fill="currentColor" fill-opacity="0.85"/>
-          </svg>
+          ${noteIconSVG(16, 16)}
         </span>
       `
       infoButton.insertAdjacentHTML('afterend', noteIndicatorSvg)
