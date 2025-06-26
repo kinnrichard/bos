@@ -2,15 +2,33 @@ class ProcessBugIssueJob < ApplicationJob
   queue_as :default
 
   def perform(issue_number)
-    # This job will be implemented in Story 2.1: Claude Integration for Bug Fixes
-    # For now, it's just a placeholder that logs the issue number
-    Rails.logger.info "ProcessBugIssueJob: Queued for processing issue ##{issue_number}"
+    Rails.logger.info "ProcessBugIssueJob: Starting to process issue ##{issue_number}"
 
-    # TODO: In Story 2.1, this will:
-    # 1. Fetch the issue details from GitHub
-    # 2. Parse the bug report data (description, console logs, screenshot)
-    # 3. Invoke Claude CLI to analyze and fix the bug
-    # 4. Create a PR with the fix
-    # 5. Update the issue with the PR link
+    # Check if automation is enabled
+    unless automation_enabled?
+      Rails.logger.info "Bug automation is disabled. Skipping issue ##{issue_number}"
+      return
+    end
+
+    # Process the bug issue with Claude
+    ClaudeAutomationService.process_bug_issue(issue_number)
+
+    Rails.logger.info "ProcessBugIssueJob: Successfully processed issue ##{issue_number}"
+  rescue ClaudeAutomationService::ClaudeExecutionError => e
+    Rails.logger.error "ProcessBugIssueJob: Failed to process issue ##{issue_number}: #{e.message}"
+    # Don't retry Claude execution errors - they need manual intervention
+    raise e
+  rescue StandardError => e
+    Rails.logger.error "ProcessBugIssueJob: Unexpected error for issue ##{issue_number}: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    # Retry other errors (network issues, etc.)
+    raise e
+  end
+
+  private
+
+  def automation_enabled?
+    # Emergency off switch via environment variable
+    ENV["BUG_AUTOMATION_ENABLED"] != "false"
   end
 end
