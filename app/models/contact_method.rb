@@ -11,6 +11,18 @@ class ContactMethod < ApplicationRecord
 
   validates :value, presence: true
 
+  # Value object integration
+  def contact_type_object
+    @contact_type_object ||= ContactMethodType.new(contact_type)
+  end
+
+  # Delegate display methods to value object
+  delegate :emoji, :label, :placeholder, :input_type, :with_emoji,
+           to: :contact_type_object, prefix: :contact_type
+
+  alias_method :type_emoji, :contact_type_emoji
+  alias_method :type_label, :contact_type_label
+
   private
 
   def detect_and_format_type

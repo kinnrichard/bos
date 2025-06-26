@@ -11,9 +11,8 @@ servers:
 
 # SSL configuration for development
 proxy:
-  ssl: false
-  host: 134.199.194.133
-  # Optionally use a subdomain like: bos-dev.yourdomain.com
+  ssl: true
+  host: dev.bos.ftls.tech
 
 # Container registry credentials
 registry:
