@@ -135,7 +135,7 @@ module IconsHelper
     when "paused" then "⏸️"
     when "waiting_for_customer" then "⏳"
     when "waiting_for_scheduled_appointment" then "📅"
-    when "successfully_completed" then "✅"
+    when "successfully_completed" then "☑️"
     when "cancelled" then "❌"
     else "❓"
     end

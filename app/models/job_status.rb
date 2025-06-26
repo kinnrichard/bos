@@ -28,7 +28,7 @@ class JobStatus
       color: "blue"
     },
     successfully_completed: {
-      emoji: "✅",
+      emoji: "☑️",
       label: "Completed",
       color: "green"
     },
