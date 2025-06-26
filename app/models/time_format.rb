@@ -132,7 +132,7 @@ class TimeFormat
         "#{unique_times.first} and #{unique_times.last}"
       else
         times_sorted = times.sort
-        "#{timestamp(times_sorted.first)} - #{timestamp(times_sorted.last)}"
+        "#{timestamp(times_sorted.first)} – #{timestamp(times_sorted.last)}"
       end
     end
 

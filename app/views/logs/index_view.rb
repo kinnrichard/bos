@@ -24,13 +24,6 @@ module Views
             if @logs.any?
               div(class: "logs-table-container") do
                 table(class: "logs-table") do
-                  thead do
-                    tr do
-                      th(class: "logs-table__user") { "User" }
-                      th(class: "logs-table__action") { "Action" }
-                      th(class: "logs-table__time") { "Time" }
-                    end
-                  end
                   tbody do
                     # Organize logs into groups
                     log_groups = organize_logs_by_context(@logs.reverse)
@@ -198,9 +191,13 @@ module Views
         row_index = 0
 
         logs_by_date.each do |date, logs|
-          # Render date header (initially hidden if collapsed)
+          # Render date header with column headers (initially hidden if collapsed)
           tr(class: "logs-table__date-header logs-group-content", data: { logs_collapsible_target: "content" }) do
-            td(colspan: 3) { format_date_header(date) }
+            td(class: "logs-table__user-header") { "User" }
+            td(class: "logs-table__action-header") { "Action" }
+            td(class: "logs-table__time-header") do
+              span(class: "date-text") { format_date_header(date) }
+            end
           end
 
           # Group identical logs within this date
@@ -255,10 +252,10 @@ module Views
 
           # Action column
           td(class: "logs-table__action-cell") do
-            if count > 1
-              span(class: "log-count") { "#{count} × " }
-            end
             render_log_message_with_links(log)
+            if count > 1
+              span(class: "log-count-badge") { "#{count}×" }
+            end
           end
 
           # Time column

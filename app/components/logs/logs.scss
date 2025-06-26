@@ -59,7 +59,7 @@
     // Group header rows (Client/Job)
     tr.logs-group-header {
       position: sticky;
-      top: 41px; // Height of table header
+      top: 0; // No table header anymore
       background-color: var(--bg-secondary);
       z-index: 9;
       cursor: pointer;
@@ -157,7 +157,7 @@
     // Date header rows
     tr.logs-table__date-header {
       position: sticky;
-      top: 82px; // Height of table header + group header
+      top: 41px; // Height of group header only
       background-color: var(--bg-secondary);
       z-index: 8;
       
@@ -167,7 +167,25 @@
         font-size: 13px;
         color: var(--text-secondary);
         border-bottom: 1px solid var(--border-primary);
-        text-align: right;
+        vertical-align: middle;
+        
+        &.logs-table__user-header {
+          text-align: right;
+          white-space: nowrap;
+        }
+        
+        &.logs-table__action-header {
+          text-align: left;
+        }
+        
+        &.logs-table__time-header {
+          text-align: right;
+          
+          .date-text {
+            font-weight: 600;
+            color: var(--text-primary);
+          }
+        }
       }
     }
     
@@ -191,6 +209,7 @@
       
       &.logs-table__user-cell {
         white-space: nowrap;
+        padding-left: 8px;
         
         .user-info {
           display: flex;
@@ -228,12 +247,19 @@
           font-size: 16px;
         }
         
-        // Style the count indicator
-        .log-count {
-          color: var(--text-tertiary);
+        // Style the count badge
+        .log-count-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background-color: var(--bg-tertiary);
+          color: var(--text-secondary);
           font-weight: 600;
-          font-size: 13px;
-          margin-right: 4px;
+          font-size: 11px;
+          padding: 2px 6px;
+          border-radius: 10px;
+          margin-left: 8px;
+          vertical-align: middle;
         }
         
         // Style links
