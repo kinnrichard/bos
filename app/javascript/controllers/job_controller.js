@@ -41,6 +41,7 @@ export default class extends Controller {
   taskLockVersions = new Map()
   jobLockVersion = null
   activeStatusTask = null
+  lastClickedTask = null
   
   // Initialize helpers
   api = null
@@ -352,7 +353,7 @@ export default class extends Controller {
     // Return key to create new task (only when not in input field and no task selected)
     if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey && !event.altKey && !isInputField) {
       // Only create new task if no tasks are selected (otherwise Enter renames)
-      if (this.selectedTasks.size === 0) {
+      if (this.selectionManager.selectedTasks.size === 0) {
         event.preventDefault()
         this.showNewTaskInput()
         return false
@@ -393,7 +394,7 @@ export default class extends Controller {
     }
     
     // Delete selected tasks
-    if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedTasks.size > 0) {
+    if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectionManager.selectedTasks.size > 0) {
       const activeElement = document.activeElement
       if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
         event.preventDefault()
@@ -402,9 +403,9 @@ export default class extends Controller {
     }
     
     // Enter to create new task below selected task
-    if (event.key === 'Enter' && this.selectedTasks.size === 1 && !isInputField) {
+    if (event.key === 'Enter' && this.selectionManager.selectedTasks.size === 1 && !isInputField) {
       event.preventDefault()
-      const selectedTask = Array.from(this.selectedTasks)[0]
+      const selectedTask = Array.from(this.selectionManager.selectedTasks)[0]
       this.createNewTaskBelow(selectedTask)
       return false
     }
@@ -445,8 +446,8 @@ export default class extends Controller {
         const wrapper = taskElement.closest('.task-wrapper') || taskElement
         
         // Remove from selection if selected
-        if (this.selectedTasks.has(taskElement)) {
-          this.selectedTasks.delete(taskElement)
+        if (this.selectionManager.selectedTasks.has(taskElement)) {
+          this.selectionManager.selectedTasks.delete(taskElement)
         }
         
         // Animate removal
@@ -491,7 +492,7 @@ export default class extends Controller {
   }
   
   deleteSelectedTasks() {
-    const count = this.selectedTasks.size
+    const count = this.selectionManager.selectedTasks.size
     if (count === 0) return
     
     const hasDeletePermission = this.checkDeletePermission()
@@ -509,7 +510,7 @@ export default class extends Controller {
     
     if (confirm(message)) {
       // Convert Set to Array to avoid modification during iteration
-      const tasksToProcess = Array.from(this.selectedTasks)
+      const tasksToProcess = Array.from(this.selectionManager.selectedTasks)
       
       tasksToProcess.forEach(taskElement => {
         const taskId = taskElement.dataset.taskId
@@ -549,7 +550,7 @@ export default class extends Controller {
           }
           
           // Clear selection if task was selected
-          if (this.selectedTasks.has(taskElement)) {
+          if (this.selectionManager.selectedTasks.has(taskElement)) {
             this.deselectTask(taskElement)
           }
         } else {
@@ -1769,9 +1770,9 @@ export default class extends Controller {
   
   // Open status menu for selected task
   openStatusMenuForSelectedTask() {
-    if (this.selectedTasks.size !== 1) return
+    if (this.selectionManager.selectedTasks.size !== 1) return
     
-    const selectedTask = Array.from(this.selectedTasks)[0]
+    const selectedTask = Array.from(this.selectionManager.selectedTasks)[0]
     const statusButton = selectedTask.querySelector('.task-status-button, .subtask-status-button')
     if (!statusButton) return
     
@@ -2227,7 +2228,7 @@ export default class extends Controller {
   }
   
   createTaskHtml(task) {
-    const taskElement = this.taskRenderer.createTaskElement(task)
+    const taskElement = this.taskRenderer.createTaskElement(task, { isNew: true })
     
     // Wrap in task-wrapper div
     const wrapper = document.createElement('div')
@@ -2251,20 +2252,20 @@ export default class extends Controller {
     
     // Clean up selectedTasks set - remove any tasks that are no longer in DOM
     const tasksToRemove = []
-    this.selectedTasks.forEach(task => {
+    this.selectionManager.selectedTasks.forEach(task => {
       if (!document.body.contains(task)) {
         tasksToRemove.push(task)
       }
     })
-    tasksToRemove.forEach(task => this.selectedTasks.delete(task))
+    tasksToRemove.forEach(task => this.selectionManager.selectedTasks.delete(task))
     
     // Get the currently selected task from the set (not from DOM classes)
     let currentTask = null
-    if (this.selectedTasks.size === 1) {
-      currentTask = Array.from(this.selectedTasks)[0]
-    } else if (this.selectedTasks.size > 1) {
+    if (this.selectionManager.selectedTasks.size === 1) {
+      currentTask = Array.from(this.selectionManager.selectedTasks)[0]
+    } else if (this.selectionManager.selectedTasks.size > 1) {
       // If multiple selected, use the last clicked one
-      currentTask = this.lastClickedTask || Array.from(this.selectedTasks)[0]
+      currentTask = this.lastClickedTask || Array.from(this.selectionManager.selectedTasks)[0]
     }
     
     // If no current task, select first/last based on direction

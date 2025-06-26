@@ -68,14 +68,48 @@ export default class extends Controller {
     }
     
     this.mutationTimeout = setTimeout(() => {
-      // Check if this is a reorder operation
-      const isReorder = mutations.some(mutation => 
-        mutation.type === 'childList' && 
-        (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)
-      )
+      // Check if this is a new task addition (not a reorder)
+      const hasNewTask = mutations.some(mutation => {
+        if (mutation.type === 'childList') {
+          // Check if any added nodes are new tasks
+          return Array.from(mutation.addedNodes).some(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // Check for the new task flag or if it's a task wrapper with a new task
+              const isNewTask = node.querySelector?.('[data-new-task="true"]') || 
+                               node.dataset?.newTask === 'true'
+              
+              // Also check if it's a task not in our position map
+              const taskItem = node.querySelector?.('.task-item') || 
+                              (node.classList?.contains('task-item') ? node : null)
+              if (taskItem) {
+                const id = this.getItemId(taskItem)
+                // If this ID isn't in our positions map, it's a new task
+                return isNewTask || !this.positions.has(id)
+              }
+              
+              return isNewTask
+            }
+            return false
+          })
+        }
+        return false
+      })
       
-      if (isReorder && !this.isAnimating) {
-        this.animateReorder()
+      // Only animate if it's a reorder (not a new task addition)
+      if (!hasNewTask && !this.isAnimating) {
+        const isReorder = mutations.some(mutation => 
+          mutation.type === 'childList' && 
+          (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)
+        )
+        
+        if (isReorder) {
+          this.animateReorder()
+        }
+      } else if (hasNewTask) {
+        // For new tasks, just capture positions without animating
+        setTimeout(() => {
+          this.captureInitialPositions()
+        }, 100)
       }
     }, 50)
   }

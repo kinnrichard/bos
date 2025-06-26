@@ -26,6 +26,15 @@ export class TaskRenderer {
     taskItem.className = this.buildTaskClasses(taskData, { isSubtask })
     this.setTaskAttributes(taskItem, taskData, { parentId })
     
+    // Mark new tasks to help Flip controller
+    if (isNew || !taskData.id) {
+      taskItem.dataset.newTask = 'true'
+      // Remove the flag after a short delay
+      setTimeout(() => {
+        delete taskItem.dataset.newTask
+      }, 500)
+    }
+    
     // Build task HTML
     taskItem.innerHTML = this.buildTaskHTML(taskData, { isNew, insertMode })
     
