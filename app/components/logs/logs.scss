@@ -59,7 +59,7 @@
     // Group header rows (Client/Job)
     tr.logs-group-header {
       position: sticky;
-      top: 0; // No table header anymore
+      top: -1px; // Offset by -1px to prevent transparency gap
       background-color: var(--bg-secondary);
       z-index: 9;
       cursor: pointer;
@@ -133,12 +133,9 @@
           font-weight: 700;
         }
         
-        .logs-group-separator {
-          color: var(--text-tertiary);
-        }
-        
         .logs-group-job {
           font-weight: 500;
+          margin-left: 8px;
         }
         
         .logs-group-title {
@@ -157,33 +154,44 @@
     // Date header rows
     tr.logs-table__date-header {
       position: sticky;
-      top: 41px; // Height of group header only
+      top: 40px; // Adjusted to prevent gap
       background-color: var(--bg-secondary);
       z-index: 8;
       
-      td {
+      td.logs-table__date-header-cell {
         padding: 8px 16px;
+        border-bottom: 1px solid var(--border-primary);
         font-weight: 600;
         font-size: 13px;
         color: var(--text-secondary);
-        border-bottom: 1px solid var(--border-primary);
-        vertical-align: middle;
         
-        &.logs-table__user-header {
+        &:first-child {
           text-align: right;
+          width: auto;
           white-space: nowrap;
-        }
-        
-        &.logs-table__action-header {
-          text-align: left;
-        }
-        
-        &.logs-table__time-header {
-          text-align: right;
           
-          .date-text {
-            font-weight: 600;
-            color: var(--text-primary);
+          .date-header-user {
+            display: block;
+            padding-right: 16px;
+          }
+        }
+        
+        &:last-child {
+          .date-header-action-time {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            
+            .date-header-action {
+              color: var(--text-secondary);
+            }
+            
+            .date-header-time {
+              color: var(--text-primary);
+              font-weight: 600;
+              white-space: nowrap;
+              margin-left: 20px;
+            }
           }
         }
       }
@@ -212,29 +220,35 @@
         padding-left: 8px;
         
         .user-info {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: flex-end;
-          gap: 8px;
+          gap: 6px;
+          vertical-align: baseline;
         }
         
         .user-avatar {
-          width: 32px;
-          height: 32px;
+          width: 24px;
+          height: 24px;
           border-radius: 50%;
           background-color: var(--accent-blue);
           color: white;
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
-          font-size: 12px;
+          font-size: 10px;
           font-weight: 600;
           flex-shrink: 0;
+          position: relative;
+          top: 1px; // Fine-tune vertical alignment
         }
         
         .user-name {
           color: var(--text-primary);
           font-weight: 500;
+          line-height: 1;
+          position: relative;
+          top: 1px; // Match avatar adjustment
         }
       }
       

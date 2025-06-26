@@ -191,7 +191,7 @@ class ActivityLogTest < ActiveSupport::TestCase
       loggable: @task,
       metadata: { "name" => "New Task" }
     )
-    assert_equal "created ☑️ New Task in 💼 #{@task.job.title}", log.message
+    assert_equal "created ☑️ New Task", log.message
   end
 
   test "message for viewed action" do

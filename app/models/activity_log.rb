@@ -18,11 +18,7 @@ class ActivityLog < ApplicationRecord
 
     case action
     when "created"
-      if loggable_type == "Task" && loggable.respond_to?(:job) && loggable.job
-        "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name} in 💼 #{loggable.job.title}"
-      else
-        "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name}"
-      end
+      "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name}"
     when "viewed"
       "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name}"
     when "renamed"

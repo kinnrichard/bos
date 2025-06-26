@@ -156,10 +156,14 @@ module Views
         logs_by_date.each do |date, logs|
           # Render date header with column headers (initially hidden if collapsed)
           tr(class: "logs-table__date-header logs-group-content", data: { logs_collapsible_target: "content" }) do
-            td(class: "logs-table__user-header") { "User" }
-            td(class: "logs-table__action-header") { "Action" }
-            td(class: "logs-table__time-header") do
-              span(class: "date-text") { format_date_header(date) }
+            td(class: "logs-table__date-header-cell") do
+              span(class: "date-header-user") { "User" }
+            end
+            td(class: "logs-table__date-header-cell", colspan: 2) do
+              div(class: "date-header-action-time") do
+                span(class: "date-header-action") { "Action" }
+                span(class: "date-header-time") { format_date_header(date) }
+              end
             end
           end
 

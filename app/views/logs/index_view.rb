@@ -173,9 +173,8 @@ module Views
                   end
 
                   if group[:job]
-                    span(class: "logs-group-separator") { " • " }
                     span(class: "logs-group-job") do
-                      plain "💼 #{group[:job].title}"
+                      plain " 💼 #{group[:job].title}"
                     end
                   end
                 end
@@ -193,10 +192,14 @@ module Views
         logs_by_date.each do |date, logs|
           # Render date header with column headers (initially hidden if collapsed)
           tr(class: "logs-table__date-header logs-group-content", data: { logs_collapsible_target: "content" }) do
-            td(class: "logs-table__user-header") { "User" }
-            td(class: "logs-table__action-header") { "Action" }
-            td(class: "logs-table__time-header") do
-              span(class: "date-text") { format_date_header(date) }
+            td(class: "logs-table__date-header-cell") do
+              span(class: "date-header-user") { "User" }
+            end
+            td(class: "logs-table__date-header-cell", colspan: 2) do
+              div(class: "date-header-action-time") do
+                span(class: "date-header-action") { "Action" }
+                span(class: "date-header-time") { format_date_header(date) }
+              end
             end
           end
 
@@ -238,11 +241,11 @@ module Views
           td(class: "logs-table__user-cell") do
             div(class: "user-info") do
               if log.user
-                div(class: "user-avatar user-avatar-sm", style: log.user.avatar_style) do
+                div(class: "user-avatar", style: log.user.avatar_style) do
                   log.user.initials
                 end
               else
-                div(class: "user-avatar user-avatar-sm", style: "background-color: #8E8E93;") do
+                div(class: "user-avatar", style: "background-color: #8E8E93;") do
                   "S"
                 end
               end
