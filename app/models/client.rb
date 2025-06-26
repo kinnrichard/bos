@@ -27,9 +27,6 @@ class Client < ApplicationRecord
   # Default ordering
   default_scope { order(:name) }
 
-  def icon
-    business? ? "🏢" : "🏠"
-  end
 
   private
 

@@ -42,7 +42,7 @@ module Views
                           missing_types.each do |type|
                             plain contact_method_emoji(type)
                           end
-                          plain "❗"
+                          plain warning_emoji
                         end
                       end
                     end

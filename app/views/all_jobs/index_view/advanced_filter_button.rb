@@ -217,14 +217,6 @@ module Views
           @selected_technician_ids.any? || @selected_statuses.any?
         end
 
-        def technician_icon(user)
-          span(
-            class: "assignee-icon",
-            style: "background-color: #{user_color(user)};"
-          ) do
-            user.name.split.map(&:first).join.upcase[0..1]
-          end
-        end
 
         def user_color(user)
           # Generate consistent color based on user name

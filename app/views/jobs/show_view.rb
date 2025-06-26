@@ -346,17 +346,6 @@ module Views
 
       # Remove duplicate method - now using IconsHelper
 
-      def job_status_emoji(status)
-        case status
-        when "open" then "⚫"
-        when "in_progress" then "🟢"
-        when "paused" then "⏸️"
-        when "successfully_completed" then "☑️"
-        when "cancelled" then "❌"
-        else "❓"
-        end
-      end
-
       def status_label(status)
         case status
         when "open" then "New"
@@ -375,11 +364,6 @@ module Views
         end
       end
 
-      def technician_icon(technician)
-        # For now, use initials. Could be replaced with actual avatars
-        initials = technician.name.split.map(&:first).join.upcase[0..1]
-        span(class: "technician-initials") { initials }
-      end
 
       def render_assignee_options
         # Unassigned option

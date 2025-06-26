@@ -52,7 +52,7 @@ module Components
       div(class: "flex-1") do
         # Client-specific navigation
         div(style: "margin-top: 24px; margin-bottom: 12px;") do
-          nav_item(@client.name, href: client_path(@client), icon: @client.icon, active: @active_section == :client_info)
+          nav_item(@client.name, href: client_path(@client), icon: client_icon(@client), active: @active_section == :client_info)
         end
 
         div(style: "margin-top: 24px; margin-bottom: 12px;") do

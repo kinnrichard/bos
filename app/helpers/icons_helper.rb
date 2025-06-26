@@ -195,6 +195,10 @@ module IconsHelper
     end
   end
 
+  def client_icon(client)
+    client_type_emoji(client.client_type)
+  end
+
   # Contact Method Icons
   def contact_method_emoji(method)
     case method.to_s

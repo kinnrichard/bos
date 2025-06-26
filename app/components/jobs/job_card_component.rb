@@ -56,16 +56,6 @@ module Components
       end
     end
 
-    def job_status_emoji(status)
-      case status
-      when "open" then "⚫"
-      when "in_progress" then "🟢"
-      when "paused" then "⏸️"
-      when "successfully_completed" then "☑️"
-      when "cancelled" then "❌"
-      else "❓"
-      end
-    end
 
     def status_label(status)
       case status
@@ -80,15 +70,6 @@ module Components
       end
     end
 
-    def priority_emoji(priority)
-      case priority
-      when "critical" then "🔥"
-      when "high" then "❗"
-      when "low" then "➖"
-      when "proactive_followup" then "💬"
-      else ""
-      end
-    end
 
     def priority_label(priority)
       case priority
