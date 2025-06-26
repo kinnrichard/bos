@@ -1,4 +1,5 @@
-import BasePopoverController from "shared/base_popover_controller"
+// Get BasePopoverController from window.Bos
+const { BasePopoverController } = window.Bos
 
 export default class extends BasePopoverController {
   static targets = [

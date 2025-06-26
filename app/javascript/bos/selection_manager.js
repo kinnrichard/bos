@@ -1,12 +1,16 @@
 // Selection management for tasks
 
-import { CLASSES, DATA_ATTRS } from './constants'
+// Note: Constants are accessed via window.Bos.Constants when this module is used
 
 export class SelectionManager {
   constructor(controller) {
     this.controller = controller
     this.selectedTasks = new Set()
     this.lastClickedTask = null
+    // Get constants from window.Bos
+    const { CLASSES, DATA_ATTRS } = window.Bos?.Constants || {}
+    this.CLASSES = CLASSES
+    this.DATA_ATTRS = DATA_ATTRS
   }
 
   // Get selected task elements
@@ -17,7 +21,7 @@ export class SelectionManager {
   // Get selected task IDs
   getSelectedIds() {
     return this.getSelectedElements()
-      .map(el => el.getAttribute(DATA_ATTRS.TASK_ID))
+      .map(el => el.getAttribute(this.DATA_ATTRS.TASK_ID))
       .filter(id => id)
   }
 
@@ -36,8 +40,8 @@ export class SelectionManager {
     if (!taskElement || this.isSelected(taskElement)) return
     
     this.selectedTasks.add(taskElement)
-    taskElement.classList.add(CLASSES.SELECTED)
-    taskElement.setAttribute(DATA_ATTRS.SELECTED, 'true')
+    taskElement.classList.add(this.CLASSES.SELECTED)
+    taskElement.setAttribute(this.DATA_ATTRS.SELECTED, 'true')
     this.updateUI()
   }
 
@@ -46,8 +50,8 @@ export class SelectionManager {
     if (!taskElement || !this.isSelected(taskElement)) return
     
     this.selectedTasks.delete(taskElement)
-    taskElement.classList.remove(CLASSES.SELECTED)
-    taskElement.setAttribute(DATA_ATTRS.SELECTED, 'false')
+    taskElement.classList.remove(this.CLASSES.SELECTED)
+    taskElement.setAttribute(this.DATA_ATTRS.SELECTED, 'false')
     this.updateUI()
   }
 
@@ -63,8 +67,8 @@ export class SelectionManager {
   // Clear all selections
   clearAll() {
     this.selectedTasks.forEach(task => {
-      task.classList.remove(CLASSES.SELECTED)
-      task.setAttribute(DATA_ATTRS.SELECTED, 'false')
+      task.classList.remove(this.CLASSES.SELECTED)
+      task.setAttribute(this.DATA_ATTRS.SELECTED, 'false')
     })
     this.selectedTasks.clear()
     this.lastClickedTask = null
@@ -118,7 +122,7 @@ export class SelectionManager {
     // Update bulk actions visibility
     const bulkActions = this.controller.element.querySelector('.bulk-actions')
     if (bulkActions) {
-      bulkActions.classList.toggle(CLASSES.HIDDEN, !hasSelection)
+      bulkActions.classList.toggle(this.CLASSES.HIDDEN, !hasSelection)
       
       const countElement = bulkActions.querySelector('.selection-count')
       if (countElement) {
@@ -139,8 +143,8 @@ export class SelectionManager {
     const priorities = new Set()
     
     elements.forEach(el => {
-      const status = el.getAttribute(DATA_ATTRS.STATUS)
-      const priority = el.getAttribute(DATA_ATTRS.PRIORITY)
+      const status = el.getAttribute(this.DATA_ATTRS.STATUS)
+      const priority = el.getAttribute(this.DATA_ATTRS.PRIORITY)
       if (status) statuses.add(status)
       if (priority) priorities.add(priority)
     })

@@ -1,10 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 import { Turbo } from "@hotwired/turbo-rails"
-import { taskStatusEmoji, jobStatusEmoji, jobPriorityEmoji, noteIconSVG, infoIconSVG } from "shared/icons"
-import { ApiClient } from "shared/api_helpers"
-import { SelectionManager } from "shared/selection_manager"
-import { TaskRenderer } from "shared/task_renderer"
-import { 
+
+// Get modules from window.Bos
+const { taskStatusEmoji, jobStatusEmoji, jobPriorityEmoji, noteIconSVG, infoIconSVG } = window.Bos?.Icons || {}
+const { ApiClient } = window.Bos || {}
+const { SelectionManager } = window.Bos || {}
+const { TaskRenderer } = window.Bos || {}
+const { 
   ANIMATION, 
   POSITIONING, 
   KEYBOARD_SHORTCUTS, 
@@ -16,12 +18,13 @@ import {
   STORAGE_KEYS,
   API_FIELDS,
   ERRORS
-} from "shared/constants"
+} = window.Bos?.Constants || {}
 
 export default class extends Controller {
   static targets = ["title", "statusBubble", "popover", "tasksContainer", "tasksList", 
                     "newTaskPlaceholder", "newTaskText", "searchInput", "task", "taskTimer",
                     "scheduleButton", "schedulePopover", "subtasksContainer", "disclosureTriangle"]
+  
   
   static values = { 
     jobId: Number,

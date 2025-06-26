@@ -1,5 +1,6 @@
-import BasePopoverController from "shared/base_popover_controller"
-import { noteIconSVG } from "shared/icons"
+// Get modules from window.Bos
+const { BasePopoverController } = window.Bos
+const { noteIconSVG } = window.Bos.Icons
 
 export default class extends BasePopoverController {
   static targets = ["timelineContainer", "noteInput", "timer"]

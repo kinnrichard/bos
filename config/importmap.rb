@@ -8,7 +8,7 @@ pin "@rails/actioncable/src", to: "@rails--actioncable--src.js" # @8.0.200
 pin "@hotwired/stimulus", to: "stimulus.min.js"
 pin "@hotwired/stimulus-loading", to: "stimulus-loading.js"
 pin_all_from "app/javascript/controllers", under: "controllers"
-pin_all_from "app/javascript/shared", under: "shared"
+pin_all_from "app/javascript/bos", under: "bos"
 
 # Sortable.js
 pin "sortable.min", to: "sortable.min.js"

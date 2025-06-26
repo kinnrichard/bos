@@ -1,11 +1,16 @@
 // Task HTML rendering utilities
 
-import { taskStatusEmoji, noteIconSVG, infoIconSVG } from './icons'
-import { CLASSES, DATA_ATTRS } from './constants'
-
 export class TaskRenderer {
   constructor(controller) {
     this.controller = controller
+    // Get dependencies from window.Bos
+    const { taskStatusEmoji, noteIconSVG, infoIconSVG } = window.Bos?.Icons || {}
+    const { CLASSES, DATA_ATTRS } = window.Bos?.Constants || {}
+    this.taskStatusEmoji = taskStatusEmoji
+    this.noteIconSVG = noteIconSVG
+    this.infoIconSVG = infoIconSVG
+    this.CLASSES = CLASSES
+    this.DATA_ATTRS = DATA_ATTRS
   }
 
   // Create a task element from data
@@ -35,19 +40,19 @@ export class TaskRenderer {
     const classes = ['task-item']
     
     if (options.isSubtask) {
-      classes.push(CLASSES.SUBTASK)
+      classes.push(this.CLASSES.SUBTASK)
     }
     
     if (taskData.status === 'successfully_completed') {
-      classes.push(CLASSES.COMPLETED)
+      classes.push(this.CLASSES.COMPLETED)
     }
     
     if (taskData.status === 'cancelled') {
-      classes.push(CLASSES.CANCELLED)
+      classes.push(this.CLASSES.CANCELLED)
     }
     
     if (taskData.subtasks?.length > 0) {
-      classes.push(CLASSES.HAS_SUBTASKS, CLASSES.EXPANDED)
+      classes.push(this.CLASSES.HAS_SUBTASKS, this.CLASSES.EXPANDED)
     }
     
     return classes.join(' ')
@@ -55,17 +60,17 @@ export class TaskRenderer {
 
   // Set task data attributes
   setTaskAttributes(element, taskData, options = {}) {
-    element.setAttribute(DATA_ATTRS.TASK_ID, taskData.id || '')
-    element.setAttribute(DATA_ATTRS.STATUS, taskData.status || 'new_task')
-    element.setAttribute(DATA_ATTRS.POSITION, taskData.position || '0')
-    element.setAttribute(DATA_ATTRS.SELECTED, 'false')
+    element.setAttribute(this.DATA_ATTRS.TASK_ID, taskData.id || '')
+    element.setAttribute(this.DATA_ATTRS.STATUS, taskData.status || 'new_task')
+    element.setAttribute(this.DATA_ATTRS.POSITION, taskData.position || '0')
+    element.setAttribute(this.DATA_ATTRS.SELECTED, 'false')
     
     if (taskData.priority) {
-      element.setAttribute(DATA_ATTRS.PRIORITY, taskData.priority)
+      element.setAttribute(this.DATA_ATTRS.PRIORITY, taskData.priority)
     }
     
     if (options.parentId) {
-      element.setAttribute(DATA_ATTRS.PARENT_ID, options.parentId)
+      element.setAttribute(this.DATA_ATTRS.PARENT_ID, options.parentId)
     }
   }
 
@@ -120,7 +125,7 @@ export class TaskRenderer {
       <div class="task-status-container">
         <button class="task-status-button" 
                 data-action="click->job#toggleTaskStatus">
-          <span>${taskStatusEmoji(taskData.status || 'new_task')}</span>
+          <span>${this.taskStatusEmoji(taskData.status || 'new_task')}</span>
         </button>
       </div>
     `
@@ -182,7 +187,7 @@ export class TaskRenderer {
     if (taskData.notes_count > 0) {
       content += `
         <span class="note-indicator" title="Has notes">
-          ${noteIconSVG(16, 16)}
+          ${this.noteIconSVG(16, 16)}
         </span>
       `
     }
@@ -203,7 +208,7 @@ export class TaskRenderer {
               data-action="click->job#showTaskInfo"
               data-task-id="${taskData.id || ''}"
               title="Task details">
-        ${infoIconSVG(16, 16, 'icon-info')}
+        ${this.infoIconSVG(16, 16, 'icon-info')}
       </button>
     `
     
@@ -273,16 +278,16 @@ export class TaskRenderer {
   updateTaskElement(taskElement, updates) {
     // Update status
     if (updates.status) {
-      taskElement.setAttribute(DATA_ATTRS.STATUS, updates.status)
+      taskElement.setAttribute(this.DATA_ATTRS.STATUS, updates.status)
       
       const statusButton = taskElement.querySelector('.task-status-button span')
       if (statusButton) {
-        statusButton.textContent = taskStatusEmoji(updates.status)
+        statusButton.textContent = this.taskStatusEmoji(updates.status)
       }
       
       // Update classes
-      taskElement.classList.toggle(CLASSES.COMPLETED, updates.status === 'successfully_completed')
-      taskElement.classList.toggle(CLASSES.CANCELLED, updates.status === 'cancelled')
+      taskElement.classList.toggle(this.CLASSES.COMPLETED, updates.status === 'successfully_completed')
+      taskElement.classList.toggle(this.CLASSES.CANCELLED, updates.status === 'cancelled')
     }
     
     // Update title
@@ -295,7 +300,7 @@ export class TaskRenderer {
     
     // Update priority
     if (updates.priority !== undefined) {
-      taskElement.setAttribute(DATA_ATTRS.PRIORITY, updates.priority)
+      taskElement.setAttribute(this.DATA_ATTRS.PRIORITY, updates.priority)
       // Update priority indicator
       this.updatePriorityIndicator(taskElement, updates.priority)
     }
@@ -388,7 +393,7 @@ export class TaskRenderer {
         
         const indicator = `
           <span class="note-indicator" title="Has notes">
-            ${noteIconSVG(16, 16)}
+            ${this.noteIconSVG(16, 16)}
           </span>
         `
         

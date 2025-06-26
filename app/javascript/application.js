@@ -4,10 +4,29 @@ import { Turbo } from "@hotwired/turbo-rails"
 // Disable Turbo Drive but keep Turbo Streams for server-driven sorting
 Turbo.session.drive = false
 
-import "controllers"
+// Import all Bos modules first, before controllers
+import * as Icons from "bos/icons"
+import * as Constants from "bos/constants"
+import { ApiClient } from "bos/api_helpers"
+import { SelectionManager } from "bos/selection_manager"
+import { TaskRenderer } from "bos/task_renderer"
+import BasePopoverController from "bos/base_popover_controller"
 
-// Create Bos namespace for custom utilities
+// Create Bos namespace for custom utilities and modules
 window.Bos = window.Bos || {}
+
+// Expose modules on window.Bos
+Object.assign(window.Bos, {
+  Icons,
+  Constants,
+  ApiClient,
+  SelectionManager,
+  TaskRenderer,
+  BasePopoverController
+})
+
+// Now import controllers after Bos is set up
+import "controllers"
 
 // Custom Turbo Stream renderer that refreshes sortable controllers
 Bos.renderTurboStreamMessage = (html) => {
