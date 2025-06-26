@@ -1,4 +1,6 @@
 class User < ApplicationRecord
+  include Loggable
+
   has_secure_password validations: false
 
   has_many :activity_logs

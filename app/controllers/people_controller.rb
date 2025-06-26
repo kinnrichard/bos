@@ -69,14 +69,7 @@ class PeopleController < ApplicationController
 
   def update
     if @person.update(person_params)
-      # Log the action
-      ActivityLog.create!(
-        user: current_user,
-        action: "updated",
-        loggable: @person,
-        metadata: { changes: @person.saved_changes.except("updated_at") }
-      )
-
+      # The Loggable concern will automatically log the update
       redirect_to client_person_path(@client, @person), notice: "Person updated successfully."
     else
       render Views::People::EditView.new(
@@ -97,14 +90,8 @@ class PeopleController < ApplicationController
 
     person_name = @person.name
 
-    # Log the action before deletion
-    ActivityLog.create!(
-      user: current_user,
-      action: "deleted",
-      loggable: @person,
-      metadata: { name: person_name, client_name: @client.name }
-    )
-
+    # Log the deletion before destroying (Loggable can't log after destroy)
+    @person.log_action("deleted", user: current_user, metadata: { name: person_name, client_name: @client.name })
     @person.destroy
 
     redirect_to client_people_path(@client), notice: "Person deleted successfully."

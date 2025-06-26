@@ -31,15 +31,30 @@ class ActivityLog < ApplicationRecord
         }
 
         if filtered_changes.any?
-          # Handle priority changes specially
+          # Handle special field changes
           if filtered_changes.keys == [ "priority" ]
+            # Priority changes
             old_priority = filtered_changes["priority"][0]
             new_priority = filtered_changes["priority"][1]
             priority_emoji = get_priority_emoji(new_priority)
             "marked #{loggable_type_emoji} #{loggable_name} as #{priority_emoji} #{new_priority.capitalize} Priority"
+          elsif filtered_changes.keys == [ "assigned_to_id" ]
+            # Assignment changes
+            old_id = filtered_changes["assigned_to_id"][0]
+            new_id = filtered_changes["assigned_to_id"][1]
+            if new_id.blank?
+              "unassigned #{loggable_type_emoji} #{loggable_name}"
+            else
+              if user = User.find_by(id: new_id)
+                "assigned #{loggable_type_emoji} #{loggable_name} to #{user.name}"
+              else
+                "assigned #{loggable_type_emoji} #{loggable_name} to user ##{new_id}"
+              end
+            end
           else
+            # Format other changes
             changes_text = filtered_changes.map { |field, values|
-              "#{field} from '#{values[0]}' to '#{values[1]}'"
+              format_field_change(field, values)
             }.join(", ")
             "#{activity_type&.past_tense || action} #{loggable_name}: #{changes_text}"
           end
@@ -130,5 +145,31 @@ class ActivityLog < ApplicationRecord
     # Get priority emoji based on loggable type
     context = loggable_type == "Job" ? :job : :generic
     Priority.find(priority, context: context)&.emoji || ""
+  end
+
+  def format_field_change(field, values)
+    old_value = values[0]
+    new_value = values[1]
+
+    case field
+    when "scheduled_date", "due_on", "start_on"
+      # Format dates nicely
+      old_formatted = old_value.present? ? Date.parse(old_value.to_s).strftime("%B %-d, %Y") : "none"
+      new_formatted = new_value.present? ? Date.parse(new_value.to_s).strftime("%B %-d, %Y") : "none"
+      "#{field.humanize.downcase} from #{old_formatted} to #{new_formatted}"
+    when "scheduled_time", "due_time", "start_time"
+      # Format times nicely
+      old_formatted = old_value.present? ? Time.parse(old_value.to_s).strftime("%-I:%M %p") : "none"
+      new_formatted = new_value.present? ? Time.parse(new_value.to_s).strftime("%-I:%M %p") : "none"
+      "#{field.humanize.downcase} from #{old_formatted} to #{new_formatted}"
+    when "person_id"
+      # Show person names instead of IDs
+      old_person = old_value.present? ? Person.find_by(id: old_value)&.name : "none"
+      new_person = new_value.present? ? Person.find_by(id: new_value)&.name : "none"
+      "assigned to #{new_person}" + (old_person != "none" ? " (was #{old_person})" : "")
+    else
+      # Default formatting
+      "#{field.humanize.downcase} from '#{old_value}' to '#{new_value}'"
+    end
   end
 end

@@ -12,18 +12,7 @@ class ScheduledDateTimesController < ApplicationController
         @scheduled_date_time.user_ids = user_ids
       end
 
-      ActivityLog.create!(
-        user: current_user,
-        action: "created",
-        loggable: @scheduled_date_time,
-        metadata: {
-          job_id: @job.id,
-          scheduled_type: @scheduled_date_time.scheduled_type,
-          scheduled_date: @scheduled_date_time.scheduled_date,
-          scheduled_time: @scheduled_date_time.scheduled_time
-        }
-      )
-
+      # The Loggable concern will automatically log the creation
       redirect_to client_job_path(@job.client, @job), notice: "Scheduled date added successfully."
     else
       redirect_to client_job_path(@job.client, @job), alert: "Failed to add scheduled date: #{@scheduled_date_time.errors.full_messages.join(', ')}"
@@ -38,16 +27,7 @@ class ScheduledDateTimesController < ApplicationController
         @scheduled_date_time.user_ids = user_ids
       end
 
-      ActivityLog.create!(
-        user: current_user,
-        action: "updated",
-        loggable: @scheduled_date_time,
-        metadata: {
-          job_id: @job.id,
-          changes: @scheduled_date_time.saved_changes.except("updated_at")
-        }
-      )
-
+      # The Loggable concern will automatically log the update
       render json: { success: true }
     else
       render json: { success: false, errors: @scheduled_date_time.errors.full_messages }, status: :unprocessable_entity
@@ -55,19 +35,16 @@ class ScheduledDateTimesController < ApplicationController
   end
 
   def destroy
-    @scheduled_date_time.destroy
+    # Store metadata before destruction for logging
+    metadata = {
+      scheduled_type: @scheduled_date_time.scheduled_type,
+      scheduled_date: @scheduled_date_time.scheduled_date,
+      job_id: @job.id
+    }
 
-    ActivityLog.create!(
-      user: current_user,
-      action: "deleted",
-      loggable_type: "ScheduledDateTime",
-      loggable_id: @scheduled_date_time.id,
-      metadata: {
-        job_id: @job.id,
-        scheduled_type: @scheduled_date_time.scheduled_type,
-        scheduled_date: @scheduled_date_time.scheduled_date
-      }
-    )
+    # Log the deletion before destroying (Loggable can't log after destroy)
+    @scheduled_date_time.log_action("deleted", user: current_user, metadata: metadata)
+    @scheduled_date_time.destroy
 
     head :ok
   end

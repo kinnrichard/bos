@@ -281,29 +281,10 @@ class TasksController < ApplicationController
     @task.assigned_to_id = technician_id
 
     if @task.save
-      # Log the assignment change
-      if technician_id
-        technician = User.find(technician_id)
-        ActivityLog.create!(
-          user: current_user,
-          action: "assigned",
-          loggable: @task,
-          metadata: {
-            assigned_to: technician.name,
-            assigned_to_id: technician.id
-          }
-        )
-      else
-        ActivityLog.create!(
-          user: current_user,
-          action: "unassigned",
-          loggable: @task
-        )
-      end
-
+      # The Loggable concern will automatically log the update to assigned_to_id
       render json: {
         status: "success",
-        technician: technician_id ? { id: technician.id, name: technician.name } : nil
+        technician: technician_id ? { id: User.find(technician_id).slice(:id, :name) } : nil
       }
     else
       render json: { error: @task.errors.full_messages.join(", ") }, status: :unprocessable_entity

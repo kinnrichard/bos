@@ -1,4 +1,6 @@
 class ScheduledDateTime < ApplicationRecord
+  include Loggable
+
   # Polymorphic association to any schedulable model (Job, etc.)
   belongs_to :schedulable, polymorphic: true
 

@@ -1,4 +1,6 @@
 class Device < ApplicationRecord
+  include Loggable
+
   belongs_to :client
   belongs_to :person, optional: true
 

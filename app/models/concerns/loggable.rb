@@ -70,8 +70,14 @@ module Loggable
       client
     when Task
       job&.client
+    when ScheduledDateTime
+      # ScheduledDateTime uses polymorphic schedulable association
+      schedulable.is_a?(Job) ? schedulable.client : nil
     when Note
       notable.respond_to?(:associated_client) ? notable.associated_client : nil
+    when User
+      # Users don't belong to a client
+      nil
     else
       nil
     end
@@ -83,8 +89,14 @@ module Loggable
       self
     when Task
       job
+    when ScheduledDateTime
+      # ScheduledDateTime uses polymorphic schedulable association
+      schedulable.is_a?(Job) ? schedulable : nil
     when Note
       notable.respond_to?(:associated_job) ? notable.associated_job : nil
+    when Person, Device, User
+      # These don't directly belong to jobs
+      nil
     else
       nil
     end

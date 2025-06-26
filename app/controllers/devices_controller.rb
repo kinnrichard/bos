@@ -22,12 +22,7 @@ class DevicesController < ApplicationController
     @device = @client.devices.build(device_params)
 
     if @device.save
-      ActivityLog.create!(
-        user: current_user,
-        action: "created",
-        loggable: @device,
-        metadata: { device_name: @device.name, client_name: @client.name }
-      )
+      # The Loggable concern will automatically log the creation
       redirect_to client_device_path(@client, @device), notice: "Device was successfully created."
     else
       @people = @client.people.order(:name)
@@ -42,12 +37,7 @@ class DevicesController < ApplicationController
 
   def update
     if @device.update(device_params)
-      ActivityLog.create!(
-        user: current_user,
-        action: "updated",
-        loggable: @device,
-        metadata: { device_name: @device.name, client_name: @client.name }
-      )
+      # The Loggable concern will automatically log the update
       redirect_to client_device_path(@client, @device), notice: "Device was successfully updated."
     else
       @people = @client.people.order(:name)
@@ -64,13 +54,8 @@ class DevicesController < ApplicationController
 
     device_name = @device.name
 
-    ActivityLog.create!(
-      user: current_user,
-      action: "deleted",
-      loggable: @device,
-      metadata: { device_name: device_name, client_name: @client.name }
-    )
-
+    # Log the deletion before destroying (Loggable can't log after destroy)
+    @device.log_action("deleted", user: current_user, metadata: { device_name: device_name, client_name: @client.name })
     @device.destroy
 
     redirect_to client_devices_path(@client), notice: "Device was successfully deleted."
