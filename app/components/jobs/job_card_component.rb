@@ -38,7 +38,7 @@ module Components
           # Technician avatar
           if @job.technicians.any?
             @job.technicians.first(1).each do |tech|
-              span(class: "technician-avatar") { tech.name.split.map(&:first).join.upcase[0..1] }
+              span(class: "technician-avatar", style: tech.avatar_style) { tech.initials }
             end
           end
         end
