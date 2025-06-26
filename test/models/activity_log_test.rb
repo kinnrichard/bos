@@ -336,7 +336,7 @@ class ActivityLogTest < ActiveSupport::TestCase
     log = ActivityLog.new(action: "status_changed", loggable: @task)
 
     # Test each status emoji using send to call private method
-    assert_equal "⚫", log.send(:get_status_emoji, "new_task")
+    assert_equal "⚫️", log.send(:get_status_emoji, "new_task")
     assert_equal "🟢", log.send(:get_status_emoji, "in_progress")
     assert_equal "⏸️", log.send(:get_status_emoji, "paused")
     assert_equal "☑️", log.send(:get_status_emoji, "successfully_completed")

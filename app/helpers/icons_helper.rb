@@ -106,52 +106,20 @@ module IconsHelper
 
   # Task Status Emojis
   def task_status_emoji(status)
-    case status.to_s
-    when "new_task" then "⚫"
-    when "in_progress" then "🟢"
-    when "paused" then "⏸️"
-    when "successfully_completed" then "☑️"
-    when "cancelled" then "❌"
-    else "❓"
-    end
+    TaskStatus.find(status)&.emoji || "❓"
   end
 
   def task_status_label(status)
-    case status.to_s
-    when "new_task" then "New"
-    when "in_progress" then "In Progress"
-    when "paused" then "Paused"
-    when "successfully_completed" then "Completed"
-    when "cancelled" then "Cancelled"
-    else status.to_s.humanize
-    end
+    TaskStatus.find(status)&.label || status.to_s.humanize
   end
 
   # Job Status Emojis
   def job_status_emoji(status)
-    case status.to_s
-    when "open" then "⚫"
-    when "in_progress" then "🟢"
-    when "paused" then "⏸️"
-    when "waiting_for_customer" then "⏳"
-    when "waiting_for_scheduled_appointment" then "📅"
-    when "successfully_completed" then "☑️"
-    when "cancelled" then "❌"
-    else "❓"
-    end
+    JobStatus.find(status)&.emoji || "❓"
   end
 
   def job_status_label(status)
-    case status.to_s
-    when "open" then "Open"
-    when "in_progress" then "In Progress"
-    when "paused" then "Paused"
-    when "waiting_for_customer" then "Waiting for Customer"
-    when "waiting_for_scheduled_appointment" then "Scheduled"
-    when "successfully_completed" then "Completed"
-    when "cancelled" then "Cancelled"
-    else status.to_s.humanize
-    end
+    JobStatus.find(status)&.label || status.to_s.humanize
   end
 
   # Priority Emojis

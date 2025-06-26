@@ -69,20 +69,53 @@ This implementation creates a feedback system that:
 
 **Acceptance Criteria:**
 1. Create FeatureRequestWidget Phlex component
-2. Implement 5-screen progressive form:
-   - Screen 1: What to add/improve + importance
-   - Screen 2: Problem, current handling, frequency
-   - Screen 3: Ideal solution, examples
-   - Screen 4: Goals, expected outcomes
-   - Screen 5: Business impact, success metrics, notes
-3. Progress indicator showing current step
+2. Implement 5-screen progressive form with these exact questions:
+
+   **Screen 1: Initial Request**
+   - "What would you like to add or improve?" (text field)
+   - "How important is this to you?" (radio buttons)
+     - Nice to have
+     - Would really help my workflow  
+     - Critical - blocking my work
+
+   **Screen 2: Problem Definition**
+   - "What problem are you trying to solve?" (text area)
+   - "How do you handle this today?" (text area)
+   - "How often do you face this?" (radio buttons)
+     - Daily
+     - Weekly  
+     - Monthly
+     - Occasionally
+
+   **Screen 3: Solution Exploration**
+   - "Describe your ideal solution" (text area)
+   - "Have you seen this done well elsewhere?" (text area - optional)
+
+   **Screen 4: Context**
+   - "What's your main goal with this feature?" (text area)
+     - Helper text: "Examples: Save time, reduce errors, automate tasks, better insights"
+   - "Expected outcome after implementation?" (text area)
+     - Helper text: "What specific improvement do you expect?"
+
+   **Screen 5: Priority & Impact**
+   - "Business impact if implemented?" (radio buttons)
+     - Minor efficiency gain
+     - Significant time savings
+     - Unlocks new capabilities
+     - Revenue/cost impact
+   - "How can we measure success?" (text area)
+     - Helper text: "What metrics would show this is working?"
+   - "Anything else we should know?" (text area - optional)
+
+3. Progress indicator showing current step (1 of 5, 2 of 5, etc.)
 4. Back/Next navigation between screens
 5. Save all answers in metadata field as structured JSON
 
 **Technical Notes:**
 - Use Stimulus for multi-step navigation
-- Validate before allowing next step
+- Validate required fields before allowing next step
 - Save draft in localStorage to prevent data loss
+- Store question-answer pairs in metadata with clear keys
 
 **Estimated:** 6-8 hours
 
@@ -118,43 +151,78 @@ This implementation creates a feedback system that:
 **So that** simple bugs can be resolved quickly
 
 **Acceptance Criteria:**
-1. Create WebhooksController with signature verification
-2. Create ClaudeWebhookService with bug formatting
-3. Create ProcessBugReportJob using Solid Queue
-4. Send bugs to Claude after creation
-5. Process Claude responses and create BugResolution
-6. Update bug status throughout pipeline
+1. Create ClaudeAutomationService that uses Claude CLI
+2. Create ProcessBugReportJob using Solid Queue
+3. Format bug report into comprehensive prompt including:
+   - Bug details (title, description, console logs, URL, browser info)
+   - Instructions for analysis, BMAD story creation, fix implementation
+   - Git branch creation and PR generation commands
+4. Execute via: `echo '#{prompt}' | claude --conversation-id bug-#{id}`
+5. Parse PR URL from Claude's response
+6. Create BugResolution record with PR details
+7. Update bug status throughout pipeline
 
 **Technical Notes:**
-- Combine webhook infrastructure with service
-- Use Faraday for HTTP calls
-- Store API endpoint in credentials
-- Log all automation attempts
+- Use Claude CLI instead of API for better context awareness
+- Include full PR creation in single prompt for continuity
+- Example prompt structure:
+  ```ruby
+  prompt = <<~PROMPT
+    You are Claude Code with BMAD capabilities. Analyze and fix this bug.
+    
+    BUG REPORT:
+    Title: #{bug_report.title}
+    Description: #{bug_report.description}
+    Console Errors: #{bug_report.console_logs}
+    URL: #{bug_report.page_url}
+    Browser: #{bug_report.browser_info}
+    
+    INSTRUCTIONS:
+    1. Analyze the bug and identify the root cause
+    2. Create a BMAD story for the fix using story format
+    3. Implement the fix following the story
+    4. Write tests if applicable (check existing test patterns)
+    5. Create a git branch named: fix/bug-report-#{bug_report.unique_id}
+    6. Commit changes with message linking to bug report
+    7. Create GitHub PR with:
+       - Title: "Fix: #{bug_report.title}"
+       - Description including bug report ID and fix summary
+       - Link: Fixes bug report #{bug_report.unique_id}
+    
+    Use git commands and gh CLI to create the PR.
+    Return the PR URL when complete.
+  PROMPT
+  ```
+- Parse PR URL with regex: `/PR created: (https:\/\/github\.com\/.+\/pull\/\d+)/`
+- Log all Claude interactions to AutomationLog
 
-**Estimated:** 8-10 hours
+**Estimated:** 6-8 hours
 
 ---
 
-### Story 2.2: GitHub PR Creation
+### Story 2.2: Bug Resolution Tracking and Notifications
 
 **As a** system  
-**I want** to create PRs from Claude's fixes  
-**So that** bug fixes can be reviewed and merged
+**I want** to track bug fix progress and notify stakeholders  
+**So that** everyone knows when bugs are resolved
 
 **Acceptance Criteria:**
-1. Add Octokit gem to Gemfile
-2. Create GitHubPRService
-3. Create PRs with Claude's fixes
-4. Link PR back to bug report
-5. Update BugResolution with PR details
-6. Handle GitHub API errors gracefully
+1. Create BugResolution model and migrations
+2. Monitor PR status via GitHub webhooks or polling
+3. Update resolution status when PR is merged/closed
+4. Send email notifications:
+   - To reporter when PR is created
+   - To reporter when PR is merged
+   - To admin on automation failures
+5. Create simple view to show PR status for admins
 
 **Technical Notes:**
-- Use GitHub personal access token
-- Create feature branches for each fix
-- Include bug report ID in PR description
+- BugResolution tracks: pr_url, pr_number, status, fix_summary
+- Consider GitHub webhook for real-time updates
+- Fall back to polling if webhooks not available
+- Include PR link in notification emails
 
-**Estimated:** 6-8 hours
+**Estimated:** 4-5 hours
 
 ---
 
@@ -215,13 +283,13 @@ This implementation creates a feedback system that:
    - **Subtotal: 17-22 hours**
 
 2. **Week 2: Automation**
-   - Story 2.1: Claude integration (8-10 hours)
-   - Story 2.2: GitHub PRs (6-8 hours)
+   - Story 2.1: Claude integration (6-8 hours)
+   - Story 2.2: Resolution tracking (4-5 hours)
    - Story 2.3: Feature workflow (5-6 hours)
    - Story 3.1: Monitoring (3-4 hours)
-   - **Subtotal: 22-28 hours**
+   - **Subtotal: 18-23 hours**
 
-**Total: 39-50 hours** (approximately 1.5-2 weeks for one developer)
+**Total: 35-45 hours** (approximately 1.5-2 weeks for one developer)
 
 ## Key Simplifications Made
 

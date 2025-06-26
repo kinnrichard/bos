@@ -107,16 +107,9 @@ module Views
         end
 
         def status_label(status)
-          case status
-          when "open" then "New"
-          when "in_progress" then "In Progress"
-          when "paused" then "Paused"
-          when "waiting_for_customer" then "Waiting for customer"
-          when "waiting_for_scheduled_appointment" then "Waiting for scheduled appointment"
-          when "successfully_completed" then "Successfully Completed"
-          when "cancelled" then "Cancelled"
-          else status.humanize
-          end
+          # Note: "open" status shows as "New" in the UI
+          return "New" if status == "open"
+          JobStatus.find(status)&.label || status.humanize
         end
       end
     end

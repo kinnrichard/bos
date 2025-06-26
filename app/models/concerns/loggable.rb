@@ -93,16 +93,9 @@ module Loggable
   def status_label
     case self
     when Job
-      status.humanize
+      JobStatus.find(status)&.label || status.humanize
     when Task
-      case status
-      when "new_task" then "New"
-      when "in_progress" then "In Progress"
-      when "paused" then "Paused"
-      when "successfully_completed" then "Successfully Completed"
-      when "cancelled" then "Cancelled"
-      else status.humanize
-      end
+      TaskStatus.find(status)&.label || status.humanize
     else
       status.humanize if respond_to?(:status)
     end

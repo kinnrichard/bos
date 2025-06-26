@@ -102,14 +102,7 @@ class ActivityLog < ApplicationRecord
   end
 
   def get_status_emoji(status)
-    case status
-    when "new_task" then "⚫"
-    when "in_progress" then "🟢"
-    when "paused" then "⏸️"
-    when "successfully_completed" then "☑️"
-    when "cancelled" then "❌"
-    when "open" then "⚫"
-    else ""
-    end
+    # Try TaskStatus first, then JobStatus
+    TaskStatus.find(status)&.emoji || JobStatus.find(status)&.emoji || ""
   end
 end
