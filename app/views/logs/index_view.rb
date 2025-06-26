@@ -253,23 +253,26 @@ module Views
             end
           end
 
-          # Action column
-          td(class: "logs-table__action-cell") do
-            render_log_message_with_links(log)
-            if count > 1
-              span(class: "log-count-badge") { "#{count}×" }
-            end
-          end
-
-          # Time column
-          td(class: "logs-table__time-cell") do
-            if count == 1
-              time(datetime: log.created_at.iso8601, title: log.created_at.to_s) do
-                format_log_timestamp(log.created_at)
+          # Action and Time column (combined)
+          td(class: "logs-table__action-cell", colspan: 2) do
+            div(class: "action-time-container") do
+              div(class: "action-content") do
+                render_log_message_with_links(log)
+                if count > 1
+                  span(class: "log-count-badge") { "#{count}×" }
+                end
               end
-            else
-              # Format grouped times
-              format_grouped_times(logs)
+
+              div(class: "time-content") do
+                if count == 1
+                  time(datetime: log.created_at.iso8601, title: log.created_at.to_s) do
+                    format_log_timestamp(log.created_at)
+                  end
+                else
+                  # Format grouped times
+                  format_grouped_times(logs)
+                end
+              end
             end
           end
         end
