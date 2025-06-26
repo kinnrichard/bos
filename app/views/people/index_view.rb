@@ -40,7 +40,7 @@ module Views
                       div(class: "person-contacts") do
                         span(class: "contact-icon") do
                           missing_types.each do |type|
-                            plain contact_method_emoji(type)
+                            plain ContactMethodType.new(type).emoji
                           end
                           plain warning_emoji
                         end

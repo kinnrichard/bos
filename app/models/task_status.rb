@@ -3,7 +3,7 @@
 class TaskStatus
   STATUSES = {
     new_task: {
-      emoji: "⚫",
+      emoji: "⚫️",
       label: "New",
       color: "gray"
     },

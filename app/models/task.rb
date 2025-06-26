@@ -49,16 +49,14 @@ class Task < ApplicationRecord
   # Update reordered_at when position or parent changes
   before_save :update_reordered_at, if: -> { position_changed? || parent_id_changed? }
 
-  # Status emoji helpers
-  def status_emoji
-    case status
-    when "new_task" then "⚫️"
-    when "in_progress" then "🟢"
-    when "paused" then "⏸️"
-    when "successfully_completed" then "☑️"
-    when "cancelled" then "❌"
-    end
+  # Value object integration
+  def status_object
+    TaskStatus.new(status)
   end
+
+  # Delegate display methods to value object
+  delegate :emoji, :label, :color, :with_emoji,
+           to: :status_object, prefix: :status
 
   # Calculate total time spent in 'in_progress' status
   def time_in_progress
@@ -140,14 +138,6 @@ class Task < ApplicationRecord
   end
 
   # Value object integration
-  def status_object
-    @status_object ||= TaskStatus.new(status)
-  end
-
-  # Delegate display methods to value objects
-  delegate :emoji, :label, :color, :with_emoji,
-           to: :status_object,
-           prefix: :status
 
   private
 

@@ -20,8 +20,9 @@ class PriorityDropdownComponent < DropdownComponent
   private
 
   def button_content_html
-    emoji = @type == :job ? job_priority_emoji(@current_priority) : priority_emoji(@current_priority)
-    label = priority_label(@current_priority)
+    priority_obj = Priority.new(@current_priority, context: @type)
+    emoji = priority_obj.emoji
+    label = priority_obj.label
 
     if emoji.present?
       safe_join([
@@ -39,8 +40,9 @@ class PriorityDropdownComponent < DropdownComponent
 
   def build_menu_items
     @priorities.map do |priority|
-      emoji = @type == :job ? job_priority_emoji(priority) : priority_emoji(priority)
-      label = priority_label(priority)
+      priority_obj = Priority.new(priority, context: @type)
+      emoji = priority_obj.emoji
+      label = priority_obj.label
 
       content = if emoji.present?
         safe_join([

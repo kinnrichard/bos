@@ -13,7 +13,7 @@ class ContactMethod < ApplicationRecord
 
   # Value object integration
   def contact_type_object
-    @contact_type_object ||= ContactMethodType.new(contact_type)
+    ContactMethodType.new(contact_type)
   end
 
   # Delegate display methods to value object

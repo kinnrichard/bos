@@ -14,6 +14,18 @@ class ScheduledDateTime < ApplicationRecord
     message: "%{value} is not a valid scheduled type"
   }
 
+  # Value object integration
+  def scheduled_type_object
+    ScheduleType.new(scheduled_type)
+  end
+
+  # Delegate display methods to value object
+  delegate :emoji, :label, :description, :color, :with_emoji,
+           to: :scheduled_type_object, prefix: :scheduled_type
+
+  alias_method :type_emoji, :scheduled_type_emoji
+  alias_method :type_label, :scheduled_type_label
+
   # Scopes
   scope :due_dates, -> { where(scheduled_type: "due") }
   scope :start_dates, -> { where(scheduled_type: "start") }
@@ -65,9 +77,5 @@ class ScheduledDateTime < ApplicationRecord
     else
       scheduled_date.strftime("%B %d, %Y")
     end
-  end
-
-  def display_type
-    self.class.scheduled_types[scheduled_type.to_sym]
   end
 end

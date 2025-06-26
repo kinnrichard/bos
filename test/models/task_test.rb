@@ -174,11 +174,14 @@ class TaskTest < ActiveSupport::TestCase
   end
 
   test "status emoji helpers" do
-    task = @job.tasks.create!(title: "Test", status: "new_task")
+    # Disable resort for this test
+    @job.created_by.update!(resort_tasks_on_status_change: false)
 
+    task = @job.tasks.create!(title: "Test", status: "new_task")
     assert_equal "⚫️", task.status_emoji
 
     task.update!(status: "in_progress")
+    assert_equal "in_progress", task.status
     assert_equal "🟢", task.status_emoji
 
     task.update!(status: "paused")
