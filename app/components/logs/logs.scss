@@ -168,7 +168,7 @@
         
         &:first-child {
           text-align: right;
-          width: auto;
+          width: 140px; // Match user cell width
           white-space: nowrap;
           
           .date-header-user {
@@ -213,6 +213,7 @@
       &.logs-table__user-cell {
         white-space: nowrap;
         text-align: right;
+        width: 140px; // Fixed width to align with header
         
         .user-info {
           display: inline-flex;
