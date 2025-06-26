@@ -293,25 +293,13 @@ module Components
       end
 
       def status_emoji(status)
-        case status
-        when "new_task" then "⚫"
-        when "in_progress" then "🟢"
-        when "paused" then "⏸️"
-        when "successfully_completed" then "☑️"
-        when "cancelled" then "❌"
-        else "❓"
-        end
+        task_status = TaskStatus.find(status)
+        task_status&.emoji || "❓"
       end
 
       def status_label(status)
-        case status
-        when "new_task" then "New"
-        when "in_progress" then "In Progress"
-        when "paused" then "Paused"
-        when "successfully_completed" then "Completed"
-        when "cancelled" then "Cancelled"
-        else status&.humanize || "Unknown"
-        end
+        task_status = TaskStatus.find(status)
+        task_status&.label || status&.humanize || "Unknown"
       end
 
       def format_timestamp(timestamp)

@@ -19,7 +19,7 @@ class AllJobsController < ApplicationController
       @page_title = "Assigned to Others"
       @active_section = :others
     when "closed"
-      @jobs = @jobs.where(status: [ "successfully_completed", "cancelled" ])
+      @jobs = @jobs.where(status: [ :successfully_completed, :cancelled ])
       @page_title = "Closed Jobs"
       @active_section = :closed
     else
