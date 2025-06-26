@@ -59,6 +59,9 @@ Rails.application.routes.draw do
   # Feedback routes
   resource :feedback, only: [ :new, :create ], controller: "feedback"
 
+  # GitHub webhook routes
+  post "/github/webhook", to: "github_webhooks#issue_comment"
+
   # Defines the root path route ("/")
   root "home#show"
 end
