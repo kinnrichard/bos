@@ -173,7 +173,7 @@ module Views
                     data: { action: "click->logs-collapsible#stopPropagation" }) do
                     emoji = group[:client].business? ? "🏢" : "🏠"
                     span { "#{emoji} #{group[:client].name}" }
-                    unsafe_raw arrow_right_circle_fill_svg(css_class: "pill-arrow")
+                    raw arrow_right_circle_fill_svg(css_class: "pill-arrow")
                   end
 
                   if group[:job]
@@ -181,7 +181,7 @@ module Views
                       class: "logs-group-job-pill",
                       data: { action: "click->logs-collapsible#stopPropagation" }) do
                       span { "💼 #{group[:job].title}" }
-                      unsafe_raw arrow_right_circle_fill_svg(css_class: "pill-arrow")
+                      raw arrow_right_circle_fill_svg(css_class: "pill-arrow")
                     end
                   end
                 end
