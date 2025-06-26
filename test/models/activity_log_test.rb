@@ -255,7 +255,8 @@ class ActivityLogTest < ActiveSupport::TestCase
         "changes" => {
           "position" => [ "6", "10" ],
           "lock_version" => [ "0", "1" ],
-          "reordered_at" => [ "2025-06-25T08:40:02.589-04:00", "2025-06-25T15:47:35.972-04:00" ]
+          "reordered_at" => [ "2025-06-25T08:40:02.589-04:00", "2025-06-25T15:47:35.972-04:00" ],
+          "parent_id" => [ "1", "2" ]
         }
       }
     )
@@ -282,6 +283,21 @@ class ActivityLogTest < ActiveSupport::TestCase
     assert_match "status from 'open' to 'in_progress'", message
     refute_match "position", message
     refute_match "lock_version", message
+  end
+
+  test "message for priority change" do
+    log = ActivityLog.new(
+      action: "updated",
+      loggable: @job,
+      metadata: {
+        "name" => "Computer won't start",
+        "changes" => {
+          "priority" => [ "low", "high" ]
+        }
+      }
+    )
+
+    assert_equal "marked 💼 Computer won't start as ❗ High Priority", log.message
   end
 
   test "message for deleted action" do
@@ -331,7 +347,7 @@ class ActivityLogTest < ActiveSupport::TestCase
       }
     )
 
-    assert_equal "marked ☑️ Task Title 🟢 In Progress", log.message
+    assert_equal "set ☑️ Task Title to 🟢 In Progress", log.message
   end
 
   test "message for added action" do

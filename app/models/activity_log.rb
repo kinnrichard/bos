@@ -27,14 +27,22 @@ class ActivityLog < ApplicationRecord
       if metadata["changes"].present?
         # Filter out unimportant attributes
         filtered_changes = metadata["changes"].reject { |field, _|
-          [ "position", "lock_version", "reordered_at" ].include?(field)
+          [ "position", "lock_version", "reordered_at", "parent_id" ].include?(field)
         }
 
         if filtered_changes.any?
-          changes_text = filtered_changes.map { |field, values|
-            "#{field} from '#{values[0]}' to '#{values[1]}'"
-          }.join(", ")
-          "#{activity_type&.past_tense || action} #{loggable_name}: #{changes_text}"
+          # Handle priority changes specially
+          if filtered_changes.keys == [ "priority" ]
+            old_priority = filtered_changes["priority"][0]
+            new_priority = filtered_changes["priority"][1]
+            priority_emoji = get_priority_emoji(new_priority)
+            "marked #{loggable_type_emoji} #{loggable_name} as #{priority_emoji} #{new_priority.capitalize} Priority"
+          else
+            changes_text = filtered_changes.map { |field, values|
+              "#{field} from '#{values[0]}' to '#{values[1]}'"
+            }.join(", ")
+            "#{activity_type&.past_tense || action} #{loggable_name}: #{changes_text}"
+          end
         else
           # If only unimportant fields were changed, return nil to hide this log
           nil
@@ -50,7 +58,7 @@ class ActivityLog < ApplicationRecord
       "#{activity_type&.past_tense || action} #{metadata['unassigned_from']} from #{loggable_type_emoji} #{loggable_name}"
     when "status_changed"
       status_emoji = get_status_emoji(metadata["new_status"])
-      "#{activity_type&.past_tense || 'marked'} #{loggable_type_emoji} #{loggable_name} #{status_emoji} #{metadata['new_status_label']}"
+      "set #{loggable_type_emoji} #{loggable_name} to #{status_emoji} #{metadata['new_status_label']}"
     when "added"
       "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name} to #{metadata['parent_type']} #{metadata['parent_name']}"
     when "logged_in"
@@ -116,5 +124,11 @@ class ActivityLog < ApplicationRecord
   def get_status_emoji(status)
     # Try TaskStatus first, then JobStatus
     TaskStatus.find(status)&.emoji || JobStatus.find(status)&.emoji || ""
+  end
+
+  def get_priority_emoji(priority)
+    # Get priority emoji based on loggable type
+    context = loggable_type == "Job" ? :job : :generic
+    Priority.find(priority, context: context)&.emoji || ""
   end
 end
