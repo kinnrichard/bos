@@ -93,17 +93,7 @@ class Task < ApplicationRecord
 
   # Format time in progress as human readable
   def formatted_time_in_progress
-    seconds = time_in_progress
-    return nil if seconds == 0
-
-    hours = (seconds / 3600).floor
-    minutes = ((seconds % 3600) / 60).floor
-
-    parts = []
-    parts << "#{hours}h" if hours > 0
-    parts << "#{minutes}m" if minutes > 0 || hours == 0
-
-    parts.join(" ")
+    TimeFormat.duration(time_in_progress)
   end
 
   # Check if this task has subtasks

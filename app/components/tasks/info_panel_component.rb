@@ -232,13 +232,7 @@ module Components
       end
 
       def time_ago_in_words(time)
-        seconds = Time.current - time
-        case seconds
-        when 0..59 then "#{seconds.to_i}s"
-        when 60..3599 then "#{(seconds / 60).to_i}m"
-        when 3600..86399 then "#{(seconds / 3600).to_i}h"
-        else "#{(seconds / 86400).to_i}d"
-        end
+        TimeFormat.time_ago(time)
       end
     end
   end

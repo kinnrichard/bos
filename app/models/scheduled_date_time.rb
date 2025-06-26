@@ -73,9 +73,9 @@ class ScheduledDateTime < ApplicationRecord
 
   def display_datetime
     if scheduled_time
-      "#{scheduled_date.strftime('%B %d, %Y')} at #{scheduled_time.strftime('%l:%M %p').strip}"
+      TimeFormat.datetime(datetime)
     else
-      scheduled_date.strftime("%B %d, %Y")
+      TimeFormat.date(scheduled_date, format: :medium)
     end
   end
 end

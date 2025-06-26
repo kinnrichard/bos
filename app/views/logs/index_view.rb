@@ -185,40 +185,16 @@ module Views
       end
 
       def format_log_timestamp(timestamp)
-        timestamp.strftime("%-I:%M %p")
+        TimeFormat.timestamp(timestamp)
       end
 
       def format_date_header(date)
-        today = Time.current.to_date
-        yesterday = today - 1
-
-        if date == today
-          "Today, #{date.strftime('%B %-d, %Y')}"
-        elsif date == yesterday
-          "Yesterday, #{date.strftime('%B %-d, %Y')}"
-        else
-          "#{date.strftime('%A, %B %-d, %Y')}"
-        end
+        TimeFormat.date_header(date)
       end
 
       def format_grouped_times(logs)
-        # Get unique times (ignoring seconds)
-        unique_times = logs.map { |l| l.created_at.strftime("%-I:%M %p") }.uniq
-
-        case unique_times.size
-        when 1
-          # All at the same minute
-          plain unique_times.first
-        when 2
-          # Exactly two unique times
-          plain "#{unique_times.first} and #{unique_times.last}"
-        else
-          # More than two unique times - show range
-          times = logs.map(&:created_at).sort
-          first_time = times.first.strftime("%-I:%M %p")
-          last_time = times.last.strftime("%-I:%M %p")
-          plain "#{first_time} - #{last_time}"
-        end
+        times = logs.map(&:created_at)
+        plain TimeFormat.grouped_times(times)
       end
 
       def render_log_row(log_group, index, extra_class = nil)
