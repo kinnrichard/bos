@@ -33,12 +33,6 @@ export default class extends Controller {
       }
       sibling = sibling.nextElementSibling
     }
-    
-    // Update toggle icon
-    const toggle = header.querySelector("[data-logs-collapsible-target='toggle']")
-    if (toggle) {
-      toggle.textContent = "▼"
-    }
   }
   
   collapse(header) {
@@ -51,12 +45,6 @@ export default class extends Controller {
         sibling.style.display = "none"
       }
       sibling = sibling.nextElementSibling
-    }
-    
-    // Update toggle icon
-    const toggle = header.querySelector("[data-logs-collapsible-target='toggle']")
-    if (toggle) {
-      toggle.textContent = "▶"
     }
   }
   

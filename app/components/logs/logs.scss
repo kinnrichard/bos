@@ -77,6 +77,26 @@
         background-color: rgba(255, 159, 10, 0.1); // orange with alpha
       }
       
+      // Collapsed state - show right chevron, hide down chevron
+      &.logs-group--collapsed {
+        .chevron-right {
+          display: block !important;
+        }
+        .chevron-down {
+          display: none !important;
+        }
+      }
+      
+      // Expanded state (default) - show down chevron, hide right chevron
+      &:not(.logs-group--collapsed) {
+        .chevron-right {
+          display: none !important;
+        }
+        .chevron-down {
+          display: block !important;
+        }
+      }
+      
       td {
         padding: 12px 16px;
         font-weight: 600;
@@ -91,11 +111,22 @@
         }
         
         .logs-group-toggle {
-          display: inline-block;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           width: 16px;
-          font-size: 12px;
+          height: 16px;
           color: var(--text-tertiary);
-          transition: transform 0.2s ease;
+          
+          svg {
+            transition: opacity 0.2s ease;
+            color: inherit;
+          }
+          
+          .chevron-right,
+          .chevron-down {
+            color: inherit;
+          }
         }
         
         .logs-group-client {
