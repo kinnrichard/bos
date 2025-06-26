@@ -5,6 +5,11 @@ module IconsHelper
 
   # Priority lists
   PRIORITIES = [ "critical", "high", "normal", "low", "proactive_followup" ]
+
+  # Unassigned icon
+  def unassigned_icon
+    "❓"
+  end
   # SVG Icons
   def note_icon_svg(width: 16, height: 16, css_class: nil)
     svg_attrs = {
