@@ -263,7 +263,10 @@ export default class extends BasePopoverController {
     setTimeout(() => {
       const scrollableContainer = this.element.querySelector('.popover-content-scrollable')
       if (scrollableContainer) {
-        scrollableContainer.scrollTop = scrollableContainer.scrollHeight
+        scrollableContainer.scrollTo({
+          top: scrollableContainer.scrollHeight,
+          behavior: 'smooth'
+        })
       }
     }, 50) // Small delay to ensure content is rendered
   }
@@ -385,7 +388,10 @@ export default class extends BasePopoverController {
     // Scroll to bottom to show new note
     const scrollableContainer = this.element.querySelector('.popover-content-scrollable')
     if (scrollableContainer) {
-      scrollableContainer.scrollTop = scrollableContainer.scrollHeight
+      scrollableContainer.scrollTo({
+        top: scrollableContainer.scrollHeight,
+        behavior: 'smooth'
+      })
     }
   }
   
