@@ -331,10 +331,17 @@ export default class extends BasePopoverController {
     
     let html = ''
     if (needsHeader) {
+      // Generate initials
+      const initials = note.user_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+      
       html += `
         <div class="timeline-header">
-          <span class="timeline-header-user">${note.user_name}</span>
-          <span class="timeline-header-separator">, </span>
+          <div class="timeline-header-left">
+            <span class="timeline-header-icon">
+              <span>${initials}</span>
+            </span>
+            <span class="timeline-header-user">${note.user_name}</span>
+          </div>
           <span class="timeline-header-date">Today</span>
         </div>
       `
@@ -366,9 +373,9 @@ export default class extends BasePopoverController {
     this.timelineContainerTarget.insertAdjacentHTML('beforeend', html)
     
     // Scroll to bottom to show new note
-    const timelineSection = this.timelineContainerTarget.closest('.timeline-section')
-    if (timelineSection) {
-      timelineSection.scrollTop = timelineSection.scrollHeight
+    const scrollableContainer = this.element.querySelector('.popover-content-scrollable')
+    if (scrollableContainer) {
+      scrollableContainer.scrollTop = scrollableContainer.scrollHeight
     }
   }
   

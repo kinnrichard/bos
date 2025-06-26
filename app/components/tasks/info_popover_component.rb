@@ -33,22 +33,19 @@ module Components
             end
           end
 
-          # Popover content
-          div(class: "popover-content") do
+          # Popover content with scrolling
+          div(class: "popover-content-scrollable") do
             # Header
             div(class: "popover-header") do
               h3 { "Task Info" }
               render_header_duration
             end
 
-            # Main content area
-            div(class: "popover-body") do
-              # Timeline section (notes and status changes combined)
-              render_timeline
+            # Timeline section (notes and status changes combined)
+            render_timeline
 
-              # Add note form at the bottom
-              render_add_note_form
-            end
+            # Add note form at the bottom
+            render_add_note_form
           end
         end
       end
@@ -164,8 +161,19 @@ module Components
 
       def render_timeline_header(user, timestamp)
         div(class: "timeline-header") do
-          span(class: "timeline-header-user") { user&.name || "System" }
-          span(class: "timeline-header-separator") { ", " }
+          # Left side with icon and user name
+          div(class: "timeline-header-left") do
+            if user
+              # Show user initials glyph
+              span(class: "timeline-header-icon") do
+                initials = user.name.split.map(&:first).join.upcase[0..1]
+                span { initials }
+              end
+            end
+            span(class: "timeline-header-user") { user&.name || "System" }
+          end
+
+          # Right side with date
           span(class: "timeline-header-date") { format_header_date(timestamp) }
         end
       end
