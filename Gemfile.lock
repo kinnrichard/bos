@@ -191,6 +191,8 @@ GEM
     mime-types-data (3.2025.0617)
     mini_mime (1.1.5)
     minitest (5.25.5)
+    mocha (2.7.1)
+      ruby2_keywords (>= 0.0.5)
     motion (0.7.1)
       lz4-ruby (>= 0.3.3)
       nokogiri
@@ -337,6 +339,7 @@ GEM
       rubocop-performance (>= 1.24)
       rubocop-rails (>= 2.30)
     ruby-progressbar (1.13.0)
+    ruby2_keywords (0.0.5)
     rubyzip (2.4.1)
     sass-embedded (1.89.2-aarch64-linux-gnu)
       google-protobuf (~> 4.31)
@@ -438,6 +441,7 @@ DEPENDENCIES
   importmap-rails
   jbuilder
   kamal
+  mocha
   motion (~> 0.5)
   octokit (~> 9.1)
   pg (~> 1.1)

@@ -6,7 +6,10 @@ module Views
       end
 
       def main_content
-        div(class: "feedback-container", data: { controller: "bug-report" }) do
+        div(class: "feedback-container", data: {
+          controller: "bug-report",
+          bug_report_console_capture_outlet: ".console-capture"
+        }) do
           div(class: "modal-overlay active", data: { bug_report_target: "overlay" })
 
           div(class: "modal active") do

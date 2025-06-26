@@ -64,7 +64,7 @@ class Views::Base < Components::Base
       end
 
       body(data: {
-        controller: "timezone",
+        controller: "timezone console-capture",
         current_user_role: current_user&.role,
         resort_tasks_on_status_change: current_user&.resort_tasks_on_status_change&.to_s
       }) do
@@ -129,19 +129,23 @@ class Views::Base < Components::Base
                   end
 
                   # Feedback section
-                  div(class: "popover-section popover-menu-items") do
+                  div(class: "popover-section popover-menu-items", data: { controller: "feedback-menu", user_menu_popover_outlet: ".user-menu-popover" }) do
                     link_to(
-                      helpers.raw("🐛 Report a Bug"),
                       new_feedback_path(type: "bug"),
                       class: "popover-menu-item",
-                      data: { turbo: false }
-                    )
+                      data: {
+                        turbo: false,
+                        action: "click->feedback-menu#reportBug"
+                      }
+                    ) { "🐛 Report a Bug" }
                     link_to(
-                      helpers.raw("✨ Request a Feature"),
                       new_feedback_path(type: "feature"),
                       class: "popover-menu-item",
-                      data: { turbo: false }
-                    )
+                      data: {
+                        turbo: false,
+                        action: "click->feedback-menu#requestFeature"
+                      }
+                    ) { "✨ Request a Feature" }
                   end
 
                   # Sign out button

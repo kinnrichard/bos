@@ -66,6 +66,13 @@ class FeedbackController < ApplicationController
   end
 
   def format_bug_report_body
+    # Parse console logs
+    console_logs = begin
+      JSON.parse(params[:console_logs] || "{}")
+    rescue JSON::ParserError
+      { entries: [], capturedAt: Time.current.iso8601 }
+    end
+
     <<~MARKDOWN
       **Reporter:** #{current_user.email}
       **URL:** #{params[:page_url]}
@@ -79,10 +86,10 @@ class FeedbackController < ApplicationController
       - Viewport: #{params[:viewport_size]}
 
       <details>
-      <summary>Console Logs</summary>
+      <summary>Console Logs (#{console_logs['entries']&.length || 0} entries)</summary>
 
       ```json
-      #{params[:console_logs]}
+      #{JSON.pretty_generate(console_logs)}
       ```
       </details>
     MARKDOWN
