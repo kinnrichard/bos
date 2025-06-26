@@ -238,13 +238,6 @@ module IconsHelper
     "✓"
   end
 
-  # Technician/User Icons
-  def technician_icon(technician)
-    # For now, use initials. Could be replaced with actual avatars
-    initials = technician.name.split.map(&:first).join.upcase[0..1]
-    span(class: "technician-initials") { initials }
-  end
-
   # Helper methods
   def render_emoji(emoji, css_class: nil, title: nil)
     content_tag(:span, emoji, class: css_class, title: title)

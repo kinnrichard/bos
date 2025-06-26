@@ -57,6 +57,16 @@ class User < ApplicationRecord
     end
   end
 
+  # UserDisplay integration
+  def display
+    @display ||= UserDisplay.new(self)
+  end
+
+  # Delegate display methods
+  delegate :initials, :avatar_color, :avatar_style, :avatar_html,
+           :display_name, :short_name, :display_email, :role_label,
+           to: :display
+
   private
 
   def downcase_email

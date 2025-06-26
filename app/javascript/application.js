@@ -7,6 +7,7 @@ Turbo.session.drive = false
 // Import all Bos modules first, before controllers
 import * as Icons from "bos/icons"
 import * as Constants from "bos/constants"
+import * as UserDisplay from "bos/user_display"
 import { ApiClient } from "bos/api_helpers"
 import { SelectionManager } from "bos/selection_manager"
 import { TaskRenderer } from "bos/task_renderer"
@@ -19,6 +20,7 @@ window.Bos = window.Bos || {}
 Object.assign(window.Bos, {
   Icons,
   Constants,
+  UserDisplay,
   ApiClient,
   SelectionManager,
   TaskRenderer,

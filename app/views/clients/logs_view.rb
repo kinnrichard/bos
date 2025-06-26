@@ -228,7 +228,7 @@ module Views
 
       def get_user_initials(user)
         return "S" unless user
-        user.name.split.map(&:first).join.upcase[0..1]
+        user.initials
       end
 
       def group_identical_logs(logs)

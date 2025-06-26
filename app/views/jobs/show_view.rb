@@ -147,7 +147,7 @@ module Views
                       span(class: "dropdown-value") do
                         if @job.technicians.any?
                           if @job.technicians.size == 1
-                            technician_icon(@job.technicians.first)
+                            span(class: "user-avatar user-avatar-sm", style: @job.technicians.first.avatar_style) { @job.technicians.first.initials }
                             span { @job.technicians.first.name }
                           else
                             span { "#{@job.technicians.size} assigned" }
@@ -291,8 +291,8 @@ module Views
         # Assignee or unassigned icon
         span(class: "bubble-icon assignee-icon") do
           if @job.technicians.any?
-            # Show first technician's initial or emoji
-            technician_icon(@job.technicians.first)
+            # Show first technician's avatar
+            span(class: "user-avatar user-avatar-sm", style: @job.technicians.first.avatar_style) { @job.technicians.first.initials }
           else
             unassigned_icon
           end
@@ -367,7 +367,7 @@ module Views
               technician_id: tech.id
             }
           ) do
-            technician_icon(tech)
+            span(class: "user-avatar user-avatar-sm", style: tech.avatar_style) { tech.initials }
             span { tech.name }
             if is_assigned
               span(class: "checkmark") { "✓" }

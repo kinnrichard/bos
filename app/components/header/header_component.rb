@@ -127,8 +127,8 @@ module Components
                   action: "click->header-job#toggleUserMenuPopover"
                 }
               ) do
-                span(class: "user-initials") do
-                  @current_user.name.split.map(&:first).join.upcase[0..1]
+                span(class: "user-avatar user-avatar-sm", style: @current_user.avatar_style) do
+                  @current_user.initials
                 end
               end
             end

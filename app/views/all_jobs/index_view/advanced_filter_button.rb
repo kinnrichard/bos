@@ -162,7 +162,7 @@ module Views
                           if @selected_technician_ids.any?
                             selected = @technicians.select { |t| @selected_technician_ids.include?(t.id.to_s) }
                             if selected.size == 1
-                              technician_icon(selected.first)
+                              span(class: "user-avatar user-avatar-sm", style: selected.first.avatar_style) { selected.first.initials }
                               span { selected.first.name }
                             else
                               span { "#{selected.size} selected" }
@@ -187,7 +187,7 @@ module Views
                               checked: @selected_technician_ids.include?(technician.id.to_s),
                               class: "status-checkbox"
                             )
-                            technician_icon(technician)
+                            span(class: "user-avatar user-avatar-sm", style: technician.avatar_style) { technician.initials }
                             span { technician.name }
                           end
                         end

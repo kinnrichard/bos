@@ -234,8 +234,14 @@ module Views
           # User column with avatar
           td(class: "logs-table__user-cell") do
             div(class: "user-info") do
-              div(class: "user-avatar") do
-                get_user_initials(log.user)
+              if log.user
+                div(class: "user-avatar user-avatar-sm", style: log.user.avatar_style) do
+                  log.user.initials
+                end
+              else
+                div(class: "user-avatar user-avatar-sm", style: "background-color: #8E8E93;") do
+                  "S"
+                end
               end
               span(class: "user-name") { log.user&.name || "System" }
             end
@@ -265,7 +271,7 @@ module Views
 
       def get_user_initials(user)
         return "S" unless user
-        user.name.split.map(&:first).join.upcase[0..1]
+        user.initials
       end
 
       def group_identical_logs(logs)
