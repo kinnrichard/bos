@@ -89,9 +89,6 @@ export class TaskRenderer {
     
     const parts = []
     
-    // Left section with checkbox and drag handle
-    parts.push(this.buildTaskLeft())
-    
     // Main content section
     parts.push(this.buildTaskMain(taskData, { isNew, insertMode }))
     
@@ -127,15 +124,24 @@ export class TaskRenderer {
     const { isNew, insertMode } = options
     const hasSubtasks = taskData.subtasks?.length > 0
     
-    let content = '<div class="task-main">'
+    let content = ''
     
-    // Status button
+    // Status button container (matches server-side structure)
     content += `
-      <div class="task-status-container">
+      <div class="dropdown-container task-status-container" 
+           data-controller="dropdown"
+           data-dropdown-positioning-value="fixed"
+           data-dropdown-z-index-value="10000"
+           data-dropdown-auto-width="true"
+           data-dropdown-close-on-select-value="true">
         <button class="task-status-button" 
-                data-action="click->job#toggleTaskStatus">
+                data-dropdown-target="button"
+                data-action="click->dropdown#toggle">
           <span>${this.taskStatusEmoji(taskData.status || 'new_task')}</span>
         </button>
+        <div class="dropdown-menu hidden" data-dropdown-target="menu">
+          <!-- Status options would go here -->
+        </div>
       </div>
     `
     
@@ -174,7 +180,7 @@ export class TaskRenderer {
       content += this.buildTimer(taskData.duration_seconds)
     }
     
-    content += '</div></div>'
+    content += '</div>'
     
     return content
   }
@@ -242,18 +248,6 @@ export class TaskRenderer {
 
   // Attach event listeners to task element
   attachEventListeners(taskElement, options = {}) {
-    // Drag events
-    const dragHandle = taskElement.querySelector('.task-drag-handle')
-    if (dragHandle) {
-      dragHandle.addEventListener('dragstart', (e) => this.controller.handleDragStart(e))
-      dragHandle.addEventListener('dragend', (e) => this.controller.handleDragEnd(e))
-    }
-    
-    // Task element drag events
-    taskElement.addEventListener('dragover', (e) => this.controller.handleDragOver(e))
-    taskElement.addEventListener('drop', (e) => this.controller.handleDrop(e))
-    taskElement.addEventListener('dragleave', (e) => this.controller.handleDragLeave(e))
-    
     // Click events
     taskElement.addEventListener('click', (e) => {
       if (!e.target.closest('button, input, [contenteditable]')) {
