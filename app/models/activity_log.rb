@@ -14,43 +14,45 @@ class ActivityLog < ApplicationRecord
 
   # Generate human-readable log messages
   def message
+    activity_type = ActivityType.find(action)
+
     case action
     when "created"
       if loggable_type == "Task" && loggable.respond_to?(:job) && loggable.job
-        "created #{loggable_type_emoji} #{loggable_name} in 💼 #{loggable.job.title}"
+        "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name} in 💼 #{loggable.job.title}"
       else
-        "created #{loggable_type_emoji} #{loggable_name}"
+        "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name}"
       end
     when "viewed"
-      "viewed #{loggable_type_emoji} #{loggable_name}"
+      "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name}"
     when "renamed"
-      "renamed #{metadata['old_name']} to #{metadata['new_name']}"
+      "#{activity_type&.past_tense || action} #{metadata['old_name']} to #{metadata['new_name']}"
     when "updated"
       if metadata["changes"].present?
         changes_text = metadata["changes"].map { |field, values|
           "#{field} from '#{values[0]}' to '#{values[1]}'"
         }.join(", ")
-        "updated #{loggable_name}: #{changes_text}"
+        "#{activity_type&.past_tense || action} #{loggable_name}: #{changes_text}"
       else
-        "updated #{loggable_name}"
+        "#{activity_type&.past_tense || action} #{loggable_name}"
       end
     when "deleted"
-      "deleted #{loggable_type_emoji} #{loggable_name}"
+      "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name}"
     when "assigned"
-      "assigned #{loggable_type_emoji} #{loggable_name} to #{metadata['assigned_to']}"
+      "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name} to #{metadata['assigned_to']}"
     when "unassigned"
-      "unassigned #{metadata['unassigned_from']} from #{loggable_type_emoji} #{loggable_name}"
+      "#{activity_type&.past_tense || action} #{metadata['unassigned_from']} from #{loggable_type_emoji} #{loggable_name}"
     when "status_changed"
       status_emoji = get_status_emoji(metadata["new_status"])
-      "marked #{loggable_type_emoji} #{loggable_name} #{status_emoji} #{metadata['new_status_label']}"
+      "#{activity_type&.past_tense || 'marked'} #{loggable_type_emoji} #{loggable_name} #{status_emoji} #{metadata['new_status_label']}"
     when "added"
-      "added #{loggable_type_emoji} #{loggable_name} to #{metadata['parent_type']} #{metadata['parent_name']}"
+      "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name} to #{metadata['parent_type']} #{metadata['parent_name']}"
     when "logged_in"
-      "signed into bŏs"
+      "#{activity_type&.past_tense || 'signed into'} bŏs"
     when "logged_out"
-      "signed out of bŏs"
+      "#{activity_type&.past_tense || 'signed out of'} bŏs"
     else
-      "••• #{action} #{loggable_name}"
+      "#{activity_type&.icon || '•••'} #{action} #{loggable_name}"
     end
   end
 
@@ -67,6 +69,10 @@ class ActivityLog < ApplicationRecord
     else
       ""
     end
+  end
+
+  def activity_type_icon
+    ActivityType.find(action)&.icon || "•••"
   end
 
   def loggable_name
