@@ -258,6 +258,16 @@ export default class extends BasePopoverController {
     }
   }
   
+  onShow() {
+    // Scroll to bottom to show latest updates
+    setTimeout(() => {
+      const scrollableContainer = this.element.querySelector('.popover-content-scrollable')
+      if (scrollableContainer) {
+        scrollableContainer.scrollTop = scrollableContainer.scrollHeight
+      }
+    }, 50) // Small delay to ensure content is rendered
+  }
+  
   onHide() {
     // Clear timer when hiding
     if (this.timerInterval) {
