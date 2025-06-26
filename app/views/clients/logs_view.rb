@@ -4,6 +4,7 @@ module Views
   module Clients
     class LogsView < Views::Base
       include Phlex::Rails::Helpers::Routes
+      include IconsHelper
 
       def initialize(client:, logs:, current_user:)
         @client = client
@@ -138,8 +139,11 @@ module Views
               else
                 # Job
                 if group[:job]
-                  span(class: "logs-group-job") do
-                    plain "💼 #{group[:job].title}"
+                  link_to(client_job_path(@client, group[:job]),
+                    class: "logs-group-job-pill",
+                    data: { action: "click->logs-collapsible#stopPropagation" }) do
+                    span { "💼 #{group[:job].title}" }
+                    unsafe_raw arrow_right_circle_fill_svg(css_class: "pill-arrow")
                   end
                 end
               end

@@ -148,6 +148,39 @@
           font-weight: 400;
           font-size: 13px;
         }
+        
+        // Clickable pills for client and job
+        .logs-group-client-pill,
+        .logs-group-job-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 2px 8px;
+          margin: -2px -8px; // Compensate for padding
+          border-radius: 6px;
+          background-color: transparent;
+          color: inherit;
+          text-decoration: none;
+          transition: background-color 0.15s ease;
+          
+          &:hover {
+            background-color: var(--bg-tertiary);
+            text-decoration: none;
+          }
+          
+          .pill-arrow {
+            opacity: 0.5;
+            transition: opacity 0.15s ease;
+          }
+          
+          &:hover .pill-arrow {
+            opacity: 0.8;
+          }
+        }
+        
+        .logs-group-job-pill {
+          margin-left: 8px;
+        }
       }
     }
     
