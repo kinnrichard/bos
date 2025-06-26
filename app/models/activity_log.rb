@@ -25,10 +25,20 @@ class ActivityLog < ApplicationRecord
       "#{activity_type&.past_tense || action} #{metadata['old_name']} to #{metadata['new_name']}"
     when "updated"
       if metadata["changes"].present?
-        changes_text = metadata["changes"].map { |field, values|
-          "#{field} from '#{values[0]}' to '#{values[1]}'"
-        }.join(", ")
-        "#{activity_type&.past_tense || action} #{loggable_name}: #{changes_text}"
+        # Filter out unimportant attributes
+        filtered_changes = metadata["changes"].reject { |field, _|
+          [ "position", "lock_version", "reordered_at" ].include?(field)
+        }
+
+        if filtered_changes.any?
+          changes_text = filtered_changes.map { |field, values|
+            "#{field} from '#{values[0]}' to '#{values[1]}'"
+          }.join(", ")
+          "#{activity_type&.past_tense || action} #{loggable_name}: #{changes_text}"
+        else
+          # If only unimportant fields were changed, return nil to hide this log
+          nil
+        end
       else
         "#{activity_type&.past_tense || action} #{loggable_name}"
       end

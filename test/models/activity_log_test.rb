@@ -246,6 +246,44 @@ class ActivityLogTest < ActiveSupport::TestCase
     assert_equal "updated Job Title", log.message
   end
 
+  test "message for updated action with only unimportant fields" do
+    log = ActivityLog.new(
+      action: "updated",
+      loggable: @job,
+      metadata: {
+        "name" => "Job Title",
+        "changes" => {
+          "position" => [ "6", "10" ],
+          "lock_version" => [ "0", "1" ],
+          "reordered_at" => [ "2025-06-25T08:40:02.589-04:00", "2025-06-25T15:47:35.972-04:00" ]
+        }
+      }
+    )
+
+    assert_nil log.message
+  end
+
+  test "message for updated action with mixed important and unimportant fields" do
+    log = ActivityLog.new(
+      action: "updated",
+      loggable: @job,
+      metadata: {
+        "name" => "Job Title",
+        "changes" => {
+          "status" => [ "open", "in_progress" ],
+          "position" => [ "6", "10" ],
+          "lock_version" => [ "0", "1" ]
+        }
+      }
+    )
+
+    message = log.message
+    assert_match "updated Job Title:", message
+    assert_match "status from 'open' to 'in_progress'", message
+    refute_match "position", message
+    refute_match "lock_version", message
+  end
+
   test "message for deleted action" do
     log = ActivityLog.new(
       action: "deleted",

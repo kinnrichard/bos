@@ -284,6 +284,9 @@ module Views
         grouped = []
 
         logs.each do |log|
+          # Skip logs with nil messages (filtered out unimportant updates)
+          next if log.message.nil?
+
           # Create a key for grouping (user + message)
           key = "#{log.user_id}-#{log.message}"
 
