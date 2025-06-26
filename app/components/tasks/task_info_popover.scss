@@ -95,6 +95,8 @@ $note-color: #FBB827;
   }
 
   .timeline-item {
+    margin-left: 26px; // Indent to align with user name (20px icon + 6px gap)
+    
     &--note {
       .timeline-content {
         flex: 1;
