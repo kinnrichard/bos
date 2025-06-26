@@ -168,21 +168,18 @@ module Views
               else
                 # Client and possibly job
                 if group[:client]
-                  link_to(client_path(group[:client]),
-                    class: "logs-group-client-pill",
-                    data: { action: "click->logs-collapsible#stopPropagation" }) do
-                    emoji = group[:client].business? ? "🏢" : "🏠"
-                    span { "#{emoji} #{group[:client].name}" }
-                    raw arrow_right_circle_fill_svg(css_class: "pill-arrow")
-                  end
+                  emoji = group[:client].business? ? "🏢" : "🏠"
+                  plain "#{emoji} "
+                  link_to(group[:client].name, client_path(group[:client]),
+                    class: "logs-group-client-link",
+                    data: { action: "click->logs-collapsible#stopPropagation" })
 
                   if group[:job]
-                    link_to(client_job_path(group[:client], group[:job]),
-                      class: "logs-group-job-pill",
-                      data: { action: "click->logs-collapsible#stopPropagation" }) do
-                      span { "💼 #{group[:job].title}" }
-                      raw arrow_right_circle_fill_svg(css_class: "pill-arrow")
-                    end
+                    plain " "
+                    plain "💼 "
+                    link_to(group[:job].title, client_job_path(group[:client], group[:job]),
+                      class: "logs-group-job-link",
+                      data: { action: "click->logs-collapsible#stopPropagation" })
                   end
                 end
               end

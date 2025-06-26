@@ -139,12 +139,10 @@ module Views
               else
                 # Job
                 if group[:job]
-                  link_to(client_job_path(@client, group[:job]),
-                    class: "logs-group-job-pill",
-                    data: { action: "click->logs-collapsible#stopPropagation" }) do
-                    span { "💼 #{group[:job].title}" }
-                    raw arrow_right_circle_fill_svg(css_class: "pill-arrow")
-                  end
+                  plain "💼 "
+                  link_to(group[:job].title, client_job_path(@client, group[:job]),
+                    class: "logs-group-job-link",
+                    data: { action: "click->logs-collapsible#stopPropagation" })
                 end
               end
 
