@@ -16,11 +16,17 @@ class ProcessBugIssueJob < ApplicationJob
     Rails.logger.info "ProcessBugIssueJob: Successfully processed issue ##{issue_number}"
   rescue ClaudeAutomationService::ClaudeExecutionError => e
     Rails.logger.error "ProcessBugIssueJob: Failed to process issue ##{issue_number}: #{e.message}"
+    # Send failure notification
+    NotificationMailer.automation_failed(issue_number, e.message).deliver_later
     # Don't retry Claude execution errors - they need manual intervention
     raise e
   rescue StandardError => e
     Rails.logger.error "ProcessBugIssueJob: Unexpected error for issue ##{issue_number}: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
+    # Send failure notification for repeated failures
+    if executions >= 3
+      NotificationMailer.automation_failed(issue_number, e.message).deliver_later
+    end
     # Retry other errors (network issues, etc.)
     raise e
   end

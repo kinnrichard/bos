@@ -62,6 +62,14 @@ Rails.application.routes.draw do
   # GitHub webhook routes
   post "/github/webhook", to: "github_webhooks#issue_comment"
 
+  # Admin routes
+  namespace :admin do
+    resource :automation_dashboard, only: [ :show ] do
+      post :toggle_automation
+      post :toggle_notifications
+    end
+  end
+
   # Defines the root path route ("/")
   root "home#show"
 end
