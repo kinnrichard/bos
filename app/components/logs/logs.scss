@@ -200,11 +200,6 @@
     
     tr.logs-table__row {
       border-bottom: 1px solid var(--border-primary);
-      transition: background-color 0.15s ease;
-      
-      &:hover {
-        background-color: var(--bg-tertiary);
-      }
       
       // Alternating row colors
       &--alt {
