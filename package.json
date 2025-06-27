@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "html2canvas": "^1.4.1",
     "puppeteer": "^24.10.2"
   },
   "devDependencies": {

@@ -21,6 +21,10 @@ class Views::Base < Components::Base
 
   private
 
+  def git_token_configured?
+    Rails.application.credentials.dig(:git_token).present? || ENV["GIT_TOKEN"].present?
+  end
+
   def delete_form_with_confirmation(url:, message: nil, checkbox_label: nil, &block)
     div(data: { controller: "delete-confirmation" }) do
       # Render the modal
@@ -64,7 +68,7 @@ class Views::Base < Components::Base
       end
 
       body(data: {
-        controller: "timezone",
+        controller: "timezone console-capture",
         current_user_role: current_user&.role,
         resort_tasks_on_status_change: current_user&.resort_tasks_on_status_change&.to_s
       }) do
@@ -126,6 +130,29 @@ class Views::Base < Components::Base
                       settings_path,
                       class: "popover-menu-item"
                     )
+                  end
+
+                  # Feedback section
+                  div(class: "popover-section popover-menu-items", data: { controller: "feedback-menu", user_menu_popover_outlet: ".user-menu-popover" }) do
+                    # Only show bug report if GIT_TOKEN is configured
+                    if git_token_configured?
+                      link_to(
+                        new_feedback_path(type: "bug"),
+                        class: "popover-menu-item",
+                        data: {
+                          turbo: false,
+                          action: "click->feedback-menu#reportBug"
+                        }
+                      ) { "🐛 Report a Bug" }
+                    end
+                    link_to(
+                      new_feedback_path(type: "feature"),
+                      class: "popover-menu-item",
+                      data: {
+                        turbo: false,
+                        action: "click->feedback-menu#requestFeature"
+                      }
+                    ) { "✨ Request a Feature" }
                   end
 
                   # Sign out button

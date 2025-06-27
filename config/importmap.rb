@@ -13,3 +13,4 @@ pin_all_from "app/javascript/bos", under: "bos"
 # Sortable.js
 pin "sortable.min", to: "sortable.min.js"
 pin "sortablejs", to: "sortable-wrapper.js"
+pin "html2canvas", to: "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.esm.js"

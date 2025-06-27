@@ -56,6 +56,21 @@ Rails.application.routes.draw do
   # Logs routes
   resources :logs, only: [ :index ]
 
+  # Feedback routes
+  resource :feedback, only: [ :new, :create ], controller: "feedback"
+
+  # GitHub webhook routes
+  post "/github/webhook", to: "github_webhooks#issue_comment"
+
+  # Admin routes
+  namespace :admin do
+    # Turning off; this function is abstracted to a separate ruby script on a separate server
+    # resource :automation_dashboard, only: [ :show ] do
+    #   post :toggle_automation
+    #   post :toggle_notifications
+    # end
+  end
+
   # Defines the root path route ("/")
   root "home#show"
 end

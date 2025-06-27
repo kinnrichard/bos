@@ -86,6 +86,15 @@ module Components
 
     def bottom_sections
       div(style: "margin-top: auto;") do
+        # Admin section (owners only)
+        # Turning off; this function is abstracted to a separate ruby script on a separate server
+        # if @current_user&.owner?
+        #   div(class: "sidebar-section", style: "margin-bottom: 12px;") do
+        #     div(class: "sidebar-section-header") { "Admin" }
+        #     nav_item("Automation Dashboard", href: admin_automation_dashboard_path, icon: "🤖", active: @active_section == :automation_dashboard)
+        #   end
+        # end
+
         # Settings section
         # div(class: "sidebar-section", style: "margin-bottom: 12px;") do
         #  div(class: "sidebar-section-header") { "Settings" }

@@ -1,40 +1,41 @@
-# Bug-to-PR Automation Implementation Stories
+# Bug-to-PR Automation Implementation Stories (GitHub Issues Version)
 
-Based on the architecture document and our discussions, here's the simplified implementation plan with both bug reports and feature requests.
+Based on the architecture document and our discussions, here's the simplified implementation plan using GitHub Issues for all tracking.
 
 ## Overview
 
 This implementation creates a feedback system that:
-- Allows users to report bugs with automatic PR generation via Claude Code
-- Allows users to request features with semi-automated story generation
-- Places both options in the user menu for easy access
-- Requires no rate limiting or complex authorization
-- Total estimated time: ~35-45 hours
+- Allows users to report bugs and request features via in-app forms
+- Creates GitHub Issues for all feedback
+- Automatically generates fixes for bugs via Claude Code
+- Uses semi-automated workflow for feature requests
+- Requires no database models or admin UI
+- Total estimated time: ~25-35 hours
 
 ## Epic 1: Feedback Collection System
 
-### Story 1.1: Create Feedback Models and Menu Integration
+### Story 1.1: Add Feedback Menu Items and Routes
 
 **As a** user  
 **I want** to report bugs or request features from the user menu  
 **So that** I can easily provide feedback to improve the system
 
 **Acceptance Criteria:**
-1. Create BugReport model with request_type enum (bug/feature)
-2. Add dividers and two menu items to UserMenuComponent:
+1. Add dividers and two menu items to UserMenuComponent:
    - 🐛 Report a Bug
    - ✨ Request a Feature  
-3. Position between Settings and Sign Out
-4. Create routes and controller for feedback
-5. Add all fields from architecture (including metadata JSONB)
-6. Include Loggable concern for activity tracking
+2. Position between Settings and Sign Out
+3. Create FeedbackController with new and create actions
+4. Add routes for /feedback/bug and /feedback/feature
+5. Add Octokit gem to Gemfile
+6. Configure GitHub client with access token
 
 **Technical Notes:**
-- Model fields: user_id, title, description, console_logs, browser_info, page_url, screenshot_data, status, metadata, unique_id, request_type
-- Use enum request_type: { bug: 0, feature: 1 }
-- Follow existing model patterns
+- No models needed - direct to GitHub Issues
+- Use environment variable for GitHub token
+- Follow existing controller patterns
 
-**Estimated:** 3-4 hours
+**Estimated:** 2-3 hours
 
 ---
 
@@ -47,15 +48,45 @@ This implementation creates a feedback system that:
 **Acceptance Criteria:**
 1. Create BugReportWidget Phlex component
 2. Single form with title, description fields
-3. Implement screenshot capture with preview
-4. Show capture button and retake option
-5. Compress screenshot before saving (2MB limit)
-6. Handle form submission with loading state
+3. Implement automatic screenshot capture flow:
+   - User clicks "Report a Bug" in user menu
+   - Close/hide the user menu dropdown
+   - Wait for menu animation to complete (~200ms)
+   - Capture screenshot using html2canvas
+   - Then open the bug report form with screenshot already captured
+4. Compress screenshot before uploading (2MB limit)
+5. On submit, create GitHub Issue with:
+   - Title from form
+   - Body with description, browser info, console logs
+   - Labels: ["bug", "auto-fix"]
+   - Screenshot attached to issue
 
 **Technical Notes:**
-- Use existing ModalComponent patterns
-- Consider html2canvas or native screenshot API
-- Store screenshot as base64 in screenshot_data
+- Use html2canvas library for screenshot capture
+- Capture sequence in Stimulus controller:
+  ```javascript
+  async reportBugClicked(event) {
+    event.preventDefault();
+    
+    // 1. Close user menu dropdown
+    this.dropdownController.close();
+    
+    // 2. Wait for animation
+    await new Promise(resolve => setTimeout(resolve, 250));
+    
+    // 3. Capture screenshot of current page state
+    const screenshot = await html2canvas(document.body, {
+      scale: 0.3,
+      logging: false
+    });
+    
+    // 4. Store screenshot and open bug report form
+    this.screenshotData = screenshot.toDataURL('image/jpeg', 0.7);
+    this.openBugReportForm();
+  }
+  ```
+- Upload image to GitHub via Issues API
+- Format issue body with markdown sections
 
 **Estimated:** 5-6 hours
 
@@ -107,21 +138,19 @@ This implementation creates a feedback system that:
      - Helper text: "What metrics would show this is working?"
    - "Anything else we should know?" (text area - optional)
 
-3. Progress indicator showing current step (1 of 5, 2 of 5, etc.)
-4. Back/Next navigation between screens
-5. Save all answers in metadata field as structured JSON
+3. Create GitHub Issue with all Q&A formatted in markdown
+4. Apply labels: ["feature-request", "needs-review"]
 
 **Technical Notes:**
 - Use Stimulus for multi-step navigation
-- Validate required fields before allowing next step
+- Format Q&A pairs as markdown in issue body
 - Save draft in localStorage to prevent data loss
-- Store question-answer pairs in metadata with clear keys
 
 **Estimated:** 6-8 hours
 
 ---
 
-### Story 1.4: Browser Data Collection
+### Story 1.4: Browser Data Collection for Bugs
 
 **As a** developer  
 **I want** bug reports to include console and browser data  
@@ -133,7 +162,16 @@ This implementation creates a feedback system that:
 3. Capture browser info (user agent, viewport, etc.)
 4. Capture current page URL automatically
 5. Only collect for bug reports, not features
-6. Include timestamp with each console entry
+6. Include in GitHub issue body as collapsible sections:
+   ```markdown
+   <details>
+   <summary>Console Logs</summary>
+   
+   ```json
+   [console entries here]
+   ```
+   </details>
+   ```
 
 **Technical Notes:**
 - Override console methods to capture
@@ -144,190 +182,244 @@ This implementation creates a feedback system that:
 
 ## Epic 2: Automation Pipeline
 
-### Story 2.1: Claude Integration for Bugs
+### Story 2.1: Claude Integration for Bug Fixes
 
 **As a** system  
-**I want** to send bug reports to Claude for automated fixes  
-**So that** simple bugs can be resolved quickly
+**I want** to automatically fix reported bugs  
+**So that** simple issues are resolved quickly
 
 **Acceptance Criteria:**
-1. Create ClaudeAutomationService that uses Claude CLI
-2. Create ProcessBugReportJob using Solid Queue
-3. Format bug report into comprehensive prompt including:
-   - Bug details (title, description, console logs, URL, browser info)
-   - Instructions for analysis, BMAD story creation, fix implementation
-   - Git branch creation and PR generation commands
-4. Execute via: `echo '#{prompt}' | claude --conversation-id bug-#{id}`
-5. Parse PR URL from Claude's response
-6. Create BugResolution record with PR details
-7. Update bug status throughout pipeline
+1. Create ClaudeAutomationService
+2. Create ProcessBugIssueJob using Solid Queue
+3. When bug issue created, fetch issue details via Octokit
+4. Format comprehensive prompt including:
+   - Issue title, body, and number
+   - Instructions for fix and PR creation
+   - Branch naming: `fix/issue-#{issue_number}`
+5. Execute via: `echo '#{prompt}' | claude --conversation-id issue-#{number}`
+6. Claude creates PR with "Fixes #123" in description
+7. Add "claude-processing" label during work
+8. Remove label and add "pr-created" when done
 
 **Technical Notes:**
-- Use Claude CLI instead of API for better context awareness
-- Include full PR creation in single prompt for continuity
 - Example prompt structure:
   ```ruby
   prompt = <<~PROMPT
-    You are Claude Code with BMAD capabilities. Analyze and fix this bug.
+    You are Claude Code with BMAD Dev agent capabilities. 
+    Fix the bug reported in GitHub Issue ##{issue.number}.
     
-    BUG REPORT:
-    Title: #{bug_report.title}
-    Description: #{bug_report.description}
-    Console Errors: #{bug_report.console_logs}
-    URL: #{bug_report.page_url}
-    Browser: #{bug_report.browser_info}
+    ISSUE DETAILS:
+    Title: #{issue.title}
+    Body: #{issue.body}
+    URL: #{issue.html_url}
     
-    INSTRUCTIONS:
-    1. Analyze the bug and identify the root cause
-    2. Create a BMAD story for the fix using story format
-    3. Implement the fix following the story
-    4. Write tests if applicable (check existing test patterns)
-    5. Create a git branch named: fix/bug-report-#{bug_report.unique_id}
-    6. Commit changes with message linking to bug report
-    7. Create GitHub PR with:
-       - Title: "Fix: #{bug_report.title}"
-       - Description including bug report ID and fix summary
-       - Link: Fixes bug report #{bug_report.unique_id}
+    BMAD METHODOLOGY INSTRUCTIONS:
     
-    Use git commands and gh CLI to create the PR.
-    Return the PR URL when complete.
+    1. ANALYZE (QA Agent approach):
+       - Identify the root cause from symptoms
+       - Determine affected components
+       - Assess impact and severity
+       - Note reproduction steps from report
+    
+    2. CREATE STORY (Story Manager approach):
+       - Title: Fix: #{issue.title}
+       - User Story: As a user, I want this bug fixed so that [impact]
+       - Acceptance Criteria:
+         * Bug no longer occurs
+         * Tests cover the fix
+         * No regression in related features
+       - Technical Notes: Document your fix approach
+    
+    3. IMPLEMENT (Dev Agent approach):
+       - Follow existing code patterns in the codebase
+       - Make minimal changes to fix the issue
+       - Add tests if applicable (check test patterns first)
+       - Ensure no side effects
+    
+    4. GIT WORKFLOW:
+       - Create branch: fix/issue-#{issue.number}
+       - Commit with message: "Fix: #{issue.title}\n\nFixes ##{issue.number}"
+       - Include story details in commit body
+    
+    5. CREATE PR:
+       - Title: "Fix: #{issue.title}"
+       - Body must include "Fixes ##{issue.number}" for auto-close
+       - Add BMAD story summary
+       - List files changed and why
+       - Note any risks or concerns
+    
+    Follow BMAD best practices throughout. The PR will automatically close the issue when merged.
   PROMPT
   ```
-- Parse PR URL with regex: `/PR created: (https:\/\/github\.com\/.+\/pull\/\d+)/`
-- Log all Claude interactions to AutomationLog
 
-**Estimated:** 6-8 hours
+**Estimated:** 5-6 hours
 
 ---
 
-### Story 2.2: Bug Resolution Tracking and Notifications
-
-**As a** system  
-**I want** to track bug fix progress and notify stakeholders  
-**So that** everyone knows when bugs are resolved
-
-**Acceptance Criteria:**
-1. Create BugResolution model and migrations
-2. Monitor PR status via GitHub webhooks or polling
-3. Update resolution status when PR is merged/closed
-4. Send email notifications:
-   - To reporter when PR is created
-   - To reporter when PR is merged
-   - To admin on automation failures
-5. Create simple view to show PR status for admins
-
-**Technical Notes:**
-- BugResolution tracks: pr_url, pr_number, status, fix_summary
-- Consider GitHub webhook for real-time updates
-- Fall back to polling if webhooks not available
-- Include PR link in notification emails
-
-**Estimated:** 4-5 hours
-
----
-
-### Story 2.3: Feature Request Workflow
+### Story 2.2: Feature Request Workflow
 
 **As an** admin  
 **I want** to review feature requests and generate stories  
 **So that** I can manage product development efficiently
 
 **Acceptance Criteria:**
-1. Create admin review interface for feature requests
-2. Add "Generate Story" button that sends to Claude
-3. Display generated story for human review/edit
-4. Add "Approve for Implementation" button
-5. Trigger Claude Code implementation on approval
-6. Track status with automation_status enum
+1. Monitor issues with "feature-request" label
+2. Add GitHub Issue comment with action buttons:
+   - "Generate Story" - sends to Claude for story creation
+   - "Approve Implementation" - triggers implementation
+   - "Decline" - closes issue with explanation
+3. When "Generate Story" clicked:
+   - Send issue content to Claude
+   - Claude adds story as issue comment
+   - Add "story-generated" label
+4. When "Approve Implementation" clicked:
+   - Send to Claude for implementation
+   - Create PR linked to issue
 
 **Technical Notes:**
-- Add automation_status enum to BugReport model
-- Create simple admin view (no dashboard needed)
-- Email notification on new feature requests
-- Reuse ClaudeWebhookService for story generation
+- Use GitHub Issue comments for workflow
+- Can be triggered via slash commands in comments
+- Simple HTML links with tokens for actions
 
-**Estimated:** 5-6 hours
+**Estimated:** 4-5 hours
 
-## Epic 3: Monitoring and Safety
+## Epic 3: Monitoring and Notifications
 
 ### Story 3.1: Basic Monitoring and Controls
 
 **As an** admin  
-**I want** to monitor the automation and disable if needed  
-**So that** I can ensure system safety
+**I want** to monitor the automation and control the system  
+**So that** I can ensure safety and quality
 
 **Acceptance Criteria:**
 1. Add email notifications for:
-   - New feature requests submitted
-   - Bug automation failures
-   - PRs created successfully
+   - New feature requests (to admin)
+   - Bug automation failures (to admin)
+   - Issue/PR creation (include links)
 2. Create emergency off switch (environment variable)
-3. Log all automation events to AutomationLog
-4. Add basic confidence threshold for fixes
-5. Skip automation for specific file patterns
+3. Skip automation for specific file patterns
+4. Add confidence check - skip if Claude unsure
+5. Log all automation attempts to Rails log
 
 **Technical Notes:**
 - Use ActionMailer for notifications
 - Add AUTOMATION_ENABLED env var
-- Log success/failure metrics
+- Check file patterns before allowing automation
+- Parse Claude's confidence from response
 
 **Estimated:** 3-4 hours
 
 ## Implementation Order
 
 1. **Week 1: Feedback Collection**
-   - Story 1.1: Models and menu (3-4 hours)
+   - Story 1.1: Menu and routes (2-3 hours)
    - Story 1.2: Bug report form (5-6 hours)
    - Story 1.3: Feature request form (6-8 hours)
    - Story 1.4: Browser data (3-4 hours)
-   - **Subtotal: 17-22 hours**
+   - **Subtotal: 16-21 hours**
 
 2. **Week 2: Automation**
-   - Story 2.1: Claude integration (6-8 hours)
-   - Story 2.2: Resolution tracking (4-5 hours)
-   - Story 2.3: Feature workflow (5-6 hours)
+   - Story 2.1: Claude integration (5-6 hours)
+   - Story 2.2: Feature workflow (4-5 hours)
    - Story 3.1: Monitoring (3-4 hours)
-   - **Subtotal: 18-23 hours**
+   - **Subtotal: 12-15 hours**
 
-**Total: 35-45 hours** (approximately 1.5-2 weeks for one developer)
+**Total: 28-36 hours** (approximately 1-1.5 weeks for one developer)
 
-## Key Simplifications Made
+## Key Simplifications from GitHub Issues
 
-1. **No rate limiting** - Not needed for 3 testers
-2. **No user-facing reports view** - Users don't need to see their submissions
-3. **No complex authorization** - All users can submit feedback
-4. **No admin dashboard** - Email notifications sufficient
-5. **No feature flags** - Roll out to everyone immediately
-6. **Combined stories** - Reduced from 12 to 8 stories
+1. **No database models** - Everything in GitHub
+2. **No admin UI** - Use GitHub Issues interface
+3. **No status tracking** - GitHub handles it
+4. **No user accounts sync** - Just include reporter info in issue
+5. **Automatic PR-to-issue linking** - Via "Fixes #123"
+6. **Built-in discussion** - GitHub Issue comments
 
-## Database Schema Summary
+## GitHub Configuration
 
-```ruby
-# BugReport model
-class BugReport < ApplicationRecord
-  belongs_to :user
-  has_one :bug_resolution
-  has_many :automation_logs, as: :automatable
-  
-  enum request_type: { bug: 0, feature: 1 }
-  enum status: { 
-    pending: 0, 
-    processing: 1, 
-    fixed: 2, 
-    rejected: 3 
-  }
-  enum automation_status: { 
-    pending_review: 0,
-    story_generated: 1, 
-    approved_for_implementation: 2,
-    pr_created: 3,
-    completed: 4,
-    rejected: 5
-  }
-  
-  # Fields: user_id, title, description, console_logs, browser_info, 
-  # page_url, screenshot_data, status, metadata, unique_id, request_type
-end
+### Required Labels:
+- `bug` - Auto-added to bug reports
+- `feature-request` - Auto-added to feature requests  
+- `auto-fix` - Bugs eligible for automation
+- `claude-processing` - Currently being fixed
+- `pr-created` - PR has been created
+- `needs-review` - Feature requests awaiting review
+- `story-generated` - Story has been created
+
+### Issue Templates:
+
+**Bug Report:**
+```markdown
+**Reporter:** {user_email}
+**URL:** {page_url}
+**Date:** {timestamp}
+
+## Description
+{user_description}
+
+## Browser Info
+- User Agent: {user_agent}
+- Viewport: {viewport_size}
+
+<details>
+<summary>Console Logs</summary>
+
+```json
+{console_logs}
+```
+</details>
+
+<details>
+<summary>Screenshot</summary>
+
+{screenshot_attachment}
+</details>
+```
+
+**Feature Request:**
+```markdown
+**Reporter:** {user_email}
+**Date:** {timestamp}
+
+## Request Summary
+{what_to_improve}
+
+## Importance
+{importance_level}
+
+## Problem Definition
+**What problem are you trying to solve?**
+{problem_description}
+
+**How do you handle this today?**
+{current_handling}
+
+**How often?**
+{frequency}
+
+## Solution
+**Ideal solution:**
+{ideal_solution}
+
+**Examples seen elsewhere:**
+{examples}
+
+## Context
+**Main goal:**
+{main_goal}
+
+**Expected outcome:**
+{expected_outcome}
+
+## Impact
+**Business impact:**
+{business_impact}
+
+**Success metrics:**
+{success_metrics}
+
+**Additional notes:**
+{additional_notes}
 ```
 
 ## Success Metrics
@@ -336,4 +428,4 @@ end
 - Feature request to story generation < 5 minutes  
 - 80%+ automation success rate for simple bugs
 - Zero security incidents from automated fixes
-- Positive feedback from the 3 testers
+- Clean GitHub Issues organization

@@ -1,0 +1,312 @@
+// Feedback forms styling (bug reports and feature requests)
+
+.feedback-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-modal);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  
+  &.active {
+    opacity: 1;
+  }
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background-color: var(--color-background);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: all 0.2s ease;
+  
+  &.active {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+  
+  h2 {
+    margin: 0;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  line-height: 1;
+  transition: color 0.2s ease;
+  
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+// Bug report form
+.bug-report-form {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.form-group {
+  margin-bottom: var(--spacing-lg);
+  
+  label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+  }
+  
+  input[type="text"],
+  textarea {
+    width: 100%;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    background-color: var(--color-background);
+    color: var(--color-text);
+    transition: border-color 0.2s ease;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+    
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+  }
+  
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  input.error,
+  textarea.error {
+    border-color: var(--color-danger);
+  }
+}
+
+.screenshot-preview {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  text-align: center;
+  
+  .screenshot-status {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    
+    &.error {
+      color: var(--accent-red);
+    }
+  }
+  
+  .screenshot-help {
+    margin: 8px 0 0 0;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+  }
+  
+  .screenshot-thumb {
+    max-width: 100%;
+    max-height: 200px;
+    height: auto;
+    margin-top: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-primary);
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+// Feature request form
+.feature-request-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.progress-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  
+  .progress-step {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--color-background-secondary);
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    position: relative;
+    transition: all 0.2s ease;
+    
+    &.active {
+      background-color: var(--color-primary);
+      color: white;
+    }
+    
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: var(--spacing-md);
+      height: 2px;
+      background-color: var(--color-border);
+    }
+  }
+}
+
+.form-screen {
+  display: none;
+  
+  &.active {
+    display: block;
+  }
+  
+  &__title {
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+  }
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: var(--bg-secondary);
+    border-color: var(--accent-blue);
+  }
+  
+  .radio-input {
+    margin-right: var(--spacing-sm);
+    accent-color: var(--accent-blue);
+  }
+  
+  &__text {
+    flex: 1;
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+  
+  &:has(.radio-input:checked) {
+    border-color: var(--accent-blue);
+    background-color: var(--bg-secondary);
+  }
+  
+  &.error {
+    border-color: var(--accent-red);
+  }
+}
+
+.form-help {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.form-navigation {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: space-between;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+  
+  .button--ghost {
+    margin-left: auto;
+  }
+}
+
+// Modal container sizes
+.modal-container--large {
+  max-width: 800px;
+  width: 90%;
+}
+
+// Ensure modal content is properly styled
+.modal-backdrop .modal-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+// Form specific modal body
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(90vh - 200px); // Account for header and footer
+}
