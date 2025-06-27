@@ -44,10 +44,13 @@ export default class extends Controller {
         }
       }
       
+      // Additional delay to ensure menu is fully hidden
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
       // Capture the screenshot
       const targetElement = document.querySelector('.main-container') || document.body
       const canvas = await html2canvas(targetElement, {
-        scale: 0.5,
+        scale: 1, // Full resolution
         logging: false,
         backgroundColor: null,
         width: targetElement.scrollWidth,
