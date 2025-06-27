@@ -28,6 +28,8 @@ export default class extends Controller {
 
   async captureScreenshot() {
     try {
+      console.log('Starting screenshot capture...')
+      
       // Update status
       this.screenshotPreviewTarget.innerHTML = '<p class="screenshot-status">Capturing screenshot...</p>'
       
@@ -35,10 +37,17 @@ export default class extends Controller {
       await new Promise(resolve => setTimeout(resolve, 100))
       
       // Hide the modal temporarily
-      const modal = this.element.querySelector('.modal')
+      const modalContainer = this.element.querySelector('.modal-container')
       const overlay = this.overlayTarget
-      modal.style.display = 'none'
-      overlay.style.display = 'none'
+      
+      if (modalContainer) {
+        modalContainer.style.display = 'none'
+      }
+      if (overlay) {
+        overlay.style.display = 'none'
+      }
+      
+      console.log('Capturing screenshot with html2canvas...')
       
       // Capture the screenshot
       const canvas = await html2canvas(document.body, {
@@ -63,17 +72,25 @@ export default class extends Controller {
       `
       
       // Show modal again
-      modal.style.display = ''
-      overlay.style.display = ''
+      if (modalContainer) {
+        modalContainer.style.display = ''
+      }
+      if (overlay) {
+        overlay.style.display = ''
+      }
     } catch (error) {
       console.error('Failed to capture screenshot:', error)
       this.screenshotPreviewTarget.innerHTML = '<p class="screenshot-status error">Failed to capture screenshot</p>'
       
       // Show modal again even on error
-      const modal = this.element.querySelector('.modal')
-      const overlay = this.overlayTarget
-      modal.style.display = ''
-      overlay.style.display = ''
+      const modalContainer = this.element.querySelector('.modal-container')
+      const overlayElement = this.overlayTarget
+      if (modalContainer) {
+        modalContainer.style.display = ''
+      }
+      if (overlayElement) {
+        overlayElement.style.display = ''
+      }
     }
   }
 

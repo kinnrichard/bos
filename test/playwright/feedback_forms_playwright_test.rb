@@ -112,6 +112,13 @@ class FeedbackFormsPlaywrightTest < ApplicationPlaywrightTestCase
     # Check screenshot preview area
     assert page.visible?(".screenshot-preview")
 
+    # Give screenshot capture a moment to start
+    sleep 1
+
+    # Check if there's a status message (either capturing or error)
+    status_visible = page.visible?(".screenshot-status")
+    assert status_visible, "Screenshot status should be visible"
+
     # Test close button
     close_button = page.wait_for_selector(".modal-close")
     close_button.click
