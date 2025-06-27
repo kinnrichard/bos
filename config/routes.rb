@@ -64,10 +64,11 @@ Rails.application.routes.draw do
 
   # Admin routes
   namespace :admin do
-    resource :automation_dashboard, only: [ :show ] do
-      post :toggle_automation
-      post :toggle_notifications
-    end
+    # Turning off; this function is abstracted to a separate ruby script on a separate server
+    # resource :automation_dashboard, only: [ :show ] do
+    #   post :toggle_automation
+    #   post :toggle_notifications
+    # end
   end
 
   # Defines the root path route ("/")

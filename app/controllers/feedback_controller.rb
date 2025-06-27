@@ -64,8 +64,8 @@ class FeedbackController < ApplicationController
       end
     end
 
-    # Queue the bug for processing
-    ProcessBugIssueJob.perform_later(issue.number)
+    # Turning off; this function is abstracted to a separate ruby script on a separate server
+    # ProcessBugIssueJob.perform_later(issue.number)
 
     redirect_to root_path, notice: "Bug report submitted successfully! Issue ##{issue.number} created."
   rescue Octokit::Error => e
