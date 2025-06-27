@@ -46,45 +46,46 @@ module Components
 
         # Right side standard items
         div(class: "header-right") do
-          # Add note button with popover
-          div(class: "relative", data: { controller: "popover" }) do
-            button(
-              type: "button",
-              class: "btn-icon",
-              data: { action: "click->popover#toggle" },
-              style: "display: flex; align-items: center; justify-content: center;"
-            ) do
-              svg(
-                xmlns: "http://www.w3.org/2000/svg",
-                viewBox: "0 0 16.4746 16.123",
-                width: "16",
-                height: "16",
-                style: "display: block;"
-              ) do |s|
-                s.path(
-                  d: "M8.93555 15.2441L8.93555 0.869141C8.93555 0.400391 8.53516 0 8.05664 0C7.57812 0 7.1875 0.400391 7.1875 0.869141L7.1875 15.2441C7.1875 15.7129 7.57812 16.1133 8.05664 16.1133C8.53516 16.1133 8.93555 15.7129 8.93555 15.2441ZM0.869141 8.92578L15.2441 8.92578C15.7129 8.92578 16.1133 8.53516 16.1133 8.05664C16.1133 7.57812 15.7129 7.17773 15.2441 7.17773L0.869141 7.17773C0.400391 7.17773 0 7.57812 0 8.05664C0 8.53516 0.400391 8.92578 0.869141 8.92578Z",
-                  fill: "currentColor"
-                )
-              end
-            end
-
-            # Popover will be added later with Motion
-            div(
-              class: "hidden popover",
-              data: { popover_target: "content" }
-            ) do
-              div(class: "popover-header") do
-                h3 { "New Task" }
-              end
-              div(class: "popover-content") do
-                textarea(
-                  class: "popover-input",
-                  placeholder: "Add a task to your inbox...",
-                  rows: 3
-                )
-              end
-            end
-          end
+          # This is commented out because the new task button doesn’t work
+          #
+          # div(class: "relative", data: { controller: "popover" }) do
+          #   button(
+          #     type: "button",
+          #     class: "btn-icon",
+          #     data: { action: "click->popover#toggle" },
+          #     style: "display: flex; align-items: center; justify-content: center;"
+          #   ) do
+          #     svg(
+          #       xmlns: "http://www.w3.org/2000/svg",
+          #       viewBox: "0 0 16.4746 16.123",
+          #       width: "16",
+          #       height: "16",
+          #       style: "display: block;"
+          #     ) do |s|
+          #       s.path(
+          #         d: "M8.93555 15.2441L8.93555 0.869141C8.93555 0.400391 8.53516 0 8.05664 0C7.57812 0 7.1875 0.400391 7.1875 0.869141L7.1875 15.2441C7.1875 15.7129 7.57812 16.1133 8.05664 16.1133C8.53516 16.1133 8.93555 15.7129 8.93555 15.2441ZM0.869141 8.92578L15.2441 8.92578C15.7129 8.92578 16.1133 8.53516 16.1133 8.05664C16.1133 7.57812 15.7129 7.17773 15.2441 7.17773L0.869141 7.17773C0.400391 7.17773 0 7.57812 0 8.05664C0 8.53516 0.400391 8.92578 0.869141 8.92578Z",
+          #         fill: "currentColor"
+          #       )
+          #     end
+          #   end
+          #
+          #   # Popover will be added later with Motion
+          #   div(
+          #     class: "hidden popover",
+          #     data: { popover_target: "content" }
+          #   ) do
+          #     div(class: "popover-header") do
+          #       h3 { "New Task" }
+          #     end
+          #     div(class: "popover-content") do
+          #       textarea(
+          #         class: "popover-input",
+          #         placeholder: "Add a task to your inbox...",
+          #         rows: 3
+          #       )
+          #     end
+          #   end
+          # end
 
           # Search box with autocomplete
           div(
