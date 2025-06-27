@@ -76,17 +76,22 @@ class FeedbackController < ApplicationController
   end
 
   def create_feature_request
+    # Generate title from the feature request
+    title = params[:what_to_improve] || "Feature Request"
+
     issue = github_client.create_issue(
       github_repo,
-      params[:title],
+      title,
       format_feature_request_body,
       labels: [ "feature-request", "needs-review" ]
     )
 
     redirect_to root_path, notice: "Feature request submitted successfully! Issue ##{issue.number} created."
   rescue Octokit::Error => e
-    Rails.logger.error "Failed to create GitHub issue: #{e.message}"
-    redirect_to new_feedback_path(type: "feature"), alert: "Failed to submit feature request. Please try again."
+    Rails.logger.error "Failed to create GitHub issue: #{e.class} - #{e.message}"
+    Rails.logger.error "Response status: #{e.response_status}" if e.respond_to?(:response_status)
+    Rails.logger.error "Response body: #{e.response_body}" if e.respond_to?(:response_body)
+    redirect_to new_feedback_path(type: "feature"), alert: "Failed to submit feature request: #{e.message}"
   end
 
   def format_bug_report_body(screenshot_url = nil)
@@ -114,10 +119,6 @@ class FeedbackController < ApplicationController
 
       ## Description
       #{params[:description]}
-
-      ## Browser Info
-      - User Agent: #{params[:user_agent]}
-      - Viewport: #{params[:viewport_size]}
     MARKDOWN
 
     # Add screenshot if available
