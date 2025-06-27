@@ -5,7 +5,7 @@ class GithubWebhooksControllerTest < ActionDispatch::IntegrationTest
   setup do
     @webhook_secret = "test_secret"
     ENV["GIT_WEBHOOK_SECRET"] = @webhook_secret
-    ENV["GITHUB_AUTHORIZED_USERS"] = "admin_user,owner_user"
+    ENV["GIT_AUTHORIZED_USERS"] = "admin_user,owner_user"
 
     @issue_comment_payload = {
       action: "created",
@@ -23,7 +23,7 @@ class GithubWebhooksControllerTest < ActionDispatch::IntegrationTest
 
   teardown do
     ENV.delete("GIT_WEBHOOK_SECRET")
-    ENV.delete("GITHUB_AUTHORIZED_USERS")
+    ENV.delete("GIT_AUTHORIZED_USERS")
   end
 
   test "rejects requests without valid signature" do

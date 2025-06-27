@@ -1,5 +1,6 @@
 class FeedbackController < ApplicationController
   before_action :set_feedback_type
+  before_action :log_env_vars, only: [ :create ]
 
   def new
     case @feedback_type
@@ -29,17 +30,38 @@ class FeedbackController < ApplicationController
     @feedback_type = params[:type]
   end
 
+  def log_env_vars
+    Rails.logger.debug "=== Environment Check at Controller Init ==="
+    Rails.logger.debug "GIT_TOKEN from ENV: #{ENV['GIT_TOKEN'].present? ? 'present' : 'missing'}"
+    Rails.logger.debug "GIT_REPO from ENV: #{ENV['GIT_REPO']}"
+    Rails.logger.debug "All GIT_* env vars: #{ENV.select { |k, v| k.start_with?('GIT_') }.keys.join(', ')}"
+  end
+
   def create_bug_report
+    # Create issue first to get issue number
     issue = github_client.create_issue(
       github_repo,
       params[:title],
-      format_bug_report_body,
+      format_bug_report_body(nil), # No screenshot URL yet
       labels: [ "bug", "auto-fix" ]
     )
 
-    # Attach screenshot if present
+    # Upload screenshot if present and update issue body
     if params[:screenshot].present?
-      attach_screenshot_to_issue(issue.number, params[:screenshot])
+      begin
+        screenshot_url = upload_screenshot_to_repo(issue.number, params[:screenshot])
+
+        # Update issue body with screenshot
+        updated_body = format_bug_report_body(screenshot_url)
+        github_client.update_issue(
+          github_repo,
+          issue.number,
+          body: updated_body
+        )
+      rescue => e
+        Rails.logger.error "Failed to upload screenshot: #{e.message}"
+        # Continue without screenshot
+      end
     end
 
     # Queue the bug for processing
@@ -47,8 +69,10 @@ class FeedbackController < ApplicationController
 
     redirect_to root_path, notice: "Bug report submitted successfully! Issue ##{issue.number} created."
   rescue Octokit::Error => e
-    Rails.logger.error "Failed to create GitHub issue: #{e.message}"
-    redirect_to new_feedback_path(type: "bug"), alert: "Failed to submit bug report. Please try again."
+    Rails.logger.error "Failed to create GitHub issue: #{e.class} - #{e.message}"
+    Rails.logger.error "Response status: #{e.response_status}" if e.respond_to?(:response_status)
+    Rails.logger.error "Response body: #{e.response_body}" if e.respond_to?(:response_body)
+    redirect_to new_feedback_path(type: "bug"), alert: "Failed to submit bug report: #{e.message}"
   end
 
   def create_feature_request
@@ -65,7 +89,7 @@ class FeedbackController < ApplicationController
     redirect_to new_feedback_path(type: "feature"), alert: "Failed to submit feature request. Please try again."
   end
 
-  def format_bug_report_body
+  def format_bug_report_body(screenshot_url = nil)
     # Parse console logs
     console_logs = if params[:console_logs].is_a?(String)
       begin
@@ -83,7 +107,7 @@ class FeedbackController < ApplicationController
       { "entries" => [], "capturedAt" => Time.current.iso8601 }
     end
 
-    <<~MARKDOWN
+    body = <<~MARKDOWN
       **Reporter:** #{current_user.email}
       **URL:** #{params[:page_url]}
       **Date:** #{Time.current.to_fs(:long)}
@@ -94,6 +118,19 @@ class FeedbackController < ApplicationController
       ## Browser Info
       - User Agent: #{params[:user_agent]}
       - Viewport: #{params[:viewport_size]}
+    MARKDOWN
+
+    # Add screenshot if available
+    if screenshot_url
+      body += <<~MARKDOWN
+
+        ## Screenshot
+        ![Screenshot](#{screenshot_url})
+      MARKDOWN
+    end
+
+    # Add console logs
+    body += <<~MARKDOWN
 
       <details>
       <summary>Console Logs (#{console_logs["entries"]&.length || 0} entries)</summary>
@@ -103,6 +140,8 @@ class FeedbackController < ApplicationController
       ```
       </details>
     MARKDOWN
+
+    body
   end
 
   def format_feature_request_body
@@ -152,38 +191,57 @@ class FeedbackController < ApplicationController
     MARKDOWN
   end
 
-  def attach_screenshot_to_issue(issue_number, screenshot_data)
+
+  def upload_screenshot_to_repo(issue_number, screenshot_data)
     # Convert base64 to binary
     image_data = Base64.decode64(screenshot_data.split(",").last)
 
-    # Create a temporary file
-    temp_file = Tempfile.new([ "screenshot", ".jpg" ])
-    temp_file.binmode
-    temp_file.write(image_data)
-    temp_file.rewind
+    # Generate filename with format: YYYY-MM-DD-issue-NNN-screenshot.png
+    timestamp = Time.current.strftime("%Y-%m-%d")
+    filename = "#{timestamp}-issue-#{issue_number}-screenshot.png"
+    path = ".github/bug-reports/#{filename}"
 
-    # Upload to GitHub
-    github_client.add_comment(
+    # Upload to GitHub repository
+    response = github_client.create_contents(
       github_repo,
-      issue_number,
-      "![Screenshot](#{upload_image_to_github(temp_file)})"
+      path,
+      "Add screenshot for issue ##{issue_number}",
+      image_data,
+      branch: "main"
     )
-  ensure
-    temp_file&.close
-    temp_file&.unlink
-  end
 
-  def upload_image_to_github(file)
-    # This is a simplified version - in production you might want to use
-    # GitHub's content API or a CDN for image hosting
-    # For now, we'll include the image as a comment attachment
-    "data:image/jpeg;base64,#{Base64.encode64(file.read)}"
+    # Return the URL to the uploaded file
+    # Use the raw URL so the image displays properly
+    "https://raw.githubusercontent.com/#{github_repo}/main/#{path}"
+  rescue => e
+    Rails.logger.error "Failed to upload screenshot to repo: #{e.message}"
+    raise
   end
 
   def github_client
-    @github_client ||= Octokit::Client.new(
-      access_token: Rails.application.credentials.dig(:git_token) || ENV["GIT_TOKEN"]
-    )
+    @github_client ||= begin
+      token = Rails.application.credentials.dig(:git_token) || ENV["GIT_TOKEN"]
+      Rails.logger.debug "Creating GitHub client..."
+      Rails.logger.debug "Token from credentials: #{Rails.application.credentials.dig(:git_token).present?}"
+      Rails.logger.debug "Token from ENV: #{ENV['GIT_TOKEN'].present?}"
+      Rails.logger.debug "Final token present: #{token.present?}"
+      Rails.logger.debug "Token value: #{token&.first(10)}..." if token
+
+      raise "No GitHub token configured" unless token.present?
+
+      client = Octokit::Client.new(access_token: token)
+
+      # Test authentication
+      begin
+        user = client.user
+        Rails.logger.debug "GitHub client authenticated as: #{user.login}"
+      rescue => e
+        Rails.logger.error "GitHub client authentication test failed: #{e.message}"
+        raise
+      end
+
+      client
+    end
   end
 
   def github_repo

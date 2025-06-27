@@ -21,6 +21,10 @@ class Views::Base < Components::Base
 
   private
 
+  def git_token_configured?
+    Rails.application.credentials.dig(:git_token).present? || ENV["GIT_TOKEN"].present?
+  end
+
   def delete_form_with_confirmation(url:, message: nil, checkbox_label: nil, &block)
     div(data: { controller: "delete-confirmation" }) do
       # Render the modal
@@ -130,14 +134,17 @@ class Views::Base < Components::Base
 
                   # Feedback section
                   div(class: "popover-section popover-menu-items", data: { controller: "feedback-menu", user_menu_popover_outlet: ".user-menu-popover" }) do
-                    link_to(
-                      new_feedback_path(type: "bug"),
-                      class: "popover-menu-item",
-                      data: {
-                        turbo: false,
-                        action: "click->feedback-menu#reportBug"
-                      }
-                    ) { "🐛 Report a Bug" }
+                    # Only show bug report if GIT_TOKEN is configured
+                    if git_token_configured?
+                      link_to(
+                        new_feedback_path(type: "bug"),
+                        class: "popover-menu-item",
+                        data: {
+                          turbo: false,
+                          action: "click->feedback-menu#reportBug"
+                        }
+                      ) { "🐛 Report a Bug" }
+                    end
                     link_to(
                       new_feedback_path(type: "feature"),
                       class: "popover-menu-item",

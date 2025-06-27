@@ -61,7 +61,7 @@ class GithubWebhooksController < ApplicationController
 
   def authorized_user?(username)
     # Get list of authorized users from config
-    authorized_users = (ENV["GITHUB_AUTHORIZED_USERS"] || "").split(",").map(&:strip)
+    authorized_users = (ENV["GIT_AUTHORIZED_USERS"] || "").split(",").map(&:strip)
     authorized_users.include?(username)
   end
 
