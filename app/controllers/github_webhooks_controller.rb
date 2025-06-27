@@ -56,7 +56,7 @@ class GithubWebhooksController < ApplicationController
   end
 
   def webhook_secret
-    Rails.application.credentials.dig(:github_webhook_secret) || ENV["GITHUB_WEBHOOK_SECRET"]
+    Rails.application.credentials.dig(:git_webhook_secret) || ENV["GIT_WEBHOOK_SECRET"]
   end
 
   def authorized_user?(username)
@@ -70,10 +70,10 @@ class GithubWebhooksController < ApplicationController
     reason = comment_body.match(/\/decline\s+(.+)/i)&.captures&.first || "This feature request has been declined."
 
     github_client = Octokit::Client.new(
-      access_token: Rails.application.credentials.dig(:github_token) || ENV["GITHUB_TOKEN"]
+      access_token: Rails.application.credentials.dig(:git_token) || ENV["GIT_TOKEN"]
     )
 
-    github_repo = Rails.application.credentials.dig(:github_repo) || ENV["GITHUB_REPO"] || "fluffyx/bos"
+    github_repo = Rails.application.credentials.dig(:git_repo) || ENV["GIT_REPO"] || "fluffyx/bos"
 
     # Close the issue with a comment
     github_client.add_comment(github_repo, issue_number, "Feature request declined: #{reason}")

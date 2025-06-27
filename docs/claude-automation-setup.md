@@ -11,10 +11,10 @@ This guide explains how to set up and configure the Claude CLI integration for a
 
 2. **GitHub Token**
    - Create a personal access token with `repo` scope
-   - Set `GITHUB_TOKEN` environment variable or add to Rails credentials
+   - Set `GIT_TOKEN` environment variable or add to Rails credentials
 
 3. **GitHub Repository**
-   - Set `GITHUB_REPO` environment variable (e.g., "fluffyx/bos")
+   - Set `GIT_REPO` environment variable (e.g., "fluffyx/bos")
    - Or configure in Rails credentials
 
 ## Configuration
@@ -23,8 +23,8 @@ This guide explains how to set up and configure the Claude CLI integration for a
 
 ```bash
 # Required
-export GITHUB_TOKEN="your-github-token"
-export GITHUB_REPO="owner/repo"
+export GIT_TOKEN="your-github-token"
+export GIT_REPO="owner/repo"
 
 # Optional - Emergency off switch
 export BUG_AUTOMATION_ENABLED="true"  # Set to "false" to disable
@@ -39,8 +39,8 @@ rails credentials:edit
 ```
 
 ```yaml
-github_token: "your-github-token"
-github_repo: "owner/repo"
+git_token: "your-github-token"
+git_repo: "owner/repo"
 ```
 
 ## How It Works

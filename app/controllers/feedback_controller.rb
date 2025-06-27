@@ -182,11 +182,11 @@ class FeedbackController < ApplicationController
 
   def github_client
     @github_client ||= Octokit::Client.new(
-      access_token: Rails.application.credentials.dig(:github_token) || ENV["GITHUB_TOKEN"]
+      access_token: Rails.application.credentials.dig(:git_token) || ENV["GIT_TOKEN"]
     )
   end
 
   def github_repo
-    Rails.application.credentials.dig(:github_repo) || ENV["GITHUB_REPO"] || "fluffyx/bos"
+    Rails.application.credentials.dig(:git_repo) || ENV["GIT_REPO"] || "fluffyx/bos"
   end
 end

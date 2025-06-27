@@ -47,7 +47,7 @@ class Admin::AutomationDashboardsController < ApplicationController
 
   def gather_automation_stats
     # Return mock data in test environment without GitHub token
-    if Rails.env.test? && (Rails.application.credentials.dig(:github_token).nil? && ENV["GITHUB_TOKEN"].nil?)
+    if Rails.env.test? && (Rails.application.credentials.dig(:git_token).nil? && ENV["GIT_TOKEN"].nil?)
       return {
         bug_reports: 0,
         feature_requests: 0,
@@ -59,10 +59,10 @@ class Admin::AutomationDashboardsController < ApplicationController
     end
 
     github_client = Octokit::Client.new(
-      access_token: Rails.application.credentials.dig(:github_token) || ENV["GITHUB_TOKEN"]
+      access_token: Rails.application.credentials.dig(:git_token) || ENV["GIT_TOKEN"]
     )
 
-    github_repo = Rails.application.credentials.dig(:github_repo) || ENV["GITHUB_REPO"] || "fluffyx/bos"
+    github_repo = Rails.application.credentials.dig(:git_repo) || ENV["GIT_REPO"] || "fluffyx/bos"
 
     # Get counts for various labels
     {
@@ -92,15 +92,15 @@ class Admin::AutomationDashboardsController < ApplicationController
 
   def fetch_recent_automated_issues
     # Return empty array in test environment without GitHub token
-    if Rails.env.test? && (Rails.application.credentials.dig(:github_token).nil? && ENV["GITHUB_TOKEN"].nil?)
+    if Rails.env.test? && (Rails.application.credentials.dig(:git_token).nil? && ENV["GIT_TOKEN"].nil?)
       return []
     end
 
     github_client = Octokit::Client.new(
-      access_token: Rails.application.credentials.dig(:github_token) || ENV["GITHUB_TOKEN"]
+      access_token: Rails.application.credentials.dig(:git_token) || ENV["GIT_TOKEN"]
     )
 
-    github_repo = Rails.application.credentials.dig(:github_repo) || ENV["GITHUB_REPO"] || "fluffyx/bos"
+    github_repo = Rails.application.credentials.dig(:git_repo) || ENV["GIT_REPO"] || "fluffyx/bos"
 
     # Get recent issues with automation labels
     search_query = "repo:#{github_repo} is:issue label:bug,feature-request sort:created-desc"
@@ -123,15 +123,15 @@ class Admin::AutomationDashboardsController < ApplicationController
 
   def fetch_failed_issues
     # Return empty array in test environment without GitHub token
-    if Rails.env.test? && (Rails.application.credentials.dig(:github_token).nil? && ENV["GITHUB_TOKEN"].nil?)
+    if Rails.env.test? && (Rails.application.credentials.dig(:git_token).nil? && ENV["GIT_TOKEN"].nil?)
       return []
     end
 
     github_client = Octokit::Client.new(
-      access_token: Rails.application.credentials.dig(:github_token) || ENV["GITHUB_TOKEN"]
+      access_token: Rails.application.credentials.dig(:git_token) || ENV["GIT_TOKEN"]
     )
 
-    github_repo = Rails.application.credentials.dig(:github_repo) || ENV["GITHUB_REPO"] || "fluffyx/bos"
+    github_repo = Rails.application.credentials.dig(:git_repo) || ENV["GIT_REPO"] || "fluffyx/bos"
 
     # Get issues that failed automation
     search_query = "repo:#{github_repo} is:issue is:open label:automation-failed"

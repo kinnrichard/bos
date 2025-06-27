@@ -11,9 +11,9 @@ class ClaudeAutomationService
   def initialize(issue_number)
     @issue_number = issue_number
     @github_client = Octokit::Client.new(
-      access_token: Rails.application.credentials.dig(:github_token) || ENV["GITHUB_TOKEN"]
+      access_token: Rails.application.credentials.dig(:git_token) || ENV["GIT_TOKEN"]
     )
-    @github_repo = Rails.application.credentials.dig(:github_repo) || ENV["GITHUB_REPO"] || "fluffyx/bos"
+    @github_repo = Rails.application.credentials.dig(:git_repo) || ENV["GIT_REPO"] || "fluffyx/bos"
   end
 
   def process

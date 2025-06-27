@@ -48,7 +48,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   def github_url
-    repo = Rails.application.credentials.dig(:github_repo) || ENV["GITHUB_REPO"] || "fluffyx/bos"
+    repo = Rails.application.credentials.dig(:git_repo) || ENV["GIT_REPO"] || "fluffyx/bos"
     "https://github.com/#{repo}"
   end
 

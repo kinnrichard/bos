@@ -140,7 +140,7 @@ module Views
               a(href: "/docs/feature-request-workflow.md", class: "resource-link") do
                 "📋 Feature Request Workflow"
               end
-              a(href: "https://github.com/#{ENV['GITHUB_REPO'] || 'fluffyx/bos'}/labels",
+              a(href: "https://github.com/#{ENV['GIT_REPO'] || 'fluffyx/bos'}/labels",
                 target: "_blank",
                 class: "resource-link") do
                 "🏷️ View All GitHub Labels"

@@ -4,7 +4,7 @@ require "mocha/minitest"
 class GithubWebhooksControllerTest < ActionDispatch::IntegrationTest
   setup do
     @webhook_secret = "test_secret"
-    ENV["GITHUB_WEBHOOK_SECRET"] = @webhook_secret
+    ENV["GIT_WEBHOOK_SECRET"] = @webhook_secret
     ENV["GITHUB_AUTHORIZED_USERS"] = "admin_user,owner_user"
 
     @issue_comment_payload = {
@@ -22,7 +22,7 @@ class GithubWebhooksControllerTest < ActionDispatch::IntegrationTest
   end
 
   teardown do
-    ENV.delete("GITHUB_WEBHOOK_SECRET")
+    ENV.delete("GIT_WEBHOOK_SECRET")
     ENV.delete("GITHUB_AUTHORIZED_USERS")
   end
 

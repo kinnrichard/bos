@@ -32,9 +32,9 @@ POSTGRES_PASSWORD="your_database_password"
 DB_PASSWORD="your_database_password"
 
 # GitHub Configuration
-GITHUB_TOKEN="your_github_personal_access_token"
-GITHUB_REPO="fluffyx/bos"  # or your repo name
-GITHUB_WEBHOOK_SECRET="generate_a_random_secret_string"
+GIT_TOKEN="your_github_personal_access_token"
+GIT_REPO="fluffyx/bos"  # or your repo name
+GIT_WEBHOOK_SECRET="generate_a_random_secret_string"
 
 # Claude Configuration  
 CLAUDE_API_KEY="your_claude_api_key"  # if using API instead of CLI
@@ -70,7 +70,7 @@ Go to your GitHub repository settings and create these labels:
 1. Go to Settings → Webhooks → Add webhook
 2. Payload URL: `https://your-domain.com/github/webhook`
 3. Content type: `application/json`
-4. Secret: Use the value from `GITHUB_WEBHOOK_SECRET`
+4. Secret: Use the value from `GIT_WEBHOOK_SECRET`
 5. Select events: "Issue comments"
 6. Active: ✓
 
@@ -95,16 +95,16 @@ rails credentials:edit
 
 Add:
 ```yaml
-github_token: your_token
-github_repo: fluffyx/bos
-github_webhook_secret: your_secret
+git_token: your_token
+git_repo: fluffyx/bos
+git_webhook_secret: your_secret
 claude_api_key: your_claude_api_key
 bug_automation_enabled: true
 feature_email_notifications: true
 admin_email: admin@example.com
 ```
 
-Then access in your code with `Rails.application.credentials.github_token` etc.
+Then access in your code with `Rails.application.credentials.git_token` etc.
 
 ### 4. Database Setup
 
@@ -121,8 +121,8 @@ rails console
 
 Test GitHub API:
 ```ruby
-client = Octokit::Client.new(access_token: ENV['GITHUB_TOKEN'])
-repo = ENV['GITHUB_REPO']
+client = Octokit::Client.new(access_token: ENV['GIT_TOKEN'])
+repo = ENV['GIT_REPO']
 issues = client.issues(repo)
 puts "Found #{issues.count} issues"
 ```

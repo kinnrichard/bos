@@ -11,7 +11,7 @@ Feature requests are processed through GitHub Issues with admin approval require
 1. **GitHub Webhook Configuration**
    - Set up webhook URL: `https://your-app.com/github/webhook`
    - Events: Issue comments
-   - Secret: Set in `GITHUB_WEBHOOK_SECRET` environment variable
+   - Secret: Set in `GIT_WEBHOOK_SECRET` environment variable
 
 2. **Authorized Users**
    - Configure in `GITHUB_AUTHORIZED_USERS` environment variable
@@ -134,7 +134,7 @@ Test the webhook endpoint:
 ```bash
 # Generate test signature
 PAYLOAD='{"action":"created","issue":{"number":123,"labels":[{"name":"feature-request"}]},"comment":{"body":"/generate-story","user":{"login":"admin_user"}}}'
-SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$GITHUB_WEBHOOK_SECRET" | sed 's/SHA256(.*)= /sha256=/')
+SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$GIT_WEBHOOK_SECRET" | sed 's/SHA256(.*)= /sha256=/')
 
 # Send test request
 curl -X POST https://your-app.com/github/webhook \

@@ -23,8 +23,8 @@ rails credentials:edit
 Add the following configuration:
 
 ```yaml
-github_token: your_personal_access_token_here
-github_repo: owner/repository # e.g., "fluffyx/bos"
+git_token: your_personal_access_token_here
+git_repo: owner/repository # e.g., "fluffyx/bos"
 ```
 
 ## 3. Create GitHub Labels
@@ -63,8 +63,8 @@ gh label create story-generated --description "Story has been generated" --color
 If you prefer to use environment variables instead of Rails credentials:
 
 ```bash
-export GITHUB_TOKEN="your_token_here"
-export GITHUB_REPO="owner/repository"
+export GIT_TOKEN="your_token_here"
+export GIT_REPO="owner/repository"
 ```
 
-Then update the controller to use `ENV["GITHUB_TOKEN"]` and `ENV["GITHUB_REPO"]`.
+Then update the controller to use `ENV["GIT_TOKEN"]` and `ENV["GIT_REPO"]`.
