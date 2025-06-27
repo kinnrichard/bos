@@ -2,9 +2,8 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   connect() {
-    // Initialize or restore console entries
-    this.consoleEntries = this.loadStoredEntries() || []
-    this.maxEntries = 100 // Increase to capture more entries
+    this.consoleEntries = []
+    this.maxEntries = 100 // Capture up to 100 entries
     
     // Store original console methods
     this.originalConsole = {
@@ -20,25 +19,9 @@ export default class extends Controller {
     
     // Capture any existing errors
     this.captureExistingErrors()
-    
-    // Store entries periodically
-    this.startAutoSave()
-    
-    // Add a note about browser warnings
-    this.captureEntry('info', [
-      'Note: Browser-level warnings (like preload warnings) cannot be captured programmatically'
-    ])
   }
   
   disconnect() {
-    // Stop auto-save
-    if (this.autoSaveInterval) {
-      clearInterval(this.autoSaveInterval)
-    }
-    
-    // Save current entries
-    this.saveEntries()
-    
     // Restore original console methods
     Object.keys(this.originalConsole).forEach(method => {
       console[method] = this.originalConsole[method]
@@ -58,9 +41,6 @@ export default class extends Controller {
         this.captureEntry(method, args)
       }
     })
-    
-    // Add a marker to show console capture is active
-    this.captureEntry('info', ['Console capture initialized at', new Date().toISOString()])
   }
   
   captureEntry(type, args) {
@@ -139,31 +119,5 @@ export default class extends Controller {
   // Clear captured console data
   clear() {
     this.consoleEntries = []
-    this.saveEntries()
-  }
-  
-  // Storage methods
-  loadStoredEntries() {
-    try {
-      const stored = sessionStorage.getItem('consoleCaptureEntries')
-      return stored ? JSON.parse(stored) : null
-    } catch (e) {
-      return null
-    }
-  }
-  
-  saveEntries() {
-    try {
-      sessionStorage.setItem('consoleCaptureEntries', JSON.stringify(this.consoleEntries))
-    } catch (e) {
-      // Ignore storage errors
-    }
-  }
-  
-  startAutoSave() {
-    // Save entries every 2 seconds
-    this.autoSaveInterval = setInterval(() => {
-      this.saveEntries()
-    }, 2000)
   }
 }
