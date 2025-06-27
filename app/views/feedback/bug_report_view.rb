@@ -18,20 +18,26 @@ module Views
       private
 
       def main_content
-        div(class: "feedback-container", data: {
+        div(class: "modal-backdrop", data: {
           controller: "bug-report",
-          bug_report_console_capture_outlet: ".console-capture"
+          bug_report_console_capture_outlet: "[data-controller~='console-capture']"
         }) do
-          div(class: "modal-overlay active", data: { bug_report_target: "overlay" })
+          div(class: "modal-overlay", data: {
+            bug_report_target: "overlay",
+            action: "click->bug-report#close"
+          })
 
-          div(class: "modal active") do
-            div(class: "modal-header") do
-              h2 { "Report a Bug" }
-              button(
-                class: "modal-close",
-                data: { action: "click->bug-report#close" }
-              ) { "×" }
-            end
+          div(class: "modal-container") do
+            div(class: "modal-content") do
+              # Header
+              div(class: "modal-header") do
+                h2 { "Report a Bug" }
+                button(
+                  type: "button",
+                  class: "modal-close",
+                  data: { action: "click->bug-report#close" }
+                ) { "×" }
+              end
 
             form_with(
               url: feedback_path,
@@ -46,44 +52,48 @@ module Views
               input(type: "hidden", name: "console_logs", data: { bug_report_target: "consoleLogs" })
               input(type: "hidden", name: "screenshot", data: { bug_report_target: "screenshot" })
 
-              div(class: "form-group") do
-                label(for: "title") { "Brief Description" }
-                f.text_field :title,
-                  required: true,
+              div(class: "modal-body") do
+                render Components::Ui::FormInputComponent.new(
+                  form: f,
+                  attribute: :title,
+                  label: "Brief Description",
                   placeholder: "e.g., Button not working on job form",
-                  class: "form-control"
-              end
+                  required: true
+                )
 
-              div(class: "form-group") do
-                label(for: "description") { "Detailed Description" }
-                f.text_area :description,
-                  required: true,
-                  rows: 4,
+                render Components::Ui::FormInputComponent.new(
+                  form: f,
+                  attribute: :description,
+                  type: :textarea,
+                  label: "Detailed Description",
                   placeholder: "Please describe what happened, what you expected to happen, and steps to reproduce the issue",
-                  class: "form-control"
+                  required: true
+                )
+
+                div(class: "screenshot-preview", data: { bug_report_target: "screenshotPreview" }) do
+                  p(class: "screenshot-status") { "Capturing screenshot..." }
+                end
               end
 
-              div(class: "screenshot-preview", data: { bug_report_target: "screenshotPreview" }) do
-                p(class: "screenshot-status") { "Capturing screenshot..." }
-              end
-
-              div(class: "form-actions") do
-                button(
-                  type: "submit",
-                  class: "button button--primary",
-                  data: { bug_report_target: "submitButton" }
-                ) { "Submit Bug Report" }
-
-                button(
-                  type: "button",
-                  class: "button button--secondary",
+              # Footer
+              div(class: "modal-footer") do
+                render Components::Ui::ButtonComponent.new(
+                  variant: :secondary,
+                  type: :button,
                   data: { action: "click->bug-report#close" }
                 ) { "Cancel" }
+
+                render Components::Ui::ButtonComponent.new(
+                  variant: :primary,
+                  type: :submit,
+                  data: { bug_report_target: "submitButton" }
+                ) { "Submit Bug Report" }
               end
             end
           end
         end
       end
+    end
     end
   end
 end
