@@ -142,6 +142,12 @@
     }
   }
   
+  .screenshot-help {
+    margin: 8px 0 0 0;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+  }
+  
   .screenshot-thumb {
     max-width: 100%;
     max-height: 200px;

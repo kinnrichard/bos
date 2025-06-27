@@ -26,6 +26,8 @@ gem "acts_as_list"
 # Browser testing
 gem "playwright-ruby-client"
 
+gem "faraday-retry"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
 

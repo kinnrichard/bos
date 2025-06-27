@@ -19,8 +19,7 @@ module Views
 
       def main_content
         div(class: "modal-backdrop", data: {
-          controller: "bug-report",
-          bug_report_console_capture_outlet: "[data-controller~='console-capture']"
+          controller: "bug-report"
         }) do
           div(class: "modal-overlay", data: {
             bug_report_target: "overlay",

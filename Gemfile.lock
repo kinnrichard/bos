@@ -122,6 +122,8 @@ GEM
       logger
     faraday-net_http (3.4.1)
       net-http (>= 0.5.0)
+    faraday-retry (2.3.2)
+      faraday (~> 2.0)
     fugit (1.11.1)
       et-orbi (~> 1, >= 1.2.11)
       raabro (~> 1.4)
@@ -438,6 +440,7 @@ DEPENDENCIES
   csv
   dartsass-rails
   debug
+  faraday-retry
   importmap-rails
   jbuilder
   kamal

@@ -6,93 +6,59 @@ export default class extends Controller {
   static outlets = ["console-capture"]
 
   async connect() {
-    // Capture the page URL from the previous page
-    this.pageUrlTarget.value = document.referrer || window.location.href
-    
-    // Capture browser info
-    this.userAgentTarget.value = navigator.userAgent
-    this.viewportSizeTarget.value = `${window.innerWidth}x${window.innerHeight}`
-    
-    // Get console logs from console capture controller if available
-    if (this.hasConsoleCaptureOutlet) {
-      const consoleData = this.consoleCaptureOutlet.getConsoleData()
-      this.consoleLogsTarget.value = JSON.stringify(consoleData)
-    } else {
-      // Fallback to empty array
-      this.consoleLogsTarget.value = JSON.stringify({ entries: [], capturedAt: new Date().toISOString() })
-    }
-    
-    // Start screenshot capture
-    await this.captureScreenshot()
-  }
-
-  async captureScreenshot() {
     try {
-      console.log('Starting screenshot capture...')
-      
-      // Update status
-      this.screenshotPreviewTarget.innerHTML = '<p class="screenshot-status">Capturing screenshot...</p>'
-      
-      // Small delay to ensure the modal overlay is not in the screenshot
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Hide the modal temporarily
-      const modalContainer = this.element.querySelector('.modal-container')
-      const overlay = this.overlayTarget
-      
-      if (modalContainer) {
-        modalContainer.style.display = 'none'
-      }
-      if (overlay) {
-        overlay.style.display = 'none'
+      // Check for pre-captured browser info from sessionStorage
+      const storedBrowserInfo = sessionStorage.getItem('bugReportBrowserInfo')
+      if (storedBrowserInfo) {
+        const browserInfo = JSON.parse(storedBrowserInfo)
+        this.pageUrlTarget.value = browserInfo.pageUrl
+        this.userAgentTarget.value = browserInfo.userAgent
+        this.viewportSizeTarget.value = browserInfo.viewportSize
+        sessionStorage.removeItem('bugReportBrowserInfo')
+      } else {
+        // Fallback to current page info
+        this.pageUrlTarget.value = document.referrer || window.location.href
+        this.userAgentTarget.value = navigator.userAgent
+        this.viewportSizeTarget.value = `${window.innerWidth}x${window.innerHeight}`
       }
       
-      console.log('Capturing screenshot with html2canvas...')
-      
-      // Capture the screenshot
-      const canvas = await html2canvas(document.body, {
-        scale: 0.3, // 30% scale for smaller file size
-        logging: false,
-        width: window.innerWidth,
-        height: window.innerHeight,
-        windowWidth: window.innerWidth,
-        windowHeight: window.innerHeight,
-        x: window.scrollX,
-        y: window.scrollY
-      })
-      
-      // Convert to JPEG for smaller size
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
-      this.screenshotTarget.value = dataUrl
-      
-      // Show preview
-      this.screenshotPreviewTarget.innerHTML = `
-        <p class="screenshot-status">Screenshot captured successfully</p>
-        <img src="${dataUrl}" alt="Screenshot" class="screenshot-thumb">
-      `
-      
-      // Show modal again
-      if (modalContainer) {
-        modalContainer.style.display = ''
+      // Check for pre-captured console logs
+      const storedConsoleLogs = sessionStorage.getItem('bugReportConsoleLogs')
+      if (storedConsoleLogs) {
+        this.consoleLogsTarget.value = storedConsoleLogs
+        sessionStorage.removeItem('bugReportConsoleLogs')
+      } else {
+        this.consoleLogsTarget.value = JSON.stringify({ entries: [], capturedAt: new Date().toISOString() })
       }
-      if (overlay) {
-        overlay.style.display = ''
+      
+      // Check for pre-captured screenshot
+      const storedScreenshot = sessionStorage.getItem('bugReportScreenshot')
+      if (storedScreenshot) {
+        console.log('Using pre-captured screenshot from sessionStorage')
+        this.screenshotTarget.value = storedScreenshot
+        
+        // Show preview
+        this.screenshotPreviewTarget.innerHTML = `
+          <p class="screenshot-status">Screenshot captured from previous page</p>
+          <img src="${storedScreenshot}" alt="Screenshot" class="screenshot-thumb">
+        `
+        
+        // Clear from sessionStorage
+        sessionStorage.removeItem('bugReportScreenshot')
+      } else {
+        // No pre-captured screenshot available
+        console.log('No pre-captured screenshot found')
+        this.screenshotPreviewTarget.innerHTML = `
+          <p class="screenshot-status">No screenshot available</p>
+          <p class="screenshot-help">Screenshot could not be captured from the previous page.</p>
+        `
       }
     } catch (error) {
-      console.error('Failed to capture screenshot:', error)
-      this.screenshotPreviewTarget.innerHTML = '<p class="screenshot-status error">Failed to capture screenshot</p>'
-      
-      // Show modal again even on error
-      const modalContainer = this.element.querySelector('.modal-container')
-      const overlayElement = this.overlayTarget
-      if (modalContainer) {
-        modalContainer.style.display = ''
-      }
-      if (overlayElement) {
-        overlayElement.style.display = ''
-      }
+      console.error('Error in bug report controller connect:', error)
     }
   }
+
+  // Screenshot capture is now handled before navigation in feedback_menu_controller.js
 
   close(event) {
     event?.preventDefault()
