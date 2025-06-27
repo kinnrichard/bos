@@ -7,13 +7,19 @@ export default class extends Controller {
   async reportBug(event) {
     event.preventDefault()
     
-    // Close the user menu dropdown
+    // Immediately hide the popover by adding hidden class
+    const popover = document.querySelector('.user-menu-popover')
+    if (popover) {
+      popover.classList.add('hidden')
+    }
+    
+    // Also try to use the outlet if available
     if (this.hasUserMenuPopoverOutlet) {
       this.userMenuPopoverOutlets.forEach(outlet => outlet.hide())
     }
     
-    // Wait for menu animation to complete
-    await new Promise(resolve => setTimeout(resolve, 250))
+    // Wait for any animations to complete
+    await new Promise(resolve => setTimeout(resolve, 50))
     
     // Capture screenshot of current page before navigating
     try {
@@ -44,8 +50,8 @@ export default class extends Controller {
         }
       }
       
-      // Additional delay to ensure menu is fully hidden
-      await new Promise(resolve => setTimeout(resolve, 200))
+      // Small delay to ensure popover is fully hidden
+      await new Promise(resolve => setTimeout(resolve, 50))
       
       // Capture the screenshot
       const targetElement = document.querySelector('.main-container') || document.body
