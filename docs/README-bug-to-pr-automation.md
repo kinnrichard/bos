@@ -22,24 +22,32 @@ Before setting up the automation system, ensure you have:
 
 ### 1. Environment Variables
 
-Add these to your `.env.development` and `.env.production` files:
+This project uses Kamal for deployment. Add these to your `.kamal/secrets.development` file:
 
 ```bash
+# Existing Kamal secrets
+KAMAL_REGISTRY_PASSWORD="your_github_personal_access_token_for_registry"
+RAILS_MASTER_KEY="your_rails_master_key"
+POSTGRES_PASSWORD="your_database_password"
+DB_PASSWORD="your_database_password"
+
 # GitHub Configuration
-GITHUB_TOKEN=your_github_personal_access_token
-GITHUB_REPO=fluffyx/bos  # or your repo name
-GITHUB_WEBHOOK_SECRET=generate_a_random_secret_string
+GITHUB_TOKEN="your_github_personal_access_token"
+GITHUB_REPO="fluffyx/bos"  # or your repo name
+GITHUB_WEBHOOK_SECRET="generate_a_random_secret_string"
 
 # Claude Configuration  
-CLAUDE_API_KEY=your_claude_api_key  # if using API instead of CLI
+CLAUDE_API_KEY="your_claude_api_key"  # if using API instead of CLI
 
 # Automation Controls
-BUG_AUTOMATION_ENABLED=true
-FEATURE_EMAIL_NOTIFICATIONS=true
+BUG_AUTOMATION_ENABLED="true"
+FEATURE_EMAIL_NOTIFICATIONS="true"
 
 # Admin Email (for notifications)
-ADMIN_EMAIL=admin@example.com
+ADMIN_EMAIL="admin@example.com"
 ```
+
+**Note**: The `.kamal/secrets*` files are ignored by git (as configured in `.gitignore`). Never commit these files to version control.
 
 ### 2. GitHub Repository Setup
 
@@ -79,7 +87,7 @@ Run `bundle install`
 
 #### Update credentials (optional)
 
-Instead of environment variables, you can use Rails credentials:
+Alternatively, you can use Rails encrypted credentials instead of Kamal secrets:
 
 ```bash
 rails credentials:edit
@@ -90,7 +98,13 @@ Add:
 github_token: your_token
 github_repo: fluffyx/bos
 github_webhook_secret: your_secret
+claude_api_key: your_claude_api_key
+bug_automation_enabled: true
+feature_email_notifications: true
+admin_email: admin@example.com
 ```
+
+Then access in your code with `Rails.application.credentials.github_token` etc.
 
 ### 4. Database Setup
 
@@ -124,7 +138,15 @@ Should return a response from Claude.
 
 ### 6. Configure Email (for notifications)
 
-Update `config/environments/production.rb`:
+First, add SMTP credentials to your `.kamal/secrets.development` file:
+
+```bash
+# Email Configuration
+SMTP_USERNAME="your_smtp_username"
+SMTP_PASSWORD="your_smtp_password"
+```
+
+Then update `config/environments/production.rb`:
 
 ```ruby
 config.action_mailer.delivery_method = :smtp
@@ -223,11 +245,12 @@ tail -f log/development.log | grep -E "(GitHub|Claude|Automation)"
 
 ### 11. Security Considerations
 
-1. **Never commit tokens** - Use environment variables
+1. **Never commit tokens** - Use Kamal secrets files (ignored by git)
 2. **Validate webhooks** - Always verify signatures
 3. **Limit Claude access** - Read-only to start
 4. **Rate limit** - Prevent abuse of bug reports
 5. **Review all PRs** - Don't auto-merge
+6. **Kamal secrets** - Ensure `.kamal/secrets*` files are in `.gitignore`
 
 ### 12. Next Steps
 
