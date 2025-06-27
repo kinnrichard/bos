@@ -1073,14 +1073,7 @@ export default class extends Controller {
       this.currentNewTaskElement = null
     }
     
-    // Check if tasks list is empty
-    const remainingTasks = document.querySelectorAll('.task-item')
-    if (remainingTasks.length === 0) {
-      const tasksList = this.tasksListTarget
-      if (tasksList && !tasksList.querySelector('.empty-tasks')) {
-        tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click below to add a task.</p></div>'
-      }
-    }
+    // Don't add empty message here - the ListComponent handles it
   }
   
   createNewTaskBelow(selectedTask) {
@@ -1293,8 +1286,7 @@ export default class extends Controller {
         }
         
         // Reset the NEW TASK placeholder for another task
-        titleElement.textContent = ''
-        titleElement.focus()
+        this.cancelNewTask()
         
         // Refresh sortable controller to set up drag handlers on new task
         const sortableController = this.application.getControllerForElementAndIdentifier(

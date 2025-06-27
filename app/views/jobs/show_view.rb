@@ -66,18 +66,13 @@ module Views
               # Use pre-loaded task data from controller
               # Render the task list using the new ListComponent
               div(id: "tasks-list", class: "tasks-list", data: { flip_target: "container", job_target: "tasksList", turbo_frame: "tasks-frame" }) do
-                if @tasks_tree.any?
-                  render Views::Tasks::ListComponent.new(
-                    job: @job,
-                    tasks_tree: @tasks_tree,
-                    last_status_changes: @task_list_data[:last_status_changes],
-                    time_in_progress: @task_list_data[:time_in_progress]
-                  )
-                else
-                  div(class: "empty-tasks") do
-                    p { "No tasks yet. Click below to add a task." }
-                  end
-                end
+                # Always render the ListComponent to ensure new-task placeholder is shown
+                render Views::Tasks::ListComponent.new(
+                  job: @job,
+                  tasks_tree: @tasks_tree,
+                  last_status_changes: @task_list_data[:last_status_changes],
+                  time_in_progress: @task_list_data[:time_in_progress]
+                )
               end
             end
 

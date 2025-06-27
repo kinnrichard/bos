@@ -10,11 +10,18 @@ module Views
       end
 
       def view_template
-        @tasks_tree.each do |task_node|
-          render_task_with_subtasks(task_node, 0)
+        # Show empty message if no tasks
+        if @tasks_tree.empty?
+          div(class: "empty-tasks") do
+            p { "No tasks yet. Click below to add a task." }
+          end
+        else
+          @tasks_tree.each do |task_node|
+            render_task_with_subtasks(task_node, 0)
+          end
         end
 
-        # New task placeholder
+        # New task placeholder - always shown
         div(class: "task-wrapper new-task-wrapper") do
           div(
             class: "task-item new-task",
