@@ -56,7 +56,7 @@ export default class extends Controller {
       // Capture the screenshot
       const targetElement = document.querySelector('.main-container') || document.body
       const canvas = await html2canvas(targetElement, {
-        scale: 1, // Full resolution
+        scale: 2, // Full resolution
         logging: false,
         backgroundColor: null,
         width: targetElement.scrollWidth,
