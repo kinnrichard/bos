@@ -211,8 +211,8 @@ class FeedbackController < ApplicationController
     )
 
     # Return the URL to the uploaded file
-    # Use the raw URL so the image displays properly
-    "https://raw.githubusercontent.com/#{github_repo}/main/#{path}"
+    # Use GitHub blob URL with ?raw=true for proper display in private repos
+    "https://github.com/#{github_repo}/blob/main/#{path}?raw=true"
   rescue => e
     Rails.logger.error "Failed to upload screenshot to repo: #{e.message}"
     raise
