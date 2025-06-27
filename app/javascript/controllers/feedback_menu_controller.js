@@ -43,6 +43,7 @@ export default class extends Controller {
           const consoleController = this.application.getControllerForElementAndIdentifier(consoleCaptureElement, 'console-capture')
           if (consoleController && consoleController.getConsoleData) {
             const consoleData = consoleController.getConsoleData()
+            console.log('Captured console data:', consoleData)
             sessionStorage.setItem('bugReportConsoleLogs', JSON.stringify(consoleData))
           }
         } catch (e) {
