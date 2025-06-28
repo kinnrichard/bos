@@ -48,11 +48,38 @@ export function createUserAvatar(user, size = 'sm', cssClass = '') {
   return `<span class="${classes}" style="background-color: ${color};">${initials}</span>`
 }
 
-// Create avatar element
+// Create avatar element with all necessary styles
 export function createUserAvatarElement(user, size = 'sm', cssClass = '') {
   const span = document.createElement('span')
   span.className = `user-avatar user-avatar-${size} ${cssClass}`.trim()
+  
+  // Apply essential inline styles to ensure proper display
+  // These match the styles from _avatar.scss
   span.style.backgroundColor = getUserAvatarColor(user.id)
+  span.style.display = 'inline-flex'
+  span.style.alignItems = 'center'
+  span.style.justifyContent = 'center'
+  span.style.borderRadius = '50%'
+  span.style.fontWeight = '600'
+  span.style.color = 'white'
+  span.style.textTransform = 'uppercase'
+  span.style.lineHeight = '1'
+  span.style.flexShrink = '0'
+  span.style.userSelect = 'none'
+  span.style.textShadow = '0.5px 0.5px 2px rgba(0, 0, 0, 0.75)'
+  
+  // Apply size-specific styles
+  const sizeStyles = {
+    sm: { width: '24px', height: '24px', fontSize: '10px' },
+    md: { width: '32px', height: '32px', fontSize: '12px' },
+    lg: { width: '40px', height: '40px', fontSize: '14px' },
+    xl: { width: '48px', height: '48px', fontSize: '16px' }
+  }
+  
+  if (sizeStyles[size]) {
+    Object.assign(span.style, sizeStyles[size])
+  }
+  
   span.textContent = getUserInitials(user.name)
   return span
 }
