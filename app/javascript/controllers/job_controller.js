@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import { Turbo } from "@hotwired/turbo-rails"
 
 // Get modules from window.Bos
-const { taskStatusEmoji, jobStatusEmoji, jobPriorityEmoji, noteIconSVG, infoIconSVG } = window.Bos?.Icons || {}
+const { taskStatusEmoji, taskStatusLabel, jobStatusEmoji, jobStatusLabel, jobPriorityEmoji, priorityLabel, noteIconSVG, infoIconSVG } = window.Bos?.Icons || {}
 const { ApiClient } = window.Bos || {}
 const { SelectionManager } = window.Bos || {}
 const { TaskRenderer } = window.Bos || {}
@@ -651,8 +651,14 @@ export default class extends Controller {
   // Status updates
   updateStatus(event) {
     event.preventDefault()
-    const newStatus = event.currentTarget.dataset.status
-    const dropdownContainer = event.currentTarget.closest('.dropdown-container')
+    const button = event.currentTarget
+    // Convert hyphens back to underscores for the status key
+    const newStatus = button.dataset.status.replace(/-/g, '_')
+    console.log('UpdateStatus called with raw:', button.dataset.status)
+    console.log('UpdateStatus called with fixed:', newStatus)
+    console.log('Button text content:', button.textContent.trim())
+    console.log('Label for status:', jobStatusLabel(newStatus))
+    const dropdownContainer = button.closest('.dropdown-container')
     
     // Close the dropdown immediately
     const dropdownMenu = dropdownContainer?.querySelector('.dropdown-menu')
@@ -665,14 +671,16 @@ export default class extends Controller {
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
     if (dropdownValue) {
       dropdownValue.innerHTML = `
-        <span class="status-emoji">${taskStatusEmoji(newStatus)}</span>
-        <span>${newStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+        <span class="status-emoji">${jobStatusEmoji(newStatus)}</span>
+        <span>${jobStatusLabel(newStatus)}</span>
       `
     }
     
     // Update active states
     dropdownContainer?.querySelectorAll('.status-option').forEach(opt => {
-      opt.classList.toggle('active', opt.dataset.status === newStatus)
+      // Compare using underscore format
+      const optStatus = opt.dataset.status.replace(/-/g, '_')
+      opt.classList.toggle('active', optStatus === newStatus)
     })
     
     // Update the internal status value IMMEDIATELY before server call
@@ -680,19 +688,23 @@ export default class extends Controller {
     this.updateStatusBubble()
     
     // Update the server
+    console.log('Sending status to server:', newStatus)
     this.api.updateResource('job', this.jobIdValue, 'status', newStatus)
       .then(data => {
+        console.log('Server response:', data)
         // Status already updated above
       })
       .catch(error => {
         console.error('Failed to update status:', error)
+        console.error('Status value that failed:', newStatus)
         // Optionally revert the optimistic update
       })
   }
 
   updatePriority(event) {
     event.preventDefault()
-    const newPriority = event.currentTarget.dataset.priority
+    // Convert hyphens back to underscores for the priority key
+    const newPriority = event.currentTarget.dataset.priority.replace(/-/g, '_')
     const dropdownContainer = event.currentTarget.closest('.dropdown-container')
     
     // Close the dropdown immediately
@@ -706,7 +718,7 @@ export default class extends Controller {
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
     if (dropdownValue) {
       const emoji = jobPriorityEmoji(newPriority)
-      const label = newPriority.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      const label = priorityLabel(newPriority)
       dropdownValue.innerHTML = emoji ? 
         `<span class="priority-emoji">${emoji}</span><span>${label}</span>` :
         `<span>${label}</span>`
@@ -714,7 +726,9 @@ export default class extends Controller {
     
     // Update active states
     dropdownContainer?.querySelectorAll('.priority-option').forEach(opt => {
-      opt.classList.toggle('active', opt.dataset.priority === newPriority)
+      // Compare using underscore format
+      const optPriority = opt.dataset.priority.replace(/-/g, '_')
+      opt.classList.toggle('active', optPriority === newPriority)
     })
     
     // Update the internal priority value IMMEDIATELY before server call
@@ -1449,7 +1463,7 @@ export default class extends Controller {
                         data-task-id="${task.id}" 
                         data-status="${status}">
                   <span class="status-emoji">${taskStatusEmoji(status)}</span>
-                  <span>${status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                  <span>${taskStatusLabel(status)}</span>
                 </button>
               `).join('')}
             </div>
@@ -1543,7 +1557,8 @@ export default class extends Controller {
   updateTaskStatus(event) {
     event.stopPropagation()
     const taskId = event.currentTarget.dataset.taskId
-    const newStatus = event.currentTarget.dataset.status
+    // Convert hyphens back to underscores for the status key
+    const newStatus = event.currentTarget.dataset.status.replace(/-/g, '_')
     // Find the task element
     const taskElement = event.target.closest(".task-item")
     

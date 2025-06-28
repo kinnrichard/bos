@@ -1,5 +1,6 @@
-// Get BasePopoverController from window.Bos
+// Get BasePopoverController and icons from window.Bos
 const { BasePopoverController } = window.Bos
+const { jobStatusEmoji, jobStatusLabel, jobPriorityEmoji, priorityLabel } = window.Bos?.Icons || {}
 
 // Connects to data-controller="job-popover"
 export default class extends BasePopoverController {
@@ -34,34 +35,20 @@ export default class extends BasePopoverController {
     const statusDropdown = this.element.querySelector('.popover-section:nth-child(1) .dropdown-container')
     if (statusDropdown) {
       const currentStatus = jobController.statusValue || jobController.getValueFromJobView('jobStatusValue')
-      const statusEmojis = {
-        'open': '⚫',
-        'new': '⚫',
-        'in_progress': '🟢',
-        'paused': '⏸️',
-        'successfully_completed': '☑️',
-        'cancelled': '❌'
-      }
-      const statusLabels = {
-        'open': 'New',
-        'new': 'New',
-        'in_progress': 'In Progress',
-        'paused': 'Paused',
-        'successfully_completed': 'Successfully Completed',
-        'cancelled': 'Cancelled'
-      }
       
       const statusValue = statusDropdown.querySelector('.dropdown-value')
       if (statusValue && currentStatus) {
         statusValue.innerHTML = `
-          <span class="status-emoji">${statusEmojis[currentStatus] || '⚫'}</span>
-          <span>${statusLabels[currentStatus] || currentStatus}</span>
+          <span class="status-emoji">${jobStatusEmoji(currentStatus)}</span>
+          <span>${jobStatusLabel(currentStatus)}</span>
         `
       }
       
       // Update active states
       statusDropdown.querySelectorAll('.status-option').forEach(opt => {
-        opt.classList.toggle('active', opt.dataset.status === currentStatus)
+        // Convert hyphens back to underscores for comparison
+        const optStatus = opt.dataset.status.replace(/-/g, '_')
+        opt.classList.toggle('active', optStatus === currentStatus)
       })
     }
     
@@ -69,25 +56,11 @@ export default class extends BasePopoverController {
     const priorityDropdown = this.element.querySelector('.popover-section:nth-child(3) .dropdown-container')
     if (priorityDropdown) {
       const currentPriority = jobController.priorityValue || jobController.getValueFromJobView('jobPriorityValue')
-      const priorityEmojis = {
-        'critical': '🔥',
-        'high': '❗',
-        'normal': '',
-        'low': '➖',
-        'proactive_followup': '💬'
-      }
-      const priorityLabels = {
-        'critical': 'Critical',
-        'high': 'High',
-        'normal': 'Normal',
-        'low': 'Low',
-        'proactive_followup': 'Proactive Followup'
-      }
       
       const priorityValue = priorityDropdown.querySelector('.dropdown-value')
       if (priorityValue && currentPriority) {
-        const emoji = priorityEmojis[currentPriority] || ''
-        const label = priorityLabels[currentPriority] || currentPriority
+        const emoji = jobPriorityEmoji(currentPriority)
+        const label = priorityLabel(currentPriority)
         priorityValue.innerHTML = emoji ? 
           `<span class="priority-emoji">${emoji}</span><span>${label}</span>` :
           `<span>${label}</span>`
@@ -95,7 +68,9 @@ export default class extends BasePopoverController {
       
       // Update active states
       priorityDropdown.querySelectorAll('.priority-option').forEach(opt => {
-        opt.classList.toggle('active', opt.dataset.priority === currentPriority)
+        // Convert hyphens back to underscores for comparison
+        const optPriority = opt.dataset.priority.replace(/-/g, '_')
+        opt.classList.toggle('active', optPriority === currentPriority)
       })
     }
     

@@ -316,7 +316,7 @@ module Views
             class: "status-option #{@job.status == status.key.to_s ? 'active' : ''}",
             data: {
               action: "click->job#updateStatus",
-              status: status.key
+              status: status.key.to_s
             }
           ) do
             span(class: "status-emoji") { status.emoji }
