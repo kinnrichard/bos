@@ -35,10 +35,12 @@ module Components
             span(class: "job-priority-emoji") { @job.priority_emoji }
           end
 
-          # Technician avatar
+          # Technician avatars - show all
           if @job.technicians.any?
-            @job.technicians.first(1).each do |tech|
-              span(class: "technician-avatar", style: tech.avatar_style) { tech.initials }
+            span(class: "technician-avatars") do
+              @job.technicians.each do |tech|
+                span(class: "technician-avatar", style: tech.avatar_style) { tech.initials }
+              end
             end
           end
         end

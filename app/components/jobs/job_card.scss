@@ -89,6 +89,13 @@
   font-size: 18px;
 }
 
+// Container for multiple technician avatars
+.technician-avatars {
+  display: flex;
+  align-items: center;
+  gap: 0; // No gap, we'll use negative margins for overlap
+}
+
 // Technician avatar circle
 .technician-avatar {
   width: 28px;
@@ -102,4 +109,18 @@
   color: white;
   text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
   border: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  position: relative; // For stacking
+  
+  // Create overlap effect for multiple avatars
+  &:not(:first-child) {
+    margin-left: -8px;
+  }
+  
+  // Ensure each avatar stacks properly
+  &:nth-child(1) { z-index: 5; }
+  &:nth-child(2) { z-index: 4; }
+  &:nth-child(3) { z-index: 3; }
+  &:nth-child(4) { z-index: 2; }
+  &:nth-child(5) { z-index: 1; }
 }
