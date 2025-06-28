@@ -126,7 +126,7 @@ class Views::Base < Components::Base
                   # Menu items
                   div(class: "popover-section popover-menu-items") do
                     link_to(
-                      "Settings",
+                      "⚙️ Settings",
                       settings_path,
                       class: "popover-menu-item"
                     )
@@ -143,7 +143,7 @@ class Views::Base < Components::Base
                           turbo: false,
                           action: "click->feedback-menu#reportBug"
                         }
-                      ) { "🐛 Report a Bug" }
+                      ) { "🐞 Report a Bug" }
                     end
                     link_to(
                       new_feedback_path(type: "feature"),

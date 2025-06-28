@@ -90,7 +90,7 @@
     background-color: var(--color-danger-bg);
     color: var(--color-danger);
     
-    &::before { content: "🐛"; }
+    &::before { content: "🐞"; }
   }
   
   &.feature-icon {

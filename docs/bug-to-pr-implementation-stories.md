@@ -22,7 +22,7 @@ This implementation creates a feedback system that:
 
 **Acceptance Criteria:**
 1. Add dividers and two menu items to UserMenuComponent:
-   - 🐛 Report a Bug
+   - 🐞 Report a Bug
    - ✨ Request a Feature  
 2. Position between Settings and Sign Out
 3. Create FeedbackController with new and create actions

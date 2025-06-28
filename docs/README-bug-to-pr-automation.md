@@ -168,7 +168,7 @@ config.action_mailer.smtp_settings = {
 After deployment:
 
 1. **For Users**: 
-   - Click user menu → "🐛 Report a Bug" or "✨ Request a Feature"
+   - Click user menu → "🐞 Report a Bug" or "✨ Request a Feature"
    
 2. **For Admins**:
    - Access dashboard at `/admin/automation_dashboard` (admin/owner only)

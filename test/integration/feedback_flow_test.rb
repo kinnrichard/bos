@@ -13,7 +13,7 @@ class FeedbackFlowTest < ApplicationPlaywrightTestCase
     click_selector ".user-menu-button"
     wait_for_selector ".user-menu-popover:not(.hidden)"
 
-    assert_selector_visible "a:has-text('🐛 Report a Bug')"
+    assert_selector_visible "a:has-text('🐞 Report a Bug')"
     assert_selector_visible "a:has-text('✨ Request a Feature')"
   end
 
@@ -21,7 +21,7 @@ class FeedbackFlowTest < ApplicationPlaywrightTestCase
     # Open bug report form
     click_selector ".user-menu-button"
     wait_for_selector ".user-menu-popover:not(.hidden)"
-    click_selector "a:has-text('🐛 Report a Bug')"
+    click_selector "a:has-text('🐞 Report a Bug')"
 
     # Wait for form to load
     wait_for_selector ".bug-report-form"
@@ -75,7 +75,7 @@ class FeedbackFlowTest < ApplicationPlaywrightTestCase
     # Open and close bug report form
     click_selector ".user-menu-button"
     wait_for_selector ".user-menu-popover:not(.hidden)"
-    click_selector "a:has-text('🐛 Report a Bug')"
+    click_selector "a:has-text('🐞 Report a Bug')"
 
     wait_for_selector ".bug-report-form"
 

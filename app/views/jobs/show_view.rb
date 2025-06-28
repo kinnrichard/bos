@@ -36,7 +36,6 @@ module Views
             flip_duration_value: 400,
             flip_stagger_value: 20,
             flip_easing_value: "cubic-bezier(0.4, 0, 0.2, 1)",
-            job_title_user_first_name_value: @current_user.first_name,
             action: "task:reorder->job#handleTaskReorder subtask:reorder->job#handleSubtaskReorder flip:connect->job#registerFlipController"
           }) do
             # Job title and search
@@ -49,7 +48,7 @@ module Views
                     action: "blur->job#updateTitle blur->job-title#handleBlur focus->job-title#handleFocus input->job-title#handleInput keydown.enter->job#handleTitleEnter",
                     job_target: "title",
                     job_title_target: "titleField",
-                    placeholder: "#{@current_user.first_name}'s Untitled Job"
+                    placeholder: "Untitled Job"
                   },
                   autofocus: is_untitled_job?
                 ) { @job.title }

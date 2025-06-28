@@ -81,23 +81,24 @@ class JobsController < ApplicationController
   end
 
   def new
-    # Skip the new form and create a job directly
     @job = @client.jobs.build
     @job.created_by = current_user
-    @job.title = generate_unique_title
 
-    if @job.save
-      ActivityLog.create!(
-        user: current_user,
-        action: "created",
-        loggable: @job,
-        metadata: { job_title: @job.title, client_name: @client.name }
-      )
+    # Prepare view data like show action
+    view_data = ViewDataService.job_assignment_data
+    sidebar_stats = SidebarStatsService.new(user: current_user, client: @client).calculate
+    tasks_tree = []
+    task_list_data = { last_status_changes: {}, time_in_progress: {} }
 
-      redirect_to client_job_path(@client, @job)
-    else
-      redirect_to client_jobs_path(@client), alert: "Unable to create job. Please try again."
-    end
+    render Views::Jobs::NewShowView.new(
+      client: @client,
+      job: @job,
+      current_user: current_user,
+      available_technicians: view_data[:available_technicians],
+      sidebar_stats: sidebar_stats,
+      tasks_tree: tasks_tree,
+      task_list_data: task_list_data
+    )
   end
 
   def create
@@ -107,11 +108,6 @@ class JobsController < ApplicationController
     # Sanitize HTML in title and description
     @job.title = ActionController::Base.helpers.sanitize(@job.title, tags: [])
     @job.description = ActionController::Base.helpers.sanitize(@job.description, tags: []) if @job.description
-
-    # Handle empty title case
-    if @job.title.blank?
-      @job.title = generate_unique_title
-    end
 
     if @job.save
       # Assign technicians if any were selected
@@ -261,18 +257,5 @@ class JobsController < ApplicationController
 
   def job_params
     params.require(:job).permit(:title, :description, :status, :priority, :due_on, :due_time, :start_on, :start_time, technician_ids: [])
-  end
-
-  def generate_unique_title
-    base_title = "#{current_user.first_name}'s Untitled Job"
-    unique_title = base_title
-    counter = 2
-
-    while @client.jobs.exists?(title: unique_title)
-      unique_title = "#{base_title} (#{counter})"
-      counter += 1
-    end
-
-    unique_title
   end
 end
