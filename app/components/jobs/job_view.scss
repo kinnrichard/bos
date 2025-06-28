@@ -171,6 +171,24 @@
     }
   }
   
+  &.cancelled {
+    // Similar to completed but with strikethrough
+    .task-title,
+    .task-content,
+    .task-assignee,
+    .task-timer,
+    .add-subtask-button {
+      opacity: 0.75;
+    }
+    
+    .task-title {
+      color: #8E8E93;
+      text-decoration: line-through;
+      text-decoration-color: #8E8E93;
+      text-decoration-thickness: 1px;
+    }
+  }
+  
   // Selected state for task highlighting
   &.selected {
     background-color: var(--accent-blue) !important;
@@ -203,11 +221,11 @@
       filter: brightness(1.2);
     }
     
-    .disclosure-triangle {
+    .subtask-toggle {
       color: #FFFFFF !important;
       
       &:hover {
-        background-color: rgba(255, 255, 255, 0.2) !important;
+        opacity: 1 !important;
       }
     }
     
@@ -315,6 +333,36 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+// Subtask toggle button (chevron)
+.subtask-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+  
+  // Chevron icon
+  .chevron {
+    transition: transform 0.2s ease;
+  }
+  
+  // Rotate when collapsed
+  &[aria-expanded="false"] .chevron {
+    transform: rotate(-90deg);
+  }
 }
 
 .task-title {
@@ -504,83 +552,6 @@
   }
 }
 
-// Disclosure container for subtasks
-.disclosure-container {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-// Subtask count badge
-.subtask-count {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  min-width: 14px;
-  text-align: right;
-  transition: opacity 0.2s ease;
-  
-  // Selected state
-  .task-item.selected & {
-    color: rgba(255, 255, 255, 0.7);
-  }
-}
-
-// Disclosure triangle for collapsing subtasks
-.disclosure-triangle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-tertiary);
-  transition: color 0.2s ease;
-  
-  // No hover effect - just cursor change
-  
-  // Chevron styling
-  svg {
-    transition: opacity 0.2s ease;
-  }
-  
-  .chevron-down,
-  .chevron-right {
-    color: inherit;
-  }
-  
-  // Default state - show down chevron
-  .chevron-down {
-    display: block;
-  }
-  
-  .chevron-right {
-    display: none;
-  }
-  
-  // When expanded (default)
-  &[aria-expanded="true"] {
-    .chevron-down {
-      display: block !important;
-    }
-    .chevron-right {
-      display: none !important;
-    }
-  }
-  
-  // When collapsed
-  &[aria-expanded="false"] {
-    .chevron-down {
-      display: none !important;
-    }
-    .chevron-right {
-      display: block !important;
-    }
-  }
-}
 
 // Task indicators
 .note-indicator,
@@ -671,12 +642,8 @@
   .dropdown-container {
     position: relative;
     overflow: visible !important;
-    z-index: auto; // Let dropdown controller handle z-index
-    
-    .dropdown-menu {
-      // Let dropdown controller handle positioning and z-index
-      // Remove our override to avoid conflicts
-    }
+	// commented because this caused a problem with overlap
+    // z-index: auto; // Let dropdown controller handle z-index
   }
   
   .popover-content {
