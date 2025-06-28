@@ -250,11 +250,11 @@ export class TaskRenderer {
   buildStatusOptions(taskData) {
     const currentStatus = taskData.status || 'new_task'
     const statuses = [
-      { key: 'new_task', label: 'New', emoji: '🆕' },
-      { key: 'in_progress', label: 'In Progress', emoji: '🔄' },
-      { key: 'paused', label: 'Paused', emoji: '⏸️' },
-      { key: 'successfully_completed', label: 'Successfully Completed', emoji: '✅' },
-      { key: 'cancelled', label: 'Cancelled', emoji: '🚫' }
+      { key: 'new_task', label: 'New' },
+      { key: 'in_progress', label: 'In Progress' },
+      { key: 'paused', label: 'Paused' },
+      { key: 'successfully_completed', label: 'Successfully Completed' },
+      { key: 'cancelled', label: 'Cancelled' }
     ]
     
     return statuses.map(status => `
@@ -262,7 +262,7 @@ export class TaskRenderer {
               data-action="click->job#updateTaskStatus"
               data-task-id="${taskData.id || ''}"
               data-status="${status.key}">
-        <span class="status-emoji">${status.emoji}</span>
+        <span class="status-emoji">${this.taskStatusEmoji(status.key)}</span>
         <span>${status.label}</span>
       </button>
     `).join('')
