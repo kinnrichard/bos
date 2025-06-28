@@ -30,7 +30,7 @@ Every job will be linked to 1 or more devices and/or 1 or more people. Tasks wit
    - instance_number (integer, default: 1) - for future support of re-adding same target
    - reason (string, nullable) - for documenting why target was re-added
 2. Add has_many :job_targets association to Job model
-3. Add validation: every job must have at least one target
+3. Prepare to add warning before marking job complete: encourage user to confirm all devices used in Job
 4. Create unique index on [job_id, target_type, target_id, instance_number]
 5. Create `task_completions` table:
    - task_id, job_target_id, status, completed_at, completed_by_id, notes
@@ -76,16 +76,16 @@ Every job will be linked to 1 or more devices and/or 1 or more people. Tasks wit
 
 **Acceptance Criteria:**
 1. Modify task list component to detect multi-target jobs
-2. Add progress bar component showing X/Y completion
+2. Add progress bar component showing X completion
 3. Display aggregate status with visual indicators
-4. Show target count next to each task
+4. Show completed-target count next to each task
 5. Maintain existing UI for single-target jobs
 
 **UI Example:**
 ```
-├── testing 123 [████████] 25/25 ✓
-├── this is a new task [████░░░░] 15/25 
-│   └── goat master [████████] 15/15 ✓
+├── testing 123          25 [████████]   (i)
+├── this is a new task   13 [███░░░░░]   (i)
+│   └── goat master.     15 [████░░░░]   (i)
 ```
 
 **Estimated:** 6-8 hours
@@ -129,8 +129,8 @@ Every job will be linked to 1 or more devices and/or 1 or more people. Tasks wit
 **Detailed View Example:**
 ```
 ├── this is a new task [███░░░░░] 15/25 [▼]
-│   ├── 🖥️ Device-Server-01 ✓ Completed
 │   ├── 🖥️ Device-Server-02 ◐ In Progress  
+│   ├── 🖥️ Device-Server-01 ✓ Completed
 │   ├── 👤 John Doe ✓ Completed
 │   └── [Show 22 more...]
 ```
@@ -148,17 +148,18 @@ Every job will be linked to 1 or more devices and/or 1 or more people. Tasks wit
 **So that** batch operations are set up from the start
 
 **Acceptance Criteria:**
-1. Add "Targets" section to job creation form
+1. Add "Targets" toolbar item to job view
 2. Implement device/person selector with search
 3. Allow mixing devices and people in same job
 4. Show selected targets with remove option
-5. Validate at least one target selected
 
 **Estimated:** 6-8 hours
 
 ---
 
-### Story 3.2: Implement Bulk Status Updates
+## Epic 4: Additional Features (Future Consideration)
+
+### Story 4.1: Implement Bulk Status Updates
 
 **As a** user  
 **I want** to update task status for multiple targets at once  
@@ -176,11 +177,7 @@ Every job will be linked to 1 or more devices and/or 1 or more people. Tasks wit
 
 **Estimated:** 8-10 hours
 
----
-
-## Epic 4: Additional Features (Future Consideration)
-
-### Story 4.1: Target Groups
+### Story 4.2: Target Groups
 
 **As a** user  
 **I want** to create reusable groups of targets  
@@ -196,7 +193,7 @@ Every job will be linked to 1 or more devices and/or 1 or more people. Tasks wit
 
 ---
 
-### Story 4.2: Task Templates (Separate Feature)
+### Story 4.3: Task Templates (Separate Feature)
 
 **As a** user  
 **I want** to create reusable task templates  
