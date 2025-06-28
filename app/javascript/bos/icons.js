@@ -1,5 +1,5 @@
 // Import emoji config functions
-import * as EmojiConfig from './emoji_config'
+import * as EmojiConfig from 'bos/emoji_config'
 
 // Task Status Emojis - now uses centralized config
 export const taskStatusEmoji = (status) => {
