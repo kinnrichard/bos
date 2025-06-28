@@ -5,6 +5,7 @@ import { Turbo } from "@hotwired/turbo-rails"
 Turbo.session.drive = false
 
 // Import all Bos modules first, before controllers
+import * as EmojiConfig from "bos/emoji_config"
 import * as Icons from "bos/icons"
 import * as Constants from "bos/constants"
 import * as UserDisplay from "bos/user_display"
@@ -30,6 +31,7 @@ window.Bos = window.Bos || {}
 
 // Expose modules on window.Bos
 Object.assign(window.Bos, {
+  EmojiConfig,
   Icons,
   Constants,
   UserDisplay,

@@ -1,122 +1,57 @@
-// Task Status Emojis
+// Import emoji config functions
+import * as EmojiConfig from './emoji_config'
+
+// Task Status Emojis - now uses centralized config
 export const taskStatusEmoji = (status) => {
-  switch (status) {
-    case "new_task": return "⚫"
-    case "in_progress": return "🟢"
-    case "paused": return "⏸️"
-    case "successfully_completed": return "☑️"
-    case "cancelled": return "❌"
-    default: return "❓"
-  }
+  return EmojiConfig.taskStatusEmoji(status);
 }
 
 export const taskStatusLabel = (status) => {
-  switch (status) {
-    case "new_task": return "New"
-    case "in_progress": return "In Progress"
-    case "paused": return "Paused"
-    case "successfully_completed": return "Completed"
-    case "cancelled": return "Cancelled"
-    default: return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
+  return EmojiConfig.taskStatusLabel(status);
 }
 
 // Job Status Emojis
 export const jobStatusEmoji = (status) => {
-  switch (status) {
-    case "open": return "⚫"
-    case "in_progress": return "🟢"
-    case "paused": return "⏸️"
-    case "waiting_for_customer": return "⏳"
-    case "waiting_for_scheduled_appointment": return "📅"
-    case "successfully_completed": return "✅"
-    case "cancelled": return "❌"
-    default: return "❓"
-  }
+  return EmojiConfig.jobStatusEmoji(status);
 }
 
 export const jobStatusLabel = (status) => {
-  switch (status) {
-    case "open": return "Open"
-    case "in_progress": return "In Progress"
-    case "paused": return "Paused"
-    case "waiting_for_customer": return "Waiting for Customer"
-    case "waiting_for_scheduled_appointment": return "Scheduled"
-    case "successfully_completed": return "Completed"
-    case "cancelled": return "Cancelled"
-    default: return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
+  return EmojiConfig.jobStatusLabel(status);
 }
 
 // Priority Emojis
 export const jobPriorityEmoji = (priority) => {
-  switch (priority) {
-    case "critical": return "🔥"
-    case "high": return "❗"
-    case "normal": return ""
-    case "low": return "➖"
-    case "proactive_followup": return "💬"
-    default: return ""
-  }
+  return EmojiConfig.jobPriorityEmoji(priority);
 }
 
 export const priorityEmoji = (priority) => {
-  switch (priority) {
-    case "high": return "🔴"
-    case "medium": return "🟡"
-    case "low": return "🟢"
-    default: return ""
-  }
+  return EmojiConfig.priorityEmoji(priority);
 }
 
 export const priorityLabel = (priority) => {
-  switch (priority) {
-    case "critical": return "Critical"
-    case "high": return "High"
-    case "normal": 
-    case "medium": return "Normal"
-    case "low": return "Low"
-    case "proactive_followup": return "Proactive Follow-up"
-    default: return priority.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
+  return EmojiConfig.priorityLabel(priority);
 }
 
 // Client Type Icons
 export const clientTypeEmoji = (type) => {
-  switch (type) {
-    case "business": return "🏢"
-    case "residential": return "🏠"
-    default: return "❓"
-  }
+  return EmojiConfig.clientTypeEmoji(type);
 }
 
 // Contact Method Icons
 export const contactMethodEmoji = (method) => {
-  switch (method) {
-    case "phone":
-    case "primary_phone": return "📱"
-    case "email": return "📧"
-    case "address": return "📍"
-    default: return "📞"
-  }
+  return EmojiConfig.contactMethodEmoji(method);
 }
 
 // Schedule Type Icons
 export const scheduleTypeEmoji = (type) => {
-  switch (type) {
-    case "scheduled_appointment": return "📅"
-    case "follow_up": return "🔄"
-    case "due_date": return "⏰"
-    case "start_date": return "▶️"
-    default: return "📅"
-  }
+  return EmojiConfig.scheduleTypeEmoji(type);
 }
 
 // Utility Icons
-export const TIMER_EMOJI = "⏱️"
-export const TRASH_EMOJI = "🗑️"
-export const WARNING_EMOJI = "❗"
-export const CHECK_EMOJI = "✓"
+export const TIMER_EMOJI = EmojiConfig.TIMER_EMOJI();
+export const TRASH_EMOJI = EmojiConfig.TRASH_EMOJI();
+export const WARNING_EMOJI = EmojiConfig.WARNING_EMOJI();
+export const CHECK_EMOJI = EmojiConfig.CHECK_EMOJI();
 
 // SVG Icons as strings (for dynamic insertion)
 export const noteIconSVG = (width = 16, height = 16) => `
@@ -150,13 +85,9 @@ export const chevronRightSVG = (width = 8, height = 12) => `
 
 // Helper functions
 export const statusWithEmoji = (status, type = 'task') => {
-  const emoji = type === 'job' ? jobStatusEmoji(status) : taskStatusEmoji(status)
-  const label = type === 'job' ? jobStatusLabel(status) : taskStatusLabel(status)
-  return `${emoji} ${label}`
+  return EmojiConfig.statusWithEmoji(status, type);
 }
 
 export const priorityWithEmoji = (priority, type = 'job') => {
-  const emoji = type === 'job' ? jobPriorityEmoji(priority) : priorityEmoji(priority)
-  const label = priorityLabel(priority)
-  return emoji ? `${emoji} ${label}` : label
+  return EmojiConfig.priorityWithEmoji(priority, type);
 }

@@ -935,15 +935,28 @@ export default class extends Controller {
         ]
         SafeDOM.replaceChildren(dropdownValue, content)
       } else if (selectedTechs.length === 1) {
-        // Get the icon from the selected option
+        // Get the technician data from the selected option
         const selectedOption = dropdownContainer.querySelector('.assignee-option.active[data-technician-id]')
-        const iconElement = selectedOption?.querySelector('span:first-child')
+        const technicianId = selectedOption?.dataset.technicianId
+        const technicianName = selectedTechs[0]
         const content = []
         
-        if (iconElement) {
-          content.push(iconElement.cloneNode(true))
+        // Create user avatar using UserDisplay module if available
+        const UserDisplay = window.Bos?.UserDisplay
+        if (UserDisplay && technicianId) {
+          const avatarElement = UserDisplay.createUserAvatarElement(
+            { id: parseInt(technicianId), name: technicianName },
+            'sm'
+          )
+          content.push(avatarElement)
+        } else {
+          // Fallback to cloning if UserDisplay not available
+          const iconElement = selectedOption?.querySelector('span:first-child')
+          if (iconElement) {
+            content.push(iconElement.cloneNode(true))
+          }
         }
-        content.push(SafeDOM.element('span', {}, [selectedTechs[0]]))
+        content.push(SafeDOM.element('span', {}, [technicianName]))
         
         SafeDOM.replaceChildren(dropdownValue, content)
       } else {
