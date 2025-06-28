@@ -69,7 +69,7 @@
 .dropdown-container {
   position: relative;
   overflow: visible !important;
-  z-index: auto !important; // Don't create new stacking context
+  //z-index: auto !important; // Don't create new stacking context
 }
 
 /* Override any parent overflow hidden when dropdown is open */

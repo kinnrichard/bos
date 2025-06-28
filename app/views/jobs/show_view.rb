@@ -52,9 +52,6 @@ module Views
                   },
                   autofocus: is_untitled_job?
                 ) { @job.title }
-
-                # Task search
-                render Components::Tasks::SearchComponent.new(job: @job)
               end
             end
 
