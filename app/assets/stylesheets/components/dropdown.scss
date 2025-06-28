@@ -36,6 +36,14 @@
   min-width: 0 !important;
   /* Ensure it's not clipped by any parent */
   pointer-events: auto !important;
+  /* Don't use percentage-based positioning for fixed dropdowns */
+  margin-top: 0 !important;
+}
+
+/* When dropdown needs to appear above button */
+.dropdown-menu.dropdown-up {
+  /* Allow transform to work */
+  top: auto !important;
 }
 
 /* Task status dropdowns specifically */
@@ -75,7 +83,6 @@
   opacity: 1 !important;
   visibility: visible !important;
   isolation: isolate; // Create new stacking context
-  transform: translateZ(0); // Force GPU layer
 }
 
 /* Generic dropdown option styles */

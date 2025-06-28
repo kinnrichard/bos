@@ -612,7 +612,6 @@
     width: max-content; // Grow to fit content
     max-width: 300px; // But not too wide
     z-index: 10000 !important; // Ensure dropdown appears above everything
-    position: fixed !important; // Force fixed positioning
     background-color: var(--bg-secondary) !important;
     border: 1px solid var(--border-primary) !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;

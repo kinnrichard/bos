@@ -81,13 +81,13 @@ export default class extends Controller {
   
   open() {
     if (this.hasMenuTarget) {
-      // Show the menu
-      this.menuTarget.classList.remove('hidden')
-      
       // Track open state
       this.element.dataset.dropdownOpen = "true"
       
-      // Position the menu after a frame to ensure popover is fully rendered
+      // Show the menu
+      this.menuTarget.classList.remove('hidden')
+      
+      // Position after next frame to ensure menu is rendered
       requestAnimationFrame(() => {
         this.positionMenu()
       })
@@ -112,6 +112,7 @@ export default class extends Controller {
     if (this.hasMenuTarget) {
       // Hide the menu
       this.menuTarget.classList.add('hidden')
+      this.menuTarget.classList.remove('dropdown-up')
       
       // Track closed state
       this.element.dataset.dropdownOpen = "false"
@@ -173,19 +174,15 @@ export default class extends Controller {
     
     const menuStyle = this.menuTarget.style
     
-    
     if (this.positioningValue === "fixed") {
       // Fixed positioning - good for dropdowns in scrollable containers
       menuStyle.position = 'fixed'
-      menuStyle.zIndex = '10000' // Force highest z-index
+      menuStyle.zIndex = '10000'
       
       // Clear any CSS positioning that might interfere
       menuStyle.transform = 'none'
       menuStyle.margin = '0'
-      menuStyle.top = 'auto'
-      menuStyle.left = 'auto'
       menuStyle.right = 'auto'
-      menuStyle.bottom = 'auto'
       
       // Ensure pointer events work
       menuStyle.pointerEvents = 'auto'
@@ -193,17 +190,38 @@ export default class extends Controller {
       // Calculate position based on button location
       const spaceBelow = window.innerHeight - rect.bottom
       const spaceAbove = rect.top
-      const menuHeight = this.menuTarget.offsetHeight || 200 // Estimate if not rendered
+      const menuHeight = this.menuTarget.offsetHeight // Now we can get accurate height
+      
+      // Add a buffer to prevent menu from touching viewport edges
+      const edgeBuffer = 10
+      
+      // Force a reflow to ensure menu dimensions are calculated
+      this.menuTarget.offsetHeight
+      
+      // Get the actual rendered height
+      const actualMenuHeight = this.menuTarget.offsetHeight || 200
+      
+      // Determine if we should drop up
+      const shouldDropUp = spaceBelow < actualMenuHeight + edgeBuffer
+      
+      // Clear all positioning first
+      menuStyle.top = ''
+      menuStyle.bottom = ''
+      menuStyle.transform = ''
       
       // Position below button by default, above if not enough space
-      if (spaceBelow >= menuHeight || spaceBelow > spaceAbove) {
+      if (!shouldDropUp) {
+        // Enough space below - position normally
         menuStyle.top = `${rect.bottom + 4}px`
-        menuStyle.bottom = 'auto'
       } else {
-        // Position menu above button - bottom edge should be 4px above button top
-        // Distance from viewport bottom = viewport height - (button top - gap)
-        menuStyle.bottom = `${window.innerHeight - (rect.top - 4)}px`
-        menuStyle.top = 'auto'
+        // Not enough space below - position above button
+        // Use transform to ensure it works
+        const topPosition = rect.top - actualMenuHeight - 4
+        menuStyle.top = `${rect.top}px`
+        menuStyle.transform = `translateY(-${actualMenuHeight + 4}px)`
+        
+        // Add a class to indicate drop-up for any special styling
+        this.menuTarget.classList.add('dropdown-up')
       }
       
       // Horizontal positioning
@@ -219,9 +237,9 @@ export default class extends Controller {
       this.menuTarget.offsetHeight
       
       // Ensure menu doesn't go off screen horizontally
-      const menuRect = this.menuTarget.getBoundingClientRect()
-      if (menuRect.right > window.innerWidth) {
-        menuStyle.left = `${window.innerWidth - menuRect.width - 10}px`
+      const finalMenuRect = this.menuTarget.getBoundingClientRect()
+      if (finalMenuRect.right > window.innerWidth) {
+        menuStyle.left = `${window.innerWidth - finalMenuRect.width - 10}px`
       }
     } else {
       // Absolute positioning - default behavior
