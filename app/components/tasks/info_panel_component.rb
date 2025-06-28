@@ -159,7 +159,7 @@ module Components
               placeholder: "Add a note...",
               data: {
                 task_info_target: "noteInput",
-                action: "keydown.cmd+enter->task-info#addNote keydown.ctrl+enter->task-info#addNote"
+                action: "keydown.meta+enter->task-info#addNote keydown.ctrl+enter->task-info#addNote"
               }
             )
             button(

@@ -140,7 +140,7 @@ export class TaskRenderer {
           <span>${this.taskStatusEmoji(taskData.status || 'new_task')}</span>
         </button>
         <div class="dropdown-menu hidden" data-dropdown-target="menu">
-          <!-- Status options would go here -->
+          ${this.buildStatusOptions(taskData)}
         </div>
       </div>
     `
@@ -244,6 +244,28 @@ export class TaskRenderer {
         <span class="timer-display">${display}</span>
       </div>
     `
+  }
+
+  // Build status dropdown options
+  buildStatusOptions(taskData) {
+    const currentStatus = taskData.status || 'new_task'
+    const statuses = [
+      { key: 'new_task', label: 'New', emoji: '🆕' },
+      { key: 'in_progress', label: 'In Progress', emoji: '🔄' },
+      { key: 'paused', label: 'Paused', emoji: '⏸️' },
+      { key: 'successfully_completed', label: 'Successfully Completed', emoji: '✅' },
+      { key: 'cancelled', label: 'Cancelled', emoji: '🚫' }
+    ]
+    
+    return statuses.map(status => `
+      <button class="task-status-option dropdown-option ${currentStatus === status.key ? 'active' : ''}"
+              data-action="click->job#updateTaskStatus"
+              data-task-id="${taskData.id || ''}"
+              data-status="${status.key}">
+        <span class="status-emoji">${status.emoji}</span>
+        <span>${status.label}</span>
+      </button>
+    `).join('')
   }
 
   // Attach event listeners to task element

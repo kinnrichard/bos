@@ -108,7 +108,7 @@ module Views
                 # Status section
                 div(class: "popover-section") do
                   h3 { "Status" }
-                  div(class: "dropdown-container", data: { controller: "dropdown" }) do
+                  div(class: "dropdown-container", data: { controller: "dropdown", dropdown_positioning_value: "fixed" }) do
                     button(
                       class: "dropdown-button",
                       data: {
@@ -134,7 +134,7 @@ module Views
                 # Assignee section (moved to second position)
                 div(class: "popover-section") do
                   h3 { "Assigned to" }
-                  div(class: "dropdown-container", data: { controller: "dropdown" }) do
+                  div(class: "dropdown-container", data: { controller: "dropdown", dropdown_positioning_value: "fixed" }) do
                     button(
                       class: "dropdown-button",
                       data: {
@@ -169,7 +169,7 @@ module Views
                 # Priority section (moved to third position)
                 div(class: "popover-section") do
                   h3 { "Priority" }
-                  div(class: "dropdown-container", data: { controller: "dropdown" }) do
+                  div(class: "dropdown-container", data: { controller: "dropdown", dropdown_positioning_value: "fixed" }) do
                     button(
                       class: "dropdown-button",
                       data: {
