@@ -31,6 +31,9 @@ RAILS_MASTER_KEY="your_rails_master_key"
 POSTGRES_PASSWORD="your_database_password"
 DB_PASSWORD="your_database_password"
 
+# for local use, you'll have to put them in rails credentials. here's how for Textmate:
+EDITOR="mate --wait" rails credentials:edit
+
 # GitHub Configuration
 GIT_TOKEN="your_github_personal_access_token"
 GIT_REPO="fluffyx/bos"  # or your repo name
@@ -123,7 +126,6 @@ Test GitHub API:
 ```ruby
 client = Octokit::Client.new(access_token: ENV['GIT_TOKEN'])
 repo = ENV['GIT_REPO']
-issues = client.issues(repo)
 puts "Found #{issues.count} issues"
 ```
 

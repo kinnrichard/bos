@@ -5,6 +5,10 @@ application up and running.
 
 Things you may want to cover:
 
+To run rails console on the dev server, run:
+
+`kamal console -c config/deploy.development.yml`
+
 * Ruby version
 
 * System dependencies

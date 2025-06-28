@@ -27,7 +27,7 @@ module Views
           sidebar_stats: @sidebar_stats
         ) do
           div(class: "job-view", data: {
-            controller: "job sortable flip",
+            controller: "job sortable flip job-title",
             job_id: @job.id,
             client_id: @client.id,
             job_status_value: @job.status,
@@ -36,6 +36,7 @@ module Views
             flip_duration_value: 400,
             flip_stagger_value: 20,
             flip_easing_value: "cubic-bezier(0.4, 0, 0.2, 1)",
+            job_title_user_first_name_value: @current_user.first_name,
             action: "task:reorder->job#handleTaskReorder subtask:reorder->job#handleSubtaskReorder flip:connect->job#registerFlipController"
           }) do
             # Job title and search
@@ -45,9 +46,12 @@ module Views
                   class: "job-title",
                   contenteditable: "true",
                   data: {
-                    action: "blur->job#updateTitle keydown.enter->job#handleTitleEnter",
-                    job_target: "title"
-                  }
+                    action: "blur->job#updateTitle blur->job-title#handleBlur focus->job-title#handleFocus input->job-title#handleInput keydown.enter->job#handleTitleEnter",
+                    job_target: "title",
+                    job_title_target: "titleField",
+                    placeholder: "#{@current_user.first_name}'s Untitled Job"
+                  },
+                  autofocus: is_untitled_job?
                 ) { @job.title }
 
                 # Task search
@@ -240,6 +244,10 @@ module Views
       end
 
       private
+
+      def is_untitled_job?
+        @job.title.match?(/\A.+'s Untitled Job( \(\d+\))?\z/)
+      end
 
 
       def render_toolbar_items(view)
