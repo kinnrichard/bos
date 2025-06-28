@@ -200,7 +200,9 @@ export default class extends Controller {
         menuStyle.top = `${rect.bottom + 4}px`
         menuStyle.bottom = 'auto'
       } else {
-        menuStyle.bottom = `${window.innerHeight - rect.top + 4}px`
+        // Position menu above button - bottom edge should be 4px above button top
+        // Distance from viewport bottom = viewport height - (button top - gap)
+        menuStyle.bottom = `${window.innerHeight - (rect.top - 4)}px`
         menuStyle.top = 'auto'
       }
       
