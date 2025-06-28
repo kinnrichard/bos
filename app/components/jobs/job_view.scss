@@ -291,6 +291,7 @@
   padding-top: 2px;
   position: relative;
   z-index: auto; // Don't create stacking context
+  margin-right: 8px; // Add space between status and content
   
   // When dropdown is open, ensure it's above everything
   &[data-dropdown-open="true"] {
@@ -349,6 +350,7 @@
   color: var(--text-tertiary);
   transition: transform 0.2s ease;
   flex-shrink: 0;
+  margin-right: 4px; // Add some space between chevron and status
   
   &:hover {
     opacity: 0.8;
@@ -357,6 +359,7 @@
   // Chevron icon
   .chevron {
     transition: transform 0.2s ease;
+    display: block;
   }
   
   // Rotate when collapsed

@@ -106,6 +106,34 @@ module Views
             flip_item: task.id.to_s  # Unique identifier for FLIP
           }.merge(time_data)
         ) do
+          # Disclosure triangle for subtasks (moved to left of status)
+          if has_subtasks
+            button(
+              class: "subtask-toggle",
+              data: {
+                action: "click->job#toggleSubtasks",
+                task_id: task.id,
+                job_target: "disclosureTriangle"
+              },
+              title: "#{task.subtasks_count} subtask#{'s' if task.subtasks_count > 1}",
+              aria_expanded: "true",
+              aria_label: "Toggle subtasks"
+            ) do
+              svg(
+                class: "chevron",
+                xmlns: "http://www.w3.org/2000/svg",
+                viewBox: "0 0 17.3242 10.4004",
+                width: "12",
+                height: "8"
+              ) do |s|
+                s.path(
+                  d: "M8.48633 10.4004C8.73047 10.4004 8.97461 10.3027 9.14062 10.1172L16.6992 2.37305C16.8652 2.20703 16.9629 1.99219 16.9629 1.74805C16.9629 1.24023 16.582 0.849609 16.0742 0.849609C15.8301 0.849609 15.6055 0.947266 15.4395 1.10352L7.95898 8.75L9.00391 8.75L1.52344 1.10352C1.36719 0.947266 1.14258 0.849609 0.888672 0.849609C0.380859 0.849609 0 1.24023 0 1.74805C0 1.99219 0.0976562 2.20703 0.263672 2.38281L7.82227 10.1172C8.00781 10.3027 8.23242 10.4004 8.48633 10.4004Z",
+                  fill: "currentColor"
+                )
+              end
+            end
+          end
+
           # Status dropdown using the existing dropdown controller
           div(
             class: "dropdown-container task-status-container",
@@ -138,36 +166,6 @@ module Views
 
           # Task content
           div(class: "task-content") do
-            # Disclosure triangle for subtasks (moved from right section)
-            if has_subtasks
-              button(
-                class: "subtask-toggle",
-                data: {
-                  action: "click->job#toggleSubtasks",
-                  task_id: task.id,
-                  job_target: "disclosureTriangle"
-                },
-                title: "#{task.subtasks_count} subtask#{'s' if task.subtasks_count > 1}",
-                aria_expanded: "true",
-                aria_label: "Toggle subtasks"
-              ) do
-                svg(
-                  class: "chevron",
-                  width: "12",
-                  height: "12",
-                  viewBox: "0 0 12 12"
-                ) do |s|
-                  s.path(
-                    d: "M3 4.5L6 7.5L9 4.5",
-                    stroke: "currentColor",
-                    stroke_width: "1.5",
-                    stroke_linecap: "round",
-                    stroke_linejoin: "round"
-                  )
-                end
-              end
-            end
-
             div(
               class: "task-title",
               contenteditable: "false",
