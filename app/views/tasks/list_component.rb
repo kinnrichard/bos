@@ -10,18 +10,14 @@ module Views
       end
 
       def view_template
-        # Show empty message if no tasks
-        if @tasks_tree.empty?
-          div(class: "empty-tasks") do
-            p { "No tasks yet. Click below to add a task." }
-          end
-        else
+        # First, render existing tasks if any
+        if !@tasks_tree.empty?
           @tasks_tree.each do |task_node|
             render_task_with_subtasks(task_node, 0)
           end
         end
 
-        # New task placeholder - always shown
+        # New task placeholder - always shown first when no tasks
         div(class: "task-wrapper new-task-wrapper") do
           div(
             class: "task-item new-task",
@@ -46,6 +42,13 @@ module Views
                 }
               )
             end
+          end
+        end
+
+        # Show instructional text only if no tasks exist
+        if @tasks_tree.empty?
+          div(class: "empty-tasks") do
+            p { "No tasks yet. Click above to add a task." }
           end
         end
       end

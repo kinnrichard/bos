@@ -96,6 +96,14 @@ export default class extends Controller {
     // Start timers for task time tracking
     this.startTimers()
     
+    // Auto-focus new task if no tasks exist
+    if (this.taskTargets.length === 0 && this.hasNewTaskPlaceholderTarget) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        this.showNewTaskInput()
+      }, 100)
+    }
+    
     // Close popover when clicking outside
     this.handleOutsideClick = this.handleOutsideClick.bind(this)
     document.addEventListener("click", this.handleOutsideClick)
@@ -1008,11 +1016,7 @@ export default class extends Controller {
     // Clear any selection
     this.clearSelection()
     
-    // Remove empty tasks message if present
-    const emptyMessage = document.querySelector('.empty-tasks')
-    if (emptyMessage) {
-      emptyMessage.remove()
-    }
+    // Don't remove empty tasks message - it should stay until task is saved
     
     // Transform the placeholder into contenteditable
     const placeholder = this.newTaskPlaceholderTarget
@@ -1281,6 +1285,18 @@ export default class extends Controller {
         if (newTaskPlaceholder) {
           // Insert the new task before the NEW TASK placeholder
           newTaskPlaceholder.insertAdjacentHTML('beforebegin', newTaskHtml)
+          
+          // Force re-render of the placeholder to fix display issues
+          const placeholderTitle = newTaskPlaceholder.querySelector('.new-task-placeholder')
+          if (placeholderTitle) {
+            // Force a reflow by reading offsetHeight
+            void placeholderTitle.offsetHeight
+            // Toggle a class to trigger re-render
+            placeholderTitle.classList.add('force-rerender')
+            requestAnimationFrame(() => {
+              placeholderTitle.classList.remove('force-rerender')
+            })
+          }
         } else {
           // Fallback: insert at the end if placeholder not found
           tasksContainer.insertAdjacentHTML('beforeend', newTaskHtml)
@@ -2173,6 +2189,18 @@ export default class extends Controller {
           if (newTaskPlaceholder) {
             // Insert the new task before the NEW TASK placeholder
             newTaskPlaceholder.insertAdjacentHTML('beforebegin', newTaskHtml)
+            
+            // Force re-render of the placeholder to fix display issues
+            const placeholderTitle = newTaskPlaceholder.querySelector('.new-task-placeholder')
+            if (placeholderTitle) {
+              // Force a reflow by reading offsetHeight
+              void placeholderTitle.offsetHeight
+              // Toggle a class to trigger re-render
+              placeholderTitle.classList.add('force-rerender')
+              requestAnimationFrame(() => {
+                placeholderTitle.classList.remove('force-rerender')
+              })
+            }
           } else {
             // Fallback: insert at the end if placeholder not found
             tasksContainer.insertAdjacentHTML('beforeend', newTaskHtml)
