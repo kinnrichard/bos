@@ -948,12 +948,17 @@ export default class extends Controller {
             { id: parseInt(technicianId), name: technicianName },
             'sm'
           )
+          // Ensure border-radius is applied
+          avatarElement.style.borderRadius = '50%'
           content.push(avatarElement)
         } else {
           // Fallback to cloning if UserDisplay not available
           const iconElement = selectedOption?.querySelector('span:first-child')
           if (iconElement) {
-            content.push(iconElement.cloneNode(true))
+            const clonedIcon = iconElement.cloneNode(true)
+            // Ensure the cloned element has proper border-radius
+            clonedIcon.style.borderRadius = '50%'
+            content.push(clonedIcon)
           }
         }
         content.push(SafeDOM.element('span', {}, [technicianName]))
