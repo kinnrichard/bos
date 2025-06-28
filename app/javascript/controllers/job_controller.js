@@ -809,26 +809,26 @@ export default class extends Controller {
       }, [jobStatusEmoji(currentStatus)])
     )
     
-    // Add assignee icon
+    // Add assignee icons - show all technicians
     const assignedTechs = document.querySelectorAll('.assignee-option.active[data-technician-id]')
     
-    // Create wrapper span for assignee icon
-    const assigneeWrapper = SafeDOM.element('span', { className: 'bubble-icon assignee-icon' }, [])
-    
     if (assignedTechs.length > 0) {
-      // Show first technician's icon
-      const firstTechIcon = assignedTechs[0].querySelector('.user-avatar')
-      if (firstTechIcon) {
-        const clonedIcon = firstTechIcon.cloneNode(true)
-        assigneeWrapper.appendChild(clonedIcon)
-      } else {
-        assigneeWrapper.textContent = '❓'
-      }
+      // Show all technician icons
+      assignedTechs.forEach(techOption => {
+        const assigneeWrapper = SafeDOM.element('span', { className: 'bubble-icon assignee-icon' }, [])
+        const techIcon = techOption.querySelector('.user-avatar')
+        if (techIcon) {
+          const clonedIcon = techIcon.cloneNode(true)
+          assigneeWrapper.appendChild(clonedIcon)
+          elements.push(assigneeWrapper)
+        }
+      })
     } else {
+      // Show unassigned icon
+      const assigneeWrapper = SafeDOM.element('span', { className: 'bubble-icon assignee-icon' }, [])
       assigneeWrapper.textContent = '❓'
+      elements.push(assigneeWrapper)
     }
-    
-    elements.push(assigneeWrapper)
     
     // Add priority icon if not normal
     const currentPriority = this.priorityValue || this.getValueFromJobView('jobPriorityValue')

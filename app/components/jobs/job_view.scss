@@ -837,9 +837,10 @@
   border: none;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   cursor: pointer;
   transition: background-color 0.15s ease;
+  min-width: fit-content; // Allow bubble to expand for multiple avatars
   
   &:hover {
     background-color: #3A3A3C;
@@ -851,6 +852,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  // Assignee icons should be more compact when multiple
+  &.assignee-icon {
+    margin: 0 -2px; // Slight negative margin for overlap effect
+    
+    &:first-of-type {
+      margin-left: 0;
+    }
+    
+    &:last-of-type {
+      margin-right: 0;
+    }
+    
+    // Ensure avatars inside maintain their circular shape
+    .user-avatar {
+      flex-shrink: 0;
+    }
+  }
 }
 
 // Technician initials badge

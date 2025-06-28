@@ -287,12 +287,15 @@ module Views
           @job.status_emoji
         end
 
-        # Assignee or unassigned icon
-        span(class: "bubble-icon assignee-icon") do
-          if @job.technicians.any?
-            # Show first technician's avatar
-            span(class: "user-avatar user-avatar-sm", style: @job.technicians.first.avatar_style) { @job.technicians.first.initials }
-          else
+        # Assignee icons - show all technicians
+        if @job.technicians.any?
+          @job.technicians.each do |technician|
+            span(class: "bubble-icon assignee-icon") do
+              span(class: "user-avatar user-avatar-sm", style: technician.avatar_style) { technician.initials }
+            end
+          end
+        else
+          span(class: "bubble-icon assignee-icon") do
             unassigned_icon
           end
         end
