@@ -15,6 +15,15 @@ import { TaskInitializer } from "bos/task_initializer"
 import BasePopoverController from "bos/base_popover_controller"
 import { taskCreationQueue } from "bos/task_creation_queue"
 import { SafeDOM } from "bos/safe_dom"
+import { StatusConverter } from "bos/status_converter"
+import { JobTaskManager } from "bos/job_task_manager"
+import { JobSelectionHandler } from "bos/job_selection_handler"
+import { JobDragHandler } from "bos/job_drag_handler"
+import { JobTimerManager } from "bos/job_timer_manager"
+import { JobKeyboardHandler } from "bos/job_keyboard_handler"
+import { errorHandler } from "bos/error_handler"
+import { notificationManager } from "bos/notification_manager"
+import { optimisticUI } from "bos/optimistic_ui_manager"
 
 // Create Bos namespace for custom utilities and modules
 window.Bos = window.Bos || {}
@@ -30,7 +39,16 @@ Object.assign(window.Bos, {
   TaskInitializer,
   BasePopoverController,
   taskCreationQueue,
-  SafeDOM
+  SafeDOM,
+  StatusConverter,
+  JobTaskManager,
+  JobSelectionHandler,
+  JobDragHandler,
+  JobTimerManager,
+  JobKeyboardHandler,
+  errorHandler,
+  NotificationManager: notificationManager,
+  optimisticUI
 })
 
 // Now import controllers after Bos is set up

@@ -8,6 +8,7 @@ const { SelectionManager } = window.Bos || {}
 const { TaskRenderer } = window.Bos || {}
 const { taskCreationQueue } = window.Bos || {}
 const { SafeDOM } = window.Bos || {}
+const { StatusConverter } = window.Bos || {}
 const { 
   ANIMATION, 
   POSITIONING, 
@@ -696,8 +697,8 @@ export default class extends Controller {
   updateStatus(event) {
     event.preventDefault()
     const button = event.currentTarget
-    // Convert hyphens back to underscores for the status key
-    const newStatus = button.dataset.status.replace(/-/g, '_')
+    // Convert to underscore format for backend API
+    const newStatus = StatusConverter.forAPI(button.dataset.status)
     console.log('UpdateStatus called with raw:', button.dataset.status)
     console.log('UpdateStatus called with fixed:', newStatus)
     console.log('Button text content:', button.textContent.trim())
@@ -719,9 +720,8 @@ export default class extends Controller {
     
     // Update active states
     dropdownContainer?.querySelectorAll('.status-option').forEach(opt => {
-      // Compare using underscore format
-      const optStatus = opt.dataset.status.replace(/-/g, '_')
-      opt.classList.toggle('active', optStatus === newStatus)
+      // Use StatusConverter for comparison
+      opt.classList.toggle('active', StatusConverter.areEqual(opt.dataset.status, newStatus))
     })
     
     // Update the internal status value IMMEDIATELY before server call
@@ -744,8 +744,8 @@ export default class extends Controller {
 
   updatePriority(event) {
     event.preventDefault()
-    // Convert hyphens back to underscores for the priority key
-    const newPriority = event.currentTarget.dataset.priority.replace(/-/g, '_')
+    // Convert to underscore format for backend API
+    const newPriority = StatusConverter.forAPI(event.currentTarget.dataset.priority)
     const dropdownContainer = event.currentTarget.closest('.dropdown-container')
     
     // Close the dropdown immediately
@@ -772,9 +772,8 @@ export default class extends Controller {
     
     // Update active states
     dropdownContainer?.querySelectorAll('.priority-option').forEach(opt => {
-      // Compare using underscore format
-      const optPriority = opt.dataset.priority.replace(/-/g, '_')
-      opt.classList.toggle('active', optPriority === newPriority)
+      // Use StatusConverter for comparison
+      opt.classList.toggle('active', StatusConverter.areEqual(opt.dataset.priority, newPriority))
     })
     
     // Update the internal priority value IMMEDIATELY before server call
@@ -987,13 +986,13 @@ export default class extends Controller {
 
   highlightActiveStatus() {
     this.element.querySelectorAll(".status-option").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.status === this.statusValue)
+      btn.classList.toggle("active", StatusConverter.areEqual(btn.dataset.status, this.statusValue))
     })
   }
 
   highlightActivePriority() {
     this.element.querySelectorAll(".priority-option").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.priority === this.priorityValue)
+      btn.classList.toggle("active", StatusConverter.areEqual(btn.dataset.priority, this.priorityValue))
     })
   }
 
@@ -1535,7 +1534,7 @@ export default class extends Controller {
 
   renderTask(task) {
     const emoji = taskStatusEmoji(task.status)
-    const isCompleted = task.status === 'successfully_completed'
+    const isCompleted = StatusConverter.areEqual(task.status, 'successfully_completed')
     
     return `
       <div class="task-wrapper">
@@ -1552,10 +1551,10 @@ export default class extends Controller {
             </button>
             <div class="task-status-dropdown hidden" data-job-target="taskStatusDropdown">
               ${['new_task', 'in_progress', 'paused', 'successfully_completed', 'cancelled'].map(status => `
-                <button class="task-status-option ${task.status === status ? 'active' : ''}" 
+                <button class="task-status-option ${StatusConverter.areEqual(task.status, status) ? 'active' : ''}" 
                         data-action="click->job#updateTaskStatus" 
                         data-task-id="${task.id}" 
-                        data-status="${status}">
+                        data-status="${StatusConverter.forDataAttribute(status)}">
                   <span class="status-emoji">${taskStatusEmoji(status)}</span>
                   <span>${taskStatusLabel(status)}</span>
                 </button>
@@ -1651,8 +1650,8 @@ export default class extends Controller {
   updateTaskStatus(event) {
     event.stopPropagation()
     const taskId = event.currentTarget.dataset.taskId
-    // Convert hyphens back to underscores for the status key
-    const newStatus = event.currentTarget.dataset.status.replace(/-/g, '_')
+    // Convert to underscore format for backend API
+    const newStatus = StatusConverter.forAPI(event.currentTarget.dataset.status)
     // Find the task element
     const taskElement = event.target.closest(".task-item")
     
@@ -1668,13 +1667,13 @@ export default class extends Controller {
       statusButton.textContent = taskStatusEmoji(newStatus)
     }
     
-    // Update data attributes
+    // Update data attributes (store in underscore format)
     taskElement.dataset.taskStatus = newStatus
-    taskElement.classList.toggle("completed", newStatus === "successfully_completed")
+    taskElement.classList.toggle("completed", StatusConverter.areEqual(newStatus, 'successfully_completed'))
     
     // Update active state in dropdown
     taskElement.querySelectorAll(".task-status-option").forEach(opt => {
-      opt.classList.toggle("active", opt.dataset.status === newStatus)
+      opt.classList.toggle("active", StatusConverter.areEqual(opt.dataset.status, newStatus))
     })
     
     // Send request to server
@@ -1720,11 +1719,11 @@ export default class extends Controller {
           try {
             const data = JSON.parse(text)
             // Only update if server returned a different status than what we set
-            if (data.task && data.task.status !== newStatus) {
+            if (data.task && !StatusConverter.areEqual(data.task.status, newStatus)) {
             console.warn('Server returned different status:', data.task.status, 'vs', newStatus)
             // Revert to server's status
             taskElement.dataset.taskStatus = data.task.status
-            taskElement.classList.toggle("completed", data.task.status === "successfully_completed")
+            taskElement.classList.toggle("completed", StatusConverter.areEqual(data.task.status, 'successfully_completed'))
             
             const statusButton = taskElement.querySelector(".task-status-button span")
             if (statusButton) {
@@ -1732,7 +1731,7 @@ export default class extends Controller {
             }
             
             taskElement.querySelectorAll(".task-status-option").forEach(opt => {
-              opt.classList.toggle("active", opt.dataset.status === data.task.status)
+              opt.classList.toggle("active", StatusConverter.areEqual(opt.dataset.status, data.task.status))
             })
           }
           
