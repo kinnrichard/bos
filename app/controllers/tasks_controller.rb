@@ -6,6 +6,23 @@ class TasksController < ApplicationController
   before_action :set_task, only: [ :update, :destroy, :details, :assign, :add_note ]
 
   def create
+    # Check for potential duplicate creation within 2 seconds
+    recent_task = @job.tasks.where(title: task_params[:title])
+                      .where("created_at > ?", 2.seconds.ago)
+                      .first
+
+    if recent_task
+      Rails.logger.info "Duplicate task creation prevented: #{task_params[:title]}"
+      respond_to do |format|
+        format.json { render json: {
+          status: "success",
+          task: recent_task.as_json(only: [ :id, :title, :status, :position ])
+        } }
+        format.html { redirect_to client_job_path(@client, @job), notice: "Task was successfully created." }
+      end
+      return
+    end
+
     @task = @job.tasks.build(task_params)
 
     if @task.save

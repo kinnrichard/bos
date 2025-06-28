@@ -1,6 +1,7 @@
 // Get BasePopoverController and icons from window.Bos
 const { BasePopoverController } = window.Bos
 const { jobStatusEmoji, jobStatusLabel, jobPriorityEmoji, priorityLabel } = window.Bos?.Icons || {}
+const { SafeDOM } = window.Bos || {}
 
 // Connects to data-controller="job-popover"
 export default class extends BasePopoverController {
@@ -37,11 +38,9 @@ export default class extends BasePopoverController {
       const currentStatus = jobController.statusValue || jobController.getValueFromJobView('jobStatusValue')
       
       const statusValue = statusDropdown.querySelector('.dropdown-value')
-      if (statusValue && currentStatus) {
-        statusValue.innerHTML = `
-          <span class="status-emoji">${jobStatusEmoji(currentStatus)}</span>
-          <span>${jobStatusLabel(currentStatus)}</span>
-        `
+      if (statusValue && currentStatus && SafeDOM) {
+        const content = SafeDOM.createDropdownContent(jobStatusEmoji(currentStatus), jobStatusLabel(currentStatus))
+        SafeDOM.replaceChildren(statusValue, content)
       }
       
       // Update active states
@@ -58,12 +57,18 @@ export default class extends BasePopoverController {
       const currentPriority = jobController.priorityValue || jobController.getValueFromJobView('jobPriorityValue')
       
       const priorityValue = priorityDropdown.querySelector('.dropdown-value')
-      if (priorityValue && currentPriority) {
+      if (priorityValue && currentPriority && SafeDOM) {
         const emoji = jobPriorityEmoji(currentPriority)
         const label = priorityLabel(currentPriority)
-        priorityValue.innerHTML = emoji ? 
-          `<span class="priority-emoji">${emoji}</span><span>${label}</span>` :
-          `<span>${label}</span>`
+        
+        const content = emoji 
+          ? [
+              SafeDOM.element('span', { className: 'priority-emoji' }, [emoji]),
+              SafeDOM.element('span', {}, [label])
+            ]
+          : [SafeDOM.element('span', {}, [label])]
+        
+        SafeDOM.replaceChildren(priorityValue, content)
       }
       
       // Update active states
@@ -81,7 +86,7 @@ export default class extends BasePopoverController {
       const activeTechs = assigneeDropdown.querySelectorAll('.assignee-option.active[data-technician-id]')
       const assigneeValue = assigneeDropdown.querySelector('.dropdown-value')
       
-      if (assigneeValue) {
+      if (assigneeValue && SafeDOM) {
         if (activeTechs.length === 0) {
           // Check if unassigned option is active
           const unassignedActive = assigneeDropdown.querySelector('.assignee-option[data-action*="setUnassigned"]')?.classList.contains('active')
@@ -92,14 +97,26 @@ export default class extends BasePopoverController {
               unassignedOption.classList.add('active')
             }
           }
-          assigneeValue.innerHTML = '<span>❓</span><span>Unassigned</span>'
+          const content = [
+            SafeDOM.element('span', {}, ['❓']),
+            SafeDOM.element('span', {}, ['Unassigned'])
+          ]
+          SafeDOM.replaceChildren(assigneeValue, content)
         } else if (activeTechs.length === 1) {
           const tech = activeTechs[0]
-          const iconHtml = tech.querySelector('span:first-child')?.outerHTML || ''
+          const iconElement = tech.querySelector('span:first-child')
           const name = tech.querySelector('span:nth-child(2)')?.textContent || ''
-          assigneeValue.innerHTML = `${iconHtml}<span>${name}</span>`
+          const content = []
+          
+          if (iconElement) {
+            content.push(iconElement.cloneNode(true))
+          }
+          content.push(SafeDOM.element('span', {}, [name]))
+          
+          SafeDOM.replaceChildren(assigneeValue, content)
         } else {
-          assigneeValue.innerHTML = `<span>${activeTechs.length} assigned</span>`
+          const content = [SafeDOM.element('span', {}, [`${activeTechs.length} assigned`])]
+          SafeDOM.replaceChildren(assigneeValue, content)
         }
       }
     }

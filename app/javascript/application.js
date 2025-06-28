@@ -11,7 +11,10 @@ import * as UserDisplay from "bos/user_display"
 import { ApiClient } from "bos/api_helpers"
 import { SelectionManager } from "bos/selection_manager"
 import { TaskRenderer } from "bos/task_renderer"
+import { TaskInitializer } from "bos/task_initializer"
 import BasePopoverController from "bos/base_popover_controller"
+import { taskCreationQueue } from "bos/task_creation_queue"
+import { SafeDOM } from "bos/safe_dom"
 
 // Create Bos namespace for custom utilities and modules
 window.Bos = window.Bos || {}
@@ -24,7 +27,10 @@ Object.assign(window.Bos, {
   ApiClient,
   SelectionManager,
   TaskRenderer,
-  BasePopoverController
+  TaskInitializer,
+  BasePopoverController,
+  taskCreationQueue,
+  SafeDOM
 })
 
 // Now import controllers after Bos is set up

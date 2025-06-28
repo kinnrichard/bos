@@ -6,6 +6,8 @@ const { taskStatusEmoji, taskStatusLabel, jobStatusEmoji, jobStatusLabel, jobPri
 const { ApiClient } = window.Bos || {}
 const { SelectionManager } = window.Bos || {}
 const { TaskRenderer } = window.Bos || {}
+const { taskCreationQueue } = window.Bos || {}
+const { SafeDOM } = window.Bos || {}
 const { 
   ANIMATION, 
   POSITIONING, 
@@ -131,16 +133,53 @@ export default class extends Controller {
   }
 
   disconnect() {
+    // Stop all timers
     this.stopTimers()
-    document.removeEventListener("click", this.handleOutsideClick)
-    document.removeEventListener("keydown", this.handleKeydown, true)
-    this.element.removeEventListener('task:reorder', this.handleTaskReorder)
-    this.element.removeEventListener('tasks:reorder', this.handleTasksReorder)
-    this.element.removeEventListener('task:parent-changed', this.handleTaskParentChanged)
     
-    if (this.element && this.element._jobController === this) {
-      delete this.element._jobController
+    // Remove document-level event listeners
+    if (this.handleOutsideClick) {
+      document.removeEventListener("click", this.handleOutsideClick)
     }
+    if (this.handleKeydown) {
+      document.removeEventListener("keydown", this.handleKeydown, true)
+    }
+    
+    // Remove element-level event listeners
+    if (this.element) {
+      this.element.removeEventListener('task:reorder', this.handleTaskReorder)
+      this.element.removeEventListener('tasks:reorder', this.handleTasksReorder)
+      this.element.removeEventListener('task:parent-changed', this.handleTaskParentChanged)
+      
+      // Clean up controller reference
+      if (this.element._jobController === this) {
+        delete this.element._jobController
+      }
+    }
+    
+    // Clean up selection manager
+    if (this.selectionManager) {
+      this.selectionManager.clearAll()
+    }
+    
+    // Clear any task creation queue references
+    if (taskCreationQueue && this._queueCleanup) {
+      this._queueCleanup()
+    }
+    
+    // Clear lock versions to prevent memory leaks
+    if (this.taskLockVersions) {
+      this.taskLockVersions.clear()
+    }
+    
+    // Clear any active dropdown references
+    this.activeStatusDropdown = null
+    this.activeStatusTask = null
+    this.lastClickedTask = null
+    
+    // Clear helper references
+    this.api = null
+    this.selectionManager = null
+    this.taskRenderer = null
   }
   
   // Show task info panel
@@ -467,7 +506,12 @@ export default class extends Controller {
           if (remainingTasks.length === 0) {
             const tasksList = document.querySelector('[data-job-target="tasksList"]')
             if (tasksList) {
-              tasksList.innerHTML = '<div class="empty-tasks"><p>No tasks yet. Click + to add a task.</p></div>'
+              if (SafeDOM) {
+                const emptyDiv = SafeDOM.element('div', { className: 'empty-tasks' }, [
+                  SafeDOM.element('p', {}, ['No tasks yet. Click + to add a task.'])
+                ])
+                SafeDOM.replaceChildren(tasksList, [emptyDiv])
+              }
             }
           }
         }, ANIMATION.BLUR_DELAY)
@@ -667,13 +711,10 @@ export default class extends Controller {
     }
     
     // Update the dropdown button text immediately
-    
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
-    if (dropdownValue) {
-      dropdownValue.innerHTML = `
-        <span class="status-emoji">${jobStatusEmoji(newStatus)}</span>
-        <span>${jobStatusLabel(newStatus)}</span>
-      `
+    if (dropdownValue && SafeDOM) {
+      const content = SafeDOM.createDropdownContent(jobStatusEmoji(newStatus), jobStatusLabel(newStatus))
+      SafeDOM.replaceChildren(dropdownValue, content)
     }
     
     // Update active states
@@ -714,14 +755,19 @@ export default class extends Controller {
     }
     
     // Update the dropdown button text immediately
-    
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
-    if (dropdownValue) {
+    if (dropdownValue && SafeDOM) {
       const emoji = jobPriorityEmoji(newPriority)
       const label = priorityLabel(newPriority)
-      dropdownValue.innerHTML = emoji ? 
-        `<span class="priority-emoji">${emoji}</span><span>${label}</span>` :
-        `<span>${label}</span>`
+      
+      const content = emoji 
+        ? [
+            SafeDOM.element('span', { className: 'priority-emoji' }, [emoji]),
+            SafeDOM.element('span', {}, [label])
+          ]
+        : [SafeDOM.element('span', {}, [label])]
+      
+      SafeDOM.replaceChildren(dropdownValue, content)
     }
     
     // Update active states
@@ -749,37 +795,40 @@ export default class extends Controller {
   updateStatusBubble() {
     // Update the status bubble in the toolbar
     const statusBubble = document.querySelector('.job-status-bubble')
-    if (!statusBubble) {
-      console.error('Status bubble not found')
+    if (!statusBubble || !SafeDOM) {
+      console.error('Status bubble not found or SafeDOM not available')
       return
     }
     
-    // Clear existing content
-    statusBubble.innerHTML = ''
+    const elements = []
     
     // Add status icon
     const currentStatus = this.statusValue || this.getValueFromJobView('jobStatusValue')
-    const statusIcon = document.createElement('span')
-    statusIcon.className = 'bubble-icon status-icon'
-    statusIcon.textContent = jobStatusEmoji(currentStatus)
-    statusBubble.appendChild(statusIcon)
+    elements.push(
+      SafeDOM.element('span', { 
+        className: 'bubble-icon status-icon' 
+      }, [jobStatusEmoji(currentStatus)])
+    )
     
     // Add assignee icon
-    const assigneeIcon = document.createElement('span')
-    assigneeIcon.className = 'bubble-icon assignee-icon'
-    
-    // Get current assignees from the dropdown
     const assignedTechs = document.querySelectorAll('.assignee-option.active[data-technician-id]')
     if (assignedTechs.length > 0) {
       // Show first technician's icon
       const firstTechIcon = assignedTechs[0].querySelector('span:first-child')
       if (firstTechIcon) {
-        assigneeIcon.innerHTML = firstTechIcon.outerHTML
+        const clonedIcon = firstTechIcon.cloneNode(true)
+        clonedIcon.className = 'bubble-icon assignee-icon'
+        elements.push(clonedIcon)
+      } else {
+        elements.push(
+          SafeDOM.element('span', { className: 'bubble-icon assignee-icon' }, ['❓'])
+        )
       }
     } else {
-      assigneeIcon.textContent = '❓'
+      elements.push(
+        SafeDOM.element('span', { className: 'bubble-icon assignee-icon' }, ['❓'])
+      )
     }
-    statusBubble.appendChild(assigneeIcon)
     
     // Add priority icon if not normal
     const currentPriority = this.priorityValue || this.getValueFromJobView('jobPriorityValue')
@@ -792,12 +841,16 @@ export default class extends Controller {
       }
       const priorityIcon = priorityEmojis[currentPriority]
       if (priorityIcon) {
-        const span = document.createElement('span')
-        span.className = 'bubble-icon priority-icon'
-        span.textContent = priorityIcon
-        statusBubble.appendChild(span)
+        elements.push(
+          SafeDOM.element('span', { 
+            className: 'bubble-icon priority-icon' 
+          }, [priorityIcon])
+        )
       }
     }
+    
+    // Replace all children safely
+    SafeDOM.replaceChildren(statusBubble, elements)
   }
   
   setUnassigned(event) {
@@ -806,8 +859,12 @@ export default class extends Controller {
     
     // Update the dropdown button text immediately
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
-    if (dropdownValue) {
-      dropdownValue.innerHTML = '<span>❓</span><span>Unassigned</span>'
+    if (dropdownValue && SafeDOM) {
+      const content = [
+        SafeDOM.element('span', {}, ['❓']),
+        SafeDOM.element('span', {}, ['Unassigned'])
+      ]
+      SafeDOM.replaceChildren(dropdownValue, content)
     }
     
     // Remove active from all technician options
@@ -871,16 +928,28 @@ export default class extends Controller {
       .map(opt => opt.querySelector('span:nth-child(2)').textContent)
     
     const dropdownValue = dropdownContainer?.querySelector('.dropdown-value')
-    if (dropdownValue) {
+    if (dropdownValue && SafeDOM) {
       if (selectedTechs.length === 0) {
-        dropdownValue.innerHTML = '<span>❓</span><span>Unassigned</span>'
+        const content = [
+          SafeDOM.element('span', {}, ['❓']),
+          SafeDOM.element('span', {}, ['Unassigned'])
+        ]
+        SafeDOM.replaceChildren(dropdownValue, content)
       } else if (selectedTechs.length === 1) {
-        // Get the icon HTML from the selected option
+        // Get the icon from the selected option
         const selectedOption = dropdownContainer.querySelector('.assignee-option.active[data-technician-id]')
-        const iconHtml = selectedOption?.querySelector('span:first-child')?.outerHTML || ''
-        dropdownValue.innerHTML = `${iconHtml}<span>${selectedTechs[0]}</span>`
+        const iconElement = selectedOption?.querySelector('span:first-child')
+        const content = []
+        
+        if (iconElement) {
+          content.push(iconElement.cloneNode(true))
+        }
+        content.push(SafeDOM.element('span', {}, [selectedTechs[0]]))
+        
+        SafeDOM.replaceChildren(dropdownValue, content)
       } else {
-        dropdownValue.innerHTML = `<span>${selectedTechs.length} assigned</span>`
+        const content = [SafeDOM.element('span', {}, [`${selectedTechs.length} assigned`])]
+        SafeDOM.replaceChildren(dropdownValue, content)
       }
     }
     
@@ -1119,7 +1188,10 @@ export default class extends Controller {
     const statusButton = document.createElement('button')
     statusButton.className = 'task-status-button'
     statusButton.dataset.action = 'click->job#toggleTaskStatus'
-    statusButton.innerHTML = `<span>${taskStatusEmoji('new_task')}</span>`
+    if (SafeDOM) {
+      const span = SafeDOM.element('span', {}, [taskStatusEmoji('new_task')])
+      SafeDOM.replaceChildren(statusButton, [span])
+    }
     statusContainer.appendChild(statusButton)
     
     // Task content
@@ -1166,70 +1238,77 @@ export default class extends Controller {
       return
     }
     
-    // Create the task via API
-    const formData = new FormData()
-    formData.append('task[title]', newTitle)
-    formData.append('task[job_id]', this.jobIdValue)
-    formData.append('task[status]', 'new_task')
-    
-    // Add parent_id if this is a subtask
-    const parentId = titleElement.dataset.parentId
-    if (parentId) {
-      formData.append('task[parent_id]', parentId)
+    // Use the task creation queue
+    if (!taskCreationQueue) {
+      console.error('Task creation queue not available')
+      const taskWrapper = titleElement.closest('.task-wrapper')
+      if (taskWrapper && !taskWrapper.classList.contains('new-task-wrapper')) {
+        taskWrapper.remove()
+      }
+      return
     }
     
     try {
-      const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': this.getCsrfToken(),
-          'Accept': 'application/json'
-        },
-        body: formData
-      })
+      const taskData = {
+        title: newTitle,
+        status: 'new_task',
+        parent_id: titleElement.dataset.parentId || null
+      }
       
-      if (response.ok) {
-        const responseData = await response.json()
-        console.log('Task created response:', responseData)
+      const result = await taskCreationQueue.enqueue(taskData, this)
+      
+      if (result.status === 'duplicate') {
+        console.log('Task recently created, removing duplicate element')
+        const taskWrapper = titleElement.closest('.task-wrapper')
+        if (taskWrapper && !taskWrapper.classList.contains('new-task-wrapper')) {
+          taskWrapper.remove()
+        }
+        return
+      }
+      
+      if (result.status === 'success') {
+        const task = result.task
         
-        // The response might wrap the task in a data object
-        const task = responseData.task || responseData
-        
-        // Insert the new task before the NEW TASK placeholder
+        // Insert the new task before the temporary element
         const taskWrapper = titleElement.closest('.task-wrapper')
         const tempDiv = document.createElement('div')
-        tempDiv.innerHTML = this.createTaskHtml(task)
+        // This is trusted content from our own createTaskHtml method
+        SafeDOM.insertTrustedHTML(tempDiv, 'beforeend', this.createTaskHtml(task))
         const newTaskElement = tempDiv.firstElementChild
         
         if (taskWrapper && newTaskElement) {
           // Insert the new task before the placeholder
           taskWrapper.parentElement.insertBefore(newTaskElement, taskWrapper)
           
-          // Reset the NEW TASK placeholder to its original state
-          titleElement.textContent = 'New task...'
-          titleElement.blur()
-          
-          // Remove the temporary inline task wrapper if it's not the main placeholder
+          // Remove the temporary inline task wrapper
           if (!taskWrapper.classList.contains('new-task-wrapper')) {
             taskWrapper.remove()
+          } else {
+            // Reset the NEW TASK placeholder to its original state
+            titleElement.textContent = 'New task...'
+            titleElement.contentEditable = 'false'
+            titleElement.blur()
           }
           
           // Reinitialize Sortable if needed
-          if (this.hasSortableTarget && this.sortableTarget) {
-            const sortableController = this.application.getControllerForElementAndIdentifier(
-              this.sortableTarget, 
-              'sortable'
-            )
-            if (sortableController && sortableController.initializeSortable) {
-              sortableController.initializeSortable()
-            }
+          const sortableController = this.application.getControllerForElementAndIdentifier(
+            this.element,
+            'sortable'
+          )
+          if (sortableController && sortableController.refresh) {
+            sortableController.refresh()
           }
+          
+          // Initialize the new task element
+          this.initializeNewTaskElement(task.id)
         }
+      } else {
+        console.error('Failed to create task:', result.error)
+        alert('Failed to create task: ' + (result.error || 'Unknown error'))
       }
     } catch (error) {
       console.error('Error creating task:', error)
-      // Show error to user
-      alert('Failed to create task. Please try again.')
+      alert('Failed to create task: ' + error.message)
     }
   }
   
@@ -1264,20 +1343,28 @@ export default class extends Controller {
       return
     }
     
-    // Create the task
+    // Use the task creation queue to handle this
+    if (!taskCreationQueue) {
+      console.error('Task creation queue not available')
+      this.cancelNewTask()
+      return
+    }
+    
     try {
-      const response = await fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": this.getCsrfToken()
-        },
-        body: JSON.stringify({ task: { title: newTitle, status: 'new_task' } })
-      })
+      const taskData = {
+        title: newTitle,
+        status: 'new_task'
+      }
       
-      const data = await response.json()
+      const result = await taskCreationQueue.enqueue(taskData, this)
       
-      if (data.status === 'success') {
+      if (result.status === 'duplicate') {
+        console.log('Task recently created, skipping')
+        this.cancelNewTask()
+        return
+      }
+      
+      if (result.status === 'success') {
         // Remove empty tasks message if present
         const emptyMessage = this.tasksListTarget.querySelector('.empty-tasks')
         if (emptyMessage) {
@@ -1288,14 +1375,15 @@ export default class extends Controller {
         const tasksContainer = this.tasksListTarget
         
         // Create task element HTML
-        const newTaskHtml = this.createTaskHtml(data.task)
+        const newTaskHtml = this.createTaskHtml(result.task)
         
         // Find the NEW TASK placeholder
         const newTaskPlaceholder = tasksContainer.querySelector('.new-task-wrapper')
         
         if (newTaskPlaceholder) {
           // Insert the new task before the NEW TASK placeholder
-          newTaskPlaceholder.insertAdjacentHTML('beforebegin', newTaskHtml)
+          // This is trusted content from our own createTaskHtml method
+          SafeDOM.insertTrustedHTML(newTaskPlaceholder, 'beforebegin', newTaskHtml)
           
           // Force re-render of the placeholder to fix display issues
           const placeholderTitle = newTaskPlaceholder.querySelector('.new-task-placeholder')
@@ -1310,7 +1398,7 @@ export default class extends Controller {
           }
         } else {
           // Fallback: insert at the end if placeholder not found
-          tasksContainer.insertAdjacentHTML('beforeend', newTaskHtml)
+          SafeDOM.insertTrustedHTML(tasksContainer, 'beforeend', newTaskHtml)
         }
         
         // Reset the NEW TASK placeholder for another task
@@ -1327,16 +1415,21 @@ export default class extends Controller {
         if (sortableController && sortableController.refresh) {
           sortableController.refresh()
         }
+        
+        // Initialize the new task element to fix click/selection issues
+        this.initializeNewTaskElement(result.task.id)
       } else {
-        console.error('Failed to create task:', data.error)
-        alert('Failed to create task: ' + (data.error || 'Unknown error'))
+        console.error('Failed to create task:', result.error)
+        alert('Failed to create task: ' + (result.error || 'Unknown error'))
         // Restore focus to allow retry
+        titleElement.contentEditable = 'true'
         titleElement.focus()
       }
     } catch (error) {
       console.error('Error creating task:', error)
-      alert('Failed to create task')
+      alert('Failed to create task: ' + error.message)
       // Restore focus to allow retry
+      titleElement.contentEditable = 'true'
       titleElement.focus()
     }
   }
@@ -1432,10 +1525,11 @@ export default class extends Controller {
     const taskHtml = this.renderTask(task)
     if (this.taskTargets.length === 0) {
       // Remove empty state
-      this.tasksListTarget.innerHTML = taskHtml
+      // This is trusted content from our own renderTask method
+      SafeDOM.insertTrustedHTML(this.tasksListTarget, 'beforeend', taskHtml)
     } else {
       // Prepend new task
-      this.tasksListTarget.insertAdjacentHTML("afterbegin", taskHtml)
+      SafeDOM.insertTrustedHTML(this.tasksListTarget, "afterbegin", taskHtml)
     }
   }
 
@@ -2163,7 +2257,7 @@ export default class extends Controller {
   }
   
   // New task creation methods
-  saveNewTask(event) {
+  async saveNewTask(event) {
     if (event && event.preventDefault) {
       event.preventDefault()
     }
@@ -2175,76 +2269,89 @@ export default class extends Controller {
       return
     }
     
-    // Create the task
-    fetch(`/clients/${this.clientIdValue}/jobs/${this.jobIdValue}/tasks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": this.getCsrfToken()
-      },
-      body: JSON.stringify({ task: { title: title, status: 'new_task' } })
-    }).then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          // Remove empty tasks message if present
-          const emptyMessage = this.tasksListTarget.querySelector('.empty-tasks')
-          if (emptyMessage) {
-            emptyMessage.remove()
-          }
+    // Use the task creation queue
+    if (!taskCreationQueue) {
+      console.error('Task creation queue not available')
+      return
+    }
+    
+    try {
+      const taskData = {
+        title: title,
+        status: 'new_task'
+      }
+      
+      const result = await taskCreationQueue.enqueue(taskData, this)
+      
+      if (result.status === 'duplicate') {
+        console.log('Task recently created, clearing input')
+        input.value = ''
+        return
+      }
+      
+      if (result.status === 'success') {
+        // Remove empty tasks message if present
+        const emptyMessage = this.tasksListTarget.querySelector('.empty-tasks')
+        if (emptyMessage) {
+          emptyMessage.remove()
+        }
+        
+        // Get the tasks container
+        const tasksContainer = this.tasksListTarget
+        
+        // Create task element HTML
+        const newTaskHtml = this.createTaskHtml(result.task)
+        
+        // Find the NEW TASK placeholder
+        const newTaskPlaceholder = tasksContainer.querySelector('.new-task-wrapper')
+        
+        if (newTaskPlaceholder) {
+          // Insert the new task before the NEW TASK placeholder
+          // This is trusted content from our own createTaskHtml method
+          SafeDOM.insertTrustedHTML(newTaskPlaceholder, 'beforebegin', newTaskHtml)
           
-          // Get the tasks container
-          const tasksContainer = this.tasksListTarget
-          
-          // Create task element HTML
-          const newTaskHtml = this.createTaskHtml(data.task)
-          
-          // Find the NEW TASK placeholder
-          const newTaskPlaceholder = tasksContainer.querySelector('.new-task-wrapper')
-          
-          if (newTaskPlaceholder) {
-            // Insert the new task before the NEW TASK placeholder
-            newTaskPlaceholder.insertAdjacentHTML('beforebegin', newTaskHtml)
-            
-            // Force re-render of the placeholder to fix display issues
-            const placeholderTitle = newTaskPlaceholder.querySelector('.new-task-placeholder')
-            if (placeholderTitle) {
-              // Force a reflow by reading offsetHeight
-              void placeholderTitle.offsetHeight
-              // Toggle a class to trigger re-render
-              placeholderTitle.classList.add('force-rerender')
-              requestAnimationFrame(() => {
-                placeholderTitle.classList.remove('force-rerender')
-              })
-            }
-          } else {
-            // Fallback: insert at the end if placeholder not found
-            tasksContainer.insertAdjacentHTML('beforeend', newTaskHtml)
-          }
-          
-          // Clear the input and keep focus for another task
-          input.value = ''
-          input.focus()
-          
-          // Store reference to the current input
-          this.currentNewTaskInput = input
-          
-          // Refresh sortable controller to set up drag handlers on new task
-          const sortableController = this.application.getControllerForElementAndIdentifier(
-            this.element,
-            'sortable'
-          )
-          if (sortableController && sortableController.refresh) {
-            sortableController.refresh()
+          // Force re-render of the placeholder to fix display issues
+          const placeholderTitle = newTaskPlaceholder.querySelector('.new-task-placeholder')
+          if (placeholderTitle) {
+            // Force a reflow by reading offsetHeight
+            void placeholderTitle.offsetHeight
+            // Toggle a class to trigger re-render
+            placeholderTitle.classList.add('force-rerender')
+            requestAnimationFrame(() => {
+              placeholderTitle.classList.remove('force-rerender')
+            })
           }
         } else {
-          console.error('Failed to create task:', data.error)
-          alert('Failed to create task: ' + (data.error || 'Unknown error'))
+          // Fallback: insert at the end if placeholder not found
+          SafeDOM.insertTrustedHTML(tasksContainer, 'beforeend', newTaskHtml)
         }
-      })
-      .catch(error => {
-        console.error('Error creating task:', error)
-        alert('Failed to create task')
-      })
+        
+        // Clear the input and keep focus for another task
+        input.value = ''
+        input.focus()
+        
+        // Store reference to the current input
+        this.currentNewTaskInput = input
+        
+        // Refresh sortable controller to set up drag handlers on new task
+        const sortableController = this.application.getControllerForElementAndIdentifier(
+          this.element,
+          'sortable'
+        )
+        if (sortableController && sortableController.refresh) {
+          sortableController.refresh()
+        }
+        
+        // Initialize the new task element
+        this.initializeNewTaskElement(result.task.id)
+      } else {
+        console.error('Failed to create task:', result.error)
+        alert('Failed to create task: ' + (result.error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error creating task:', error)
+      alert('Failed to create task: ' + error.message)
+    }
   }
   
   
@@ -2266,6 +2373,27 @@ export default class extends Controller {
   createTaskHtml(task) {
     const taskElement = this.taskRenderer.createTaskElement(task, { isNew: true })
     
+    // Ensure the task element has all required attributes for Stimulus
+    taskElement.setAttribute('data-job-target', 'task')
+    taskElement.setAttribute('data-action', 'click->job#handleTaskClick')
+    taskElement.setAttribute('draggable', 'true')
+    
+    // Ensure task title has proper attributes
+    const taskTitle = taskElement.querySelector('.task-title')
+    if (taskTitle) {
+      taskTitle.setAttribute('contenteditable', 'true')
+      taskTitle.setAttribute('data-action', 'focus->job#storeOriginalTitle blur->job#updateTaskTitle click->job#handleTaskTitleClick keydown->job#handleTaskTitleKeydown')
+      taskTitle.setAttribute('data-task-id', task.id)
+      taskTitle.setAttribute('data-original-title', task.title || '')
+    }
+    
+    // Ensure status dropdown has proper controller
+    const statusContainer = taskElement.querySelector('.task-status-container')
+    if (statusContainer && !statusContainer.hasAttribute('data-controller')) {
+      statusContainer.setAttribute('data-controller', 'dropdown')
+      statusContainer.setAttribute('data-dropdown-positioning-value', 'fixed')
+    }
+    
     // Wrap in task-wrapper div
     const wrapper = document.createElement('div')
     wrapper.className = 'task-wrapper'
@@ -2285,15 +2413,10 @@ export default class extends Controller {
     
     if (allTasks.length === 0) return
     
-    
     // Clean up selectedTasks set - remove any tasks that are no longer in DOM
-    const tasksToRemove = []
-    this.selectionManager.selectedTasks.forEach(task => {
-      if (!document.body.contains(task)) {
-        tasksToRemove.push(task)
-      }
-    })
-    tasksToRemove.forEach(task => this.selectionManager.selectedTasks.delete(task))
+    if (this.selectionManager) {
+      this.selectionManager.cleanupDeletedElements()
+    }
     
     // Get the currently selected task from the set (not from DOM classes)
     let currentTask = null
@@ -2395,5 +2518,28 @@ export default class extends Controller {
     if (flipController && flipController.stimulusController) {
       window.flipController = flipController.stimulusController
     }
+  }
+  
+  // Initialize a newly created task element to ensure all handlers are attached
+  initializeNewTaskElement(taskId) {
+    // Use requestAnimationFrame to ensure DOM is fully updated
+    requestAnimationFrame(() => {
+      const taskElement = this.element.querySelector(`[data-task-id="${taskId}"]`)
+      if (!taskElement) {
+        console.warn('Could not find newly created task element:', taskId)
+        return
+      }
+      
+      // Use the centralized TaskInitializer
+      const { TaskInitializer } = window.Bos || {}
+      if (TaskInitializer) {
+        TaskInitializer.initializeTaskElement(taskElement, {
+          taskId,
+          application: this.application
+        })
+      } else {
+        console.error('TaskInitializer not found in window.Bos')
+      }
+    })
   }
 }

@@ -159,4 +159,28 @@ export class SelectionManager {
       hasMultiplePriorities: priorities.size > 1
     }
   }
+  
+  // Clean up references to deleted DOM elements
+  cleanupDeletedElements() {
+    const toRemove = []
+    this.selectedTasks.forEach(task => {
+      if (!document.body.contains(task)) {
+        toRemove.push(task)
+      }
+    })
+    
+    toRemove.forEach(task => {
+      this.selectedTasks.delete(task)
+    })
+    
+    // Also clean up lastClickedTask if it's been removed
+    if (this.lastClickedTask && !document.body.contains(this.lastClickedTask)) {
+      this.lastClickedTask = null
+    }
+    
+    // Update UI if we removed anything
+    if (toRemove.length > 0) {
+      this.updateUI()
+    }
+  }
 }
