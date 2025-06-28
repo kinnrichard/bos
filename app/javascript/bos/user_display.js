@@ -21,15 +21,8 @@ export const AVATAR_COLORS = [
 export function getUserInitials(name) {
   if (!name || name.trim() === '') return '?'
   
-  const parts = name.trim().split(/\s+/)
-  
-  if (parts.length >= 2) {
-    // Take first letter of first two words
-    return parts[0][0].toUpperCase() + parts[1][0].toUpperCase()
-  } else {
-    // For single word names, take first two letters
-    return name.slice(0, 2).toUpperCase()
-  }
+  // Take only the first letter of the name
+  return name.trim()[0].toUpperCase()
 }
 
 // Get consistent avatar color based on user ID

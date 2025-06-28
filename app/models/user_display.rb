@@ -29,16 +29,8 @@ class UserDisplay
   def initials
     return "?" unless @user.name.present?
 
-    # Split name and take first letter of each word
-    parts = @user.name.split(/\s+/)
-
-    if parts.length >= 2
-      # Take first letter of first two words
-      parts[0..1].map { |part| part[0]&.upcase }.join
-    else
-      # For single word names, take first two letters
-      @user.name[0..1].upcase
-    end
+    # Take only the first letter of the name
+    @user.name[0].upcase
   end
 
   # Get consistent avatar color based on user
