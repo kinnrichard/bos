@@ -48,7 +48,8 @@ module Views
         # Show instructional text only if no tasks exist
         if @tasks_tree.empty?
           div(class: "empty-tasks") do
-            p { "No tasks yet. Click above to add a task." }
+            p { "No tasks yet." }
+            p { "Please add your first task above." }
           end
         end
       end

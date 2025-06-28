@@ -98,10 +98,7 @@ export default class extends Controller {
     
     // Auto-focus new task if no tasks exist
     if (this.taskTargets.length === 0 && this.hasNewTaskPlaceholderTarget) {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        this.showNewTaskInput()
-      }, 100)
+      this.showNewTaskInput()
     }
     
     // Close popover when clicking outside
@@ -1304,6 +1301,9 @@ export default class extends Controller {
         
         // Reset the NEW TASK placeholder for another task
         this.cancelNewTask()
+        
+        // Automatically focus the new task placeholder for quick entry
+        this.showNewTaskInput()
         
         // Refresh sortable controller to set up drag handlers on new task
         const sortableController = this.application.getControllerForElementAndIdentifier(
