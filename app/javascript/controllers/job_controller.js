@@ -811,23 +811,24 @@ export default class extends Controller {
     
     // Add assignee icon
     const assignedTechs = document.querySelectorAll('.assignee-option.active[data-technician-id]')
+    
+    // Create wrapper span for assignee icon
+    const assigneeWrapper = SafeDOM.element('span', { className: 'bubble-icon assignee-icon' }, [])
+    
     if (assignedTechs.length > 0) {
       // Show first technician's icon
-      const firstTechIcon = assignedTechs[0].querySelector('span:first-child')
+      const firstTechIcon = assignedTechs[0].querySelector('.user-avatar')
       if (firstTechIcon) {
         const clonedIcon = firstTechIcon.cloneNode(true)
-        clonedIcon.className = 'bubble-icon assignee-icon'
-        elements.push(clonedIcon)
+        assigneeWrapper.appendChild(clonedIcon)
       } else {
-        elements.push(
-          SafeDOM.element('span', { className: 'bubble-icon assignee-icon' }, ['❓'])
-        )
+        assigneeWrapper.textContent = '❓'
       }
     } else {
-      elements.push(
-        SafeDOM.element('span', { className: 'bubble-icon assignee-icon' }, ['❓'])
-      )
+      assigneeWrapper.textContent = '❓'
     }
+    
+    elements.push(assigneeWrapper)
     
     // Add priority icon if not normal
     const currentPriority = this.priorityValue || this.getValueFromJobView('jobPriorityValue')
@@ -937,26 +938,17 @@ export default class extends Controller {
       } else if (selectedTechs.length === 1) {
         // Get the technician data from the selected option
         const selectedOption = dropdownContainer.querySelector('.assignee-option.active[data-technician-id]')
-        const technicianId = selectedOption?.dataset.technicianId
         const technicianName = selectedTechs[0]
         const content = []
         
-        // Create user avatar using UserDisplay module if available
-        const UserDisplay = window.Bos?.UserDisplay
-        if (UserDisplay && technicianId) {
-          const avatarElement = UserDisplay.createUserAvatarElement(
-            { id: parseInt(technicianId), name: technicianName },
-            'sm'
-          )
-          content.push(avatarElement)
-        } else {
-          // Fallback to cloning if UserDisplay not available
-          const iconElement = selectedOption?.querySelector('span:first-child')
-          if (iconElement) {
-            const clonedIcon = iconElement.cloneNode(true)
-            content.push(clonedIcon)
-          }
+        // Clone the avatar element from the selected option to preserve all styles
+        const avatarElement = selectedOption?.querySelector('.user-avatar')
+        if (avatarElement) {
+          // Deep clone to preserve all attributes and styles
+          const clonedAvatar = avatarElement.cloneNode(true)
+          content.push(clonedAvatar)
         }
+        
         content.push(SafeDOM.element('span', {}, [technicianName]))
         
         SafeDOM.replaceChildren(dropdownValue, content)
