@@ -132,6 +132,9 @@ module Views
                 )
               end
             end
+          else
+            # Spacer for consistent alignment
+            div(class: "subtask-toggle-spacer")
           end
 
           # Status dropdown using the existing dropdown controller

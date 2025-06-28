@@ -90,7 +90,7 @@ export class TaskRenderer {
     
     const parts = []
     
-    // Subtask toggle if has subtasks (before status)
+    // Subtask toggle if has subtasks, otherwise spacer
     if (hasSubtasks) {
       parts.push(`
         <button class="subtask-toggle" 
@@ -103,6 +103,9 @@ export class TaskRenderer {
           </svg>
         </button>
       `)
+    } else {
+      // Add spacer for consistent alignment
+      parts.push(`<div class="subtask-toggle-spacer"></div>`)
     }
     
     // Main content section

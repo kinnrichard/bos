@@ -368,6 +368,14 @@
   }
 }
 
+// Spacer for tasks without subtasks (same dimensions as toggle)
+.subtask-toggle-spacer {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-right: 4px; // Same margin as toggle
+}
+
 .task-title {
   font-size: 17px;
   color: #FFFFFF;
