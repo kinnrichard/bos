@@ -188,17 +188,11 @@ $note-color: #FBB827;
     }
     
     .timeline-header-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      // User avatar styling is handled by .user-avatar class
+      // Just ensure proper size for timeline context
       width: 20px;
       height: 20px;
-      border-radius: 50%;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-secondary);
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--text-primary);
+      font-size: 12px; // Match the increased font size from earlier
     }
   }
 

@@ -164,10 +164,9 @@ module Components
           # Left side with icon and user name
           div(class: "timeline-header-left") do
             if user
-              # Show user initials glyph
-              span(class: "timeline-header-icon") do
-                initials = user.name.split.map(&:first).join.upcase[0..1]
-                span { initials }
+              # Show user avatar with proper styling
+              span(class: "timeline-header-icon user-avatar", style: user.avatar_style) do
+                user.initials
               end
             end
             span(class: "timeline-header-user") { user&.name || "System" }
