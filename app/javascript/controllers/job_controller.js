@@ -1186,6 +1186,10 @@ export default class extends Controller {
       newTaskItem.dataset.parentId = parentId
     }
     
+    // Add subtask toggle spacer for proper alignment
+    const spacer = document.createElement('div')
+    spacer.className = 'subtask-toggle-spacer'
+    
     // Status button container
     const statusContainer = document.createElement('div')
     statusContainer.className = 'task-status-container'
@@ -1214,6 +1218,7 @@ export default class extends Controller {
     taskContent.appendChild(taskTitle)
     
     // Assemble the task
+    newTaskItem.appendChild(spacer)
     newTaskItem.appendChild(statusContainer)
     newTaskItem.appendChild(taskContent)
     newTaskWrapper.appendChild(newTaskItem)
