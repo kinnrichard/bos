@@ -27,6 +27,9 @@ module Views
             },
             title: "Click or press Enter to create a new task"
           ) do
+            # Spacer for alignment
+            div(class: "subtask-toggle-spacer")
+
             div(class: "task-status-container") do
               button(class: "task-status-button", disabled: true) do
                 span { task_status_emoji("new_task") }
