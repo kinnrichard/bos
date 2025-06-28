@@ -46,7 +46,7 @@
 // Tasks components
 @use '../../../components/tasks/task_info_panel';
 @use '../../../components/tasks/task_info_popover';
-@use '../../../components/tasks/task_search';
+// @use '../../../components/tasks/task_search'; // TODO: Create this component stylesheet
 
 // Form components
 @use '../../../components/forms/forms'; // General form styles

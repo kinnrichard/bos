@@ -54,7 +54,7 @@ module Views
             message = if @client.business?
               "Add employees and other people at #{@client.name} we might work with."
             else
-              "Add family members, contacts, and even pets at #{@client.name}!"
+              "Add family members, contacts, and even pets!"
             end
 
             div(class: "empty-state-wrapper") do

@@ -397,4 +397,227 @@ class DropdownPositioningPlaywrightTest < ApplicationPlaywrightTestCase
 
     assert assigned_closed, "Assigned To dropdown should be closed"
   end
+
+  test "dropdown appears above button when near viewport bottom" do
+    # Create many tasks to make the page scrollable
+    15.times do |i|
+      Task.create!(
+        job: @job,
+        title: "Task #{i + 1}",
+        position: i + 1,
+        status: "new_task"
+      )
+    end
+
+    # Refresh the page
+    @page.reload
+    sleep 0.5
+
+    # Scroll to bottom of page
+    @page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    sleep 0.3
+
+    # Open the job status popover
+    @page.click('button[data-action="click->header-job#toggleJobPopover"]')
+    sleep 0.3
+
+    # Find a dropdown button near the bottom of the popover
+    # Priority dropdown is usually at the bottom
+    priority_button = @page.locator(".job-popover .dropdown-button").nth(2)
+
+    # Get button position before opening
+    button_info = @page.evaluate(<<~JS)
+      (() => {
+        const buttons = document.querySelectorAll('.job-popover .dropdown-button');
+        const button = buttons[2]; // Priority button
+        if (button) {
+          const rect = button.getBoundingClientRect();
+          return {
+            top: rect.top,
+            bottom: rect.bottom,
+            viewportHeight: window.innerHeight,
+            spaceBelow: window.innerHeight - rect.bottom
+          };
+        }
+        return null;
+      })()
+    JS
+
+    assert_not_nil button_info, "Could not find priority button"
+
+    # Click the priority dropdown
+    priority_button.click
+    sleep 0.2
+
+    # Check if dropdown appears above when space below is limited
+    dropdown_info = @page.evaluate(<<~JS)
+      (() => {
+        const menu = document.querySelector('.dropdown-menu:not(.hidden)');
+        const button = document.querySelectorAll('.job-popover .dropdown-button')[2];
+        if (menu && button) {
+          const menuRect = menu.getBoundingClientRect();
+          const buttonRect = button.getBoundingClientRect();
+          const hasDropUpClass = menu.classList.contains('dropdown-up');
+          const hasTransform = menu.style.transform.includes('translateY');
+      #{'    '}
+          return {
+            menuTop: menuRect.top,
+            menuBottom: menuRect.bottom,
+            buttonTop: buttonRect.top,
+            buttonBottom: buttonRect.bottom,
+            menuAppearsAbove: menuRect.bottom < buttonRect.top,
+            hasDropUpClass: hasDropUpClass,
+            hasTransform: hasTransform,
+            transform: menu.style.transform,
+            spaceBelow: window.innerHeight - buttonRect.bottom,
+            menuHeight: menuRect.height
+          };
+        }
+        return null;
+      })()
+    JS
+
+    assert_not_nil dropdown_info, "Could not find dropdown menu"
+
+    # If there's not enough space below, menu should appear above
+    if dropdown_info["spaceBelow"] < dropdown_info["menuHeight"] + 10
+      assert dropdown_info["menuAppearsAbove"], "Dropdown should appear above button when not enough space below"
+      assert dropdown_info["hasDropUpClass"], "Dropdown should have 'dropdown-up' class"
+      assert dropdown_info["hasTransform"], "Dropdown should use transform for positioning"
+    end
+  end
+
+  test "dropdown positioning adjusts correctly with CSS transform" do
+    # Scroll page to create a scenario where dropdown needs to appear above
+    @page.evaluate("document.body.style.height = '2000px'") # Make page tall
+    sleep 0.1
+
+    # Open the job status popover
+    @page.click('button[data-action="click->header-job#toggleJobPopover"]')
+    sleep 0.3
+
+    # Position popover near bottom
+    @page.evaluate(<<~JS)
+      (() => {
+        const popover = document.querySelector('.job-popover');
+        if (popover) {
+          // Position popover near bottom of viewport
+          popover.style.top = `${window.innerHeight - 300}px`;
+        }
+      })()
+    JS
+    sleep 0.1
+
+    # Click the status dropdown
+    @page.click(".job-popover .dropdown-button")
+    sleep 0.2
+
+    # Verify transform-based positioning
+    transform_info = @page.evaluate(<<~JS)
+      (() => {
+        const menu = document.querySelector('.dropdown-menu:not(.hidden)');
+        if (menu) {
+          const computedStyle = getComputedStyle(menu);
+          const transform = menu.style.transform;
+          const hasNegativeTranslateY = transform.includes('translateY(-');
+      #{'    '}
+          return {
+            transform: transform,
+            hasNegativeTranslateY: hasNegativeTranslateY,
+            position: menu.style.position,
+            top: menu.style.top
+          };
+        }
+        return null;
+      })()
+    JS
+
+    assert_not_nil transform_info, "Could not find dropdown menu"
+
+    # When dropdown needs to appear above, it should use negative translateY
+    if transform_info["hasNegativeTranslateY"]
+      assert_match /translateY\(-\d+px\)/, transform_info["transform"], "Should use negative translateY for upward positioning"
+      assert_equal "fixed", transform_info["position"], "Should use fixed positioning"
+    end
+  end
+
+  test "dropdown stays within viewport bounds in all scenarios" do
+    # Test multiple viewport positions
+    viewport_positions = [
+      { scroll: 0, popover_top: 100 },    # Top of page
+      { scroll: 500, popover_top: 300 },  # Middle of page
+      { scroll: "bottom", popover_top: -400 } # Near bottom (negative means from bottom)
+    ]
+
+    viewport_positions.each_with_index do |position, index|
+      # Reset page state
+      @page.reload
+      sleep 0.5
+
+      # Set up scroll position
+      if position[:scroll] == "bottom"
+        @page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+      else
+        @page.evaluate("window.scrollTo(0, #{position[:scroll]})")
+      end
+      sleep 0.2
+
+      # Open popover
+      @page.click('button[data-action="click->header-job#toggleJobPopover"]')
+      sleep 0.3
+
+      # Position popover if needed
+      if position[:popover_top] < 0
+        @page.evaluate(<<~JS)
+          (() => {
+            const popover = document.querySelector('.job-popover');
+            if (popover) {
+              popover.style.top = `${window.innerHeight + #{position[:popover_top]}}px`;
+            }
+          })()
+        JS
+      end
+
+      # Test each dropdown in the popover
+      [ "status", "assignee", "priority" ].each_with_index do |dropdown_type, dropdown_index|
+        # Click the dropdown
+        @page.locator(".job-popover .dropdown-button").nth(dropdown_index).click
+        sleep 0.2
+
+        # Check if dropdown is within viewport
+        viewport_check = @page.evaluate(<<~JS)
+          (() => {
+            const menu = document.querySelector('.dropdown-menu:not(.hidden)');
+            if (menu) {
+              const rect = menu.getBoundingClientRect();
+              return {
+                inViewportTop: rect.top >= 0,
+                inViewportBottom: rect.bottom <= window.innerHeight,
+                inViewportLeft: rect.left >= 0,
+                inViewportRight: rect.right <= window.innerWidth,
+                menuTop: rect.top,
+                menuBottom: rect.bottom,
+                viewportHeight: window.innerHeight
+              };
+            }
+            return null;
+          })()
+        JS
+
+        assert_not_nil viewport_check, "Could not find dropdown menu for #{dropdown_type} at position #{index}"
+        assert viewport_check["inViewportTop"], "#{dropdown_type} dropdown top should be within viewport at position #{index}"
+        assert viewport_check["inViewportBottom"], "#{dropdown_type} dropdown bottom should be within viewport at position #{index}"
+        assert viewport_check["inViewportLeft"], "#{dropdown_type} dropdown left should be within viewport at position #{index}"
+        assert viewport_check["inViewportRight"], "#{dropdown_type} dropdown right should be within viewport at position #{index}"
+
+        # Close dropdown
+        @page.keyboard.press("Escape")
+        sleep 0.1
+      end
+
+      # Close popover
+      @page.keyboard.press("Escape")
+      sleep 0.2
+    end
+  end
 end

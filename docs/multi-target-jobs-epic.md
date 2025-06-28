@@ -27,16 +27,20 @@ Every job will be linked to 1 or more devices and/or 1 or more people. Tasks wit
 **Acceptance Criteria:**
 1. Create `job_targets` table with fields:
    - id, job_id, target_type (enum: device/person), target_id, status, created_at, updated_at
+   - instance_number (integer, default: 1) - for future support of re-adding same target
+   - reason (string, nullable) - for documenting why target was re-added
 2. Add has_many :job_targets association to Job model
 3. Add validation: every job must have at least one target
-4. Create `task_completions` table:
+4. Create unique index on [job_id, target_type, target_id, instance_number]
+5. Create `task_completions` table:
    - task_id, job_target_id, status, completed_at, completed_by_id, notes
-5. Update Task model with completion tracking methods
+6. Update Task model with completion tracking methods
 
 **Technical Notes:**
 - Use Rails enums for target_type and status
 - Add indexes for efficient querying
 - Consider using counter caches for performance
+- The instance_number field prepares for future re-addition of targets without requiring schema changes
 
 **Estimated:** 6-8 hours
 
@@ -220,6 +224,14 @@ Every job will be linked to 1 or more devices and/or 1 or more people. Tasks wit
    - Unit tests for model methods
    - Integration tests for UI flows
    - Performance tests for large target sets
+
+4. **Future Enhancement - Re-adding Targets:**
+   - The schema includes instance_number and reason fields for future support
+   - Use case: Computer needs setup redone after an issue
+   - MVP behavior: Prevent duplicate targets (instance_number always 1)
+   - Future behavior: Allow re-adding with incrementing instance_number
+   - UI would prompt for reason when adding existing target
+   - Maintains complete audit trail of all work performed
 
 ## Success Metrics
 

@@ -378,4 +378,91 @@ class JobDropdownUpdatesPlaywrightTest < ApplicationPlaywrightTestCase
     @job.reload
     assert_equal "open", @job.status, "Status should not change in DB due to validation error"
   end
+
+  test "multi-word status 'waiting_for_customer' updates correctly" do
+    # Open the job status popover
+    @page.click('button[data-action="click->header-job#toggleJobPopover"]')
+    sleep 0.3
+
+    # Click the status dropdown
+    @page.click(".job-popover .dropdown-button")
+    sleep 0.2
+
+    # Change status to "Waiting for Customer"
+    @page.click('.job-popover .status-option[data-status="waiting_for_customer"]')
+    sleep 0.5 # Wait for AJAX request
+
+    # Check for errors
+    errors = @page.evaluate("window.consoleErrors || []")
+    assert_empty errors, "Console errors occurred: #{errors.join(', ')}"
+
+    # Verify status was updated in UI with correct label
+    status_text = @page.evaluate(<<~JS)
+      document.querySelector('.job-popover .dropdown-button').textContent.trim()
+    JS
+    assert_includes status_text, "Waiting for Customer", "Status should display as 'Waiting for Customer' (not with underscores)"
+    assert_not_includes status_text, "waiting_for_customer", "Should not show underscores in UI"
+    assert_not_includes status_text, "Waiting-For-Customer", "Should not show hyphens in UI"
+
+    # Verify the job bubble also updated
+    bubble_has_waiting = @page.evaluate(<<~JS)
+      (() => {
+        const bubble = document.querySelector('.job-status-bubble');
+        return bubble && bubble.textContent.includes('⏳');
+      })()
+    JS
+    assert bubble_has_waiting, "Job status bubble should show waiting indicator"
+
+    # Reload and verify persistence and correct display
+    @page.reload
+    sleep 0.5
+
+    # Verify database has correct value
+    @job.reload
+    assert_equal "waiting_for_customer", @job.status, "Status should be persisted with underscores in database"
+
+    # Open popover again to check display after reload
+    @page.click('button[data-action="click->header-job#toggleJobPopover"]')
+    sleep 0.3
+
+    # Verify status still displays correctly after reload
+    reloaded_status = @page.evaluate(<<~JS)
+      document.querySelector('.job-popover .dropdown-button').textContent.trim()
+    JS
+    assert_includes reloaded_status, "Waiting for Customer", "Status should still display correctly after reload"
+    assert_not_includes reloaded_status, "waiting_for_customer", "Should not show underscores after reload"
+  end
+
+  test "multi-word priority 'proactive_followup' updates correctly" do
+    # Open the job status popover
+    @page.click('button[data-action="click->header-job#toggleJobPopover"]')
+    sleep 0.3
+
+    # Click the priority dropdown (third dropdown)
+    priority_button = @page.locator(".job-popover .dropdown-button").nth(2)
+    priority_button.click
+    sleep 0.2
+
+    # Change priority to "Proactive Follow-up"
+    @page.click('.job-popover .priority-option[data-priority="proactive-followup"]')
+    sleep 0.5 # Wait for AJAX request
+
+    # Check for errors
+    errors = @page.evaluate("window.consoleErrors || []")
+    assert_empty errors, "Console errors occurred: #{errors.join(', ')}"
+
+    # Verify priority was updated in UI with correct label
+    priority_text = @page.evaluate(<<~JS)
+      (() => {
+        const buttons = document.querySelectorAll('.job-popover .dropdown-button');
+        return buttons[2].textContent.trim();
+      })()
+    JS
+    assert_includes priority_text, "Proactive Follow-up", "Priority should display as 'Proactive Follow-up'"
+    assert_not_includes priority_text, "proactive_followup", "Should not show underscores in UI"
+
+    # Verify persistence
+    @job.reload
+    assert_equal "proactive_followup", @job.priority, "Priority should be persisted with underscores in database"
+  end
 end
