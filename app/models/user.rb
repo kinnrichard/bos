@@ -24,6 +24,7 @@ class User < ApplicationRecord
   validates :password, length: { minimum: 6 }, if: :password_required?
 
   before_validation :downcase_email
+  before_validation :strip_name
 
   # Thread-safe current user storage
   thread_cattr_accessor :current_user
@@ -69,10 +70,18 @@ class User < ApplicationRecord
            :display_name, :short_name, :display_email, :role_label,
            to: :display
 
+  def first_name
+    name.split.first if name.present?
+  end
+
   private
 
   def downcase_email
     self.email = email.downcase if email.present?
+  end
+
+  def strip_name
+    self.name = name.strip if name.present?
   end
 
   def password_required?

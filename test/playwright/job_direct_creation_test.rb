@@ -2,35 +2,37 @@ require_relative "../application_playwright_test_case"
 
 class JobDirectCreationTest < ApplicationPlaywrightTestCase
   setup do
-    # Create test users
-    @admin = User.create!(
-      name: "Admin User",
-      first_name: "Admin",
-      email: "admin@example.com",
-      password: "password123",
-      role: "admin"
-    )
+    # Create test users first
+    @admin = User.find_or_create_by!(email: "admin@example.com") do |u|
+      u.name = "Admin User"
+      u.password = "password123"
+      u.role = "admin"
+    end
 
-    @john = User.create!(
-      name: "John Doe",
-      first_name: "John",
-      email: "john@example.com",
-      password: "password123",
-      role: "technician"
-    )
+    @john = User.find_or_create_by!(email: "john@example.com") do |u|
+      u.name = "John Doe"
+      u.password = "password123"
+      u.role = "technician"
+    end
+
+    # Set current user for activity logs
+    User.current_user = @admin
+
+    # Clean up and create client
+    Client.where(name: "Test Client").destroy_all
 
     @client = Client.create!(
       name: "Test Client",
-      email: "client@example.com",
-      phone: "555-0123"
+      client_type: "business"
     )
   end
 
   test "creates job directly and shows untitled job with pulsing" do
+    User.current_user = @admin
     sign_in_as(@admin)
 
-    # Navigate to client
-    visit "/clients/#{@client.id}"
+    # Navigate to client jobs page
+    visit "/clients/#{@client.id}/jobs"
     wait_for_navigation
 
     # Click new job button
@@ -53,6 +55,7 @@ class JobDirectCreationTest < ApplicationPlaywrightTestCase
   end
 
   test "pulsing stops when user focuses the field" do
+    User.current_user = @john
     sign_in_as(@john)
 
     # Create a job with untitled name
@@ -88,6 +91,7 @@ class JobDirectCreationTest < ApplicationPlaywrightTestCase
   end
 
   test "saves title when user types and blurs" do
+    User.current_user = @admin
     sign_in_as(@admin)
 
     # Create an untitled job
@@ -125,6 +129,7 @@ class JobDirectCreationTest < ApplicationPlaywrightTestCase
   end
 
   test "handles duplicate untitled jobs with numbering" do
+    User.current_user = @john
     sign_in_as(@john)
 
     # Create first untitled job
@@ -149,6 +154,7 @@ class JobDirectCreationTest < ApplicationPlaywrightTestCase
   end
 
   test "restores placeholder when title is cleared" do
+    User.current_user = @admin
     sign_in_as(@admin)
 
     # Create a job with a real title

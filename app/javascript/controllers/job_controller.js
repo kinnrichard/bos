@@ -592,7 +592,8 @@ export default class extends Controller {
   updateTitle(event) {
     const newTitle = event.target.textContent.trim()
     if (!newTitle) {
-      event.target.textContent = "Untitled Job"
+      const placeholder = event.target.dataset.placeholder || "Untitled Job"
+      event.target.textContent = placeholder
       return
     }
 
