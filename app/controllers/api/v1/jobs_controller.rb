@@ -7,7 +7,7 @@ class Api::V1::JobsController < Api::V1::BaseController
   # GET /api/v1/jobs
   def index
     jobs = job_scope
-                      .includes(:client, :tasks, :technicians)
+                      .includes(:client, :technicians, tasks: :subtasks)
                       .order(created_at: :desc)
 
     # Apply filters
@@ -86,10 +86,10 @@ class Api::V1::JobsController < Api::V1::BaseController
     # Use the same permission logic as the index action
     if current_user.admin? || current_user.owner?
       # Admins/owners can access any job
-      @job = Job.find(params[:id])
+      @job = Job.includes(:client, :technicians, tasks: :subtasks).find(params[:id])
     else
       # Regular users can only access jobs they're assigned to
-      @job = current_user.technician_jobs.find(params[:id])
+      @job = current_user.technician_jobs.includes(:client, :technicians, tasks: :subtasks).find(params[:id])
     end
   rescue ActiveRecord::RecordNotFound
     render_error(

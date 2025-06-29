@@ -87,7 +87,7 @@ export class JobsService {
    * Get single job by ID with included relationships
    */
   async getJobWithDetails(id: string): Promise<PopulatedJob> {
-    const include = 'client,created_by,technicians,tasks';
+    const include = 'client,created_by,technicians,tasks,tasks.subtasks';
     const endpoint = `/jobs/${id}?include=${include}`;
     
     const response = await api.get<JobApiResponse>(endpoint);

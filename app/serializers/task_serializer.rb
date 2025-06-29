@@ -1,7 +1,7 @@
 class TaskSerializer < ApplicationSerializer
   set_type :tasks
 
-  attributes :title, :status, :position, :subtasks_count
+  attributes :title, :description, :status, :position, :subtasks_count, :parent_id
 
   timestamp_attributes :created_at, :updated_at
 
