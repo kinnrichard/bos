@@ -27,12 +27,11 @@ export interface Task {
   type: 'tasks';
   attributes: {
     title: string;
-    description?: string;
     status: string;
     created_at: string;
     updated_at: string;
     parent_id?: string;
-    subtask_count?: number;
+    subtasks_count?: number;
     depth?: number;
   };
 }

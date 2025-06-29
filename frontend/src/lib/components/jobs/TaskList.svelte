@@ -6,12 +6,11 @@
   export let tasks: Array<{
     id: string;
     title: string;
-    description?: string;
     status: string;
     created_at: string;
     updated_at: string;
     parent_id?: string;
-    subtask_count?: number;
+    subtasks_count?: number;
     depth?: number;
   }>;
   
@@ -179,9 +178,6 @@
 
             <div class="task-body">
               <h5 class="task-title">{renderItem.task.title}</h5>
-              {#if renderItem.task.description}
-                <p class="task-description">{renderItem.task.description}</p>
-              {/if}
             </div>
           </div>
 
