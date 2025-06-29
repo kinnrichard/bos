@@ -14,8 +14,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
           type: "auth",
           id: user.id.to_s,
           attributes: {
-            access_token: token[:access_token],
-            refresh_token: token[:refresh_token],
+            message: "Successfully authenticated",
             expires_at: token[:expires_at]
           },
           relationships: {
@@ -68,8 +67,26 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
         raise StandardError, "Invalid token type"
       end
 
+      # Find the refresh token in database
+      jti = payload[:jti] || payload["jti"]
+      refresh_token_record = RefreshToken.find_by(jti: jti)
+
+      if refresh_token_record.nil?
+        raise StandardError, "Token not found or already used"
+      end
+
+      if !refresh_token_record.valid_for_refresh?
+        # Token was revoked or expired - revoke entire family as precaution
+        RefreshToken.revoke_family!(refresh_token_record.family_id)
+        raise StandardError, "Token is no longer valid"
+      end
+
+      # Revoke the old token (it's been used)
+      refresh_token_record.revoke!
+
+      # Generate new tokens with same family ID (rotation)
       user = User.find(payload[:user_id])
-      new_tokens = generate_tokens(user)
+      new_tokens = generate_tokens(user, refresh_token_record.family_id)
       set_auth_cookie(new_tokens[:access_token], new_tokens[:refresh_token])
 
       render json: {
@@ -77,8 +94,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
           type: "auth",
           id: user.id.to_s,
           attributes: {
-            access_token: new_tokens[:access_token],
-            refresh_token: new_tokens[:refresh_token],
+            message: "Token refreshed successfully",
             expires_at: new_tokens[:expires_at]
           }
         }
@@ -122,15 +138,34 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
     params.except(:session, :controller, :action).permit(:refresh_token)
   end
 
-  def generate_tokens(user)
+  def generate_tokens(user, existing_family_id = nil)
+    # Generate new family ID if not rotating
+    family_id = existing_family_id || SecureRandom.uuid
+    jti = SecureRandom.uuid
+    expires_at = 7.days.from_now
+
+    # Create refresh token record
+    user.refresh_tokens.create!(
+      jti: jti,
+      family_id: family_id,
+      expires_at: expires_at,
+      device_fingerprint: request.user_agent
+    )
+
+    # Generate tokens
     access_token = JwtService.encode(
       { user_id: user.id, type: "access" },
       15.minutes.from_now
     )
 
     refresh_token = JwtService.encode(
-      { user_id: user.id, type: "refresh" },
-      2.weeks.from_now
+      {
+        user_id: user.id,
+        type: "refresh",
+        jti: jti,
+        family: family_id
+      },
+      expires_at
     )
 
     {
@@ -145,7 +180,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
       value: token,
       httponly: true,
       secure: Rails.env.production?,
-      same_site: :lax,
+      same_site: :strict,
       expires: 15.minutes.from_now
     }
 
@@ -155,8 +190,8 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
         value: refresh_token,
         httponly: true,
         secure: Rails.env.production?,
-        same_site: :lax,
-        expires: 2.weeks.from_now
+        same_site: :strict,
+        expires: 7.days.from_now
       }
     end
   end

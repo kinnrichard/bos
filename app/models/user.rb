@@ -12,6 +12,7 @@ class User < ApplicationRecord
   has_many :scheduled_date_times, through: :scheduled_date_time_users
   has_many :notes, dependent: :destroy
   has_many :created_jobs, class_name: "Job", foreign_key: "created_by_id", dependent: :nullify
+  has_many :refresh_tokens, dependent: :destroy
 
   enum :role, {
     admin: 0,

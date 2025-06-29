@@ -5,7 +5,7 @@ class JwtService
     def encode(payload, exp = 2.weeks.from_now)
       payload[:exp] = exp.to_i
       payload[:iat] = Time.current.to_i
-      payload[:jti] = SecureRandom.uuid # JWT ID for token revocation
+      payload[:jti] ||= SecureRandom.uuid # JWT ID for token revocation (only if not provided)
 
       JWT.encode(payload, secret_key, "HS256")
     end

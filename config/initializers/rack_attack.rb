@@ -23,6 +23,13 @@ class Rack::Attack
     end
   end
 
+  # Throttle refresh token attempts by IP
+  throttle("refresh/ip", limit: 5, period: 1.hour) do |req|
+    if req.path == "/api/v1/auth/refresh" && req.post?
+      req.ip
+    end
+  end
+
   # Throttle sync endpoints per device
   throttle("sync/device", limit: 100, period: 1.hour) do |req|
     if req.path.start_with?("/api/v1/sync")

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_29_041956) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -139,6 +139,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_041956) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["client_id"], name: "index_people_on_client_id"
+  end
+
+  create_table "refresh_tokens", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "jti", null: false
+    t.string "family_id", null: false
+    t.datetime "expires_at", null: false
+    t.string "device_fingerprint"
+    t.datetime "revoked_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["family_id"], name: "index_refresh_tokens_on_family_id"
+    t.index ["jti"], name: "index_refresh_tokens_on_jti", unique: true
+    t.index ["user_id", "family_id"], name: "index_refresh_tokens_on_user_id_and_family_id"
+    t.index ["user_id"], name: "index_refresh_tokens_on_user_id"
   end
 
   create_table "scheduled_date_time_users", force: :cascade do |t|
@@ -383,6 +398,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_041956) do
   add_foreign_key "jobs", "users", column: "created_by_id"
   add_foreign_key "notes", "users"
   add_foreign_key "people", "clients"
+  add_foreign_key "refresh_tokens", "users"
   add_foreign_key "scheduled_date_time_users", "scheduled_date_times"
   add_foreign_key "scheduled_date_time_users", "users"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
