@@ -7,7 +7,7 @@ This document outlines the migration of the bŏs application from a traditional 
 ## Current State Analysis
 
 ### Architecture
-- **Backend**: Rails 7.x with full MVC stack
+- **Backend**: Rails 8.x with full MVC stack
 - **Frontend**: Server-rendered ERB/Phlex views with Stimulus controllers
 - **Interactivity**: Turbo/Hotwire for page updates
 - **Styling**: Tailwind CSS
@@ -15,7 +15,7 @@ This document outlines the migration of the bŏs application from a traditional 
 
 ### Pain Points
 1. **Performance**: Server round-trips for UI updates cause noticeable lag in drag-and-drop and multi-select operations
-2. **DRY Violations**: Duplicate rendering logic between server (ERB) and client (Stimulus)
+2. **DRY Violations**: Duplicate rendering logic between server (Phlex) and client (Stimulus, client-side plain JavaScript)
 3. **Complexity**: Complex interactions require extensive Stimulus controllers with manual DOM manipulation
 4. **UI Inconsistencies**: Dropdown/popover positioning issues in scrollable containers
 5. **Limited Offline**: No offline functionality for field technicians
@@ -43,7 +43,7 @@ This document outlines the migration of the bŏs application from a traditional 
 ```
 
 ### Technology Stack
-- **Backend**: Rails 7.x (API-only mode)
+- **Backend**: Rails 8.x (API-only mode)
 - **Frontend**: Svelte 5 + Vite
 - **Offline**: Service Workers + IndexedDB (via Dexie.js)
 - **State Management**: Svelte stores + svelte-query
