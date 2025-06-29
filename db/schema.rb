@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_29_125703) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_29_133908) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -29,6 +29,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_125703) do
     t.uuid "user_uuid"
     t.uuid "client_uuid"
     t.uuid "job_uuid"
+    t.uuid "loggable_uuid"
     t.index ["client_id", "created_at"], name: "index_activity_logs_on_client_id_and_created_at"
     t.index ["client_id", "job_id"], name: "index_activity_logs_on_client_id_and_job_id"
     t.index ["client_id"], name: "index_activity_logs_on_client_id"
@@ -36,6 +37,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_125703) do
     t.index ["job_id"], name: "index_activity_logs_on_job_id"
     t.index ["job_uuid"], name: "index_activity_logs_on_job_uuid"
     t.index ["loggable_type", "loggable_id"], name: "index_activity_logs_on_loggable"
+    t.index ["loggable_type", "loggable_uuid"], name: "index_activity_logs_on_loggable_type_and_uuid"
+    t.index ["loggable_uuid"], name: "index_activity_logs_on_loggable_uuid"
     t.index ["user_id"], name: "index_activity_logs_on_user_id"
     t.index ["user_uuid"], name: "index_activity_logs_on_user_uuid"
     t.index ["uuid"], name: "index_activity_logs_on_uuid", unique: true
@@ -128,11 +131,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_125703) do
     t.datetime "updated_at", null: false
     t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.uuid "job_uuid"
+    t.uuid "target_uuid"
     t.index ["job_id", "target_type", "target_id", "instance_number"], name: "index_job_targets_uniqueness", unique: true
     t.index ["job_id"], name: "index_job_targets_on_job_id"
     t.index ["job_uuid"], name: "index_job_targets_on_job_uuid"
     t.index ["status"], name: "index_job_targets_on_status"
     t.index ["target_type", "target_id"], name: "index_job_targets_on_target_type_and_target_id"
+    t.index ["target_type", "target_uuid"], name: "index_job_targets_on_target_type_and_uuid"
+    t.index ["target_uuid"], name: "index_job_targets_on_target_uuid"
     t.index ["uuid"], name: "index_job_targets_on_uuid", unique: true
   end
 
@@ -173,7 +179,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_125703) do
     t.jsonb "metadata"
     t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.uuid "user_uuid"
+    t.uuid "notable_uuid"
     t.index ["notable_type", "notable_id"], name: "index_notes_on_notable"
+    t.index ["notable_type", "notable_uuid"], name: "index_notes_on_notable_type_and_uuid"
+    t.index ["notable_uuid"], name: "index_notes_on_notable_uuid"
     t.index ["user_id"], name: "index_notes_on_user_id"
     t.index ["user_uuid"], name: "index_notes_on_user_uuid"
     t.index ["uuid"], name: "index_notes_on_uuid", unique: true
@@ -251,8 +260,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_125703) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "schedulable_uuid"
     t.index ["schedulable_type", "schedulable_id", "scheduled_type"], name: "index_scheduled_date_times_on_schedulable_and_type"
     t.index ["schedulable_type", "schedulable_id"], name: "index_scheduled_date_times_on_schedulable"
+    t.index ["schedulable_type", "schedulable_uuid"], name: "index_scheduled_date_times_on_schedulable_type_and_uuid"
+    t.index ["schedulable_uuid"], name: "index_scheduled_date_times_on_schedulable_uuid"
     t.index ["scheduled_date"], name: "index_scheduled_date_times_on_scheduled_date"
     t.index ["scheduled_type"], name: "index_scheduled_date_times_on_scheduled_type"
     t.index ["uuid"], name: "index_scheduled_date_times_on_uuid", unique: true

@@ -33,6 +33,14 @@ module UuidAssociations
       # Original ID-based association
       has_many name, scope, **options
 
+      # Handle polymorphic associations differently
+      if options[:as]
+        # For polymorphic associations, we need a different approach
+        # The UUID column is named after the polymorphic association, not the model
+        # e.g., for "has_many :notes, as: :notable", we need notable_uuid, not job_uuid
+        return
+      end
+
       # UUID-based association
       uuid_options = options.dup
       uuid_options[:foreign_key] ||= "#{self.name.underscore}_uuid"
@@ -44,8 +52,7 @@ module UuidAssociations
         class_name: options[:class_name] || name.to_s.classify.singularize,
         foreign_key: uuid_options[:foreign_key],
         primary_key: uuid_options[:primary_key],
-        dependent: options[:dependent],
-        as: options[:as]
+        dependent: options[:dependent]
     end
 
     # Define a has_one association that works with both ID and UUID
@@ -55,6 +62,12 @@ module UuidAssociations
 
       # Original ID-based association
       has_one name, scope, **options
+
+      # Handle polymorphic associations differently
+      if options[:as]
+        # For polymorphic associations, we need a different approach
+        return
+      end
 
       # UUID-based association
       uuid_options = options.dup
@@ -67,8 +80,7 @@ module UuidAssociations
         class_name: options[:class_name] || name.to_s.classify,
         foreign_key: uuid_options[:foreign_key],
         primary_key: uuid_options[:primary_key],
-        dependent: options[:dependent],
-        as: options[:as]
+        dependent: options[:dependent]
     end
   end
 

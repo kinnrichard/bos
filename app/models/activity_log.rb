@@ -1,4 +1,6 @@
 class ActivityLog < ApplicationRecord
+  include PolymorphicUuidSupport
+
   belongs_to :user
   belongs_to :loggable, polymorphic: true, optional: true
   belongs_to :client, optional: true

@@ -171,8 +171,6 @@ class Api::V1::JobsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should destroy job if authorized" do
-    skip "Polymorphic UUID associations need to be fixed first"
-
     # Use owner who can delete
     owner = users(:owner)
     login_as(owner)
