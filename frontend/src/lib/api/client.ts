@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import type { ApiError, ApiResponse, RequestConfig } from '$lib/types/api';
+import type { ApiError, ApiResponse, RequestConfig, AuthResponse } from '$lib/types/api';
 import { csrfTokenManager } from './csrf';
 
 class ApiClient {
@@ -8,6 +8,7 @@ class ApiClient {
   private defaultHeaders: Record<string, string>;
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<boolean> | null = null;
+  private requestQueue: Array<() => void> = [];
 
   constructor() {
     this.baseURL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000/api/v1';
@@ -46,10 +47,11 @@ class ApiClient {
       requestHeaders['X-CSRF-Token'] = csrfToken;
     }
 
-    const requestConfig: RequestInit = {
+    const requestConfig: globalThis.RequestInit = {
       method,
       headers: requestHeaders,
-      credentials: 'include', // Include cookies for authentication
+      // Only include credentials for state-changing requests
+      credentials: ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) ? 'include' : 'same-origin',
     };
 
     if (data && method !== 'GET') {
@@ -64,6 +66,18 @@ class ApiClient {
 
       // Handle 401 Unauthorized - try to refresh token
       if (response.status === 401 && retryOnUnauthorized && !skipAuth) {
+        // If we're already refreshing, queue this request
+        if (this.isRefreshing) {
+          return new Promise<ApiResponse<T>>((resolve, reject) => {
+            this.requestQueue.push(() => {
+              // Retry the original request after refresh completes
+              this.request<T>(endpoint, { ...config, retryOnUnauthorized: false })
+                .then(resolve)
+                .catch(reject);
+            });
+          });
+        }
+
         const refreshed = await this.refreshToken();
         if (refreshed) {
           // Retry the original request
@@ -112,8 +126,8 @@ class ApiClient {
 
   private async refreshToken(): Promise<boolean> {
     // Prevent multiple concurrent refresh attempts
-    if (this.isRefreshing) {
-      return this.refreshPromise || Promise.resolve(false);
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
     }
 
     this.isRefreshing = true;
@@ -121,6 +135,15 @@ class ApiClient {
 
     try {
       const result = await this.refreshPromise;
+      
+      // Process queued requests
+      if (result) {
+        this.processRequestQueue();
+      } else {
+        // Clear queue on failure
+        this.requestQueue = [];
+      }
+      
       return result;
     } finally {
       this.isRefreshing = false;
@@ -128,9 +151,17 @@ class ApiClient {
     }
   }
 
+  private processRequestQueue(): void {
+    const queue = [...this.requestQueue];
+    this.requestQueue = [];
+    
+    // Execute all queued requests
+    queue.forEach(callback => callback());
+  }
+
   private async performTokenRefresh(): Promise<boolean> {
     try {
-      const response = await this.request<any>('/auth/refresh', {
+      const response = await this.request<AuthResponse>('/auth/refresh', {
         method: 'POST',
         skipAuth: true,
         retryOnUnauthorized: false
