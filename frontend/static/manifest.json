@@ -19,12 +19,5 @@
       "type": "image/png"
     }
   ],
-  "categories": ["business", "productivity"],
-  "screenshots": [
-    {
-      "src": "/screenshot-1.png",
-      "sizes": "1280x720",
-      "type": "image/png"
-    }
-  ]
+  "categories": ["business", "productivity"]
 }
