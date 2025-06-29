@@ -120,6 +120,11 @@
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     const isExpanded = isTaskExpanded(task.id);
     
+    // Debug logging
+    if (hasSubtasks) {
+      console.log(`Rendering task "${task.title}" at depth ${depth}, has ${task.subtasks.length} subtasks, expanded: ${isExpanded}`);
+    }
+    
     // Add the current task
     result.push({
       task,
@@ -130,11 +135,13 @@
     
     // Add subtasks if expanded
     if (hasSubtasks && isExpanded) {
+      console.log(`Adding ${task.subtasks.length} subtasks for "${task.title}"`);
       for (const subtask of task.subtasks) {
         result.push(...renderTaskTree(subtask, depth + 1));
       }
     }
     
+    console.log(`renderTaskTree for "${task.title}" returning ${result.length} items`);
     return result;
   }
 </script>
