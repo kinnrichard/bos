@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_25_035005) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_29_041956) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -84,6 +84,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_25_035005) do
     t.index ["person_id"], name: "index_job_people_on_person_id"
   end
 
+  create_table "job_targets", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.string "target_type", null: false
+    t.bigint "target_id", null: false
+    t.string "status", default: "active"
+    t.integer "instance_number", default: 1, null: false
+    t.string "reason"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_id", "target_type", "target_id", "instance_number"], name: "index_job_targets_uniqueness", unique: true
+    t.index ["job_id"], name: "index_job_targets_on_job_id"
+    t.index ["status"], name: "index_job_targets_on_status"
+    t.index ["target_type", "target_id"], name: "index_job_targets_on_target_type_and_target_id"
+  end
+
   create_table "jobs", force: :cascade do |t|
     t.bigint "client_id", null: false
     t.string "title"
@@ -112,6 +127,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_25_035005) do
     t.text "content"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "metadata"
     t.index ["notable_type", "notable_id"], name: "index_notes_on_notable"
     t.index ["user_id"], name: "index_notes_on_user_id"
   end
@@ -292,6 +308,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_25_035005) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "task_completions", force: :cascade do |t|
+    t.bigint "task_id", null: false
+    t.bigint "job_target_id", null: false
+    t.string "status", default: "new_task", null: false
+    t.datetime "completed_at"
+    t.bigint "completed_by_id"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["completed_by_id"], name: "index_task_completions_on_completed_by_id"
+    t.index ["job_target_id"], name: "index_task_completions_on_job_target_id"
+    t.index ["status"], name: "index_task_completions_on_status"
+    t.index ["task_id", "job_target_id"], name: "index_task_completions_on_task_id_and_job_target_id", unique: true
+    t.index ["task_id"], name: "index_task_completions_on_task_id"
+  end
+
   create_table "tasks", force: :cascade do |t|
     t.bigint "job_id", null: false
     t.string "title"
@@ -304,6 +336,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_25_035005) do
     t.integer "subtasks_count", default: 0
     t.datetime "reordered_at", default: -> { "CURRENT_TIMESTAMP" }
     t.integer "lock_version", default: 0, null: false
+    t.boolean "applies_to_all_targets", default: true, null: false
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
     t.index ["job_id"], name: "index_tasks_on_job_id"
     t.index ["lock_version"], name: "index_tasks_on_lock_version"
@@ -345,6 +378,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_25_035005) do
   add_foreign_key "job_assignments", "users"
   add_foreign_key "job_people", "jobs"
   add_foreign_key "job_people", "people"
+  add_foreign_key "job_targets", "jobs"
   add_foreign_key "jobs", "clients"
   add_foreign_key "jobs", "users", column: "created_by_id"
   add_foreign_key "notes", "users"
@@ -357,6 +391,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_25_035005) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "task_completions", "job_targets"
+  add_foreign_key "task_completions", "tasks"
+  add_foreign_key "task_completions", "users", column: "completed_by_id"
   add_foreign_key "tasks", "jobs"
   add_foreign_key "tasks", "tasks", column: "parent_id"
   add_foreign_key "tasks", "users", column: "assigned_to_id"

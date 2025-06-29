@@ -2,26 +2,26 @@ source "https://rubygems.org"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.2"
+# Action Cable for WebSocket connections (real-time features)
+gem "actioncable", "~> 8.0.2"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
-gem "propshaft"
+# gem "propshaft" # Not needed for API mode
 # Dart Sass for SCSS compilation
-gem "dartsass-rails"
+# gem "dartsass-rails" # Not needed for API mode
 # Use PostgreSQL as the database for Active Record
 gem "pg", "~> 1.1"
+# Use Active Storage for file uploads
+gem "image_processing", "~> 1.2"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
-# Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
-gem "importmap-rails"
-# Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
-gem "stimulus-rails"
-# Phlex for building views as Ruby objects
-gem "phlex-rails", "~> 2.0"
-# Motion for reactive components
-gem "motion", "~> 0.5"
-# Build JSON APIs with ease [https://github.com/rails/jbuilder]
-gem "jbuilder"
+# API-only mode gems
+gem "rack-cors"
+gem "jsonapi-serializer"
+gem "rack-attack"
 # For drag-and-drop ordering
 gem "acts_as_list"
+# Pagination
+gem "kaminari"
 
 # Browser testing
 gem "playwright-ruby-client"
@@ -30,6 +30,8 @@ gem "faraday-retry"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
+# JWT for token-based authentication
+gem "jwt"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]

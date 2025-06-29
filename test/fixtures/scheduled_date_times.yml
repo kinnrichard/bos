@@ -1,17 +1,15 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  schedulable: one
-  schedulable_type: Schedulable
-  scheduled_type: MyString
+  schedulable: open_job (Job)
+  scheduled_type: due
   scheduled_date: 2025-06-21
-  scheduled_time: 2025-06-21 17:37:51
-  notes: MyText
+  scheduled_time: "14:00:00"
+  notes: Initial due date
 
 two:
-  schedulable: two
-  schedulable_type: Schedulable
-  scheduled_type: MyString
-  scheduled_date: 2025-06-21
-  scheduled_time: 2025-06-21 17:37:51
-  notes: MyText
+  schedulable: in_progress_job (Job)
+  scheduled_type: start
+  scheduled_date: 2025-06-22
+  scheduled_time: "09:00:00"
+  notes: Start time for job

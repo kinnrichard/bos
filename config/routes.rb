@@ -1,6 +1,40 @@
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
+  # Mount Action Cable for WebSocket connections
+  mount ActionCable.server => "/cable"
+
+  # API v1 namespace
+  namespace :api do
+    namespace :v1 do
+      # Health check endpoint
+      get "health", to: "health#show"
+
+      # Authentication endpoints
+      namespace :auth do
+        post "login", to: "sessions#create"
+        post "refresh", to: "sessions#refresh"
+        post "logout", to: "sessions#destroy"
+      end
+
+      # WebSocket connection info
+      get "websocket/connection_info", to: "websocket#connection_info"
+
+      # API documentation
+      get "documentation", to: "documentation#index"
+
+      # Resource endpoints
+      resources :jobs do
+        resources :tasks do
+          member do
+            patch :reorder
+            patch :update_status
+          end
+        end
+      end
+    end
+  end
+
   # Health check is handled in config.ru to bypass Rails middleware
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
