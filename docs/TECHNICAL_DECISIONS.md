@@ -104,4 +104,4 @@ export function Counter() {
 2. **Offline-First**: Every feature must work offline
 3. **Type Safety**: TypeScript everywhere
 4. **Component-Driven**: Small, focused components
-5. **Progressive Enhancement**: Core functionality without JS
+5. **Performance-First**: Optimize for speed and responsiveness
