@@ -26,9 +26,10 @@ module Bos
     # Configure Rails as API-only mode for Svelte frontend
     config.api_only = true
 
-    # Enable cookies for API authentication
+    # Enable cookies and sessions for API authentication and CSRF protection
     config.middleware.use ActionDispatch::Cookies
     config.middleware.use ActionDispatch::Session::CookieStore
+    config.session_store :cookie_store, key: "_bos_api_session"
 
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.

@@ -54,9 +54,12 @@ class Api::V1::Auth::SessionsControllerTest < ActionDispatch::IntegrationTest
 
     # Get refresh token from cookie instead of JSON
     refresh_token = cookies[:refresh_token]
+    csrf_token = response.headers["X-CSRF-Token"]
 
     # Now refresh using cookie
-    post api_v1_auth_refresh_url, as: :json
+    post api_v1_auth_refresh_url,
+      headers: { "X-CSRF-Token" => csrf_token },
+      as: :json
 
     assert_response :success
 
@@ -78,8 +81,12 @@ class Api::V1::Auth::SessionsControllerTest < ActionDispatch::IntegrationTest
       }
     }, as: :json
 
+    csrf_token = response.headers["X-CSRF-Token"]
+
     # Now logout using cookie authentication
-    post api_v1_auth_logout_url, as: :json
+    post api_v1_auth_logout_url,
+      headers: { "X-CSRF-Token" => csrf_token },
+      as: :json
 
     assert_response :success
 

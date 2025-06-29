@@ -13,6 +13,7 @@ class User < ApplicationRecord
   has_many_dual :notes, dependent: :destroy
   has_many :created_jobs, class_name: "Job", foreign_key: "created_by_id", dependent: :nullify
   has_many_dual :refresh_tokens, dependent: :destroy
+  has_many_dual :revoked_tokens, dependent: :destroy
 
   enum :role, {
     admin: 0,

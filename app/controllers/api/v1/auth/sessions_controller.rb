@@ -1,5 +1,7 @@
 class Api::V1::Auth::SessionsController < Api::V1::BaseController
   skip_before_action :authenticate_request, only: [ :create, :refresh ]
+  skip_before_action :verify_csrf_token_for_cookie_auth, only: [ :create ]
+  after_action :set_csrf_token_header, only: [ :create ]
 
   # POST /api/v1/auth/login
   def create
@@ -113,10 +115,37 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
 
   # POST /api/v1/auth/logout
   def destroy
-    clear_auth_cookies
+    # Extract token to revoke it
+    if auth_token.present?
+      begin
+        payload = JwtService.decode(auth_token)
 
-    # In a production app, you might want to blacklist the JWT here
-    # or track revoked tokens in Redis/database
+        # Revoke the access token
+        if payload[:jti] && payload[:exp]
+          RevokedToken.revoke!(
+            payload[:jti],
+            current_user.id,
+            Time.at(payload[:exp])
+          )
+        end
+
+        # Also revoke the refresh token if present
+        if cookies.signed[:refresh_token].present?
+          refresh_payload = JwtService.decode(cookies.signed[:refresh_token])
+          if refresh_payload[:jti] && refresh_payload[:exp]
+            RevokedToken.revoke!(
+              refresh_payload[:jti],
+              current_user.id,
+              Time.at(refresh_payload[:exp])
+            )
+          end
+        end
+      rescue StandardError => e
+        Rails.logger.error "Error revoking tokens on logout: #{e.message}"
+      end
+    end
+
+    clear_auth_cookies
 
     render json: {
       data: {
@@ -129,6 +158,15 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
   end
 
   private
+
+  def auth_token
+    # Use the same logic as Authenticatable concern
+    if request.headers["Authorization"].present?
+      request.headers["Authorization"].split(" ").last
+    else
+      cookies.signed[:auth_token]
+    end
+  end
 
   def login_params
     params.require(:auth).permit(:email, :password)
@@ -159,15 +197,18 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
       15.minutes.from_now
     )
 
-    refresh_token = JwtService.encode(
-      {
-        user_id: user.id,
-        type: "refresh",
-        jti: jti,
-        family: family_id
-      },
-      expires_at
-    )
+    # Generate refresh token with predefined JTI
+    refresh_payload = {
+      user_id: user.id,
+      type: "refresh",
+      jti: jti,
+      family: family_id
+    }
+    refresh_payload[:exp] = expires_at.to_i
+    refresh_payload[:iat] = Time.current.to_i
+
+    # Encode without generating new JTI
+    refresh_token = JWT.encode(refresh_payload, Rails.application.credentials.secret_key_base || Rails.application.secrets.secret_key_base, "HS256")
 
     {
       access_token: access_token,

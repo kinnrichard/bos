@@ -20,6 +20,13 @@ module Authenticatable
     return nil unless auth_token.present?
 
     payload = JwtService.decode(auth_token)
+
+    # Check if token has been revoked
+    if payload[:jti] && RevokedToken.revoked?(payload[:jti])
+      Rails.logger.info "Attempted to use revoked token: #{payload[:jti]}"
+      return nil
+    end
+
     User.find_by(id: payload[:user_id])
   rescue StandardError => e
     Rails.logger.info "JWT decode error: #{e.message}"

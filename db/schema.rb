@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_29_122025) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_29_125703) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -209,6 +209,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_122025) do
     t.index ["user_id"], name: "index_refresh_tokens_on_user_id"
     t.index ["user_uuid"], name: "index_refresh_tokens_on_user_uuid"
     t.index ["uuid"], name: "index_refresh_tokens_on_uuid", unique: true
+  end
+
+  create_table "revoked_tokens", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "jti", null: false
+    t.bigint "user_id", null: false
+    t.string "user_uuid", null: false
+    t.datetime "revoked_at", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["expires_at"], name: "index_revoked_tokens_on_expires_at"
+    t.index ["jti"], name: "index_revoked_tokens_on_jti", unique: true
+    t.index ["user_id"], name: "index_revoked_tokens_on_user_id"
+    t.index ["user_uuid"], name: "index_revoked_tokens_on_user_uuid"
   end
 
   create_table "scheduled_date_time_users", force: :cascade do |t|
@@ -508,6 +522,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_122025) do
   add_foreign_key "notes", "users"
   add_foreign_key "people", "clients"
   add_foreign_key "refresh_tokens", "users"
+  add_foreign_key "revoked_tokens", "users"
   add_foreign_key "scheduled_date_time_users", "scheduled_date_times"
   add_foreign_key "scheduled_date_time_users", "users"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
