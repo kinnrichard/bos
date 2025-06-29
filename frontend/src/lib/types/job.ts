@@ -31,6 +31,9 @@ export interface Task {
     status: string;
     created_at: string;
     updated_at: string;
+    parent_id?: string;
+    subtask_count?: number;
+    depth?: number;
   };
 }
 

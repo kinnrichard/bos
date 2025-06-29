@@ -1,5 +1,7 @@
 <script lang="ts">
   import { getTaskStatusEmoji } from '$lib/config/emoji';
+  import chevronRight from '$lib/assets/icons/chevron-right.svg';
+  import chevronDown from '$lib/assets/icons/chevron-down.svg';
 
   export let tasks: Array<{
     id: string;
@@ -8,9 +10,56 @@
     status: string;
     created_at: string;
     updated_at: string;
+    parent_id?: string;
+    subtask_count?: number;
+    depth?: number;
   }>;
   
   export let jobId: string; // Used for future drag & drop functionality
+
+  // Track collapsed/expanded state of tasks with subtasks
+  let expandedTasks = new Set<string>();
+
+  // Organize tasks into hierarchical structure
+  function organizeTasksHierarchically(taskList: typeof tasks) {
+    const taskMap = new Map();
+    const rootTasks: any[] = [];
+    
+    // First pass: create map of all tasks
+    taskList.forEach(task => {
+      taskMap.set(task.id, {
+        ...task,
+        subtasks: []
+      });
+    });
+    
+    // Second pass: organize into hierarchy
+    taskList.forEach(task => {
+      const taskWithSubtasks = taskMap.get(task.id);
+      if (task.parent_id && taskMap.has(task.parent_id)) {
+        taskMap.get(task.parent_id).subtasks.push(taskWithSubtasks);
+      } else {
+        rootTasks.push(taskWithSubtasks);
+      }
+    });
+    
+    return rootTasks;
+  }
+
+  $: hierarchicalTasks = organizeTasksHierarchically(tasks);
+
+  function toggleTaskExpansion(taskId: string) {
+    if (expandedTasks.has(taskId)) {
+      expandedTasks.delete(taskId);
+    } else {
+      expandedTasks.add(taskId);
+    }
+    expandedTasks = expandedTasks; // Trigger reactivity
+  }
+
+  function isTaskExpanded(taskId: string): boolean {
+    return expandedTasks.has(taskId);
+  }
 
   function getStatusLabel(status: string): string {
     const labelMap: Record<string, string> = {
@@ -44,6 +93,35 @@
     // Placeholder for future status change functionality
     console.log('Status change:', taskId, newStatus);
   }
+
+  // Recursive function to render task tree with proper depth and visibility
+  function renderTaskTree(task: any, depth: number): Array<{
+    task: any;
+    depth: number;
+    hasSubtasks: boolean;
+    isExpanded: boolean;
+  }> {
+    const result = [];
+    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+    const isExpanded = isTaskExpanded(task.id);
+    
+    // Add the current task
+    result.push({
+      task,
+      depth,
+      hasSubtasks,
+      isExpanded
+    });
+    
+    // Add subtasks if expanded
+    if (hasSubtasks && isExpanded) {
+      for (const subtask of task.subtasks) {
+        result.push(...renderTaskTree(subtask, depth + 1));
+      }
+    }
+    
+    return result;
+  }
 </script>
 
 <div class="task-list">
@@ -55,30 +133,54 @@
     </div>
   {:else}
     <div class="tasks-container">
-      {#each tasks as task (task.id)}
-        <div 
-          class="task-item"
-          class:completed={task.status === 'successfully_completed'}
-          class:in-progress={task.status === 'in_progress'}
-          class:cancelled={task.status === 'cancelled' || task.status === 'failed'}
-          data-task-id={task.id}
-        >
+      {#each hierarchicalTasks as task (task.id)}
+        {@const hasSubtasks = task.subtasks && task.subtasks.length > 0}
+        {@const isExpanded = isTaskExpanded(task.id)}
+        {#each renderTaskTree(task, 0) as renderItem}
+          <div 
+            class="task-item"
+            class:completed={renderItem.task.status === 'successfully_completed'}
+            class:in-progress={renderItem.task.status === 'in_progress'}
+            class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
+            class:has-subtasks={renderItem.hasSubtasks}
+            style="--depth: {renderItem.depth}"
+            data-task-id={renderItem.task.id}
+          >
           <!-- Task Main Content -->
           <div class="task-content">
             <div class="task-header">
+              <!-- Disclosure Triangle -->
+              <div class="task-disclosure">
+                {#if renderItem.hasSubtasks}
+                  <button 
+                    class="disclosure-button"
+                    on:click={() => toggleTaskExpansion(renderItem.task.id)}
+                    aria-label={renderItem.isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+                  >
+                    <img 
+                      src={renderItem.isExpanded ? chevronDown : chevronRight} 
+                      alt={renderItem.isExpanded ? 'Expanded' : 'Collapsed'}
+                      class="chevron-icon"
+                    />
+                  </button>
+                {:else}
+                  <div class="disclosure-spacer"></div>
+                {/if}
+              </div>
+              
               <div class="task-status">
-                <span class="status-emoji">{getTaskStatusEmoji(task.status)}</span>
-                <span class="status-label">{getStatusLabel(task.status)}</span>
+                <span class="status-emoji">{getTaskStatusEmoji(renderItem.task.status)}</span>
+                <span class="status-label">{getStatusLabel(renderItem.task.status)}</span>
               </div>
               <div class="task-meta">
-                <span class="task-updated">{formatDateTime(task.updated_at)}</span>
+                <span class="task-updated">{formatDateTime(renderItem.task.updated_at)}</span>
               </div>
             </div>
 
             <div class="task-body">
-              <h5 class="task-title">{task.title}</h5>
-              {#if task.description}
-                <p class="task-description">{task.description}</p>
+              <h5 class="task-title">{renderItem.task.title}</h5>
+              {#if renderItem.task.description}
+                <p class="task-description">{renderItem.task.description}</p>
               {/if}
             </div>
           </div>
@@ -87,7 +189,7 @@
           <div class="task-actions">
             <button 
               class="task-action-button"
-              on:click={() => handleTaskClick(task.id)}
+              on:click={() => handleTaskClick(renderItem.task.id)}
               disabled
               title="Task details (coming soon)"
             >
@@ -95,10 +197,10 @@
             </button>
             
             <!-- Status Change Button (Future Enhancement) -->
-            {#if task.status !== 'successfully_completed'}
+            {#if renderItem.task.status !== 'successfully_completed'}
               <button 
                 class="task-action-button"
-                on:click={() => handleStatusChange(task.id, 'successfully_completed')}
+                on:click={() => handleStatusChange(renderItem.task.id, 'successfully_completed')}
                 disabled
                 title="Mark complete (coming soon)"
               >
@@ -107,6 +209,7 @@
             {/if}
           </div>
         </div>
+        {/each}
       {/each}
     </div>
 
@@ -165,11 +268,17 @@
     align-items: flex-start;
     gap: 12px;
     padding: 16px;
+    padding-left: calc(16px + (var(--depth, 0) * 24px));
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 8px;
     transition: all 0.15s ease;
     cursor: pointer;
+    position: relative;
+  }
+
+  .task-item.has-subtasks {
+    border-left: 3px solid var(--accent-blue);
   }
 
   .task-item:hover {
@@ -198,16 +307,57 @@
 
   .task-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
-    gap: 12px;
+    gap: 8px;
+  }
+
+  .task-disclosure {
+    display: flex;
+    align-items: center;
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .disclosure-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+  }
+
+  .disclosure-button:hover {
+    background-color: var(--bg-tertiary);
+  }
+
+  .chevron-icon {
+    width: 12px;
+    height: 12px;
+    opacity: 0.7;
+    transition: opacity 0.15s ease;
+  }
+
+  .disclosure-button:hover .chevron-icon {
+    opacity: 1;
+  }
+
+  .disclosure-spacer {
+    width: 16px;
+    height: 16px;
   }
 
   .task-status {
     display: flex;
     align-items: center;
     gap: 6px;
+    flex: 1;
   }
 
   .status-emoji {
