@@ -13,6 +13,7 @@
 		--text-primary: #f2f2f7;
 		--text-secondary: #c7c7cc;
 		--text-tertiary: #8e8e93;
+		--brand-primary: #00a3ff;  /* RGB(0, 163, 255) - Primary brand color */
 		--accent-blue: #00a3ff;
 		--accent-blue-hover: #0089e0;
 
@@ -71,5 +72,10 @@
 
 	body {
 		background-color: var(--bg-black);
+	}
+
+	h1 {
+		color: var(--brand-primary);
+		font-size: 3.5rem; /* ~56px - roughly double the typical default */
 	}
 }
