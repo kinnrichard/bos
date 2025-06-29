@@ -3,6 +3,7 @@ class Api::V1::BaseController < ActionController::API
   include ActionController::HttpAuthentication::Token::ControllerMethods
   include Authenticatable
   include ApiErrorHandler
+  include UuidFindable
 
   before_action :set_request_id
 

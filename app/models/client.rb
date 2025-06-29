@@ -2,9 +2,9 @@ class Client < ApplicationRecord
   include Loggable
 
   # Associations
-  has_many :people, dependent: :destroy
-  has_many :jobs, dependent: :destroy
-  has_many :devices, dependent: :destroy
+  has_many_dual :people, dependent: :destroy
+  has_many_dual :jobs, dependent: :destroy
+  has_many_dual :devices, dependent: :destroy
 
   # Validations
   validates :name, presence: true

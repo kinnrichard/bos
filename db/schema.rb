@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_29_122025) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pgcrypto"
 
   create_table "activity_logs", force: :cascade do |t|
     t.bigint "user_id", null: false
@@ -24,12 +25,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.datetime "updated_at", null: false
     t.bigint "client_id"
     t.bigint "job_id"
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "user_uuid"
+    t.uuid "client_uuid"
+    t.uuid "job_uuid"
     t.index ["client_id", "created_at"], name: "index_activity_logs_on_client_id_and_created_at"
     t.index ["client_id", "job_id"], name: "index_activity_logs_on_client_id_and_job_id"
     t.index ["client_id"], name: "index_activity_logs_on_client_id"
+    t.index ["client_uuid"], name: "index_activity_logs_on_client_uuid"
     t.index ["job_id"], name: "index_activity_logs_on_job_id"
+    t.index ["job_uuid"], name: "index_activity_logs_on_job_uuid"
     t.index ["loggable_type", "loggable_id"], name: "index_activity_logs_on_loggable"
     t.index ["user_id"], name: "index_activity_logs_on_user_id"
+    t.index ["user_uuid"], name: "index_activity_logs_on_user_uuid"
+    t.index ["uuid"], name: "index_activity_logs_on_uuid", unique: true
   end
 
   create_table "clients", force: :cascade do |t|
@@ -38,7 +47,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "name_normalized"
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["name_normalized"], name: "index_clients_on_name_normalized", unique: true
+    t.index ["uuid"], name: "index_clients_on_uuid", unique: true
   end
 
   create_table "contact_methods", force: :cascade do |t|
@@ -48,7 +59,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.integer "contact_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "person_uuid"
     t.index ["person_id"], name: "index_contact_methods_on_person_id"
+    t.index ["person_uuid"], name: "index_contact_methods_on_person_uuid"
+    t.index ["uuid"], name: "index_contact_methods_on_uuid", unique: true
   end
 
   create_table "devices", force: :cascade do |t|
@@ -61,9 +76,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "client_id", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "client_uuid"
+    t.uuid "person_uuid"
     t.index ["client_id", "name"], name: "index_devices_on_client_id_and_name", unique: true
     t.index ["client_id"], name: "index_devices_on_client_id"
+    t.index ["client_uuid"], name: "index_devices_on_client_uuid"
     t.index ["person_id"], name: "index_devices_on_person_id"
+    t.index ["person_uuid"], name: "index_devices_on_person_uuid"
+    t.index ["uuid"], name: "index_devices_on_uuid", unique: true
   end
 
   create_table "job_assignments", force: :cascade do |t|
@@ -71,8 +92,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "job_uuid"
+    t.uuid "user_uuid"
     t.index ["job_id"], name: "index_job_assignments_on_job_id"
+    t.index ["job_uuid"], name: "index_job_assignments_on_job_uuid"
     t.index ["user_id"], name: "index_job_assignments_on_user_id"
+    t.index ["user_uuid"], name: "index_job_assignments_on_user_uuid"
+    t.index ["uuid"], name: "index_job_assignments_on_uuid", unique: true
   end
 
   create_table "job_people", force: :cascade do |t|
@@ -80,8 +107,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.bigint "person_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "job_uuid"
+    t.uuid "person_uuid"
     t.index ["job_id"], name: "index_job_people_on_job_id"
+    t.index ["job_uuid"], name: "index_job_people_on_job_uuid"
     t.index ["person_id"], name: "index_job_people_on_person_id"
+    t.index ["person_uuid"], name: "index_job_people_on_person_uuid"
+    t.index ["uuid"], name: "index_job_people_on_uuid", unique: true
   end
 
   create_table "job_targets", force: :cascade do |t|
@@ -93,10 +126,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.string "reason"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "job_uuid"
     t.index ["job_id", "target_type", "target_id", "instance_number"], name: "index_job_targets_uniqueness", unique: true
     t.index ["job_id"], name: "index_job_targets_on_job_id"
+    t.index ["job_uuid"], name: "index_job_targets_on_job_uuid"
     t.index ["status"], name: "index_job_targets_on_status"
     t.index ["target_type", "target_id"], name: "index_job_targets_on_target_type_and_target_id"
+    t.index ["uuid"], name: "index_job_targets_on_uuid", unique: true
   end
 
   create_table "jobs", force: :cascade do |t|
@@ -115,9 +152,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.date "start_on"
     t.time "start_time"
     t.integer "lock_version", default: 0, null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "client_uuid"
+    t.uuid "created_by_uuid"
     t.index ["client_id"], name: "index_jobs_on_client_id"
+    t.index ["client_uuid"], name: "index_jobs_on_client_uuid"
     t.index ["created_by_id"], name: "index_jobs_on_created_by_id"
+    t.index ["created_by_uuid"], name: "index_jobs_on_created_by_uuid"
     t.index ["lock_version"], name: "index_jobs_on_lock_version"
+    t.index ["uuid"], name: "index_jobs_on_uuid", unique: true
   end
 
   create_table "notes", force: :cascade do |t|
@@ -128,8 +171,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "metadata"
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "user_uuid"
     t.index ["notable_type", "notable_id"], name: "index_notes_on_notable"
     t.index ["user_id"], name: "index_notes_on_user_id"
+    t.index ["user_uuid"], name: "index_notes_on_user_uuid"
+    t.index ["uuid"], name: "index_notes_on_uuid", unique: true
   end
 
   create_table "people", force: :cascade do |t|
@@ -138,7 +185,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "client_uuid"
     t.index ["client_id"], name: "index_people_on_client_id"
+    t.index ["client_uuid"], name: "index_people_on_client_uuid"
+    t.index ["uuid"], name: "index_people_on_uuid", unique: true
   end
 
   create_table "refresh_tokens", force: :cascade do |t|
@@ -150,10 +201,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.datetime "revoked_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "user_uuid"
     t.index ["family_id"], name: "index_refresh_tokens_on_family_id"
     t.index ["jti"], name: "index_refresh_tokens_on_jti", unique: true
     t.index ["user_id", "family_id"], name: "index_refresh_tokens_on_user_id_and_family_id"
     t.index ["user_id"], name: "index_refresh_tokens_on_user_id"
+    t.index ["user_uuid"], name: "index_refresh_tokens_on_user_uuid"
+    t.index ["uuid"], name: "index_refresh_tokens_on_uuid", unique: true
   end
 
   create_table "scheduled_date_time_users", force: :cascade do |t|
@@ -161,9 +216,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "scheduled_date_time_uuid"
+    t.uuid "user_uuid"
     t.index ["scheduled_date_time_id", "user_id"], name: "index_scheduled_date_time_users_unique", unique: true
     t.index ["scheduled_date_time_id"], name: "index_scheduled_date_time_users_on_scheduled_date_time_id"
+    t.index ["scheduled_date_time_uuid"], name: "index_scheduled_date_time_users_on_scheduled_date_time_uuid"
     t.index ["user_id"], name: "index_scheduled_date_time_users_on_user_id"
+    t.index ["user_uuid"], name: "index_scheduled_date_time_users_on_user_uuid"
+    t.index ["uuid"], name: "index_scheduled_date_time_users_on_uuid", unique: true
   end
 
   create_table "scheduled_date_times", force: :cascade do |t|
@@ -175,10 +236,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["schedulable_type", "schedulable_id", "scheduled_type"], name: "index_scheduled_date_times_on_schedulable_and_type"
     t.index ["schedulable_type", "schedulable_id"], name: "index_scheduled_date_times_on_schedulable"
     t.index ["scheduled_date"], name: "index_scheduled_date_times_on_scheduled_date"
     t.index ["scheduled_type"], name: "index_scheduled_date_times_on_scheduled_type"
+    t.index ["uuid"], name: "index_scheduled_date_times_on_uuid", unique: true
   end
 
   create_table "solid_cable_messages", force: :cascade do |t|
@@ -186,9 +249,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.binary "payload", null: false
     t.datetime "created_at", null: false
     t.bigint "channel_hash", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["channel"], name: "index_solid_cable_messages_on_channel"
     t.index ["channel_hash"], name: "index_solid_cable_messages_on_channel_hash"
     t.index ["created_at"], name: "index_solid_cable_messages_on_created_at"
+    t.index ["uuid"], name: "index_solid_cable_messages_on_uuid", unique: true
   end
 
   create_table "solid_cache_entries", force: :cascade do |t|
@@ -197,9 +262,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.datetime "created_at", null: false
     t.bigint "key_hash", null: false
     t.integer "byte_size", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["byte_size"], name: "index_solid_cache_entries_on_byte_size"
     t.index ["key_hash", "byte_size"], name: "index_solid_cache_entries_on_key_hash_and_byte_size"
     t.index ["key_hash"], name: "index_solid_cache_entries_on_key_hash", unique: true
+    t.index ["uuid"], name: "index_solid_cache_entries_on_uuid", unique: true
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
@@ -209,24 +276,30 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.string "concurrency_key", null: false
     t.datetime "expires_at", null: false
     t.datetime "created_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["concurrency_key", "priority", "job_id"], name: "index_solid_queue_blocked_executions_for_release"
     t.index ["expires_at", "concurrency_key"], name: "index_solid_queue_blocked_executions_for_maintenance"
     t.index ["job_id"], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
+    t.index ["uuid"], name: "index_solid_queue_blocked_executions_on_uuid", unique: true
   end
 
   create_table "solid_queue_claimed_executions", force: :cascade do |t|
     t.bigint "job_id", null: false
     t.bigint "process_id"
     t.datetime "created_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["job_id"], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
     t.index ["process_id", "job_id"], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
+    t.index ["uuid"], name: "index_solid_queue_claimed_executions_on_uuid", unique: true
   end
 
   create_table "solid_queue_failed_executions", force: :cascade do |t|
     t.bigint "job_id", null: false
     t.text "error"
     t.datetime "created_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["job_id"], name: "index_solid_queue_failed_executions_on_job_id", unique: true
+    t.index ["uuid"], name: "index_solid_queue_failed_executions_on_uuid", unique: true
   end
 
   create_table "solid_queue_jobs", force: :cascade do |t|
@@ -240,17 +313,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.string "concurrency_key"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
     t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
     t.index ["finished_at"], name: "index_solid_queue_jobs_on_finished_at"
     t.index ["queue_name", "finished_at"], name: "index_solid_queue_jobs_for_filtering"
     t.index ["scheduled_at", "finished_at"], name: "index_solid_queue_jobs_for_alerting"
+    t.index ["uuid"], name: "index_solid_queue_jobs_on_uuid", unique: true
   end
 
   create_table "solid_queue_pauses", force: :cascade do |t|
     t.string "queue_name", null: false
     t.datetime "created_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["queue_name"], name: "index_solid_queue_pauses_on_queue_name", unique: true
+    t.index ["uuid"], name: "index_solid_queue_pauses_on_uuid", unique: true
   end
 
   create_table "solid_queue_processes", force: :cascade do |t|
@@ -262,9 +339,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.text "metadata"
     t.datetime "created_at", null: false
     t.string "name", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["last_heartbeat_at"], name: "index_solid_queue_processes_on_last_heartbeat_at"
     t.index ["name", "supervisor_id"], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
     t.index ["supervisor_id"], name: "index_solid_queue_processes_on_supervisor_id"
+    t.index ["uuid"], name: "index_solid_queue_processes_on_uuid", unique: true
   end
 
   create_table "solid_queue_ready_executions", force: :cascade do |t|
@@ -272,9 +351,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.string "queue_name", null: false
     t.integer "priority", default: 0, null: false
     t.datetime "created_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["job_id"], name: "index_solid_queue_ready_executions_on_job_id", unique: true
     t.index ["priority", "job_id"], name: "index_solid_queue_poll_all"
     t.index ["queue_name", "priority", "job_id"], name: "index_solid_queue_poll_by_queue"
+    t.index ["uuid"], name: "index_solid_queue_ready_executions_on_uuid", unique: true
   end
 
   create_table "solid_queue_recurring_executions", force: :cascade do |t|
@@ -282,8 +363,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.string "task_key", null: false
     t.datetime "run_at", null: false
     t.datetime "created_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["job_id"], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
     t.index ["task_key", "run_at"], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
+    t.index ["uuid"], name: "index_solid_queue_recurring_executions_on_uuid", unique: true
   end
 
   create_table "solid_queue_recurring_tasks", force: :cascade do |t|
@@ -298,8 +381,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["key"], name: "index_solid_queue_recurring_tasks_on_key", unique: true
     t.index ["static"], name: "index_solid_queue_recurring_tasks_on_static"
+    t.index ["uuid"], name: "index_solid_queue_recurring_tasks_on_uuid", unique: true
   end
 
   create_table "solid_queue_scheduled_executions", force: :cascade do |t|
@@ -308,8 +393,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.integer "priority", default: 0, null: false
     t.datetime "scheduled_at", null: false
     t.datetime "created_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["job_id"], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
     t.index ["scheduled_at", "priority", "job_id"], name: "index_solid_queue_dispatch_all"
+    t.index ["uuid"], name: "index_solid_queue_scheduled_executions_on_uuid", unique: true
   end
 
   create_table "solid_queue_semaphores", force: :cascade do |t|
@@ -318,9 +405,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.datetime "expires_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["expires_at"], name: "index_solid_queue_semaphores_on_expires_at"
     t.index ["key", "value"], name: "index_solid_queue_semaphores_on_key_and_value"
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
+    t.index ["uuid"], name: "index_solid_queue_semaphores_on_uuid", unique: true
   end
 
   create_table "task_completions", force: :cascade do |t|
@@ -332,11 +421,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "task_uuid"
+    t.uuid "job_target_uuid"
+    t.uuid "completed_by_uuid"
     t.index ["completed_by_id"], name: "index_task_completions_on_completed_by_id"
+    t.index ["completed_by_uuid"], name: "index_task_completions_on_completed_by_uuid"
     t.index ["job_target_id"], name: "index_task_completions_on_job_target_id"
+    t.index ["job_target_uuid"], name: "index_task_completions_on_job_target_uuid"
     t.index ["status"], name: "index_task_completions_on_status"
     t.index ["task_id", "job_target_id"], name: "index_task_completions_on_task_id_and_job_target_id", unique: true
     t.index ["task_id"], name: "index_task_completions_on_task_id"
+    t.index ["task_uuid"], name: "index_task_completions_on_task_uuid"
+    t.index ["uuid"], name: "index_task_completions_on_uuid", unique: true
   end
 
   create_table "tasks", force: :cascade do |t|
@@ -352,11 +449,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.datetime "reordered_at", default: -> { "CURRENT_TIMESTAMP" }
     t.integer "lock_version", default: 0, null: false
     t.boolean "applies_to_all_targets", default: true, null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.uuid "job_uuid"
+    t.uuid "assigned_to_uuid"
+    t.uuid "parent_uuid"
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
+    t.index ["assigned_to_uuid"], name: "index_tasks_on_assigned_to_uuid"
     t.index ["job_id"], name: "index_tasks_on_job_id"
+    t.index ["job_uuid"], name: "index_tasks_on_job_uuid"
     t.index ["lock_version"], name: "index_tasks_on_lock_version"
     t.index ["parent_id"], name: "index_tasks_on_parent_id"
+    t.index ["parent_uuid"], name: "index_tasks_on_parent_uuid"
     t.index ["reordered_at"], name: "index_tasks_on_reordered_at"
+    t.index ["uuid"], name: "index_tasks_on_uuid", unique: true
   end
 
   create_table "unique_ids", force: :cascade do |t|
@@ -369,8 +474,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.bigint "identifiable_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["generated_id"], name: "index_unique_ids_on_generated_id", unique: true
     t.index ["identifiable_type", "identifiable_id"], name: "index_unique_ids_on_identifiable"
+    t.index ["uuid"], name: "index_unique_ids_on_uuid", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -381,6 +488,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_044043) do
     t.datetime "updated_at", null: false
     t.string "password_digest"
     t.boolean "resort_tasks_on_status_change", default: true, null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.index ["uuid"], name: "index_users_on_uuid", unique: true
   end
 
   add_foreign_key "activity_logs", "clients"

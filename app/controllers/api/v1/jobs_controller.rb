@@ -76,7 +76,7 @@ class Api::V1::JobsController < Api::V1::BaseController
   private
 
   def set_job
-    @job = current_user.technician_jobs.find(params[:id])
+    @job = current_user.technician_jobs.find_by_id_or_uuid!(params[:id])
   rescue ActiveRecord::RecordNotFound
     render_error(
       status: :not_found,
@@ -106,7 +106,11 @@ class Api::V1::JobsController < Api::V1::BaseController
 
     # Filter by client
     if params[:client_id].present?
-      scope = scope.where(client_id: params[:client_id])
+      if uuid?(params[:client_id])
+        scope = scope.where(client_uuid: params[:client_id])
+      else
+        scope = scope.where(client_id: params[:client_id])
+      end
     end
 
     # Filter by date range

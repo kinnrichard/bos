@@ -1,16 +1,16 @@
 class Job < ApplicationRecord
   include Loggable
 
-  belongs_to :client
-  belongs_to :created_by, class_name: "User"
+  belongs_to_dual :client
+  belongs_to_dual :created_by, class_name: "User"
 
-  has_many :job_assignments, dependent: :destroy
+  has_many_dual :job_assignments, dependent: :destroy
   has_many :technicians, through: :job_assignments, source: :user
-  has_many :job_people, dependent: :destroy
+  has_many_dual :job_people, dependent: :destroy
   has_many :people, through: :job_people
-  has_many :tasks, dependent: :destroy
-  has_many :notes, as: :notable, dependent: :destroy
-  has_many :scheduled_date_times, as: :schedulable, dependent: :destroy
+  has_many_dual :tasks, dependent: :destroy
+  has_many_dual :notes, as: :notable, dependent: :destroy
+  has_many_dual :scheduled_date_times, as: :schedulable, dependent: :destroy
 
   enum :status, {
     open: 0,

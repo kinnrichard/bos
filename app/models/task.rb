@@ -1,13 +1,13 @@
 class Task < ApplicationRecord
   include Loggable
 
-  belongs_to :job
-  belongs_to :assigned_to, class_name: "User", optional: true
-  belongs_to :parent, class_name: "Task", optional: true, counter_cache: :subtasks_count
+  belongs_to_dual :job
+  belongs_to_dual :assigned_to, class_name: "User", optional: true
+  belongs_to_dual :parent, class_name: "Task", optional: true, counter_cache: :subtasks_count
 
-  has_many :notes, as: :notable, dependent: :destroy
+  has_many_dual :notes, as: :notable, dependent: :destroy
   has_many :activity_logs, as: :loggable, dependent: :destroy
-  has_many :subtasks, class_name: "Task", foreign_key: :parent_id, dependent: :destroy
+  has_many_dual :subtasks, class_name: "Task", foreign_key: :parent_id, dependent: :destroy
 
   enum :status, {
     new_task: 0,

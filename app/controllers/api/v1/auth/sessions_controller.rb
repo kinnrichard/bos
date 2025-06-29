@@ -149,7 +149,8 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
       jti: jti,
       family_id: family_id,
       expires_at: expires_at,
-      device_fingerprint: request.user_agent
+      device_fingerprint: request.user_agent,
+      user_uuid: user.uuid
     )
 
     # Generate tokens
