@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PopulatedJob } from '$lib/types/job';
+  import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emojis';
   import JobInfo from './JobInfo.svelte';
   import ClientInfo from './ClientInfo.svelte';
   import TaskList from './TaskList.svelte';
@@ -7,32 +8,8 @@
 
   export let job: PopulatedJob;
 
-  $: statusEmoji = getStatusEmoji(job.attributes.status);
-  $: priorityEmoji = getPriorityEmoji(job.attributes.priority);
-  
-  function getStatusEmoji(status: string): string {
-    const emojiMap: Record<string, string> = {
-      'open': '📝',
-      'in_progress': '⚡',
-      'waiting_for_customer': '⏳',
-      'waiting_for_scheduled_appointment': '📅',
-      'paused': '⏸️',
-      'successfully_completed': '✅',
-      'cancelled': '❌'
-    };
-    return emojiMap[status] || '📝';
-  }
-  
-  function getPriorityEmoji(priority: string): string {
-    const emojiMap: Record<string, string> = {
-      'low': '⬇️',
-      'normal': '',
-      'high': '⬆️',
-      'critical': '🔥',
-      'proactive_followup': '🔄'
-    };
-    return emojiMap[priority] || '';
-  }
+  $: statusEmoji = getJobStatusEmoji(job.attributes.status);
+  $: priorityEmoji = getJobPriorityEmoji(job.attributes.priority);
 </script>
 
 <div class="job-detail-view">

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { getTaskStatusEmoji } from '$lib/config/emojis';
+
   export let tasks: Array<{
     id: string;
     title: string;
@@ -9,18 +11,6 @@
   }>;
   
   export let jobId: string; // Used for future drag & drop functionality
-
-  function getStatusEmoji(status: string): string {
-    const emojiMap: Record<string, string> = {
-      'new_task': '📝',
-      'in_progress': '⚡',
-      'paused': '⏸️',
-      'successfully_completed': '✅',
-      'cancelled': '❌',
-      'failed': '❌'
-    };
-    return emojiMap[status] || '📝';
-  }
 
   function getStatusLabel(status: string): string {
     const labelMap: Record<string, string> = {
@@ -77,7 +67,7 @@
           <div class="task-content">
             <div class="task-header">
               <div class="task-status">
-                <span class="status-emoji">{getStatusEmoji(task.status)}</span>
+                <span class="status-emoji">{getTaskStatusEmoji(task.status)}</span>
                 <span class="status-label">{getStatusLabel(task.status)}</span>
               </div>
               <div class="task-meta">
