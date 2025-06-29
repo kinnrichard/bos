@@ -23,7 +23,7 @@ Before making any changes:
 ## Documentation Structure
 
 ### Core Documentation
-- [Product Requirements Document](./prd.md) - Business goals and feature specifications
+- [Product Requirements Document](./architecture/prd.md) - Business goals and feature specifications
 - [Architecture Index](./architecture/index.md) - Technical architecture overview
 
 ### Essential Reading (Start Here)
@@ -41,6 +41,8 @@ Before making any changes:
 
 #### API and Data
 - [REST API Specification](./architecture/rest-api-spec.md) - Endpoint documentation
+- [API Authentication](./api/API_AUTHENTICATION.md) - Authentication methods and security
+- [API Specification](./api/API_SPECIFICATION.md) - Detailed API documentation
 - [Data Models](./architecture/data-models.md) - Business entity definitions
 - [Database Schema](./architecture/database-schema.md) - PostgreSQL structure
 
@@ -53,6 +55,29 @@ Before making any changes:
 - [Deployment Guide](./architecture/deployment-guide.md) - Kamal deployment process
 - [Performance Guidelines](./architecture/performance-guidelines.md) - Optimization patterns
 - [Troubleshooting Guide](./architecture/troubleshooting-guide.md) - Common issues
+
+### Product Requirements Documents
+- [Svelte Migration PRD](./prd/SVELTE_MIGRATION_PRD.md) - Frontend framework migration plan
+- [Bug to PR Automation](./prd/bug-to-pr-automation/) - Automated issue resolution system
+  - [Architecture](./prd/bug-to-pr-automation/architecture.md) - System design
+
+### User Stories and Epics
+- [Svelte Migration Stories](./stories/SVELTE_MIGRATION_STORIES.md) - Implementation stories
+- [Bug to PR Implementation Stories](./stories/bug-to-pr-implementation-stories.md) - Automation stories
+- [Device Compliance Management Epic](./stories/device-compliance-management-epic.md) - Device tracking
+- [Multi-Target Jobs Epic](./stories/multi-target-jobs-epic.md) - Job management enhancements
+
+### Development Guides
+- [Claude Automation Setup](./guides/claude-automation-setup.md) - AI assistant configuration
+- [Bug to PR Automation Guide](./guides/README-bug-to-pr-automation.md) - Setup instructions
+- [Test Plan Critical Areas](./guides/test-plan-critical-areas.md) - Testing focus areas
+
+### Standards and Conventions
+- [Style Guide](./standards/STYLE_GUIDE.md) - Code formatting and conventions
+- [Technical Decisions](./standards/TECHNICAL_DECISIONS.md) - Architectural choices
+
+### Workflows
+- [Feature Request Workflow](./workflows/feature-request-workflow.md) - Development process
 
 ## Key Technologies
 
