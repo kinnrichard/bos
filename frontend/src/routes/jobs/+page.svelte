@@ -30,7 +30,7 @@
 </script>
 
 <svelte:head>
-  <title>Jobs - BOS</title>
+  <title>Jobs - bŏs</title>
 </svelte:head>
 
 <div class="jobs-container">

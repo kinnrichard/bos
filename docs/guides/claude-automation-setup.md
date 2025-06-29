@@ -1,6 +1,6 @@
 # Claude Automation Setup Guide
 
-This guide explains how to set up and configure the Claude CLI integration for automated bug fixing in BOS.
+This guide explains how to set up and configure the Claude CLI integration for automated bug fixing in bŏs.
 
 ## Prerequisites
 

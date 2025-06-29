@@ -57,7 +57,7 @@
 </script>
 
 <svelte:head>
-  <title>Sign In - BOS</title>
+  <title>Sign In - bŏs</title>
 </svelte:head>
 
 <div class="auth-container">

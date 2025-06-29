@@ -1,8 +1,8 @@
-# BOS Bug Report to PR Automation Architecture
+# bŏs Bug Report to PR Automation Architecture
 
 ## Introduction
 
-This document outlines the architectural approach for enhancing BOS (Business Operations System) with an automated bug report to pull request pipeline. Its primary goal is to serve as the guiding architectural blueprint for AI-driven development of a feedback system that captures beta tester bug reports and automatically generates fixes via Claude Code integration.
+This document outlines the architectural approach for enhancing bŏs (Business Operating System) with an automated bug report to pull request pipeline. Its primary goal is to serve as the guiding architectural blueprint for AI-driven development of a feedback system that captures beta tester bug reports and automatically generates fixes via Claude Code integration.
 
 **Relationship to Existing Architecture:**
 This document supplements the existing Rails 8 application architecture by defining how new bug tracking and automation components will integrate with current systems. Where conflicts arise between new and existing patterns, this document provides guidance on maintaining consistency while implementing the automated feedback pipeline.

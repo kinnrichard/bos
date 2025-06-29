@@ -1,8 +1,8 @@
-# BOS API Documentation
+# bŏs API Documentation
 
 ## Overview
 
-The BOS (Business Operations System) API is a RESTful API that provides endpoints for managing jobs, tasks, clients, and technician collaboration. The API uses JWT for authentication and follows JSON:API specification for responses.
+The bŏs (Business Operating System) API is a RESTful API that provides endpoints for managing jobs, tasks, clients, and technician collaboration. The API uses JWT for authentication and follows JSON:API specification for responses.
 
 ## Authentication
 

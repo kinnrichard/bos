@@ -27,7 +27,7 @@
 </script>
 
 <svelte:head>
-  <title>{job ? `${job.attributes.title} - BOS` : 'Job Details - BOS'}</title>
+  <title>{job ? `${job.attributes.title} - bŏs` : 'Job Details - bŏs'}</title>
 </svelte:head>
 
 <div class="job-detail-container">

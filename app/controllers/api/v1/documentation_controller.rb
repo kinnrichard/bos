@@ -12,8 +12,8 @@ class Api::V1::DocumentationController < Api::V1::BaseController
     {
       openapi: "3.0.0",
       info: {
-        title: "BOS API",
-        description: "API for the Business Operations System. Supports both cookie-based authentication (for the Svelte PWA) and Bearer token authentication (for future native mobile apps).",
+        title: "bŏs API",
+        description: "API for the Business Operating System. Supports both cookie-based authentication (for the Svelte PWA) and Bearer token authentication (for future native mobile apps).",
         version: "1.0.0",
         contact: {
           name: "API Support",

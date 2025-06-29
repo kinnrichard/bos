@@ -1,6 +1,6 @@
 # Feature Request Workflow
 
-This document describes the semi-automated workflow for handling feature requests in BOS.
+This document describes the semi-automated workflow for handling feature requests in bŏs.
 
 ## Overview
 

@@ -6,7 +6,7 @@ To enable the bug report and feature request functionality, you need to configur
 
 1. Go to GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
 2. Click "Generate new token (classic)"
-3. Give it a descriptive name like "BOS Bug Report Integration"
+3. Give it a descriptive name like "bŏs Bug Report Integration"
 4. Select the following scopes:
    - `repo` (Full control of private repositories)
    - `write:issues` (Write access to issues)

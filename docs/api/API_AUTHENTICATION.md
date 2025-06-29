@@ -1,6 +1,6 @@
 # API Authentication Guide
 
-The BOS API supports two authentication methods to accommodate different client types:
+The bŏs API supports two authentication methods to accommodate different client types:
 
 ## 1. Cookie-Based Authentication (Svelte PWA)
 
