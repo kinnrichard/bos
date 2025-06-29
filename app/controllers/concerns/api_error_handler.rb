@@ -21,6 +21,9 @@ module ApiErrorHandler
   def handle_standard_error(exception)
     log_error(exception)
 
+    # Don't render if response already sent
+    return if response_body
+
     # In production, don't expose internal errors
     if Rails.env.production?
       render_error(
