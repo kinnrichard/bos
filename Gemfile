@@ -17,7 +17,7 @@ gem "puma", ">= 5.0"
 # API-only mode gems
 gem "rack-cors"
 gem "jsonapi-serializer"
-gem "rack-attack"
+# gem "rack-attack" # Temporarily disabled for development
 # For drag-and-drop ordering
 gem "acts_as_list"
 # Pagination
