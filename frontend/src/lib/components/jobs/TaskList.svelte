@@ -49,6 +49,13 @@
 
   $: hierarchicalTasks = organizeTasksHierarchically(tasks);
   
+  // Make rendering reactive to expandedTasks state changes
+  $: flattenedTasks = (() => {
+    // Include expandedTasks in dependency by referencing it
+    const _ = expandedTasks; 
+    return hierarchicalTasks.flatMap(task => renderTaskTree(task, 0));
+  })();
+  
   // Debug: Log hierarchical tasks to see the structure
   $: {
     if (hierarchicalTasks.length > 0) {
@@ -59,6 +66,11 @@
         }
       });
     }
+  }
+  
+  // Debug: Log when flattened tasks change
+  $: {
+    console.log('Flattened tasks updated:', flattenedTasks.length, 'items');
   }
 
   function toggleTaskExpansion(taskId: string) {
@@ -155,19 +167,16 @@
     </div>
   {:else}
     <div class="tasks-container">
-      {#each hierarchicalTasks as task (task.id)}
-        {@const hasSubtasks = task.subtasks && task.subtasks.length > 0}
-        {@const isExpanded = isTaskExpanded(task.id)}
-        {#each renderTaskTree(task, 0) as renderItem}
-          <div 
-            class="task-item"
-            class:completed={renderItem.task.status === 'successfully_completed'}
-            class:in-progress={renderItem.task.status === 'in_progress'}
-            class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
-            class:has-subtasks={renderItem.hasSubtasks}
-            style="--depth: {renderItem.depth}"
-            data-task-id={renderItem.task.id}
-          >
+      {#each flattenedTasks as renderItem (renderItem.task.id)}
+        <div 
+          class="task-item"
+          class:completed={renderItem.task.status === 'successfully_completed'}
+          class:in-progress={renderItem.task.status === 'in_progress'}
+          class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
+          class:has-subtasks={renderItem.hasSubtasks}
+          style="--depth: {renderItem.depth}"
+          data-task-id={renderItem.task.id}
+        >
           <!-- Task Main Content -->
           <div class="task-content">
             <div class="task-header">
@@ -228,7 +237,6 @@
             {/if}
           </div>
         </div>
-        {/each}
       {/each}
     </div>
 
