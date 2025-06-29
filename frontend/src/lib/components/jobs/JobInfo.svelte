@@ -18,17 +18,6 @@
     return timeString;
   }
 
-  function formatDateTime(dateString?: string): string {
-    if (!dateString) return 'Not set';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    });
-  }
 </script>
 
 <div class="job-info-panel">
@@ -130,20 +119,6 @@
       </div>
     </div>
 
-    <!-- Timestamps -->
-    <div class="info-group">
-      <h4>Activity</h4>
-      <div class="info-items">
-        <div class="info-item">
-          <span class="info-label">Created</span>
-          <span class="info-value">{formatDateTime(job.attributes.created_at)}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Last Updated</span>
-          <span class="info-value">{formatDateTime(job.attributes.updated_at)}</span>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
