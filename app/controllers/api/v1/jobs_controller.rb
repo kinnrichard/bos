@@ -83,7 +83,14 @@ class Api::V1::JobsController < Api::V1::BaseController
   private
 
   def set_job
-    @job = current_user.technician_jobs.find(params[:id])
+    # Use the same permission logic as the index action
+    if current_user.admin? || current_user.owner?
+      # Admins/owners can access any job
+      @job = Job.find(params[:id])
+    else
+      # Regular users can only access jobs they're assigned to
+      @job = current_user.technician_jobs.find(params[:id])
+    end
   rescue ActiveRecord::RecordNotFound
     render_error(
       status: :not_found,
