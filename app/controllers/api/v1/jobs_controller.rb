@@ -16,20 +16,27 @@ class Api::V1::JobsController < Api::V1::BaseController
     # Paginate
     jobs = paginate(jobs)
 
-    render json: JobSerializer.new(
-      jobs,
-      include: params[:include]&.split(","),
-      meta: pagination_meta(jobs),
-      links: pagination_links(jobs, request.url)
-    ).serializable_hash
+    # Check ETag freshness with filter params as additional keys
+    filter_params = params.permit(:status, :priority, :client_id, :q, :page, :per_page, :include, :from_date, :to_date).to_h
+    if stale_check?(jobs, additional_keys: [ filter_params ])
+      render json: JobSerializer.new(
+        jobs,
+        include: params[:include]&.split(","),
+        meta: pagination_meta(jobs),
+        links: pagination_links(jobs, request.url)
+      ).serializable_hash
+    end
   end
 
   # GET /api/v1/jobs/:id
   def show
-    render json: JobSerializer.new(
-      @job,
-      include: params[:include]&.split(",")
-    ).serializable_hash
+    # Check ETag freshness for the job
+    if stale_check?(@job, additional_keys: [ params[:include] ])
+      render json: JobSerializer.new(
+        @job,
+        include: params[:include]&.split(",")
+      ).serializable_hash
+    end
   end
 
   # POST /api/v1/jobs
@@ -115,16 +122,16 @@ class Api::V1::JobsController < Api::V1::BaseController
 
     # Filter by date range
     if params[:from_date].present?
-      scope = scope.where("created_at >= ?", Date.parse(params[:from_date]))
+      scope = scope.where("jobs.created_at >= ?", Date.parse(params[:from_date]))
     end
 
     if params[:to_date].present?
-      scope = scope.where("created_at <= ?", Date.parse(params[:to_date]).end_of_day)
+      scope = scope.where("jobs.created_at <= ?", Date.parse(params[:to_date]).end_of_day)
     end
 
     # Search by title
     if params[:q].present?
-      scope = scope.where("title ILIKE ?", "%#{params[:q]}%")
+      scope = scope.where("jobs.title ILIKE ?", "%#{params[:q]}%")
     end
 
     scope

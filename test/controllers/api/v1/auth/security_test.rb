@@ -37,9 +37,12 @@ class Api::V1::Auth::SecurityTest < ActionDispatch::IntegrationTest
 
     initial_refresh_count = RefreshToken.count
     initial_token = RefreshToken.last
+    csrf_token = response.headers["X-CSRF-Token"]
 
-    # Use refresh token
-    post api_v1_auth_refresh_url, as: :json
+    # Use refresh token with CSRF token
+    post api_v1_auth_refresh_url,
+         headers: { "X-CSRF-Token" => csrf_token },
+         as: :json
 
     assert_response :success
 
@@ -67,14 +70,18 @@ class Api::V1::Auth::SecurityTest < ActionDispatch::IntegrationTest
 
     first_token = RefreshToken.last
     family_id = first_token.family_id
+    csrf_token = response.headers["X-CSRF-Token"]
 
     # Refresh once (normal rotation)
-    post api_v1_auth_refresh_url, as: :json
+    post api_v1_auth_refresh_url,
+         headers: { "X-CSRF-Token" => csrf_token },
+         as: :json
     assert_response :success
 
-    # Clear cookies to simulate theft
+    # Clear cookies and session to simulate theft from a different client
     cookies.delete(:auth_token)
     cookies.delete(:refresh_token)
+    reset! # Reset the session to simulate a new client
 
     # Generate JWT for the old (revoked) token to simulate token theft
     stolen_jwt = JwtService.encode(

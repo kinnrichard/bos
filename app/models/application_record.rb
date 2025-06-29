@@ -5,7 +5,10 @@ class ApplicationRecord < ActiveRecord::Base
 
   # Generate cache key with version for ETag support
   def cache_key_with_version
-    "#{model_name.cache_key}/#{id}-#{updated_at.to_i}"
+    # Use UUID for cache key if available, fallback to ID
+    identifier = respond_to?(:uuid) && uuid.present? ? uuid : id
+    timestamp = updated_at&.utc&.to_fs(:usec) || "nil"
+    "#{model_name.cache_key}/#{identifier}-#{timestamp}"
   end
 
   # Override to_param to use UUID for URLs

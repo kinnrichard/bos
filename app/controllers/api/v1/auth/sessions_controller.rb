@@ -74,13 +74,19 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
       refresh_token_record = RefreshToken.find_by(jti: jti)
 
       if refresh_token_record.nil?
-        raise StandardError, "Token not found or already used"
+        raise StandardError, "Token not found"
       end
 
-      if !refresh_token_record.valid_for_refresh?
-        # Token was revoked or expired - revoke entire family as precaution
+      # Check if token was already used (revoked) - indicates potential theft
+      if refresh_token_record.revoked?
+        # Token was already used - revoke entire family as this indicates token theft
         RefreshToken.revoke_family!(refresh_token_record.family_id)
-        raise StandardError, "Token is no longer valid"
+        raise StandardError, "Token has already been used - potential security breach detected"
+      end
+
+      # Check if token is expired
+      if refresh_token_record.expired?
+        raise StandardError, "Token has expired"
       end
 
       # Revoke the old token (it's been used)

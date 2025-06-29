@@ -5,6 +5,7 @@ class Api::V1::BaseController < ActionController::API
   include ApiErrorHandler
   include ApiCsrfProtection
   include UuidFindable
+  include EtagSupport
 
   before_action :set_request_id
 
