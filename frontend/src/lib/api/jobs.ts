@@ -1,4 +1,5 @@
 import { api } from './client';
+import qs from 'qs';
 import type {
   JobResource,
   JobCreateRequest,
@@ -17,15 +18,12 @@ export class JobsService {
    * Get paginated list of jobs with new scope parameter support
    */
   async getJobsWithScope(params: JobsRequestParams = {}): Promise<JobsApiResponse> {
-    const searchParams = new URLSearchParams();
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        searchParams.append(key, String(value));
-      }
+    const queryString = qs.stringify(params, {
+      skipNulls: true,        // Skip null and undefined values
+      strictNullHandling: true, // Don't serialize null as empty string
+      arrayFormat: 'comma'    // For array parameters like include
     });
 
-    const queryString = searchParams.toString();
     const endpoint = `/jobs${queryString ? `?${queryString}` : ''}`;
     
     return api.get<JobsApiResponse>(endpoint);
@@ -74,15 +72,11 @@ export class JobsService {
     client_id?: string;
     technician_id?: string;
   } = {}): Promise<PaginatedResponse<JobResource>> {
-    const searchParams = new URLSearchParams();
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        searchParams.append(key, String(value));
-      }
+    const queryString = qs.stringify(params, {
+      skipNulls: true,
+      strictNullHandling: true
     });
 
-    const queryString = searchParams.toString();
     const endpoint = `/jobs${queryString ? `?${queryString}` : ''}`;
     
     return api.get<PaginatedResponse<JobResource>>(endpoint);
