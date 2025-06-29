@@ -1,106 +1,96 @@
 <script lang="ts">
+  import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
+
   export let status: string;
   export let priority: string;
   export let isOverdue: boolean = false;
 
   function getStatusInfo(status: string) {
-    const statusMap: Record<string, { label: string; color: string; emoji: string }> = {
+    const statusMap: Record<string, { label: string; color: string }> = {
       'open': {
         label: 'Open',
-        color: 'var(--text-secondary)',
-        emoji: '📝'
+        color: 'var(--text-secondary)'
       },
       'in_progress': {
         label: 'In Progress',
-        color: 'var(--accent-blue)',
-        emoji: '⚡'
+        color: 'var(--accent-blue)'
       },
       'waiting_for_customer': {
         label: 'Waiting for Customer',
-        color: 'var(--text-secondary)',
-        emoji: '⏳'
+        color: 'var(--text-secondary)'
       },
       'waiting_for_scheduled_appointment': {
         label: 'Waiting for Appointment',
-        color: 'var(--text-secondary)',
-        emoji: '📅'
+        color: 'var(--text-secondary)'
       },
       'paused': {
         label: 'Paused',
-        color: 'var(--text-secondary)',
-        emoji: '⏸️'
+        color: 'var(--text-secondary)'
       },
       'successfully_completed': {
         label: 'Completed',
-        color: 'var(--accent-green)',
-        emoji: '✅'
+        color: 'var(--accent-green)'
       },
       'cancelled': {
         label: 'Cancelled',
-        color: 'var(--accent-red)',
-        emoji: '❌'
+        color: 'var(--accent-red)'
       }
     };
 
     return statusMap[status] || {
       label: status.replace('_', ' '),
-      color: 'var(--text-secondary)',
-      emoji: '❓'
+      color: 'var(--text-secondary)'
     };
   }
 
   function getPriorityInfo(priority: string) {
-    const priorityMap: Record<string, { label: string; color: string; emoji: string }> = {
+    const priorityMap: Record<string, { label: string; color: string }> = {
       'low': {
         label: 'Low Priority',
-        color: 'var(--text-secondary)',
-        emoji: '⬇️'
+        color: 'var(--text-secondary)'
       },
       'normal': {
         label: 'Normal Priority',
-        color: 'var(--text-secondary)',
-        emoji: ''
+        color: 'var(--text-secondary)'
       },
       'high': {
         label: 'High Priority',
-        color: 'var(--accent-red)',
-        emoji: '⬆️'
+        color: 'var(--accent-red)'
       },
       'critical': {
         label: 'Critical Priority',
-        color: 'var(--accent-red)',
-        emoji: '🔥'
+        color: 'var(--accent-red)'
       },
       'proactive_followup': {
         label: 'Proactive Follow-up',
-        color: 'var(--accent-blue)',
-        emoji: '🔄'
+        color: 'var(--accent-blue)'
       }
     };
 
     return priorityMap[priority] || {
       label: priority.replace('_', ' '),
-      color: 'var(--text-secondary)',
-      emoji: ''
+      color: 'var(--text-secondary)'
     };
   }
 
   $: statusInfo = getStatusInfo(status);
   $: priorityInfo = getPriorityInfo(priority);
+  $: statusEmoji = getJobStatusEmoji(status);
+  $: priorityEmoji = getJobPriorityEmoji(priority);
 </script>
 
 <div class="status-indicator">
   <!-- Primary Status -->
   <div class="status-badge primary" style="color: {statusInfo.color}">
-    <span class="status-emoji">{statusInfo.emoji}</span>
+    <span class="status-emoji">{statusEmoji}</span>
     <span class="status-label">{statusInfo.label}</span>
   </div>
 
   <!-- Priority Indicator (only if not normal) -->
   {#if priority !== 'normal'}
     <div class="status-badge priority" style="color: {priorityInfo.color}">
-      {#if priorityInfo.emoji}
-        <span class="status-emoji">{priorityInfo.emoji}</span>
+      {#if priorityEmoji}
+        <span class="status-emoji">{priorityEmoji}</span>
       {/if}
       <span class="status-label">{priorityInfo.label}</span>
     </div>
@@ -179,18 +169,18 @@
     }
   }
 
-  /* Status-specific styling */
-  .status-badge:has(.status-emoji:contains('✅')) {
+  /* Status-specific styling based on status type */
+  .status-badge.primary:has(.status-label:contains('Completed')) {
     background-color: rgba(50, 215, 75, 0.1);
     border-color: rgba(50, 215, 75, 0.2);
   }
 
-  .status-badge:has(.status-emoji:contains('⚡')) {
+  .status-badge.primary:has(.status-label:contains('In Progress')) {
     background-color: rgba(0, 163, 255, 0.1);
     border-color: rgba(0, 163, 255, 0.2);
   }
 
-  .status-badge:has(.status-emoji:contains('❌')) {
+  .status-badge.primary:has(.status-label:contains('Cancelled')) {
     background-color: rgba(255, 69, 58, 0.1);
     border-color: rgba(255, 69, 58, 0.2);
   }
