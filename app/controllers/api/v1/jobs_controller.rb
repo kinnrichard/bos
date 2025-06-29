@@ -17,7 +17,7 @@ class Api::V1::JobsController < Api::V1::BaseController
     jobs = paginate(jobs)
 
     # Check ETag freshness with filter params as additional keys
-    filter_params = params.permit(:status, :priority, :client_id, :q, :page, :per_page, :include, :from_date, :to_date).to_h
+    filter_params = params.permit(:scope, :status, :priority, :client_id, :q, :page, :per_page, :include, :from_date, :to_date).to_h
     if stale_check?(jobs, additional_keys: [ filter_params ])
       render json: JobSerializer.new(
         jobs,
