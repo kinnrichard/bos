@@ -76,6 +76,6 @@
 
 	h1 {
 		color: var(--brand-primary);
-		font-size: 3.5rem; /* ~56px - roughly double the typical default */
+		font-size: 2rem; /* ~56px - roughly double the typical default */
 	}
 }
