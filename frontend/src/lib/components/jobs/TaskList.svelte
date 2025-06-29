@@ -513,7 +513,7 @@
   }
 
   .action-icon {
-    font-size: 14px;
+    font-size: 18px;
   }
 
   .task-list-footer {
