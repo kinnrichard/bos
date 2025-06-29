@@ -7,8 +7,8 @@
 
 // Job Status Emoji Mappings
 const JOB_STATUS_EMOJIS: Record<string, string> = {
-  'open': '📝',
-  'in_progress': '⚡',
+  'open': '⚫',
+  'in_progress': '🟢',
   'waiting_for_customer': '⏳',
   'waiting_for_scheduled_appointment': '📅',
   'paused': '⏸️',
@@ -18,11 +18,11 @@ const JOB_STATUS_EMOJIS: Record<string, string> = {
 
 // Job Priority Emoji Mappings
 const JOB_PRIORITY_EMOJIS: Record<string, string> = {
-  'low': '⬇️',
+  'low': '➖',
   'normal': '',
-  'high': '⬆️',
+  'high': '❗',
   'critical': '🔥',
-  'proactive_followup': '🔄'
+  'proactive_followup': '💬'
 };
 
 // Task Status Emoji Mappings

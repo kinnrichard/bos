@@ -359,8 +359,7 @@ await api.post('/jobs', { title: 'New Job' });
 - [ ] Touch support for tablets
 
 **Technical Notes:**
-- Use native HTML5 drag & drop
-- Consider `svelte-dnd-action` library
+- Use the `svelte-dnd-action` library
 
 ---
 

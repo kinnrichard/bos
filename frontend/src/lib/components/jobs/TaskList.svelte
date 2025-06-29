@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getTaskStatusEmoji } from '$lib/config/emojis';
+  import { getTaskStatusEmoji } from '$lib/config/emoji';
 
   export let tasks: Array<{
     id: string;

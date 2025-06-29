@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PopulatedJob } from '$lib/types/job';
-  import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emojis';
+  import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
   import JobInfo from './JobInfo.svelte';
   import ClientInfo from './ClientInfo.svelte';
   import TaskList from './TaskList.svelte';
