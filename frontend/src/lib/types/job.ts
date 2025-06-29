@@ -130,6 +130,12 @@ export type JobPriority =
   | 'critical'
   | 'proactive_followup';
 
+// Individual job API response (for job detail view)
+export interface JobApiResponse {
+  data: Job;
+  included: Array<Client | User | Task>;
+}
+
 // API request types
 export interface JobsRequestParams {
   scope?: 'all' | 'mine';

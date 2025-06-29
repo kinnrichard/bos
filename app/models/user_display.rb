@@ -38,7 +38,9 @@ class UserDisplay
     # Use user ID for consistent color assignment
     return AVATAR_COLORS[0] unless @user.id
 
-    AVATAR_COLORS[@user.id % AVATAR_COLORS.length]
+    # Convert UUID to hash for consistent color assignment
+    hash = @user.id.hash
+    AVATAR_COLORS[hash % AVATAR_COLORS.length]
   end
 
   # Get avatar background style

@@ -10,7 +10,7 @@ class JobSerializer < ApplicationSerializer
   attribute :start_on
   attribute :start_time
 
-  # Relationships
+  # Relationships - clean and simple with UUID primary keys
   belongs_to :client
   belongs_to :created_by, serializer: :user
 

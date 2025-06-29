@@ -83,7 +83,7 @@ class Api::V1::JobsController < Api::V1::BaseController
   private
 
   def set_job
-    @job = current_user.technician_jobs.find_by_id_or_uuid!(params[:id])
+    @job = current_user.technician_jobs.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render_error(
       status: :not_found,

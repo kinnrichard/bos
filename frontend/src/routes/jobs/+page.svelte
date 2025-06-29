@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  // import { page } from '$app/stores';
   import { invalidateAll } from '$app/navigation';
   import JobCard from '$lib/components/jobs/JobCard.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
@@ -15,7 +15,7 @@
   $: error = $query.error;
   $: jobs = $query.data?.jobs || [];
   $: meta = $query.data?.meta;
-  $: links = $query.data?.links;
+  // $: links = $query.data?.links;
 
   // Handle retry
   function handleRetry() {

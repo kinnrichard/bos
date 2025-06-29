@@ -3,17 +3,17 @@ class User < ApplicationRecord
 
   has_secure_password validations: false
 
-  has_many_dual :activity_logs
+  has_many :activity_logs
   has_many :assigned_jobs, class_name: "Job", foreign_key: "assigned_to_id"
   has_many :assigned_tasks, class_name: "Task", foreign_key: "assigned_to_id"
-  has_many_dual :job_assignments
+  has_many :job_assignments
   has_many :technician_jobs, through: :job_assignments, source: :job
-  has_many_dual :scheduled_date_time_users, dependent: :destroy
+  has_many :scheduled_date_time_users, dependent: :destroy
   has_many :scheduled_date_times, through: :scheduled_date_time_users
-  has_many_dual :notes, dependent: :destroy
+  has_many :notes, dependent: :destroy
   has_many :created_jobs, class_name: "Job", foreign_key: "created_by_id", dependent: :nullify
-  has_many_dual :refresh_tokens, dependent: :destroy
-  has_many_dual :revoked_tokens, dependent: :destroy
+  has_many :refresh_tokens, dependent: :destroy
+  has_many :revoked_tokens, dependent: :destroy
 
   enum :role, {
     admin: 0,

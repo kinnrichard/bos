@@ -1,5 +1,5 @@
 class RefreshToken < ApplicationRecord
-  belongs_to_dual :user
+  belongs_to :user
 
   validates :jti, presence: true, uniqueness: true
   validates :family_id, presence: true

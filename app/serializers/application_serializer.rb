@@ -5,8 +5,9 @@ class ApplicationSerializer
   # Use snake_case for consistency with Rails conventions and frontend expectations
   set_key_transform :underscore
 
-  # Use UUID as the ID for all serializers
-  set_id :uuid
+  # Use UUID primary key as the ID for all serializers
+  # Since we migrated to UUID-only, the :id field contains UUIDs
+  # No need to set_id explicitly as it defaults to :id
 
   # Helper method to serialize timestamps
   def self.timestamp_attributes(*attrs)

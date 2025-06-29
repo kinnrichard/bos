@@ -9,6 +9,7 @@ import type {
 } from '$lib/types/api';
 import type {
   JobsApiResponse,
+  JobApiResponse,
   JobsRequestParams,
   PopulatedJob
 } from '$lib/types/job';
@@ -83,7 +84,27 @@ export class JobsService {
   }
 
   /**
-   * Get single job by ID
+   * Get single job by ID with included relationships
+   */
+  async getJobWithDetails(id: string): Promise<PopulatedJob> {
+    const include = 'client,created_by,technicians,tasks';
+    const endpoint = `/jobs/${id}?include=${include}`;
+    
+    const response = await api.get<JobApiResponse>(endpoint);
+    
+    // Use the existing populate logic for consistency
+    const populated = this.populateJobs({
+      data: [response.data],
+      included: response.included || [],
+      meta: { total: 1, page: 1, per_page: 1, total_pages: 1 },
+      links: {}
+    });
+    
+    return populated[0];
+  }
+
+  /**
+   * Get single job by ID (legacy method)
    */
   async getJob(id: string): Promise<JsonApiResponse<JobResource>> {
     return api.get<JsonApiResponse<JobResource>>(`/jobs/${id}`);

@@ -1,5 +1,5 @@
 class RevokedToken < ApplicationRecord
-  belongs_to_dual :user
+  belongs_to :user
 
   validates :jti, presence: true, uniqueness: true
   validates :revoked_at, presence: true
@@ -17,7 +17,6 @@ class RevokedToken < ApplicationRecord
     create!(
       jti: jti,
       user_id: user_id,
-      user_uuid: User.find(user_id).uuid,
       revoked_at: Time.current,
       expires_at: expires_at
     )

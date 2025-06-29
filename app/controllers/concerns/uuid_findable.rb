@@ -4,9 +4,9 @@ module UuidFindable
 
   private
 
-  # Find a record by either ID or UUID
+  # Find a record by UUID (since everything now uses UUID primary keys)
   def find_record(model_class, identifier)
-    model_class.find_by_id_or_uuid!(identifier)
+    model_class.find(identifier)
   rescue ActiveRecord::RecordNotFound
     nil
   end
