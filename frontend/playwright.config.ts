@@ -5,13 +5,13 @@ export default defineConfig({
 		command: 'npm run build && npm run preview',
 		port: 4173,
 		timeout: 120 * 1000,
-		reuseExistingServer: !process.env.CI
+		reuseExistingServer: !process.env.CI,
 	},
 	testDir: 'tests',
 	testMatch: /(.+\.)?(test|spec)\.[jt]s/,
 	timeout: 30 * 1000,
 	expect: {
-		timeout: 5000
+		timeout: 5000,
 	},
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
@@ -22,20 +22,20 @@ export default defineConfig({
 		baseURL: 'http://localhost:4173',
 		trace: 'on-first-retry',
 		screenshot: 'only-on-failure',
-		video: 'retain-on-failure'
+		video: 'retain-on-failure',
 	},
 	projects: [
 		{
 			name: 'chromium',
-			use: { ...devices['Desktop Chrome'] }
+			use: { ...devices['Desktop Chrome'] },
 		},
 		{
 			name: 'firefox',
-			use: { ...devices['Desktop Firefox'] }
+			use: { ...devices['Desktop Firefox'] },
 		},
 		{
 			name: 'webkit',
-			use: { ...devices['Desktop Safari'] }
-		}
-	]
+			use: { ...devices['Desktop Safari'] },
+		},
+	],
 });

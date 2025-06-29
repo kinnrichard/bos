@@ -17,9 +17,9 @@ const config = {
 			$stores: 'src/stores',
 			$api: 'src/lib/api',
 			$utils: 'src/lib/utils',
-			$types: 'src/types'
-		}
-	}
+			$types: 'src/types',
+		},
+	},
 };
 
 export default config;
