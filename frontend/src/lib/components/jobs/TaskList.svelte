@@ -1,7 +1,9 @@
 <script lang="ts">
   import { getTaskStatusEmoji } from '$lib/config/emoji';
-  import chevronRight from '$lib/assets/icons/chevron-right.svg';
-  import chevronDown from '$lib/assets/icons/chevron-down.svg';
+  
+  // Use static SVG URLs for better compatibility
+  const chevronRight = '/icons/chevron-right.svg';
+  const chevronDown = '/icons/chevron-down.svg';
 
   export let tasks: Array<{
     id: string;
@@ -46,14 +48,28 @@
   }
 
   $: hierarchicalTasks = organizeTasksHierarchically(tasks);
+  
+  // Debug: Log hierarchical tasks to see the structure
+  $: {
+    if (hierarchicalTasks.length > 0) {
+      console.log('Hierarchical tasks:', hierarchicalTasks);
+      hierarchicalTasks.forEach(task => {
+        if (task.subtasks.length > 0) {
+          console.log(`Task "${task.title}" has ${task.subtasks.length} subtasks:`, task.subtasks);
+        }
+      });
+    }
+  }
 
   function toggleTaskExpansion(taskId: string) {
+    console.log('Toggling task expansion for:', taskId, 'Currently expanded:', expandedTasks.has(taskId));
     if (expandedTasks.has(taskId)) {
       expandedTasks.delete(taskId);
     } else {
       expandedTasks.add(taskId);
     }
     expandedTasks = expandedTasks; // Trigger reactivity
+    console.log('New expanded state:', expandedTasks);
   }
 
   function isTaskExpanded(taskId: string): boolean {
