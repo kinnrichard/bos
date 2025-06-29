@@ -2,7 +2,6 @@
   import type { PopulatedJob } from '$lib/types/job';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
   import JobInfo from './JobInfo.svelte';
-  import ClientInfo from './ClientInfo.svelte';
   import TaskList from './TaskList.svelte';
   import StatusIndicator from './StatusIndicator.svelte';
 
@@ -49,17 +48,9 @@
     {/if}
   </div>
 
-  <!-- Main Content Grid -->
-  <div class="job-content-grid">
-    <!-- Left Column: Job Info -->
-    <div class="job-info-column">
-      <JobInfo {job} />
-    </div>
-
-    <!-- Right Column: Client Info -->
-    <div class="client-info-column">
-      <ClientInfo client={job.client} />
-    </div>
+  <!-- Job Info Section -->
+  <div class="job-info-section">
+    <JobInfo {job} />
   </div>
 
   <!-- Tasks Section -->
@@ -165,14 +156,7 @@
     margin: 0;
   }
 
-  .job-content-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-  }
-
-  .job-info-column,
-  .client-info-column {
+  .job-info-section {
     display: flex;
     flex-direction: column;
   }
@@ -211,12 +195,6 @@
   }
 
   /* Responsive layout */
-  @media (max-width: 1024px) {
-    .job-content-grid {
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-  }
 
   @media (max-width: 768px) {
     .job-detail-view {

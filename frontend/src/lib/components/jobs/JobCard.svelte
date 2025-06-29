@@ -25,7 +25,13 @@
   <!-- Client and job name section -->
   <span class="job-name-section">
     {#if showClient}
-      <span class="client-name-prefix">{job.client.name}</span>
+      <a 
+        href="/clients/{job.client.id}" 
+        class="client-name-prefix client-link"
+        on:click|stopPropagation
+      >
+        {job.client.name}
+      </a>
     {/if}
     <span class="job-name">{job.attributes.title}</span>
   </span>
@@ -93,6 +99,16 @@
     font-size: 13px;
     font-weight: 400;
     padding-right: 13px;
+  }
+
+  .client-link {
+    text-decoration: none;
+    color: var(--accent-blue);
+    transition: color 0.15s ease;
+  }
+
+  .client-link:hover {
+    color: var(--accent-blue-hover);
   }
 
   .job-name {
