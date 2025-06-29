@@ -6,7 +6,7 @@ class NotificationMailer < ApplicationMailer
 
     mail(
       to: admin_emails,
-      subject: "[BOS] Story Generated for Feature Request ##{issue_number}"
+      subject: "[bŏs] Story Generated for Feature Request ##{issue_number}"
     ) do |format|
       format.text { render plain: story_generated_text }
       format.html { render html: story_generated_html.html_safe }
@@ -20,7 +20,7 @@ class NotificationMailer < ApplicationMailer
 
     mail(
       to: admin_emails,
-      subject: "[BOS] Implementation Started for Feature ##{issue_number}"
+      subject: "[bŏs] Implementation Started for Feature ##{issue_number}"
     ) do |format|
       format.text { render plain: implementation_started_text }
       format.html { render html: implementation_started_html.html_safe }
@@ -34,7 +34,7 @@ class NotificationMailer < ApplicationMailer
 
     mail(
       to: admin_emails,
-      subject: "[BOS] ⚠️ Automation Failed for Issue ##{issue_number}"
+      subject: "[bŏs] ⚠️ Automation Failed for Issue ##{issue_number}"
     ) do |format|
       format.text { render plain: automation_failed_text }
       format.html { render html: automation_failed_html.html_safe }
