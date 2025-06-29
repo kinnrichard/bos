@@ -55,13 +55,12 @@ export class AuthService {
   }
 
   /**
-   * Check if user is currently authenticated by testing API access
+   * Check if user is currently authenticated by testing a protected endpoint
    */
   async checkAuth(): Promise<boolean> {
     try {
-      // Try to access a protected endpoint
+      // Try to access a protected endpoint to verify authentication
       await api.get('/jobs', { 
-        headers: { 'X-Test-Auth': 'true' },
         retryOnUnauthorized: false 
       });
       return true;

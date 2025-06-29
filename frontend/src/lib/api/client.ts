@@ -50,8 +50,8 @@ class ApiClient {
     const requestConfig: globalThis.RequestInit = {
       method,
       headers: requestHeaders,
-      // Only include credentials for state-changing requests
-      credentials: ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) ? 'include' : 'same-origin',
+      // Always include credentials for all API requests to send cookies
+      credentials: 'include',
     };
 
     if (data && method !== 'GET') {
@@ -64,36 +64,29 @@ class ApiClient {
       // Update CSRF token from response headers if present
       csrfTokenManager.setTokenFromResponse(response);
 
-      // Handle 401 Unauthorized - try to refresh token
+      // Handle 401 Unauthorized - for cookie auth, just redirect to login
       if (response.status === 401 && retryOnUnauthorized && !skipAuth) {
-        // If we're already refreshing, queue this request
-        if (this.isRefreshing) {
-          return new Promise<ApiResponse<T>>((resolve, reject) => {
-            this.requestQueue.push(() => {
-              // Retry the original request after refresh completes
-              this.request<T>(endpoint, { ...config, retryOnUnauthorized: false })
-                .then(resolve)
-                .catch(reject);
-            });
-          });
+        // For cookie-based auth, don't try to refresh - just redirect to login
+        if (browser) {
+          goto('/login');
         }
-
-        const refreshed = await this.refreshToken();
-        if (refreshed) {
-          // Retry the original request
-          return this.request<T>(endpoint, { ...config, retryOnUnauthorized: false });
-        } else {
-          // Refresh failed, redirect to login
-          if (browser) {
-            goto('/login');
-          }
-          throw new Error('Authentication failed');
-        }
+        throw new Error('Authentication failed');
       }
 
       const responseData = await response.json();
 
       if (!response.ok) {
+        // Special handling for rate limiting
+        if (response.status === 429) {
+          const error: ApiError = {
+            status: response.status,
+            code: 'RATE_LIMITED',
+            message: 'Too many requests. Please wait a moment and try again.',
+            errors: responseData.errors || []
+          };
+          throw error;
+        }
+
         const error: ApiError = {
           status: response.status,
           code: responseData.errors?.[0]?.code || 'UNKNOWN_ERROR',
@@ -155,14 +148,21 @@ class ApiClient {
     const queue = [...this.requestQueue];
     this.requestQueue = [];
     
-    // Execute all queued requests
-    queue.forEach(callback => callback());
+    // Execute queued requests with staggered timing to prevent rate limiting
+    queue.forEach((callback, index) => {
+      // Add 50ms delay between each request to prevent rate limiting
+      setTimeout(() => {
+        callback();
+      }, index * 50);
+    });
   }
 
   private async performTokenRefresh(): Promise<boolean> {
     try {
-      const response = await this.request<AuthResponse>('/auth/refresh', {
-        method: 'POST',
+      // For cookie-based auth, try to refresh by calling a lightweight endpoint
+      // This will either succeed if cookies are valid or fail and redirect to login
+      const response = await this.request<any>('/health', {
+        method: 'GET',
         skipAuth: true,
         retryOnUnauthorized: false
       });

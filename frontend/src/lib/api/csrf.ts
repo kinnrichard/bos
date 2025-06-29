@@ -2,6 +2,8 @@ import { browser } from '$app/environment';
 
 class CsrfTokenManager {
   private token: string | null = null;
+  private tokenFetchTime: number = 0;
+  private readonly TOKEN_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   /**
    * Get CSRF token from various sources in order of preference:
@@ -12,8 +14,8 @@ class CsrfTokenManager {
   async getToken(): Promise<string | null> {
     if (!browser) return null;
 
-    // Return cached token if available
-    if (this.token) {
+    // Return cached token if available and not expired
+    if (this.token && this.isTokenFresh()) {
       return this.token;
     }
 
@@ -24,11 +26,11 @@ class CsrfTokenManager {
       return this.token;
     }
 
-    // If no meta tag, try to fetch from API
+    // If no meta tag, try to fetch from API (with rate limiting protection)
     try {
       const fetchedToken = await this.fetchTokenFromApi();
       if (fetchedToken) {
-        this.token = fetchedToken;
+        this.setToken(fetchedToken);
         return this.token;
       }
     } catch (error) {
@@ -39,13 +41,28 @@ class CsrfTokenManager {
   }
 
   /**
+   * Check if current token is still fresh (within cache duration)
+   */
+  private isTokenFresh(): boolean {
+    return Date.now() - this.tokenFetchTime < this.TOKEN_CACHE_DURATION;
+  }
+
+  /**
+   * Set token with timestamp
+   */
+  private setToken(token: string): void {
+    this.token = token;
+    this.tokenFetchTime = Date.now();
+    this.updateMetaTag(token);
+  }
+
+  /**
    * Set token from response headers
    */
   setTokenFromResponse(response: Response): void {
     const newToken = response.headers.get('X-CSRF-Token');
     if (newToken) {
-      this.token = newToken;
-      this.updateMetaTag(newToken);
+      this.setToken(newToken);
     }
   }
 
@@ -54,6 +71,7 @@ class CsrfTokenManager {
    */
   clearToken(): void {
     this.token = null;
+    this.tokenFetchTime = 0;
     this.removeMetaTag();
   }
 

@@ -13,6 +13,9 @@
   $: returnTo = $page.url.searchParams.get('return_to') || '/jobs';
 
   async function handleSubmit() {
+    // Prevent double-submit
+    if (loading) return;
+    
     if (!email || !password) {
       error = 'Please enter both email and password';
       return;
@@ -30,7 +33,14 @@
       console.error('Login failed:', err);
       
       if (err && typeof err === 'object' && 'message' in err) {
-        error = (err as ApiError).message;
+        const apiError = err as ApiError;
+        
+        // Special handling for rate limiting
+        if (apiError.code === 'RATE_LIMITED' || apiError.status === 429) {
+          error = 'Too many login attempts. Please wait a moment and try again.';
+        } else {
+          error = apiError.message;
+        }
       } else {
         error = 'Login failed. Please try again.';
       }
