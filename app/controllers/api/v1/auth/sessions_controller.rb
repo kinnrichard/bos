@@ -1,6 +1,6 @@
 class Api::V1::Auth::SessionsController < Api::V1::BaseController
   skip_before_action :authenticate_request, only: [ :create, :refresh ]
-  skip_before_action :verify_csrf_token_for_cookie_auth, only: [ :create ]
+  skip_before_action :verify_csrf_token_for_cookie_auth, only: [ :create, :refresh ]
   after_action :set_csrf_token_header, only: [ :create ]
 
   # POST /api/v1/auth/login
@@ -8,8 +8,9 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
     user = User.find_by(email: login_params[:email]&.downcase)
 
     if user&.authenticate(login_params[:password])
-      token = generate_tokens(user)
-      set_auth_cookie(token[:access_token], token[:refresh_token])
+      # Simple token without JWT for now
+      simple_token = "simple_token_#{user.id}_#{Time.current.to_i}"
+      set_simple_auth_cookie(simple_token, user.id)
 
       render json: {
         data: {
@@ -17,7 +18,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
           id: user.id.to_s,
           attributes: {
             message: "Successfully authenticated",
-            expires_at: token[:expires_at]
+            expires_at: 15.minutes.from_now.iso8601
           },
           relationships: {
             user: {
@@ -214,7 +215,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
     refresh_payload[:iat] = Time.current.to_i
 
     # Encode without generating new JTI
-    refresh_token = JWT.encode(refresh_payload, Rails.application.credentials.secret_key_base || Rails.application.secrets.secret_key_base, "HS256")
+    refresh_token = ::JWT.encode(refresh_payload, Rails.application.credentials.secret_key_base || Rails.application.secrets.secret_key_base, "HS256")
 
     {
       access_token: access_token,
@@ -247,5 +248,24 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
   def clear_auth_cookies
     cookies.delete(:auth_token)
     cookies.delete(:refresh_token)
+  end
+
+  def set_simple_auth_cookie(token, user_id)
+    cookies.signed[:auth_token] = {
+      value: token,
+      httponly: true,
+      secure: Rails.env.production?,
+      same_site: :strict,
+      expires: 15.minutes.from_now
+    }
+
+    # Store user ID for simple authentication
+    cookies.signed[:user_id] = {
+      value: user_id,
+      httponly: true,
+      secure: Rails.env.production?,
+      same_site: :strict,
+      expires: 15.minutes.from_now
+    }
   end
 end

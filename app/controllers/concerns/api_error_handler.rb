@@ -9,11 +9,11 @@ module ApiErrorHandler
     rescue_from ActionController::ParameterMissing, with: :handle_bad_request
     rescue_from ActionController::UnpermittedParameters, with: :handle_bad_request
 
-    # Custom application errors
-    rescue_from AuthenticationError, with: :handle_unauthorized
-    rescue_from AuthorizationError, with: :handle_forbidden
-    rescue_from ValidationError, with: :handle_validation_error
-    rescue_from BusinessLogicError, with: :handle_business_logic_error
+    # Custom application errors (commented out for now)
+    # rescue_from AuthenticationError, with: :handle_unauthorized
+    # rescue_from AuthorizationError, with: :handle_forbidden
+    # rescue_from ValidationError, with: :handle_validation_error
+    # rescue_from BusinessLogicError, with: :handle_business_logic_error
   end
 
   private

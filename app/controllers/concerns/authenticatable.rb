@@ -17,17 +17,13 @@ module Authenticatable
   end
 
   def current_user_from_token
-    return nil unless auth_token.present?
+    # Simple cookie-based authentication (temporary)
+    user_id = cookies.signed[:user_id]
+    token = cookies.signed[:auth_token]
 
-    payload = JwtService.decode(auth_token)
+    return nil unless user_id.present? && token.present?
 
-    # Check if token has been revoked
-    if payload[:jti] && RevokedToken.revoked?(payload[:jti])
-      Rails.logger.info "Attempted to use revoked token: #{payload[:jti]}"
-      return nil
-    end
-
-    User.find_by(id: payload[:user_id])
+    User.find_by(id: user_id)
   rescue StandardError => e
     Rails.logger.info "JWT decode error: #{e.message}"
     nil

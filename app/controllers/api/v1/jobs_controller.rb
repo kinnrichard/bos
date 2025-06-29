@@ -6,7 +6,7 @@ class Api::V1::JobsController < Api::V1::BaseController
 
   # GET /api/v1/jobs
   def index
-    jobs = current_user.technician_jobs
+    jobs = job_scope
                       .includes(:client, :tasks, :technicians)
                       .order(created_at: :desc)
 
@@ -135,5 +135,24 @@ class Api::V1::JobsController < Api::V1::BaseController
     end
 
     scope
+  end
+
+  def job_scope
+    case params[:scope]
+    when "all"
+      # All jobs - only for admins/owners
+      if current_user.admin? || current_user.owner?
+        Job.all
+      else
+        # Non-admins get their assigned jobs
+        current_user.technician_jobs
+      end
+    when "mine"
+      # Explicitly request user's assigned jobs
+      current_user.technician_jobs
+    else
+      # Default: user's assigned jobs (maintains existing behavior)
+      current_user.technician_jobs
+    end
   end
 end

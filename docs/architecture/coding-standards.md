@@ -1,21 +1,38 @@
 # bŏs Coding Standards
 
+## 🚨 MIGRATION IN PROGRESS
+
+**The bŏs application is transitioning from a Rails monolith to separate Rails API + Svelte frontend.**
+
+**Critical for AI Agents**:
+- ❌ DO NOT create new Phlex components - use Svelte components
+- ❌ DO NOT create new Stimulus controllers - use Svelte reactivity
+- ✅ DO follow the Svelte/TypeScript standards for all new UI code
+- ✅ DO create API endpoints in Rails for new features
+
 ## Overview
 
-This document defines coding conventions and standards for the bŏs project. AI agents MUST follow these standards to maintain consistency and quality. Special attention is given to Phlex components and Apple-like UI patterns.
+This document defines coding conventions and standards for the bŏs project. AI agents MUST follow these standards to maintain consistency and quality.
 
 ## Quick Reference
 
-**Before coding:**
-- Check existing patterns in similar files
-- Use Phlex components, not ERB templates
+**Frontend Development (Svelte):**
+- Check existing patterns in `/frontend/src`
+- Use Svelte components with TypeScript
 - Follow Apple HIG for UI decisions
+- Use Tailwind CSS utilities
 - Write Playwright tests for new features
 
-**After coding:**
+**Backend Development (Rails API):**
+- Create API endpoints, not views
+- Use JSON serialization
 - Run `rubocop -A` to fix style issues
-- Rebuild assets after ANY JavaScript or CSS changes
-- Run Playwright tests
+- Write RSpec tests for API endpoints
+
+**After coding:**
+- Frontend: Run `npm run lint` and `npm run check`
+- Backend: Run `rubocop -A`
+- Run relevant tests
 - Commit with "—CC" signature
 
 ## Ruby Standards
@@ -70,7 +87,104 @@ def calculate_total_hours_for_period(start_date, end_date)
 end
 ```
 
-## Phlex Component Standards 🚨 CRITICAL FOR AI AGENTS
+## Svelte Component Standards 🚨 PRIMARY APPROACH
+
+### Basic Svelte Component Structure
+```svelte
+<!-- src/lib/components/Button.svelte -->
+<script lang="ts">
+  export let text: string;
+  export let variant: 'primary' | 'secondary' | 'danger' = 'primary';
+  export let size: 'small' | 'medium' | 'large' = 'medium';
+  export let disabled = false;
+  
+  $: classes = `
+    button
+    button--${variant}
+    button--${size}
+    ${$$props.class || ''}
+  `.trim();
+</script>
+
+<button 
+  class={classes}
+  {disabled}
+  on:click
+  {...$$restProps}
+>
+  {text}
+</button>
+```
+
+### Svelte Best Practices
+
+1. **Use TypeScript for all components**
+   ```svelte
+   <script lang="ts">
+   // Always use TypeScript for type safety
+   </script>
+   ```
+
+2. **Component Organization**
+   ```
+   frontend/src/
+   ├── lib/
+   │   ├── components/     # Reusable components
+   │   ├── stores/         # Svelte stores
+   │   ├── api/            # API client functions
+   │   └── utils/          # Helper functions
+   ├── routes/             # SvelteKit pages
+   └── app.css             # Global styles
+   ```
+
+3. **Props and Events**
+   ```svelte
+   <script lang="ts">
+   // Export props with types
+   export let name: string;
+   export let count: number = 0;
+   
+   // Use createEventDispatcher for custom events
+   import { createEventDispatcher } from 'svelte';
+   const dispatch = createEventDispatcher<{
+     change: { value: string };
+     delete: { id: number };
+   }>();
+   </script>
+   ```
+
+4. **State Management**
+   ```typescript
+   // src/lib/stores/user.ts
+   import { writable } from 'svelte/store';
+   
+   interface User {
+     id: number;
+     name: string;
+     email: string;
+   }
+   
+   export const currentUser = writable<User | null>(null);
+   ```
+
+5. **API Integration**
+   ```typescript
+   // src/lib/api/clients.ts
+   import { createQuery } from '@tanstack/svelte-query';
+   
+   export function useClients() {
+     return createQuery({
+       queryKey: ['clients'],
+       queryFn: async () => {
+         const response = await fetch('/api/clients');
+         if (!response.ok) throw new Error('Failed to fetch');
+         return response.json();
+       }
+     });
+   }
+   ```
+
+## LEGACY Phlex Component Standards ⚠️ DO NOT USE FOR NEW CODE
 
 ### Basic Phlex Component Structure
 ```ruby
@@ -213,7 +327,81 @@ end
    end
    ```
 
-## JavaScript Standards (Stimulus)
+## TypeScript/JavaScript Standards (Svelte)
+
+### TypeScript Configuration
+```typescript
+// Use strict TypeScript settings
+// tsconfig.json is already configured with strict mode
+
+// Always type your props and events
+interface Props {
+  name: string;
+  count?: number;
+}
+
+// Use proper types for API responses
+interface ApiResponse<T> {
+  data: T;
+  error?: string;
+}
+```
+
+### Svelte Component Patterns
+```svelte
+<script lang="ts">
+  // Imports at top
+  import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
+  import type { Client } from '$lib/types';
+  
+  // Props with defaults
+  export let client: Client;
+  export let showDetails = false;
+  
+  // Local state
+  let isLoading = false;
+  let error: string | null = null;
+  
+  // Reactive statements
+  $: fullName = `${client.firstName} ${client.lastName}`;
+  
+  // Functions
+  async function handleSave() {
+    isLoading = true;
+    try {
+      // API call
+    } catch (e) {
+      error = e.message;
+    } finally {
+      isLoading = false;
+    }
+  }
+  
+  // Lifecycle
+  onMount(() => {
+    // Setup code
+    return () => {
+      // Cleanup code
+    };
+  });
+</script>
+```
+
+### ESLint v9 Configuration
+- Configuration file: `frontend/eslint.config.js`
+- Uses flat config format
+- Includes TypeScript and Svelte plugins
+- Prettier integration for formatting
+
+### Code Style
+- Use Prettier for formatting (configured)
+- 2-space indentation
+- Single quotes for strings
+- No semicolons (optional with Prettier)
+- Trailing commas in multi-line objects/arrays
+
+## LEGACY JavaScript Standards (Stimulus) ⚠️ DO NOT USE FOR NEW CODE
 
 ### Stimulus Controller Structure
 ```javascript
@@ -306,10 +494,71 @@ export default class extends Controller {
    <!-- NOT: <input data-action="client-filter#doStuff"> -->
    ```
 
-## SCSS/CSS Standards - bŏs Design System
+## CSS Standards - Tailwind CSS (Current)
+
+### Frontend Styling with Tailwind
+The Svelte frontend uses Tailwind CSS with a custom dark theme configuration.
+
+**Configuration**: `frontend/tailwind.config.js`
+
+### Design Tokens
+```javascript
+// Use these color variables in Tailwind classes
+colors: {
+  dark: {
+    100: '#1C1C1E',  // Primary background
+    200: '#1C1C1D',  // Secondary background
+    300: '#3A3A3C',  // Tertiary/hover
+  },
+  text: {
+    primary: '#F2F2F7',
+    secondary: '#C7C7CC',
+    tertiary: '#8E8E93',
+  },
+  blue: {
+    500: '#00A3FF',  // Primary accent
+    600: '#0089E0',  // Hover state
+  }
+}
+```
+
+### Tailwind Best Practices
+1. **Use utility classes directly**
+   ```svelte
+   <button class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md">
+     Click me
+   </button>
+   ```
+
+2. **Extract components for repeated patterns**
+   ```svelte
+   <!-- Button.svelte -->
+   <button class="button-primary">
+     <slot />
+   </button>
+   
+   <style lang="postcss">
+     .button-primary {
+       @apply px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md
+              transition-colors duration-150 focus:outline-none focus:ring-2;
+     }
+   </style>
+   ```
+
+3. **Use CSS variables for dynamic theming**
+   ```css
+   /* app.css */
+   :root {
+     --color-primary: theme('colors.blue.500');
+   }
+   ```
+
+## LEGACY SCSS/CSS Standards - Rails App ⚠️ DEPRECATED
 
 ### Design System Overview
-The project uses a **dark theme** design system following ITCSS architecture with macOS-native patterns.
+The Rails app uses a **dark theme** design system following ITCSS architecture with macOS-native patterns.
+
+**Status**: LEGACY - Being removed as views migrate to Svelte
 
 ### Color Palette (CSS Variables)
 ```scss
@@ -609,32 +858,54 @@ rails tmp:clear && rails assets:clobber && rails assets:precompile && rm -f publ
 # docs: Documentation
 # style: CSS/formatting changes
 # maintenance: Maintenance tasks
+# migration: Svelte migration work
 
-# Examples:
-git commit -m "feature: Add client search with Stimulus controller —CC"
-git commit -m "fix: Correct dropdown positioning in scrollable containers —CC"
-git commit -m "style: Update button hover states for better affordance —CC"
-git commit -m "test: Add Playwright tests for job creation workflow —CC"
-git commit -m "maintenance: Update dependencies and clean up unused code —CC"
+# Frontend examples:
+git commit -m "feature: Add client search with Svelte component —CC"
+git commit -m "migration: Convert job list from Phlex to Svelte —CC"
+git commit -m "fix: Correct TypeScript types for API response —CC"
+git commit -m "test: Add Playwright tests for client creation —CC"
+
+# Backend examples:
+git commit -m "feature: Add JSON API endpoint for clients —CC"
+git commit -m "fix: Correct JWT token validation —CC"
+git commit -m "refactor: Extract client serialization logic —CC"
 ```
 
 ### Commit Workflow
+
+**Frontend Changes:**
+```bash
+# 1. Make your changes in /frontend
+# 2. Type check and lint
+npm run check
+npm run lint
+
+# 3. Run tests
+npm run test
+
+# 4. Stage and commit
+git add .
+git commit -m "feature: Implement client search in Svelte —CC"
+
+# 5. Push to remote
+git push
+```
+
+**Backend Changes:**
 ```bash
 # 1. Make your changes
 # 2. Run tests
-bundle exec ruby test/playwright/your_test.rb
+bundle exec rspec
 
 # 3. Fix style issues
 rubocop -A
 
-# 4. Rebuild assets (if JS or CSS changed)
-rails tmp:clear && rails assets:clobber && rails assets:precompile && rm -f public/assets/.manifest.json
-
-# 5. Stage and commit
+# 4. Stage and commit
 git add .
-git commit -m "feature: Implement drag-and-drop for task reordering —CC"
+git commit -m "feature: Add clients API endpoint —CC"
 
-# 6. Push to remote
+# 5. Push to remote
 git push
 ```
 
@@ -692,16 +963,26 @@ end
 
 ## Common Pitfalls to Avoid
 
-1. **Creating ERB files instead of Phlex components**
-2. **Forgetting to rebuild assets after JavaScript OR CSS changes**
-3. **Using jQuery or vanilla JS instead of Stimulus**
-4. **Not writing Playwright tests for UI changes**
-5. **Committing without running Rubocop**
-6. **Using inline styles instead of CSS classes**
-7. **Not following the existing dark theme color palette**
-8. **Ignoring the ITCSS architecture when adding styles**
-9. **Creating new color values instead of using CSS variables**
-10. **Using px units instead of spacing variables**
+### Frontend (Svelte) Development
+1. **Creating Phlex components instead of Svelte components**
+2. **Not using TypeScript for new components**
+3. **Using vanilla JS instead of Svelte's reactivity**
+4. **Not using Tailwind utility classes**
+5. **Forgetting to run type checking (`npm run check`)**
+6. **Not writing Playwright tests for UI changes**
+7. **Using inline styles instead of Tailwind classes**
+8. **Creating custom colors instead of using theme tokens**
+9. **Not following the ESLint v9 configuration**
+10. **Importing from Rails app instead of API calls**
+
+### Backend (Rails) Development
+1. **Creating view templates instead of API endpoints**
+2. **Adding Stimulus controllers (use Svelte instead)**
+3. **Creating new Phlex components (use Svelte instead)**
+4. **Forgetting to run Rubocop**
+5. **Not writing RSpec tests for API endpoints**
+6. **Using session auth instead of JWT for API**
+7. **Returning HTML instead of JSON**
 
 ## CSS/SCSS Specific Don'ts
 

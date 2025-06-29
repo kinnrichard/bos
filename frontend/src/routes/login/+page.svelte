@@ -1,0 +1,297 @@
+<script lang="ts">
+  import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
+  import { authService } from '$lib/api/auth';
+  import type { ApiError } from '$lib/types/api';
+
+  let email = '';
+  let password = '';
+  let loading = false;
+  let error: string | null = null;
+
+  // Get return_to parameter for redirect after login
+  $: returnTo = $page.url.searchParams.get('return_to') || '/jobs';
+
+  async function handleSubmit() {
+    if (!email || !password) {
+      error = 'Please enter both email and password';
+      return;
+    }
+
+    loading = true;
+    error = null;
+
+    try {
+      await authService.login({ email, password });
+      
+      // Login successful, redirect to return_to or default
+      goto(returnTo);
+    } catch (err) {
+      console.error('Login failed:', err);
+      
+      if (err && typeof err === 'object' && 'message' in err) {
+        error = (err as ApiError).message;
+      } else {
+        error = 'Login failed. Please try again.';
+      }
+    } finally {
+      loading = false;
+    }
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      handleSubmit();
+    }
+  }
+</script>
+
+<svelte:head>
+  <title>Sign In - BOS</title>
+</svelte:head>
+
+<div class="auth-container">
+  <div class="auth-box">
+    <!-- Logo section -->
+    <div class="auth-logo">
+      <div class="logo-placeholder">
+        <h1 class="logo-text">bŏs</h1>
+      </div>
+    </div>
+
+    <h1 class="auth-title">Sign In</h1>
+
+    <!-- Error message -->
+    {#if error}
+      <div class="alert alert-error" role="alert">
+        {error}
+      </div>
+    {/if}
+
+    <!-- Login form -->
+    <form class="auth-form" on:submit|preventDefault={handleSubmit}>
+      <div class="form-group">
+        <label for="email" class="form-label">Email</label>
+        <input
+          type="email"
+          id="email"
+          bind:value={email}
+          class="form-input"
+          placeholder="your@email.com"
+          required
+          autofocus
+          disabled={loading}
+          on:keydown={handleKeydown}
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input
+          type="password"
+          id="password"
+          bind:value={password}
+          class="form-input"
+          placeholder="••••••••"
+          required
+          disabled={loading}
+          on:keydown={handleKeydown}
+        />
+      </div>
+
+      <button 
+        type="submit" 
+        class="button button--primary button--full-width submit-button"
+        disabled={loading}
+      >
+        {#if loading}
+          <span class="button-spinner"></span>
+          Signing In...
+        {:else}
+          Sign In
+        {/if}
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-black, #000);
+    padding: 20px;
+  }
+
+  .auth-box {
+    width: 100%;
+    max-width: 400px;
+    background-color: var(--bg-primary, #1C1C1E);
+    border: 1px solid var(--border-primary, #38383A);
+    border-radius: 12px;
+    padding: 48px 40px;
+    box-shadow: var(--shadow-xl, 0 20px 60px rgba(0, 0, 0, 0.5));
+  }
+
+  .auth-logo {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .logo-placeholder {
+    display: inline-block;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, var(--accent-blue, #00A3FF), var(--accent-blue-hover, #0089E0));
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 163, 255, 0.3);
+  }
+
+  .logo-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .auth-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary, #F2F2F7);
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+
+  .alert-error {
+    background-color: rgba(255, 59, 48, 0.1);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    color: #ff3b30;
+  }
+
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .form-group {
+    margin-bottom: 24px;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary, #C7C7CC);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: var(--bg-secondary, #1C1C1D);
+    border: 1px solid var(--border-primary, #38383A);
+    border-radius: 8px;
+    color: var(--text-primary, #F2F2F7);
+    font-size: 16px;
+    outline: none;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+
+  .form-input::placeholder {
+    color: var(--text-tertiary, #8E8E93);
+  }
+
+  .form-input:focus {
+    border-color: var(--accent-blue, #00A3FF);
+    background-color: var(--bg-tertiary, #3A3A3C);
+    box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
+  }
+
+  .form-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .submit-button {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .submit-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .button-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 480px) {
+    .auth-box {
+      padding: 32px 24px;
+      margin: 16px;
+    }
+
+    .auth-title {
+      font-size: 24px;
+    }
+
+    .form-input {
+      font-size: 16px; /* Prevent zoom on iOS */
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .auth-box {
+      border-width: 2px;
+    }
+
+    .form-input {
+      border-width: 2px;
+    }
+
+    .form-input:focus {
+      border-width: 2px;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .form-input {
+      transition: none;
+    }
+
+    .button-spinner {
+      animation: none;
+    }
+  }
+</style>

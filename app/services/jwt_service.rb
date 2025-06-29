@@ -1,5 +1,3 @@
-require "jwt"
-
 class JwtService
   class << self
     def encode(payload, exp = 2.weeks.from_now)
@@ -7,19 +5,19 @@ class JwtService
       payload[:iat] = Time.current.to_i
       payload[:jti] ||= SecureRandom.uuid # Generate JWT ID only if not provided
 
-      JWT.encode(payload, secret_key, "HS256")
+      ::JWT.encode(payload, secret_key, "HS256")
     end
 
     def decode(token)
-      decoded = JWT.decode(token, secret_key, true, { algorithm: "HS256" })[0]
+      decoded = ::JWT.decode(token, secret_key, true, { algorithm: "HS256" })[0]
       HashWithIndifferentAccess.new(decoded)
-    rescue JWT::DecodeError => e
+    rescue ::JWT::DecodeError => e
       raise_decode_error(e)
     end
 
     def decode_without_verification(token)
-      JWT.decode(token, nil, false)[0]
-    rescue JWT::DecodeError
+      ::JWT.decode(token, nil, false)[0]
+    rescue ::JWT::DecodeError
       nil
     end
 

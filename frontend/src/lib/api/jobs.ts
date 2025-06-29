@@ -6,10 +6,66 @@ import type {
   PaginatedResponse,
   JsonApiResponse
 } from '$lib/types/api';
+import type {
+  JobsApiResponse,
+  JobsRequestParams,
+  PopulatedJob
+} from '$lib/types/job';
 
 export class JobsService {
   /**
-   * Get paginated list of jobs
+   * Get paginated list of jobs with new scope parameter support
+   */
+  async getJobsWithScope(params: JobsRequestParams = {}): Promise<JobsApiResponse> {
+    const searchParams = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    const queryString = searchParams.toString();
+    const endpoint = `/jobs${queryString ? `?${queryString}` : ''}`;
+    
+    return api.get<JobsApiResponse>(endpoint);
+  }
+
+  /**
+   * Helper method to populate jobs with included relationship data
+   */
+  populateJobs(response: JobsApiResponse): PopulatedJob[] {
+    const includedMap = new Map();
+    
+    // Build lookup map for included resources
+    response.included?.forEach(resource => {
+      const key = `${resource.type}:${resource.id}`;
+      includedMap.set(key, resource);
+    });
+
+    return response.data.map(job => {
+      // Find related resources
+      const client = includedMap.get(`clients:${job.relationships.client.data.id}`);
+      const createdBy = includedMap.get(`users:${job.relationships.created_by.data.id}`);
+      const technicians = job.relationships.technicians.data.map(tech => 
+        includedMap.get(`users:${tech.id}`)
+      ).filter(Boolean);
+      const tasks = job.relationships.tasks.data.map(task => 
+        includedMap.get(`tasks:${task.id}`)
+      ).filter(Boolean);
+
+      return {
+        ...job,
+        client: { ...client?.attributes, id: client?.id },
+        created_by: { ...createdBy?.attributes, id: createdBy?.id },
+        technicians: technicians.map(tech => ({ ...tech?.attributes, id: tech?.id })),
+        tasks: tasks.map(task => ({ ...task?.attributes, id: task?.id }))
+      } as PopulatedJob;
+    });
+  }
+
+  /**
+   * Get paginated list of jobs (legacy method for backward compatibility)
    */
   async getJobs(params: {
     page?: number;
