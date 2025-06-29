@@ -27,11 +27,14 @@ module Authenticatable
   end
 
   def auth_token
-    # Check Authorization header first
+    # Authentication strategy:
+    # 1. Bearer tokens (Authorization header) - for future Swift/native mobile apps
+    # 2. HttpOnly cookies - for the Svelte PWA (better XSS protection)
+    # This dual support allows the API to serve both web and mobile clients
     if request.headers["Authorization"].present?
       request.headers["Authorization"].split(" ").last
     else
-      # Fall back to cookie
+      # Fall back to cookie for Svelte PWA
       cookies.signed[:auth_token]
     end
   end

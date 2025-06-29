@@ -13,7 +13,7 @@ class Api::V1::DocumentationController < Api::V1::BaseController
       openapi: "3.0.0",
       info: {
         title: "BOS API",
-        description: "API for the Business Operations System",
+        description: "API for the Business Operations System. Supports both cookie-based authentication (for the Svelte PWA) and Bearer token authentication (for future native mobile apps).",
         version: "1.0.0",
         contact: {
           name: "API Support",
@@ -32,13 +32,13 @@ class Api::V1::DocumentationController < Api::V1::BaseController
             type: "http",
             scheme: "bearer",
             bearerFormat: "JWT",
-            description: "JWT token obtained from /api/v1/auth/login"
+            description: "Bearer token authentication for native mobile apps (e.g., future Swift app). Include token in Authorization header as 'Bearer {token}'"
           },
           cookieAuth: {
             type: "apiKey",
             in: "cookie",
             name: "auth_token",
-            description: "JWT token stored in httpOnly cookie"
+            description: "Cookie-based authentication for the Svelte PWA. Tokens are stored in secure httpOnly cookies for XSS protection"
           }
         },
         schemas: {
@@ -93,13 +93,15 @@ class Api::V1::DocumentationController < Api::V1::BaseController
               data: {
                 type: "object",
                 properties: {
-                  type: { type: "string", example: "auth_tokens" },
+                  type: { type: "string", example: "auth" },
                   attributes: {
                     type: "object",
                     properties: {
-                      accessToken: { type: "string", example: "eyJhbGciOiJIUzI1NiJ9..." },
-                      refreshToken: { type: "string", example: "eyJhbGciOiJIUzI1NiJ9..." },
-                      expiresAt: { type: "string", format: "date-time" }
+                      message: { type: "string", example: "Successfully authenticated" },
+                      expiresAt: { type: "string", format: "date-time" },
+                      # Note: accessToken and refreshToken are only included when X-Request-Client: mobile header is present
+                      accessToken: { type: "string", example: "eyJhbGciOiJIUzI1NiJ9...", description: "Only included for mobile clients" },
+                      refreshToken: { type: "string", example: "eyJhbGciOiJIUzI1NiJ9...", description: "Only included for mobile clients" }
                     }
                   },
                   relationships: {
@@ -147,6 +149,12 @@ class Api::V1::DocumentationController < Api::V1::BaseController
       security: [
         { bearerAuth: [] },
         { cookieAuth: [] }
+      ],
+      tags: [
+        {
+          name: "Authentication",
+          description: "Authentication endpoints support two methods: 1) Cookie-based auth for the Svelte PWA (default) - tokens stored in secure httpOnly cookies. 2) Bearer token auth for future Swift/native apps - tokens returned in response body when X-Request-Client: mobile header is present."
+        }
       ]
     }
   end
@@ -182,7 +190,7 @@ class Api::V1::DocumentationController < Api::V1::BaseController
         post: {
           tags: [ "Authentication" ],
           summary: "User login",
-          description: "Authenticate user and receive JWT tokens",
+          description: "Authenticate user and receive JWT tokens. For Svelte PWA: tokens are set as httpOnly cookies. For native apps: include 'X-Request-Client: mobile' header to receive tokens in response body.",
           security: [],
           requestBody: {
             required: true,
