@@ -16,6 +16,24 @@
 		--brand-primary: #00a3ff;  /* RGB(0, 163, 255) - Primary brand color */
 		--accent-blue: #00a3ff;
 		--accent-blue-hover: #0089e0;
+		
+		/* Status and semantic colors */
+		--accent-green: #30d158;  /* Success/completed state */
+		--accent-green-hover: #28c946;
+		--accent-red: #ff453a;    /* Error/cancelled/failed state */
+		--accent-red-hover: #ff3b30;
+		--accent-orange: #ff9500; /* Warning/paused state */
+		--accent-orange-hover: #ff8c00;
+		--accent-yellow: #ffd60a; /* Caution/pending state */
+		--accent-purple: #bf5af2; /* Special/priority state */
+		
+		/* Task status colors */
+		--status-new: var(--text-secondary);
+		--status-in-progress: var(--accent-blue);
+		--status-paused: var(--accent-orange);
+		--status-completed: var(--accent-green);
+		--status-cancelled: var(--accent-red);
+		--status-failed: var(--accent-red);
 
 		/* Typography */
 		--font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', sans-serif;

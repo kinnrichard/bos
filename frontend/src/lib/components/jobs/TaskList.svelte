@@ -177,43 +177,42 @@
           style="--depth: {renderItem.depth}"
           data-task-id={renderItem.task.id}
         >
-          <!-- Task Main Content -->
-          <div class="task-content">
-            <div class="task-header">
-              <!-- Disclosure Triangle -->
-              <div class="task-disclosure">
-                {#if renderItem.hasSubtasks}
-                  <button 
-                    class="disclosure-button"
-                    on:click={() => toggleTaskExpansion(renderItem.task.id)}
-                    aria-label={renderItem.isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
-                  >
-                    <img 
-                      src={renderItem.isExpanded ? chevronDown : chevronRight} 
-                      alt={renderItem.isExpanded ? 'Expanded' : 'Collapsed'}
-                      class="chevron-icon"
-                    />
-                  </button>
-                {:else}
-                  <div class="disclosure-spacer"></div>
-                {/if}
-              </div>
-              
-              <div class="task-status">
-                <span class="status-emoji">{getTaskStatusEmoji(renderItem.task.status)}</span>
-                <span class="status-label">{getStatusLabel(renderItem.task.status)}</span>
-              </div>
-              <div class="task-meta">
-                <span class="task-updated">{formatDateTime(renderItem.task.updated_at)}</span>
-              </div>
-            </div>
+          <!-- Disclosure Triangle (if has subtasks) -->
+          {#if renderItem.hasSubtasks}
+            <button 
+              class="disclosure-button"
+              on:click={() => toggleTaskExpansion(renderItem.task.id)}
+              aria-expanded={renderItem.isExpanded}
+              aria-label={renderItem.isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+            >
+              <img 
+                src={chevronRight} 
+                alt={renderItem.isExpanded ? 'Expanded' : 'Collapsed'}
+                class="chevron-icon"
+              />
+            </button>
+          {:else}
+            <div class="disclosure-spacer"></div>
+          {/if}
 
-            <div class="task-body">
-              <h5 class="task-title">{renderItem.task.title}</h5>
-            </div>
+          <!-- Task Status Button -->
+          <div class="task-status">
+            <button 
+              class="status-emoji"
+              on:click={() => handleStatusChange(renderItem.task.id, renderItem.task.status)}
+              disabled
+              title="Change status (coming soon)"
+            >
+              {getTaskStatusEmoji(renderItem.task.status)}
+            </button>
+          </div>
+          
+          <!-- Task Content -->
+          <div class="task-content">
+            <h5 class="task-title">{renderItem.task.title}</h5>
           </div>
 
-          <!-- Task Actions (Placeholder for future functionality) -->
+          <!-- Task Actions (Hidden, shown on hover) -->
           <div class="task-actions">
             <button 
               class="task-action-button"
@@ -221,20 +220,8 @@
               disabled
               title="Task details (coming soon)"
             >
-              <span class="action-icon">📝</span>
+              <span class="action-icon">ⓘ</span>
             </button>
-            
-            <!-- Status Change Button (Future Enhancement) -->
-            {#if renderItem.task.status !== 'successfully_completed'}
-              <button 
-                class="task-action-button"
-                on:click={() => handleStatusChange(renderItem.task.id, 'successfully_completed')}
-                disabled
-                title="Mark complete (coming soon)"
-              >
-                <span class="action-icon">✅</span>
-              </button>
-            {/if}
           </div>
         </div>
       {/each}
@@ -253,7 +240,8 @@
   .task-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0; /* Remove gap to match Rails tight spacing */
+    background-color: var(--bg-black);
   }
 
   .empty-state {
@@ -261,8 +249,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48px 24px;
+    padding: 60px 20px;
     text-align: center;
+    color: var(--text-tertiary);
   }
 
   .empty-icon {
@@ -287,122 +276,153 @@
   .tasks-container {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0; /* No gap between tasks like Rails */
   }
 
   .task-item {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
-    padding: 16px;
-    padding-left: calc(16px + (var(--depth, 0) * 24px));
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    transition: all 0.15s ease;
-    cursor: pointer;
+    padding: 4px !important; /* Match Rails minimal padding */
+    padding-left: calc(4px + (var(--depth, 0) * 32px)) !important; /* Rails indentation */
+    border: none !important;
+    border-radius: 8px !important;
+    background: none !important;
+    background-color: transparent !important;
+    transition: opacity 0.2s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     position: relative;
+    will-change: transform;
   }
 
   .task-item.has-subtasks {
-    border-left: 3px solid var(--accent-blue);
+    /* Remove border styling, Rails doesn't use this */
   }
 
   .task-item:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
+    /* Subtle hover effect like Rails */
+    background-color: rgba(255, 255, 255, 0.05) !important;
   }
 
   .task-item.completed {
-    opacity: 0.7;
-    border-color: var(--accent-green);
+    /* Apply opacity to individual elements, not the whole task */
+  }
+
+  .task-item.completed .task-title,
+  .task-item.completed .task-content,
+  .task-item.completed .task-meta {
+    opacity: 0.75;
+    color: #8E8E93;
   }
 
   .task-item.in-progress {
-    border-color: var(--accent-blue);
+    /* Remove border styling for status, Rails uses different approach */
   }
 
-  .task-item.cancelled {
-    opacity: 0.6;
-    border-color: var(--accent-red);
+  .task-item.cancelled .task-title,
+  .task-item.cancelled .task-content,
+  .task-item.cancelled .task-meta {
+    opacity: 0.75;
+    color: #8E8E93;
+    text-decoration: line-through;
+    text-decoration-color: #8E8E93;
+    text-decoration-thickness: 1px;
   }
 
   .task-content {
     flex: 1;
     min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .task-header {
     display: flex;
     align-items: center;
-    margin-bottom: 8px;
-    gap: 8px;
+    margin-bottom: 0; /* Rails doesn't have margin here */
+    gap: 0; /* Rails uses tighter spacing */
   }
 
   .task-disclosure {
     display: flex;
     align-items: center;
     width: 20px;
+    height: 20px;
     flex-shrink: 0;
+    margin-right: 4px; /* Space between chevron and status */
   }
 
   .disclosure-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     background: none;
     border: none;
     cursor: pointer;
     padding: 0;
-    border-radius: 2px;
-    transition: all 0.15s ease;
+    color: var(--text-tertiary);
+    transition: transform 0.2s ease;
   }
 
   .disclosure-button:hover {
-    background-color: var(--bg-tertiary);
+    opacity: 0.8;
   }
 
   .chevron-icon {
     width: 12px;
     height: 12px;
     opacity: 0.7;
-    transition: opacity 0.15s ease;
+    transition: transform 0.2s ease, opacity 0.15s ease;
+    display: block;
+    transform: rotate(0deg); /* Default: pointing right */
   }
-
-  .disclosure-button:hover .chevron-icon {
-    opacity: 1;
+  
+  /* When expanded, rotate chevron-right 90 degrees to point down */
+  .disclosure-button[aria-expanded="true"] .chevron-icon {
+    transform: rotate(90deg);
   }
 
   .disclosure-spacer {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-right: 4px;
   }
 
   .task-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1;
+    flex-shrink: 0;
+    padding-top: 2px;
+    position: relative;
+    margin-right: 8px;
   }
 
   .status-emoji {
     font-size: 14px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .status-emoji:hover {
+    opacity: 0.8;
   }
 
   .status-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    display: none; /* Hide status label to match Rails minimal design */
   }
 
   .task-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: none; /* Hide metadata in main view like Rails */
   }
 
   .task-updated {
@@ -411,19 +431,25 @@
   }
 
   .task-body {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex: 1;
+    min-width: 0;
   }
 
   .task-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-primary);
+    font-size: 17px; /* Match Rails title size */
+    color: #FFFFFF; /* Rails white color */
     margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    margin-bottom: 2px;
+    word-wrap: break-word;
+    font-weight: 400; /* Rails uses normal weight */
+    line-height: 1.3;
+    cursor: text;
+    outline: none;
+    display: inline-block;
+    min-width: 75px;
+    width: fit-content;
+    max-width: 100%;
+    user-select: text;
   }
 
   .task-description {
@@ -439,48 +465,61 @@
 
   .task-actions {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 8px;
     flex-shrink: 0;
+    pointer-events: none; /* Allow clicks to pass through container */
+  }
+
+  .task-actions > * {
+    pointer-events: auto; /* Enable on children */
   }
 
   .task-action-button {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: none;
+    border: none;
+    color: var(--accent-blue);
+    font-size: 16px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: none;
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    color: var(--text-secondary);
-    cursor: pointer;
     transition: all 0.15s ease;
-    opacity: 0.6;
+    opacity: 0;
+    pointer-events: none;
   }
 
-  .task-action-button:not(:disabled) {
-    opacity: 1;
+  /* Show action buttons on task hover - Rails behavior */
+  .task-item:hover .task-action-button {
+    opacity: 0.7;
+    pointer-events: auto;
   }
 
-  .task-action-button:not(:disabled):hover {
+  .task-action-button:hover {
+    opacity: 1 !important;
     background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-    color: var(--text-primary);
+  }
+
+  .task-action-button:active {
+    transform: scale(0.95);
   }
 
   .task-action-button:disabled {
+    opacity: 0.3;
     cursor: not-allowed;
   }
 
   .action-icon {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .task-list-footer {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-primary);
+    margin-top: 20px;
+    padding: 12px;
+    text-align: center;
   }
 
   .feature-note {
@@ -489,27 +528,17 @@
     text-align: center;
     margin: 0;
     font-style: italic;
+    opacity: 0.7;
   }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .task-item {
-      padding: 12px;
-      gap: 8px;
+      padding: 4px !important;
     }
 
-    .task-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
-    }
-
-    .task-meta {
-      align-self: flex-end;
-    }
-
-    .task-actions {
-      flex-direction: row;
+    .task-title {
+      font-size: 16px;
     }
 
     .empty-state {
@@ -523,42 +552,48 @@
   }
 
   @media (max-width: 480px) {
-    .task-item {
-      padding: 10px;
+    .task-title {
+      font-size: 15px;
     }
 
-    .task-actions {
-      gap: 2px;
+    .disclosure-button,
+    .disclosure-spacer {
+      width: 16px;
+      height: 16px;
+    }
+
+    .status-emoji {
+      width: 18px;
+      height: 18px;
+      font-size: 12px;
     }
 
     .task-action-button {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
     }
 
     .action-icon {
-      font-size: 10px;
+      font-size: 12px;
     }
   }
 
   /* High contrast mode support */
   @media (prefers-contrast: high) {
-    .task-item {
-      border-width: 2px;
-    }
-
-    .task-item.completed,
-    .task-item.in-progress,
-    .task-item.cancelled {
-      border-width: 3px;
+    .task-item:hover {
+      background-color: rgba(255, 255, 255, 0.1) !important;
     }
 
     .task-action-button {
-      border-width: 2px;
+      border: 1px solid var(--border-primary);
     }
+  }
 
-    .task-list-footer {
-      border-top-width: 2px;
-    }
+  /* Smooth transitions for better UX */
+  .task-item,
+  .disclosure-button,
+  .status-emoji,
+  .task-action-button {
+    transition: all 0.15s ease;
   }
 </style>
