@@ -270,7 +270,7 @@
     let positionUpdates: Array<{id: string, position: number}> = [];
     
     if (wasMultiSelectDrag) {
-      // Handle multi-select drag: move all selected tasks as a group
+      // Handle multi-select drag: move all selected tasks as a contiguous group
       const draggedItem = event.detail.info?.id;
       const draggedIndex = items.findIndex((item: any) => item.id === draggedItem);
       const selectedTaskIds = Array.from($taskSelection.selectedTaskIds);
@@ -281,9 +281,21 @@
         .filter(Boolean)
         .sort((a, b) => (a.position || 0) - (b.position || 0));
       
-      // Calculate new positions for all selected tasks starting at drop position
-      selectedTasks.forEach((task, index) => {
-        const newPosition = draggedIndex + 1 + index;
+      // Get all tasks and separate selected from non-selected
+      const allTasks = tasks.slice().sort((a, b) => (a.position || 0) - (b.position || 0));
+      const nonSelectedTasks = allTasks.filter(task => !selectedTaskIds.includes(task.id));
+      
+      // Insert selected tasks as a group at the drop position
+      const insertPosition = draggedIndex;
+      const reorderedTasks = [
+        ...nonSelectedTasks.slice(0, insertPosition),
+        ...selectedTasks,
+        ...nonSelectedTasks.slice(insertPosition)
+      ];
+      
+      // Calculate new positions for all tasks
+      reorderedTasks.forEach((task, index) => {
+        const newPosition = index + 1;
         
         // Store original for rollback
         optimisticUpdates.set(task.id, {
