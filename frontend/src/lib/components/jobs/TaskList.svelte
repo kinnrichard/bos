@@ -418,7 +418,7 @@
           
           <!-- Task Content -->
           <div class="task-content">
-            <h5 class="task-title">{renderItem.task.title}</h5>
+            <h5 class="task-title">[{renderItem.task.position || 0}] {renderItem.task.title}</h5>
           </div>
 
           <!-- Task Actions (Hidden, shown on hover) -->
