@@ -69,15 +69,18 @@
       
       // Invalidate job queries to refetch updated data
       await queryClient.invalidateQueries({
-        queryKey: ['job', jobId]
+        queryKey: ['job', jobId],
+        exact: true
       });
       await queryClient.invalidateQueries({
         queryKey: ['jobs']
       });
       
-      // Wait for the queries to refetch, then sync with server state
+      // Force immediate refetch regardless of stale time
       await queryClient.refetchQueries({
-        queryKey: ['job', jobId]
+        queryKey: ['job', jobId],
+        exact: true,
+        type: 'active'
       });
       
       // Now safe to sync with server state

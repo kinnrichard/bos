@@ -56,10 +56,18 @@
       
       // Invalidate job queries to refetch updated data
       await queryClient.invalidateQueries({
-        queryKey: ['job', $currentJob.id]
+        queryKey: ['job', $currentJob.id],
+        exact: true
       });
       await queryClient.invalidateQueries({
         queryKey: ['jobs']
+      });
+      
+      // Force immediate refetch regardless of stale time
+      await queryClient.refetchQueries({
+        queryKey: ['job', $currentJob.id],
+        exact: true,
+        type: 'active'
       });
     } catch (err: any) {
       console.error('Failed to update job status:', err);

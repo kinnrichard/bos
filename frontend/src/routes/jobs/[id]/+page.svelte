@@ -36,7 +36,8 @@
   $: job = $query?.data;
 
   // Update current job in layout store when job data changes
-  $: if (job) {
+  // Include dataUpdatedAt to ensure updates when refetch happens
+  $: if (job && $query?.dataUpdatedAt) {
     layoutActions.setCurrentJob(job);
   }
 
