@@ -1,0 +1,34 @@
+# frozen_string_literal: true
+
+class <%= class_name %> < ApplicationRecord
+<% if touchable_config -%>
+  # Custom touchable configuration
+  touchable_config <%= touchable_config.inspect %>
+  
+<% end -%>
+<% belongs_to_associations.each do |association| -%>
+  belongs_to :<%= association.name %><%= association.inject_options %>
+<% end -%>
+<% if regular_attributes.any? -%>
+  
+  # Validations
+<% regular_attributes.select { |attr| attr.name != 'id' }.each do |attribute| -%>
+<% if attribute.name.in?(%w[title name subject]) -%>
+  validates :<%= attribute.name %>, presence: true
+<% end -%>
+<% end -%>
+<% end -%>
+<% if complex_relationships? -%>
+  
+  # Uncomment and customize cache invalidation rules as needed:
+  # include CacheInvalidation
+  # invalidates_cache_for :job, if: :affects_display?
+  # 
+  # private
+  # 
+  # def affects_display?
+  #   # Define when changes to this model should invalidate parent cache
+  #   title_changed? || status_changed?
+  # end
+<% end -%>
+end

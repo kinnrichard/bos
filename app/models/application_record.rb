@@ -1,4 +1,6 @@
 class ApplicationRecord < ActiveRecord::Base
+  include Touchable
+
   primary_abstract_class
 
   # All models now use UUID as primary key
