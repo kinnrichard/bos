@@ -53,10 +53,6 @@
 <div class="toolbar">
   <!-- Left section: Logo + Mobile sidebar toggle -->
   <div class="toolbar-left">
-    <!-- Logo -->
-    <div class="logo-container">
-      <img src="/faultless_logo.png" alt="Faultless" class="logo" />
-    </div>
 
     <!-- Sidebar toggle -->
     <button 
@@ -71,30 +67,6 @@
   <!-- Right section: Search + Page actions + User menu -->
   <div class="toolbar-right">
     <!-- Search -->
-    <div class="search-container" class:focused={searchFocused}>
-      <div class="search-input-wrapper">
-        <img src="/icons/search.svg" alt="Search" class="search-icon" />
-        <input
-          type="text"
-          placeholder="Search"
-          bind:value={searchQuery}
-          on:focus={() => searchFocused = true}
-          on:blur={() => searchFocused = false}
-          on:keydown={handleSearchKeydown}
-          class="search-input"
-        />
-        {#if searchQuery}
-          <button 
-            class="search-clear"
-            on:click={() => searchQuery = ''}
-            aria-label="Clear search"
-          >
-            <img src="/temp/close.svg" alt="Clear" />
-          </button>
-        {/if}
-      </div>
-    </div>
-
     <!-- Page-specific actions -->
     {#if pageActions.length > 0}
       <div class="page-actions">
@@ -110,6 +82,30 @@
         {/each}
       </div>
     {/if}
+	
+	<div class="search-container" class:focused={searchFocused}>
+	  <div class="search-input-wrapper">
+	    <img src="/icons/search.svg" alt="Search" class="search-icon" />
+	    <input
+	      type="text"
+	      placeholder="Search"
+	      bind:value={searchQuery}
+	      on:focus={() => searchFocused = true}
+	      on:blur={() => searchFocused = false}
+	      on:keydown={handleSearchKeydown}
+	      class="search-input"
+	    />
+	    {#if searchQuery}
+	      <button 
+	        class="search-clear"
+	        on:click={() => searchQuery = ''}
+	        aria-label="Clear search"
+	      >
+	        <img src="/temp/close.svg" alt="Clear" />
+	      </button>
+	    {/if}
+	  </div>
+	</div>
 
     <!-- User menu -->
     <div class="user-menu">
