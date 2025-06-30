@@ -1,7 +1,7 @@
 import { writable, derived } from 'svelte/store';
 
-// Task status filter store
-export const selectedTaskStatuses = writable<string[]>([]);
+// Task status filter store - start with all statuses selected
+export const selectedTaskStatuses = writable<string[]>(['new_task', 'in_progress', 'paused', 'successfully_completed', 'cancelled']);
 
 // Helper function to check if a task should be visible based on filters
 export function shouldShowTask(task: any, statuses: string[]): boolean {
