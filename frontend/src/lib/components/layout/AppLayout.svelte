@@ -56,21 +56,25 @@
     width: 280px;
     flex-shrink: 0;
     background-color: var(--bg-primary);
-    border-right: 1px solid var(--border-primary);
     position: relative;
     z-index: 100;
+    margin: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
 
   .sidebar-container.mobile {
     position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
+    top: 16px;
+    left: 16px;
+    height: calc(100vh - 32px);
     z-index: 1000;
+    margin: 0;
     background-color: rgba(28, 28, 30, 0.95);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
   }
 
   .mobile-backdrop {

@@ -51,19 +51,25 @@
 </script>
 
 <div class="toolbar">
-  <!-- Left section: Mobile sidebar toggle + Search -->
+  <!-- Left section: Logo + Mobile sidebar toggle -->
   <div class="toolbar-left">
-    <!-- Mobile sidebar toggle -->
-    {#if $isMobile}
-      <button 
-        class="sidebar-toggle"
-        on:click={layoutActions.toggleSidebar}
-        aria-label={$sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
-      >
-        <img src="/icons/sidebar.svg" alt="Menu" />
-      </button>
-    {/if}
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="/faultless_logo.png" alt="Faultless" class="logo" />
+    </div>
 
+    <!-- Sidebar toggle -->
+    <button 
+      class="sidebar-toggle"
+      on:click={layoutActions.toggleSidebar}
+      aria-label={$sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+    >
+      <img src="/icons/sidebar.svg" alt="Menu" />
+    </button>
+  </div>
+
+  <!-- Right section: Search + Page actions + User menu -->
+  <div class="toolbar-right">
     <!-- Search -->
     <div class="search-container" class:focused={searchFocused}>
       <div class="search-input-wrapper">
@@ -88,10 +94,7 @@
         {/if}
       </div>
     </div>
-  </div>
 
-  <!-- Right section: Page actions + User menu -->
-  <div class="toolbar-right">
     <!-- Page-specific actions -->
     {#if pageActions.length > 0}
       <div class="page-actions">
@@ -125,7 +128,6 @@
     justify-content: space-between;
     padding: 0 20px;
     background-color: var(--bg-black);
-    border-bottom: 1px solid var(--border-primary);
   }
 
   .toolbar-left,
@@ -133,6 +135,17 @@
     display: flex;
     align-items: center;
     gap: 16px;
+  }
+
+  /* Logo */
+  .logo-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .logo {
+    height: 32px;
+    width: auto;
   }
 
   /* Mobile sidebar toggle */

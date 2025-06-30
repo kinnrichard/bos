@@ -46,9 +46,6 @@
         </div>
         <div class="client-info">
           <div class="client-name">{$currentClient.name}</div>
-          <div class="client-type">
-            {$currentClient.client_type === 'business' ? 'Business' : 'Individual'}
-          </div>
         </div>
       </a>
     </div>
@@ -94,13 +91,14 @@
 
 <style>
   .sidebar {
-    height: 100vh;
+    height: 100%;
     display: flex;
     flex-direction: column;
     background-color: var(--bg-primary);
     position: relative;
     overflow-y: auto;
     overflow-x: hidden;
+    border-radius: 12px;
   }
 
   /* Mobile close button */
@@ -134,7 +132,6 @@
   /* Brand section */
   .brand-section {
     padding: 24px 20px;
-    border-bottom: 1px solid var(--border-primary);
   }
 
   .brand-link {
@@ -164,7 +161,6 @@
   /* Client section */
   .client-section {
     padding: 20px;
-    border-bottom: 1px solid var(--border-primary);
   }
 
   .client-link {
@@ -209,12 +205,6 @@
     white-space: nowrap;
   }
 
-  .client-type {
-    font-size: 12px;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
 
   /* Main navigation */
   .main-nav {
@@ -275,7 +265,6 @@
   /* Footer navigation */
   .footer-nav {
     padding: 16px;
-    border-top: 1px solid var(--border-primary);
     margin-top: auto;
   }
 

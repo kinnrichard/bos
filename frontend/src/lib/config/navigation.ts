@@ -38,7 +38,7 @@ export const footerNavItems: NavItem[] = [
     id: 'logs',
     label: "Vital Planet's Logs",
     href: '/logs',
-    icon: '📄',
+    icon: '📊',
     type: 'footer'
   }
 ];
