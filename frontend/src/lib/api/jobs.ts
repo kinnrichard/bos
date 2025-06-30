@@ -127,11 +127,7 @@ export class JobsService {
    */
   async updateJob(id: string, jobData: JobUpdateRequest): Promise<JsonApiResponse<JobResource>> {
     return api.patch<JsonApiResponse<JobResource>>(`/jobs/${id}`, {
-      data: {
-        type: 'jobs',
-        id,
-        attributes: jobData
-      }
+      job: jobData
     });
   }
 
@@ -186,6 +182,17 @@ export class JobsService {
       }>;
     }>(`/jobs/${jobId}/technicians`, {
       technician_ids: technicianIds
+    });
+  }
+
+  /**
+   * Update job status
+   */
+  async updateJobStatus(jobId: string, status: string): Promise<JsonApiResponse<JobResource>> {
+    return api.patch<JsonApiResponse<JobResource>>(`/jobs/${jobId}`, {
+      job: {
+        status
+      }
     });
   }
 }
