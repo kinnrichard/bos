@@ -1,6 +1,6 @@
 class Api::V1::TasksController < Api::V1::BaseController
   before_action :find_job
-  before_action :find_task, except: [ :index, :create, :reorder ]
+  before_action :find_task, except: [ :index, :create, :reorder, :batch_reorder ]
 
   def index
     @tasks = @job.tasks.includes(:assigned_to)
@@ -226,9 +226,16 @@ class Api::V1::TasksController < Api::V1::BaseController
   private
 
   def find_job
-    @job = current_user.accessible_jobs.find(params[:job_id])
+    # Use the same permission logic as the Jobs API controller
+    if current_user.admin? || current_user.owner?
+      # Admins/owners can access any job
+      @job = Job.includes(:tasks).find(params[:job_id])
+    else
+      # Regular users can only access jobs they're assigned to
+      @job = current_user.technician_jobs.includes(:tasks).find(params[:job_id])
+    end
   rescue ActiveRecord::RecordNotFound
-    render json: { error: "Job not found" }, status: :not_found
+    render json: { error: "Job not found or not accessible" }, status: :not_found
   end
 
   def find_task
