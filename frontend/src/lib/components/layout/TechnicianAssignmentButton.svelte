@@ -23,8 +23,13 @@
   let isOptimisticUpdate = false;
 
   // Initialize selected users from props (only when not in optimistic update mode)
-  $: if (!isOptimisticUpdate) {
-    selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
+  $: if (!isOptimisticUpdate && !isLoading) {
+    const propIds = new Set(assignedTechnicians.map(t => t.id));
+    // Only update if the prop data is actually different
+    if (propIds.size !== selectedUserIds.size || 
+        !Array.from(propIds).every(id => selectedUserIds.has(id))) {
+      selectedUserIds = propIds;
+    }
   }
 
   // Get users from cache - this ensures we have complete user data with proper initials
