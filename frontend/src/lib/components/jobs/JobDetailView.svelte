@@ -23,7 +23,7 @@
         </span-->
       </div>
     </div>
-    <TaskList tasks={job.tasks} jobId={job.id} clientId={job.client.id} />
+    <TaskList tasks={job.tasks} jobId={job.id} />
   </div>
   
   <!-- Job Header -->

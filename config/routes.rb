@@ -26,6 +26,9 @@ Rails.application.routes.draw do
       # Resource endpoints
       resources :jobs do
         resources :tasks do
+          collection do
+            patch :batch_reorder
+          end
           member do
             patch :reorder
             patch :update_status
