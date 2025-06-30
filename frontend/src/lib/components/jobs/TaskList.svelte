@@ -104,19 +104,6 @@
     }
   }
   
-  // Debug: Log hierarchical structure
-  $: {
-    console.log('=== HIERARCHICAL TASKS DEBUG ===');
-    console.log('Raw tasks:', tasks.map(t => ({ id: t.id, title: t.title, parent_id: t.parent_id, position: t.position })));
-    console.log('Hierarchical tasks:', hierarchicalTasks.map(t => ({
-      id: t.id,
-      title: t.title,
-      parent_id: t.parent_id,
-      subtasks_count: t.subtasks?.length || 0,
-      subtasks: t.subtasks?.map(st => ({ id: st.id, title: st.title, parent_id: st.parent_id }))
-    })));
-    console.log('Expanded tasks:', Array.from(expandedTasks));
-  }
   
   // Make rendering reactive to expandedTasks state changes
   $: flattenedTasks = (() => {
@@ -146,28 +133,14 @@
     }
   }
   
-  // Debug: Log when flattened tasks change
-  $: {
-    console.log('Flattened tasks updated:', flattenedTasks.length, 'items');
-    console.log('Flattened structure:', flattenedTasks.map(ft => ({
-      id: ft.task.id,
-      title: ft.task.title,
-      depth: ft.depth,
-      parent_id: ft.task.parent_id,
-      hasSubtasks: ft.hasSubtasks,
-      isExpanded: ft.isExpanded
-    })));
-  }
 
   function toggleTaskExpansion(taskId: string) {
-    console.log('Toggling task expansion for:', taskId, 'Currently expanded:', expandedTasks.has(taskId));
     if (expandedTasks.has(taskId)) {
       expandedTasks.delete(taskId);
     } else {
       expandedTasks.add(taskId);
     }
     expandedTasks = expandedTasks; // Trigger reactivity
-    console.log('New expanded state:', expandedTasks);
   }
 
   function isTaskExpanded(taskId: string): boolean {
@@ -275,14 +248,10 @@
     isDragging = false;
     draggedTaskId = null;
     
-    console.log('DnD finalize - reordering items:', items.map(i => ({ id: i.id, title: i.task?.title })));
-    
     // Calculate new positions based on the DnD order
     const positionUpdates = items.map((item: any, index: number) => {
       const newPosition = index + 1;
       const originalTask = tasks.find(t => t.id === item.id);
-      
-      console.log(`Task ${item.id} (${originalTask?.title}) moving from position ${originalTask?.position} to ${newPosition}`);
       
       // Store original for rollback
       optimisticUpdates.set(item.id, {
@@ -304,8 +273,6 @@
       }
       return task;
     });
-    
-    console.log('Optimistic update applied, new task positions:', tasks.map(t => ({ id: t.id, title: t.title, position: t.position })));
     
     try {
       // Send batch reorder to server  
@@ -351,11 +318,6 @@
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     const isExpanded = isTaskExpanded(task.id);
     
-    // Debug logging
-    if (hasSubtasks) {
-      console.log(`Rendering task "${task.title}" at depth ${depth}, has ${task.subtasks.length} subtasks, expanded: ${isExpanded}`);
-    }
-    
     // Add the current task
     result.push({
       task,
@@ -366,13 +328,11 @@
     
     // Add subtasks if expanded
     if (hasSubtasks && isExpanded) {
-      console.log(`Adding ${task.subtasks.length} subtasks for "${task.title}"`);
       for (const subtask of task.subtasks) {
         result.push(...renderTaskTree(subtask, depth + 1));
       }
     }
     
-    console.log(`renderTaskTree for "${task.title}" returning ${result.length} items`);
     return result;
   }
 </script>
@@ -457,7 +417,7 @@
           
           <!-- Task Content -->
           <div class="task-content">
-            <h5 class="task-title">[{renderItem.task.position || 0}] [D:{renderItem.depth}] {renderItem.task.title}</h5>
+            <h5 class="task-title">{renderItem.task.title}</h5>
           </div>
 
           <!-- Task Actions (Hidden, shown on hover) -->
