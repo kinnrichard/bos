@@ -1,5 +1,6 @@
 <script lang="ts">
   import { sidebarVisible, isMobile, currentPage, layoutActions } from '$lib/stores/layout';
+  import { taskFilterActions } from '$lib/stores/taskFilter';
   import FilterPopover from './FilterPopover.svelte';
 
   // Search functionality
@@ -49,10 +50,9 @@
     }
   }
 
-  // Filter functionality
-  function handleFilterChange(filters: any) {
-    console.log('Filters updated:', filters);
-    // TODO: Apply filters to data
+  // Task filter functionality
+  function handleTaskStatusFilter(statuses: string[]) {
+    taskFilterActions.setStatuses(statuses);
   }
 </script>
 
@@ -73,9 +73,9 @@
   <!-- Right section: Search + Page actions + User menu -->
   <div class="toolbar-right">
     <!-- Search -->
-    <!-- Filter for jobs page -->
-    {#if $currentPage === 'jobs'}
-      <FilterPopover onFilterChange={handleFilterChange} />
+    <!-- Filter for job detail page -->
+    {#if $currentPage === 'job-detail'}
+      <FilterPopover onFilterChange={handleTaskStatusFilter} />
     {/if}
 
     <!-- Page-specific actions -->

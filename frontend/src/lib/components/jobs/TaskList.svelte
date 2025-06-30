@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getTaskStatusEmoji } from '$lib/config/emoji';
+  import { selectedTaskStatuses, shouldShowTask } from '$lib/stores/taskFilter';
   
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';
@@ -21,8 +22,8 @@
   // Track collapsed/expanded state of tasks with subtasks
   let expandedTasks = new Set<string>();
 
-  // Organize tasks into hierarchical structure
-  function organizeTasksHierarchically(taskList: typeof tasks) {
+  // Organize tasks into hierarchical structure with filtering
+  function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[]) {
     const taskMap = new Map();
     const rootTasks: any[] = [];
     
@@ -34,11 +35,21 @@
       });
     });
     
-    // Second pass: organize into hierarchy
+    // Second pass: organize into hierarchy and apply filtering
     taskList.forEach(task => {
       const taskWithSubtasks = taskMap.get(task.id);
+      
+      // Apply filter - only include tasks that should be shown
+      if (!shouldShowTask(task, filterStatuses)) {
+        return;
+      }
+      
       if (task.parent_id && taskMap.has(task.parent_id)) {
-        taskMap.get(task.parent_id).subtasks.push(taskWithSubtasks);
+        // Only add to parent if parent is also visible
+        const parent = taskMap.get(task.parent_id);
+        if (shouldShowTask(parent, filterStatuses)) {
+          parent.subtasks.push(taskWithSubtasks);
+        }
       } else {
         rootTasks.push(taskWithSubtasks);
       }
@@ -47,7 +58,7 @@
     return rootTasks;
   }
 
-  $: hierarchicalTasks = organizeTasksHierarchically(tasks);
+  $: hierarchicalTasks = organizeTasksHierarchically(tasks, $selectedTaskStatuses);
   
   // Make rendering reactive to expandedTasks state changes
   $: flattenedTasks = (() => {
@@ -392,7 +403,6 @@
     width: 20px;
     height: 20px;
     flex-shrink: 0;
-    margin-right: 4px;
   }
 
   .task-status {

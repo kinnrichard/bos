@@ -1,43 +1,35 @@
 <script lang="ts">
   import { createPopover } from 'svelte-headlessui';
-  import FilterSection from './FilterSection.svelte';
 
-  export let onFilterChange: (filters: any) => void = () => {};
+  export let onFilterChange: (statuses: string[]) => void = () => {};
 
-  let filters = {
-    status: [],
-    priority: [],
-    assignee: [],
-    client: [],
-    dateRange: null
-  };
+  let selectedStatuses: string[] = [];
 
   const popover = createPopover();
 
-  function handleFilterUpdate(section: string, values: any) {
-    filters = { ...filters, [section]: values };
-    onFilterChange(filters);
+  const taskStatuses = [
+    { value: 'new', label: 'New' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'paused', label: 'Paused' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' }
+  ];
+
+  function toggleStatus(status: string) {
+    if (selectedStatuses.includes(status)) {
+      selectedStatuses = selectedStatuses.filter(s => s !== status);
+    } else {
+      selectedStatuses = [...selectedStatuses, status];
+    }
+    onFilterChange(selectedStatuses);
   }
 
   function clearAllFilters() {
-    filters = {
-      status: [],
-      priority: [],
-      assignee: [],
-      client: [],
-      dateRange: null
-    };
-    onFilterChange(filters);
+    selectedStatuses = [];
+    onFilterChange(selectedStatuses);
   }
 
-  function applyFilters() {
-    onFilterChange(filters);
-    popover.close();
-  }
-
-  $: hasActiveFilters = Object.values(filters).some(value => 
-    Array.isArray(value) ? value.length > 0 : value !== null
-  );
+  $: hasActiveFilters = selectedStatuses.length > 0;
 </script>
 
 <div class="filter-popover">
@@ -58,7 +50,7 @@
     >
       <div class="filter-content">
         <div class="filter-header">
-          <h3 class="filter-title">Filter Jobs</h3>
+          <h3 class="filter-title">Filter Tasks</h3>
           <button 
             class="clear-filters-btn"
             on:click={clearAllFilters}
@@ -68,57 +60,18 @@
           </button>
         </div>
 
-        <div class="filter-sections">
-          <FilterSection
-            title="Status"
-            type="checkbox"
-            options={[
-              { value: 'pending', label: 'Pending' },
-              { value: 'in_progress', label: 'In Progress' },
-              { value: 'completed', label: 'Completed' },
-              { value: 'cancelled', label: 'Cancelled' }
-            ]}
-            selectedValues={filters.status}
-            onUpdate={(values) => handleFilterUpdate('status', values)}
-          />
-
-          <FilterSection
-            title="Priority"
-            type="checkbox"
-            options={[
-              { value: 'low', label: 'Low' },
-              { value: 'medium', label: 'Medium' },
-              { value: 'high', label: 'High' },
-              { value: 'urgent', label: 'Urgent' }
-            ]}
-            selectedValues={filters.priority}
-            onUpdate={(values) => handleFilterUpdate('priority', values)}
-          />
-
-          <FilterSection
-            title="Assignee"
-            type="search"
-            placeholder="Search assignees..."
-            selectedValues={filters.assignee}
-            onUpdate={(values) => handleFilterUpdate('assignee', values)}
-          />
-
-          <FilterSection
-            title="Client"
-            type="search"
-            placeholder="Search clients..."
-            selectedValues={filters.client}
-            onUpdate={(values) => handleFilterUpdate('client', values)}
-          />
-        </div>
-
-        <div class="filter-footer">
-          <button 
-            class="apply-filters-btn"
-            on:click={applyFilters}
-          >
-            Apply Filters
-          </button>
+        <div class="status-checkboxes">
+          {#each taskStatuses as status}
+            <label class="status-checkbox">
+              <input
+                type="checkbox"
+                checked={selectedStatuses.includes(status.value)}
+                on:change={() => toggleStatus(status.value)}
+                class="checkbox-input"
+              />
+              <span class="checkbox-label">{status.label}</span>
+            </label>
+          {/each}
         </div>
       </div>
     </div>
@@ -170,14 +123,12 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 320px;
+    width: 200px;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
     z-index: var(--z-popover);
-    max-height: 80vh;
-    overflow-y: auto;
   }
 
   .filter-content {
@@ -220,47 +171,37 @@
     cursor: not-allowed;
   }
 
-  .filter-sections {
+  .status-checkboxes {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
   }
 
-  .filter-footer {
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-primary);
-  }
-
-  .apply-filters-btn {
-    width: 100%;
-    background-color: var(--accent-blue);
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: var(--radius-md);
-    font-size: 14px;
-    font-weight: 500;
+  .status-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    padding: 4px 0;
   }
 
-  .apply-filters-btn:hover {
-    background-color: var(--accent-blue-hover);
+  .checkbox-input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-blue);
+  }
+
+  .checkbox-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.2;
   }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .filter-panel {
-      width: 280px;
+      width: 180px;
       right: -20px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .filter-panel {
-      width: 260px;
-      right: -40px;
     }
   }
 </style>

@@ -44,6 +44,7 @@ export const currentPage = derived(page, ($page) => {
   if (!$page?.route?.id) return 'home';
   
   // Extract page type from route
+  if ($page.route.id === '/jobs/[id]') return 'job-detail';
   if ($page.route.id.includes('/jobs')) return 'jobs';
   if ($page.route.id.includes('/clients')) return 'clients';
   if ($page.route.id.includes('/people')) return 'people';
