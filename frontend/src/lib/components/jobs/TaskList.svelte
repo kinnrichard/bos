@@ -212,7 +212,6 @@
     const prevSelected = prevTask && taskSelectionState.selectedTaskIds.has(prevTask.task.id);
     const nextSelected = nextTask && taskSelectionState.selectedTaskIds.has(nextTask.task.id);
     
-    console.log(`Task ${taskId} at index ${index}: prev=${prevSelected}, next=${nextSelected}`);
     
     if (prevSelected && nextSelected) return 'selection-middle';
     if (prevSelected) return 'selection-bottom';
