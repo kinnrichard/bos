@@ -20,9 +20,12 @@
   let selectedUserIds: Set<string> = new Set();
   let isLoading = false;
   let error = '';
+  let isOptimisticUpdate = false;
 
-  // Initialize selected users from props
-  $: selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
+  // Initialize selected users from props (only when not in optimistic update mode)
+  $: if (!isOptimisticUpdate) {
+    selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
+  }
 
   // Get users from cache - this ensures we have complete user data with proper initials
   $: availableUsers = $userStore;
@@ -50,7 +53,8 @@
       newSelectedIds.delete(user.id);
     }
 
-    // Optimistic update
+    // Start optimistic update
+    isOptimisticUpdate = true;
     selectedUserIds = newSelectedIds;
     const updatedTechnicians = availableUsers.filter(u => newSelectedIds.has(u.id));
     onAssignmentChange(updatedTechnicians);
@@ -70,6 +74,14 @@
       await queryClient.invalidateQueries({
         queryKey: ['jobs']
       });
+      
+      // Wait for the queries to refetch, then sync with server state
+      await queryClient.refetchQueries({
+        queryKey: ['job', jobId]
+      });
+      
+      // Now safe to sync with server state
+      isOptimisticUpdate = false;
     } catch (err: any) {
       console.error('Failed to update technician assignment:', err);
       
@@ -81,6 +93,7 @@
       }
       
       // Rollback on error
+      isOptimisticUpdate = false;
       selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
       onAssignmentChange(assignedTechnicians);
     } finally {
