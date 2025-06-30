@@ -109,18 +109,6 @@
     flex-shrink: 0;
   }
 
-  .job-title {
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
-  }
-
   .job-priority-emoji {
     font-size: 20px;
     flex-shrink: 0;

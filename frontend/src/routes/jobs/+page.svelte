@@ -176,9 +176,6 @@
       gap: 16px;
     }
 
-    .page-header h1 {
-      font-size: 24px;
-    }
 
     .page-header__actions {
       width: 100%;

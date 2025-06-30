@@ -94,6 +94,16 @@
 
 	h1 {
 		color: var(--brand-primary);
-		font-size: 2rem; /* ~56px - roughly double the typical default */
+		font-size: 2rem; /* 32px - page headings */
+		font-weight: 600;
+		margin: 0 0 1.5rem 0;
+		line-height: 1.2;
+	}
+
+	/* Responsive h1 styling */
+	@media (max-width: 768px) {
+		h1 {
+			font-size: 1.5rem; /* 24px on mobile */
+		}
 	}
 }
