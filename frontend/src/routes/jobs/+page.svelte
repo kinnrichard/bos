@@ -1,6 +1,7 @@
 <script lang="ts">
   // import { page } from '$app/stores';
   import { invalidateAll } from '$app/navigation';
+  import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobCard from '$lib/components/jobs/JobCard.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import type { PageData } from './$types';
@@ -33,6 +34,7 @@
   <title>Jobs - bŏs</title>
 </svelte:head>
 
+<AppLayout>
 <div class="jobs-container">
   <!-- Page Header -->
   <div class="page-header">
@@ -113,6 +115,7 @@
     </div>
   {/if}
 </div>
+</AppLayout>
 
 <style>
   .jobs-container {

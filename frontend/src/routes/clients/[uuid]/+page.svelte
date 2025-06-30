@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import ClientInfo from '$lib/components/jobs/ClientInfo.svelte';
 
   export let data: PageData;
@@ -11,6 +12,7 @@
   <title>{client.attributes.name} - Client Details</title>
 </svelte:head>
 
+<AppLayout>
 <div class="client-page">
   <div class="page-header">
     <h1 class="page-title">Client Details</h1>
@@ -25,6 +27,7 @@
     <ClientInfo client={client} />
   </div>
 </div>
+</AppLayout>
 
 <style>
   .client-page {

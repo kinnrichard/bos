@@ -1,6 +1,7 @@
 <script lang="ts">
   // import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import type { PageData } from './$types';
@@ -30,6 +31,7 @@
   <title>{job ? `${job.attributes.title} - bŏs` : 'Job Details - bŏs'}</title>
 </svelte:head>
 
+<AppLayout>
 <div class="job-detail-container">
   <!-- Back Navigation -->
   <div class="page-navigation">
@@ -97,6 +99,7 @@
     </div>
   {/if}
 </div>
+</AppLayout>
 
 <style>
   .job-detail-container {
