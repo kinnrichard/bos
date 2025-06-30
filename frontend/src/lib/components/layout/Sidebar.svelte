@@ -17,10 +17,10 @@
   role="navigation"
   aria-label="Main navigation"
 >
-  <!-- Close button for mobile (hover only) -->
-  {#if $isMobile && sidebarHovered}
+  <!-- Close button (hover only) -->
+  {#if sidebarHovered}
     <button 
-      class="mobile-close-btn"
+      class="close-btn"
       on:click={layoutActions.hideSidebar}
       aria-label="Close sidebar"
     >
@@ -53,9 +53,12 @@
   	        <span class="nav-label">{$currentClient.name}</span>
   	      </a>
   	    </li>
+        <!-- Invisible spacer -->
+        <li class="nav-spacer" aria-hidden="true"></li>
   	  {/if}
   
   
+
       {#each mainNavItems as item (item.id)}
         <li class="nav-item">
           <a 
@@ -103,37 +106,34 @@
     border-radius: 16px;
   }
 
-  /* Mobile close button */
-  .mobile-close-btn {
+  /* Close button */
+  .close-btn {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: 8px;
+    right: 8px;
     width: 24px;
     height: 24px;
-    background: none;
-    border: none;
-    cursor: pointer;
     z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    transition: background-color 0.15s ease;
   }
 
-  .mobile-close-btn:hover {
-    background-color: var(--bg-tertiary);
-  }
-
-  .mobile-close-btn img {
-    width: 16px;
-    height: 16px;
+  .close-btn img {
     opacity: 0.7;
+    transition: opacity 0.25s ease;
   }
+  
+  .close-btn:hover img {
+    opacity: 1;
+    transition: opacity 0.25s ease;
+  }
+  
 
   /* Brand section */
   .brand-section {
     padding: 12px;
+    margin-bottom: 30px;
   }
 
   .brand-link {
@@ -172,32 +172,6 @@
     letter-spacing: 0.5px;
   }
 
-  /* Client section */
-  .client-section {
-    margin-top: 16px;
-    margin-bottom: 16px;
-    padding: 0 4px;
-    text-align: center;
-  }
-
-  .client-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 6px 16px;
-    text-decoration: none;
-    color: var(--text-secondary);
-    border-radius: 8px;
-    transition: all 0.15s ease;
-    font-size: 13px;
-    font-weight: 500;
-  }
-
-  .client-link:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
 
 
   /* Main navigation */
@@ -216,6 +190,11 @@
   }
 
   .nav-item {
+    width: 100%;
+  }
+
+  .nav-spacer {
+    height: 15px; /* matches nav-link height: 6px top + 6px bottom + 13px font + 12px for line-height */
     width: 100%;
   }
 
@@ -249,6 +228,10 @@
     width: 20px;
     text-align: center;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-1px);
   }
 
   .nav-label {
@@ -265,12 +248,12 @@
   }
 
   .footer-link {
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
     font-size: 13px;
   }
 
   .footer-link:hover {
-    color: var(--text-secondary);
+    color: var(--text-primary);
   }
 
   .footer-link.active {
