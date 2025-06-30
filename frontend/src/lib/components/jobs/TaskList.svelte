@@ -74,6 +74,19 @@
       }
     });
     
+    // Sort root tasks by position
+    rootTasks.sort((a, b) => (a.position || 0) - (b.position || 0));
+    
+    // Sort subtasks by position for each parent
+    function sortSubtasks(task: any) {
+      if (task.subtasks && task.subtasks.length > 0) {
+        task.subtasks.sort((a: any, b: any) => (a.position || 0) - (b.position || 0));
+        task.subtasks.forEach(sortSubtasks);
+      }
+    }
+    
+    rootTasks.forEach(sortSubtasks);
+    
     return rootTasks;
   }
 
