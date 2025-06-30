@@ -1,5 +1,6 @@
 <script lang="ts">
   import { sidebarVisible, isMobile, currentPage, layoutActions } from '$lib/stores/layout';
+  import FilterPopover from './FilterPopover.svelte';
 
   // Search functionality
   let searchQuery = '';
@@ -29,24 +30,29 @@
     switch (page) {
       case 'jobs':
         return [
-          { label: 'New Job', icon: '/icons/plus.svg', iconType: 'svg', action: () => console.log('New job') },
-          { label: 'Filter', icon: '/icons/filter.svg', iconType: 'svg', action: () => console.log('Filter jobs') }
+          { label: 'New Job', icon: '/icons/plus.svg', iconType: 'svg', action: () => console.log('New job') }
         ];
       case 'clients':
         return [
-          { label: 'New Client', icon: '➕', action: () => console.log('New client') }
+          { label: 'New Client', icon: '➕', iconType: 'emoji', action: () => console.log('New client') }
         ];
       case 'people':
         return [
-          { label: 'Add Person', icon: '➕', action: () => console.log('Add person') }
+          { label: 'Add Person', icon: '➕', iconType: 'emoji', action: () => console.log('Add person') }
         ];
       case 'devices':
         return [
-          { label: 'Add Device', icon: '➕', action: () => console.log('Add device') }
+          { label: 'Add Device', icon: '➕', iconType: 'emoji', action: () => console.log('Add device') }
         ];
       default:
         return [];
     }
+  }
+
+  // Filter functionality
+  function handleFilterChange(filters: any) {
+    console.log('Filters updated:', filters);
+    // TODO: Apply filters to data
   }
 </script>
 
@@ -67,6 +73,11 @@
   <!-- Right section: Search + Page actions + User menu -->
   <div class="toolbar-right">
     <!-- Search -->
+    <!-- Filter for jobs page -->
+    {#if $currentPage === 'jobs'}
+      <FilterPopover onFilterChange={handleFilterChange} />
+    {/if}
+
     <!-- Page-specific actions -->
     {#if pageActions.length > 0}
       <div class="page-actions">
@@ -78,7 +89,7 @@
           >
             {#if action.iconType === 'svg'}
               <img src={action.icon} alt="" class="action-icon-svg" />
-            {:else}
+            {:else if action.iconType === 'emoji'}
               <span class="action-icon">{action.icon}</span>
             {/if}
           </button>
