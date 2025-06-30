@@ -60,14 +60,16 @@
   <!-- Left section: Logo + Mobile sidebar toggle -->
   <div class="toolbar-left">
 
-    <!-- Sidebar toggle -->
-    <button 
-      class="sidebar-toggle"
-      on:click={layoutActions.toggleSidebar}
-      aria-label={$sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
-    >
-      <img src="/icons/sidebar.svg" alt="Menu" />
-    </button>
+    <!-- Sidebar toggle (only show when sidebar is hidden) -->
+    {#if !$sidebarVisible}
+      <button 
+        class="sidebar-toggle"
+        on:click={layoutActions.toggleSidebar}
+        aria-label="Show sidebar"
+      >
+        <img src="/icons/sidebar.svg" alt="Menu" />
+      </button>
+    {/if}
   </div>
 
   <!-- Right section: Search + Page actions + User menu -->

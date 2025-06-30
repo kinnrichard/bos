@@ -8,7 +8,7 @@
   export let showToolbar = true;
 </script>
 
-<div class="app-container" class:sidebar-hidden={!$sidebarVisible || !showSidebar}>
+<div class="app-container">
   <!-- Sidebar -->
   {#if showSidebar && $sidebarVisible}
     <div class="sidebar-container" class:mobile={$isMobile}>
@@ -110,16 +110,6 @@
     position: relative;
   }
 
-  /* Smooth transitions for sidebar */
-  .sidebar-container {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Hide sidebar on desktop when sidebar-hidden class is present */
-  .app-container.sidebar-hidden .sidebar-container:not(.mobile) {
-    transform: translateX(-100%);
-    width: 0;
-  }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
@@ -140,10 +130,4 @@
     }
   }
 
-  /* Accessibility improvements */
-  @media (prefers-reduced-motion: reduce) {
-    .sidebar-container {
-      transition: none;
-    }
-  }
 </style>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createPopover } from 'svelte-headlessui';
+  import { fade } from 'svelte/transition';
 
   export let onFilterChange: (statuses: string[]) => void = () => {};
 
@@ -62,6 +63,8 @@
     <div 
       class="filter-panel"
       use:popover.panel
+      in:fade={{ duration: 0 }}
+      out:fade={{ duration: 150 }}
     >
       <div class="filter-content">
           <h3 class="filter-title">Show…</h3>
@@ -155,7 +158,8 @@
   .filter-panel {
     position: absolute;
     top: calc(100% + 8px);
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 150px;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
@@ -211,8 +215,7 @@
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .filter-panel {
-      width: 180px;
-      right: -20px;
+      width: 140px;
     }
   }
 </style>
