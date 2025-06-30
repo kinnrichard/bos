@@ -36,7 +36,15 @@ class ApiClient {
     let csrfToken = null;
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       csrfToken = await csrfTokenManager.getToken();
-      console.log('CSRF token for request:', csrfToken ? 'present' : 'missing');
+      console.log('CSRF token for request:', csrfToken ? `present (${csrfToken.substring(0, 10)}...)` : 'missing');
+      
+      // If we still don't have a token, try once more
+      if (!csrfToken) {
+        console.warn('No CSRF token found, attempting to fetch again...');
+        csrfTokenManager.clearToken();
+        csrfToken = await csrfTokenManager.getToken();
+        console.log('Second attempt CSRF token:', csrfToken ? `present (${csrfToken.substring(0, 10)}...)` : 'still missing');
+      }
     }
 
     const requestHeaders: Record<string, string> = {
@@ -91,10 +99,24 @@ class ApiClient {
           throw error;
         }
 
+        // Special handling for CSRF token errors
+        if (response.status === 403 && responseData.code === 'INVALID_CSRF_TOKEN') {
+          console.warn('CSRF token invalid, clearing token cache');
+          csrfTokenManager.clearToken();
+          
+          const error: ApiError = {
+            status: response.status,
+            code: responseData.code,
+            message: responseData.message || 'CSRF token is invalid or missing',
+            errors: responseData.errors || []
+          };
+          throw error;
+        }
+
         const error: ApiError = {
           status: response.status,
-          code: responseData.errors?.[0]?.code || 'UNKNOWN_ERROR',
-          message: responseData.errors?.[0]?.detail || responseData.error || 'An error occurred',
+          code: responseData.errors?.[0]?.code || responseData.code || 'UNKNOWN_ERROR',
+          message: responseData.errors?.[0]?.detail || responseData.message || responseData.error || 'An error occurred',
           errors: responseData.errors || []
         };
         throw error;

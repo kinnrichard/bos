@@ -248,20 +248,18 @@ class Api::V1::TasksController < Api::V1::BaseController
   end
 
   def task_params
-    params.require(:task).permit(:title, :description, :status, :parent_id, :position, :assigned_to_id)
+    params.require(:task).permit(:title, :status, :parent_id, :position, :assigned_to_id)
   end
 
   def task_attributes(task)
     {
       id: task.id,
       title: task.title,
-      description: task.description,
       status: task.status,
       position: task.position,
       parent_id: task.parent_id,
       created_at: task.created_at,
       updated_at: task.updated_at,
-      completed_at: task.completed_at,
       lock_version: task.lock_version
     }
   end
