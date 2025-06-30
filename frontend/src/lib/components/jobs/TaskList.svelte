@@ -525,7 +525,6 @@
     background-color: #007AFF;
     border-radius: 2px;
     z-index: 1000;
-    box-shadow: 0 0 8px rgba(0, 122, 255, 0.5);
   }
 
   :global(.task-item.drop-target-below)::after {
@@ -538,7 +537,6 @@
     background-color: #007AFF;
     border-radius: 2px;
     z-index: 1000;
-    box-shadow: 0 0 8px rgba(0, 122, 255, 0.5);
   }
 
   .empty-state {
