@@ -42,6 +42,9 @@ class Api::V1::JobsController < Api::V1::BaseController
 
   # GET /api/v1/jobs/:id
   def show
+    # Reload job to ensure we have the latest data including updated_at from touch callbacks
+    @job.reload
+
     # Check ETag freshness for the job
     if stale_check?(@job, additional_keys: [ params[:include] ])
       render json: JobSerializer.new(
@@ -108,7 +111,10 @@ class Api::V1::JobsController < Api::V1::BaseController
     Rails.logger.info "TECH ASSIGNMENT: About to save job with technicians" if Rails.env.development?
 
     if @job.save
+      # Reload the job to get the updated timestamp from touch callbacks
+      @job.reload
       Rails.logger.info "TECH ASSIGNMENT: Successfully saved. Current technicians: #{@job.technicians.pluck(:name).join(', ')}" if Rails.env.development?
+      Rails.logger.info "TECH ASSIGNMENT: Job updated_at: #{@job.updated_at}" if Rails.env.development?
       render json: {
         status: "success",
         technicians: technicians.map { |tech| technician_data(tech) }

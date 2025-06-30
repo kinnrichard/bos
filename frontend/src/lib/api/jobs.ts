@@ -88,17 +88,9 @@ export class JobsService {
    */
   async getJobWithDetails(id: string): Promise<PopulatedJob> {
     const include = 'client,created_by,technicians,tasks,tasks.subtasks';
-    // Add cache-busting timestamp to force fresh data
-    const cacheBuster = `_t=${Date.now()}`;
-    const endpoint = `/jobs/${id}?include=${include}&${cacheBuster}`;
+    const endpoint = `/jobs/${id}?include=${include}`;
     
-    const response = await api.get<JobApiResponse>(endpoint, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    });
+    const response = await api.get<JobApiResponse>(endpoint);
     
     // Use the existing populate logic for consistency
     const populated = this.populateJobs({

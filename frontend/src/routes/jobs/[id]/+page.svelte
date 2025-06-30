@@ -20,8 +20,7 @@
       const response = await jobsService.getJobWithDetails(jobId);
       return response;
     },
-    staleTime: 0, // Always refetch - no cache
-    gcTime: 0, // Don't keep data in memory
+    staleTime: 30 * 1000, // 30 seconds
     retry: (failureCount, error: any) => {
       // Don't retry 404s or 403s
       if (error?.status === 404 || error?.status === 403) {

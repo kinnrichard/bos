@@ -1,7 +1,7 @@
 class Task < ApplicationRecord
   include Loggable
 
-  belongs_to :job
+  belongs_to :job, touch: true
   belongs_to :assigned_to, class_name: "User", optional: true
   belongs_to :parent, class_name: "Task", optional: true, counter_cache: :subtasks_count
 
