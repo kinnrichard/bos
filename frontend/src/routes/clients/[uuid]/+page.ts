@@ -1,19 +1,22 @@
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 import { api } from '$lib/api';
+import type { ClientResource } from '$lib/types';
 
 export const load: PageLoad = async ({ params }) => {
   try {
-    const response = await api.get(`/clients/${params.uuid}`);
+    const clientData = await api.get<{ data: ClientResource }>(`/clients/${params.uuid}`);
     
-    if (!response.ok) {
-      throw error(response.status, 'Client not found');
-    }
-
-    const client = await response.json();
+    // Transform JsonApiResource to simple object for ClientInfo component
+    const client = {
+      id: clientData.data.id,
+      name: clientData.data.attributes.name,
+      created_at: clientData.data.attributes.created_at,
+      updated_at: clientData.data.attributes.updated_at
+    };
     
     return {
-      client: client.data
+      client
     };
   } catch (err) {
     console.error('Error loading client:', err);

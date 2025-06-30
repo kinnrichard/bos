@@ -9,7 +9,7 @@
 </script>
 
 <svelte:head>
-  <title>{client.attributes.name} - Client Details</title>
+  <title>{client.name} - Client Details</title>
 </svelte:head>
 
 <AppLayout>
@@ -19,7 +19,7 @@
     <nav class="breadcrumb">
       <a href="/jobs" class="breadcrumb-link">Jobs</a>
       <span class="breadcrumb-separator">→</span>
-      <span class="breadcrumb-current">{client.attributes.name}</span>
+      <span class="breadcrumb-current">{client.name}</span>
     </nav>
   </div>
 

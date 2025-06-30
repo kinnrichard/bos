@@ -45,6 +45,14 @@
     }
   }
 
+  // Type-safe event handler for checkbox changes
+  function createCheckboxHandler(setValue: (val: boolean) => void, currentValue: boolean) {
+    return (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      handleCheckboxChange(target.checked, setValue, currentValue);
+    };
+  }
+
   $: hasActiveFilters = selectedStatuses.length > 0 && selectedStatuses.length < 5;
 
   // Notify parent when filters change
@@ -74,7 +82,7 @@
             <input 
               type="checkbox" 
               checked={newTaskChecked} 
-              on:change={(e) => handleCheckboxChange(e.target.checked, (val) => newTaskChecked = val, newTaskChecked)}
+              on:change={createCheckboxHandler((val) => newTaskChecked = val, newTaskChecked)}
               class="checkbox-input" 
             />
             <span class="checkbox-label">New</span>
@@ -83,7 +91,7 @@
             <input 
               type="checkbox" 
               checked={inProgressChecked} 
-              on:change={(e) => handleCheckboxChange(e.target.checked, (val) => inProgressChecked = val, inProgressChecked)}
+              on:change={createCheckboxHandler((val) => inProgressChecked = val, inProgressChecked)}
               class="checkbox-input" 
             />
             <span class="checkbox-label">In Progress</span>
@@ -92,7 +100,7 @@
             <input 
               type="checkbox" 
               checked={pausedChecked} 
-              on:change={(e) => handleCheckboxChange(e.target.checked, (val) => pausedChecked = val, pausedChecked)}
+              on:change={createCheckboxHandler((val) => pausedChecked = val, pausedChecked)}
               class="checkbox-input" 
             />
             <span class="checkbox-label">Paused</span>
@@ -101,7 +109,7 @@
             <input 
               type="checkbox" 
               checked={completedChecked} 
-              on:change={(e) => handleCheckboxChange(e.target.checked, (val) => completedChecked = val, completedChecked)}
+              on:change={createCheckboxHandler((val) => completedChecked = val, completedChecked)}
               class="checkbox-input" 
             />
             <span class="checkbox-label">Completed</span>
@@ -110,7 +118,7 @@
             <input 
               type="checkbox" 
               checked={cancelledChecked} 
-              on:change={(e) => handleCheckboxChange(e.target.checked, (val) => cancelledChecked = val, cancelledChecked)}
+              on:change={createCheckboxHandler((val) => cancelledChecked = val, cancelledChecked)}
               class="checkbox-input" 
             />
             <span class="checkbox-label">Cancelled</span>
