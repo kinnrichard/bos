@@ -30,11 +30,12 @@ class TaskSortingService
   end
 
   def get_ordered_tasks
+    # Always use position-based ordering now - let frontend handle display logic
     # Get root tasks with proper ordering and preload associations
     root_tasks = @job.tasks
       .includes(:notes, :assigned_to, subtasks: [ :notes, :assigned_to ])
       .root_tasks
-      .ordered_by_status
+      .order(:position)
 
     # Build complete task tree
     tasks_tree = []
@@ -48,10 +49,11 @@ class TaskSortingService
   private
 
   def build_task_tree(task, depth = 0)
+    # Always use position-based ordering for subtasks too
     {
       task: task,
       depth: depth,
-      subtasks: task.subtasks.ordered_by_status.map { |subtask|
+      subtasks: task.subtasks.order(:position).map { |subtask|
         build_task_tree(subtask, depth + 1)
       }
     }
