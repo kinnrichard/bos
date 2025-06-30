@@ -157,7 +157,7 @@
 
   .filter-panel {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 12px);
     left: 50%;
     transform: translateX(-50%);
     width: 150px;
@@ -166,6 +166,33 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
     z-index: var(--z-popover);
+  }
+
+  /* Arrow/tail pointing up to the button */
+  .filter-panel::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid var(--border-primary);
+  }
+
+  .filter-panel::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid var(--bg-secondary);
   }
 
   .filter-content {
