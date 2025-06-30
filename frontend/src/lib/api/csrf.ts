@@ -16,27 +16,34 @@ class CsrfTokenManager {
 
     // Return cached token if available and not expired
     if (this.token && this.isTokenFresh()) {
+      console.log('Using cached CSRF token');
       return this.token;
     }
 
     // Try to get from meta tag first
     const metaToken = this.getTokenFromMeta();
     if (metaToken) {
+      console.log('Found CSRF token in meta tag');
       this.token = metaToken;
       return this.token;
     }
 
     // If no meta tag, try to fetch from API (with rate limiting protection)
     try {
+      console.log('Fetching CSRF token from API...');
       const fetchedToken = await this.fetchTokenFromApi();
       if (fetchedToken) {
+        console.log('Successfully fetched CSRF token from API');
         this.setToken(fetchedToken);
         return this.token;
+      } else {
+        console.warn('No CSRF token received from API');
       }
     } catch (error) {
       console.warn('Failed to fetch CSRF token:', error);
     }
 
+    console.warn('No CSRF token available');
     return null;
   }
 

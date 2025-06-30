@@ -36,6 +36,7 @@ class ApiClient {
     let csrfToken = null;
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       csrfToken = await csrfTokenManager.getToken();
+      console.log('CSRF token for request:', csrfToken ? 'present' : 'missing');
     }
 
     const requestHeaders: Record<string, string> = {
@@ -45,6 +46,9 @@ class ApiClient {
 
     if (csrfToken) {
       requestHeaders['X-CSRF-Token'] = csrfToken;
+      console.log('Added CSRF token to request headers');
+    } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      console.warn('No CSRF token available for state-changing request');
     }
 
     const requestConfig: globalThis.RequestInit = {

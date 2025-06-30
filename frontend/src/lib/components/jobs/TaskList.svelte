@@ -337,27 +337,12 @@
       class="tasks-container"
       use:dndzone={{
         items: dndItems,
-        flipDurationMs,
+        flipDurationMs: 200,
         type: 'tasks',
         dragDisabled: false,
-        dropTargetStyle: {
-          outline: '2px dashed var(--accent-blue)',
-          outlineOffset: '2px'
-        },
+        dropTargetStyle: {},
         morphDisabled: true,
-        dropFromOthersDisabled: true,
-        centralDragDisabled: true,
-        transformDraggedElement: (element, data) => {
-          try {
-            if (element && element.style) {
-              element.style.transform = 'rotate(5deg) scale(1.02)';
-              element.style.opacity = '0.9';
-              element.style.zIndex = '1000';
-            }
-          } catch (error) {
-            console.warn('Transform error:', error);
-          }
-        }
+        dropFromOthersDisabled: true
       }}
       on:consider={handleDndConsider}
       on:finalize={handleDndFinalize}
