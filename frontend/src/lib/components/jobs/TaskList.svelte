@@ -23,6 +23,7 @@
   }>;
   
   export let jobId: string; // Used for drag & drop functionality
+  export let clientId: string; // Used for API endpoints
 
   // Track collapsed/expanded state of tasks with subtasks
   let expandedTasks = new Set<string>();
@@ -194,7 +195,7 @@
     tasks = [...tasks]; // Trigger reactivity
     
     try {
-      await tasksService.updateTaskStatus(jobId, taskId, newStatus);
+      await tasksService.updateTaskStatus(clientId, jobId, taskId, newStatus);
       console.log('Status updated successfully:', taskId, newStatus);
     } catch (error) {
       // Rollback on error
@@ -256,7 +257,7 @@
         position: index + 1
       }));
       
-      await tasksService.batchReorderTasks(jobId, { positions });
+      await tasksService.batchReorderTasks(clientId, jobId, { positions });
       
       dragFeedback = 'Tasks reordered successfully!';
       setTimeout(() => dragFeedback = '', 2000);
@@ -345,8 +346,9 @@
           outlineOffset: '2px'
         },
         morphDisabled: true,
+        dropFromOthersDisabled: true,
         transformDraggedElement: (element) => {
-          if (element) {
+          if (element && element.parentElement) {
             element.style.transform += ' rotate(5deg)';
             element.style.opacity = '0.9';
           }

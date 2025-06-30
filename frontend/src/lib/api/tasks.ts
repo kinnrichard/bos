@@ -71,21 +71,23 @@ export class TasksService {
    * Batch reorder multiple tasks
    */
   async batchReorderTasks(
+    clientId: string,
     jobId: string, 
     request: BatchTaskReorderRequest
   ): Promise<TaskReorderResponse> {
-    return api.patch<TaskReorderResponse>(`/jobs/${jobId}/tasks/reorder`, request);
+    return api.patch<TaskReorderResponse>(`/clients/${clientId}/jobs/${jobId}/tasks/reorder`, request);
   }
 
   /**
    * Update task status
    */
   async updateTaskStatus(
+    clientId: string,
     jobId: string, 
     taskId: string, 
     status: string
   ): Promise<{ status: string; task: Task }> {
-    return api.patch<{ status: string; task: Task }>(`/jobs/${jobId}/tasks/${taskId}/update_status`, {
+    return api.patch<{ status: string; task: Task }>(`/clients/${clientId}/jobs/${jobId}/tasks/${taskId}/update_status`, {
       status
     });
   }
