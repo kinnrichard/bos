@@ -358,11 +358,7 @@
         flipDurationMs: 200,
         type: 'tasks',
         dragDisabled: false,
-        dropTargetStyle: {
-          outline: '2px solid #007AFF',
-          outlineOffset: '2px',
-          backgroundColor: 'rgba(0, 122, 255, 0.05)'
-        },
+        dropTargetStyle: {},
         morphDisabled: true,
         dropFromOthersDisabled: true
       }}
