@@ -244,11 +244,7 @@
       isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedItem) && $taskSelection.selectedTaskIds.size > 1;
       multiSelectDragCount = $taskSelection.selectedTaskIds.size;
       
-      if (isMultiSelectDrag) {
-        dragFeedback = `Moving ${multiSelectDragCount} selected tasks...`;
-      } else {
-        dragFeedback = 'Reordering task...';
-      }
+      // No visual feedback messages needed
     }
     
     // Update dndItems to maintain reactivity during drag
@@ -341,8 +337,7 @@
       // Send batch reorder to server  
       await tasksService.batchReorderTasks(jobId, { positions: positionUpdates });
       
-      dragFeedback = 'Tasks reordered successfully!';
-      setTimeout(() => dragFeedback = '', 2000);
+      // No success feedback needed
       
       // Clear optimistic updates on success
       optimisticUpdates.clear();
@@ -363,8 +358,7 @@
         return task;
       });
       
-      dragFeedback = error.response?.data?.error || 'Failed to reorder tasks';
-      setTimeout(() => dragFeedback = '', 5000);
+      // Error logged to console, no UI feedback needed
       
       optimisticUpdates.clear();
     }
@@ -492,9 +486,6 @@
 
           <!-- Task Actions (Hidden, shown on hover) -->
           <div class="task-actions">
-            {#if isSelected}
-              <div class="selection-indicator" title="Selected">✓</div>
-            {/if}
             <button 
               class="task-action-button"
               on:click|stopPropagation={() => console.log('Task details:', renderItem.task.id)}
@@ -508,31 +499,15 @@
       {/each}
     </div>
 
-    <!-- Drag & Drop Feedback and Multi-Select Info -->
-    <div class="task-list-footer">
-      {#if dragFeedback}
-        <div class="feedback-message" class:error={dragFeedback.includes('Failed')}>
+    <!-- Error feedback only -->
+    {#if dragFeedback && dragFeedback.includes('Failed')}
+      <div class="task-list-footer">
+        <div class="feedback-message error">
           {dragFeedback}
         </div>
-      {/if}
-      
-      {#if $taskSelection.isMultiSelectActive}
-        <div class="multi-select-info">
-          {$taskSelection.selectedTaskIds.size} tasks selected
-          <button 
-            class="clear-selection"
-            on:click={() => taskSelection.clearSelection()}
-            title="Clear selection"
-          >
-            ✕
-          </button>
-        </div>
-      {/if}
-      
-      <p class="feature-note">
-        💡 Drag to reorder • Click status to change • Shift/Cmd+click to select multiple
-      </p>
-    </div>
+      </div>
+    {/if}
+
   {/if}
 </div>
 
@@ -878,20 +853,6 @@
   }
 
   /* Selection indicator */
-  .selection-indicator {
-    background-color: var(--accent-blue);
-    color: white;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: bold;
-    margin-right: 4px;
-    animation: scaleIn 0.2s ease-out;
-  }
 
   @keyframes scaleIn {
     from {
@@ -952,25 +913,6 @@
     animation: slideIn 0.3s ease-out;
   }
 
-  .clear-selection {
-    background: none;
-    border: none;
-    color: var(--accent-blue);
-    cursor: pointer;
-    padding: 2px;
-    border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    transition: all 0.15s ease;
-  }
-
-  .clear-selection:hover {
-    background-color: rgba(0, 163, 255, 0.2);
-  }
 
   @keyframes slideIn {
     from {
@@ -983,14 +925,6 @@
     }
   }
 
-  .feature-note {
-    font-size: 12px;
-    color: var(--text-tertiary);
-    text-align: center;
-    margin: 0;
-    font-style: italic;
-    opacity: 0.7;
-  }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
