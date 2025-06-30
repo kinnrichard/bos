@@ -1,32 +1,63 @@
 <script lang="ts">
-  // import { page } from '$app/stores';
+  import { page } from '$app/stores';
+  import { browser } from '$app/environment';
   import { invalidateAll } from '$app/navigation';
+  import { createQuery } from '@tanstack/svelte-query';
+  import { jobsService } from '$lib/api/jobs';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobCard from '$lib/components/jobs/JobCard.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
-  import type { PageData } from './$types';
+  import type { JobStatus, JobPriority } from '$lib/types/job';
 
-  export let data: PageData;
+  // Extract query parameters for filtering
+  $: url = $page.url;
+  $: scope = url.searchParams.get('scope') || 'all';
+  $: status = url.searchParams.get('status') as JobStatus | undefined;
+  $: priority = url.searchParams.get('priority') as JobPriority | undefined;
+  $: currentPage = parseInt(url.searchParams.get('page') || '1');
+  $: per_page = parseInt(url.searchParams.get('per_page') || '20');
 
-  // Create the query using the factory from the load function
-  $: query = data.queryFactory();
+  // Create the query on the client side only
+  $: query = browser ? createQuery({
+    queryKey: ['jobs', { scope, status, priority, page: currentPage, per_page }],
+    queryFn: async () => {
+      const response = await jobsService.getJobsWithScope({
+        scope: scope as 'all' | 'mine',
+        status,
+        priority,
+        page: currentPage,
+        per_page,
+        include: 'client,technicians,tasks' // Include related data
+      });
+      
+      // Populate the jobs with relationship data
+      const populatedJobs = jobsService.populateJobs(response);
+      
+      return {
+        jobs: populatedJobs,
+        meta: response.meta,
+        links: response.links
+      };
+    },
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
+  }) : null;
 
   // Reactive statements for query state
-  $: isLoading = $query.isLoading;
-  $: error = $query.error;
-  $: jobs = $query.data?.jobs || [];
-  $: meta = $query.data?.meta;
+  $: isLoading = $query?.isLoading || false;
+  $: error = $query?.error;
+  $: jobs = $query?.data?.jobs || [];
+  $: meta = $query?.data?.meta;
   // $: links = $query.data?.links;
 
   // Handle retry
   function handleRetry() {
-    $query.refetch();
+    $query?.refetch();
   }
 
   // Handle refresh
   function handleRefresh() {
-    invalidateAll();
-    $query.refetch();
+    $query?.refetch();
   }
 </script>
 

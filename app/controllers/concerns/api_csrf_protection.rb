@@ -16,10 +16,27 @@ module ApiCsrfProtection
     return if request.get? || request.head? || request.options?
 
     # Skip CSRF check if no auth cookie is present (unauthenticated request)
-    return unless cookies.signed[:auth_token].present?
+    # Use lenient check consistent with token distribution
+    return unless cookies.signed[:auth_token].present? || cookies.signed[:user_id].present?
+
+    # Add debug logging in development
+    if Rails.env.development?
+      token_from_header = request.headers["X-CSRF-Token"] || request.headers["X-XSRF-Token"]
+      session_token = session[:_csrf_token]
+
+      Rails.logger.info "CSRF DEBUG: Request to #{request.path}"
+      Rails.logger.info "CSRF DEBUG: Auth cookies - user_id: #{cookies.signed[:user_id].present?}, auth_token: #{cookies.signed[:auth_token].present?}"
+      Rails.logger.info "CSRF DEBUG: Header token: #{token_from_header ? token_from_header[0..8] + '...' : 'MISSING'}"
+      Rails.logger.info "CSRF DEBUG: Session token: #{session_token ? session_token[0..8] + '...' : 'MISSING'}"
+      Rails.logger.info "CSRF DEBUG: Session ID: #{session.id}"
+    end
 
     # Verify CSRF token for cookie-based authentication
     unless valid_csrf_token?
+      # Always regenerate token on failure to provide fresh one in error response
+      session[:_csrf_token] = generate_csrf_token
+      set_csrf_token_header
+
       render json: {
         errors: [ {
           status: "403",
@@ -49,6 +66,18 @@ module ApiCsrfProtection
 
   # Include CSRF token in response headers for client to use
   def set_csrf_token_header
-    response.headers["X-CSRF-Token"] = session[:_csrf_token] ||= generate_csrf_token
+    # Ensure we have a fresh token in the session
+    session[:_csrf_token] ||= generate_csrf_token
+
+    # Always include the token in response headers for authenticated requests
+    response.headers["X-CSRF-Token"] = session[:_csrf_token]
+
+    # Manually set CORS expose header for X-CSRF-Token (backup for CORS config)
+    response.headers["Access-Control-Expose-Headers"] = "X-CSRF-Token, X-Request-ID"
+
+    # Add debug logging in development
+    if Rails.env.development?
+      Rails.logger.debug "CSRF: Setting token in response header: #{session[:_csrf_token][0..8]}..."
+    end
   end
 end

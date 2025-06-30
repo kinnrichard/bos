@@ -221,7 +221,7 @@
   }
 
   // Task status change handler with optimistic updates
-  async function handleStatusChange(taskId: string, newStatus: string, retryCount = 0) {
+  async function handleStatusChange(taskId: string, newStatus: string) {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     
@@ -235,26 +235,16 @@
       await tasksService.updateTaskStatus(jobId, taskId, newStatus);
       console.log('Status updated successfully:', taskId, newStatus);
     } catch (error: any) {
-      // Check if this is a CSRF token error and we haven't retried yet
-      if (error.code === 'INVALID_CSRF_TOKEN' && retryCount === 0) {
-        console.log('CSRF token error, retrying once...');
-        // Wait a moment for token to be cleared and retry
-        setTimeout(() => {
-          handleStatusChange(taskId, newStatus, 1);
-        }, 500);
-        return;
-      }
-      
       // Rollback on error
       task.status = originalStatus;
       tasks = [...tasks];
       console.error('Failed to update status:', error);
       
-      // Show more specific error message
+      // Show appropriate error message
       if (error.code === 'INVALID_CSRF_TOKEN') {
-        dragFeedback = 'Authentication error - please refresh the page';
+        dragFeedback = 'Session expired - please try again';
       } else {
-        dragFeedback = 'Failed to update task status';
+        dragFeedback = 'Failed to update task status - please try again';
       }
       setTimeout(() => dragFeedback = '', 3000);
     }

@@ -10,6 +10,9 @@ Rails.application.routes.draw do
       # Health check endpoint
       get "health", to: "health#show"
 
+      # CSRF test endpoint for development debugging
+      get "csrf_test", to: "health#csrf_test" if Rails.env.development?
+
       # Authentication endpoints
       namespace :auth do
         post "login", to: "sessions#create"
@@ -24,6 +27,8 @@ Rails.application.routes.draw do
       get "documentation", to: "documentation#index"
 
       # Resource endpoints
+      resources :users, only: [ :index ]
+
       resources :jobs do
         resources :tasks do
           collection do
@@ -33,6 +38,9 @@ Rails.application.routes.draw do
             patch :reorder
             patch :update_status
           end
+        end
+        member do
+          patch :technicians, to: "jobs#update_technicians"
         end
       end
     end

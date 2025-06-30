@@ -1,22 +1,39 @@
 <script lang="ts">
-  // import { page } from '$app/stores';
+  import { page } from '$app/stores';
+  import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onDestroy } from 'svelte';
+  import { createQuery } from '@tanstack/svelte-query';
+  import { jobsService } from '$lib/api/jobs';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import { layoutActions } from '$lib/stores/layout';
-  import type { PageData } from './$types';
 
-  export let data: PageData;
+  // Get job ID from URL params
+  $: jobId = $page.params.id;
 
-  // Create the query using the factory from the load function
-  $: query = data.queryFactory();
+  // Create the query on the client side only
+  $: query = browser && jobId ? createQuery({
+    queryKey: ['job', jobId],
+    queryFn: async () => {
+      const response = await jobsService.getJobWithDetails(jobId);
+      return response;
+    },
+    staleTime: 30 * 1000, // 30 seconds
+    retry: (failureCount, error: any) => {
+      // Don't retry 404s or 403s
+      if (error?.status === 404 || error?.status === 403) {
+        return false;
+      }
+      return failureCount < 3;
+    }
+  }) : null;
 
   // Reactive statements for query state
-  $: isLoading = $query.isLoading;
-  $: error = $query.error;
-  $: job = $query.data;
+  $: isLoading = $query?.isLoading || false;
+  $: error = $query?.error;
+  $: job = $query?.data;
 
   // Update current job in layout store when job data changes
   $: if (job) {
@@ -35,7 +52,7 @@
 
   // Handle retry
   function handleRetry() {
-    $query.refetch();
+    $query?.refetch();
   }
 </script>
 

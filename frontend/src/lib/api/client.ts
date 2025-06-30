@@ -36,15 +36,8 @@ class ApiClient {
     let csrfToken = null;
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       csrfToken = await csrfTokenManager.getToken();
-      console.log('CSRF token for request:', csrfToken ? `present (${csrfToken.substring(0, 10)}...)` : 'missing');
       
-      // If we still don't have a token, try once more
-      if (!csrfToken) {
-        console.warn('No CSRF token found, attempting to fetch again...');
-        csrfTokenManager.clearToken();
-        csrfToken = await csrfTokenManager.getToken();
-        console.log('Second attempt CSRF token:', csrfToken ? `present (${csrfToken.substring(0, 10)}...)` : 'still missing');
-      }
+      console.log(`[API] ${method} ${endpoint}: CSRF token`, csrfToken ? `present (${csrfToken.substring(0, 10)}...)` : 'MISSING!');
     }
 
     const requestHeaders: Record<string, string> = {
@@ -54,9 +47,9 @@ class ApiClient {
 
     if (csrfToken) {
       requestHeaders['X-CSRF-Token'] = csrfToken;
-      console.log('Added CSRF token to request headers');
+      console.log('[API] Added CSRF token to request headers');
     } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      console.warn('No CSRF token available for state-changing request');
+      console.warn(`[API] No CSRF token available for ${method} ${endpoint} - this will likely fail!`);
     }
 
     const requestConfig: globalThis.RequestInit = {
@@ -101,8 +94,10 @@ class ApiClient {
 
         // Special handling for CSRF token errors
         if (response.status === 403 && responseData.code === 'INVALID_CSRF_TOKEN') {
-          console.warn('CSRF token invalid, clearing token cache');
-          csrfTokenManager.clearToken();
+          console.warn('[API] CSRF token invalid, forcing token refresh');
+          
+          // The backend now provides a fresh token in the error response
+          csrfTokenManager.setTokenFromResponse(response);
           
           const error: ApiError = {
             status: response.status,

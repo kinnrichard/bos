@@ -27,10 +27,7 @@ class ApplicationController < ActionController::Base
 
   def require_login
     unless logged_in?
-      respond_to do |format|
-        format.html { redirect_to login_path(return_to: request.fullpath), alert: "Please sign in to continue" }
-        format.json { render json: { error: "Authentication required" }, status: :unauthorized }
-      end
+      render json: { error: "Authentication required" }, status: :unauthorized
     end
   end
 
@@ -45,17 +42,11 @@ class ApplicationController < ActionController::Base
   end
 
   def handle_not_found
-    respond_to do |format|
-      format.html { render file: "#{Rails.root}/public/404.html", status: :not_found, layout: false }
-      format.json { render json: { error: "Resource not found" }, status: :not_found }
-    end
+    render json: { error: "Resource not found" }, status: :not_found
   end
 
   def handle_bad_request
-    respond_to do |format|
-      format.html { redirect_back(fallback_location: root_path, alert: "Invalid request parameters") }
-      format.json { render json: { error: "Invalid request parameters" }, status: :bad_request }
-    end
+    render json: { error: "Invalid request parameters" }, status: :bad_request
   end
 
   def handle_api_version
@@ -67,10 +58,7 @@ class ApplicationController < ActionController::Base
   end
 
   def handle_csrf_failure
-    respond_to do |format|
-      format.html { render plain: "CSRF token validation failed", status: :unprocessable_entity }
-      format.json { render json: { error: "CSRF token validation failed" }, status: :unprocessable_entity }
-    end
+    render json: { error: "CSRF token validation failed" }, status: :unprocessable_entity
   end
 
   # Check if user has access to the current client
@@ -90,19 +78,13 @@ class ApplicationController < ActionController::Base
 
     # For now, simulate the test scenario: admin user cannot access 'techstartup' client
     if current_user && current_user.role == "admin" && client.name == "TechStartup Inc"
-      respond_to do |format|
-        format.html { redirect_to root_path, alert: "Access denied" }
-        format.json { render json: { error: "Access denied" }, status: :forbidden }
-      end
+      render json: { error: "Access denied" }, status: :forbidden
       return
     end
 
     # All other access is allowed for authenticated users
     unless logged_in?
-      respond_to do |format|
-        format.html { redirect_to root_path, alert: "Access denied" }
-        format.json { render json: { error: "Access denied" }, status: :forbidden }
-      end
+      render json: { error: "Access denied" }, status: :forbidden
     end
   rescue ActiveRecord::RecordNotFound
     handle_not_found

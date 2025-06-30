@@ -80,6 +80,32 @@ class Api::V1::JobsController < Api::V1::BaseController
     end
   end
 
+  # PATCH /api/v1/jobs/:id/technicians
+  def update_technicians
+    @job = Job.find(params[:id])
+    technician_ids = params[:technician_ids] || []
+
+    # Find valid users
+    technicians = User.where(id: technician_ids)
+
+    # Update job technicians
+    @job.technicians = technicians
+
+    if @job.save
+      render json: {
+        status: "success",
+        technicians: technicians.map { |tech| technician_data(tech) }
+      }
+    else
+      render json: {
+        status: "error",
+        errors: @job.errors.full_messages
+      }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "Job not found" }, status: :not_found
+  end
+
   private
 
   def set_job
@@ -161,5 +187,18 @@ class Api::V1::JobsController < Api::V1::BaseController
       # Default: user's assigned jobs (maintains existing behavior)
       current_user.technician_jobs
     end
+  end
+
+  private
+
+  def technician_data(technician)
+    {
+      id: technician.id,
+      name: technician.name,
+      email: technician.email,
+      role: technician.role,
+      initials: technician.initials,
+      avatar_style: technician.avatar_style
+    }
   end
 end

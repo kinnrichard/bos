@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { sidebarVisible, isMobile, currentPage, layoutActions } from '$lib/stores/layout';
+  import { sidebarVisible, isMobile, currentPage, layoutActions, currentJob } from '$lib/stores/layout';
   import { taskFilterActions } from '$lib/stores/taskFilter';
   import FilterPopover from './FilterPopover.svelte';
   import JobStatusButton from './JobStatusButton.svelte';
+  import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
 
   // Search functionality
   let searchQuery = '';
@@ -55,6 +56,18 @@
   function handleTaskStatusFilter(statuses: string[]) {
     taskFilterActions.setStatuses(statuses);
   }
+
+  // Technician assignment functionality  
+  function handleTechnicianAssignmentChange(updatedTechnicians: any[]) {
+    // Update the current job in the store with new technicians
+    if ($currentJob) {
+      const updatedJob = {
+        ...$currentJob,
+        technicians: updatedTechnicians
+      };
+      layoutActions.setCurrentJob(updatedJob);
+    }
+  }
 </script>
 
 <div class="toolbar">
@@ -81,8 +94,13 @@
   <!-- Right section: Search + Page actions + User menu -->
   <div class="toolbar-right">
     <!-- Search -->
-    <!-- Filter for job detail page -->
-    {#if $currentPage === 'job-detail'}
+    <!-- Job detail page controls -->
+    {#if $currentPage === 'job-detail' && $currentJob}
+      <TechnicianAssignmentButton 
+        jobId={$currentJob.id}
+        assignedTechnicians={$currentJob.technicians}
+        onAssignmentChange={handleTechnicianAssignmentChange}
+      />
       <FilterPopover onFilterChange={handleTaskStatusFilter} />
     {/if}
 

@@ -13,6 +13,7 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
       headers: :any,
       methods: [ :get, :post, :put, :patch, :delete, :options ],
       credentials: true,
+      expose: %w[X-CSRF-Token X-Request-ID],  # Expose custom headers for JavaScript access
       max_age: 86400
   end
 end

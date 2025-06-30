@@ -159,6 +159,35 @@ export class JobsService {
       }
     });
   }
+
+  /**
+   * Update job technician assignments
+   */
+  async updateJobTechnicians(jobId: string, technicianIds: string[]): Promise<{
+    status: string;
+    technicians: Array<{
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      initials: string;
+      avatar_style: string;
+    }>;
+  }> {
+    return api.patch<{
+      status: string;
+      technicians: Array<{
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+        initials: string;
+        avatar_style: string;
+      }>;
+    }>(`/jobs/${jobId}/technicians`, {
+      technician_ids: technicianIds
+    });
+  }
 }
 
 // Export singleton instance
