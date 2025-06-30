@@ -33,17 +33,6 @@
 
 <AppLayout>
 <div class="job-detail-container">
-  <!-- Back Navigation -->
-  <div class="page-navigation">
-    <button 
-      class="back-button"
-      on:click={handleBack}
-      type="button"
-    >
-      <span class="back-arrow">←</span>
-      <span>Back to Jobs</span>
-    </button>
-  </div>
 
   <!-- Loading State -->
   {#if isLoading}

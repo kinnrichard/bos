@@ -12,6 +12,21 @@
 </script>
 
 <div class="job-detail-view">
+  <h1 class="job-title">{job.attributes.title}</h1>
+  
+  <!-- Tasks Section -->
+  <div class="tasks-section">
+    <div class="section-header">
+      <h2>Tasks</h2>
+      <div class="task-counts">
+        <span class="task-count">
+          {job.attributes.task_counts.completed} / {job.attributes.task_counts.total} completed
+        </span>
+      </div>
+    </div>
+    <TaskList tasks={job.tasks} jobId={job.id} />
+  </div>
+  
   <!-- Job Header -->
   <div class="job-header">
     <div class="job-header-main">
@@ -53,18 +68,6 @@
     <JobInfo {job} />
   </div>
 
-  <!-- Tasks Section -->
-  <div class="tasks-section">
-    <div class="section-header">
-      <h2>Tasks</h2>
-      <div class="task-counts">
-        <span class="task-count">
-          {job.attributes.task_counts.completed} / {job.attributes.task_counts.total} completed
-        </span>
-      </div>
-    </div>
-    <TaskList tasks={job.tasks} jobId={job.id} />
-  </div>
 </div>
 
 <style>
@@ -162,10 +165,6 @@
   }
 
   .tasks-section {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 12px;
-    padding: 24px;
   }
 
   .section-header {

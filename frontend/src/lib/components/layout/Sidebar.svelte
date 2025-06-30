@@ -6,28 +6,13 @@
   // Reactive active item tracking
   $: activeItem = getActiveNavItem($page.url.pathname);
 
-  // Mobile close button (only show on hover on mobile)
-  let sidebarHovered = false;
 </script>
 
 <div 
   class="sidebar"
-  on:mouseenter={() => sidebarHovered = true}
-  on:mouseleave={() => sidebarHovered = false}
   role="navigation"
   aria-label="Main navigation"
 >
-  <!-- Close button (hover only) -->
-  {#if sidebarHovered}
-    <button 
-      class="close-btn"
-      on:click={layoutActions.hideSidebar}
-      aria-label="Close sidebar"
-    >
-      <!-- Using temp close icon as specified -->
-      <img src="/temp/close.svg" alt="Close" />
-    </button>
-  {/if}
 
   <!-- Brand/Logo -->
   <div class="brand-section">
@@ -36,6 +21,16 @@
       <img src="/faultless_logo.png" alt="Faultless" class="logo" />
     </div>
   </div>
+
+  <!-- Close button (CSS-controlled visibility) -->
+  <button 
+    class="close-btn"
+    on:click={layoutActions.hideSidebar}
+    aria-label="Close sidebar"
+  >
+    <!-- Using temp close icon as specified -->
+    <img src="/temp/close.svg" alt="Close" />
+  </button>
 
   <!-- Main Navigation -->
   <nav class="main-nav">
@@ -111,22 +106,31 @@
     position: absolute;
     top: 8px;
     right: 8px;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
   }
 
   .close-btn img {
-    opacity: 0.7;
+    opacity: 0.5;
     transition: opacity 0.25s ease;
+  }
+  
+  /* Show close button when hovering brand section or the button itself */
+  .brand-section:hover + .close-btn,
+  .close-btn:hover {
+    opacity: 1;
+    pointer-events: auto;
   }
   
   .close-btn:hover img {
     opacity: 1;
-    transition: opacity 0.25s ease;
   }
   
 

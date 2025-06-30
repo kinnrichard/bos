@@ -21,10 +21,6 @@
 </script>
 
 <div class="job-info-panel">
-  <div class="panel-header">
-    <h3>Job Information</h3>
-  </div>
-
   <div class="info-grid">
     <!-- Status and Priority -->
     <div class="info-group">
