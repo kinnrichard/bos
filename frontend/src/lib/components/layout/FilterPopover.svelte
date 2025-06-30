@@ -189,10 +189,11 @@
   }
 
   .status-checkbox {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 4px 0;
+    width: fit-content;
   }
 
   .checkbox-input {
