@@ -92,6 +92,32 @@
 
   $: hierarchicalTasks = organizeTasksHierarchically(tasks, $selectedTaskStatuses);
   
+  // Auto-expand tasks that have subtasks by default
+  $: {
+    if (hierarchicalTasks.length > 0) {
+      hierarchicalTasks.forEach(task => {
+        if (task.subtasks && task.subtasks.length > 0) {
+          expandedTasks.add(task.id);
+        }
+      });
+      expandedTasks = expandedTasks; // Trigger reactivity
+    }
+  }
+  
+  // Debug: Log hierarchical structure
+  $: {
+    console.log('=== HIERARCHICAL TASKS DEBUG ===');
+    console.log('Raw tasks:', tasks.map(t => ({ id: t.id, title: t.title, parent_id: t.parent_id, position: t.position })));
+    console.log('Hierarchical tasks:', hierarchicalTasks.map(t => ({
+      id: t.id,
+      title: t.title,
+      parent_id: t.parent_id,
+      subtasks_count: t.subtasks?.length || 0,
+      subtasks: t.subtasks?.map(st => ({ id: st.id, title: st.title, parent_id: st.parent_id }))
+    })));
+    console.log('Expanded tasks:', Array.from(expandedTasks));
+  }
+  
   // Make rendering reactive to expandedTasks state changes
   $: flattenedTasks = (() => {
     // Include expandedTasks in dependency by referencing it
@@ -123,6 +149,14 @@
   // Debug: Log when flattened tasks change
   $: {
     console.log('Flattened tasks updated:', flattenedTasks.length, 'items');
+    console.log('Flattened structure:', flattenedTasks.map(ft => ({
+      id: ft.task.id,
+      title: ft.task.title,
+      depth: ft.depth,
+      parent_id: ft.task.parent_id,
+      hasSubtasks: ft.hasSubtasks,
+      isExpanded: ft.isExpanded
+    })));
   }
 
   function toggleTaskExpansion(taskId: string) {
@@ -423,7 +457,7 @@
           
           <!-- Task Content -->
           <div class="task-content">
-            <h5 class="task-title">[{renderItem.task.position || 0}] {renderItem.task.title}</h5>
+            <h5 class="task-title">[{renderItem.task.position || 0}] [D:{renderItem.depth}] {renderItem.task.title}</h5>
           </div>
 
           <!-- Task Actions (Hidden, shown on hover) -->
