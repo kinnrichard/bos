@@ -186,7 +186,6 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
   }
 
   .nav-item {
@@ -209,6 +208,7 @@
     transition: all 0.15s ease;
     font-size: 13px;
     font-weight: 500;
+    margin: 0;
   }
 
   .nav-link:hover {
