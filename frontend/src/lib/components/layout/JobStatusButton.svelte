@@ -168,7 +168,7 @@
     top: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%);
-    width: 200px;
+    width: 240px;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-lg);
@@ -297,7 +297,7 @@
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .job-status-panel {
-      width: 180px;
+      width: 220px;
     }
   }
 </style>

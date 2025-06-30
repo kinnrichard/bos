@@ -6,6 +6,7 @@
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { usersService } from '$lib/api/users';
   import { jobsService } from '$lib/api/jobs';
+  import { userStore, userLookup } from '$lib/stores/users';
   import type { User } from '$lib/types/job';
 
   export let jobId: string;
@@ -16,7 +17,6 @@
   const queryClient = useQueryClient();
 
   // State
-  let availableUsers: User[] = [];
   let selectedUserIds: Set<string> = new Set();
   let isLoading = false;
   let error = '';
@@ -24,28 +24,19 @@
   // Initialize selected users from props
   $: selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
 
-  // Convert assigned technicians to User format for display
-  $: assignedTechniciansForDisplay = assignedTechnicians.map(tech => ({
-    id: tech.id,
-    type: 'users' as const,
-    attributes: {
-      name: tech.name,
-      email: tech.email,
-      role: tech.role,
-      initials: tech.initials,
-      avatar_style: tech.avatar_style,
-      created_at: tech.created_at,
-      updated_at: tech.updated_at
-    }
-  }));
+  // Get users from cache - this ensures we have complete user data with proper initials
+  $: availableUsers = $userStore;
+  $: assignedTechniciansForDisplay = userStore.getUsers(assignedTechnicians.map(t => t.id));
 
-  // Load available users when component mounts
+  // Load users if not already cached
   onMount(async () => {
-    try {
-      availableUsers = await usersService.getUsers();
-    } catch (err) {
-      console.error('Failed to load users:', err);
-      error = 'Failed to load users';
+    if (!userStore.isLoaded()) {
+      try {
+        await userStore.loadUsers();
+      } catch (err) {
+        console.error('Failed to load users:', err);
+        error = 'Failed to load users';
+      }
     }
   });
 
