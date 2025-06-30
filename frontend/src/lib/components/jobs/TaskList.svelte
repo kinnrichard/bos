@@ -226,6 +226,10 @@
     }
   }
 
+  // Track multi-select drag state
+  let isMultiSelectDrag = false;
+  let multiSelectDragCount = 0;
+
   // Drag & drop handlers
   function handleDndConsider(event: CustomEvent) {
     // Update visual state during drag
@@ -234,7 +238,17 @@
     // Check if dragging has started
     if (event.detail.info && event.detail.info.trigger === TRIGGERS.DRAG_STARTED) {
       isDragging = true;
-      dragFeedback = 'Reordering tasks...';
+      
+      // Check if we're dragging a selected task with multiple selections
+      const draggedItem = event.detail.info.id;
+      isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedItem) && $taskSelection.selectedTaskIds.size > 1;
+      multiSelectDragCount = $taskSelection.selectedTaskIds.size;
+      
+      if (isMultiSelectDrag) {
+        dragFeedback = `Moving ${multiSelectDragCount} selected tasks...`;
+      } else {
+        dragFeedback = 'Reordering task...';
+      }
     }
     
     // Update dndItems to maintain reactivity during drag
@@ -248,22 +262,59 @@
     isDragging = false;
     draggedTaskId = null;
     
-    // Calculate new positions based on the DnD order
-    const positionUpdates = items.map((item: any, index: number) => {
-      const newPosition = index + 1;
-      const originalTask = tasks.find(t => t.id === item.id);
+    // Reset multi-select drag state
+    const wasMultiSelectDrag = isMultiSelectDrag;
+    isMultiSelectDrag = false;
+    multiSelectDragCount = 0;
+    
+    let positionUpdates: Array<{id: string, position: number}> = [];
+    
+    if (wasMultiSelectDrag) {
+      // Handle multi-select drag: move all selected tasks as a group
+      const draggedItem = event.detail.info?.id;
+      const draggedIndex = items.findIndex((item: any) => item.id === draggedItem);
+      const selectedTaskIds = Array.from($taskSelection.selectedTaskIds);
       
-      // Store original for rollback
-      optimisticUpdates.set(item.id, {
-        originalPosition: originalTask?.position || 0,
-        originalParentId: originalTask?.parent_id
+      // Sort selected tasks by their current position to maintain relative order
+      const selectedTasks = selectedTaskIds
+        .map(id => tasks.find(t => t.id === id))
+        .filter(Boolean)
+        .sort((a, b) => (a.position || 0) - (b.position || 0));
+      
+      // Calculate new positions for all selected tasks starting at drop position
+      selectedTasks.forEach((task, index) => {
+        const newPosition = draggedIndex + 1 + index;
+        
+        // Store original for rollback
+        optimisticUpdates.set(task.id, {
+          originalPosition: task.position || 0,
+          originalParentId: task.parent_id
+        });
+        
+        positionUpdates.push({
+          id: task.id,
+          position: newPosition
+        });
       });
       
-      return {
-        id: item.id,
-        position: newPosition
-      };
-    });
+    } else {
+      // Handle single task drag (existing logic)
+      positionUpdates = items.map((item: any, index: number) => {
+        const newPosition = index + 1;
+        const originalTask = tasks.find(t => t.id === item.id);
+        
+        // Store original for rollback
+        optimisticUpdates.set(item.id, {
+          originalPosition: originalTask?.position || 0,
+          originalParentId: originalTask?.parent_id
+        });
+        
+        return {
+          id: item.id,
+          position: newPosition
+        };
+      });
+    }
     
     // Apply optimistic updates to tasks array
     tasks = tasks.map(task => {
@@ -418,6 +469,13 @@
           <!-- Task Content -->
           <div class="task-content">
             <h5 class="task-title">{renderItem.task.title}</h5>
+            
+            <!-- Multi-select drag indicator -->
+            {#if isDragging && isMultiSelectDrag && $taskSelection.selectedTaskIds.has(renderItem.task.id)}
+              <div class="multi-drag-badge">
+                +{multiSelectDragCount - 1} more
+              </div>
+            {/if}
           </div>
 
           <!-- Task Actions (Hidden, shown on hover) -->
@@ -580,6 +638,19 @@
     border: none !important;
     border-left: none !important;
     padding-left: calc(4px + (var(--depth, 0) * 32px)) !important; /* Reset padding */
+  }
+
+  /* Multi-select drag badge */
+  .multi-drag-badge {
+    display: inline-block;
+    background-color: var(--accent-blue);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 8px;
+    vertical-align: middle;
   }
 
   .task-item.has-subtasks {
