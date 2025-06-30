@@ -203,14 +203,14 @@
   }
 
   // Determine selection position classes for consecutive selections
-  function getSelectionPositionClass(taskId: string, index: number): string {
-    if (!$taskSelection.selectedTaskIds.has(taskId)) return '';
+  function getSelectionPositionClass(taskId: string, index: number, taskSelectionState: any): string {
+    if (!taskSelectionState.selectedTaskIds.has(taskId)) return '';
     
     const prevTask = flattenedTasks[index - 1];
     const nextTask = flattenedTasks[index + 1];
     
-    const prevSelected = prevTask && $taskSelection.selectedTaskIds.has(prevTask.task.id);
-    const nextSelected = nextTask && $taskSelection.selectedTaskIds.has(nextTask.task.id);
+    const prevSelected = prevTask && taskSelectionState.selectedTaskIds.has(prevTask.task.id);
+    const nextSelected = nextTask && taskSelectionState.selectedTaskIds.has(nextTask.task.id);
     
     console.log(`Task ${taskId} at index ${index}: prev=${prevSelected}, next=${nextSelected}`);
     
@@ -438,7 +438,7 @@
       {#each dndItems as renderItem, index (renderItem.id)}
         {@const isSelected = $taskSelection.selectedTaskIds.has(renderItem.task.id)}
         {@const isDraggedItem = draggedTaskId === renderItem.task.id}
-        {@const selectionPositionClass = getSelectionPositionClass(renderItem.task.id, index)}
+        {@const selectionPositionClass = getSelectionPositionClass(renderItem.task.id, index, $taskSelection)}
         <div 
           class="task-item"
           class:completed={renderItem.task.status === 'successfully_completed'}
