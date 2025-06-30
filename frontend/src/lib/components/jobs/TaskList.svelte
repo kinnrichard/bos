@@ -229,6 +229,9 @@
       isDragging = true;
       dragFeedback = 'Reordering tasks...';
     }
+    
+    // Update dndItems to maintain reactivity during drag
+    dndItems = items;
   }
 
   async function handleDndFinalize(event: CustomEvent) {
@@ -238,38 +241,41 @@
     isDragging = false;
     draggedTaskId = null;
     
-    // Update optimistic state
-    const reorderedTasks = items.map((item: any, index: number) => {
-      const originalTask = flattenedTasks.find(ft => ft.task.id === item.id);
-      if (originalTask) {
-        // Store original position for potential rollback
-        optimisticUpdates.set(item.id, {
-          originalPosition: flattenedTasks.findIndex(ft => ft.task.id === item.id),
-          originalParentId: originalTask.task.parent_id
-        });
-        
-        return {
-          ...originalTask.task,
-          position: index + 1
-        };
-      }
-      return null;
-    }).filter(Boolean);
+    console.log('DnD finalize - reordering items:', items.map(i => ({ id: i.id, title: i.task?.title })));
     
-    // Apply optimistic update
-    tasks = tasks.map(task => {
-      const reordered = reorderedTasks.find((rt: any) => rt.id === task.id);
-      return reordered || task;
+    // Calculate new positions based on the DnD order
+    const positionUpdates = items.map((item: any, index: number) => {
+      const newPosition = index + 1;
+      const originalTask = tasks.find(t => t.id === item.id);
+      
+      console.log(`Task ${item.id} (${originalTask?.title}) moving from position ${originalTask?.position} to ${newPosition}`);
+      
+      // Store original for rollback
+      optimisticUpdates.set(item.id, {
+        originalPosition: originalTask?.position || 0,
+        originalParentId: originalTask?.parent_id
+      });
+      
+      return {
+        id: item.id,
+        position: newPosition
+      };
     });
     
+    // Apply optimistic updates to tasks array
+    tasks = tasks.map(task => {
+      const update = positionUpdates.find(u => u.id === task.id);
+      if (update) {
+        return { ...task, position: update.position };
+      }
+      return task;
+    });
+    
+    console.log('Optimistic update applied, new task positions:', tasks.map(t => ({ id: t.id, title: t.title, position: t.position })));
+    
     try {
-      // Send batch reorder to server
-      const positions = items.map((item: any, index: number) => ({
-        id: item.id,
-        position: index + 1
-      }));
-      
-      await tasksService.batchReorderTasks(jobId, { positions });
+      // Send batch reorder to server  
+      await tasksService.batchReorderTasks(jobId, { positions: positionUpdates });
       
       dragFeedback = 'Tasks reordered successfully!';
       setTimeout(() => dragFeedback = '', 2000);
@@ -284,7 +290,6 @@
       tasks = tasks.map(task => {
         const original = optimisticUpdates.get(task.id);
         if (original) {
-          // Restore original position/parent
           return {
             ...task,
             position: original.originalPosition,
@@ -353,7 +358,11 @@
         flipDurationMs: 200,
         type: 'tasks',
         dragDisabled: false,
-        dropTargetStyle: {},
+        dropTargetStyle: {
+          outline: '2px solid #007AFF',
+          outlineOffset: '2px',
+          backgroundColor: 'rgba(0, 122, 255, 0.05)'
+        },
         morphDisabled: true,
         dropFromOthersDisabled: true
       }}
@@ -473,6 +482,33 @@
     flex-direction: column;
     gap: 0; /* Remove gap to match Rails tight spacing */
     background-color: var(--bg-black);
+  }
+
+  /* Drop indicator styles for blue line */
+  :global(.task-item.drop-target-above)::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: #007AFF;
+    border-radius: 2px;
+    z-index: 1000;
+    box-shadow: 0 0 8px rgba(0, 122, 255, 0.5);
+  }
+
+  :global(.task-item.drop-target-below)::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: #007AFF;
+    border-radius: 2px;
+    z-index: 1000;
+    box-shadow: 0 0 8px rgba(0, 122, 255, 0.5);
   }
 
   .empty-state {
