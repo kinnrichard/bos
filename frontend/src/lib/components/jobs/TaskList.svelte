@@ -613,13 +613,10 @@
     background-color: rgba(0, 163, 255, 0.2) !important;
   }
 
-  /* Dragging state styling */
+  /* Dragging state styling - minimal visual changes */
   .task-item.dragging {
-    transform: rotate(5deg) scale(1.02);
-    opacity: 0.9;
+    opacity: 0.8;
     z-index: 1000;
-    background-color: rgba(0, 163, 255, 0.1) !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
   }
 
   .task-item.has-subtasks {
