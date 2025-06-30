@@ -31,10 +31,10 @@
 
   <!-- Brand/Logo -->
   <div class="brand-section">
-    <a href={brandConfig.homeHref} class="brand-link">
-      <span class="brand-icon">{brandConfig.logoIcon}</span>
-      <span class="brand-name">{brandConfig.name}</span>
-    </a>
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="/faultless_logo.png" alt="Faultless" class="logo" />
+    </div>
   </div>
 
   <!-- Current Client Section -->
@@ -131,7 +131,7 @@
 
   /* Brand section */
   .brand-section {
-    padding: 24px 20px;
+    padding: 28px 24px 24px;
   }
 
   .brand-link {
@@ -147,6 +147,18 @@
     opacity: 0.8;
   }
 
+  /* Sidebar logo styling */
+  .brand-section .logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .brand-section .logo {
+    height: 32px;
+    width: auto;
+  }
+
   .brand-icon {
     font-size: 24px;
     color: var(--accent-blue);
@@ -160,7 +172,7 @@
 
   /* Client section */
   .client-section {
-    padding: 20px;
+    padding: 20px 24px;
   }
 
   .client-link {
@@ -209,7 +221,7 @@
   /* Main navigation */
   .main-nav {
     flex: 1;
-    padding: 20px 16px;
+    padding: 20px 20px;
   }
 
   .nav-list {
@@ -264,7 +276,7 @@
 
   /* Footer navigation */
   .footer-nav {
-    padding: 16px;
+    padding: 16px 20px;
     margin-top: auto;
   }
 

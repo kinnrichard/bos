@@ -58,9 +58,10 @@
     background-color: var(--bg-primary);
     position: relative;
     z-index: 100;
-    margin: 16px;
+    margin: 20px;
+    margin-right: 16px;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
 
   .sidebar-container.mobile {
@@ -96,10 +97,9 @@
   }
 
   .toolbar-container {
-    height: 60px;
+    height: 64px;
     flex-shrink: 0;
     background-color: var(--bg-black);
-    border-bottom: 1px solid var(--border-primary);
   }
 
   .content {
