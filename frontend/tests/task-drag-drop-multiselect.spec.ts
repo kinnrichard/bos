@@ -2,8 +2,16 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Task Drag & Drop and Multi-Select Features', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to jobs page and wait for tasks to load
+    // Navigate to jobs list page first
     await page.goto('/jobs');
+    
+    // Wait for jobs to load and click on the first job
+    await page.waitForSelector('.job-card', { timeout: 10000 });
+    
+    // Click on the first job to go to the job detail page
+    await page.click('.job-card:first-child');
+    
+    // Wait for tasks to load on the job detail page
     await page.waitForSelector('[data-task-id]', { timeout: 10000 });
   });
 
