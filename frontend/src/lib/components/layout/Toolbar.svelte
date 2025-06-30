@@ -2,6 +2,7 @@
   import { sidebarVisible, isMobile, currentPage, layoutActions } from '$lib/stores/layout';
   import { taskFilterActions } from '$lib/stores/taskFilter';
   import FilterPopover from './FilterPopover.svelte';
+  import JobStatusButton from './JobStatusButton.svelte';
 
   // Search functionality
   let searchQuery = '';
@@ -57,7 +58,7 @@
 </script>
 
 <div class="toolbar">
-  <!-- Left section: Logo + Mobile sidebar toggle -->
+  <!-- Left section: Logo + Mobile sidebar toggle + Job status -->
   <div class="toolbar-left">
 
     <!-- Sidebar toggle (only show when sidebar is hidden) -->
@@ -69,6 +70,11 @@
       >
         <img src="/icons/sidebar.svg" alt="Menu" />
       </button>
+    {/if}
+
+    <!-- Job status button (only show on job detail page) -->
+    {#if $currentPage === 'job-detail'}
+      <JobStatusButton />
     {/if}
   </div>
 

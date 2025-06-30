@@ -1,9 +1,11 @@
 <script lang="ts">
   // import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { onDestroy } from 'svelte';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
+  import { layoutActions } from '$lib/stores/layout';
   import type { PageData } from './$types';
 
   export let data: PageData;
@@ -15,6 +17,16 @@
   $: isLoading = $query.isLoading;
   $: error = $query.error;
   $: job = $query.data;
+
+  // Update current job in layout store when job data changes
+  $: if (job) {
+    layoutActions.setCurrentJob(job);
+  }
+
+  // Clear current job when component is destroyed (leaving page)
+  onDestroy(() => {
+    layoutActions.setCurrentJob(null);
+  });
 
   // Handle back navigation
   function handleBack() {
@@ -92,7 +104,7 @@
 
 <style>
   .job-detail-container {
-    padding: 24px;
+    padding: 0 24px;
     max-width: 1200px;
     margin: 0 auto;
     min-height: 100vh;

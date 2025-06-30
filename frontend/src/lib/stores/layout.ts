@@ -1,6 +1,7 @@
 import { writable, derived } from 'svelte/store';
 import { page } from '$app/stores';
 import { browser } from '$app/environment';
+import type { PopulatedJob } from '$lib/types/job';
 
 // Client type definition
 export type ClientType = 'business' | 'individual';
@@ -19,6 +20,7 @@ export interface Client {
 // Layout state stores
 export const sidebarVisible = writable(true);
 export const currentClient = writable<Client | null>(null);
+export const currentJob = writable<PopulatedJob | null>(null);
 
 // Mobile breakpoint detection
 export const isMobile = writable(false);
@@ -77,6 +79,10 @@ export const layoutActions = {
   
   setCurrentClient: (client: Client | null) => {
     currentClient.set(client);
+  },
+  
+  setCurrentJob: (job: PopulatedJob | null) => {
+    currentJob.set(job);
   }
 };
 

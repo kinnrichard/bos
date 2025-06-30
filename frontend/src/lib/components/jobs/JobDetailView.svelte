@@ -17,11 +17,10 @@
   <!-- Tasks Section -->
   <div class="tasks-section">
     <div class="section-header">
-      <h2>Tasks</h2>
       <div class="task-counts">
-        <span class="task-count">
+        <!--span class="task-count">
           {job.attributes.task_counts.completed} / {job.attributes.task_counts.total} completed
-        </span>
+        </span-->
       </div>
     </div>
     <TaskList tasks={job.tasks} jobId={job.id} />
@@ -71,10 +70,14 @@
 </div>
 
 <style>
+  h1 {
+    margin: 0;
+    padding: 0;
+  }  
+  
   .job-detail-view {
     display: flex;
     flex-direction: column;
-    gap: 32px;
   }
 
   .job-header {
