@@ -202,6 +202,23 @@
     }
   }
 
+  // Determine selection position classes for consecutive selections
+  function getSelectionPositionClass(taskId: string, index: number): string {
+    if (!$taskSelection.selectedTaskIds.has(taskId)) return '';
+    
+    const prevTask = flattenedTasks[index - 1];
+    const nextTask = flattenedTasks[index + 1];
+    
+    const prevSelected = prevTask && $taskSelection.selectedTaskIds.has(prevTask.task.id);
+    const nextSelected = nextTask && $taskSelection.selectedTaskIds.has(nextTask.task.id);
+    
+    if (prevSelected && nextSelected) return 'selection-middle';
+    if (prevSelected) return 'selection-bottom';
+    if (nextSelected) return 'selection-top';
+    
+    return ''; // Single selection, keep default rounded corners
+  }
+
   // Task status change handler with optimistic updates
   async function handleStatusChange(taskId: string, newStatus: string) {
     const task = tasks.find(t => t.id === taskId);
@@ -416,11 +433,12 @@
       on:consider={handleDndConsider}
       on:finalize={handleDndFinalize}
     >
-      {#each dndItems as renderItem (renderItem.id)}
+      {#each dndItems as renderItem, index (renderItem.id)}
         {@const isSelected = $taskSelection.selectedTaskIds.has(renderItem.task.id)}
         {@const isDraggedItem = draggedTaskId === renderItem.task.id}
+        {@const selectionPositionClass = getSelectionPositionClass(renderItem.task.id, index)}
         <div 
-          class="task-item"
+          class="task-item {selectionPositionClass}"
           class:completed={renderItem.task.status === 'successfully_completed'}
           class:in-progress={renderItem.task.status === 'in_progress'}
           class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
@@ -614,6 +632,21 @@
     background-color: var(--accent-blue) !important;
     color: white !important;
     text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
+  }
+
+  /* Consecutive selection styling - square off touching borders */
+  .task-item.selected.selection-middle {
+    border-radius: 0 !important;
+  }
+
+  .task-item.selected.selection-top {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+
+  .task-item.selected.selection-bottom {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
   }
 
   /* Dragging state styling - minimal visual changes */
