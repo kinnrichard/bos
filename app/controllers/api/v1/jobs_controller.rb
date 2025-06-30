@@ -16,6 +16,18 @@ class Api::V1::JobsController < Api::V1::BaseController
     # Paginate
     jobs = paginate(jobs)
 
+    Rails.logger.info "JOBS INDEX: Loading #{jobs.count} jobs" if Rails.env.development?
+    Rails.logger.info "JOBS INDEX: Include params: #{params[:include]}" if Rails.env.development?
+
+    # Log technician counts for debugging
+    if Rails.env.development?
+      jobs.each do |job|
+        tech_count = job.technicians.count
+        tech_names = job.technicians.pluck(:name).join(", ")
+        Rails.logger.info "JOBS INDEX: Job #{job.id} has #{tech_count} technicians: #{tech_names}"
+      end
+    end
+
     # Check ETag freshness with filter params as additional keys
     filter_params = params.permit(:scope, :status, :priority, :client_id, :q, :page, :per_page, :include, :from_date, :to_date).to_h
     if stale_check?(jobs, additional_keys: [ filter_params ])
@@ -85,24 +97,31 @@ class Api::V1::JobsController < Api::V1::BaseController
     @job = Job.find(params[:id])
     technician_ids = params[:technician_ids] || []
 
+    Rails.logger.info "TECH ASSIGNMENT: Job ID: #{@job.id}, Technician IDs: #{technician_ids.inspect}" if Rails.env.development?
+
     # Find valid users
     technicians = User.where(id: technician_ids)
+    Rails.logger.info "TECH ASSIGNMENT: Found #{technicians.count} technicians: #{technicians.pluck(:name).join(', ')}" if Rails.env.development?
 
     # Update job technicians
     @job.technicians = technicians
+    Rails.logger.info "TECH ASSIGNMENT: About to save job with technicians" if Rails.env.development?
 
     if @job.save
+      Rails.logger.info "TECH ASSIGNMENT: Successfully saved. Current technicians: #{@job.technicians.pluck(:name).join(', ')}" if Rails.env.development?
       render json: {
         status: "success",
         technicians: technicians.map { |tech| technician_data(tech) }
       }
     else
+      Rails.logger.error "TECH ASSIGNMENT: Failed to save job: #{@job.errors.full_messages}" if Rails.env.development?
       render json: {
         status: "error",
         errors: @job.errors.full_messages
       }, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordNotFound
+    Rails.logger.error "TECH ASSIGNMENT: Job not found: #{params[:id]}" if Rails.env.development?
     render json: { error: "Job not found" }, status: :not_found
   end
 

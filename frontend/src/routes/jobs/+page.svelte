@@ -33,6 +33,14 @@
       // Populate the jobs with relationship data
       const populatedJobs = jobsService.populateJobs(response);
       
+      console.log('JOBS PAGE: Raw response from API:', response);
+      console.log('JOBS PAGE: Populated jobs:', populatedJobs);
+      console.log('JOBS PAGE: Job technicians:', populatedJobs.map(job => ({
+        jobId: job.id,
+        title: job.title,
+        technicians: job.technicians || []
+      })));
+      
       return {
         jobs: populatedJobs,
         meta: response.meta,

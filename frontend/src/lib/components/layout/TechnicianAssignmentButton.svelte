@@ -1,7 +1,8 @@
 <script lang="ts">
   import { createPopover } from 'svelte-headlessui';
   import { fade } from 'svelte/transition';
-  import { onMount } from 'svelte';
+  import { onMount, getContext } from 'svelte';
+  import { useQueryClient } from '@tanstack/svelte-query';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { usersService } from '$lib/api/users';
   import { jobsService } from '$lib/api/jobs';
@@ -12,6 +13,7 @@
   export let onAssignmentChange: (technicians: User[]) => void = () => {};
 
   const popover = createPopover();
+  const queryClient = useQueryClient();
 
   // State
   let availableUsers: User[] = [];
@@ -66,8 +68,17 @@
     try {
       isLoading = true;
       error = '';
-      await jobsService.updateJobTechnicians(jobId, Array.from(newSelectedIds));
-      console.log('Technician assignment updated successfully');
+      const response = await jobsService.updateJobTechnicians(jobId, Array.from(newSelectedIds));
+      console.log('Technician assignment updated successfully:', response);
+      console.log('Response technicians:', response.technicians);
+      
+      // Invalidate job queries to refetch updated data
+      await queryClient.invalidateQueries({
+        queryKey: ['job', jobId]
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['jobs']
+      });
     } catch (err: any) {
       console.error('Failed to update technician assignment:', err);
       
