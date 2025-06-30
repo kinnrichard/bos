@@ -598,10 +598,11 @@
     will-change: transform;
   }
 
-  /* Selection state styling - bright blue background only */
+  /* Selection state styling - bright blue background with text shadow */
   .task-item.selected {
     background-color: var(--accent-blue) !important;
     color: white !important;
+    text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
   }
 
   /* Multi-select mode styling - remove borders, keep clean */
@@ -612,6 +613,7 @@
   .task-item.multi-select-active.selected {
     background-color: var(--accent-blue) !important;
     color: white !important;
+    text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
   }
 
   /* Dragging state styling - minimal visual changes */
@@ -1027,6 +1029,7 @@
     .task-item.selected {
       background-color: var(--accent-blue) !important;
       color: white !important;
+      text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
     }
   }
 
