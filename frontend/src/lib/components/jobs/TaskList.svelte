@@ -575,6 +575,11 @@
   .task-item.dragging {
     opacity: 0.8;
     z-index: 1000;
+    /* Override selection styling during drag */
+    background-color: transparent !important;
+    border: none !important;
+    border-left: none !important;
+    padding-left: calc(4px + (var(--depth, 0) * 32px)) !important; /* Reset padding */
   }
 
   .task-item.has-subtasks {
