@@ -346,10 +346,16 @@
         },
         morphDisabled: true,
         dropFromOthersDisabled: true,
-        transformDraggedElement: (element) => {
-          if (element && element.parentElement) {
-            element.style.transform += ' rotate(5deg)';
-            element.style.opacity = '0.9';
+        centralDragDisabled: true,
+        transformDraggedElement: (element, data) => {
+          try {
+            if (element && element.style) {
+              element.style.transform = 'rotate(5deg) scale(1.02)';
+              element.style.opacity = '0.9';
+              element.style.zIndex = '1000';
+            }
+          } catch (error) {
+            console.warn('Transform error:', error);
           }
         }
       }}
