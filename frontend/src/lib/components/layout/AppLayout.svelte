@@ -58,9 +58,9 @@
     background-color: var(--bg-primary);
     position: relative;
     z-index: 100;
-    margin: 20px;
-    margin-right: 16px;
-    border-radius: 12px;
+    margin: 12px 0 12px 12px;
+    border-radius: 16px;
+    border: 1px solid var(--border-primary);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
 
@@ -75,7 +75,7 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
-    border-radius: 12px;
+    border-radius: 16px;
   }
 
   .mobile-backdrop {

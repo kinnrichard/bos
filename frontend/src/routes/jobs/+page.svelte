@@ -39,19 +39,6 @@
   <!-- Page Header -->
   <div class="page-header">
     <h1>Jobs</h1>
-    <div class="page-header__actions">
-      <button 
-        class="button button--secondary button--small"
-        on:click={handleRefresh}
-        disabled={isLoading}
-      >
-        {#if isLoading}
-          Refreshing...
-        {:else}
-          Refresh
-        {/if}
-      </button>
-    </div>
   </div>
 
   <!-- Loading State -->
@@ -105,12 +92,6 @@
         <div class="empty-state-icon">📋</div>
         <h2>No jobs found</h2>
         <p>There are currently no jobs to display.</p>
-        <button 
-          class="button button--primary"
-          on:click={handleRefresh}
-        >
-          Refresh
-        </button>
       </div>
     </div>
   {/if}

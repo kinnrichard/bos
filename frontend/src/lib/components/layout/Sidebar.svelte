@@ -37,23 +37,25 @@
     </div>
   </div>
 
-  <!-- Current Client Section -->
-  {#if $currentClient}
-    <div class="client-section">
-      <a href="/clients/{$currentClient.id}" class="client-link">
-        <div class="client-icon">
-          {getClientTypeEmoji($currentClient.client_type)}
-        </div>
-        <div class="client-info">
-          <div class="client-name">{$currentClient.name}</div>
-        </div>
-      </a>
-    </div>
-  {/if}
-
   <!-- Main Navigation -->
   <nav class="main-nav">
     <ul class="nav-list">
+  	  <!-- Current Client Section -->
+  	  {#if $currentClient}
+  	    <li class="nav-item">
+  	      <a 
+  	        href="#"
+  	        class="nav-link"
+  	      >
+  	        <span class="nav-icon">
+  	          {getClientTypeEmoji($currentClient.client_type)}
+  	        </span>
+  	        <span class="nav-label">{$currentClient.name}</span>
+  	      </a>
+  	    </li>
+  	  {/if}
+  
+  
       {#each mainNavItems as item (item.id)}
         <li class="nav-item">
           <a 
@@ -94,11 +96,11 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    background-color: var(--bg-primary);
+    background-color: var(--bg-secondary);
     position: relative;
     overflow-y: auto;
     overflow-x: hidden;
-    border-radius: 12px;
+    border-radius: 16px;
   }
 
   /* Mobile close button */
@@ -131,7 +133,7 @@
 
   /* Brand section */
   .brand-section {
-    padding: 28px 24px 24px;
+    padding: 12px;
   }
 
   .brand-link {
@@ -155,7 +157,7 @@
   }
 
   .brand-section .logo {
-    height: 32px;
+    height: 40px;
     width: auto;
   }
 
@@ -172,56 +174,36 @@
 
   /* Client section */
   .client-section {
-    padding: 20px 24px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    padding: 0 4px;
+    text-align: center;
   }
 
   .client-link {
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 6px 16px;
     text-decoration: none;
-    color: inherit;
-    padding: 12px;
+    color: var(--text-secondary);
     border-radius: 8px;
-    transition: background-color 0.15s ease;
+    transition: all 0.15s ease;
+    font-size: 13px;
+    font-weight: 500;
   }
 
   .client-link:hover {
     background-color: var(--bg-tertiary);
-  }
-
-  .client-icon {
-    font-size: 20px;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--bg-secondary);
-    border-radius: 6px;
-    flex-shrink: 0;
-  }
-
-  .client-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .client-name {
-    font-size: 14px;
-    font-weight: 500;
     color: var(--text-primary);
-    margin-bottom: 2px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
+
 
 
   /* Main navigation */
   .main-nav {
     flex: 1;
-    padding: 20px 20px;
+    padding: 0 12px 16px;
   }
 
   .nav-list {
@@ -241,12 +223,12 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 6px 16px;
     text-decoration: none;
     color: var(--text-secondary);
     border-radius: 8px;
     transition: all 0.15s ease;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
   }
 
@@ -258,6 +240,8 @@
   .nav-link.active {
     background-color: var(--accent-blue);
     color: #FFFFFF;
+    font-weight: bold;
+    text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
 
   .nav-icon {
@@ -276,7 +260,7 @@
 
   /* Footer navigation */
   .footer-nav {
-    padding: 16px 20px;
+    padding: 0 12px 12px;
     margin-top: auto;
   }
 
