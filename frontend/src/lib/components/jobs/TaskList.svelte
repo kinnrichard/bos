@@ -623,22 +623,20 @@
     will-change: transform;
   }
 
-  /* Selection state styling */
+  /* Selection state styling - bright blue background only */
   .task-item.selected {
-    background-color: rgba(0, 163, 255, 0.15) !important;
-    border-left: 3px solid var(--accent-blue) !important;
-    padding-left: calc(1px + (var(--depth, 0) * 32px)) !important; /* Adjust for border */
+    background-color: var(--accent-blue) !important;
+    color: white !important;
   }
 
-  /* Multi-select mode styling */
+  /* Multi-select mode styling - remove borders, keep clean */
   .task-item.multi-select-active {
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 6px !important;
+    /* No visual change when in multi-select mode */
   }
 
   .task-item.multi-select-active.selected {
-    border: 1px solid var(--accent-blue) !important;
-    background-color: rgba(0, 163, 255, 0.2) !important;
+    background-color: var(--accent-blue) !important;
+    color: white !important;
   }
 
   /* Dragging state styling - minimal visual changes */
@@ -647,9 +645,7 @@
     z-index: 1000;
     /* Override selection styling during drag */
     background-color: transparent !important;
-    border: none !important;
-    border-left: none !important;
-    padding-left: calc(4px + (var(--depth, 0) * 32px)) !important; /* Reset padding */
+    color: inherit !important;
   }
 
   /* Multi-select drag badge */
@@ -1095,7 +1091,8 @@
     }
     
     .task-item.selected {
-      border-left: 4px solid var(--accent-blue) !important;
+      background-color: var(--accent-blue) !important;
+      color: white !important;
     }
   }
 
