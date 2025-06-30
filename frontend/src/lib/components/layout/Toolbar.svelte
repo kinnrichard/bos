@@ -29,8 +29,8 @@
     switch (page) {
       case 'jobs':
         return [
-          { label: 'New Job', icon: '➕', action: () => console.log('New job') },
-          { label: 'Filter', icon: '🔽', action: () => console.log('Filter jobs') }
+          { label: 'New Job', icon: '/icons/plus.svg', iconType: 'svg', action: () => console.log('New job') },
+          { label: 'Filter', icon: '/icons/filter.svg', iconType: 'svg', action: () => console.log('Filter jobs') }
         ];
       case 'clients':
         return [
@@ -76,8 +76,11 @@
             on:click={action.action}
             title={action.label}
           >
-            <span class="action-icon">{action.icon}</span>
-            <span class="action-label">{action.label}</span>
+            {#if action.iconType === 'svg'}
+              <img src={action.icon} alt="" class="action-icon-svg" />
+            {:else}
+              <span class="action-icon">{action.icon}</span>
+            {/if}
           </button>
         {/each}
       </div>
@@ -101,7 +104,7 @@
 	        on:click={() => searchQuery = ''}
 	        aria-label="Clear search"
 	      >
-	        <img src="/temp/close.svg" alt="Clear" />
+	        <img src="/icons/close.svg" alt="Clear" />
 	      </button>
 	    {/if}
 	  </div>
@@ -190,7 +193,7 @@
     border: 1px solid var(--border-primary);
     border-radius: 9999px;
     transition: all 0.15s ease;
-    height: 40px;
+    height: 36px;
   }
 
   .search-container.focused .search-input-wrapper {
@@ -254,19 +257,16 @@
   }
 
   .action-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
+    width: 36px;
+    height: 36px;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 14px;
-    font-weight: 500;
+    border-radius: 50%;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.15s ease;
-    height: 40px;
   }
 
   .action-btn:hover {
@@ -275,18 +275,21 @@
   }
 
   .action-icon {
-    font-size: 14px;
+    font-size: 16px;
   }
 
-  .action-label {
-    white-space: nowrap;
+  .action-icon-svg {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
   }
+
 
   /* User menu */
   .user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 20px;
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
     background-color: var(--accent-red);
     border: none;
     cursor: pointer;
@@ -303,7 +306,7 @@
 
   .user-initials {
     color: white;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
@@ -314,16 +317,6 @@
       min-width: 280px;
     }
 
-    .action-label {
-      display: none;
-    }
-
-    .action-btn {
-      padding: 10px;
-      width: 40px;
-      height: 40px;
-      justify-content: center;
-    }
   }
 
   @media (max-width: 768px) {
@@ -353,6 +346,11 @@
     .action-btn {
       width: 28px;
       height: 28px;
+    }
+
+    .action-icon-svg {
+      width: 16px;
+      height: 16px;
     }
 
     .user-avatar {

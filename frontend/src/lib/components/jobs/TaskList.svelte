@@ -500,7 +500,6 @@
 
   .task-action-button:hover {
     opacity: 1 !important;
-    background-color: var(--bg-tertiary);
   }
 
   .task-action-button:active {
@@ -508,7 +507,7 @@
   }
 
   .task-action-button:disabled {
-    opacity: 0.3;
+    opacity: 0;
     cursor: not-allowed;
   }
 

@@ -28,8 +28,8 @@
     on:click={layoutActions.hideSidebar}
     aria-label="Close sidebar"
   >
-    <!-- Using temp close icon as specified -->
-    <img src="/temp/close.svg" alt="Close" />
+    <!-- Close icon -->
+    <img src="/icons/close.svg" alt="Close" />
   </button>
 
   <!-- Main Navigation -->
