@@ -212,6 +212,8 @@
     const prevSelected = prevTask && $taskSelection.selectedTaskIds.has(prevTask.task.id);
     const nextSelected = nextTask && $taskSelection.selectedTaskIds.has(nextTask.task.id);
     
+    console.log(`Task ${taskId} at index ${index}: prev=${prevSelected}, next=${nextSelected}`);
+    
     if (prevSelected && nextSelected) return 'selection-middle';
     if (prevSelected) return 'selection-bottom';
     if (nextSelected) return 'selection-top';
@@ -438,7 +440,7 @@
         {@const isDraggedItem = draggedTaskId === renderItem.task.id}
         {@const selectionPositionClass = getSelectionPositionClass(renderItem.task.id, index)}
         <div 
-          class="task-item {selectionPositionClass}"
+          class="task-item"
           class:completed={renderItem.task.status === 'successfully_completed'}
           class:in-progress={renderItem.task.status === 'in_progress'}
           class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
@@ -446,6 +448,9 @@
           class:selected={isSelected}
           class:dragging={isDraggedItem}
           class:multi-select-active={$taskSelection.isMultiSelectActive}
+          class:selection-top={selectionPositionClass === 'selection-top'}
+          class:selection-middle={selectionPositionClass === 'selection-middle'}
+          class:selection-bottom={selectionPositionClass === 'selection-bottom'}
           style="--depth: {renderItem.depth}"
           data-task-id={renderItem.task.id}
           role="button"
