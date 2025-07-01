@@ -127,7 +127,9 @@ class Api::V1::JobsController < Api::V1::BaseController
       # Reload the job to get the updated timestamp from touch callbacks
       @job.reload
     else
-      Rails.logger.info "TECH ASSIGNMENT: No changes detected, skipping update" if Rails.env.development?
+      Rails.logger.info "TECH ASSIGNMENT: No changes detected, but touching job to bust cache" if Rails.env.development?
+      # Even if no DB changes needed, update timestamp to bust frontend cache
+      @job.touch
     end
 
     Rails.logger.info "TECH ASSIGNMENT: About to save job with technicians" if Rails.env.development?
