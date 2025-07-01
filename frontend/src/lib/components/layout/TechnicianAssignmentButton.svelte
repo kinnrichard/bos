@@ -8,6 +8,7 @@
   import { jobsService } from '$lib/api/jobs';
   import { userStore, userLookup } from '$lib/stores/users';
   import type { User } from '$lib/types/job';
+  import { debugTechAssignment, debugReactive, debugAPI, debugState } from '$lib/utils/debug';
 
   export let jobId: string;
   export let assignedTechnicians: Array<User['attributes'] & { id: string }> = [];
@@ -20,9 +21,16 @@
   let selectedUserIds: Set<string> = new Set();
   let isLoading = false;
   let error = '';
+  let isUpdating = false; // Local flag to prevent reactive overrides
 
-  // Simple reactive sync with props - no complex optimistic update logic
-  $: selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
+  // Sync with props only when not actively updating
+  $: if (!isUpdating) {
+    const newIds = new Set(assignedTechnicians.map(t => t.id));
+    debugReactive('Reactive statement firing - assignedTechnicians: %o, isUpdating: %s, isLoading: %s', assignedTechnicians.map(t => t.id), isUpdating, isLoading);
+    selectedUserIds = newIds;
+  } else {
+    debugReactive('Reactive statement BLOCKED - isUpdating: %s, assignedTechnicians: %o', isUpdating, assignedTechnicians.map(t => t.id));
+  }
 
   // Get users from cache - this ensures we have complete user data with proper initials
   $: availableUsers = $userStore;
@@ -51,29 +59,27 @@
     }
 
     try {
+      isUpdating = true; // Block reactive updates
       isLoading = true;
       error = '';
       
       // Immediately update local state for UI responsiveness
+      debugState('Setting selectedUserIds to: %o', Array.from(newSelectedIds));
       selectedUserIds = newSelectedIds;
       
       // Immediately update parent component
       const updatedTechnicians = availableUsers.filter(u => newSelectedIds.has(u.id));
+      debugTechAssignment('Calling onAssignmentChange with technicians: %o', updatedTechnicians.map(t => t.id));
       onAssignmentChange(updatedTechnicians);
       
       // Persist to server
       const response = await jobsService.updateJobTechnicians(jobId, Array.from(newSelectedIds));
-      console.log('Technician assignment updated successfully:', response);
-      console.log('Response technicians:', response.technicians);
+      debugAPI('Technician assignment updated successfully: %o', response);
+      debugAPI('Response technicians: %o', response.technicians);
       
-      // Force cache refresh to ensure consistency
-      await queryClient.invalidateQueries({
-        queryKey: ['job', jobId],
-        exact: true
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ['jobs']
-      });
+      // Skip cache invalidation entirely - server cache has timing issues
+      // The immediate onAssignmentChange already updates the UI correctly
+      debugTechAssignment('Skipping cache invalidation due to server-side cache timing issues');
       
     } catch (err: any) {
       console.error('Failed to update technician assignment:', err);
@@ -86,10 +92,14 @@
       }
       
       // Rollback on error - restore original state
+      isUpdating = false; // Allow reactive updates to work for rollback
       selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
-      onAssignmentChange(assignedTechnicians);
+      // Convert back to full User objects for rollback
+      const rollbackTechnicians = availableUsers.filter(u => assignedTechnicians.some(t => t.id === u.id));
+      onAssignmentChange(rollbackTechnicians);
     } finally {
       isLoading = false;
+      isUpdating = false; // Reset immediately since we're not doing delayed cache invalidation
     }
   }
 
@@ -143,7 +153,7 @@
                 type="checkbox" 
                 checked={selectedUserIds.has(user.id)}
                 disabled={isLoading}
-                on:change={(e) => handleUserToggle(user, e.target.checked)}
+                on:change={(e) => handleUserToggle(user, e.currentTarget.checked)}
                 class="checkbox-input" 
               />
               <UserAvatar {user} size="small" />
