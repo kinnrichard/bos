@@ -52,6 +52,7 @@ Before making any changes:
 - [Core Workflows](./architecture/core-workflows.md) - User interaction flows
 
 #### Development Practices
+- [Debugging Guide](./architecture/debugging-guide.md) - Professional debugging with namespaced logging
 - [Deployment Guide](./architecture/deployment-guide.md) - Kamal deployment process
 - [Performance Guidelines](./architecture/performance-guidelines.md) - Optimization patterns
 - [Troubleshooting Guide](./architecture/troubleshooting-guide.md) - Common issues
@@ -92,6 +93,20 @@ Before making any changes:
 ```bash
 # Clear and rebuild all assets
 rails tmp:clear && rails assets:clobber && rails assets:precompile && rm -f public/assets/.manifest.json
+```
+
+### Debugging Workflow
+```bash
+# Enable all debugging during development
+DEBUG=bos:* npm run dev
+
+# Enable specific debugging areas
+DEBUG=bos:technician-assignment,bos:api npm run dev:quiet
+
+# Browser console debugging
+bosDebug.enable('bos:*')        # Enable all
+bosDebug.enable('bos:reactive') # Enable specific namespace
+bosDebug.disable()              # Disable all
 ```
 
 ### Testing Workflow

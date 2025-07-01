@@ -409,6 +409,33 @@ input(type: "hidden", name: "authenticity_token", value: form_authenticity_token
 
 ## Debugging Techniques
 
+### Professional Debug Library (Frontend)
+
+The project uses a professional debugging system for frontend components. See the [Debugging Guide](./debugging-guide.md) for complete documentation.
+
+**Quick Usage:**
+```bash
+# Enable all frontend debugging
+DEBUG=bos:* npm run dev
+
+# Debug specific issues
+DEBUG=bos:technician-assignment npm run dev:quiet  # Component issues
+DEBUG=bos:reactive npm run dev:quiet               # Svelte reactivity
+DEBUG=bos:api npm run dev:quiet                    # API calls
+```
+
+**Browser Console:**
+```javascript
+// Enable debugging in browser
+bosDebug.enable('bos:*')
+bosDebug.status()  // Check current settings
+```
+
+**Common Debug Scenarios:**
+- **Race conditions**: `DEBUG=bos:reactive,bos:state`
+- **API failures**: `DEBUG=bos:api,bos:technician-assignment`
+- **State sync issues**: `DEBUG=bos:state,bos:component`
+
 ### Rails Console Debugging
 
 ```ruby
