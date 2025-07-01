@@ -112,66 +112,21 @@ export function useUpdateJobTechniciansMutation() {
 
   return createMutation({
     mutationFn: async ({ jobId, technicianIds }: { jobId: string; technicianIds: string[] }) => {
-      debugTechAssignment('Updating job %s technicians to: %o', jobId, technicianIds);
+      debugTechAssignment('API call: Updating job %s technicians to: %o', jobId, technicianIds);
       
       // Use jobs service for the actual API call
       const { jobsService } = await import('../jobs');
       return jobsService.updateJobTechnicians(jobId, technicianIds);
     },
-    onMutate: async ({ jobId, technicianIds }) => {
-      // Cancel outgoing refetches for this job
-      await queryClient.cancelQueries({ queryKey: ['job', jobId] });
-      
-      // Snapshot previous job data
-      const previousJob = queryClient.getQueryData(['job', jobId]);
-      
-      // Optimistically update job technicians in cache
-      queryClient.setQueryData(['job', jobId], (old: any) => {
-        if (!old?.data) return old;
-        
-        // Get user data for the new technicians
-        const usersData = queryClient.getQueryData<User[]>(['users']);
-        const updatedTechnicians = technicianIds
-          .map(id => usersData?.find(u => u.id === id))
-          .filter(Boolean)
-          .map(user => ({
-            id: user!.id,
-            ...user!.attributes
-          }));
-        
-        debugTechAssignment('Optimistically updating job %s technicians cache: %o', jobId, updatedTechnicians);
-        
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            attributes: {
-              ...old.data.attributes,
-              technicians: updatedTechnicians
-            }
-          }
-        };
-      });
-      
-      return { previousJob };
-    },
-    onError: (error: unknown, { jobId }: { jobId: string; technicianIds: string[] }, context: any) => {
-      // Rollback on error
-      if (context?.previousJob) {
-        debugTechAssignment('Rolling back job %s technicians due to error: %o', jobId, error);
-        queryClient.setQueryData(['job', jobId], context.previousJob);
-      } else {
-        // If no previous data, invalidate to refetch
-        queryClient.invalidateQueries({ queryKey: ['job', jobId] });
-      }
-    },
     onSuccess: (data, { jobId }) => {
-      debugTechAssignment('Job %s technicians updated successfully: %o', jobId, data);
+      debugTechAssignment('API success: Job %s technicians updated: %o', jobId, data);
       
-      // The response is the technician data, not the full job
-      // We need to invalidate the job cache to get the updated job data
+      // Invalidate relevant caches to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    },
+    onError: (error: unknown, { jobId }) => {
+      debugTechAssignment('API error: Job %s technicians update failed: %o', jobId, error);
     },
     retry: (failureCount: number, error: unknown) => {
       // Don't retry on authentication or validation errors
