@@ -7,12 +7,12 @@
 
   export let job: PopulatedJob;
 
-  $: statusEmoji = getJobStatusEmoji(job.attributes.status);
-  $: priorityEmoji = getJobPriorityEmoji(job.attributes.priority);
+  $: statusEmoji = getJobStatusEmoji(job?.attributes?.status);
+  $: priorityEmoji = getJobPriorityEmoji(job?.attributes?.priority);
 </script>
 
 <div class="job-detail-view">
-  <h1 class="job-title">{job.attributes.title}</h1>
+  <h1 class="job-title">{job?.attributes?.title || ''}</h1>
   
   <!-- Tasks Section -->
   <div class="tasks-section">
@@ -23,7 +23,7 @@
         </span-->
       </div>
     </div>
-    <TaskList tasks={job.tasks} jobId={job.id} />
+    <TaskList tasks={job?.tasks || []} jobId={job?.id} />
   </div>
   
   <!-- Job Header -->
@@ -32,32 +32,32 @@
       <div class="job-title-section">
         <div class="job-title-row">
           <span class="job-status-emoji">{statusEmoji}</span>
-          <h1 class="job-title">{job.attributes.title}</h1>
+          <h1 class="job-title">{job?.attributes?.title || ''}</h1>
           {#if priorityEmoji}
-            <span class="job-priority-emoji" title={job.attributes.priority_label}>
+            <span class="job-priority-emoji" title={job?.attributes?.priority_label || ''}>
               {priorityEmoji}
             </span>
           {/if}
         </div>
         <div class="job-meta">
-          <span class="client-name">{job.client.name}</span>
-          <span class="job-id">#{job.id}</span>
+          <span class="client-name">{job?.client?.name || ''}</span>
+          <span class="job-id">#{job?.id || ''}</span>
         </div>
       </div>
       
       <div class="job-status-section">
         <StatusIndicator 
-          status={job.attributes.status}
-          priority={job.attributes.priority}
-          isOverdue={job.attributes.is_overdue}
+          status={job?.attributes?.status}
+          priority={job?.attributes?.priority}
+          isOverdue={job?.attributes?.is_overdue}
         />
       </div>
     </div>
 
     <!-- Description (if present) -->
-    {#if job.attributes.description}
+    {#if job?.attributes?.description}
       <div class="job-description">
-        <p>{job.attributes.description}</p>
+        <p>{job?.attributes?.description}</p>
       </div>
     {/if}
   </div>

@@ -8,7 +8,7 @@
     };
   };
   export let size: 'small' | 'normal' = 'normal';
-  export let title: string = user.attributes.name;
+  export let title: string = user?.attributes?.name || '';
 
   // Avatar style mapping - these match the user avatar styles in the system
   const avatarStyles = {
@@ -20,7 +20,7 @@
     gray: 'var(--text-secondary)'
   };
 
-  $: backgroundColor = avatarStyles[user.attributes.avatar_style as keyof typeof avatarStyles] || avatarStyles.gray;
+  $: backgroundColor = avatarStyles[user?.attributes?.avatar_style as keyof typeof avatarStyles] || avatarStyles.gray;
   $: sizeClass = size === 'small' ? 'avatar-small' : 'avatar-normal';
 </script>
 
@@ -29,7 +29,7 @@
   style="background-color: {backgroundColor};"
   {title}
 >
-  <span class="user-initials">{user.attributes.initials}</span>
+  <span class="user-initials">{user?.attributes?.initials || '?'}</span>
 </div>
 
 <style>

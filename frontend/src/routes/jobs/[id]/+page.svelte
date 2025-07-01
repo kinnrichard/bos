@@ -58,7 +58,7 @@
 </script>
 
 <svelte:head>
-  <title>{job ? `${job.attributes.title} - bŏs` : 'Job Details - bŏs'}</title>
+  <title>{job ? `${job.attributes?.title || 'Job'} - bŏs` : 'Job Details - bŏs'}</title>
 </svelte:head>
 
 <AppLayout>

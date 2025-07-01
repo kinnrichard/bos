@@ -24,7 +24,9 @@
   $: job = $jobQuery.data?.data;
   $: availableUsers = $usersQuery.data || [];
   $: assignedTechnicians = job?.relationships?.technicians?.data || initialTechnicians;
-  $: assignedTechniciansForDisplay = userLookup.getUsersByIds(assignedTechnicians.map(t => t.id));
+  $: assignedTechniciansForDisplay = userLookup.getUsersByIds(
+    assignedTechnicians?.map(t => t?.id).filter(Boolean) || []
+  );
   
   $: isLoading = $updateTechniciansMutation.isPending;
   $: error = $updateTechniciansMutation.error;
@@ -35,8 +37,8 @@
   
   // Keep local state in sync with server data
   $: {
-    if (!isLoading) {
-      localSelectedIds = new Set(assignedTechnicians.map(t => t.id));
+    if (!isLoading && assignedTechnicians?.length >= 0) {
+      localSelectedIds = new Set(assignedTechnicians.map(t => t?.id).filter(Boolean));
     }
   }
 
@@ -44,6 +46,12 @@
   function handleUserToggle(user: User, checked: boolean) {
     if (isLoading) {
       debugTechAssignment('Ignoring click - mutation already pending');
+      return;
+    }
+    
+    // Ensure user has required data
+    if (!user?.id || !user?.attributes?.name) {
+      debugTechAssignment('Invalid user data, ignoring click: %o', user);
       return;
     }
     
@@ -76,7 +84,7 @@
     class="assignment-button"
     class:has-assignments={hasAssignments}
     use:popover.button
-    title={hasAssignments ? `Assigned to: ${assignedTechniciansForDisplay.map(t => t.attributes.name).join(', ')}` : 'Assign technicians'}
+    title={hasAssignments ? `Assigned to: ${assignedTechniciansForDisplay.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Assign technicians'}
   >
     {#if hasAssignments}
       <!-- Show assigned technician avatars -->
@@ -121,17 +129,19 @@
         {:else}
           <div class="user-checkboxes" class:loading={isLoading}>
             {#each availableUsers as user}
-              <label class="user-checkbox">
-                <input 
-                  type="checkbox" 
-                  checked={localSelectedIds.has(user.id)}
-                  disabled={isLoading}
-                  on:change={(e) => handleUserToggle(user, e.currentTarget.checked)}
-                  class="checkbox-input" 
-                />
-                <UserAvatar {user} size="small" />
-                <span class="user-name">{user.attributes.name}</span>
-              </label>
+              {#if user?.id && user?.attributes?.name}
+                <label class="user-checkbox">
+                  <input 
+                    type="checkbox" 
+                    checked={localSelectedIds.has(user.id)}
+                    disabled={isLoading}
+                    on:change={(e) => handleUserToggle(user, e.currentTarget.checked)}
+                    class="checkbox-input" 
+                  />
+                  <UserAvatar {user} size="small" />
+                  <span class="user-name">{user.attributes.name}</span>
+                </label>
+              {/if}
             {/each}
           </div>
         {/if}

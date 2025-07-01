@@ -25,8 +25,8 @@
   ];
 
   // Get job status emoji
-  $: jobStatusEmoji = $currentJob ? getJobStatusEmoji($currentJob.attributes.status) : '📝';
-  $: currentStatus = $currentJob?.attributes.status;
+  $: jobStatusEmoji = $currentJob ? getJobStatusEmoji($currentJob.attributes?.status) : '📝';
+  $: currentStatus = $currentJob?.attributes?.status;
 
   // Handle status change with optimistic updates
   async function handleStatusChange(newStatus: string) {
