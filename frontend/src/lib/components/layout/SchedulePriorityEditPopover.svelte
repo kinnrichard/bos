@@ -213,11 +213,11 @@
   }
 
   .calendar-button {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
-    border-radius: 8px;
+    border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -232,8 +232,8 @@
   }
 
   .calendar-icon {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     opacity: 0.7;
   }
 
