@@ -109,4 +109,11 @@ module Touchable
     association = self.class.reflect_on_association(association_name)
     association&.options&.dig(:touch) == true
   end
+
+  # Force cache invalidation for API endpoints
+  # Use this when bulk operations might bypass touch callbacks
+  def ensure_cache_fresh!
+    touch unless changed?
+    Rails.logger.debug "[Touchable] Cache refresh forced for #{self.class.name}##{id}" if Rails.env.development?
+  end
 end

@@ -1,5 +1,6 @@
 class Job < ApplicationRecord
   include Loggable
+  include Touchable
 
   belongs_to :client
   belongs_to :created_by, class_name: "User"
