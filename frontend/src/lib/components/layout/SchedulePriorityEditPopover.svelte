@@ -99,7 +99,7 @@
     use:popover.button
     title="Edit schedule and priority"
   >
-    <img src="/icons/calendar.svg" alt="Schedule" class="calendar-icon" />
+    <img src="/icons/calendar-add.svg" alt="Schedule" class="calendar-icon" />
   </button>
 
   {#if $popover.expanded}

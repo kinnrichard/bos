@@ -40,47 +40,6 @@
     <TaskList tasks={job?.tasks || []} jobId={job?.id} />
   </div>
   
-  <!-- Job Header -->
-  <div class="job-header">
-    <div class="job-header-main">
-      <div class="job-title-section">
-        <div class="job-title-row">
-          <span class="job-status-emoji">{statusEmoji}</span>
-          <h1 class="job-title">{jobTitle}</h1>
-          {#if priorityEmoji}
-            <span class="job-priority-emoji" title={job?.attributes?.priority_label || ''}>
-              {priorityEmoji}
-            </span>
-          {/if}
-        </div>
-        <div class="job-meta">
-          <span class="client-name">{jobClient}</span>
-          <span class="job-id">#{jobId}</span>
-        </div>
-      </div>
-      
-      <div class="job-status-section">
-        <StatusIndicator 
-          status={job?.attributes?.status}
-          priority={job?.attributes?.priority}
-          isOverdue={job?.attributes?.is_overdue}
-        />
-      </div>
-    </div>
-
-    <!-- Description (if present) -->
-    {#if job?.attributes?.description}
-      <div class="job-description">
-        <p>{job?.attributes?.description}</p>
-      </div>
-    {/if}
-  </div>
-
-  <!-- Job Info Section -->
-  <div class="job-info-section">
-    <JobInfo {job} />
-  </div>
-
 </div>
 
 <style>
