@@ -21,12 +21,11 @@
   const updateTechniciansMutation = useUpdateJobTechniciansMutation();
 
   // Derived state from TanStack Query cache - fallback to initial data
-  $: job = $jobQuery.data?.data;
+  $: job = $jobQuery.data; // Now returns PopulatedJob directly
   $: availableUsers = $usersQuery.data || [];
-  $: assignedTechnicians = job?.relationships?.technicians?.data || initialTechnicians;
-  $: assignedTechniciansForDisplay = userLookup.getUsersByIds(
-    assignedTechnicians?.map(t => t?.id).filter(Boolean) || []
-  );
+  // Use populated technicians from job.technicians instead of relationships
+  $: assignedTechnicians = job?.technicians || initialTechnicians;
+  $: assignedTechniciansForDisplay = assignedTechnicians;
   
   $: isLoading = $updateTechniciansMutation.isPending;
   $: error = $updateTechniciansMutation.error;

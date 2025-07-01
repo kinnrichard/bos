@@ -27,12 +27,12 @@ export function useJobsQuery(params: {
 }
 
 /**
- * Query hook for fetching single job
+ * Query hook for fetching single job with populated relationships
  */
 export function useJobQuery(id: string, enabled: boolean = true) {
   return createQuery({
     queryKey: ['job', id],
-    queryFn: () => jobsService.getJob(id),
+    queryFn: () => jobsService.getJobWithDetails(id),
     enabled: enabled && !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

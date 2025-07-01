@@ -9,10 +9,24 @@
 
   $: statusEmoji = getJobStatusEmoji(job?.attributes?.status);
   $: priorityEmoji = getJobPriorityEmoji(job?.attributes?.priority);
+  
+  // Debug logging for job data received
+  $: if (job) {
+    console.log('[JobDetailView] Received job data:', JSON.parse(JSON.stringify(job)));
+    console.log('[JobDetailView] Job title:', job?.attributes?.title);
+    console.log('[JobDetailView] Job client:', job?.client?.name || 'Using JSON:API format');
+    console.log('[JobDetailView] Job status:', job?.attributes?.status);
+  }
+  
+  // Handle both populated and JSON:API formats
+  $: jobTitle = job?.attributes?.title || '';
+  $: jobClient = job?.client?.name || 'Unknown Client'; // Fallback for JSON:API format
+  $: jobStatus = job?.attributes?.status;
+  $: jobId = job?.id || '';
 </script>
 
 <div class="job-detail-view">
-  <h1 class="job-title">{job?.attributes?.title || ''}</h1>
+  <h1 class="job-title">{jobTitle}</h1>
   
   <!-- Tasks Section -->
   <div class="tasks-section">
@@ -32,7 +46,7 @@
       <div class="job-title-section">
         <div class="job-title-row">
           <span class="job-status-emoji">{statusEmoji}</span>
-          <h1 class="job-title">{job?.attributes?.title || ''}</h1>
+          <h1 class="job-title">{jobTitle}</h1>
           {#if priorityEmoji}
             <span class="job-priority-emoji" title={job?.attributes?.priority_label || ''}>
               {priorityEmoji}
@@ -40,8 +54,8 @@
           {/if}
         </div>
         <div class="job-meta">
-          <span class="client-name">{job?.client?.name || ''}</span>
-          <span class="job-id">#{job?.id || ''}</span>
+          <span class="client-name">{jobClient}</span>
+          <span class="job-id">#{jobId}</span>
         </div>
       </div>
       

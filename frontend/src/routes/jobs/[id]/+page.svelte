@@ -17,7 +17,18 @@
   $: query = browser && jobId ? createQuery({
     queryKey: ['job', jobId],
     queryFn: async () => {
+      console.log('[JobPage] Executing query with key:', ['job', jobId]);
       const response = await jobsService.getJobWithDetails(jobId);
+      console.log('[JobPage] Query response received:', JSON.parse(JSON.stringify(response)));
+      
+      // Check if this is a wrapped response from the API directly vs populated response
+      if (response && typeof response === 'object' && 'data' in response && !('client' in response)) {
+        console.log('[JobPage] Got wrapped JSON:API response, extracting and using raw data');
+        console.log('[JobPage] Raw job data:', response.data);
+        // Return the raw job data - it's in JSON:API format but better than wrapped
+        return response.data;
+      }
+      
       return response;
     },
     staleTime: 30 * 1000, // 30 seconds
@@ -34,10 +45,26 @@
   $: isLoading = $query?.isLoading || false;
   $: error = $query?.error;
   $: job = $query?.data;
+  
+  // Debug logging for query state changes
+  $: if (typeof isLoading !== 'undefined') {
+    console.log('[JobPage] Query state changed:', {
+      isLoading,
+      hasError: !!error,
+      hasJob: !!job,
+      jobId: jobId
+    });
+    if (job) {
+      console.log('[JobPage] CURRENT job data structure:', JSON.parse(JSON.stringify(job)));
+      console.log('[JobPage] Job title from data:', job?.attributes?.title);
+      console.log('[JobPage] Job client from data:', job?.client?.name);
+    }
+  }
 
   // Update current job in layout store when job data changes
-  // Include dataUpdatedAt to ensure updates when refetch happens
-  $: if (job && $query?.dataUpdatedAt) {
+  // Only update with actual data, preserve existing data during cache invalidation
+  $: if (job) {
+    console.log('[JobPage] Setting current job in layout store:', JSON.parse(JSON.stringify(job)));
     layoutActions.setCurrentJob(job);
   }
 

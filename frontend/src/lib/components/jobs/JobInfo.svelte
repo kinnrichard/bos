@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PopulatedJob } from '$lib/types/job';
 
-  export let job: PopulatedJob;
+  export let job: PopulatedJob | null | undefined;
 
   function formatDate(dateString?: string): string {
     if (!dateString) return 'Not set';
@@ -18,104 +18,128 @@
     return timeString;
   }
 
+  function formatStatusLabel(status?: string): string {
+    if (!status) return 'Unknown';
+    // Convert raw status to display label
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  function formatPriorityLabel(priority?: string): string {
+    if (!priority) return 'Normal';
+    // Convert raw priority to display label  
+    return priority.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  // Computed labels from raw API data
+  $: statusLabel = formatStatusLabel(job?.attributes?.status);
+  $: priorityLabel = formatPriorityLabel(job?.attributes?.priority);
+
 </script>
 
 <div class="job-info-panel">
-  <div class="info-grid">
-    <!-- Status and Priority -->
-    <div class="info-group">
-      <h4>Status & Priority</h4>
-      <div class="info-items">
-        <div class="info-item">
-          <span class="info-label">Status</span>
-          <span class="info-value status-value" data-status={job.attributes.status}>
-            {job.attributes.status_label}
-          </span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Priority</span>
-          <span class="info-value priority-value" data-priority={job.attributes.priority}>
-            {job.attributes.priority_label}
-          </span>
-        </div>
-        {#if job.attributes.is_overdue}
+  {#if job?.attributes}
+    <div class="info-grid">
+      <!-- Status and Priority -->
+      <div class="info-group">
+        <h4>Status & Priority</h4>
+        <div class="info-items">
           <div class="info-item">
             <span class="info-label">Status</span>
-            <span class="info-value overdue-indicator">
-              ⚠️ Overdue
+            <span class="info-value status-value" data-status={job.attributes.status || 'unknown'}>
+              {statusLabel}
             </span>
           </div>
-        {/if}
-      </div>
-    </div>
-
-    <!-- Scheduling -->
-    <div class="info-group">
-      <h4>Schedule</h4>
-      <div class="info-items">
-        <div class="info-item">
-          <span class="info-label">Start Date</span>
-          <span class="info-value">{formatDate(job.attributes.start_on)}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Start Time</span>
-          <span class="info-value">{formatTime(job.attributes.start_time)}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Due Date</span>
-          <span class="info-value">{formatDate(job.attributes.due_on)}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Due Time</span>
-          <span class="info-value">{formatTime(job.attributes.due_time)}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Team -->
-    <div class="info-group">
-      <h4>Team</h4>
-      <div class="info-items">
-        <div class="info-item">
-          <span class="info-label">Created By</span>
-          <span class="info-value">
-            <div class="user-info">
-              <span 
-                class="user-avatar" 
-                style={job.created_by.avatar_style || `background-color: var(--accent-blue);`}
-              >
-                {job.created_by.initials}
+          <div class="info-item">
+            <span class="info-label">Priority</span>
+            <span class="info-value priority-value" data-priority={job.attributes.priority || 'normal'}>
+              {priorityLabel}
+            </span>
+          </div>
+          {#if job.attributes.is_overdue}
+            <div class="info-item">
+              <span class="info-label">Status</span>
+              <span class="info-value overdue-indicator">
+                ⚠️ Overdue
               </span>
-              <span class="user-name">{job.created_by.name}</span>
             </div>
-          </span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Technicians</span>
-          <span class="info-value">
-            {#if job.technicians.length > 0}
-              <div class="technicians-list">
-                {#each job.technicians as technician}
-                  <div class="user-info">
-                    <span 
-                      class="user-avatar" 
-                      style={technician.avatar_style || `background-color: var(--accent-blue);`}
-                    >
-                      {technician.initials}
-                    </span>
-                    <span class="user-name">{technician.name}</span>
-                  </div>
-                {/each}
-              </div>
-            {:else}
-              <span class="no-data">No technicians assigned</span>
-            {/if}
-          </span>
+          {/if}
         </div>
       </div>
-    </div>
 
-  </div>
+      <!-- Scheduling -->
+      <div class="info-group">
+        <h4>Schedule</h4>
+        <div class="info-items">
+          <div class="info-item">
+            <span class="info-label">Start Date</span>
+            <span class="info-value">{formatDate(job.attributes.start_on)}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Start Time</span>
+            <span class="info-value">{formatTime(job.attributes.start_time)}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Due Date</span>
+            <span class="info-value">{formatDate(job.attributes.due_on)}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Due Time</span>
+            <span class="info-value">{formatTime(job.attributes.due_time)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team -->
+      <div class="info-group">
+        <h4>Team</h4>
+        <div class="info-items">
+          <div class="info-item">
+            <span class="info-label">Created By</span>
+            <span class="info-value">
+              {#if job.created_by?.name}
+                <div class="user-info">
+                  <span 
+                    class="user-avatar" 
+                    style={job.created_by.avatar_style || `background-color: var(--accent-blue);`}
+                  >
+                    {job.created_by.initials || '?'}
+                  </span>
+                  <span class="user-name">{job.created_by.name}</span>
+                </div>
+              {:else}
+                <span class="no-data">Unknown</span>
+              {/if}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Technicians</span>
+            <span class="info-value">
+              {#if job.technicians?.length > 0}
+                <div class="technicians-list">
+                  {#each job.technicians as technician}
+                    {#if technician?.name}
+                      <div class="user-info">
+                        <span 
+                          class="user-avatar" 
+                          style={technician.avatar_style || `background-color: var(--accent-blue);`}
+                        >
+                          {technician.initials || '?'}
+                        </span>
+                        <span class="user-name">{technician.name}</span>
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+              {:else}
+                <span class="no-data">No technicians assigned</span>
+              {/if}
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -258,6 +282,7 @@
     color: var(--text-tertiary);
     font-style: italic;
   }
+
 
   /* Responsive adjustments */
   @media (max-width: 768px) {

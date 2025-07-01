@@ -38,7 +38,7 @@
     };
 
     return statusMap[status] || {
-      label: status ? status.replace('_', ' ') : 'Unknown',
+      label: (status && typeof status === 'string') ? status.replace('_', ' ') : 'Unknown',
       color: 'var(--text-secondary)'
     };
   }
@@ -68,15 +68,15 @@
     };
 
     return priorityMap[priority] || {
-      label: priority ? priority.replace('_', ' ') : 'Unknown',
+      label: (priority && typeof priority === 'string') ? priority.replace('_', ' ') : 'Unknown',
       color: 'var(--text-secondary)'
     };
   }
 
-  $: statusInfo = getStatusInfo(status);
-  $: priorityInfo = getPriorityInfo(priority);
-  $: statusEmoji = getJobStatusEmoji(status);
-  $: priorityEmoji = getJobPriorityEmoji(priority);
+  $: statusInfo = status ? getStatusInfo(status) : { label: 'Unknown', color: 'var(--text-secondary)' };
+  $: priorityInfo = priority ? getPriorityInfo(priority) : { label: 'Unknown', color: 'var(--text-secondary)' };
+  $: statusEmoji = status ? getJobStatusEmoji(status) : '📝';
+  $: priorityEmoji = priority ? getJobPriorityEmoji(priority) : '';
 </script>
 
 <div class="status-indicator">

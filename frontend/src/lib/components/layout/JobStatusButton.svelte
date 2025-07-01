@@ -24,9 +24,9 @@
     { value: 'cancelled', label: 'Cancelled', emoji: '❌' }
   ];
 
-  // Get job status emoji
-  $: jobStatusEmoji = $currentJob ? getJobStatusEmoji($currentJob.attributes?.status) : '📝';
-  $: currentStatus = $currentJob?.attributes?.status;
+  // Get job status emoji with comprehensive null checks
+  $: jobStatusEmoji = ($currentJob?.attributes?.status) ? getJobStatusEmoji($currentJob.attributes.status) : '📝';
+  $: currentStatus = $currentJob?.attributes?.status || 'open';
 
   // Handle status change with optimistic updates
   async function handleStatusChange(newStatus: string) {
@@ -42,6 +42,8 @@
         status: newStatus
       }
     };
+    console.log('[JobStatusButton] BEFORE optimistic update - currentJob:', JSON.parse(JSON.stringify($currentJob)));
+    console.log('[JobStatusButton] APPLYING optimistic update - updatedJob:', JSON.parse(JSON.stringify(updatedJob)));
     layoutActions.setCurrentJob(updatedJob);
 
     // Close popover
@@ -51,10 +53,19 @@
       isLoading = true;
       error = '';
       
+      console.log('[JobStatusButton] Starting status update:', {
+        jobId: $currentJob.id,
+        oldStatus: originalStatus,
+        newStatus: newStatus
+      });
+      
       const response = await jobsService.updateJobStatus($currentJob.id, newStatus);
-      console.log('Job status updated successfully:', response);
+      console.log('[JobStatusButton] Job status updated successfully:', response);
+      console.log('[JobStatusButton] API response job data structure:', JSON.parse(JSON.stringify(response.data)));
       
       // Invalidate job queries to refetch updated data
+      console.log('[JobStatusButton] Invalidating queries...');
+      console.log('[JobStatusButton] Invalidating query key:', ['job', $currentJob.id]);
       await queryClient.invalidateQueries({
         queryKey: ['job', $currentJob.id],
         exact: true
@@ -63,12 +74,7 @@
         queryKey: ['jobs']
       });
       
-      // Force immediate refetch regardless of stale time
-      await queryClient.refetchQueries({
-        queryKey: ['job', $currentJob.id],
-        exact: true,
-        type: 'active'
-      });
+      console.log('[JobStatusButton] Queries invalidated successfully');
     } catch (err: any) {
       console.error('Failed to update job status:', err);
       
