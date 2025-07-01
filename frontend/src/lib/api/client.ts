@@ -64,13 +64,23 @@ class ApiClient {
     }
 
     try {
+      console.log(`[API] Making request: ${method} ${url}`);
+      console.log(`[API] Request headers:`, JSON.stringify(requestHeaders, null, 2));
+      
       const response = await fetch(url, requestConfig);
+      
+      console.log(`[API] Response status: ${response.status} ${response.statusText}`);
+      console.log(`[API] Response headers:`, [...response.headers.entries()]);
 
       // Update CSRF token from response headers if present
       csrfTokenManager.setTokenFromResponse(response);
 
       // Handle 401 Unauthorized - for cookie auth, just redirect to login
       if (response.status === 401 && retryOnUnauthorized && !skipAuth) {
+        console.error(`[API] 401 Unauthorized for ${method} ${endpoint}`);
+        console.error(`[API] Request was made to: ${url}`);
+        console.error(`[API] Request headers were:`, requestHeaders);
+        
         // For cookie-based auth, don't try to refresh - just redirect to login
         if (browser) {
           goto('/login');

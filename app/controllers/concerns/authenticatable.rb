@@ -9,6 +9,17 @@ module Authenticatable
 
   def authenticate_request
     @current_user = current_user_from_token
+
+    # Debug logging for authentication failures
+    if Rails.env.development? && !@current_user
+      user_id = cookies.signed[:user_id]
+      token = cookies.signed[:auth_token]
+      Rails.logger.info "AUTH DEBUG: Authentication failed for #{request.method} #{request.path}"
+      Rails.logger.info "AUTH DEBUG: user_id cookie: #{user_id.present? ? user_id : 'MISSING'}"
+      Rails.logger.info "AUTH DEBUG: auth_token cookie: #{token.present? ? 'PRESENT' : 'MISSING'}"
+      Rails.logger.info "AUTH DEBUG: Current user found: #{@current_user ? @current_user.id : 'NONE'}"
+    end
+
     render_unauthorized unless @current_user
   end
 
