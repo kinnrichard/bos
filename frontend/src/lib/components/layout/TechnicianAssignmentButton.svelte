@@ -1,55 +1,45 @@
 <script lang="ts">
   import { createPopover } from 'svelte-headlessui';
   import { fade } from 'svelte/transition';
-  import { onMount, getContext } from 'svelte';
-  import { useQueryClient } from '@tanstack/svelte-query';
+  import { onMount } from 'svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
-  import { usersService } from '$lib/api/users';
-  import { jobsService } from '$lib/api/jobs';
-  import { userStore, userLookup } from '$lib/stores/users';
+  import { useUsersQuery, useUserLookup, useUpdateJobTechniciansMutation } from '$lib/api/hooks/users';
+  import { technicianSelections } from '$lib/utils/persisted-store';
   import type { User } from '$lib/types/job';
-  import { debugTechAssignment, debugReactive, debugAPI, debugState } from '$lib/utils/debug';
+  import { debugTechAssignment, debugAPI } from '$lib/utils/debug';
 
   export let jobId: string;
   export let assignedTechnicians: Array<User['attributes'] & { id: string }> = [];
   export let onAssignmentChange: (technicians: User[]) => void = () => {};
 
   const popover = createPopover();
-  const queryClient = useQueryClient();
+  
+  // Use TanStack Query for user data
+  const usersQuery = useUsersQuery();
+  const userLookup = useUserLookup();
+  const updateTechniciansMutation = useUpdateJobTechniciansMutation();
 
-  // State
-  let selectedUserIds: Set<string> = new Set();
-  let isLoading = false;
-  let error = '';
-  let isUpdating = false; // Local flag to prevent reactive overrides
-
-  // Sync with props only when not actively updating
-  $: if (!isUpdating) {
-    const newIds = new Set(assignedTechnicians.map(t => t.id));
-    debugReactive('Reactive statement firing - assignedTechnicians: %o, isUpdating: %s, isLoading: %s', assignedTechnicians.map(t => t.id), isUpdating, isLoading);
-    selectedUserIds = newIds;
-  } else {
-    debugReactive('Reactive statement BLOCKED - isUpdating: %s, assignedTechnicians: %o', isUpdating, assignedTechnicians.map(t => t.id));
+  // Simple reactive state management
+  $: selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
+  $: availableUsers = $usersQuery.data || [];
+  $: assignedTechniciansForDisplay = userLookup.getUsersByIds(assignedTechnicians.map(t => t.id));
+  $: isLoading = $updateTechniciansMutation.isPending;
+  $: error = $updateTechniciansMutation.error;
+  $: errorCode = error && (error as any).code;
+  
+  // Store last selection for convenience
+  function saveSelection(jobId: string, technicianIds: string[]) {
+    technicianSelections.update(selections => ({
+      ...selections,
+      [jobId]: {
+        technicianIds,
+        lastUpdated: Date.now()
+      }
+    }));
   }
 
-  // Get users from cache - this ensures we have complete user data with proper initials
-  $: availableUsers = $userStore;
-  $: assignedTechniciansForDisplay = userStore.getUsers(assignedTechnicians.map(t => t.id));
-
-  // Load users if not already cached
-  onMount(async () => {
-    if (!userStore.isLoaded()) {
-      try {
-        await userStore.loadUsers();
-      } catch (err) {
-        console.error('Failed to load users:', err);
-        error = 'Failed to load users';
-      }
-    }
-  });
-
-  // Handle checkbox changes with simplified, reliable state management
-  async function handleUserToggle(user: User, checked: boolean) {
+  // Handle checkbox changes with TanStack Query optimistic updates
+  function handleUserToggle(user: User, checked: boolean) {
     const newSelectedIds = new Set(selectedUserIds);
     
     if (checked) {
@@ -58,49 +48,38 @@
       newSelectedIds.delete(user.id);
     }
 
-    try {
-      isUpdating = true; // Block reactive updates
-      isLoading = true;
-      error = '';
-      
-      // Immediately update local state for UI responsiveness
-      debugState('Setting selectedUserIds to: %o', Array.from(newSelectedIds));
-      selectedUserIds = newSelectedIds;
-      
-      // Immediately update parent component
-      const updatedTechnicians = availableUsers.filter(u => newSelectedIds.has(u.id));
-      debugTechAssignment('Calling onAssignmentChange with technicians: %o', updatedTechnicians.map(t => t.id));
-      onAssignmentChange(updatedTechnicians);
-      
-      // Persist to server
-      const response = await jobsService.updateJobTechnicians(jobId, Array.from(newSelectedIds));
-      debugAPI('Technician assignment updated successfully: %o', response);
-      debugAPI('Response technicians: %o', response.technicians);
-      
-      // Skip cache invalidation entirely - server cache has timing issues
-      // The immediate onAssignmentChange already updates the UI correctly
-      debugTechAssignment('Skipping cache invalidation due to server-side cache timing issues');
-      
-    } catch (err: any) {
-      console.error('Failed to update technician assignment:', err);
-      
-      // Show appropriate error message
-      if (err.code === 'INVALID_CSRF_TOKEN') {
-        error = 'Session expired - please try again';
-      } else {
-        error = 'Failed to update assignment - please try again';
+    const technicianIds = Array.from(newSelectedIds);
+    
+    debugTechAssignment('Updating technicians for job %s: %o', jobId, technicianIds);
+    
+    // Save selection to localStorage for convenience
+    saveSelection(jobId, technicianIds);
+    
+    // Use TanStack Query mutation with built-in optimistic updates
+    $updateTechniciansMutation.mutate(
+      { jobId, technicianIds },
+      {
+        onSuccess: (response) => {
+          debugAPI('Technician assignment updated successfully: %o', response);
+          
+          // Update parent component with server response
+          const updatedTechnicians = userLookup.getUsersByIds(
+            response.technicians.map((t: any) => t.id)
+          );
+          onAssignmentChange(updatedTechnicians);
+        },
+        onError: (error: any) => {
+          debugAPI('Technician assignment failed: %o', error);
+          
+          // TanStack Query automatically handles rollback via onMutate
+          // Parent component will be updated with original state
+          const originalTechnicians = userLookup.getUsersByIds(
+            assignedTechnicians.map(t => t.id)
+          );
+          onAssignmentChange(originalTechnicians);
+        }
       }
-      
-      // Rollback on error - restore original state
-      isUpdating = false; // Allow reactive updates to work for rollback
-      selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
-      // Convert back to full User objects for rollback
-      const rollbackTechnicians = availableUsers.filter(u => assignedTechnicians.some(t => t.id === u.id));
-      onAssignmentChange(rollbackTechnicians);
-    } finally {
-      isLoading = false;
-      isUpdating = false; // Reset immediately since we're not doing delayed cache invalidation
-    }
+    );
   }
 
   // Display logic for button content
@@ -142,25 +121,37 @@
       <div class="assignment-content">
         <h3 class="assignment-title">Assigned to…</h3>
         
-        {#if error}
-          <div class="error-message">{error}</div>
+        {#if $usersQuery.isError}
+          <div class="error-message">Failed to load users</div>
+        {:else if error}
+          <div class="error-message">
+            {#if errorCode === 'INVALID_CSRF_TOKEN'}
+              Session expired - please try again
+            {:else}
+              Failed to update assignment - please try again
+            {/if}
+          </div>
         {/if}
 
-        <div class="user-checkboxes" class:loading={isLoading}>
-          {#each availableUsers as user}
-            <label class="user-checkbox">
-              <input 
-                type="checkbox" 
-                checked={selectedUserIds.has(user.id)}
-                disabled={isLoading}
-                on:change={(e) => handleUserToggle(user, e.currentTarget.checked)}
-                class="checkbox-input" 
-              />
-              <UserAvatar {user} size="small" />
-              <span class="user-name">{user.attributes.name}</span>
-            </label>
-          {/each}
-        </div>
+        {#if $usersQuery.isLoading}
+          <div class="loading-indicator">Loading users...</div>
+        {:else}
+          <div class="user-checkboxes" class:loading={isLoading}>
+            {#each availableUsers as user}
+              <label class="user-checkbox">
+                <input 
+                  type="checkbox" 
+                  checked={selectedUserIds.has(user.id)}
+                  disabled={isLoading}
+                  on:change={(e) => handleUserToggle(user, e.currentTarget.checked)}
+                  class="checkbox-input" 
+                />
+                <UserAvatar {user} size="small" />
+                <span class="user-name">{user.attributes.name}</span>
+              </label>
+            {/each}
+          </div>
+        {/if}
 
         {#if isLoading}
           <div class="loading-indicator">Updating...</div>
