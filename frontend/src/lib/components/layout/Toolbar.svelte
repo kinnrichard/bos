@@ -57,17 +57,7 @@
     taskFilterActions.setStatuses(statuses);
   }
 
-  // Technician assignment functionality  
-  function handleTechnicianAssignmentChange(updatedTechnicians: any[]) {
-    // Update the current job in the store with new technicians
-    if ($currentJob) {
-      const updatedJob = {
-        ...$currentJob,
-        technicians: updatedTechnicians
-      };
-      layoutActions.setCurrentJob(updatedJob);
-    }
-  }
+  // Technician assignment functionality removed - TanStack Query handles everything
 </script>
 
 <div class="toolbar">
@@ -98,8 +88,7 @@
     {#if $currentPage === 'job-detail' && $currentJob}
       <TechnicianAssignmentButton 
         jobId={$currentJob.id}
-        assignedTechnicians={$currentJob.technicians}
-        onAssignmentChange={handleTechnicianAssignmentChange}
+        initialTechnicians={$currentJob.technicians || []}
       />
       <FilterPopover onFilterChange={handleTaskStatusFilter} />
     {/if}

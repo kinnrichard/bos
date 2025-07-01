@@ -1,80 +1,43 @@
 <script lang="ts">
   import { createPopover } from 'svelte-headlessui';
   import { fade } from 'svelte/transition';
-  import { onMount } from 'svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
-  import { useUsersQuery, useUserLookup, useUpdateJobTechniciansMutation } from '$lib/api/hooks/users';
-  import { technicianSelections } from '$lib/utils/persisted-store';
+  import { useUsersQuery, useUserLookup } from '$lib/api/hooks/users';
+  import { useJobQuery, useUpdateJobTechniciansMutation } from '$lib/api/hooks/jobs';
   import type { User } from '$lib/types/job';
-  import { debugTechAssignment, debugAPI } from '$lib/utils/debug';
+  import { debugTechAssignment } from '$lib/utils/debug';
 
   export let jobId: string;
-  export let assignedTechnicians: Array<User['attributes'] & { id: string }> = [];
-  export let onAssignmentChange: (technicians: User[]) => void = () => {};
+  
+  // Optional props to provide initial data while job query loads
+  export let initialTechnicians: Array<{id: string}> = [];
 
   const popover = createPopover();
   
-  // Use TanStack Query for user data
+  // Use TanStack Query for all data - single source of truth
   const usersQuery = useUsersQuery();
   const userLookup = useUserLookup();
+  const jobQuery = useJobQuery(jobId);
   const updateTechniciansMutation = useUpdateJobTechniciansMutation();
 
-  // Controlled state management - no reactive override of user selections
-  let selectedUserIds: Set<string> = new Set();
-  
+  // Derived state from TanStack Query cache - fallback to initial data
+  $: job = $jobQuery.data?.data;
   $: availableUsers = $usersQuery.data || [];
+  $: assignedTechnicians = job?.relationships?.technicians?.data || initialTechnicians;
+  $: selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
   $: assignedTechniciansForDisplay = userLookup.getUsersByIds(assignedTechnicians.map(t => t.id));
+  
   $: isLoading = $updateTechniciansMutation.isPending;
   $: error = $updateTechniciansMutation.error;
   $: errorCode = error && (error as any).code;
   
-  // Initialize local state from props only once
-  onMount(() => {
-    selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
-    debugTechAssignment('Initialized selectedUserIds: %o', Array.from(selectedUserIds));
-  });
-  
-  // Track when we're in the middle of our own update to prevent reactive overrides
-  let isOurUpdate = false;
-  
-  // Update local state only when props change externally (not from our mutations)
-  let lastPropsSignature = assignedTechnicians.map(t => t.id).sort().join(',');
-  $: {
-    const currentSignature = assignedTechnicians.map(t => t.id).sort().join(',');
-    
-    // Only update if this is an external change (not from our own mutation)
-    if (!isOurUpdate && !$updateTechniciansMutation.isPending && currentSignature !== lastPropsSignature) {
-      debugTechAssignment('Props changed externally, updating selectedUserIds from %s to %s', lastPropsSignature, currentSignature);
-      selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
-      lastPropsSignature = currentSignature;
-    } else if (currentSignature !== lastPropsSignature) {
-      debugTechAssignment('Props changed but blocked: isOurUpdate=%s, isPending=%s', isOurUpdate, $updateTechniciansMutation.isPending);
-    }
-  }
-  
-  // Store last selection for convenience
-  function saveSelection(jobId: string, technicianIds: string[]) {
-    technicianSelections.update(selections => ({
-      ...selections,
-      [jobId]: {
-        technicianIds,
-        lastUpdated: Date.now()
-      }
-    }));
-  }
-
-  // Handle checkbox changes with proper state control
+  // Handle checkbox changes - simple and clean
   function handleUserToggle(user: User, checked: boolean) {
-    // Prevent multiple clicks while loading
-    if ($updateTechniciansMutation.isPending) {
+    if (isLoading) {
       debugTechAssignment('Ignoring click - mutation already pending');
       return;
     }
     
-    // Set flag to prevent reactive overrides during our update
-    isOurUpdate = true;
-    
-    // Update local state immediately for responsive UI
     const newSelectedIds = new Set(selectedUserIds);
     if (checked) {
       newSelectedIds.add(user.id);
@@ -82,59 +45,13 @@
       newSelectedIds.delete(user.id);
     }
     
-    // Update local state immediately
-    selectedUserIds = newSelectedIds;
     const technicianIds = Array.from(newSelectedIds);
     
-    debugTechAssignment('User clicked %s %s, local state now: %o', 
+    debugTechAssignment('User clicked %s %s, updating to: %o', 
       user.attributes.name, checked ? 'ON' : 'OFF', technicianIds);
     
-    // Save selection to localStorage for convenience
-    saveSelection(jobId, technicianIds);
-    
-    // Make API call without optimistic updates (we handle state locally)
-    $updateTechniciansMutation.mutate(
-      { jobId, technicianIds },
-      {
-        onSuccess: (response) => {
-          debugAPI('API success, server returned: %o', response.technicians.map((t: any) => t.id));
-          
-          // Update parent component with server response
-          const updatedTechnicians = userLookup.getUsersByIds(
-            response.technicians.map((t: any) => t.id)
-          );
-          onAssignmentChange(updatedTechnicians);
-          
-          // Sync local state with server response and update signature
-          const serverIds = new Set(response.technicians.map((t: any) => t.id));
-          selectedUserIds = serverIds;
-          lastPropsSignature = Array.from(serverIds).sort().join(',');
-          
-          debugTechAssignment('Synced with server, final state: %o', Array.from(serverIds));
-          
-          // Clear our update flag
-          isOurUpdate = false;
-        },
-        onError: (error: any) => {
-          debugAPI('API error, reverting to original state: %o', error);
-          
-          // Revert local state on error
-          const originalIds = new Set(assignedTechnicians.map(t => t.id));
-          selectedUserIds = originalIds;
-          
-          debugTechAssignment('Reverted to original state: %o', Array.from(originalIds));
-          
-          // Notify parent of failure (keep original state)
-          const originalTechnicians = userLookup.getUsersByIds(
-            assignedTechnicians.map(t => t.id)
-          );
-          onAssignmentChange(originalTechnicians);
-          
-          // Clear our update flag
-          isOurUpdate = false;
-        }
-      }
-    );
+    // TanStack Query mutation with optimistic updates handles everything
+    $updateTechniciansMutation.mutate({ jobId, technicianIds });
   }
 
   // Display logic for button content

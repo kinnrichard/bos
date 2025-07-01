@@ -130,6 +130,76 @@ export function useDeleteJobMutation() {
 }
 
 /**
+ * Mutation hook for updating job technician assignments with optimistic updates
+ */
+export function useUpdateJobTechniciansMutation() {
+  const queryClient = useQueryClient();
+
+  return createMutation({
+    mutationFn: ({ 
+      jobId, 
+      technicianIds 
+    }: { 
+      jobId: string; 
+      technicianIds: string[] 
+    }) => jobsService.updateJobTechnicians(jobId, technicianIds),
+    
+    onMutate: async ({ jobId, technicianIds }) => {
+      // Cancel outgoing refetches so they don't overwrite optimistic update
+      await queryClient.cancelQueries({ queryKey: ['job', jobId] });
+      
+      // Snapshot previous value for rollback
+      const previousJob = queryClient.getQueryData(['job', jobId]);
+      
+      // Get users cache to map IDs to full user objects
+      const usersData = queryClient.getQueryData(['users']) as any[];
+      const technicianObjects = technicianIds.map(id => {
+        const user = usersData?.find((u: any) => u.id === id);
+        return user ? { ...user.attributes, id: user.id } : null;
+      }).filter(Boolean);
+      
+      // Optimistically update job cache with new technicians
+      queryClient.setQueryData(['job', jobId], (old: JsonApiResponse<JobResource> | undefined) => {
+        if (!old?.data?.relationships) {
+          // If job structure is invalid, skip optimistic update
+          console.warn('Job data structure invalid for optimistic update, skipping...');
+          return old;
+        }
+        
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            relationships: {
+              ...old.data.relationships,
+              technicians: {
+                data: technicianIds.map(id => ({ id, type: 'users' }))
+              }
+            }
+          }
+        };
+      });
+      
+      return { previousJob };
+    },
+    
+    onError: (error, { jobId }, context) => {
+      // Rollback optimistic updates on error
+      if (context?.previousJob) {
+        queryClient.setQueryData(['job', jobId], context.previousJob);
+      }
+      console.error('Failed to update job technicians:', error);
+    },
+    
+    onSettled: (data, error, { jobId }) => {
+      // Always refetch to ensure consistency with server
+      queryClient.invalidateQueries({ queryKey: ['job', jobId] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    }
+  });
+}
+
+/**
  * Mutation hook for bulk status updates
  */
 export function useBulkUpdateJobStatusMutation() {
