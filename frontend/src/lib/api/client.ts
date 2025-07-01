@@ -57,6 +57,8 @@ class ApiClient {
       headers: requestHeaders,
       // Always include credentials for all API requests to send cookies
       credentials: 'include',
+      // Disable browser caching for API requests to prevent stale data
+      cache: 'no-cache',
     };
 
     if (data && method !== 'GET') {
