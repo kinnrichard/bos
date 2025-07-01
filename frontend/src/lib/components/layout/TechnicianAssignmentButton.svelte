@@ -24,13 +24,22 @@
   $: job = $jobQuery.data?.data;
   $: availableUsers = $usersQuery.data || [];
   $: assignedTechnicians = job?.relationships?.technicians?.data || initialTechnicians;
-  $: selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
   $: assignedTechniciansForDisplay = userLookup.getUsersByIds(assignedTechnicians.map(t => t.id));
   
   $: isLoading = $updateTechniciansMutation.isPending;
   $: error = $updateTechniciansMutation.error;
   $: errorCode = error && (error as any).code;
   
+  // Local state for immediate UI responsiveness
+  let localSelectedIds: Set<string> = new Set();
+  
+  // Keep local state in sync with server data
+  $: {
+    if (!isLoading) {
+      localSelectedIds = new Set(assignedTechnicians.map(t => t.id));
+    }
+  }
+
   // Handle checkbox changes - simple and clean
   function handleUserToggle(user: User, checked: boolean) {
     if (isLoading) {
@@ -38,19 +47,21 @@
       return;
     }
     
-    const newSelectedIds = new Set(selectedUserIds);
+    // Update local state immediately for UI responsiveness
+    const newSelectedIds = new Set(localSelectedIds);
     if (checked) {
       newSelectedIds.add(user.id);
     } else {
       newSelectedIds.delete(user.id);
     }
+    localSelectedIds = newSelectedIds;
     
     const technicianIds = Array.from(newSelectedIds);
     
     debugTechAssignment('User clicked %s %s, updating to: %o', 
       user.attributes.name, checked ? 'ON' : 'OFF', technicianIds);
     
-    // TanStack Query mutation with optimistic updates handles everything
+    // TanStack Query mutation handles API call and cache updates
     $updateTechniciansMutation.mutate({ jobId, technicianIds });
   }
 
@@ -113,7 +124,7 @@
               <label class="user-checkbox">
                 <input 
                   type="checkbox" 
-                  checked={selectedUserIds.has(user.id)}
+                  checked={localSelectedIds.has(user.id)}
                   disabled={isLoading}
                   on:change={(e) => handleUserToggle(user, e.currentTarget.checked)}
                   class="checkbox-input" 

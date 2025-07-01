@@ -151,34 +151,9 @@ export function useUpdateJobTechniciansMutation() {
       // Snapshot previous value for rollback
       const previousJob = queryClient.getQueryData(['job', jobId]);
       
-      // Get users cache to map IDs to full user objects
-      const usersData = queryClient.getQueryData(['users']) as any[];
-      const technicianObjects = technicianIds.map(id => {
-        const user = usersData?.find((u: any) => u.id === id);
-        return user ? { ...user.attributes, id: user.id } : null;
-      }).filter(Boolean);
-      
-      // Optimistically update job cache with new technicians
-      queryClient.setQueryData(['job', jobId], (old: JsonApiResponse<JobResource> | undefined) => {
-        if (!old?.data?.relationships) {
-          // If job structure is invalid, skip optimistic update
-          console.warn('Job data structure invalid for optimistic update, skipping...');
-          return old;
-        }
-        
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            relationships: {
-              ...old.data.relationships,
-              technicians: {
-                data: technicianIds.map(id => ({ id, type: 'users' }))
-              }
-            }
-          }
-        };
-      });
+      // Skip optimistic update for now - the API calls work fine without it
+      // The UI will update when the server responds and cache is invalidated
+      console.log('TanStack Query: Technician update submitted, will sync after API response');
       
       return { previousJob };
     },
