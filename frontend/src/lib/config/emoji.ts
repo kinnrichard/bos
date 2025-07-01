@@ -126,6 +126,7 @@ export function getScheduleTypeEmoji(type: keyof typeof UTILITY_EMOJIS.schedule_
  * Helper function to get status with emoji and label
  */
 export function getJobStatusWithEmoji(status: string): string {
+  if (!status) return '📝 Unknown';
   const emoji = getJobStatusEmoji(status);
   const label = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   return `${emoji} ${label}`;
@@ -135,6 +136,7 @@ export function getJobStatusWithEmoji(status: string): string {
  * Helper function to get priority with emoji and label
  */
 export function getJobPriorityWithEmoji(priority: string): string {
+  if (!priority) return 'Unknown';
   const emoji = getJobPriorityEmoji(priority);
   const label = priority.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   return emoji ? `${emoji} ${label}` : label;

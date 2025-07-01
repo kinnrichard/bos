@@ -85,7 +85,7 @@
   <div class="toolbar-right">
     <!-- Search -->
     <!-- Job detail page controls -->
-    {#if $currentPage === 'job-detail' && $currentJob}
+    {#if $currentPage === 'job-detail' && $currentJob && $currentJob.id}
       <TechnicianAssignmentButton 
         jobId={$currentJob.id}
         initialTechnicians={$currentJob.technicians || []}

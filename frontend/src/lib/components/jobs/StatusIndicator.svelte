@@ -38,7 +38,7 @@
     };
 
     return statusMap[status] || {
-      label: status.replace('_', ' '),
+      label: status ? status.replace('_', ' ') : 'Unknown',
       color: 'var(--text-secondary)'
     };
   }
@@ -68,7 +68,7 @@
     };
 
     return priorityMap[priority] || {
-      label: priority.replace('_', ' '),
+      label: priority ? priority.replace('_', ' ') : 'Unknown',
       color: 'var(--text-secondary)'
     };
   }

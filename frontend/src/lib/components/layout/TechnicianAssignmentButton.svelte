@@ -55,6 +55,12 @@
       return;
     }
     
+    // Ensure jobId is valid
+    if (!jobId) {
+      debugTechAssignment('Invalid jobId, ignoring click: %o', jobId);
+      return;
+    }
+    
     // Update local state immediately for UI responsiveness
     const newSelectedIds = new Set(localSelectedIds);
     if (checked) {
@@ -70,7 +76,12 @@
       user.attributes.name, checked ? 'ON' : 'OFF', technicianIds);
     
     // TanStack Query mutation handles API call and cache updates
-    $updateTechniciansMutation.mutate({ jobId, technicianIds });
+    try {
+      $updateTechniciansMutation.mutate({ jobId, technicianIds });
+    } catch (error) {
+      debugTechAssignment('Error during mutation: %o', error);
+      console.error('TechnicianAssignmentButton mutation error:', error);
+    }
   }
 
   // Display logic for button content
@@ -81,6 +92,7 @@
 
 <div class="technician-assignment-popover">
   <button 
+    type="button"
     class="assignment-button"
     class:has-assignments={hasAssignments}
     use:popover.button
