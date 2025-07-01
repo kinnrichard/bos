@@ -106,34 +106,29 @@ class Api::V1::JobsController < Api::V1::BaseController
     technicians = User.where(id: technician_ids)
     Rails.logger.info "TECH ASSIGNMENT: Found #{technicians.count} technicians: #{technicians.pluck(:name).join(', ')}" if Rails.env.development?
 
-    # Update job technicians - properly delete and create to trigger touch callbacks
+    # Update job technicians - Touchable concern handles cache invalidation automatically
     current_tech_ids = @job.job_assignments.pluck(:user_id)
     new_tech_ids = technician_ids.reject(&:blank?).uniq
 
     Rails.logger.info "TECH ASSIGNMENT: Current: #{current_tech_ids.inspect}, New: #{new_tech_ids.inspect}" if Rails.env.development?
 
-    # Only update if there are changes to avoid unnecessary touch
+    # Only update if there are changes
     unless current_tech_ids.sort == new_tech_ids.sort
       Rails.logger.info "TECH ASSIGNMENT: Changes detected, updating assignments" if Rails.env.development?
 
-      # Delete all existing assignments (triggers touch callback via belongs_to :job, touch: true)
+      # Touchable concern automatically touches job when destroy_all is called
       @job.job_assignments.destroy_all
 
-      # Create new assignments (each create also triggers touch callback)
+      # Create new assignments (also triggers touch via belongs_to :job, touch: true)
       new_tech_ids.each do |user_id|
         @job.job_assignments.create!(user_id: user_id)
       end
 
-      # Reload the job to get the updated timestamp from touch callbacks
+      # Reload the job to get the updated timestamp
       @job.reload
     else
-      Rails.logger.info "TECH ASSIGNMENT: No changes detected, ensuring cache is fresh" if Rails.env.development?
+      Rails.logger.info "TECH ASSIGNMENT: No changes detected" if Rails.env.development?
     end
-
-    # Always ensure cache is fresh for API responses
-    @job.ensure_cache_fresh!
-
-    Rails.logger.info "TECH ASSIGNMENT: About to save job with technicians" if Rails.env.development?
 
     Rails.logger.info "TECH ASSIGNMENT: Successfully updated. Current technicians: #{@job.technicians.pluck(:name).join(', ')}" if Rails.env.development?
     Rails.logger.info "TECH ASSIGNMENT: Job updated_at: #{@job.updated_at}" if Rails.env.development?

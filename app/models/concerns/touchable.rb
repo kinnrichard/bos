@@ -42,6 +42,9 @@ module Touchable
 
   included do
     class_attribute :touchable_options, default: {}
+
+    # Automatically patch association collections after model is loaded
+    after_initialize :patch_association_collections, if: :persisted?
   end
 
   class_methods do
@@ -66,6 +69,7 @@ module Touchable
 
       super(name, scope, **options)
     end
+
 
     private
 
@@ -115,5 +119,39 @@ module Touchable
   def ensure_cache_fresh!
     touch unless changed?
     Rails.logger.debug "[Touchable] Cache refresh forced for #{self.class.name}##{id}" if Rails.env.development?
+  end
+
+  private
+
+  def patch_association_collections
+    # Patch has_many collections to auto-touch parent on bulk operations
+    self.class.reflect_on_all_associations(:has_many).each do |association|
+      collection = public_send(association.name)
+      owner = self
+
+      # Patch destroy_all to touch parent
+      collection.define_singleton_method(:destroy_all) do |*args|
+        result = super(*args)
+        owner.touch unless owner.new_record?
+        Rails.logger.debug "[Touchable] Auto-touched #{owner.class.name}##{owner.id} after destroy_all on #{association.name}" if Rails.env.development?
+        result
+      end
+
+      # Patch delete_all to touch parent
+      collection.define_singleton_method(:delete_all) do |*args|
+        result = super(*args)
+        owner.touch unless owner.new_record?
+        Rails.logger.debug "[Touchable] Auto-touched #{owner.class.name}##{owner.id} after delete_all on #{association.name}" if Rails.env.development?
+        result
+      end
+
+      # Patch clear to touch parent
+      collection.define_singleton_method(:clear) do |*args|
+        result = super(*args)
+        owner.touch unless owner.new_record?
+        Rails.logger.debug "[Touchable] Auto-touched #{owner.class.name}##{owner.id} after clear on #{association.name}" if Rails.env.development?
+        result
+      end
+    end
   end
 end
