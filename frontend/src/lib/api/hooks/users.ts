@@ -42,6 +42,8 @@ export function useTechniciansQuery() {
  * Falls back to server if not in cache
  */
 export function useUserQuery(id: string, enabled: boolean = true) {
+  const queryClient = useQueryClient();
+  
   return createQuery({
     queryKey: ['user', id],
     queryFn: async () => {
@@ -182,5 +184,4 @@ export function useUpdateJobTechniciansMutation() {
   });
 }
 
-// Get the query client instance for internal use
-const queryClient = useQueryClient();
+// Note: Don't use useQueryClient() at module level - only in hooks/components
