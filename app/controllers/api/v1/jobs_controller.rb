@@ -106,26 +106,39 @@ class Api::V1::JobsController < Api::V1::BaseController
     technicians = User.where(id: technician_ids)
     Rails.logger.info "TECH ASSIGNMENT: Found #{technicians.count} technicians: #{technicians.pluck(:name).join(', ')}" if Rails.env.development?
 
-    # Update job technicians
-    @job.technicians = technicians
-    Rails.logger.info "TECH ASSIGNMENT: About to save job with technicians" if Rails.env.development?
+    # Update job technicians - properly delete and create to trigger touch callbacks
+    current_tech_ids = @job.job_assignments.pluck(:user_id)
+    new_tech_ids = technician_ids.reject(&:blank?).uniq
 
-    if @job.save
+    Rails.logger.info "TECH ASSIGNMENT: Current: #{current_tech_ids.inspect}, New: #{new_tech_ids.inspect}" if Rails.env.development?
+
+    # Only update if there are changes to avoid unnecessary touch
+    unless current_tech_ids.sort == new_tech_ids.sort
+      Rails.logger.info "TECH ASSIGNMENT: Changes detected, updating assignments" if Rails.env.development?
+
+      # Delete all existing assignments (triggers touch callback via belongs_to :job, touch: true)
+      @job.job_assignments.destroy_all
+
+      # Create new assignments (each create also triggers touch callback)
+      new_tech_ids.each do |user_id|
+        @job.job_assignments.create!(user_id: user_id)
+      end
+
       # Reload the job to get the updated timestamp from touch callbacks
       @job.reload
-      Rails.logger.info "TECH ASSIGNMENT: Successfully saved. Current technicians: #{@job.technicians.pluck(:name).join(', ')}" if Rails.env.development?
-      Rails.logger.info "TECH ASSIGNMENT: Job updated_at: #{@job.updated_at}" if Rails.env.development?
-      render json: {
-        status: "success",
-        technicians: technicians.map { |tech| technician_data(tech) }
-      }
     else
-      Rails.logger.error "TECH ASSIGNMENT: Failed to save job: #{@job.errors.full_messages}" if Rails.env.development?
-      render json: {
-        status: "error",
-        errors: @job.errors.full_messages
-      }, status: :unprocessable_entity
+      Rails.logger.info "TECH ASSIGNMENT: No changes detected, skipping update" if Rails.env.development?
     end
+
+    Rails.logger.info "TECH ASSIGNMENT: About to save job with technicians" if Rails.env.development?
+
+    Rails.logger.info "TECH ASSIGNMENT: Successfully updated. Current technicians: #{@job.technicians.pluck(:name).join(', ')}" if Rails.env.development?
+    Rails.logger.info "TECH ASSIGNMENT: Job updated_at: #{@job.updated_at}" if Rails.env.development?
+
+    render json: {
+      status: "success",
+      technicians: @job.technicians.map { |tech| technician_data(tech) }
+    }
   rescue ActiveRecord::RecordNotFound
     Rails.logger.error "TECH ASSIGNMENT: Job not found: #{params[:id]}" if Rails.env.development?
     render json: { error: "Job not found" }, status: :not_found
