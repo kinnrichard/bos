@@ -34,14 +34,21 @@
     debugTechAssignment('Initialized selectedUserIds: %o', Array.from(selectedUserIds));
   });
   
+  // Track when we're in the middle of our own update to prevent reactive overrides
+  let isOurUpdate = false;
+  
   // Update local state only when props change externally (not from our mutations)
-  let lastPropsUpdate = assignedTechnicians;
+  let lastPropsSignature = assignedTechnicians.map(t => t.id).sort().join(',');
   $: {
+    const currentSignature = assignedTechnicians.map(t => t.id).sort().join(',');
+    
     // Only update if this is an external change (not from our own mutation)
-    if (!$updateTechniciansMutation.isPending && assignedTechnicians !== lastPropsUpdate) {
+    if (!isOurUpdate && !$updateTechniciansMutation.isPending && currentSignature !== lastPropsSignature) {
+      debugTechAssignment('Props changed externally, updating selectedUserIds from %s to %s', lastPropsSignature, currentSignature);
       selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
-      lastPropsUpdate = assignedTechnicians;
-      debugTechAssignment('Updated selectedUserIds from props: %o', Array.from(selectedUserIds));
+      lastPropsSignature = currentSignature;
+    } else if (currentSignature !== lastPropsSignature) {
+      debugTechAssignment('Props changed but blocked: isOurUpdate=%s, isPending=%s', isOurUpdate, $updateTechniciansMutation.isPending);
     }
   }
   
@@ -64,6 +71,9 @@
       return;
     }
     
+    // Set flag to prevent reactive overrides during our update
+    isOurUpdate = true;
+    
     // Update local state immediately for responsive UI
     const newSelectedIds = new Set(selectedUserIds);
     if (checked) {
@@ -76,8 +86,8 @@
     selectedUserIds = newSelectedIds;
     const technicianIds = Array.from(newSelectedIds);
     
-    debugTechAssignment('User clicked %s %s, updating job %s technicians to: %o', 
-      user.attributes.name, checked ? 'ON' : 'OFF', jobId, technicianIds);
+    debugTechAssignment('User clicked %s %s, local state now: %o', 
+      user.attributes.name, checked ? 'ON' : 'OFF', technicianIds);
     
     // Save selection to localStorage for convenience
     saveSelection(jobId, technicianIds);
@@ -87,7 +97,7 @@
       { jobId, technicianIds },
       {
         onSuccess: (response) => {
-          debugAPI('Technician assignment updated successfully: %o', response);
+          debugAPI('API success, server returned: %o', response.technicians.map((t: any) => t.id));
           
           // Update parent component with server response
           const updatedTechnicians = userLookup.getUsersByIds(
@@ -95,21 +105,33 @@
           );
           onAssignmentChange(updatedTechnicians);
           
-          // Sync local state with server response
-          selectedUserIds = new Set(response.technicians.map((t: any) => t.id));
-          lastPropsUpdate = assignedTechnicians; // Prevent reactive override
+          // Sync local state with server response and update signature
+          const serverIds = new Set(response.technicians.map((t: any) => t.id));
+          selectedUserIds = serverIds;
+          lastPropsSignature = Array.from(serverIds).sort().join(',');
+          
+          debugTechAssignment('Synced with server, final state: %o', Array.from(serverIds));
+          
+          // Clear our update flag
+          isOurUpdate = false;
         },
         onError: (error: any) => {
-          debugAPI('Technician assignment failed: %o', error);
+          debugAPI('API error, reverting to original state: %o', error);
           
           // Revert local state on error
-          selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
+          const originalIds = new Set(assignedTechnicians.map(t => t.id));
+          selectedUserIds = originalIds;
+          
+          debugTechAssignment('Reverted to original state: %o', Array.from(originalIds));
           
           // Notify parent of failure (keep original state)
           const originalTechnicians = userLookup.getUsersByIds(
             assignedTechnicians.map(t => t.id)
           );
           onAssignmentChange(originalTechnicians);
+          
+          // Clear our update flag
+          isOurUpdate = false;
         }
       }
     );
