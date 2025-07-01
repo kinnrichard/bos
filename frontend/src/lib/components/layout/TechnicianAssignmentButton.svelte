@@ -20,17 +20,9 @@
   let selectedUserIds: Set<string> = new Set();
   let isLoading = false;
   let error = '';
-  let isOptimisticUpdate = false;
 
-  // Initialize selected users from props (only when not in optimistic update mode)
-  $: if (!isOptimisticUpdate && !isLoading) {
-    const propIds = new Set(assignedTechnicians.map(t => t.id));
-    // Only update if the prop data is actually different
-    if (propIds.size !== selectedUserIds.size || 
-        !Array.from(propIds).every(id => selectedUserIds.has(id))) {
-      selectedUserIds = propIds;
-    }
-  }
+  // Simple reactive sync with props - no complex optimistic update logic
+  $: selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
 
   // Get users from cache - this ensures we have complete user data with proper initials
   $: availableUsers = $userStore;
@@ -48,7 +40,7 @@
     }
   });
 
-  // Handle checkbox changes with optimistic updates
+  // Handle checkbox changes with simplified, reliable state management
   async function handleUserToggle(user: User, checked: boolean) {
     const newSelectedIds = new Set(selectedUserIds);
     
@@ -58,21 +50,23 @@
       newSelectedIds.delete(user.id);
     }
 
-    // Start optimistic update
-    isOptimisticUpdate = true;
-    selectedUserIds = newSelectedIds;
-    const updatedTechnicians = availableUsers.filter(u => newSelectedIds.has(u.id));
-    onAssignmentChange(updatedTechnicians);
-
-    // Persist to server
     try {
       isLoading = true;
       error = '';
+      
+      // Immediately update local state for UI responsiveness
+      selectedUserIds = newSelectedIds;
+      
+      // Immediately update parent component
+      const updatedTechnicians = availableUsers.filter(u => newSelectedIds.has(u.id));
+      onAssignmentChange(updatedTechnicians);
+      
+      // Persist to server
       const response = await jobsService.updateJobTechnicians(jobId, Array.from(newSelectedIds));
       console.log('Technician assignment updated successfully:', response);
       console.log('Response technicians:', response.technicians);
       
-      // Invalidate job queries to refetch updated data
+      // Force cache refresh to ensure consistency
       await queryClient.invalidateQueries({
         queryKey: ['job', jobId],
         exact: true
@@ -81,15 +75,6 @@
         queryKey: ['jobs']
       });
       
-      // Force immediate refetch regardless of stale time
-      await queryClient.refetchQueries({
-        queryKey: ['job', jobId],
-        exact: true,
-        type: 'active'
-      });
-      
-      // Now safe to sync with server state
-      isOptimisticUpdate = false;
     } catch (err: any) {
       console.error('Failed to update technician assignment:', err);
       
@@ -100,8 +85,7 @@
         error = 'Failed to update assignment - please try again';
       }
       
-      // Rollback on error
-      isOptimisticUpdate = false;
+      // Rollback on error - restore original state
       selectedUserIds = new Set(assignedTechnicians.map(t => t.id));
       onAssignmentChange(assignedTechnicians);
     } finally {
