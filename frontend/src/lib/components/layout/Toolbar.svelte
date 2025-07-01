@@ -4,6 +4,7 @@
   import FilterPopover from './FilterPopover.svelte';
   import JobStatusButton from './JobStatusButton.svelte';
   import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
+  import SchedulePriorityEditPopover from './SchedulePriorityEditPopover.svelte';
 
   // Search functionality
   let searchQuery = '';
@@ -82,6 +83,7 @@
         jobId={$currentJob.id}
         initialTechnicians={$currentJob.technicians || []}
       />
+      <SchedulePriorityEditPopover jobId={$currentJob.id} initialJob={$currentJob} />  
     {/if}
   </div>
 
