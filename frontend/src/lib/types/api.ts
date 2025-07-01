@@ -156,9 +156,11 @@ export interface JobUpdateRequest {
   title?: string;
   description?: string;
   status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  due_date?: string;
-  start_date?: string;
+  priority?: 'low' | 'normal' | 'high' | 'critical' | 'proactive_followup';
+  due_on?: string | null;
+  due_time?: string | null;
+  start_on?: string | null;
+  start_time?: string | null;
   technician_ids?: string[];
 }
 

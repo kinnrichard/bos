@@ -64,7 +64,7 @@
     class="filter-button"
     use:popover.button
   >
-    <img src={hasActiveFilters ? "/icons/filter-active.svg" : "/icons/filter.svg"} alt="" class="filter-icon" class:active={hasActiveFilters} />
+    <img src={hasActiveFilters ? "/icons/filter-active.svg" : "/icons/filter-inactive.svg"} alt="" class="filter-icon" class:active={hasActiveFilters} />
   </button>
 
   {#if $popover.expanded}

@@ -76,8 +76,12 @@
     {/if}
 
     <!-- Job status button (only show on job detail page) -->
-    {#if $currentPage === 'job-detail'}
+    {#if $currentPage === 'job-detail' && $currentJob && $currentJob.id}
       <JobStatusButton />
+      <TechnicianAssignmentButton 
+        jobId={$currentJob.id}
+        initialTechnicians={$currentJob.technicians || []}
+      />
     {/if}
   </div>
 
@@ -86,10 +90,6 @@
     <!-- Search -->
     <!-- Job detail page controls -->
     {#if $currentPage === 'job-detail' && $currentJob && $currentJob.id}
-      <TechnicianAssignmentButton 
-        jobId={$currentJob.id}
-        initialTechnicians={$currentJob.technicians || []}
-      />
       <FilterPopover onFilterChange={handleTaskStatusFilter} />
     {/if}
 

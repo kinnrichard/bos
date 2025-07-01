@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PopulatedJob } from '$lib/types/job';
+  import SchedulePriorityEditPopover from '$lib/components/layout/SchedulePriorityEditPopover.svelte';
 
   export let job: PopulatedJob | null | undefined;
 
@@ -68,7 +69,12 @@
 
       <!-- Scheduling -->
       <div class="info-group">
-        <h4>Schedule</h4>
+        <div class="info-group-header">
+          <h4>Schedule</h4>
+          {#if job?.id}
+            <SchedulePriorityEditPopover jobId={job.id} initialJob={job} />
+          {/if}
+        </div>
         <div class="info-items">
           <div class="info-item">
             <span class="info-label">Start Date</span>
@@ -150,16 +156,6 @@
     padding: 24px;
   }
 
-  .panel-header {
-    margin-bottom: 20px;
-  }
-
-  .panel-header h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
-  }
 
   .info-grid {
     display: flex;
@@ -171,6 +167,12 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .info-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .info-group h4 {
