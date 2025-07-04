@@ -5,6 +5,7 @@
   import JobStatusButton from './JobStatusButton.svelte';
   import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
   import SchedulePriorityEditPopover from './SchedulePriorityEditPopover.svelte';
+  import CircularButton from '$lib/components/ui/CircularButton.svelte';
 
   // Search functionality
   let searchQuery = '';
@@ -67,13 +68,14 @@
 
     <!-- Sidebar toggle (only show when sidebar is hidden) -->
     {#if !$sidebarVisible}
-      <button 
-        class="sidebar-toggle"
+      <CircularButton
+        variant="default"
+        size="normal"
         on:click={layoutActions.toggleSidebar}
-        aria-label="Show sidebar"
+        title="Show sidebar"
       >
         <img src="/icons/sidebar.svg" alt="Menu" />
-      </button>
+      </CircularButton>
     {/if}
 
     <!-- Job status button (only show on job detail page) -->
@@ -99,8 +101,9 @@
     {#if pageActions.length > 0}
       <div class="page-actions">
         {#each pageActions as action}
-          <button 
-            class="action-btn"
+          <CircularButton
+            variant="default"
+            size="normal"
             on:click={action.action}
             title={action.label}
           >
@@ -109,7 +112,7 @@
             {:else if action.iconType === 'emoji'}
               <span class="action-icon">{action.icon}</span>
             {/if}
-          </button>
+          </CircularButton>
         {/each}
       </div>
     {/if}
@@ -140,9 +143,13 @@
 
     <!-- User menu -->
     <div class="user-menu">
-      <button class="user-avatar" aria-label="User menu">
+      <CircularButton
+        variant="avatar"
+        size="normal"
+        title="User menu"
+      >
         <span class="user-initials">OL</span>
-      </button>
+      </CircularButton>
     </div>
   </div>
 </div>
@@ -181,30 +188,7 @@
     width: auto;
   }
 
-  /* Mobile sidebar toggle */
-  .sidebar-toggle {
-    width: 36px;
-    height: 36px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-  }
-
-  .sidebar-toggle:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
-
-  .sidebar-toggle img {
-    width: 20px;
-    height: 20px;
-    opacity: 0.7;
-  }
+  /* Icon styling for CircularButton content */
 
   /* Search container */
   .search-container {
@@ -284,23 +268,6 @@
     gap: 8px;
   }
 
-  .action-btn {
-    width: 36px;
-    height: 36px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-  }
-
-  .action-btn:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
 
   .action-icon {
     font-size: 16px;
@@ -314,23 +281,6 @@
 
 
   /* User menu */
-  .user-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 18px;
-    background-color: var(--accent-red);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.15s ease;
-    flex-shrink: 0;
-  }
-
-  .user-avatar:hover {
-    opacity: 0.9;
-  }
 
   .user-initials {
     color: white;

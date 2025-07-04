@@ -1,0 +1,492 @@
+<script lang="ts">
+  export let type: 'text' | 'email' | 'password' | 'url' | 'tel' | 'search' | 'number' | 'date' | 'time' | 'datetime-local' = 'text';
+  export let value: string | number = '';
+  export let placeholder: string = '';
+  export let disabled: boolean = false;
+  export let readonly: boolean = false;
+  export let required: boolean = false;
+  export let id: string = '';
+  export let name: string = '';
+  export let autocomplete: string = '';
+  export let min: string | number | undefined = undefined;
+  export let max: string | number | undefined = undefined;
+  export let step: string | number | undefined = undefined;
+  export let maxlength: number | undefined = undefined;
+  export let pattern: string = '';
+  export let title: string = '';
+  export let ariaLabel: string = '';
+  export let ariaDescribedby: string = '';
+  
+  // Styling props
+  export let size: 'small' | 'normal' | 'large' = 'normal';
+  export let variant: 'default' | 'error' | 'success' = 'default';
+  export let fullWidth: boolean = false;
+  export let customClass: string = '';
+
+  // Error state
+  export let error: string = '';
+  export let showError: boolean = true;
+
+  // Focus management
+  let inputElement: HTMLInputElement;
+  export function focus() {
+    inputElement?.focus();
+  }
+
+  export function blur() {
+    inputElement?.blur();
+  }
+
+  export function select() {
+    inputElement?.select();
+  }
+
+  // Size configurations
+  const sizeConfig = {
+    small: { padding: '6px 10px', fontSize: '12px' },
+    normal: { padding: '8px 12px', fontSize: '13px' },
+    large: { padding: '10px 14px', fontSize: '14px' }
+  };
+
+  $: config = sizeConfig[size];
+  $: hasError = error && showError;
+  $: finalVariant = hasError ? 'error' : variant;
+</script>
+
+<div class="form-input-wrapper" class:full-width={fullWidth}>
+  {#if type === 'text'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="text"
+      {placeholder}
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {autocomplete}
+      {maxlength}
+      {pattern}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {:else if type === 'email'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="email"
+      {placeholder}
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {autocomplete}
+      {maxlength}
+      {pattern}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {:else if type === 'password'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="password"
+      {placeholder}
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {autocomplete}
+      {maxlength}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {:else if type === 'url'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="url"
+      {placeholder}
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {autocomplete}
+      {maxlength}
+      {pattern}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {:else if type === 'tel'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="tel"
+      {placeholder}
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {autocomplete}
+      {maxlength}
+      {pattern}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {:else if type === 'search'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="search"
+      {placeholder}
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {autocomplete}
+      {maxlength}
+      {pattern}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {:else if type === 'number'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="number"
+      {placeholder}
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {autocomplete}
+      {min}
+      {max}
+      {step}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {:else if type === 'date'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="date"
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {min}
+      {max}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {:else if type === 'time'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="time"
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {min}
+      {max}
+      {step}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {:else if type === 'datetime-local'}
+    <input
+      bind:this={inputElement}
+      bind:value
+      type="datetime-local"
+      {disabled}
+      {readonly}
+      {required}
+      {id}
+      {name}
+      {min}
+      {max}
+      {step}
+      {title}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      class="form-input {size} {finalVariant} {customClass}"
+      class:has-error={hasError}
+      style:padding={config.padding}
+      style:font-size={config.fontSize}
+      on:input
+      on:change
+      on:focus
+      on:blur
+      on:keydown
+      on:keyup
+      on:keypress
+    />
+  {/if}
+  
+  {#if hasError}
+    <div class="input-error" id="{id}-error">
+      {error}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .form-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-input-wrapper.full-width {
+    width: 100%;
+  }
+
+  .form-input {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    color: var(--text-primary);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    font-family: inherit;
+    line-height: 1.4;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
+  }
+
+  .form-input:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+    background-color: var(--bg-tertiary);
+  }
+
+  .form-input:readonly {
+    background-color: var(--bg-tertiary);
+    cursor: default;
+  }
+
+  .form-input::placeholder {
+    color: var(--text-tertiary);
+    opacity: 1;
+  }
+
+  /* Variant styles */
+  .form-input.error {
+    border-color: var(--accent-red);
+  }
+
+  .form-input.error:focus {
+    border-color: var(--accent-red);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+
+  .form-input.success {
+    border-color: var(--accent-green);
+  }
+
+  .form-input.success:focus {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+
+  /* Error message */
+  .input-error {
+    color: var(--accent-red);
+    font-size: 12px;
+    line-height: 1.3;
+    margin-top: 2px;
+  }
+
+  /* Size variants */
+  .form-input.small {
+    /* Padding and font-size handled by style props */
+  }
+
+  .form-input.normal {
+    /* Padding and font-size handled by style props */
+  }
+
+  .form-input.large {
+    /* Padding and font-size handled by style props */
+  }
+
+  /* Special input types */
+  .form-input[type="date"],
+  .form-input[type="time"],
+  .form-input[type="datetime-local"] {
+    /* Ensure consistent appearance across browsers */
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+  }
+
+  .form-input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  .form-input[type="number"]::-webkit-outer-spin-button,
+  .form-input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Search input specific styling */
+  .form-input[type="search"] {
+    -webkit-appearance: none;
+  }
+
+  .form-input[type="search"]::-webkit-search-decoration,
+  .form-input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .form-input {
+      border-width: 2px;
+    }
+
+    .form-input:focus {
+      box-shadow: 0 0 0 2px var(--accent-blue);
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .form-input {
+      transition: none;
+    }
+  }
+
+  /* Dark mode adjustments */
+  @media (prefers-color-scheme: dark) {
+    .form-input[type="date"],
+    .form-input[type="time"],
+    .form-input[type="datetime-local"] {
+      color-scheme: dark;
+    }
+  }
+</style>

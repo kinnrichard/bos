@@ -1,13 +1,19 @@
 <script lang="ts">
-  import { createPopover } from 'svelte-headlessui';
-  import { fade } from 'svelte/transition';
+  import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
+  import CircularButton from '$lib/components/ui/CircularButton.svelte';
+  import FormInput from '$lib/components/ui/FormInput.svelte';
+  import FormSelect from '$lib/components/ui/FormSelect.svelte';
+  import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
+  import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
   import { useJobQuery, useUpdateJobMutation } from '$lib/api/hooks/jobs';
   import type { PopulatedJob } from '$lib/types/job';
+  import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
+  import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
 
   export let jobId: string;
   export let initialJob: PopulatedJob | null = null;
 
-  const popover = createPopover();
+  let popover: any;
   
   const jobQuery = useJobQuery(jobId);
   const updateJobMutation = useUpdateJobMutation();
@@ -16,6 +22,7 @@
   $: job = $jobQuery.data || initialJob;
   $: isLoading = $updateJobMutation.isPending;
   $: error = $updateJobMutation.error;
+  $: errorMessage = getPopoverErrorMessage(error);
 
   // Local form state
   let localPriority = '';
@@ -92,190 +99,131 @@
   }
 </script>
 
-<div class="schedule-priority-popover">
-  <button 
-    type="button"
-    class="calendar-button"
-    use:popover.button
+<BasePopoverButton
+  bind:popover
+  buttonClass="schedule-priority-popover"
+  panelClass="schedule-panel"
+  position="bottom-right"
+  let:isExpanded
+>
+  <CircularButton
+    slot="trigger"
+    variant="default"
+    size="normal"
     title="Schedule and Priority"
   >
     <img src="/icons/calendar-add.svg" alt="Schedule" class="calendar-icon" />
-  </button>
+  </CircularButton>
 
-  {#if $popover.expanded}
-    <div 
-      class="schedule-panel"
-      use:popover.panel
-      in:fade={{ duration: 0 }}
-      out:fade={{ duration: 150 }}
-    >
-      <div class="schedule-content">
-        <h3 class="schedule-title">Schedule & Priority</h3>
-        
-        {#if error}
-          <div class="error-message">
-            Failed to update - please try again
-          </div>
-        {/if}
+  <div class="schedule-content" slot="content">
+    <h3 class="schedule-title">Schedule & Priority</h3>
+    
+    {#if errorMessage}
+      <ErrorMessage 
+        message={errorMessage}
+        variant="popover"
+        size="small"
+      />
+    {/if}
 
-        <form class="schedule-form" on:submit|preventDefault={handleSave}>
-          <!-- Priority Section -->
-          <div class="form-section">
-            <label class="form-label" for="priority-select-{jobId}">Priority</label>
-            <select 
-              id="priority-select-{jobId}"
-              bind:value={localPriority}
-              disabled={isLoading}
-              class="form-select"
-            >
-              {#each priorityOptions as option}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </div>
-
-          <!-- Schedule Section -->
-          <div class="form-section">
-            <h4 class="section-title">Schedule</h4>
-            
-            <div class="date-time-group">
-              <label class="form-label" for="start-date-{jobId}">Start Date</label>
-              <input 
-                id="start-date-{jobId}"
-                type="date"
-                bind:value={localStartDate}
-                disabled={isLoading}
-                class="form-input"
-              />
-            </div>
-
-            <div class="date-time-group">
-              <label class="form-label" for="start-time-{jobId}">Start Time</label>
-              <input 
-                id="start-time-{jobId}"
-                type="time"
-                bind:value={localStartTime}
-                disabled={isLoading}
-                class="form-input"
-              />
-            </div>
-
-            <div class="date-time-group">
-              <label class="form-label" for="due-date-{jobId}">Due Date</label>
-              <input 
-                id="due-date-{jobId}"
-                type="date"
-                bind:value={localDueDate}
-                disabled={isLoading}
-                class="form-input"
-              />
-            </div>
-
-            <div class="date-time-group">
-              <label class="form-label" for="due-time-{jobId}">Due Time</label>
-              <input 
-                id="due-time-{jobId}"
-                type="time"
-                bind:value={localDueTime}
-                disabled={isLoading}
-                class="form-input"
-              />
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="action-buttons">
-            <button 
-              type="button" 
-              class="cancel-button"
-              disabled={isLoading}
-              on:click={handleCancel}
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              class="save-button"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </form>
+    <form class="schedule-form" on:submit|preventDefault={handleSave}>
+      <!-- Priority Section -->
+      <div class="form-section">
+        <label class="form-label" for="priority-select-{jobId}">Priority</label>
+        <FormSelect
+          id="priority-select-{jobId}"
+          bind:value={localPriority}
+          options={priorityOptions}
+          disabled={isLoading}
+          size="small"
+        />
       </div>
-    </div>
-  {/if}
-</div>
+
+      <!-- Schedule Section -->
+      <div class="form-section">
+        <h4 class="section-title">Schedule</h4>
+        
+        <div class="date-time-group">
+          <label class="form-label" for="start-date-{jobId}">Start Date</label>
+          <FormInput
+            id="start-date-{jobId}"
+            type="date"
+            bind:value={localStartDate}
+            disabled={isLoading}
+            size="small"
+          />
+        </div>
+
+        <div class="date-time-group">
+          <label class="form-label" for="start-time-{jobId}">Start Time</label>
+          <FormInput
+            id="start-time-{jobId}"
+            type="time"
+            bind:value={localStartTime}
+            disabled={isLoading}
+            size="small"
+          />
+        </div>
+
+        <div class="date-time-group">
+          <label class="form-label" for="due-date-{jobId}">Due Date</label>
+          <FormInput
+            id="due-date-{jobId}"
+            type="date"
+            bind:value={localDueDate}
+            disabled={isLoading}
+            size="small"
+          />
+        </div>
+
+        <div class="date-time-group">
+          <label class="form-label" for="due-time-{jobId}">Due Time</label>
+          <FormInput
+            id="due-time-{jobId}"
+            type="time"
+            bind:value={localDueTime}
+            disabled={isLoading}
+            size="small"
+          />
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button 
+          type="button" 
+          class="cancel-button"
+          disabled={isLoading}
+          on:click={handleCancel}
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit" 
+          class="save-button"
+          disabled={isLoading}
+        >
+          {#if isLoading}
+            <LoadingIndicator type="text" message="Saving..." size="small" inline />
+          {:else}
+            Save
+          {/if}
+        </button>
+      </div>
+    </form>
+  </div>
+</BasePopoverButton>
 
 <style>
-  .schedule-priority-popover {
-    position: relative;
-  }
-
-  .calendar-button {
-    width: 36px;
-    height: 36px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    padding: 0;
-  }
-
-  .calendar-button:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
-
   .calendar-icon {
     width: 20px;
     height: 20px;
     opacity: 0.7;
   }
 
-  .schedule-panel {
-    position: absolute;
-    top: calc(100% + 12px);
-    right: 0;
-    width: 280px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xl);
-    z-index: var(--z-popover);
-  }
-
-  /* Arrow/tail pointing up to the button */
-  .schedule-panel::before {
-    content: '';
-    position: absolute;
-    top: -12px;
-    right: 20px;
-    width: 0;
-    height: 0;
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 12px solid var(--border-primary);
-  }
-
-  .schedule-panel::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    right: 22px;
-    width: 0;
-    height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid var(--bg-secondary);
-  }
-
   .schedule-content {
     padding: 20px;
+    width: 280px;
   }
 
   .schedule-title {
@@ -283,16 +231,6 @@
     margin: 0 0 16px 0;
     font-size: 16px;
     font-weight: 600;
-  }
-
-  .error-message {
-    color: var(--accent-red);
-    font-size: 12px;
-    margin-bottom: 12px;
-    text-align: center;
-    padding: 8px;
-    background-color: var(--bg-error, rgba(239, 68, 68, 0.1));
-    border-radius: 6px;
   }
 
   .schedule-form {
@@ -330,29 +268,6 @@
     letter-spacing: 0.5px;
   }
 
-  .form-input,
-  .form-select {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 13px;
-    color: var(--text-primary);
-    transition: border-color 0.15s ease;
-  }
-
-  .form-input:focus,
-  .form-select:focus {
-    outline: none;
-    border-color: var(--accent-blue);
-  }
-
-  .form-input:disabled,
-  .form-select:disabled {
-    opacity: 0.6;
-    pointer-events: none;
-  }
-
   .action-buttons {
     display: flex;
     gap: 8px;
@@ -368,6 +283,9 @@
     font-weight: 500;
     transition: all 0.15s ease;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .cancel-button {
@@ -399,40 +317,16 @@
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
-    .schedule-panel {
+    .schedule-content {
       width: 260px;
-      right: -20px;
-    }
-
-    .schedule-panel::before {
-      right: 40px;
-    }
-
-    .schedule-panel::after {
-      right: 42px;
     }
   }
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
-    .calendar-button,
-    .form-input,
-    .form-select,
     .cancel-button,
     .save-button {
       transition: none;
-    }
-  }
-
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    .calendar-button {
-      border-width: 2px;
-    }
-
-    .form-input,
-    .form-select {
-      border-width: 2px;
     }
   }
 </style>
