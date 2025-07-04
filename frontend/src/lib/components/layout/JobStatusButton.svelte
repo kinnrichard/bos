@@ -69,16 +69,15 @@
       options={availableStatuses}
       loading={loading}
       onOptionClick={handleStatusChange}
+      isSelected={(option) => option.value === currentStatus}
     >
       <svelte:fragment slot="option-content" let:option>
-        {@const isSelected = option.value === currentStatus}
-        
         <span class="status-emoji popover-option-left-content">{option.emoji}</span>
-        <span class="popover-option-main-label" class:selected={isSelected}>{option.label}</span>
+        <span class="popover-option-main-label">{option.label}</span>
         
         <!-- Selection indicator in same reactive scope -->
         <div class="popover-checkmark-container">
-          {#if isSelected}
+          {#if option.value === currentStatus}
             <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
           {/if}
         </div>

@@ -70,22 +70,26 @@ export function createOptimisticMutation<TData, TVariables, TError = Error>(
       },
 
       onSuccess: (data: TData, variables: TVariables) => {
-        // Invalidate relevant queries
-        const mainQueryKey = config.queryKey(variables);
-        queryClient.invalidateQueries({ queryKey: mainQueryKey });
+        // Defer cache invalidation to prevent hover flicker during UI interactions
+        // This allows ongoing CSS transitions to complete before triggering re-renders
+        requestAnimationFrame(() => {
+          // Invalidate relevant queries
+          const mainQueryKey = config.queryKey(variables);
+          queryClient.invalidateQueries({ queryKey: mainQueryKey });
 
-        // Invalidate additional queries if specified
-        if (config.invalidateKeys) {
-          const additionalKeys = config.invalidateKeys(variables);
-          additionalKeys.forEach(key => {
-            queryClient.invalidateQueries({ queryKey: key });
-          });
-        }
+          // Invalidate additional queries if specified
+          if (config.invalidateKeys) {
+            const additionalKeys = config.invalidateKeys(variables);
+            additionalKeys.forEach(key => {
+              queryClient.invalidateQueries({ queryKey: key });
+            });
+          }
 
-        // Call custom success handler
+          console.log('Mutation successful, invalidated queries:', { mainQueryKey });
+        });
+
+        // Call custom success handler immediately (not deferred)
         config.onSuccess?.(data, variables);
-        
-        console.log('Mutation successful, invalidated queries:', { mainQueryKey });
       }
     });
   };

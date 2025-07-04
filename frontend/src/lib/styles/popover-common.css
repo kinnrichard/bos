@@ -58,3 +58,9 @@
   line-height: 1.2;
   flex: 1;
 }
+
+/* Selected item styling - blue text for active selections */
+.option-item.selected .popover-option-main-label {
+  color: var(--accent-blue);
+  font-weight: 600;
+}

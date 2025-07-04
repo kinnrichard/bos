@@ -6,10 +6,19 @@
   export let loading: boolean = false;
   export let maxHeight: string = 'min(400px, 50vh)';
   export let onOptionClick: (option: any) => void;
+  export let isSelected: (option: any) => boolean = () => false;
 
-  function handleOptionClick(option: any) {
+  function handleOptionClick(option: any, event: MouseEvent) {
     if (loading) return;
-    onOptionClick(option);
+    
+    // Prevent event from bubbling and interfering with hover state
+    event.stopPropagation();
+    
+    // Use requestAnimationFrame to defer the callback
+    // This preserves hover state during the click handling
+    requestAnimationFrame(() => {
+      onOptionClick(option);
+    });
   }
 </script>
 
@@ -18,8 +27,9 @@
     <button 
       type="button"
       class="option-item"
+      class:selected={isSelected(option)}
       disabled={loading}
-      on:click={() => handleOptionClick(option)}
+      on:click={(event) => handleOptionClick(option, event)}
     >
       <slot name="option-content" {option} />
     </button>
@@ -45,6 +55,11 @@
     text-align: left;
     width: 100%;
     cursor: pointer;
+    /* Hardware acceleration to prevent transition interruption */
+    will-change: background-color;
+    transform: translateZ(0);
+    /* Stabilize composite layer to prevent flicker during DOM updates */
+    backface-visibility: hidden;
   }
 
   .option-item:hover:not(:disabled) {

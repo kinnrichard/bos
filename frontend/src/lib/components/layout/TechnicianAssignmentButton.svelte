@@ -8,6 +8,7 @@
   import { debugTechAssignment } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage, validateUserData, createIdSet } from '$lib/utils/popover-utils';
+  import { tick } from 'svelte';
   import '$lib/styles/popover-common.css';
 
   export let jobId: string;
@@ -38,17 +39,22 @@
   let localSelectedIds: Set<string> = new Set();
   let optimisticTechnicians: User[] = [];
   
-  // Consolidated reactive logic to eliminate race conditions
+  // Sync with server data only when server data actually changes (not on every local update)
+  // This prevents unnecessary re-renders that cause hover flicker
+  let lastServerDataHash = '';
   $: {
-    // Always sync localSelectedIds with TanStack Query cache data
-    // Since we now have proper optimistic updates, the cache always contains correct data
-    if (assignedTechnicians?.length >= 0) {
-      const serverIds = new Set(assignedTechnicians.map(t => t?.id).filter(Boolean));
-      localSelectedIds = serverIds;
-    }
+    const currentServerIds = assignedTechnicians?.map(t => t?.id).filter(Boolean) || [];
+    const currentHash = currentServerIds.sort().join(',');
     
-    // Always derive optimisticTechnicians from localSelectedIds using user lookup
-    // This ensures consistent data structure and real-time UI updates
+    // Only update localSelectedIds if server data actually changed
+    if (currentHash !== lastServerDataHash) {
+      lastServerDataHash = currentHash;
+      localSelectedIds = new Set(currentServerIds);
+    }
+  }
+  
+  // Derive optimistic display data separately - this only updates when users list or localSelectedIds change
+  $: {
     const userList = $usersQuery.data || [];
     optimisticTechnicians = Array.from(localSelectedIds)
       .map(id => userList.find(user => user.id === id))
@@ -56,7 +62,7 @@
   }
 
   // Handle checkbox changes - optimistic updates, no loading blocking
-  function handleUserToggle(user: User, checked: boolean) {
+  async function handleUserToggle(user: User, checked: boolean) {
     // Remove loading guard to allow optimistic updates
     
     // Ensure user has required data
@@ -79,6 +85,10 @@
       newSelectedIds.delete(user.id);
     }
     localSelectedIds = newSelectedIds;
+    
+    // Wait for next tick to batch reactive updates before triggering mutation
+    // This prevents multiple render cycles that could interrupt hover states
+    await tick();
     
     const technicianIds = Array.from(newSelectedIds);
     
@@ -142,16 +152,15 @@
     {:else}
       <PopoverOptionList
         options={availableUsers.filter(validateUserData)}
-        loading={loading}
+        loading={$usersQuery.isLoading}
         maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
         onOptionClick={(user) => {
           const isCurrentlySelected = localSelectedIds.has(user.id);
           handleUserToggle(user, !isCurrentlySelected);
         }}
+        isSelected={(option) => localSelectedIds.has(option.id)}
       >
         <svelte:fragment slot="option-content" let:option>
-          {@const isSelected = localSelectedIds.has(option.id)}
-          
           <div class="technician-avatar popover-option-left-content">
             <UserAvatar user={option} size="xs" />
           </div>
@@ -159,7 +168,7 @@
           
           <!-- Checkmark in same reactive scope for immediate updates -->
           <div class="popover-checkmark-container">
-            {#if isSelected}
+            {#if localSelectedIds.has(option.id)}
               <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
             {/if}
           </div>
