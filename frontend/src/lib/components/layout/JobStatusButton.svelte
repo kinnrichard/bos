@@ -134,7 +134,7 @@
               <span class="status-emoji">{status.emoji}</span>
               <span class="status-label">{status.label}</span>
               {#if status.value === currentStatus}
-                <span class="current-indicator">✓</span>
+                <img src="/icons/checkmark.svg" alt="Selected" class="current-indicator" />
               {/if}
             </button>
           {/each}
@@ -296,9 +296,10 @@
   }
 
   .current-indicator {
-    font-size: 12px;
-    color: white;
+    width: 14px;
+    height: 14px;
     flex-shrink: 0;
+    filter: brightness(0) invert(1); /* Make white */
   }
 
   .loading-indicator {

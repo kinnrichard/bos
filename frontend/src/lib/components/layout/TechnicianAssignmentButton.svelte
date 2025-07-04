@@ -144,19 +144,23 @@
         {#if $usersQuery.isLoading}
           <div class="loading-indicator">Loading users...</div>
         {:else}
-          <div class="user-checkboxes">
+          <div class="technician-options">
             {#each availableUsers as user}
               {#if user?.id && user?.attributes?.name}
-                <label class="user-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={localSelectedIds.has(user.id)}
-                    on:change={(e) => handleUserToggle(user, e.currentTarget.checked)}
-                    class="checkbox-input" 
-                  />
-                  <UserAvatar {user} size="small" />
-                  <span class="user-name">{user.attributes.name}</span>
-                </label>
+                <button 
+                  class="technician-option" 
+                  type="button"
+                  aria-pressed={localSelectedIds.has(user.id)}
+                  on:click={() => handleUserToggle(user, !localSelectedIds.has(user.id))}
+                >
+                  <div class="technician-avatar">
+                    <UserAvatar {user} size="small" />
+                  </div>
+                  <span class="technician-name">{user.attributes.name}</span>
+                  {#if localSelectedIds.has(user.id)}
+                    <img src="/icons/checkmark.svg" alt="Selected" class="technician-indicator" />
+                  {/if}
+                </button>
               {/if}
             {/each}
           </div>
@@ -286,38 +290,38 @@
     text-align: center;
   }
 
-  .user-checkboxes {
+  /* Technician options styling - matching job status format */
+  .technician-options {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 2px;
     max-height: min(400px, 50vh);
     overflow-y: auto;
   }
 
-  /* Removed loading styles for optimistic UX */
-
-  .user-checkbox {
+  .technician-option {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 0;
-    cursor: pointer;
+    padding: 8px 12px;
+    background: none;
+    border: none;
     border-radius: 4px;
+    cursor: pointer;
     transition: background-color 0.15s ease;
+    text-align: left;
+    width: 100%;
   }
 
-  .user-checkbox:hover {
+  .technician-option:hover {
     background-color: var(--bg-tertiary);
   }
 
-  .checkbox-input {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--accent-blue);
+  .technician-avatar {
     flex-shrink: 0;
   }
 
-  .user-name {
+  .technician-name {
     font-size: 13px;
     color: var(--text-secondary);
     line-height: 1.2;
@@ -326,6 +330,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
+  }
+
+  .technician-indicator {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    /* No filter - keep natural color for regular checkmark */
   }
 
   .loading-indicator {
