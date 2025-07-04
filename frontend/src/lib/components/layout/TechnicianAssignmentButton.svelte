@@ -228,7 +228,9 @@
     top: calc(100% + 12px);
     left: 50%;
     transform: translateX(-50%);
-    width: 200px;
+    min-width: 200px;
+    max-width: 320px;
+    width: max-content;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-lg);
@@ -285,7 +287,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 200px;
+    max-height: min(400px, 50vh);
     overflow-y: auto;
   }
 
@@ -320,6 +322,10 @@
     color: var(--text-secondary);
     line-height: 1.2;
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
   }
 
   .loading-indicator {
@@ -332,7 +338,12 @@
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .assignment-panel {
-      width: 180px;
+      min-width: 180px;
+      max-width: 280px;
+    }
+    
+    .user-checkboxes {
+      max-height: min(300px, 40vh);
     }
   }
 
