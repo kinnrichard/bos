@@ -157,9 +157,11 @@
                     <UserAvatar {user} size="xs" />
                   </div>
                   <span class="technician-name">{user.attributes.name}</span>
-                  {#if localSelectedIds.has(user.id)}
-                    <img src="/icons/checkmark.svg" alt="Selected" class="technician-indicator" />
-                  {/if}
+                  <div class="technician-checkmark-area">
+                    {#if localSelectedIds.has(user.id)}
+                      <img src="/icons/checkmark.svg" alt="Selected" class="technician-indicator" />
+                    {/if}
+                  </div>
                 </button>
               {/if}
             {/each}
@@ -272,12 +274,12 @@
   }
 
   .assignment-content {
-    padding: 16px;
+    padding: 12px;
   }
 
   .assignment-title {
     color: var(--text-primary);
-    margin: 0 0 12px 0;
+    margin: 0 0 6px 0;
     font-size: 14px;
     font-weight: 600;
   }
@@ -300,7 +302,6 @@
   .technician-option {
     display: flex;
     align-items: center;
-    gap: 8px;
     padding: 6px 12px;
     background: none;
     border: none;
@@ -316,6 +317,7 @@
 
   .technician-avatar {
     flex-shrink: 0;
+    margin-right: 8px;
   }
 
   .technician-name {
@@ -327,12 +329,21 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
+    margin-right: 14px;
+  }
+
+  .technician-checkmark-area {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .technician-indicator {
     width: 14px;
     height: 14px;
-    flex-shrink: 0;
     /* No filter - keep natural color for regular checkmark */
   }
 
