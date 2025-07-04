@@ -1,27 +1,30 @@
 <script lang="ts">
-  import { createPopover } from 'svelte-headlessui';
-  import { fade } from 'svelte/transition';
+  import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
+  import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import { useQueryClient } from '@tanstack/svelte-query';
   import { currentJob, layoutActions } from '$lib/stores/layout';
   import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
   import { jobsService } from '$lib/api/jobs';
+  import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
+  import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
 
-  const popover = createPopover();
+  let popover: any;
   const queryClient = useQueryClient();
 
   // State
   let isLoading = false;
   let error = '';
+  $: errorMessage = getPopoverErrorMessage(error);
 
   // All available job statuses with their display information
   const availableStatuses = [
-    { value: 'open', label: 'Open', emoji: '⚫' },
-    { value: 'in_progress', label: 'In Progress', emoji: '🟢' },
-    { value: 'paused', label: 'Paused', emoji: '⏸️' },
-    { value: 'waiting_for_customer', label: 'Waiting for Customer', emoji: '⏳' },
-    { value: 'waiting_for_scheduled_appointment', label: 'Scheduled', emoji: '📅' },
-    { value: 'successfully_completed', label: 'Completed', emoji: '✅' },
-    { value: 'cancelled', label: 'Cancelled', emoji: '❌' }
+    { id: 'open', value: 'open', label: 'Open', emoji: '⚫' },
+    { id: 'in_progress', value: 'in_progress', label: 'In Progress', emoji: '🟢' },
+    { id: 'paused', value: 'paused', label: 'Paused', emoji: '⏸️' },
+    { id: 'waiting_for_customer', value: 'waiting_for_customer', label: 'Waiting for Customer', emoji: '⏳' },
+    { id: 'waiting_for_scheduled_appointment', value: 'waiting_for_scheduled_appointment', label: 'Scheduled', emoji: '📅' },
+    { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed', emoji: '✅' },
+    { id: 'cancelled', value: 'cancelled', label: 'Cancelled', emoji: '❌' }
   ];
 
   // Get job status emoji with comprehensive null checks
@@ -29,8 +32,14 @@
   $: currentStatus = $currentJob?.attributes?.status || 'open';
 
   // Handle status change with optimistic updates
-  async function handleStatusChange(newStatus: string) {
+  function handleStatusChange(statusOption: any, selected: boolean) {
+    const newStatus = statusOption.value;
     if (!$currentJob || newStatus === currentStatus) return;
+    
+    performStatusUpdate(newStatus);
+  }
+
+  async function performStatusUpdate(newStatus: string) {
 
     const originalStatus = $currentJob.attributes.status;
     
@@ -100,124 +109,52 @@
   }
 </script>
 
-<div class="job-status-popover">
-  <button 
-    class="job-status-button"
-    use:popover.button
-    title="Job Status"
-  >
+<BasePopoverButton 
+  bind:popover
+  title="Job Status"
+  error={errorMessage}
+  loading={isLoading}
+  panelWidth={POPOVER_CONSTANTS.DEFAULT_PANEL_WIDTH}
+  panelPosition="center"
+  topOffset={POPOVER_CONSTANTS.ALTERNATIVE_TOP_OFFSET}
+  contentPadding={POPOVER_CONSTANTS.DEFAULT_CONTENT_PADDING}
+>
+  <svelte:fragment slot="button-content">
     <span class="job-status-emoji">{jobStatusEmoji}</span>
-  </button>
+  </svelte:fragment>
 
-  {#if $popover.expanded}
-    <div 
-      class="job-status-panel"
-      use:popover.panel
-      in:fade={{ duration: 0 }}
-      out:fade={{ duration: 150 }}
+  <svelte:fragment slot="panel-content" let:error let:loading>
+    <h3 class="status-title">Job Status</h3>
+    
+    {#if error}
+      <div class="error-message">{error}</div>
+    {/if}
+
+    <PopoverOptionList
+      options={availableStatuses}
+      selectedIds={new Set()}
+      loading={loading}
+      onOptionClick={handleStatusChange}
+      showCheckmarks={true}
+      singleSelect={true}
+      currentSelection={currentStatus}
     >
-      <div class="job-status-content">
-        <h3 class="status-title">Job Status</h3>
-        
-        {#if error}
-          <div class="error-message">{error}</div>
-        {/if}
+      <svelte:fragment slot="option-content" let:option let:selected>
+        <span class="status-emoji">{option.emoji}</span>
+        <span class="status-label">{option.label}</span>
+      </svelte:fragment>
+    </PopoverOptionList>
 
-        <div class="status-options" class:loading={isLoading}>
-          {#each availableStatuses as status}
-            <button
-              class="status-option"
-              class:current={status.value === currentStatus}
-              disabled={isLoading}
-              on:click={() => handleStatusChange(status.value)}
-            >
-              <span class="status-emoji">{status.emoji}</span>
-              <span class="status-label">{status.label}</span>
-              {#if status.value === currentStatus}
-                <img src="/icons/checkmark.svg" alt="Selected" class="current-indicator" />
-              {/if}
-            </button>
-          {/each}
-        </div>
-
-        {#if isLoading}
-          <div class="loading-indicator">Updating status...</div>
-        {/if}
-      </div>
-    </div>
-  {/if}
-</div>
+    {#if loading}
+      <div class="loading-indicator">Updating status...</div>
+    {/if}
+  </svelte:fragment>
+</BasePopoverButton>
 
 <style>
-  .job-status-popover {
-    position: relative;
-  }
-
-  .job-status-button {
-    width: 36px;
-    height: 36px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-
-  .job-status-button:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
-
   .job-status-emoji {
     font-size: 18px;
     line-height: 1;
-  }
-
-  .job-status-panel {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    width: 240px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xl);
-    z-index: var(--z-popover);
-  }
-
-  /* Arrow/tail pointing up to the button */
-  .job-status-panel::before {
-    content: '';
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 12px solid var(--border-primary);
-  }
-
-  .job-status-panel::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid var(--bg-secondary);
-  }
-
-  .job-status-content {
-    padding: 16px;
   }
 
   .status-title {
@@ -234,50 +171,11 @@
     text-align: center;
   }
 
-  .status-options {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .status-options.loading {
-    opacity: 0.6;
-    pointer-events: none;
-  }
-
-  .status-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 12px;
-    background: none;
-    border: none;
-    border-radius: 8px;
-    text-align: left;
-    width: 100%;
-  }
-
-  .status-option:hover {
-    background-color: var(--bg-tertiary);
-  }
-
-  .status-option.current {
-    background-color: var(--accent-blue);
-    color: white;
-  }
-
-  .status-option.current:hover {
-    background-color: var(--accent-blue-hover);
-  }
-
-  .status-option:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
   .status-emoji {
     font-size: 16px;
     line-height: 1;
     flex-shrink: 0;
+    margin-right: 8px;
   }
 
   .status-label {
@@ -287,28 +185,10 @@
     flex: 1;
   }
 
-  .status-option.current .status-label {
-    color: white;
-  }
-
-  .current-indicator {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    filter: brightness(0) invert(1); /* Make white */
-  }
-
   .loading-indicator {
     text-align: center;
     font-size: 12px;
     color: var(--text-tertiary);
     margin-top: 8px;
-  }
-
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .job-status-panel {
-      width: 220px;
-    }
   }
 </style>

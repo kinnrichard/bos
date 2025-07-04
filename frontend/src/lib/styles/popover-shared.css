@@ -1,0 +1,176 @@
+/* Shared styles for popover components */
+
+/* Common title styling */
+.popover-title {
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.popover-title.large {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+/* Common error message styling */
+.popover-error {
+  color: var(--accent-red);
+  font-size: 12px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.popover-error.with-background {
+  padding: 8px;
+  background-color: var(--bg-error, rgba(239, 68, 68, 0.1));
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+/* Common loading indicator styling */
+.popover-loading {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+}
+
+/* Loading state for option containers */
+.popover-options-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Common form styles for popovers */
+.popover-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.popover-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popover-form-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.popover-section-title {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Common form input styles */
+.popover-input,
+.popover-select {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: border-color 0.15s ease;
+}
+
+.popover-input:focus,
+.popover-select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.popover-input:disabled,
+.popover-select:disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Common button group styles */
+.popover-button-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.popover-button-secondary,
+.popover-button-primary {
+  flex: 1;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.popover-button-secondary {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+}
+
+.popover-button-secondary:hover:not(:disabled) {
+  background-color: var(--bg-quaternary);
+  color: var(--text-primary);
+}
+
+.popover-button-primary {
+  background-color: var(--accent-blue);
+  border: 1px solid var(--accent-blue);
+  color: white;
+}
+
+.popover-button-primary:hover:not(:disabled) {
+  background-color: var(--accent-blue-dark, #0066cc);
+}
+
+.popover-button-secondary:disabled,
+.popover-button-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Common responsive adjustments */
+@media (max-width: 768px) {
+  .popover-title {
+    font-size: 13px;
+  }
+  
+  .popover-title.large {
+    font-size: 15px;
+  }
+}
+
+/* Common accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .popover-input,
+  .popover-select,
+  .popover-button-secondary,
+  .popover-button-primary {
+    transition: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .popover-input,
+  .popover-select {
+    border-width: 2px;
+  }
+  
+  .popover-button-secondary,
+  .popover-button-primary {
+    border-width: 2px;
+  }
+}

@@ -1,18 +1,20 @@
 <script lang="ts">
-  import { createPopover } from 'svelte-headlessui';
-  import { fade } from 'svelte/transition';
+  import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
+  import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { useUsersQuery, useUserLookup } from '$lib/api/hooks/users';
   import { useJobQuery, useUpdateJobTechniciansMutation } from '$lib/api/hooks/jobs';
   import type { User } from '$lib/types/job';
   import { debugTechAssignment } from '$lib/utils/debug';
+  import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
+  import { getPopoverErrorMessage, validateUserData, createIdSet } from '$lib/utils/popover-utils';
 
   export let jobId: string;
   
   // Optional props to provide initial data while job query loads
   export let initialTechnicians: Array<{id: string}> = [];
 
-  const popover = createPopover();
+  let popover: any;
   
   // Use TanStack Query for all data - single source of truth
   const usersQuery = useUsersQuery();
@@ -29,7 +31,7 @@
   
   $: isLoading = $updateTechniciansMutation.isPending;
   $: error = $updateTechniciansMutation.error;
-  $: errorCode = error && (error as any).code;
+  $: errorMessage = getPopoverErrorMessage(error);
   
   // Local state for immediate UI responsiveness (optimistic updates)
   let localSelectedIds: Set<string> = new Set();
@@ -55,7 +57,7 @@
     // Remove loading guard to allow optimistic updates
     
     // Ensure user has required data
-    if (!user?.id || !user?.attributes?.name) {
+    if (!validateUserData(user)) {
       debugTechAssignment('Invalid user data, ignoring click: %o', user);
       return;
     }
@@ -95,14 +97,18 @@
   $: hasAssignments = optimisticTechnicians.length > 0;
 </script>
 
-<div class="technician-assignment-popover">
-  <button 
-    type="button"
-    class="assignment-button"
-    class:has-assignments={hasAssignments}
-    use:popover.button
-    title={hasAssignments ? `Technicians: ${optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Technicians'}
-  >
+<BasePopoverButton 
+  bind:popover
+  title={hasAssignments ? `Technicians: ${optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Technicians'}
+  error={errorMessage}
+  loading={isLoading}
+  panelWidth="max-content"
+  panelPosition="center"
+  topOffset={POPOVER_CONSTANTS.DEFAULT_TOP_OFFSET}
+  contentPadding={POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING}
+  buttonClass={hasAssignments ? 'has-assignments' : ''}
+>
+  <svelte:fragment slot="button-content">
     {#if hasAssignments}
       <!-- Show assigned technician avatars -->
       <div class="assigned-avatars">
@@ -115,94 +121,49 @@
       </div>
     {:else}
       <!-- Show add-person icon when no assignments -->
-      <img src="/icons/add-person.svg" alt="Assign technicians" class="add-person-icon" />
+      <img src={POPOVER_CONSTANTS.ADD_PERSON_ICON} alt="Assign technicians" class="add-person-icon" />
     {/if}
-  </button>
+  </svelte:fragment>
 
-  {#if $popover.expanded}
-    <div 
-      class="assignment-panel"
-      use:popover.panel
-      in:fade={{ duration: 0 }}
-      out:fade={{ duration: 150 }}
-    >
-      <div class="assignment-content">
-        <h3 class="assignment-title">Assigned To</h3>
-        
-        {#if $usersQuery.isError}
-          <div class="error-message">Failed to load users</div>
-        {:else if error}
-          <div class="error-message">
-            {#if errorCode === 'INVALID_CSRF_TOKEN'}
-              Session expired - please try again
-            {:else}
-              Failed to update assignment - please try again
-            {/if}
+  <svelte:fragment slot="panel-content" let:error let:loading>
+    <h3 class="assignment-title">Assigned To</h3>
+    
+    {#if $usersQuery.isError}
+      <div class="error-message">{POPOVER_ERRORS.LOAD_USERS}</div>
+    {:else if error}
+      <div class="error-message">{error}</div>
+    {/if}
+
+    {#if $usersQuery.isLoading}
+      <div class="loading-indicator">Loading users...</div>
+    {:else}
+      <PopoverOptionList
+        options={availableUsers.filter(validateUserData)}
+        selectedIds={localSelectedIds}
+        loading={loading}
+        maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
+        onOptionClick={(user, selected) => handleUserToggle(user, selected)}
+        showCheckmarks={true}
+        singleSelect={false}
+      >
+        <svelte:fragment slot="option-content" let:option>
+          <div class="technician-avatar">
+            <UserAvatar user={option} size="xs" />
           </div>
-        {/if}
-
-        {#if $usersQuery.isLoading}
-          <div class="loading-indicator">Loading users...</div>
-        {:else}
-          <div class="technician-options">
-            {#each availableUsers as user}
-              {#if user?.id && user?.attributes?.name}
-                <button 
-                  class="technician-option" 
-                  type="button"
-                  aria-pressed={localSelectedIds.has(user.id)}
-                  on:click={() => handleUserToggle(user, !localSelectedIds.has(user.id))}
-                >
-                  <div class="technician-avatar">
-                    <UserAvatar {user} size="xs" />
-                  </div>
-                  <span class="technician-name">{user.attributes.name}</span>
-                  <div class="technician-checkmark-area">
-                    {#if localSelectedIds.has(user.id)}
-                      <img src="/icons/checkmark.svg" alt="Selected" class="technician-indicator" />
-                    {/if}
-                  </div>
-                </button>
-              {/if}
-            {/each}
-          </div>
-        {/if}
-
-        <!-- Removed 'Updating...' loading indicator for optimistic UX -->
-      </div>
-    </div>
-  {/if}
-</div>
+          <span class="technician-name">{option.attributes.name}</span>
+        </svelte:fragment>
+      </PopoverOptionList>
+    {/if}
+  </svelte:fragment>
+</BasePopoverButton>
 
 <style>
-  .technician-assignment-popover {
-    position: relative;
-  }
-
-  .assignment-button {
-    width: 36px;
-    height: 36px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    position: relative;
-    padding: 0;
-  }
-
-  .assignment-button:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
-
-  .assignment-button.has-assignments {
-    border-radius: 18px;
-    width: auto;
-    min-width: 36px;
-    padding: 0 6px;
+  /* Override BasePopoverButton styles for dynamic button sizing */
+  :global(.popover-button.has-assignments) {
+    border-radius: 18px !important;
+    width: auto !important;
+    min-width: 36px !important;
+    padding: 0 6px !important;
   }
 
   .assigned-avatars {
@@ -231,52 +192,7 @@
     opacity: 0.7;
   }
 
-  .assignment-panel {
-    position: absolute;
-    top: calc(100% + 12px);
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 200px;
-    max-width: 320px;
-    width: max-content;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xl);
-    z-index: var(--z-popover);
-  }
-
-  /* Arrow/tail pointing up to the button */
-  .assignment-panel::before {
-    content: '';
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 12px solid var(--border-primary);
-  }
-
-  .assignment-panel::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid var(--bg-secondary);
-  }
-
-  .assignment-content {
-    padding: 12px;
-  }
-
+  /* Panel content styling */
   .assignment-title {
     color: var(--text-primary);
     margin: 0 0 6px 0;
@@ -291,30 +207,14 @@
     text-align: center;
   }
 
-  /* Technician options styling - matching job status format */
-  .technician-options {
-    display: flex;
-    flex-direction: column;
-    max-height: min(400px, 50vh);
-    overflow-y: auto;
+  .loading-indicator {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 8px;
   }
 
-  .technician-option {
-    display: flex;
-    align-items: center;
-    padding: 6px 12px;
-    background: none;
-    border: none;
-    border-radius: 8px;
-    transition: background-color 0.15s ease;
-    text-align: left;
-    width: 100%;
-  }
-
-  .technician-option:hover {
-    background-color: var(--bg-tertiary);
-  }
-
+  /* Option content styling for the PopoverOptionList slot */
   .technician-avatar {
     flex-shrink: 0;
     margin-right: 8px;
@@ -329,55 +229,5 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
-    margin-right: 14px;
-  }
-
-  .technician-checkmark-area {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .technician-indicator {
-    width: 14px;
-    height: 14px;
-    /* No filter - keep natural color for regular checkmark */
-  }
-
-  .loading-indicator {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-tertiary);
-    margin-top: 8px;
-  }
-
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .assignment-panel {
-      min-width: 180px;
-      max-width: 280px;
-    }
-    
-    .technician-options {
-      max-height: min(300px, 40vh);
-    }
-  }
-
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    .assignment-button {
-      border-width: 2px;
-    }
-  }
-
-  /* Accessibility improvements */
-  @media (prefers-reduced-motion: reduce) {
-    .assignment-button,
-    .technician-option {
-      transition: none;
-    }
   }
 </style>

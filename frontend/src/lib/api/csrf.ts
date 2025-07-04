@@ -295,7 +295,7 @@ class CsrfTokenManager {
 export const csrfTokenManager = new CsrfTokenManager();
 
 // Development debugging helper
-if (import.meta.env.DEV) {
+if (import.meta.env.DEV && typeof window !== 'undefined') {
   // @ts-ignore - Development only
   window.csrfDebug = () => {
     console.log('[CSRF Debug]', csrfTokenManager.getDebugInfo());
