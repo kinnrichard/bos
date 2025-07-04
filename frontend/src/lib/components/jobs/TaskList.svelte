@@ -32,9 +32,11 @@
   let isDragging = false;
   let dragFeedback = '';
   
-  // Drop indicator state
-  let dropIndicatorPosition: number | null = null; // Index where drop line should appear
-  let dropIndicatorType: 'above' | 'below' | null = null;
+  // Drop line state (StackOverflow approach)
+  let overId: string | null = null; // Which task is being hovered over
+  let dropLinePosition: 'top' | 'bottom' | '' = ''; // Position of drop line relative to hovered task
+  let taskRefs: Record<string, HTMLElement> = {}; // Store task element references
+  let dropLineTop = 0; // Dynamic position for drop line
   
   // Multi-select state
   let flatTaskIds: string[] = [];
@@ -125,17 +127,6 @@
     ...item
   }));
   
-  // Debug: Log hierarchical tasks to see the structure
-  $: {
-    if (hierarchicalTasks.length > 0) {
-      console.log('Hierarchical tasks:', hierarchicalTasks);
-      hierarchicalTasks.forEach(task => {
-        if (task.subtasks.length > 0) {
-          console.log(`Task "${task.title}" has ${task.subtasks.length} subtasks:`, task.subtasks);
-        }
-      });
-    }
-  }
   
 
   function toggleTaskExpansion(taskId: string) {
@@ -267,29 +258,62 @@
     // Check if dragging has started
     if (info && info.trigger === TRIGGERS.DRAG_STARTED) {
       isDragging = true;
+      draggedTaskId = info.id;
       
       // Check if we're dragging a selected task with multiple selections
       const draggedItem = info.id;
       isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedItem) && $taskSelection.selectedTaskIds.size > 1;
       multiSelectDragCount = $taskSelection.selectedTaskIds.size;
       
-      // Clear any existing drop indicators
-      dropIndicatorPosition = null;
-      dropIndicatorType = null;
+      // Clear drop line state
+      overId = null;
+      dropLinePosition = '';
     }
     
-    // Handle drop indicator positioning during drag
+    // Handle drop line positioning during active drag (StackOverflow approach)
     if (isDragging && info) {
-      const draggedItem = info.id;
-      const draggedIndex = items.findIndex((item: any) => item.id === draggedItem);
+      const draggedItemId = info.id;
+      const currentItems = items;
       
-      if (draggedIndex >= 0) {
-        // Show drop indicator at the position where the item will be inserted
-        dropIndicatorPosition = draggedIndex;
-        
-        // Determine if we should show indicator above or below
-        // For simplicity, always show below except for the last position
-        dropIndicatorType = draggedIndex < items.length - 1 ? 'below' : 'above';
+      // Find the dragged item's current position in the reordered array
+      const draggedIndex = currentItems.findIndex((item: any) => item.id === draggedItemId);
+      
+      // Find the original position of the dragged item before drag started
+      const originalIndex = dndItems.findIndex((item: any) => item.id === draggedItemId);
+      
+      if (draggedIndex >= 0 && originalIndex >= 0) {
+        // Determine which task we're hovering over and position
+        if (draggedIndex !== originalIndex) {
+          // We're over a different position, show drop line
+          const targetItem = currentItems[draggedIndex];
+          overId = targetItem.id;
+          
+          // Compare original vs new position to determine top/bottom
+          if (originalIndex > draggedIndex) {
+            // Dragging up - show line at top of target
+            dropLinePosition = 'top';
+          } else {
+            // Dragging down - show line at bottom of target  
+            dropLinePosition = 'bottom';
+          }
+          
+          // Calculate the actual position for the drop line
+          setTimeout(() => {
+            const targetElement = taskRefs[targetItem.id];
+            if (targetElement) {
+              const rect = targetElement.getBoundingClientRect();
+              const containerElement = targetElement.closest('.drag-drop-container');
+              if (containerElement) {
+                const containerRect = containerElement.getBoundingClientRect();
+                if (dropLinePosition === 'top') {
+                  dropLineTop = rect.top - containerRect.top;
+                } else {
+                  dropLineTop = rect.bottom - containerRect.top;
+                }
+              }
+            }
+          }, 0);
+        }
       }
     }
     
@@ -304,9 +328,9 @@
     isDragging = false;
     draggedTaskId = null;
     
-    // Clear drop indicators
-    dropIndicatorPosition = null;
-    dropIndicatorType = null;
+    // Clear drop line state
+    overId = null;
+    dropLinePosition = '';
     
     // Reset multi-select drag state
     const wasMultiSelectDrag = isMultiSelectDrag;
@@ -452,54 +476,64 @@
       <p>Tasks will appear here when they are added to this job.</p>
     </div>
   {:else}
-    <div 
-      class="tasks-container"
-      use:dndzone={{
-        items: dndItems,
-        flipDurationMs: 200,
-        type: 'tasks',
-        dragDisabled: false,
-        dropTargetStyle: {}, // Disable default drop styling
-        morphDisabled: true,
-        dropFromOthersDisabled: true,
-        transformDraggedElement: (element) => {
-          // Clean up ghost appearance - remove borders and selection styling
-          element.style.border = 'none';
-          element.style.outline = 'none';
-          element.style.boxShadow = 'none';
-          element.classList.remove('selected');
-          return element;
-        }
-      }}
-      on:consider={handleDndConsider}
-      on:finalize={handleDndFinalize}
-    >
-      {#each dndItems as renderItem, index (renderItem.id)}
-        <div 
-          class="task-item"
-          class:completed={renderItem.task.status === 'successfully_completed'}
-          class:in-progress={renderItem.task.status === 'in_progress'}
-          class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
-          class:has-subtasks={renderItem.hasSubtasks}
-          class:selected={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
-          class:dragging={draggedTaskId === renderItem.task.id}
-          class:multi-select-active={$taskSelection.isMultiSelectActive}
-          class:selection-top={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
-          class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
-          class:selection-bottom={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-bottom'}
-          style="--depth: {renderItem.depth}"
-          data-task-id={renderItem.task.id}
-          role="button"
-          tabindex="0"
-          aria-label="Task: {renderItem.task.title}. {$taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
-          animate:flip={{ duration: flipDurationMs, easing: quintOut }}
-          on:click={(e) => handleTaskClick(e, renderItem.task.id)}
-          on:keydown={(e) => handleTaskKeydown(e, renderItem.task.id)}
-        >
-          <!-- Drop indicator above -->
-          {#if dropIndicatorPosition === index && dropIndicatorType === 'above'}
-            <div class="drop-indicator"></div>
-          {/if}
+    <!-- Container for drop lines and tasks -->
+    <div class="drag-drop-container">
+      <!-- Single absolute positioned drop line -->
+      <div 
+        class="drop-line-absolute"
+        class:visible={overId !== null && dropLinePosition !== ''}
+        style="top: {dropLineTop}px;"
+      ></div>
+      
+      <!-- Draggable tasks container -->
+      <div 
+        class="tasks-container"
+        use:dndzone={{
+          items: dndItems,
+          flipDurationMs: 200,
+          type: 'tasks',
+          dragDisabled: false,
+          dropTargetStyle: {}, // Disable default drop styling
+          morphDisabled: true,
+          dropFromOthersDisabled: true,
+          centreDraggedOnCursor: true,
+          transformDraggedElement: (element) => {
+            // Clean up ghost appearance - remove borders and selection styling
+            element.style.border = 'none';
+            element.style.outline = 'none';
+            element.style.boxShadow = 'none';
+            element.style.background = 'rgba(0, 0, 0, 0.1)';
+            element.style.backdropFilter = 'blur(4px)';
+            element.classList.remove('selected');
+            return element;
+          }
+        }}
+        on:consider={handleDndConsider}
+        on:finalize={handleDndFinalize}
+      >
+        {#each dndItems as renderItem, index (renderItem.id)}
+          
+          <div 
+            bind:this={taskRefs[renderItem.task.id]}
+            class="task-item"
+            class:completed={renderItem.task.status === 'successfully_completed'}
+            class:in-progress={renderItem.task.status === 'in_progress'}
+            class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
+            class:has-subtasks={renderItem.hasSubtasks}
+            class:selected={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
+            class:dragging={draggedTaskId === renderItem.task.id}
+            class:multi-select-active={$taskSelection.isMultiSelectActive}
+            class:selection-top={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
+            class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
+            class:selection-bottom={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-bottom'}
+            style="--depth: {renderItem.depth}"
+            data-task-id={renderItem.task.id}
+            role="button"
+            tabindex="0"
+            aria-label="Task: {renderItem.task.title}. {$taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
+            on:click={(e) => handleTaskClick(e, renderItem.task.id)}
+            on:keydown={(e) => handleTaskKeydown(e, renderItem.task.id)}
+          >
           
           <!-- Disclosure Triangle (if has subtasks) -->
           {#if renderItem.hasSubtasks}
@@ -559,13 +593,9 @@
               <span class="action-icon">ⓘ</span>
             </button>
           </div>
-          
-          <!-- Drop indicator below -->
-          {#if dropIndicatorPosition === index && dropIndicatorType === 'below'}
-            <div class="drop-indicator"></div>
-          {/if}
-        </div>
-      {/each}
+          </div>
+        {/each}
+      </div>
     </div>
 
     <!-- Error feedback only -->
@@ -588,15 +618,28 @@
     background-color: var(--bg-black);
   }
 
-  /* Drop indicator styles for blue line */
-  .drop-indicator {
-    height: 2px;
-    background-color: #007AFF;
-    width: 100%;
-    border-radius: 1px;
-    margin: 2px 0;
-    z-index: 1000;
+  /* Container for drag-drop positioning */
+  .drag-drop-container {
     position: relative;
+  }
+
+  /* Absolute positioned drop lines */
+  .drop-line-absolute {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #007AFF, #0099FF);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    box-shadow: 0 1px 4px rgba(0, 122, 255, 0.4);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .drop-line-absolute.visible {
+    opacity: 1;
   }
 
   .empty-state {
@@ -627,6 +670,7 @@
     color: var(--text-secondary);
     margin: 0;
   }
+
 
   .tasks-container {
     display: flex;

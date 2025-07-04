@@ -50,7 +50,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Default state: monochrome with reduced opacity 
+  opacity: 0.66;
+  transition: filter 0.15s ease, opacity 0.15s ease; */
 }
+
+/* Restore full color and opacity on hover 
+.option-item:hover .popover-option-left-content, .option-item.selected .popover-option-left-content {
+  filter: grayscale(0);
+  opacity: 1;
+} */
 
 .popover-option-main-label {
   font-size: 14px;
