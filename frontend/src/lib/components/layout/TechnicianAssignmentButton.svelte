@@ -31,22 +31,28 @@
   $: error = $updateTechniciansMutation.error;
   $: errorCode = error && (error as any).code;
   
-  // Local state for immediate UI responsiveness
+  // Local state for immediate UI responsiveness (optimistic updates)
   let localSelectedIds: Set<string> = new Set();
+  let optimisticTechnicians: User[] = [];
   
-  // Keep local state in sync with server data
+  // Consolidated reactive logic to eliminate race conditions
   $: {
-    if (!isLoading && assignedTechnicians?.length >= 0) {
+    // First: sync localSelectedIds from server when safe (not actively updating)
+    if (!$updateTechniciansMutation.isPending && assignedTechnicians?.length >= 0) {
       localSelectedIds = new Set(assignedTechnicians.map(t => t?.id).filter(Boolean));
     }
+    
+    // Then: always derive optimisticTechnicians from localSelectedIds using user lookup
+    // This ensures consistent data structure and eliminates the type guard issue
+    const userList = $usersQuery.data || [];
+    optimisticTechnicians = Array.from(localSelectedIds)
+      .map(id => userList.find(user => user.id === id))
+      .filter(Boolean) as User[];
   }
 
-  // Handle checkbox changes - simple and clean
+  // Handle checkbox changes - optimistic updates, no loading blocking
   function handleUserToggle(user: User, checked: boolean) {
-    if (isLoading) {
-      debugTechAssignment('Ignoring click - mutation already pending');
-      return;
-    }
+    // Remove loading guard to allow optimistic updates
     
     // Ensure user has required data
     if (!user?.id || !user?.attributes?.name) {
@@ -83,10 +89,10 @@
     }
   }
 
-  // Display logic for button content
-  $: displayTechnicians = assignedTechniciansForDisplay.slice(0, 2);
-  $: extraCount = Math.max(0, assignedTechniciansForDisplay.length - 2);
-  $: hasAssignments = assignedTechniciansForDisplay.length > 0;
+  // Display logic for button content - use optimistic data
+  $: displayTechnicians = optimisticTechnicians.slice(0, 2);
+  $: extraCount = Math.max(0, optimisticTechnicians.length - 2);
+  $: hasAssignments = optimisticTechnicians.length > 0;
 </script>
 
 <div class="technician-assignment-popover">
@@ -95,7 +101,7 @@
     class="assignment-button"
     class:has-assignments={hasAssignments}
     use:popover.button
-    title={hasAssignments ? `Assigned to: ${assignedTechniciansForDisplay.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Assign technicians'}
+    title={hasAssignments ? `Assigned to: ${optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Assign technicians'}
   >
     {#if hasAssignments}
       <!-- Show assigned technician avatars -->
@@ -138,14 +144,13 @@
         {#if $usersQuery.isLoading}
           <div class="loading-indicator">Loading users...</div>
         {:else}
-          <div class="user-checkboxes" class:loading={isLoading}>
+          <div class="user-checkboxes">
             {#each availableUsers as user}
               {#if user?.id && user?.attributes?.name}
                 <label class="user-checkbox">
                   <input 
                     type="checkbox" 
                     checked={localSelectedIds.has(user.id)}
-                    disabled={isLoading}
                     on:change={(e) => handleUserToggle(user, e.currentTarget.checked)}
                     class="checkbox-input" 
                   />
@@ -157,9 +162,7 @@
           </div>
         {/if}
 
-        {#if isLoading}
-          <div class="loading-indicator">Updating...</div>
-        {/if}
+        <!-- Removed 'Updating...' loading indicator for optimistic UX -->
       </div>
     </div>
   {/if}
@@ -291,10 +294,7 @@
     overflow-y: auto;
   }
 
-  .user-checkboxes.loading {
-    opacity: 0.6;
-    pointer-events: none;
-  }
+  /* Removed loading styles for optimistic UX */
 
   .user-checkbox {
     display: flex;
