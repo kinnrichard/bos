@@ -1,6 +1,5 @@
 <script lang="ts">
   import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
-  import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import FormInput from '$lib/components/ui/FormInput.svelte';
   import FormSelect from '$lib/components/ui/FormSelect.svelte';
   import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
@@ -101,21 +100,18 @@
 
 <BasePopoverButton
   bind:popover
-  buttonClass="schedule-priority-popover"
-  panelClass="schedule-panel"
-  position="bottom-right"
-  let:isExpanded
+  title="Schedule and Priority"
+  error={errorMessage}
+  loading={isLoading}
+  panelWidth="280px"
+  panelPosition="right"
+  contentPadding="20px"
 >
-  <CircularButton
-    slot="trigger"
-    variant="default"
-    size="normal"
-    title="Schedule and Priority"
-  >
+  <svelte:fragment slot="button-content">
     <img src="/icons/calendar-add.svg" alt="Schedule" class="calendar-icon" />
-  </CircularButton>
+  </svelte:fragment>
 
-  <div class="schedule-content" slot="content">
+  <svelte:fragment slot="panel-content" let:error let:loading>
     <h3 class="schedule-title">Schedule & Priority</h3>
     
     {#if errorMessage}
@@ -211,7 +207,7 @@
         </button>
       </div>
     </form>
-  </div>
+  </svelte:fragment>
 </BasePopoverButton>
 
 <style>
@@ -219,11 +215,6 @@
     width: 20px;
     height: 20px;
     opacity: 0.7;
-  }
-
-  .schedule-content {
-    padding: 20px;
-    width: 280px;
   }
 
   .schedule-title {
@@ -315,12 +306,7 @@
     cursor: not-allowed;
   }
 
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .schedule-content {
-      width: 260px;
-    }
-  }
+  /* Responsive adjustments handled by BasePopoverButton */
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
