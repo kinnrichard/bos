@@ -7,7 +7,7 @@
       avatar_style: string;
     };
   };
-  export let size: 'small' | 'normal' = 'normal';
+  export let size: 'xs' | 'small' | 'normal' = 'normal';
   export let title: string = user?.attributes?.name || '';
 
   // Avatar style mapping - these match the user avatar styles in the system
@@ -20,8 +20,8 @@
     gray: 'var(--text-secondary)'
   };
 
-  $: backgroundColor = avatarStyles[user?.attributes?.avatar_style as keyof typeof avatarStyles] || avatarStyles.gray;
-  $: sizeClass = size === 'small' ? 'avatar-small' : 'avatar-normal';
+  $: backgroundColor = avatarStyles[user?.attributes?.avatar_style as keyof typeof avatarStyles] || avatarStyles.blue;
+  $: sizeClass = size === 'xs' ? 'avatar-xs' : size === 'small' ? 'avatar-small' : 'avatar-normal';
 </script>
 
 <div 
@@ -54,6 +54,11 @@
     height: 24px;
   }
 
+  .avatar-xs {
+    width: 19px;
+    height: 19px;
+  }
+
   .user-initials {
     color: white;
     font-weight: 600;
@@ -67,6 +72,10 @@
 
   .avatar-small .user-initials {
     font-size: 10px;
+  }
+
+  .avatar-xs .user-initials {
+    font-size: 12px;
   }
 
   /* Hover effect for interactive contexts */

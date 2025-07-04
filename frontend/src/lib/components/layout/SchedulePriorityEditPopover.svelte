@@ -97,7 +97,7 @@
     type="button"
     class="calendar-button"
     use:popover.button
-    title="Edit schedule and priority"
+    title="Schedule and Priority"
   >
     <img src="/icons/calendar-add.svg" alt="Schedule" class="calendar-icon" />
   </button>

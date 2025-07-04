@@ -163,7 +163,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
     position: relative;
   }
 
@@ -238,7 +237,6 @@
   .status-options {
     display: flex;
     flex-direction: column;
-    gap: 2px;
   }
 
   .status-options.loading {
@@ -250,12 +248,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    padding: 9px 12px;
     background: none;
     border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
+    border-radius: 8px;
     text-align: left;
     width: 100%;
   }

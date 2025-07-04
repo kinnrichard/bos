@@ -160,13 +160,13 @@
   .toolbar-left {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 12px;
   }
 
   .toolbar-right {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 12px;
   }
 
   /* Logo */

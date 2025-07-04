@@ -101,13 +101,13 @@
     class="assignment-button"
     class:has-assignments={hasAssignments}
     use:popover.button
-    title={hasAssignments ? `Assigned to: ${optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Assign technicians'}
+    title={hasAssignments ? `Technicians: ${optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Technicians'}
   >
     {#if hasAssignments}
       <!-- Show assigned technician avatars -->
       <div class="assigned-avatars">
         {#each displayTechnicians as technician}
-          <UserAvatar user={technician} size="small" />
+          <UserAvatar user={technician} size="xs" />
         {/each}
         {#if extraCount > 0}
           <div class="extra-count">+{extraCount}</div>
@@ -127,7 +127,7 @@
       out:fade={{ duration: 150 }}
     >
       <div class="assignment-content">
-        <h3 class="assignment-title">Assigned to…</h3>
+        <h3 class="assignment-title">Assigned To</h3>
         
         {#if $usersQuery.isError}
           <div class="error-message">Failed to load users</div>
@@ -154,7 +154,7 @@
                   on:click={() => handleUserToggle(user, !localSelectedIds.has(user.id))}
                 >
                   <div class="technician-avatar">
-                    <UserAvatar {user} size="small" />
+                    <UserAvatar {user} size="xs" />
                   </div>
                   <span class="technician-name">{user.attributes.name}</span>
                   {#if localSelectedIds.has(user.id)}
@@ -183,7 +183,6 @@
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 50%;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -294,7 +293,6 @@
   .technician-options {
     display: flex;
     flex-direction: column;
-    gap: 2px;
     max-height: min(400px, 50vh);
     overflow-y: auto;
   }
@@ -303,11 +301,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    padding: 6px 12px;
     background: none;
     border: none;
-    border-radius: 4px;
-    cursor: pointer;
+    border-radius: 8px;
     transition: background-color 0.15s ease;
     text-align: left;
     width: 100%;
@@ -322,9 +319,9 @@
   }
 
   .technician-name {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--text-secondary);
-    line-height: 1.2;
+    line-height: 1.3;
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
@@ -353,7 +350,7 @@
       max-width: 280px;
     }
     
-    .user-checkboxes {
+    .technician-options {
       max-height: min(300px, 40vh);
     }
   }
@@ -368,7 +365,7 @@
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
     .assignment-button,
-    .user-checkbox {
+    .technician-option {
       transition: none;
     }
   }
