@@ -716,8 +716,7 @@
   }
 
   .task-item:hover {
-    /* Subtle hover effect like Rails */
-    background-color: rgba(255, 255, 255, 0.05) !important;
+    /* No background color change on hover per user request */
   }
 
   .task-item.completed {
