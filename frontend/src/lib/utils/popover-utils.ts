@@ -1,4 +1,5 @@
 import { POPOVER_ERRORS } from './popover-constants';
+import type { QueryClient } from '@tanstack/svelte-query';
 
 // Common error handling for popover components
 export function getPopoverErrorMessage(error: any): string {
@@ -98,6 +99,129 @@ export function createOptimisticUpdate<T extends Record<string, any>>(
   return {
     ...original,
     ...updates,
+  };
+}
+
+// Enhanced optimistic update utilities for TanStack Query mutations
+
+// Factory function to create optimistic mutation configuration
+export function createOptimisticMutationConfig<TData, TError, TVariables>({
+  queryClient,
+  queryKey,
+  optimisticUpdate,
+  rollbackOnError = true,
+}: {
+  queryClient: QueryClient;
+  queryKey: (variables: TVariables) => any[];
+  optimisticUpdate: (variables: TVariables, previousData?: TData) => TData | undefined;
+  rollbackOnError?: boolean;
+}) {
+  return {
+    onMutate: async (variables: TVariables) => {
+      const key = queryKey(variables);
+      // Cancel any outgoing refetches to prevent overwriting optimistic updates
+      await queryClient.cancelQueries({ queryKey: key });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData<TData>(key);
+
+      // Optimistically update the cache
+      const optimisticData = optimisticUpdate(variables, previousData);
+      if (optimisticData) {
+        queryClient.setQueryData(key, optimisticData);
+      }
+
+      // Return context with rollback data
+      return { previousData, queryKey: key };
+    },
+
+    onError: rollbackOnError 
+      ? (error: TError, variables: TVariables, context?: { previousData?: TData; queryKey: any[] }) => {
+          // Rollback to previous data on error
+          if (context?.previousData && context?.queryKey) {
+            queryClient.setQueryData(context.queryKey, context.previousData);
+          }
+        }
+      : undefined,
+
+    onSettled: (data: TData | undefined, error: TError | null, variables: TVariables, context?: { queryKey: any[] }) => {
+      // Always refetch after settling to ensure consistency
+      if (context?.queryKey) {
+        queryClient.invalidateQueries({ queryKey: context.queryKey });
+      }
+    },
+  };
+}
+
+// Standardized rollback handler for custom optimistic updates
+export function createRollbackHandler<T>(
+  setState: (value: T) => void,
+  originalValue: T
+) {
+  return () => setState(originalValue);
+}
+
+// State synchronization helper for local optimistic state
+export function createOptimisticStateManager<T>({
+  serverData,
+  isLoading,
+  localState,
+  setLocalState,
+  isEqual,
+}: {
+  serverData: T | undefined;
+  isLoading: boolean;
+  localState: T;
+  setLocalState: (value: T) => void;
+  isEqual: (a: T, b: T) => boolean;
+}) {
+  // Sync local state with server when safe and data has changed
+  if (serverData && (!isLoading || isEqual(localState, {} as T))) {
+    if (!isEqual(localState, serverData)) {
+      setLocalState(serverData);
+    }
+  }
+}
+
+// Common mutation pattern for popover components
+export function createPopoverMutation<TData, TError, TVariables>({
+  queryClient,
+  mutationFn,
+  queryKey,
+  optimisticUpdate,
+  errorHandler,
+  successHandler,
+}: {
+  queryClient: QueryClient;
+  mutationFn: (variables: TVariables) => Promise<TData>;
+  queryKey: (variables: TVariables) => any[];
+  optimisticUpdate?: (variables: TVariables, previousData?: TData) => TData | undefined;
+  errorHandler?: (error: TError) => string;
+  successHandler?: (data: TData) => void;
+}) {
+  const baseConfig = optimisticUpdate 
+    ? createOptimisticMutationConfig({
+        queryClient,
+        queryKey,
+        optimisticUpdate,
+        rollbackOnError: true,
+      })
+    : {
+        onSuccess: (data: TData, variables: TVariables) => {
+          // Invalidate relevant queries on success
+          queryClient.invalidateQueries({ queryKey: queryKey(variables) });
+          successHandler?.(data);
+        },
+        onError: (error: TError) => {
+          // Handle errors with provided error handler
+          const errorMessage = errorHandler?.(error) || getPopoverErrorMessage(error);
+          console.error('Popover mutation error:', errorMessage);
+        },
+      };
+
+  return {
+    mutationFn,
+    ...baseConfig,
   };
 }
 

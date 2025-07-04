@@ -8,6 +8,7 @@
   import { debugTechAssignment } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage, validateUserData, createIdSet } from '$lib/utils/popover-utils';
+  import '$lib/styles/popover-common.css';
 
   export let jobId: string;
   
@@ -39,13 +40,15 @@
   
   // Consolidated reactive logic to eliminate race conditions
   $: {
-    // First: sync localSelectedIds from server when safe (not actively updating)
-    if (!$updateTechniciansMutation.isPending && assignedTechnicians?.length >= 0) {
-      localSelectedIds = new Set(assignedTechnicians.map(t => t?.id).filter(Boolean));
+    // Always sync localSelectedIds with TanStack Query cache data
+    // Since we now have proper optimistic updates, the cache always contains correct data
+    if (assignedTechnicians?.length >= 0) {
+      const serverIds = new Set(assignedTechnicians.map(t => t?.id).filter(Boolean));
+      localSelectedIds = serverIds;
     }
     
-    // Then: always derive optimisticTechnicians from localSelectedIds using user lookup
-    // This ensures consistent data structure and eliminates the type guard issue
+    // Always derive optimisticTechnicians from localSelectedIds using user lookup
+    // This ensures consistent data structure and real-time UI updates
     const userList = $usersQuery.data || [];
     optimisticTechnicians = Array.from(localSelectedIds)
       .map(id => userList.find(user => user.id === id))
@@ -126,31 +129,40 @@
   </svelte:fragment>
 
   <svelte:fragment slot="panel-content" let:error let:loading>
-    <h3 class="assignment-title">Assigned To</h3>
+    <h3 class="popover-title">Assigned To</h3>
     
     {#if $usersQuery.isError}
-      <div class="error-message">{POPOVER_ERRORS.LOAD_USERS}</div>
+      <div class="popover-error-message">{POPOVER_ERRORS.LOAD_USERS}</div>
     {:else if error}
-      <div class="error-message">{error}</div>
+      <div class="popover-error-message">{error}</div>
     {/if}
 
     {#if $usersQuery.isLoading}
-      <div class="loading-indicator">Loading users...</div>
+      <div class="popover-loading-indicator">Loading users...</div>
     {:else}
       <PopoverOptionList
         options={availableUsers.filter(validateUserData)}
-        selectedIds={localSelectedIds}
         loading={loading}
         maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
-        onOptionClick={(user, selected) => handleUserToggle(user, selected)}
-        showCheckmarks={true}
-        singleSelect={false}
+        onOptionClick={(user) => {
+          const isCurrentlySelected = localSelectedIds.has(user.id);
+          handleUserToggle(user, !isCurrentlySelected);
+        }}
       >
         <svelte:fragment slot="option-content" let:option>
-          <div class="technician-avatar">
+          {@const isSelected = localSelectedIds.has(option.id)}
+          
+          <div class="technician-avatar popover-option-left-content">
             <UserAvatar user={option} size="xs" />
           </div>
-          <span class="technician-name">{option.attributes.name}</span>
+          <span class="popover-option-main-label">{option.attributes.name}</span>
+          
+          <!-- Checkmark in same reactive scope for immediate updates -->
+          <div class="popover-checkmark-container">
+            {#if isSelected}
+              <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
+            {/if}
+          </div>
         </svelte:fragment>
       </PopoverOptionList>
     {/if}
@@ -193,41 +205,7 @@
   }
 
   /* Panel content styling */
-  .assignment-title {
-    color: var(--text-primary);
-    margin: 0 0 6px 0;
-    font-size: 14px;
-    font-weight: 600;
-  }
 
-  .error-message {
-    color: var(--accent-red);
-    font-size: 12px;
-    margin-bottom: 8px;
-    text-align: center;
-  }
+  /* Component-specific option styling removed - now using shared classes */
 
-  .loading-indicator {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-tertiary);
-    margin-top: 8px;
-  }
-
-  /* Option content styling for the PopoverOptionList slot */
-  .technician-avatar {
-    flex-shrink: 0;
-    margin-right: 8px;
-  }
-
-  .technician-name {
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.3;
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-  }
 </style>

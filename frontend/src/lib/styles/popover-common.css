@@ -1,0 +1,55 @@
+/* Common styles for popover components to maintain DRY principles */
+
+/* Checkmark icon styling - used in all popover selection lists */
+.popover-checkmark-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Container for checkmark icons with consistent spacing and layout */
+.popover-checkmark-container {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 28px;
+}
+
+/* Error message styling for all popovers */
+.popover-error-message {
+  color: var(--accent-red);
+  font-size: 12px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* Loading indicator styling for all popovers */
+.popover-loading-indicator {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+}
+
+/* Common title styling for all popover headers */
+.popover-title {
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Common styling for option content layout */
+.popover-option-left-content {
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.popover-option-main-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.2;
+  flex: 1;
+}

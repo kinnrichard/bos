@@ -1,5 +1,6 @@
 import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 import { jobsService } from '../jobs';
+import { createJobTechniciansMutation, createJobStatusMutation } from './mutation-factories';
 import type {
   JobResource,
   JobCreateRequest,
@@ -7,6 +8,7 @@ import type {
   PaginatedResponse,
   JsonApiResponse
 } from '$lib/types/api';
+import type { PopulatedJob } from '$lib/types/job';
 
 /**
  * Query hook for fetching jobs list
@@ -131,47 +133,26 @@ export function useDeleteJobMutation() {
 
 /**
  * Mutation hook for updating job technician assignments with optimistic updates
+ * Now uses the standardized mutation factory pattern
  */
 export function useUpdateJobTechniciansMutation() {
-  const queryClient = useQueryClient();
+  const mutationFactory = createJobTechniciansMutation(
+    (jobId: string, technicianIds: string[]) => jobsService.updateJobTechnicians(jobId, technicianIds)
+  );
+  
+  return mutationFactory();
+}
 
-  return createMutation({
-    mutationFn: ({ 
-      jobId, 
-      technicianIds 
-    }: { 
-      jobId: string; 
-      technicianIds: string[] 
-    }) => jobsService.updateJobTechnicians(jobId, technicianIds),
-    
-    onMutate: async ({ jobId, technicianIds }) => {
-      // Cancel outgoing refetches so they don't overwrite optimistic update
-      await queryClient.cancelQueries({ queryKey: ['job', jobId] });
-      
-      // Snapshot previous value for rollback
-      const previousJob = queryClient.getQueryData(['job', jobId]);
-      
-      // Skip optimistic update for now - the API calls work fine without it
-      // The UI will update when the server responds and cache is invalidated
-      console.log('TanStack Query: Technician update submitted, will sync after API response');
-      
-      return { previousJob };
-    },
-    
-    onError: (error, { jobId }, context) => {
-      // Rollback optimistic updates on error
-      if (context?.previousJob) {
-        queryClient.setQueryData(['job', jobId], context.previousJob);
-      }
-      console.error('Failed to update job technicians:', error);
-    },
-    
-    onSettled: (data, error, { jobId }) => {
-      // Always refetch to ensure consistency with server
-      queryClient.invalidateQueries({ queryKey: ['job', jobId] });
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
-    }
-  });
+/**
+ * Mutation hook for updating job status with optimistic updates
+ * Uses the standardized mutation factory pattern
+ */
+export function useUpdateJobStatusMutation() {
+  const mutationFactory = createJobStatusMutation(
+    (jobId: string, status: string) => jobsService.updateJobStatus(jobId, status)
+  );
+  
+  return mutationFactory();
 }
 
 /**

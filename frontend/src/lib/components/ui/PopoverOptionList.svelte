@@ -3,34 +3,13 @@
     id: string;
     [key: string]: any;
   }>;
-  export let selectedIds: Set<string> = new Set();
   export let loading: boolean = false;
   export let maxHeight: string = 'min(400px, 50vh)';
-  export let onOptionClick: (option: any, selected: boolean) => void;
-
-  // Whether to show checkmarks for selected items
-  export let showCheckmarks: boolean = true;
-  
-  // Whether this is a single-select list (like job status) vs multi-select (like technicians)
-  export let singleSelect: boolean = false;
-  
-  // For single-select, which option is currently selected
-  export let currentSelection: string = '';
+  export let onOptionClick: (option: any) => void;
 
   function handleOptionClick(option: any) {
     if (loading) return;
-    
-    const isSelected = singleSelect 
-      ? option.id === currentSelection
-      : selectedIds.has(option.id);
-    
-    onOptionClick(option, !isSelected);
-  }
-
-  function isOptionSelected(option: any): boolean {
-    return singleSelect 
-      ? option.id === currentSelection
-      : selectedIds.has(option.id);
+    onOptionClick(option);
   }
 </script>
 
@@ -39,28 +18,10 @@
     <button 
       type="button"
       class="option-item"
-      class:selected={isOptionSelected(option)}
-      class:single-select={singleSelect}
       disabled={loading}
-      aria-pressed={isOptionSelected(option)}
       on:click={() => handleOptionClick(option)}
     >
-      <div class="option-content">
-        <slot name="option-content" {option} selected={isOptionSelected(option)} />
-      </div>
-      
-      {#if showCheckmarks}
-        <div class="checkmark-area">
-          {#if isOptionSelected(option)}
-            <img 
-              src="/icons/checkmark.svg" 
-              alt="Selected" 
-              class="checkmark-icon"
-              class:white-checkmark={singleSelect && isOptionSelected(option)}
-            />
-          {/if}
-        </div>
-      {/if}
+      <slot name="option-content" {option} />
     </button>
   {/each}
 </div>
@@ -76,6 +37,7 @@
     display: flex;
     align-items: center;
     padding: 6px 12px;
+    min-height: 31px;
     background: none;
     border: none;
     border-radius: 8px;
@@ -92,42 +54,6 @@
   .option-item:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-  }
-
-  /* Single-select styling (like job status) */
-  .option-item.single-select.selected {
-    background-color: var(--accent-blue);
-    color: white;
-  }
-
-  .option-item.single-select.selected:hover {
-    background-color: var(--accent-blue-hover);
-  }
-
-  .option-content {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    min-width: 0; /* Allow content to shrink */
-  }
-
-  .checkmark-area {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 14px;
-  }
-
-  .checkmark-icon {
-    width: 14px;
-    height: 14px;
-  }
-
-  .white-checkmark {
-    filter: brightness(0) invert(1); /* Make white for blue backgrounds */
   }
 
   /* Accessibility improvements */
