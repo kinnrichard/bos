@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createPopover } from 'svelte-headlessui';
+  import { createManagedPopover } from '$lib/utils/popover-manager';
   import { fade } from 'svelte/transition';
 
   export let title: string;
@@ -11,7 +11,7 @@
   export let contentPadding: string = '16px'; // Panel content padding
   export let buttonClass: string = ''; // Additional button classes
 
-  const popover = createPopover();
+  const popover = createManagedPopover();
 
   // Export the popover instance for parent components to control
   export { popover };

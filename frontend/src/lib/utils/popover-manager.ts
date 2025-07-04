@@ -1,0 +1,108 @@
+import { createPopover } from 'svelte-headlessui';
+import { onDestroy } from 'svelte';
+import { popoverStore, type PopoverInstance } from '$lib/stores/popover';
+
+// Generate unique ID for each popover instance
+let popoverIdCounter = 0;
+function generatePopoverId(): string {
+  return `popover-${++popoverIdCounter}`;
+}
+
+/**
+ * Enhanced popover creation that integrates with global popover management.
+ * This wrapper ensures only one popover can be open at a time and provides
+ * automatic cleanup and coordination between multiple popover instances.
+ */
+export function createManagedPopover() {
+  const popoverId = generatePopoverId();
+  const basePopover = createPopover();
+  
+  // Create managed instance that tracks state
+  const managedInstance: PopoverInstance = {
+    id: popoverId,
+    isOpen: false,
+    close: () => {
+      basePopover.close();
+    }
+  };
+  
+  // Register with global store
+  popoverStore.register(popoverId, managedInstance);
+  
+  // Create reactive store that syncs with base popover
+  const { subscribe, set } = basePopover;
+  
+  // Override the base popover's open/close methods to coordinate with global store
+  const originalOpen = basePopover.open;
+  const originalClose = basePopover.close;
+  const originalToggle = basePopover.toggle;
+  
+  const managedPopover = {
+    subscribe,
+    
+    // Enhanced open method that coordinates with global store
+    open: () => {
+      // First close any other open popovers
+      popoverStore.setOpen(popoverId, true);
+      // Then open this one
+      originalOpen();
+    },
+    
+    // Enhanced close method
+    close: () => {
+      popoverStore.setOpen(popoverId, false);
+      originalClose();
+    },
+    
+    // Enhanced toggle method
+    toggle: () => {
+      const currentState = managedInstance.isOpen;
+      if (currentState) {
+        managedPopover.close();
+      } else {
+        managedPopover.open();
+      }
+    },
+    
+    // Expose original properties for compatibility
+    button: basePopover.button,
+    panel: basePopover.panel,
+    
+    // Additional managed properties
+    id: popoverId,
+    isManaged: true
+  };
+  
+  // Subscribe to base popover state changes to update our managed instance
+  const unsubscribe = subscribe((state) => {
+    const wasOpen = managedInstance.isOpen;
+    const isNowOpen = state.expanded;
+    
+    if (wasOpen !== isNowOpen) {
+      managedInstance.isOpen = isNowOpen;
+      popoverStore.setOpen(popoverId, isNowOpen);
+    }
+  });
+  
+  // Cleanup on component destroy
+  onDestroy(() => {
+    unsubscribe();
+    popoverStore.unregister(popoverId);
+  });
+  
+  return managedPopover;
+}
+
+/**
+ * Utility to check if any popover is currently open
+ */
+export function isAnyPopoverOpen(): boolean {
+  return popoverStore.getActiveCount() > 0;
+}
+
+/**
+ * Utility to close all open popovers
+ */
+export function closeAllPopovers(): void {
+  popoverStore.closeAll();
+}
