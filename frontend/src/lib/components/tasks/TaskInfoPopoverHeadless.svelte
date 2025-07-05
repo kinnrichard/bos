@@ -1,16 +1,21 @@
 <script lang="ts">
   import { createPopover } from 'svelte-headlessui';
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy, onMount } from 'svelte';
   import { tasksService, type Task } from '$lib/api/tasks';
   import { formatDateTime } from '$lib/utils/date';
+  import Portal from '../ui/Portal.svelte';
+  import { 
+    calculatePopoverPosition, 
+    getArrowPath, 
+    debounce,
+    type PopoverPosition 
+  } from '$lib/utils/popover-positioning';
   
   export let task: Task;
   export let jobId: string;
   
   const popover = createPopover();
   const dispatch = createEventDispatcher();
-  
-  
   
   let taskDetails: any = null;
   let loading = false;
@@ -22,7 +27,15 @@
   let timer: any;
   let panelElement: HTMLElement;
   let buttonElement: HTMLElement;
-  let arrowPosition = { top: '50%' };
+  
+  // Portal positioning
+  let position: PopoverPosition = {
+    top: 0,
+    left: 0,
+    placement: 'left',
+    arrowPosition: {}
+  };
+  let isPositioned = false;
   
   // Update timer every second for in-progress tasks
   $: if ($popover.expanded && task?.status === 'in_progress') {
@@ -37,18 +50,28 @@
   // Clean up timer when component is destroyed
   onDestroy(() => {
     if (timer) clearInterval(timer);
+    window.removeEventListener('scroll', debouncedUpdatePosition, true);
+    window.removeEventListener('resize', debouncedUpdatePosition);
+  });
+  
+  // Set up scroll and resize listeners
+  onMount(() => {
+    window.addEventListener('scroll', debouncedUpdatePosition, true);
+    window.addEventListener('resize', debouncedUpdatePosition);
   });
   
   // Handle keyboard events
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && $popover.expanded) {
+    if (!$popover.expanded) return;
+    if (event.key === 'Escape') {
       popover.close();
     }
   }
   
   // Handle outside clicks
   function handleOutsideClick(event: MouseEvent) {
-    if ($popover.expanded && panelElement && !panelElement.contains(event.target as Node)) {
+    if (!$popover.expanded) return;
+    if (panelElement && !panelElement.contains(event.target as Node) && !buttonElement.contains(event.target as Node)) {
       popover.close();
     }
   }
@@ -58,25 +81,30 @@
     loadTaskDetails();
   }
   
-  // Calculate arrow position when popover opens
+  // Calculate position when popover opens
   $: if ($popover.expanded && buttonElement && panelElement) {
     // Wait for DOM to update before calculating positions
-    setTimeout(() => updateArrowPosition(), 0);
+    setTimeout(() => updatePosition(), 0);
   }
   
-  function updateArrowPosition() {
+  function updatePosition() {
     if (!buttonElement || !panelElement) return;
     
-    const buttonRect = buttonElement.getBoundingClientRect();
-    const containerRect = buttonElement.parentElement.getBoundingClientRect();
+    const panelRect = panelElement.getBoundingClientRect();
+    const newPosition = calculatePopoverPosition(
+      { element: buttonElement, preferredPlacement: 'left' },
+      { width: panelRect.width || 380, height: panelRect.height || 500 }
+    );
     
-    // Calculate the center of the button relative to the container
-    const buttonCenter = buttonRect.top + (buttonRect.height / 2);
-    const containerTop = containerRect.top;
-    const relativePosition = buttonCenter - containerTop;
-    
-    arrowPosition = { top: `${relativePosition}px` };
+    position = newPosition;
+    isPositioned = true;
   }
+  
+  const debouncedUpdatePosition = debounce(() => {
+    if ($popover.expanded) {
+      updatePosition();
+    }
+  }, 10);
   
   // Reset state when task changes
   $: if (task) {
@@ -313,28 +341,47 @@
     use:popover.button
     bind:this={buttonElement}
     title="Task details"
+    on:click|stopPropagation
   >
     <span class="action-icon">ⓘ</span>
   </button>
+</div>
 
-  <!-- Popover Panel -->
+<!-- Global event handlers (must be at top level) -->
+<svelte:window on:click={handleOutsideClick} on:keydown={handleKeydown} />
+
+<!-- Popover Panel (rendered via Portal) -->
+<Portal enabled={$popover.expanded}>
   {#if $popover.expanded}
-    <!-- Arrow pointing to button (outside panel) -->
-    <div class="popover-arrow" style="top: {arrowPosition.top};">
+    <!-- Arrow pointing to button -->
+    <div 
+      class="popover-arrow" 
+      style="
+        top: {position.arrowPosition.top || 'auto'}; 
+        left: {position.arrowPosition.left || 'auto'}; 
+        right: {position.arrowPosition.right || 'auto'}; 
+        bottom: {position.arrowPosition.bottom || 'auto'};
+        opacity: {isPositioned ? 1 : 0};
+      "
+    >
       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="20" viewBox="0 0 12 20">
         <path
-          d="M0 0 L0 20 L12 10 Z"
+          d={getArrowPath(position.placement)}
           fill="var(--bg-secondary)"
           stroke="var(--border-primary)"
           stroke-width="1"
           stroke-linejoin="miter"
         />
-        <!-- Cover the left border where arrow meets panel -->
-        <path
-          d="M0 0 L0 20"
-          stroke="var(--bg-secondary)"
-          stroke-width="2"
-        />
+        <!-- Cover the connecting border based on placement -->
+        {#if position.placement === 'left'}
+          <path d="M0 0 L0 20" stroke="var(--bg-secondary)" stroke-width="2" />
+        {:else if position.placement === 'right'}
+          <path d="M12 0 L12 20" stroke="var(--bg-secondary)" stroke-width="2" />
+        {:else if position.placement === 'top'}
+          <path d="M0 0 L20 0" stroke="var(--bg-secondary)" stroke-width="2" />
+        {:else if position.placement === 'bottom'}
+          <path d="M0 12 L20 12" stroke="var(--bg-secondary)" stroke-width="2" />
+        {/if}
       </svg>
     </div>
 
@@ -342,6 +389,16 @@
       class="task-info-popover-panel"
       use:popover.panel
       bind:this={panelElement}
+      style="
+        position: fixed;
+        top: {position.top}px;
+        left: {position.left}px;
+        max-width: {position.maxWidth ? position.maxWidth + 'px' : '380px'};
+        max-height: {position.maxHeight ? position.maxHeight + 'px' : 'calc(100vh - 100px)'};
+        opacity: {isPositioned ? 1 : 0};
+        transition: opacity 0.2s ease;
+        z-index: 2000;
+      "
     >
       <!-- Popover content with scrolling -->
       <div class="popover-content-scrollable">
@@ -486,7 +543,7 @@
       </div>
     </div>
   {/if}
-</div>
+</Portal>
 
 <style>
   /* Note color variable to match Rails */
@@ -507,33 +564,26 @@
   }
 
   .task-info-popover-panel {
-    position: absolute;
-    right: calc(100% + 8px);
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 1000;
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 8px;
     box-shadow: var(--shadow-lg);
     width: 380px;
-    max-width: calc(100vw - 40px);
-    max-height: calc(100vh - 100px);
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    /* Position and z-index are handled via inline styles for portal */
   }
 
-  /* Arrow styles - positioned on the right side pointing to the button */
+  /* Arrow styles - positioned via portal with dynamic placement */
   .popover-arrow {
-    position: absolute;
-    right: calc(100% + 8px - 12px); /* Align with panel's right position */
-    transform: translateY(-50%);
+    position: fixed;
     pointer-events: none;
-    z-index: 1001; /* Higher than panel's z-index of 1000 */
+    z-index: 2001; /* Higher than panel's z-index */
     width: 12px;
     height: 20px;
-    transition: top 0.2s ease;
+    transition: opacity 0.2s ease;
+    /* Position is handled via inline styles */
   }
   
   .popover-arrow svg {
@@ -815,20 +865,5 @@
     to { transform: rotate(360deg); }
   }
 
-  /* Responsive positioning adjustments */
-  @media (max-width: 768px) {
-    .task-info-popover-panel {
-      /* On mobile, position to the left of the button */
-      right: auto;
-      left: calc(100% + 8px);
-      max-width: calc(100vw - 60px);
-    }
-
-    .popover-arrow {
-      /* Flip arrow to point left on mobile */
-      right: auto;
-      left: -12px;
-      transform: translateY(-50%) scaleX(-1);
-    }
-  }
+  /* Responsive behavior is handled automatically by the positioning utilities */
 </style>
