@@ -31,7 +31,8 @@
   let position: PopoverPosition = {
     top: 0,
     left: 0,
-    placement: 'left'
+    placement: 'left',
+    arrowPosition: { top: 0, left: 0 }
   };
   let isPositioned = false;
   let mutationObserver: MutationObserver | null = null;
@@ -417,12 +418,21 @@
 <!-- Popover Panel (rendered via Portal) -->
 <Portal enabled={$popover.expanded}>
   {#if $popover.expanded}
+    <!-- Separate arrow element -->
+    <div 
+      class="popover-arrow panel-{position.placement}"
+      style="
+        position: fixed;
+        top: {position.arrowPosition.top}px;
+        left: {position.arrowPosition.left}px;
+        opacity: {isPositioned ? 1 : 0};
+        transition: opacity 0.2s ease;
+        z-index: 2001;
+      "
+    ></div>
+
     <div 
       class="task-info-popover-panel"
-      class:panel-top={position.placement === 'top'}
-      class:panel-bottom={position.placement === 'bottom'}
-      class:panel-left={position.placement === 'left'}
-      class:panel-right={position.placement === 'right'}
       use:popover.panel
       bind:this={panelElement}
       style="
@@ -605,18 +615,24 @@
     border-radius: 8px;
     box-shadow: var(--shadow-lg);
     width: 380px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     /* Position and z-index are handled via inline styles for portal */
   }
 
-  /* Arrow styles using CSS border triangles - much simpler and cleaner */
-  
+  /* Arrow styles - separate DOM elements with CSS border triangles */
+  .popover-arrow {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+  }
+
   /* Bottom placement (arrow points up to button) */
   .panel-bottom::before {
     content: '';
     position: absolute;
-    top: -12px;
+    top: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
@@ -629,7 +645,7 @@
   .panel-bottom::after {
     content: '';
     position: absolute;
-    top: -10px;
+    top: 2px;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
@@ -643,7 +659,7 @@
   .panel-top::before {
     content: '';
     position: absolute;
-    bottom: -12px;
+    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
@@ -656,7 +672,7 @@
   .panel-top::after {
     content: '';
     position: absolute;
-    bottom: -10px;
+    bottom: 2px;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
@@ -670,7 +686,7 @@
   .panel-left::before {
     content: '';
     position: absolute;
-    right: -12px;
+    right: 0;
     top: 50%;
     transform: translateY(-50%);
     width: 0;
@@ -683,7 +699,7 @@
   .panel-left::after {
     content: '';
     position: absolute;
-    right: -10px;
+    right: 2px;
     top: 50%;
     transform: translateY(-50%);
     width: 0;
@@ -697,7 +713,7 @@
   .panel-right::before {
     content: '';
     position: absolute;
-    left: -12px;
+    left: 0;
     top: 50%;
     transform: translateY(-50%);
     width: 0;
@@ -710,7 +726,7 @@
   .panel-right::after {
     content: '';
     position: absolute;
-    left: -10px;
+    left: 2px;
     top: 50%;
     transform: translateY(-50%);
     width: 0;

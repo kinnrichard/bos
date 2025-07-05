@@ -2,6 +2,10 @@ export interface PopoverPosition {
   top: number;
   left: number;
   placement: 'top' | 'bottom' | 'left' | 'right';
+  arrowPosition: {
+    top: number;
+    left: number;
+  };
   maxHeight?: number;
   maxWidth?: number;
 }
@@ -94,6 +98,7 @@ function calculatePositionForPlacement(
   
   let top: number;
   let left: number;
+  let arrowPosition: { top: number; left: number };
   let maxHeight: number | undefined;
   let maxWidth: number | undefined;
   
@@ -114,6 +119,13 @@ function calculatePositionForPlacement(
         top = viewportHeight - popoverHeight - VIEWPORT_PADDING;
       }
       
+      // Calculate arrow position (pointing right to button)
+      const triggerCenterY = triggerRect.top + (triggerRect.height / 2);
+      arrowPosition = {
+        top: triggerCenterY - 10, // Center arrow on trigger button (arrow height 20px / 2)
+        left: left + popoverWidth // Position arrow just outside right edge of panel
+      };
+      
       break;
       
     case 'right':
@@ -130,6 +142,13 @@ function calculatePositionForPlacement(
       } else if (top + popoverHeight > viewportHeight - VIEWPORT_PADDING) {
         top = viewportHeight - popoverHeight - VIEWPORT_PADDING;
       }
+      
+      // Calculate arrow position (pointing left to button)
+      const triggerCenterYRight = triggerRect.top + (triggerRect.height / 2);
+      arrowPosition = {
+        top: triggerCenterYRight - 10, // Center arrow on trigger button
+        left: left - 12 // Position arrow just outside left edge of panel
+      };
       
       break;
       
@@ -149,6 +168,13 @@ function calculatePositionForPlacement(
         left = viewportWidth - popoverWidth - VIEWPORT_PADDING;
       }
       
+      // Calculate arrow position (pointing down to button)
+      const triggerCenterX = triggerRect.left + (triggerRect.width / 2);
+      arrowPosition = {
+        top: top + popoverHeight, // Position arrow just outside bottom edge of panel
+        left: triggerCenterX - 10 // Center arrow on trigger button (arrow width 20px / 2)
+      };
+      
       break;
       
     case 'bottom':
@@ -166,6 +192,13 @@ function calculatePositionForPlacement(
         left = viewportWidth - popoverWidth - VIEWPORT_PADDING;
       }
       
+      // Calculate arrow position (pointing up to button)
+      const triggerCenterXBottom = triggerRect.left + (triggerRect.width / 2);
+      arrowPosition = {
+        top: top - 12, // Position arrow just outside top edge of panel
+        left: triggerCenterXBottom - 10 // Center arrow on trigger button (arrow width 20px / 2)
+      };
+      
       break;
   }
   
@@ -173,6 +206,7 @@ function calculatePositionForPlacement(
     top,
     left,
     placement,
+    arrowPosition,
     maxHeight,
     maxWidth
   };
