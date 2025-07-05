@@ -1,6 +1,47 @@
-import { createPopover } from 'svelte-headlessui';
+// Note: @rgossiaux/svelte-headlessui v2.0.0 removed createPopover function
+// This is a legacy wrapper for components that haven't been migrated yet
+// TODO: Migrate all popover components to use new Popover, PopoverButton, PopoverPanel components
 import { onDestroy } from 'svelte';
+import { writable } from 'svelte/store';
 import { popoverStore, type PopoverInstance } from '$lib/stores/popover';
+
+// Simple createPopover polyfill for legacy components
+function createPopover() {
+  const expanded = writable(false);
+  
+  return {
+    subscribe: (run: any) => {
+      return expanded.subscribe((value) => {
+        run({ expanded: value, opened: value });
+      });
+    },
+    set: (value: any) => expanded.set(value),
+    update: (fn: any) => expanded.update(fn),
+    open: () => expanded.set(true),
+    close: () => expanded.set(false),
+    toggle: () => expanded.update(value => !value),
+    button: (node: HTMLElement) => {
+      function handleClick() {
+        expanded.update(value => !value);
+      }
+      
+      node.addEventListener('click', handleClick);
+      
+      return {
+        destroy() {
+          node.removeEventListener('click', handleClick);
+        }
+      };
+    },
+    panel: (node: HTMLElement) => {
+      return {
+        destroy() {
+          // Cleanup if needed
+        }
+      };
+    }
+  };
+}
 
 // Generate unique ID for each popover instance
 let popoverIdCounter = 0;
