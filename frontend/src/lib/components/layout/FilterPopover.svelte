@@ -1,128 +1,119 @@
 <script lang="ts">
-  import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
+  import BasePopover from '$lib/components/ui/BasePopover.svelte';
+  import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
+  import '$lib/styles/popover-common.css';
 
   export let onFilterChange: (statuses: string[]) => void = () => {};
 
-  let popover: any;
+  let basePopover: any;
+  export { basePopover as popover };
 
-  // Individual boolean variables as source of truth
-  let newTaskChecked = true;
-  let inProgressChecked = true;
-  let pausedChecked = true;
-  let completedChecked = true;
-  let cancelledChecked = true;
+  // Status options configuration
+  const statusOptions = [
+    { id: 'new_task', value: 'new_task', label: 'New' },
+    { id: 'in_progress', value: 'in_progress', label: 'In Progress' },
+    { id: 'paused', value: 'paused', label: 'Paused' },
+    { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed' },
+    { id: 'cancelled', value: 'cancelled', label: 'Cancelled' }
+  ];
 
-  let selectedStatuses: string[] = [];
+  // Start with all statuses selected (default behavior)
+  let selectedStatuses: string[] = statusOptions.map(option => option.value);
 
-  // Derive selectedStatuses from the boolean variables
-  $: selectedStatuses = [
-    newTaskChecked && 'new_task',
-    inProgressChecked && 'in_progress', 
-    pausedChecked && 'paused',
-    completedChecked && 'successfully_completed',
-    cancelledChecked && 'cancelled'
-  ].filter(Boolean) as string[];
-
-  // Handle the "uncheck last item" case with event handlers on each checkbox
-  function handleCheckboxChange(checked: boolean, setValue: (val: boolean) => void, currentValue: boolean) {
-    if (!checked && currentValue) {
-      // User is unchecking this item - check if this would make all unchecked
-      // We need to temporarily apply this change to see what the result would be
-      setValue(false);
+  // Handle status toggle with "prevent all unchecked" logic
+  function handleStatusToggle(option: { value: string; label: string }) {
+    const isCurrentlySelected = selectedStatuses.includes(option.value);
+    
+    if (isCurrentlySelected) {
+      // User wants to uncheck - check if this would make all unchecked
+      const newSelected = selectedStatuses.filter(status => status !== option.value);
       
-      // Check if all are now unchecked
-      if (!newTaskChecked && !inProgressChecked && !pausedChecked && !completedChecked && !cancelledChecked) {
-        // Select all instead
-        newTaskChecked = true;
-        inProgressChecked = true;
-        pausedChecked = true;
-        completedChecked = true;
-        cancelledChecked = true;
+      if (newSelected.length === 0) {
+        // Would make all unchecked - select all instead
+        selectedStatuses = statusOptions.map(opt => opt.value);
+      } else {
+        // Safe to uncheck this item
+        selectedStatuses = newSelected;
       }
     } else {
-      setValue(checked);
+      // User wants to check - add to selection
+      selectedStatuses = [...selectedStatuses, option.value];
     }
   }
 
-  // Type-safe event handler for checkbox changes
-  function createCheckboxHandler(setValue: (val: boolean) => void, currentValue: boolean) {
-    return (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      handleCheckboxChange(target.checked, setValue, currentValue);
-    };
-  }
-
-  $: hasActiveFilters = selectedStatuses.length > 0 && selectedStatuses.length < 5;
+  $: hasActiveFilters = selectedStatuses.length > 0 && selectedStatuses.length < statusOptions.length;
 
   // Notify parent when filters change
   $: onFilterChange(selectedStatuses);
 </script>
 
-<BasePopoverButton
-  bind:popover
-  title="Filter tasks"
-  panelWidth="150px"
-  panelPosition="center"
-  contentPadding="16px"
+<BasePopover 
+  bind:popover={basePopover}
+  preferredPlacement="bottom"
+  panelWidth="max-content"
 >
-  <svelte:fragment slot="button-content">
-    <img src={hasActiveFilters ? "/icons/filter-active.svg" : "/icons/filter-inactive.svg"} alt="" class="filter-icon" class:active={hasActiveFilters} />
+  <svelte:fragment slot="trigger" let:popover>
+    <button 
+      class="popover-button"
+      use:popover.button
+      title="Filter tasks"
+      on:click|stopPropagation
+    >
+      <img 
+        src={hasActiveFilters ? "/icons/filter-active.svg" : "/icons/filter-inactive.svg"} 
+        alt="" 
+        class="filter-icon" 
+        class:active={hasActiveFilters} 
+      />
+    </button>
   </svelte:fragment>
 
-  <svelte:fragment slot="panel-content">
-    <h3 class="filter-title">Show…</h3>
-
-    <div class="status-checkboxes">
-      <label class="status-checkbox">
-        <input 
-          type="checkbox" 
-          checked={newTaskChecked} 
-          on:change={createCheckboxHandler((val) => newTaskChecked = val, newTaskChecked)}
-          class="checkbox-input" 
-        />
-        <span class="checkbox-label">New</span>
-      </label>
-      <label class="status-checkbox">
-        <input 
-          type="checkbox" 
-          checked={inProgressChecked} 
-          on:change={createCheckboxHandler((val) => inProgressChecked = val, inProgressChecked)}
-          class="checkbox-input" 
-        />
-        <span class="checkbox-label">In Progress</span>
-      </label>
-      <label class="status-checkbox">
-        <input 
-          type="checkbox" 
-          checked={pausedChecked} 
-          on:change={createCheckboxHandler((val) => pausedChecked = val, pausedChecked)}
-          class="checkbox-input" 
-        />
-        <span class="checkbox-label">Paused</span>
-      </label>
-      <label class="status-checkbox">
-        <input 
-          type="checkbox" 
-          checked={completedChecked} 
-          on:change={createCheckboxHandler((val) => completedChecked = val, completedChecked)}
-          class="checkbox-input" 
-        />
-        <span class="checkbox-label">Completed</span>
-      </label>
-      <label class="status-checkbox">
-        <input 
-          type="checkbox" 
-          checked={cancelledChecked} 
-          on:change={createCheckboxHandler((val) => cancelledChecked = val, cancelledChecked)}
-          class="checkbox-input" 
-        />
-        <span class="checkbox-label">Cancelled</span>
-      </label>
-    </div>
-  </svelte:fragment>
-</BasePopoverButton>
+  <div class="filter-content">
+    <h3 class="popover-title">Show…</h3>
+    
+    <PopoverOptionList
+      options={statusOptions}
+      loading={false}
+      maxHeight="min(300px, 40vh)"
+      onOptionClick={handleStatusToggle}
+      isSelected={(option) => selectedStatuses.includes(option.value)}
+    >
+      <svelte:fragment slot="option-content" let:option>
+        <span class="popover-option-main-label">{option.label}</span>
+        
+        <div class="popover-checkmark-container">
+          {#if selectedStatuses.includes(option.value)}
+            <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
+          {/if}
+        </div>
+      </svelte:fragment>
+    </PopoverOptionList>
+  </div>
+</BasePopover>
 
 <style>
+  .popover-button {
+    width: 36px;
+    height: 36px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    padding: 0;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
+  }
+
+  .popover-button:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--accent-blue);
+  }
+
   .filter-icon {
     width: 20px;
     height: 20px;
@@ -133,36 +124,21 @@
     opacity: 1;
   }
 
-  .filter-title {
-    color: var(--text-primary);
-    margin: 0 0 12px 0;
+  .filter-content {
+    padding: 16px;
   }
 
-  .status-checkboxes {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  /* Accessibility improvements */
+  @media (prefers-reduced-motion: reduce) {
+    .popover-button {
+      transition: none;
+    }
   }
 
-  .status-checkbox {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
-    width: fit-content;
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .popover-button {
+      border-width: 2px;
+    }
   }
-
-  .checkbox-input {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--accent-blue);
-  }
-
-  .checkbox-label {
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.2;
-  }
-
-  /* Responsive adjustments are handled by BasePopoverButton */
 </style>
