@@ -1,5 +1,5 @@
 <script lang="ts">
-  import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
+  import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import { useUpdateJobStatusMutation } from '$lib/api/hooks/jobs';
   import { currentJob } from '$lib/stores/layout';
@@ -44,7 +44,7 @@
   }
 </script>
 
-<BasePopoverButton 
+<HeadlessPopoverButton 
   bind:popover
   title="Job Status"
   error={$updateStatusMutation.error ? getPopoverErrorMessage($updateStatusMutation.error) : ''}
@@ -88,7 +88,7 @@
       <div class="popover-loading-indicator">Updating status...</div>
     {/if}
   </svelte:fragment>
-</BasePopoverButton>
+</HeadlessPopoverButton>
 
 <style>
   .job-status-emoji {

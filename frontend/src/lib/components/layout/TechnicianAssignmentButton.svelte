@@ -1,5 +1,5 @@
 <script lang="ts">
-  import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
+  import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { useUsersQuery, useUserLookup } from '$lib/api/hooks/users';
@@ -110,7 +110,7 @@
   $: hasAssignments = optimisticTechnicians.length > 0;
 </script>
 
-<BasePopoverButton 
+<HeadlessPopoverButton 
   bind:popover
   title={hasAssignments ? `Technicians: ${optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Technicians'}
   error={errorMessage}
@@ -176,10 +176,10 @@
       </PopoverOptionList>
     {/if}
   </svelte:fragment>
-</BasePopoverButton>
+</HeadlessPopoverButton>
 
 <style>
-  /* Override BasePopoverButton styles for dynamic button sizing */
+  /* Override HeadlessPopoverButton styles for dynamic button sizing */
   :global(.popover-button.has-assignments) {
     border-radius: 18px !important;
     width: auto !important;

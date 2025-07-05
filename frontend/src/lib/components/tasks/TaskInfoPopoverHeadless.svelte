@@ -134,11 +134,6 @@
       actualDimensions
     );
     
-    console.log('Arrow positioning debug:', {
-      buttonRect: buttonElement.getBoundingClientRect(),
-      panelRect,
-      newPosition
-    });
     
     position = newPosition;
   }
