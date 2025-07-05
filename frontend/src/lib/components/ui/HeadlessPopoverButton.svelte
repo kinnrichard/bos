@@ -254,7 +254,6 @@
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-    overflow: hidden;
   }
 
   /* Arrow styles using CSS border triangles - much simpler and cleaner */

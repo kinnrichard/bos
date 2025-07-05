@@ -605,7 +605,6 @@
     border-radius: 8px;
     box-shadow: var(--shadow-lg);
     width: 380px;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     /* Position and z-index are handled via inline styles for portal */
