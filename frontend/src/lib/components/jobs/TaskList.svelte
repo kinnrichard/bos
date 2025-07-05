@@ -3,7 +3,7 @@
   import { selectedTaskStatuses, shouldShowTask } from '$lib/stores/taskFilter';
   import { taskSelection, type TaskSelectionState } from '$lib/stores/taskSelection';
   import { tasksService } from '$lib/api/tasks';
-  import { dndzone, TRIGGERS, SOURCES } from 'svelte-dnd-action';
+  import { dndzone, TRIGGERS, SOURCES, SHADOW_ITEM_MARKER_PROPERTY_NAME, SHADOW_PLACEHOLDER_ITEM_ID } from 'svelte-dnd-action';
   import { flip } from 'svelte/animate';
   import { quintOut } from 'svelte/easing';
   
@@ -27,16 +27,20 @@
   // Track collapsed/expanded state of tasks with subtasks
   let expandedTasks = new Set<string>();
   
-  // Drag & drop state
-  let draggedTaskId: string | null = null;
-  let isDragging = false;
-  let dragFeedback = '';
+  // Consolidated drag & drop state (Svelte-idiomatic)
+  let dragState = {
+    isDragging: false,
+    draggedTaskId: null as string | null,
+    feedback: '',
+    dropTarget: {
+      overId: null as string | null,
+      position: '' as 'top' | 'bottom' | '',
+      top: 0
+    }
+  };
   
-  // Drop line state (StackOverflow approach)
-  let overId: string | null = null; // Which task is being hovered over
-  let dropLinePosition: 'top' | 'bottom' | '' = ''; // Position of drop line relative to hovered task
-  let taskRefs: Record<string, HTMLElement> = {}; // Store task element references
-  let dropLineTop = 0; // Dynamic position for drop line
+  // Task element references for position calculations
+  let taskRefs: Record<string, HTMLElement> = {};
   
   // Multi-select state
   let flatTaskIds: string[] = [];
@@ -46,6 +50,39 @@
   
   // Animation duration for smooth transitions
   const flipDurationMs = 300;
+
+  // Svelte action to set element reference
+  function setTaskRef(element: HTMLElement, taskId: string | undefined) {
+    if (taskId) {
+      taskRefs[taskId] = element;
+    }
+    return {
+      destroy() {
+        if (taskId && taskRefs[taskId] === element) {
+          delete taskRefs[taskId];
+        }
+      }
+    };
+  }
+
+  // Svelte-idiomatic position calculation (replaces setTimeout)
+  function calculateDropLinePosition(targetId: string) {
+    const targetElement = taskRefs[targetId];
+    console.log('calculateDropLinePosition:', { targetId, targetElement, refs: Object.keys(taskRefs) });
+    if (!targetElement) return;
+    
+    const rect = targetElement.getBoundingClientRect();
+    const containerElement = targetElement.closest('.drag-drop-container');
+    if (!containerElement) return;
+    
+    const containerRect = containerElement.getBoundingClientRect();
+    if (dragState.dropTarget.position === 'top') {
+      dragState.dropTarget.top = rect.top - containerRect.top;
+    } else {
+      dragState.dropTarget.top = rect.bottom - containerRect.top;
+    }
+    console.log('Position calculated:', dragState.dropTarget.top);
+  }
 
   // Organize tasks into hierarchical structure with filtering
   function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[]) {
@@ -237,11 +274,11 @@
       
       // Show appropriate error message
       if (error.code === 'INVALID_CSRF_TOKEN') {
-        dragFeedback = 'Session expired - please try again';
+        dragState.feedback = 'Session expired - please try again';
       } else {
-        dragFeedback = 'Failed to update task status - please try again';
+        dragState.feedback = 'Failed to update task status - please try again';
       }
-      setTimeout(() => dragFeedback = '', 3000);
+      setTimeout(() => dragState.feedback = '', 3000);
     }
   }
 
@@ -257,8 +294,8 @@
     
     // Check if dragging has started
     if (info && info.trigger === TRIGGERS.DRAG_STARTED) {
-      isDragging = true;
-      draggedTaskId = info.id;
+      dragState.isDragging = true;
+      dragState.draggedTaskId = info.id;
       
       // Check if we're dragging a selected task with multiple selections
       const draggedItem = info.id;
@@ -266,12 +303,12 @@
       multiSelectDragCount = $taskSelection.selectedTaskIds.size;
       
       // Clear drop line state
-      overId = null;
-      dropLinePosition = '';
+      dragState.dropTarget.overId = null;
+      dragState.dropTarget.position = '';
     }
     
     // Handle drop line positioning during active drag (StackOverflow approach)
-    if (isDragging && info) {
+    if (dragState.isDragging && info) {
       const draggedItemId = info.id;
       const currentItems = items;
       
@@ -282,38 +319,71 @@
       const originalIndex = dndItems.findIndex((item: any) => item.id === draggedItemId);
       
       if (draggedIndex >= 0 && originalIndex >= 0) {
-        // Determine which task we're hovering over and position
-        if (draggedIndex !== originalIndex) {
-          // We're over a different position, show drop line
-          const targetItem = currentItems[draggedIndex];
-          overId = targetItem.id;
+        // Find the non-shadow item to position the drop line
+        let targetItemIndex = draggedIndex;
+        let targetItem = currentItems[draggedIndex];
+        
+        // If current target is shadow, find the nearest real task
+        if (targetItem[SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
+          console.log('Shadow item detected at index', draggedIndex, 'finding nearest real task');
+          // Look for the nearest real task (prefer the one that's adjacent)
+          let foundRealTask = false;
           
-          // Compare original vs new position to determine top/bottom
-          if (originalIndex > draggedIndex) {
-            // Dragging up - show line at top of target
-            dropLinePosition = 'top';
-          } else {
-            // Dragging down - show line at bottom of target  
-            dropLinePosition = 'bottom';
+          // First try items after the shadow
+          for (let i = draggedIndex + 1; i < currentItems.length; i++) {
+            if (!currentItems[i][SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
+              targetItem = currentItems[i];
+              targetItemIndex = i;
+              foundRealTask = true;
+              console.log('Found real task after shadow at index', i, 'task:', targetItem.task?.title);
+              break;
+            }
           }
           
-          // Calculate the actual position for the drop line
-          setTimeout(() => {
-            const targetElement = taskRefs[targetItem.id];
-            if (targetElement) {
-              const rect = targetElement.getBoundingClientRect();
-              const containerElement = targetElement.closest('.drag-drop-container');
-              if (containerElement) {
-                const containerRect = containerElement.getBoundingClientRect();
-                if (dropLinePosition === 'top') {
-                  dropLineTop = rect.top - containerRect.top;
-                } else {
-                  dropLineTop = rect.bottom - containerRect.top;
-                }
+          // If not found after, try items before the shadow
+          if (!foundRealTask) {
+            for (let i = draggedIndex - 1; i >= 0; i--) {
+              if (!currentItems[i][SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
+                targetItem = currentItems[i];
+                targetItemIndex = i;
+                foundRealTask = true;
+                console.log('Found real task before shadow at index', i, 'task:', targetItem.task?.title);
+                break;
               }
             }
-          }, 0);
+          }
+        } else {
+          console.log('Real task at index', draggedIndex, 'task:', targetItem.task?.title);
         }
+        
+        // Only proceed if we found a real task
+        if (!targetItem[SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
+          dragState.dropTarget.overId = targetItem.id;
+          
+          // Compare original vs new position to determine top/bottom
+          if (originalIndex > targetItemIndex) {
+            // Dragging up - show line at top of target
+            dragState.dropTarget.position = 'top';
+          } else if (originalIndex < targetItemIndex) {
+            // Dragging down - show line at bottom of target  
+            dragState.dropTarget.position = 'bottom';
+          } else {
+            // Same position - show line at bottom (could be top, user preference)
+            dragState.dropTarget.position = 'bottom';
+          }
+          
+          // Calculate position immediately (Svelte-idiomatic)
+          calculateDropLinePosition(targetItem.id);
+          console.log('Drop line state:', dragState.dropTarget);
+        } else {
+          // No real tasks found, clear drop line
+          dragState.dropTarget.overId = null;
+          dragState.dropTarget.position = '';
+        }
+      } else {
+        // Clear drop line if we can't determine position
+        dragState.dropTarget.overId = null;
+        dragState.dropTarget.position = '';
       }
     }
     
@@ -324,13 +394,13 @@
   async function handleDndFinalize(event: CustomEvent) {
     const items = event.detail.items;
     
-    // End dragging state
-    isDragging = false;
-    draggedTaskId = null;
+    // End dragging state (consolidated)
+    dragState.isDragging = false;
+    dragState.draggedTaskId = null;
     
     // Clear drop line state
-    overId = null;
-    dropLinePosition = '';
+    dragState.dropTarget.overId = null;
+    dragState.dropTarget.position = '';
     
     // Reset multi-select drag state
     const wasMultiSelectDrag = isMultiSelectDrag;
@@ -481,8 +551,8 @@
       <!-- Single absolute positioned drop line -->
       <div 
         class="drop-line-absolute"
-        class:visible={overId !== null && dropLinePosition !== ''}
-        style="top: {dropLineTop}px;"
+        class:visible={dragState.dropTarget.overId !== null && dragState.dropTarget.position !== ''}
+        style="top: {dragState.dropTarget.top}px;"
       ></div>
       
       <!-- Draggable tasks container -->
@@ -494,12 +564,11 @@
           type: 'tasks',
           dragDisabled: false,
           dropTargetStyle: {}, // Disable default drop styling
-          morphDisabled: false,
+          morphDisabled: true,
           dropFromOthersDisabled: true,
           centreDraggedOnCursor: false,
-          draggedElementStyle: { opacity: '0', height: '0', minHeight: '0', padding: '0', margin: '0' },
           transformDraggedElement: (element) => {
-            // Clean up ghost appearance - remove borders and selection styling
+            // Clean up appearance without affecting positioning
             element.style.border = 'none';
             element.style.outline = 'none';
             element.style.boxShadow = 'none';
@@ -514,27 +583,31 @@
         {#each dndItems as renderItem, index (renderItem.id)}
           
           <div 
-            bind:this={taskRefs[renderItem.task.id]}
+            use:setTaskRef={renderItem.task?.id}
             class="task-item"
-            class:completed={renderItem.task.status === 'successfully_completed'}
-            class:in-progress={renderItem.task.status === 'in_progress'}
-            class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
+            class:shadow-item={renderItem[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
+            class:completed={renderItem.task?.status === 'successfully_completed'}
+            class:in-progress={renderItem.task?.status === 'in_progress'}
+            class:cancelled={renderItem.task?.status === 'cancelled' || renderItem.task?.status === 'failed'}
             class:has-subtasks={renderItem.hasSubtasks}
-            class:selected={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
-            class:dragging={draggedTaskId === renderItem.task.id}
+            class:selected={renderItem.task?.id && $taskSelection.selectedTaskIds.has(renderItem.task.id)}
+            class:dragging={renderItem.task?.id && dragState.draggedTaskId === renderItem.task.id}
             class:multi-select-active={$taskSelection.isMultiSelectActive}
-            class:selection-top={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
-            class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
-            class:selection-bottom={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-bottom'}
-            style="--depth: {renderItem.depth}"
-            data-task-id={renderItem.task.id}
+            class:selection-top={renderItem.task?.id && getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
+            class:selection-middle={renderItem.task?.id && getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
+            class:selection-bottom={renderItem.task?.id && getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-bottom'}
+            style="--depth: {renderItem.depth || 0}"
+            data-task-id={renderItem.task?.id || ''}
+            data-is-dnd-shadow-item-hint={renderItem[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
             role="button"
             tabindex="0"
-            aria-label="Task: {renderItem.task.title}. {$taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
-            on:click={(e) => handleTaskClick(e, renderItem.task.id)}
-            on:keydown={(e) => handleTaskKeydown(e, renderItem.task.id)}
+            aria-label="Task: {renderItem.task?.title || 'Shadow item'}. {renderItem.task?.id && $taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
+            on:click={(e) => renderItem.task?.id && handleTaskClick(e, renderItem.task.id)}
+            on:keydown={(e) => renderItem.task?.id && handleTaskKeydown(e, renderItem.task.id)}
           >
           
+          <!-- Only render task content for real tasks, not shadow items -->
+          {#if !renderItem[SHADOW_ITEM_MARKER_PROPERTY_NAME] && renderItem.task}
           <!-- Disclosure Triangle (if has subtasks) -->
           {#if renderItem.hasSubtasks}
             <button 
@@ -575,7 +648,7 @@
             <h5 class="task-title">{renderItem.task.title}</h5>
             
             <!-- Multi-select drag indicator -->
-            {#if isDragging && isMultiSelectDrag && $taskSelection.selectedTaskIds.has(renderItem.task.id)}
+            {#if dragState.isDragging && isMultiSelectDrag && $taskSelection.selectedTaskIds.has(renderItem.task.id)}
               <div class="multi-drag-badge">
                 +{multiSelectDragCount - 1} more
               </div>
@@ -593,16 +666,17 @@
               <span class="action-icon">ⓘ</span>
             </button>
           </div>
+          {/if}
           </div>
         {/each}
       </div>
     </div>
 
     <!-- Error feedback only -->
-    {#if dragFeedback && dragFeedback.includes('Failed')}
+    {#if dragState.feedback && dragState.feedback.includes('Failed')}
       <div class="task-list-footer">
         <div class="feedback-message error">
-          {dragFeedback}
+          {dragState.feedback}
         </div>
       </div>
     {/if}
@@ -1157,25 +1231,39 @@
     transition: all 0.15s ease;
   }
 
-  /* Hide placeholder element during drag to prevent empty space */
+  /* macOS-style dragged element - keep at origin with reduced opacity */
   :global(.task-item[aria-grabbed="true"]) {
-    opacity: 0 !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    overflow: hidden !important;
+    opacity: 0.5 !important;
   }
 
-  /* Alternative: Hide elements with the dragged class */
+  /* macOS-style dragged element using our class */
   .task-item.dragging {
-    opacity: 0 !important;
+    opacity: 0.5 !important;
+  }
+
+  /* Robust CSS-only shadow hiding strategy */
+  .task-item.shadow-item {
+    display: none !important;
     height: 0 !important;
     min-height: 0 !important;
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
+    opacity: 0 !important;
     overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+
+  /* Additional shadow item targeting (fallback) */
+  :global([data-is-dnd-shadow-item-hint="true"]) {
+    display: none !important;
+    height: 0 !important;
+    visibility: hidden !important;
+  }
+
+  /* Target shadow items by data attribute */
+  :global(.task-item[data-is-dnd-shadow-item-hint="true"]) {
+    display: none !important;
   }
 </style>
