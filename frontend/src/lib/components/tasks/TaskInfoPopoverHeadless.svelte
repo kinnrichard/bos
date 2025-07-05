@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createPopover } from 'svelte-headlessui';
-  import { createEventDispatcher, onDestroy, onMount } from 'svelte';
+  import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
   import { tasksService, type Task } from '$lib/api/tasks';
   import { formatDateTime } from '$lib/utils/date';
   import Portal from '../ui/Portal.svelte';
@@ -36,6 +36,7 @@
     arrowPosition: {}
   };
   let isPositioned = false;
+  let mutationObserver: MutationObserver | null = null;
   
   // Update timer every second for in-progress tasks
   $: if ($popover.expanded && task?.status === 'in_progress') {
@@ -50,6 +51,10 @@
   // Clean up timer when component is destroyed
   onDestroy(() => {
     if (timer) clearInterval(timer);
+    if (mutationObserver) {
+      mutationObserver.disconnect();
+      mutationObserver = null;
+    }
     window.removeEventListener('scroll', debouncedUpdatePosition, true);
     window.removeEventListener('resize', debouncedUpdatePosition);
   });
@@ -82,22 +87,82 @@
   }
   
   // Calculate position when popover opens
+  $: if ($popover.expanded && buttonElement) {
+    // Calculate initial position immediately using estimated dimensions
+    updatePositionImmediate();
+  }
+  
+  // Set up content change observer when panel is mounted
   $: if ($popover.expanded && buttonElement && panelElement) {
-    // Wait for DOM to update before calculating positions
-    setTimeout(() => updatePosition(), 0);
+    setupContentObserver();
+    // Also do an immediate update with actual dimensions
+    tick().then(() => updatePosition());
+  }
+  
+  // Clean up observer when popover closes
+  $: if (!$popover.expanded && mutationObserver) {
+    mutationObserver.disconnect();
+    mutationObserver = null;
+  }
+  
+  function updatePositionImmediate() {
+    if (!buttonElement) return;
+    
+    // Use estimated dimensions for immediate positioning to avoid flicker
+    const estimatedDimensions = { width: 380, height: 500 };
+    const newPosition = calculatePopoverPosition(
+      { element: buttonElement, preferredPlacement: 'left' },
+      estimatedDimensions
+    );
+    
+    position = newPosition;
+    isPositioned = true;
   }
   
   function updatePosition() {
     if (!buttonElement || !panelElement) return;
     
+    // Use actual panel dimensions for precise positioning
     const panelRect = panelElement.getBoundingClientRect();
+    const actualDimensions = { 
+      width: panelRect.width || 380, 
+      height: panelRect.height || 500 
+    };
+    
     const newPosition = calculatePopoverPosition(
       { element: buttonElement, preferredPlacement: 'left' },
-      { width: panelRect.width || 380, height: panelRect.height || 500 }
+      actualDimensions
     );
     
     position = newPosition;
-    isPositioned = true;
+  }
+  
+  function setupContentObserver() {
+    if (!panelElement || mutationObserver) return;
+    
+    // Create observer to watch for content changes
+    mutationObserver = new MutationObserver((mutations) => {
+      // Check if any mutations actually changed content
+      const hasContentChange = mutations.some(mutation => 
+        mutation.type === 'childList' || 
+        mutation.type === 'characterData' ||
+        (mutation.type === 'attributes' && mutation.attributeName === 'style')
+      );
+      
+      if (hasContentChange) {
+        // Debounce position updates to avoid excessive recalculation
+        debouncedUpdatePosition();
+      }
+    });
+    
+    // Start observing changes to the panel content
+    mutationObserver.observe(panelElement, {
+      childList: true,       // Watch for added/removed child elements
+      subtree: true,         // Watch for changes in descendants
+      characterData: true,   // Watch for text content changes
+      attributes: true,      // Watch for attribute changes (like style)
+      attributeFilter: ['style', 'class'] // Only watch relevant attributes
+    });
   }
   
   const debouncedUpdatePosition = debounce(() => {
