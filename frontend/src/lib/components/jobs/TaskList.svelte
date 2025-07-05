@@ -3,10 +3,9 @@
   import { selectedTaskStatuses, shouldShowTask } from '$lib/stores/taskFilter';
   import { taskSelection, type TaskSelectionState } from '$lib/stores/taskSelection';
   import { tasksService } from '$lib/api/tasks';
-  import { dndzone, TRIGGERS, SOURCES, SHADOW_ITEM_MARKER_PROPERTY_NAME, SHADOW_PLACEHOLDER_ITEM_ID } from 'svelte-dnd-action';
-  import { flip } from 'svelte/animate';
-  import { quintOut } from 'svelte/easing';
-  
+  import { sortable, showDropIndicator, hideDropIndicator } from '$lib/utils/sortable-action';
+  import type { SortableEvent } from 'sortablejs';
+
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';
   const chevronDown = '/icons/chevron-down.svg';
@@ -20,188 +19,23 @@
     parent_id?: string;
     subtasks_count?: number;
     depth?: number;
+    position?: number;
   }>;
   
-  export let jobId: string; // Used for drag & drop functionality
+  export let jobId: string;
 
   // Track collapsed/expanded state of tasks with subtasks
   let expandedTasks = new Set<string>();
   
-  // Consolidated drag & drop state (Svelte-idiomatic)
-  let dragState = {
-    isDragging: false,
-    draggedTaskId: null as string | null,
-    feedback: '',
-    dropTarget: {
-      overId: null as string | null,
-      position: '' as 'top' | 'bottom' | '',
-      top: 0
-    }
-  };
-  
-  // Mouse tracking for cursor-based positioning
-  let mouseY = 0;
-  let containerElement: HTMLElement;
-  
-  // Task element references for position calculations
-  let taskRefs: Record<string, HTMLElement> = {};
+  // Drag & drop state
+  let isDragging = false;
+  let feedback = '';
   
   // Multi-select state
   let flatTaskIds: string[] = [];
   
   // Track optimistic updates for rollback
   let optimisticUpdates = new Map<string, { originalPosition: number; originalParentId?: string }>();
-  
-  // Animation duration for smooth transitions
-  const flipDurationMs = 300;
-
-  // Stable element reference management (no deletions during drag)
-  function setTaskRef(element: HTMLElement, taskId: string | undefined) {
-    if (taskId && element) {
-      taskRefs[taskId] = element;
-    }
-    return {
-      destroy() {
-        // Don't delete refs during drag - they're needed for positioning
-        // Only clean up when component unmounts
-      }
-    };
-  }
-
-  // Cursor-based drop line positioning
-  function calculateDropLinePositionFromCursor() {
-    if (!containerElement || !dragState.isDragging || !dragState.draggedTaskId) return;
-    
-    try {
-      // Get all visible task elements (not dragged, not shadow)
-      const visibleTasks = Object.keys(taskRefs)
-        .map(taskId => ({
-          id: taskId,
-          element: taskRefs[taskId],
-          task: dndItems.find(item => item.id === taskId && !item[SHADOW_ITEM_MARKER_PROPERTY_NAME])?.task
-        }))
-        .filter(item => {
-          // More robust filtering with validation
-          return item.element && 
-                 item.task && 
-                 item.id !== dragState.draggedTaskId &&
-                 item.element.isConnected && // Ensure element is still in DOM
-                 item.element.offsetParent !== null; // Ensure element is visible
-        })
-        .sort((a, b) => {
-          // Sort by vertical position with error handling
-          try {
-            const rectA = a.element.getBoundingClientRect();
-            const rectB = b.element.getBoundingClientRect();
-            return rectA.top - rectB.top;
-          } catch (e) {
-            console.warn('Error getting element bounds during sort:', e);
-            return 0;
-          }
-        });
-
-      if (visibleTasks.length === 0) {
-        dragState.dropTarget.overId = null;
-        dragState.dropTarget.position = '';
-        return;
-      }
-    } catch (error) {
-      console.warn('Error in calculateDropLinePositionFromCursor:', error);
-      dragState.dropTarget.overId = null;
-      dragState.dropTarget.position = '';
-      return;
-    }
-
-    const containerRect = containerElement.getBoundingClientRect();
-    const relativeMouseY = mouseY - containerRect.top;
-    
-    // Find the gap that the cursor is in
-    let targetTaskId = null;
-    let position: 'top' | 'bottom' = 'top';
-    let dropY = 0;
-
-    // Check if cursor is above the first task
-    const firstTask = visibleTasks[0];
-    const firstRect = firstTask.element.getBoundingClientRect();
-    const firstRelativeTop = firstRect.top - containerRect.top;
-    
-    if (relativeMouseY < firstRelativeTop + (firstRect.height / 2)) {
-      targetTaskId = firstTask.id;
-      position = 'top';
-      dropY = firstRelativeTop;
-    } else {
-      // Check between tasks and after last task
-      for (let i = 0; i < visibleTasks.length; i++) {
-        const currentTask = visibleTasks[i];
-        const currentRect = currentTask.element.getBoundingClientRect();
-        const currentRelativeTop = currentRect.top - containerRect.top;
-        const currentRelativeBottom = currentRect.bottom - containerRect.top;
-        
-        if (i === visibleTasks.length - 1) {
-          // Last task - check if cursor is below it
-          if (relativeMouseY > currentRelativeTop + (currentRect.height / 2)) {
-            targetTaskId = currentTask.id;
-            position = 'bottom';
-            dropY = currentRelativeBottom;
-          } else {
-            targetTaskId = currentTask.id;
-            position = 'top';
-            dropY = currentRelativeTop;
-          }
-          break;
-        } else {
-          // Between tasks
-          const nextTask = visibleTasks[i + 1];
-          const nextRect = nextTask.element.getBoundingClientRect();
-          const nextRelativeTop = nextRect.top - containerRect.top;
-          
-          const gapMiddle = (currentRelativeBottom + nextRelativeTop) / 2;
-          
-          if (relativeMouseY <= gapMiddle) {
-            if (relativeMouseY > currentRelativeTop + (currentRect.height / 2)) {
-              targetTaskId = currentTask.id;
-              position = 'bottom';
-              dropY = currentRelativeBottom;
-            } else {
-              targetTaskId = currentTask.id;
-              position = 'top';
-              dropY = currentRelativeTop;
-            }
-            break;
-          }
-        }
-      }
-    }
-
-    if (targetTaskId) {
-      dragState.dropTarget.overId = targetTaskId;
-      dragState.dropTarget.position = position;
-      dragState.dropTarget.top = dropY;
-      // Drop line positioned successfully
-    } else {
-      dragState.dropTarget.overId = null;
-      dragState.dropTarget.position = '';
-    }
-  }
-
-  // Mouse tracking during drag
-  function handleMouseMove(event: MouseEvent) {
-    if (dragState.isDragging) {
-      mouseY = event.clientY;
-      
-      // Throttle calculations for better performance
-      if (!mouseTrackingThrottle) {
-        mouseTrackingThrottle = true;
-        requestAnimationFrame(() => {
-          calculateDropLinePositionFromCursor();
-          mouseTrackingThrottle = false;
-        });
-      }
-    }
-  }
-  
-  // Performance throttling for mouse tracking
-  let mouseTrackingThrottle = false;
 
   // Organize tasks into hierarchical structure with filtering
   function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[]) {
@@ -262,28 +96,18 @@
           expandedTasks.add(task.id);
         }
       });
-      expandedTasks = expandedTasks; // Trigger reactivity
+      expandedTasks = expandedTasks;
     }
   }
   
-  
   // Make rendering reactive to expandedTasks state changes
   $: flattenedTasks = (() => {
-    // Include expandedTasks in dependency by referencing it
     const _ = expandedTasks; 
     return hierarchicalTasks.flatMap(task => renderTaskTree(task, 0));
   })();
   
   // Update flat task IDs for multi-select functionality
   $: flatTaskIds = flattenedTasks.map(item => item.task.id);
-  
-  // Prepare tasks for drag & drop (svelte-dnd-action format)
-  $: dndItems = flattenedTasks.map(item => ({
-    id: item.task.id,
-    ...item
-  }));
-  
-  
 
   function toggleTaskExpansion(taskId: string) {
     if (expandedTasks.has(taskId)) {
@@ -291,7 +115,7 @@
     } else {
       expandedTasks.add(taskId);
     }
-    expandedTasks = expandedTasks; // Trigger reactivity
+    expandedTasks = expandedTasks;
   }
 
   function isTaskExpanded(taskId: string): boolean {
@@ -321,17 +145,13 @@
 
   // Multi-select click handler
   function handleTaskClick(event: MouseEvent, taskId: string) {
-    // Prevent event bubbling to avoid conflicts
     event.stopPropagation();
     
     if (event.shiftKey) {
-      // Shift+click: range selection
       taskSelection.selectRange(taskId, flatTaskIds);
     } else if (event.ctrlKey || event.metaKey) {
-      // Ctrl/Cmd+click: toggle selection
       taskSelection.toggleTask(taskId);
     } else {
-      // Normal click: single selection
       taskSelection.selectTask(taskId);
     }
   }
@@ -341,7 +161,6 @@
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       
-      // Treat as click with current modifier keys
       const mockEvent = {
         stopPropagation: () => {},
         shiftKey: event.shiftKey,
@@ -363,12 +182,11 @@
     const prevSelected = prevTask && taskSelectionState.selectedTaskIds.has(prevTask.task.id);
     const nextSelected = nextTask && taskSelectionState.selectedTaskIds.has(nextTask.task.id);
     
-    
     if (prevSelected && nextSelected) return 'selection-middle';
     if (prevSelected) return 'selection-bottom';
     if (nextSelected) return 'selection-top';
     
-    return ''; // Single selection, keep default rounded corners
+    return '';
   }
 
   // Task status change handler with optimistic updates
@@ -380,99 +198,91 @@
     
     // Optimistic update
     task.status = newStatus;
-    tasks = [...tasks]; // Trigger reactivity
+    tasks = [...tasks];
     
     try {
       await tasksService.updateTaskStatus(jobId, taskId, newStatus);
-      console.log('Status updated successfully:', taskId, newStatus);
     } catch (error: any) {
       // Rollback on error
       task.status = originalStatus;
       tasks = [...tasks];
       console.error('Failed to update status:', error);
       
-      // Show appropriate error message
       if (error.code === 'INVALID_CSRF_TOKEN') {
-        dragState.feedback = 'Session expired - please try again';
+        feedback = 'Session expired - please try again';
       } else {
-        dragState.feedback = 'Failed to update task status - please try again';
+        feedback = 'Failed to update task status - please try again';
       }
-      setTimeout(() => dragState.feedback = '', 3000);
+      setTimeout(() => feedback = '', 3000);
     }
   }
 
-  // Track multi-select drag state
-  let isMultiSelectDrag = false;
-  let multiSelectDragCount = 0;
-
-  // Drag & drop handlers
-  function handleDndConsider(event: CustomEvent) {
-    // Update visual state during drag
-    const items = event.detail.items;
-    const info = event.detail.info;
+  // SortableJS event handlers
+  function handleSortStart(event: SortableEvent) {
+    isDragging = true;
     
-    // Check if dragging has started
-    if (info && info.trigger === TRIGGERS.DRAG_STARTED) {
-      dragState.isDragging = true;
-      dragState.draggedTaskId = info.id;
-      
-      // Check if we're dragging a selected task with multiple selections
-      const draggedItem = info.id;
-      isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedItem) && $taskSelection.selectedTaskIds.size > 1;
-      multiSelectDragCount = $taskSelection.selectedTaskIds.size;
-      
-      // Clear drop line state - cursor tracking will handle positioning
-      dragState.dropTarget.overId = null;
-      dragState.dropTarget.position = '';
-      
-      // Drag started - cursor tracking will handle drop line positioning
+    // Check for multi-select drag
+    const selectedCount = $taskSelection.selectedTaskIds.size;
+    const draggedTaskId = event.item.dataset.taskId;
+    
+    if (draggedTaskId && $taskSelection.selectedTaskIds.has(draggedTaskId) && selectedCount > 1) {
+      // Show multi-drag badge
+      const badge = document.createElement('div');
+      badge.className = 'multi-drag-badge';
+      badge.textContent = `+${selectedCount - 1} more`;
+      badge.style.cssText = `
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: #007AFF;
+        color: white;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-weight: 600;
+        z-index: 1001;
+      `;
+      event.item.appendChild(badge);
     }
-    
-    // Update dndItems to maintain reactivity during drag
-    dndItems = items;
   }
 
-  async function handleDndFinalize(event: CustomEvent) {
-    const items = event.detail.items;
+  function handleSortEnd(event: SortableEvent) {
+    isDragging = false;
     
-    // End dragging state (consolidated)
-    dragState.isDragging = false;
-    dragState.draggedTaskId = null;
+    // Remove multi-drag badge if it exists
+    const badge = event.item.querySelector('.multi-drag-badge');
+    if (badge) {
+      badge.remove();
+    }
     
-    // Clear drop line state
-    dragState.dropTarget.overId = null;
-    dragState.dropTarget.position = '';
-    dragState.dropTarget.top = 0;
-    
-    // Reset mouse tracking
-    mouseY = 0;
-    mouseTrackingThrottle = false;
-    
-    // Reset multi-select drag state
-    const wasMultiSelectDrag = isMultiSelectDrag;
-    isMultiSelectDrag = false;
-    multiSelectDragCount = 0;
+    // Handle the actual reordering
+    if (event.oldIndex !== undefined && event.newIndex !== undefined && event.oldIndex !== event.newIndex) {
+      handleTaskReorder(event);
+    }
+  }
+
+  async function handleTaskReorder(event: SortableEvent) {
+    const draggedTaskId = event.item.dataset.taskId;
+    if (!draggedTaskId) return;
+
+    // Determine if this is a multi-select drag
+    const isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedTaskId) && $taskSelection.selectedTaskIds.size > 1;
     
     let positionUpdates: Array<{id: string, position: number}> = [];
     
-    if (wasMultiSelectDrag) {
+    if (isMultiSelectDrag) {
       // Handle multi-select drag: move all selected tasks as a contiguous group
-      const draggedItem = event.detail.info?.id;
-      const draggedIndex = items.findIndex((item: any) => item.id === draggedItem);
       const selectedTaskIds = Array.from($taskSelection.selectedTaskIds);
-      
-      // Sort selected tasks by their current position to maintain relative order
       const selectedTasks = selectedTaskIds
         .map(id => tasks.find(t => t.id === id))
         .filter(Boolean)
-        .sort((a, b) => (a.position || 0) - (b.position || 0));
+        .sort((a, b) => (a!.position || 0) - (b!.position || 0));
       
-      // Get all tasks and separate selected from non-selected
       const allTasks = tasks.slice().sort((a, b) => (a.position || 0) - (b.position || 0));
       const nonSelectedTasks = allTasks.filter(task => !selectedTaskIds.includes(task.id));
       
       // Insert selected tasks as a group at the drop position
-      const insertPosition = draggedIndex;
+      const insertPosition = event.newIndex!;
       const reorderedTasks = [
         ...nonSelectedTasks.slice(0, insertPosition),
         ...selectedTasks,
@@ -483,7 +293,6 @@
       reorderedTasks.forEach((task, index) => {
         const newPosition = index + 1;
         
-        // Store original for rollback
         optimisticUpdates.set(task.id, {
           originalPosition: task.position || 0,
           originalParentId: task.parent_id
@@ -496,25 +305,30 @@
       });
       
     } else {
-      // Handle single task drag (existing logic)
-      positionUpdates = items.map((item: any, index: number) => {
-        const newPosition = index + 1;
-        const originalTask = tasks.find(t => t.id === item.id);
-        
-        // Store original for rollback
-        optimisticUpdates.set(item.id, {
-          originalPosition: originalTask?.position || 0,
-          originalParentId: originalTask?.parent_id
+      // Handle single task drag
+      const currentTasks = [...flattenedTasks.map(item => item.task)];
+      const draggedTask = currentTasks[event.oldIndex!];
+      const newIndex = event.newIndex!;
+      
+      // Remove from old position
+      currentTasks.splice(event.oldIndex!, 1);
+      // Insert at new position
+      currentTasks.splice(newIndex, 0, draggedTask);
+      
+      positionUpdates = currentTasks.map((task, index) => {
+        optimisticUpdates.set(task.id, {
+          originalPosition: task.position || 0,
+          originalParentId: task.parent_id
         });
         
         return {
-          id: item.id,
-          position: newPosition
+          id: task.id,
+          position: index + 1
         };
       });
     }
     
-    // Apply optimistic updates to tasks array
+    // Apply optimistic updates
     tasks = tasks.map(task => {
       const update = positionUpdates.find(u => u.id === task.id);
       if (update) {
@@ -526,8 +340,6 @@
     try {
       // Send batch reorder to server  
       await tasksService.batchReorderTasks(jobId, { positions: positionUpdates });
-      
-      // No success feedback needed
       
       // Clear optimistic updates on success
       optimisticUpdates.clear();
@@ -548,13 +360,11 @@
         return task;
       });
       
-      // Error logged to console, no UI feedback needed
-      
       optimisticUpdates.clear();
     }
   }
 
-  // Recursive function to render task tree with proper depth and visibility
+  // Recursive function to render task tree
   function renderTaskTree(task: any, depth: number): Array<{
     task: any;
     depth: number;
@@ -565,7 +375,6 @@
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     const isExpanded = isTaskExpanded(task.id);
     
-    // Add the current task
     result.push({
       task,
       depth,
@@ -573,7 +382,6 @@
       isExpanded
     });
     
-    // Add subtasks if expanded
     if (hasSubtasks && isExpanded) {
       for (const subtask of task.subtasks) {
         result.push(...renderTaskTree(subtask, depth + 1));
@@ -592,77 +400,49 @@
       <p>Tasks will appear here when they are added to this job.</p>
     </div>
   {:else}
-    <!-- Container for drop lines and tasks -->
+    <!-- Sortable tasks container -->
     <div 
-      class="drag-drop-container"
-      bind:this={containerElement}
-      on:mousemove={handleMouseMove}
+      class="tasks-container"
+      use:sortable={{
+        animation: 200,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        ghostClass: 'task-ghost',
+        chosenClass: 'task-chosen',
+        dragClass: 'task-dragging',
+        multiDrag: true,
+        multiDragKey: 'ctrl',
+        selectedClass: 'task-selected-for-drag',
+        fallbackTolerance: 0,
+        emptyInsertThreshold: 5,
+        onStart: handleSortStart,
+        onEnd: handleSortEnd
+      }}
     >
-      <!-- Single absolute positioned drop line -->
-      <div 
-        class="drop-line-absolute"
-        class:visible={dragState.dropTarget.overId !== null && dragState.dropTarget.position !== ''}
-        style="top: {dragState.dropTarget.top}px;"
-      ></div>
-      
-      <!-- Draggable tasks container -->
-      <div 
-        class="tasks-container"
-        use:dndzone={{
-          items: dndItems,
-          flipDurationMs: 200,
-          type: 'tasks',
-          dragDisabled: false,
-          dropTargetStyle: {}, // Disable default drop styling
-          morphDisabled: true,
-          dropFromOthersDisabled: true,
-          centreDraggedOnCursor: false,
-          transformDraggedElement: (element) => {
-            // Clean up appearance without affecting positioning
-            element.style.border = 'none';
-            element.style.outline = 'none';
-            element.style.boxShadow = 'none';
-            element.style.background = 'transparent';
-            element.classList.remove('selected');
-            return element;
-          }
-        }}
-        on:consider={handleDndConsider}
-        on:finalize={handleDndFinalize}
-      >
-        {#each dndItems as renderItem, index (renderItem.id)}
-          
-          <div 
-            use:setTaskRef={renderItem.task?.id}
-            class="task-item"
-            class:shadow-item={renderItem[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
-            class:completed={renderItem.task?.status === 'successfully_completed'}
-            class:in-progress={renderItem.task?.status === 'in_progress'}
-            class:cancelled={renderItem.task?.status === 'cancelled' || renderItem.task?.status === 'failed'}
-            class:has-subtasks={renderItem.hasSubtasks}
-            class:selected={renderItem.task?.id && $taskSelection.selectedTaskIds.has(renderItem.task.id)}
-            class:dragging={renderItem.task?.id && dragState.draggedTaskId === renderItem.task.id}
-            class:multi-select-active={$taskSelection.isMultiSelectActive}
-            class:selection-top={renderItem.task?.id && getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
-            class:selection-middle={renderItem.task?.id && getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
-            class:selection-bottom={renderItem.task?.id && getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-bottom'}
-            style="--depth: {renderItem.depth || 0}"
-            data-task-id={renderItem.task?.id || ''}
-            data-is-dnd-shadow-item-hint={renderItem[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
-            role="button"
-            tabindex="0"
-            aria-label="Task: {renderItem.task?.title || 'Shadow item'}. {renderItem.task?.id && $taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
-            on:click={(e) => renderItem.task?.id && handleTaskClick(e, renderItem.task.id)}
-            on:keydown={(e) => renderItem.task?.id && handleTaskKeydown(e, renderItem.task.id)}
-          >
-          
-          <!-- Only render task content for real tasks, not shadow items -->
-          {#if !renderItem[SHADOW_ITEM_MARKER_PROPERTY_NAME] && renderItem.task}
+      {#each flattenedTasks as renderItem, index (renderItem.task.id)}
+        <div 
+          class="task-item"
+          class:completed={renderItem.task.status === 'successfully_completed'}
+          class:in-progress={renderItem.task.status === 'in_progress'}
+          class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
+          class:has-subtasks={renderItem.hasSubtasks}
+          class:selected={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
+          class:multi-select-active={$taskSelection.isMultiSelectActive}
+          class:selection-top={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
+          class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
+          class:selection-bottom={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-bottom'}
+          style="--depth: {renderItem.depth || 0}"
+          data-task-id={renderItem.task.id}
+          role="button"
+          tabindex="0"
+          aria-label="Task: {renderItem.task.title}. {$taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
+          on:click={(e) => handleTaskClick(e, renderItem.task.id)}
+          on:keydown={(e) => handleTaskKeydown(e, renderItem.task.id)}
+        >
           <!-- Disclosure Triangle (if has subtasks) -->
           {#if renderItem.hasSubtasks}
             <button 
               class="disclosure-button"
-              on:click={() => toggleTaskExpansion(renderItem.task.id)}
+              on:click|stopPropagation={() => toggleTaskExpansion(renderItem.task.id)}
               aria-expanded={renderItem.isExpanded}
               aria-label={renderItem.isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
             >
@@ -681,7 +461,6 @@
             <button 
               class="status-emoji"
               on:click|stopPropagation={() => {
-                // Cycle through statuses: new_task -> in_progress -> successfully_completed -> new_task
                 const statusCycle = ['new_task', 'in_progress', 'successfully_completed'];
                 const currentIndex = statusCycle.indexOf(renderItem.task.status);
                 const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
@@ -696,16 +475,9 @@
           <!-- Task Content -->
           <div class="task-content">
             <h5 class="task-title">{renderItem.task.title}</h5>
-            
-            <!-- Multi-select drag indicator -->
-            {#if dragState.isDragging && isMultiSelectDrag && $taskSelection.selectedTaskIds.has(renderItem.task.id)}
-              <div class="multi-drag-badge">
-                +{multiSelectDragCount - 1} more
-              </div>
-            {/if}
           </div>
 
-          <!-- Task Actions (Hidden, shown on hover) -->
+          <!-- Task Actions -->
           <div class="task-actions">
             <button 
               class="task-action-button"
@@ -716,17 +488,15 @@
               <span class="action-icon">ⓘ</span>
             </button>
           </div>
-          {/if}
-          </div>
-        {/each}
-      </div>
+        </div>
+      {/each}
     </div>
 
     <!-- Error feedback only -->
-    {#if dragState.feedback && dragState.feedback.includes('Failed')}
+    {#if feedback && feedback.includes('Failed')}
       <div class="task-list-footer">
         <div class="feedback-message error">
-          {dragState.feedback}
+          {feedback}
         </div>
       </div>
     {/if}
@@ -738,32 +508,8 @@
   .task-list {
     display: flex;
     flex-direction: column;
-    gap: 0; /* Remove gap to match Rails tight spacing */
+    gap: 0;
     background-color: var(--bg-black);
-  }
-
-  /* Container for drag-drop positioning */
-  .drag-drop-container {
-    position: relative;
-  }
-
-  /* Absolute positioned drop lines */
-  .drop-line-absolute {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #007AFF, #0099FF);
-    border-radius: 2px;
-    opacity: 0;
-    transition: opacity 150ms ease;
-    box-shadow: 0 1px 4px rgba(0, 122, 255, 0.4);
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .drop-line-absolute.visible {
-    opacity: 1;
   }
 
   .empty-state {
@@ -795,18 +541,17 @@
     margin: 0;
   }
 
-
   .tasks-container {
     display: flex;
     flex-direction: column;
-    gap: 0; /* No gap between tasks like Rails */
+    gap: 0;
   }
 
   .task-item {
     display: flex;
     align-items: flex-start;
-    padding: 4px !important; /* Match Rails minimal padding */
-    padding-left: calc(4px + (var(--depth, 0) * 32px)) !important; /* Rails indentation */
+    padding: 4px !important;
+    padding-left: calc(4px + (var(--depth, 0) * 32px)) !important;
     border: none !important;
     border-radius: 8px !important;
     background: none !important;
@@ -814,23 +559,35 @@
     transition: all 0.2s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     position: relative;
     will-change: transform;
   }
 
-  /* Selection state styling - bright blue background with text shadow */
+  /* SortableJS classes */
+  .task-item.task-ghost {
+    opacity: 0.5;
+    background-color: rgba(0, 122, 255, 0.1) !important;
+  }
+
+  .task-item.task-chosen {
+    opacity: 0.8;
+  }
+
+  .task-item.task-dragging {
+    opacity: 0.9;
+    transform: rotate(5deg);
+    z-index: 1000;
+  }
+
+  .task-item.task-selected-for-drag {
+    background-color: rgba(0, 122, 255, 0.2) !important;
+  }
+
+  /* Selection state styling */
   .task-item.selected {
     background-color: var(--accent-blue) !important;
     color: white !important;
     text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
-  }
-
-  /* Multi-select mode styling - remove borders, keep clean */
-  .task-item.multi-select-active {
-    /* No visual change when in multi-select mode */
   }
 
   .task-item.multi-select-active.selected {
@@ -839,7 +596,7 @@
     text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
   }
 
-  /* Consecutive selection styling - square off touching borders */
+  /* Consecutive selection styling */
   .task-item.selected.selection-middle {
     border-radius: 0 !important;
   }
@@ -854,57 +611,14 @@
     border-top-right-radius: 0 !important;
   }
 
-  /* Dragging state styling - minimal visual changes */
-  .task-item.dragging {
-    /* Keep normal opacity, remove selection styling */
-    z-index: 1000;
-    /* Override selection styling during drag */
-    background-color: transparent !important;
-    color: inherit !important;
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Multi-select drag badge */
-  .multi-drag-badge {
-    display: inline-block;
-    background-color: var(--accent-blue);
-    color: white;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 10px;
-    margin-left: 8px;
-    vertical-align: middle;
-  }
-
-  .task-item.has-subtasks {
-    /* Remove border styling, Rails doesn't use this */
-  }
-
-  .task-item:hover {
-    /* No background color change on hover per user request */
-  }
-
-  .task-item.completed {
-    /* Apply opacity to individual elements, not the whole task */
-  }
-
   .task-item.completed .task-title,
-  .task-item.completed .task-content,
-  .task-item.completed .task-meta {
+  .task-item.completed .task-content {
     opacity: 0.75;
     color: #8E8E93;
   }
 
-  .task-item.in-progress {
-    /* Remove border styling for status, Rails uses different approach */
-  }
-
   .task-item.cancelled .task-title,
-  .task-item.cancelled .task-content,
-  .task-item.cancelled .task-meta {
+  .task-item.cancelled .task-content {
     opacity: 0.75;
     color: #8E8E93;
     text-decoration: line-through;
@@ -918,22 +632,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  .task-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0; /* Rails doesn't have margin here */
-    gap: 0; /* Rails uses tighter spacing */
-  }
-
-  .task-disclosure {
-    display: flex;
-    align-items: center;
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    margin-right: 4px; /* Space between chevron and status */
   }
 
   .disclosure-button {
@@ -958,12 +656,10 @@
     width: 12px;
     height: 12px;
     opacity: 0.7;
-    transition: transform 0.2s ease, opacity 0.15s ease;
-    display: block;
-    transform: rotate(0deg); /* Default: pointing right */
+    transition: transform 0.2s ease;
+    transform: rotate(0deg);
   }
   
-  /* When expanded, rotate chevron-right 90 degrees to point down */
   .disclosure-button[aria-expanded="true"] .chevron-icon {
     transform: rotate(90deg);
   }
@@ -996,31 +692,13 @@
     opacity: 0.8;
   }
 
-  .status-label {
-    display: none; /* Hide status label to match Rails minimal design */
-  }
-
-  .task-meta {
-    display: none; /* Hide metadata in main view like Rails */
-  }
-
-  .task-updated {
-    font-size: 11px;
-    color: var(--text-tertiary);
-  }
-
-  .task-body {
-    flex: 1;
-    min-width: 0;
-  }
-
   .task-title {
-    font-size: 17px; /* Match Rails title size */
-    color: #FFFFFF; /* Rails white color */
+    font-size: 17px;
+    color: #FFFFFF;
     margin: 0;
     margin-bottom: 2px;
     word-wrap: break-word;
-    font-weight: 400; /* Rails uses normal weight */
+    font-weight: 400;
     line-height: 1.3;
     cursor: text;
     outline: none;
@@ -1031,27 +709,16 @@
     user-select: text;
   }
 
-  .task-description {
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.4;
-    margin: 0;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-
   .task-actions {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
-    pointer-events: none; /* Allow clicks to pass through container */
+    pointer-events: none;
   }
 
   .task-actions > * {
-    pointer-events: auto; /* Enable on children */
+    pointer-events: auto;
   }
 
   .task-action-button {
@@ -1071,7 +738,6 @@
     pointer-events: none;
   }
 
-  /* Show action buttons on task hover - Rails behavior */
   .task-item:hover .task-action-button {
     opacity: 0.7;
     pointer-events: auto;
@@ -1094,26 +760,6 @@
     font-size: 18px;
   }
 
-  /* Selection indicator */
-
-  @keyframes scaleIn {
-    from {
-      transform: scale(0);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  /* Drag & drop visual feedback */
-  .tasks-container:global(.drag-active) {
-    background-color: rgba(0, 163, 255, 0.05);
-    border-radius: 8px;
-    border: 2px dashed var(--accent-blue);
-  }
-
   .task-list-footer {
     margin-top: 20px;
     padding: 12px;
@@ -1124,7 +770,6 @@
     align-items: center;
   }
 
-  /* Feedback messages */
   .feedback-message {
     background-color: rgba(50, 215, 75, 0.2);
     color: var(--accent-green, #32D74B);
@@ -1141,21 +786,6 @@
     border-color: rgba(255, 69, 58, 0.3);
   }
 
-  /* Multi-select info */
-  .multi-select-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background-color: rgba(0, 163, 255, 0.15);
-    color: var(--accent-blue);
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    border: 1px solid rgba(0, 163, 255, 0.3);
-    animation: slideIn 0.3s ease-out;
-  }
-
-
   @keyframes slideIn {
     from {
       transform: translateY(-10px);
@@ -1167,6 +797,21 @@
     }
   }
 
+  /* Global SortableJS drop indicator styles */
+  :global(.sortable-drop-indicator) {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #007AFF, #0099FF);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    box-shadow: 0 1px 4px rgba(0, 122, 255, 0.4);
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+  }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
@@ -1218,7 +863,7 @@
   /* Touch support for tablets */
   @media (hover: none) and (pointer: coarse) {
     .task-item {
-      min-height: 44px; /* iOS touch target minimum */
+      min-height: 44px;
       touch-action: manipulation;
     }
     
@@ -1232,13 +877,11 @@
       min-height: 44px;
     }
     
-    /* Show action buttons always on touch devices */
     .task-action-button {
       opacity: 0.7;
       pointer-events: auto;
     }
     
-    /* Improve drag handle for touch */
     .task-item::before {
       content: '⋮⋮';
       position: absolute;
@@ -1249,10 +892,6 @@
       font-size: 16px;
       opacity: 0.5;
       pointer-events: none;
-    }
-    
-    .task-item.dragging::before {
-      display: none;
     }
   }
 
@@ -1273,47 +912,11 @@
     }
   }
 
-  /* Smooth transitions for better UX */
+  /* Smooth transitions */
   .task-item,
   .disclosure-button,
   .status-emoji,
   .task-action-button {
     transition: all 0.15s ease;
-  }
-
-  /* macOS-style dragged element - keep at origin with reduced opacity */
-  :global(.task-item[aria-grabbed="true"]) {
-    opacity: 0.5 !important;
-  }
-
-  /* macOS-style dragged element using our class */
-  .task-item.dragging {
-    opacity: 0.5 !important;
-  }
-
-  /* Robust CSS-only shadow hiding strategy */
-  .task-item.shadow-item {
-    display: none !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    opacity: 0 !important;
-    overflow: hidden !important;
-    position: absolute !important;
-    left: -9999px !important;
-  }
-
-  /* Additional shadow item targeting (fallback) */
-  :global([data-is-dnd-shadow-item-hint="true"]) {
-    display: none !important;
-    height: 0 !important;
-    visibility: hidden !important;
-  }
-
-  /* Target shadow items by data attribute */
-  :global(.task-item[data-is-dnd-shadow-item-hint="true"]) {
-    display: none !important;
   }
 </style>

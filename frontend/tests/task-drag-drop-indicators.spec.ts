@@ -12,7 +12,7 @@ test.describe('Task Drag & Drop Indicators', () => {
   test('should show blue drop indicator during drag operation', async ({ page }) => {
     // Get the first two tasks
     const tasks = page.locator('.task-item');
-    await expect(tasks).toHaveCount.greaterThan(1);
+    await expect(tasks).toHaveCount(2);
     
     const firstTask = tasks.first();
     const secondTask = tasks.nth(1);
@@ -25,7 +25,7 @@ test.describe('Task Drag & Drop Indicators', () => {
     await secondTask.hover();
     
     // Check that a drop indicator appears
-    const dropIndicator = page.locator('.drop-indicator');
+    const dropIndicator = page.locator('.sortable-drop-indicator');
     await expect(dropIndicator).toBeVisible();
     
     // Verify the indicator styling
@@ -81,7 +81,7 @@ test.describe('Task Drag & Drop Indicators', () => {
 
   test('should show drop indicators at different positions', async ({ page }) => {
     const tasks = page.locator('.task-item');
-    await expect(tasks).toHaveCount.greaterThan(2);
+    await expect(tasks).toHaveCount(3);
     
     const firstTask = tasks.first();
     
@@ -105,7 +105,7 @@ test.describe('Task Drag & Drop Indicators', () => {
 
   test('should handle multi-select drag with indicators', async ({ page }) => {
     const tasks = page.locator('.task-item');
-    await expect(tasks).toHaveCount.greaterThan(2);
+    await expect(tasks).toHaveCount(3);
     
     // Select multiple tasks using Ctrl+click
     await tasks.first().click();
@@ -122,7 +122,7 @@ test.describe('Task Drag & Drop Indicators', () => {
     await tasks.nth(2).hover();
     
     // Check that drop indicator appears
-    const dropIndicator = page.locator('.drop-indicator');
+    const dropIndicator = page.locator('.sortable-drop-indicator');
     await expect(dropIndicator).toBeVisible();
     
     // Check for multi-drag badge
@@ -144,7 +144,7 @@ test.describe('Task Drag & Drop Indicators', () => {
     await tasks.nth(1).hover();
     
     // Check that drop indicator spans full width
-    const dropIndicator = page.locator('.drop-indicator');
+    const dropIndicator = page.locator('.sortable-drop-indicator');
     await expect(dropIndicator).toBeVisible();
     await expect(dropIndicator).toHaveCSS('width', '100%');
     
@@ -163,7 +163,7 @@ test.describe('Task Drag & Drop Indicators', () => {
     
     // Move to second task and verify instant appearance
     await secondTask.hover();
-    const dropIndicator = page.locator('.drop-indicator');
+    const dropIndicator = page.locator('.sortable-drop-indicator');
     await expect(dropIndicator).toBeVisible();
     
     // Move away and verify instant disappearance
