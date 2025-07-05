@@ -1,6 +1,7 @@
 class Api::V1::TasksController < Api::V1::BaseController
   before_action :find_job
   before_action :find_task, except: [ :index, :create, :reorder, :batch_reorder ]
+  before_action :set_current_user
 
   # Temporarily skip CSRF for testing
   skip_before_action :verify_csrf_token_for_cookie_auth, only: [ :batch_reorder ]
@@ -59,7 +60,7 @@ class Api::V1::TasksController < Api::V1::BaseController
   # GET /api/v1/jobs/:job_id/tasks/:id/details
   def details
     # Load associated data for detailed view
-    @task = @job.tasks.includes(:assigned_to, notes: :user).find(params[:id])
+    @task = @job.tasks.includes(:assigned_to, notes: :user, activity_logs: :user).find(params[:id])
 
     render json: {
       id: @task.id,
@@ -75,6 +76,15 @@ class Api::V1::TasksController < Api::V1::BaseController
           content: note.content,
           user_name: note.user.name,
           created_at: note.created_at
+        }
+      end,
+      activity_logs: @task.activity_logs.order(:created_at).map do |log|
+        {
+          id: log.id,
+          action: log.action,
+          user_name: log.user&.name,
+          created_at: log.created_at,
+          metadata: log.metadata
         }
       end,
       available_technicians: User.technician.map do |user|
@@ -314,6 +324,10 @@ class Api::V1::TasksController < Api::V1::BaseController
   end
 
   private
+
+  def set_current_user
+    User.current_user = current_user
+  end
 
   def find_job
     # Use the same permission logic as the Jobs API controller
