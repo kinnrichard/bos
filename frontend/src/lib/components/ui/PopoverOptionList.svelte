@@ -5,7 +5,7 @@
   }>;
   export let loading: boolean = false;
   export let maxHeight: string = 'min(400px, 50vh)';
-  export let onOptionClick: (option: any) => void;
+  export let onOptionClick: (option: any, event?: MouseEvent) => void;
   export let isSelected: (option: any) => boolean = () => false;
 
   function handleOptionClick(option: any, event: MouseEvent) {
@@ -17,7 +17,7 @@
     // Use requestAnimationFrame to defer the callback
     // This preserves hover state during the click handling
     requestAnimationFrame(() => {
-      onOptionClick(option);
+      onOptionClick(option, event);
     });
   }
 </script>

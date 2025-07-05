@@ -154,7 +154,7 @@
         options={availableUsers.filter(validateUserData)}
         loading={$usersQuery.isLoading}
         maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
-        onOptionClick={(user) => {
+        onOptionClick={(user, event) => {
           const isCurrentlySelected = localSelectedIds.has(user.id);
           handleUserToggle(user, !isCurrentlySelected);
         }}

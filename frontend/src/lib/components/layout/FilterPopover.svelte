@@ -21,7 +21,13 @@
   let selectedStatuses: string[] = statusOptions.map(option => option.value);
 
   // Handle status toggle with "prevent all unchecked" logic
-  function handleStatusToggle(option: { value: string; label: string }) {
+  function handleStatusToggle(option: { value: string; label: string }, event?: MouseEvent) {
+    // Easter egg: Option-click for exclusive selection
+    if (event?.altKey) {
+      selectedStatuses = [option.value];
+      return;
+    }
+    
     const isCurrentlySelected = selectedStatuses.includes(option.value);
     
     if (isCurrentlySelected) {
