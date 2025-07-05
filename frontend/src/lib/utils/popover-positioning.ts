@@ -122,12 +122,32 @@ function calculatePositionForPlacement(
         top = viewportHeight - popoverHeight - VIEWPORT_PADDING;
       }
       
-      // Calculate arrow position (pointing right)
+      // Calculate arrow position (pointing right) - center arrow on trigger button
       const triggerCenter = triggerRect.top + (triggerRect.height / 2);
-      const arrowTop = triggerCenter - top;
+      const arrowTop = triggerCenter - top - 10; // Subtract half arrow height (20px / 2)
+      const clampedArrowTop = Math.max(5, Math.min(popoverHeight - 25, arrowTop));
+      
+      // Position arrow slightly inside the right edge of the popover
+      const arrowLeftPos = left + popoverWidth - 6; // 6px inward from right edge
+      
+      // Use absolute positioning for arrow top (not relative to popover)
+      const arrowAbsoluteTop = triggerCenter - 10; // Center arrow on trigger
+      
+      console.log('Arrow calculation debug:', {
+        triggerCenter,
+        popoverTop: top,
+        arrowTop,
+        clampedArrowTop,
+        arrowAbsoluteTop,
+        popoverHeight,
+        arrowLeftPos,
+        popoverLeft: left,
+        popoverWidth
+      });
+      
       arrowPosition = {
-        top: `${Math.max(10, Math.min(popoverHeight - 10, arrowTop))}px`,
-        right: `-${ARROW_SIZE}px`
+        top: `${arrowAbsoluteTop}px`,
+        left: `${arrowLeftPos}px`
       };
       break;
       
@@ -149,8 +169,9 @@ function calculatePositionForPlacement(
       // Calculate arrow position (pointing left)
       const triggerCenterRight = triggerRect.top + (triggerRect.height / 2);
       const arrowTopRight = triggerCenterRight - top;
+      const clampedArrowTopRight = Math.max(10, Math.min(popoverHeight - 20, arrowTopRight));
       arrowPosition = {
-        top: `${Math.max(10, Math.min(popoverHeight - 10, arrowTopRight))}px`,
+        top: `${clampedArrowTopRight}px`,
         left: `-${ARROW_SIZE}px`
       };
       break;

@@ -134,6 +134,12 @@
       actualDimensions
     );
     
+    console.log('Arrow positioning debug:', {
+      buttonRect: buttonElement.getBoundingClientRect(),
+      panelRect,
+      newPosition
+    });
+    
     position = newPosition;
   }
   
@@ -429,25 +435,39 @@
         opacity: {isPositioned ? 1 : 0};
       "
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="20" viewBox="0 0 12 20">
-        <path
-          d={getArrowPath(position.placement)}
-          fill="var(--bg-secondary)"
-          stroke="var(--border-primary)"
-          stroke-width="1"
-          stroke-linejoin="miter"
-        />
-        <!-- Cover the connecting border based on placement -->
-        {#if position.placement === 'left'}
-          <path d="M0 0 L0 20" stroke="var(--bg-secondary)" stroke-width="2" />
-        {:else if position.placement === 'right'}
-          <path d="M12 0 L12 20" stroke="var(--bg-secondary)" stroke-width="2" />
-        {:else if position.placement === 'top'}
-          <path d="M0 0 L20 0" stroke="var(--bg-secondary)" stroke-width="2" />
-        {:else if position.placement === 'bottom'}
-          <path d="M0 12 L20 12" stroke="var(--bg-secondary)" stroke-width="2" />
-        {/if}
-      </svg>
+      {#if position.placement === 'left' || position.placement === 'right'}
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="20" viewBox="0 0 12 20">
+          <path
+            d={getArrowPath(position.placement)}
+            fill="var(--bg-secondary)"
+            stroke="var(--border-primary)"
+            stroke-width="1"
+            stroke-linejoin="miter"
+          />
+          <!-- Cover the connecting border -->
+          {#if position.placement === 'left'}
+            <path d="M0 0 L0 20" stroke="var(--bg-secondary)" stroke-width="2" />
+          {:else}
+            <path d="M12 0 L12 20" stroke="var(--bg-secondary)" stroke-width="2" />
+          {/if}
+        </svg>
+      {:else}
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="12" viewBox="0 0 20 12">
+          <path
+            d={getArrowPath(position.placement)}
+            fill="var(--bg-secondary)"
+            stroke="var(--border-primary)"
+            stroke-width="1"
+            stroke-linejoin="miter"
+          />
+          <!-- Cover the connecting border -->
+          {#if position.placement === 'top'}
+            <path d="M0 0 L20 0" stroke="var(--bg-secondary)" stroke-width="2" />
+          {:else}
+            <path d="M0 12 L20 12" stroke="var(--bg-secondary)" stroke-width="2" />
+          {/if}
+        </svg>
+      {/if}
     </div>
 
     <div 
@@ -645,10 +665,10 @@
     position: fixed;
     pointer-events: none;
     z-index: 2001; /* Higher than panel's z-index */
-    width: 12px;
-    height: 20px;
     transition: opacity 0.2s ease;
-    /* Position is handled via inline styles */
+    width: 20px; /* Max width for horizontal/vertical arrows */
+    height: 20px; /* Max height for horizontal/vertical arrows */
+    overflow: visible; /* Allow SVG to render outside container if needed */
   }
   
   .popover-arrow svg {
