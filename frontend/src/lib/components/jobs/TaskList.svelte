@@ -39,6 +39,10 @@
     }
   };
   
+  // Mouse tracking for cursor-based positioning
+  let mouseY = 0;
+  let containerElement: HTMLElement;
+  
   // Task element references for position calculations
   let taskRefs: Record<string, HTMLElement> = {};
   
@@ -51,38 +55,153 @@
   // Animation duration for smooth transitions
   const flipDurationMs = 300;
 
-  // Svelte action to set element reference
+  // Stable element reference management (no deletions during drag)
   function setTaskRef(element: HTMLElement, taskId: string | undefined) {
-    if (taskId) {
+    if (taskId && element) {
       taskRefs[taskId] = element;
     }
     return {
       destroy() {
-        if (taskId && taskRefs[taskId] === element) {
-          delete taskRefs[taskId];
-        }
+        // Don't delete refs during drag - they're needed for positioning
+        // Only clean up when component unmounts
       }
     };
   }
 
-  // Svelte-idiomatic position calculation (replaces setTimeout)
-  function calculateDropLinePosition(targetId: string) {
-    const targetElement = taskRefs[targetId];
-    console.log('calculateDropLinePosition:', { targetId, targetElement, refs: Object.keys(taskRefs) });
-    if (!targetElement) return;
+  // Cursor-based drop line positioning
+  function calculateDropLinePositionFromCursor() {
+    if (!containerElement || !dragState.isDragging || !dragState.draggedTaskId) return;
     
-    const rect = targetElement.getBoundingClientRect();
-    const containerElement = targetElement.closest('.drag-drop-container');
-    if (!containerElement) return;
-    
-    const containerRect = containerElement.getBoundingClientRect();
-    if (dragState.dropTarget.position === 'top') {
-      dragState.dropTarget.top = rect.top - containerRect.top;
-    } else {
-      dragState.dropTarget.top = rect.bottom - containerRect.top;
+    try {
+      // Get all visible task elements (not dragged, not shadow)
+      const visibleTasks = Object.keys(taskRefs)
+        .map(taskId => ({
+          id: taskId,
+          element: taskRefs[taskId],
+          task: dndItems.find(item => item.id === taskId && !item[SHADOW_ITEM_MARKER_PROPERTY_NAME])?.task
+        }))
+        .filter(item => {
+          // More robust filtering with validation
+          return item.element && 
+                 item.task && 
+                 item.id !== dragState.draggedTaskId &&
+                 item.element.isConnected && // Ensure element is still in DOM
+                 item.element.offsetParent !== null; // Ensure element is visible
+        })
+        .sort((a, b) => {
+          // Sort by vertical position with error handling
+          try {
+            const rectA = a.element.getBoundingClientRect();
+            const rectB = b.element.getBoundingClientRect();
+            return rectA.top - rectB.top;
+          } catch (e) {
+            console.warn('Error getting element bounds during sort:', e);
+            return 0;
+          }
+        });
+
+      if (visibleTasks.length === 0) {
+        dragState.dropTarget.overId = null;
+        dragState.dropTarget.position = '';
+        return;
+      }
+    } catch (error) {
+      console.warn('Error in calculateDropLinePositionFromCursor:', error);
+      dragState.dropTarget.overId = null;
+      dragState.dropTarget.position = '';
+      return;
     }
-    console.log('Position calculated:', dragState.dropTarget.top);
+
+    const containerRect = containerElement.getBoundingClientRect();
+    const relativeMouseY = mouseY - containerRect.top;
+    
+    // Find the gap that the cursor is in
+    let targetTaskId = null;
+    let position: 'top' | 'bottom' = 'top';
+    let dropY = 0;
+
+    // Check if cursor is above the first task
+    const firstTask = visibleTasks[0];
+    const firstRect = firstTask.element.getBoundingClientRect();
+    const firstRelativeTop = firstRect.top - containerRect.top;
+    
+    if (relativeMouseY < firstRelativeTop + (firstRect.height / 2)) {
+      targetTaskId = firstTask.id;
+      position = 'top';
+      dropY = firstRelativeTop;
+    } else {
+      // Check between tasks and after last task
+      for (let i = 0; i < visibleTasks.length; i++) {
+        const currentTask = visibleTasks[i];
+        const currentRect = currentTask.element.getBoundingClientRect();
+        const currentRelativeTop = currentRect.top - containerRect.top;
+        const currentRelativeBottom = currentRect.bottom - containerRect.top;
+        
+        if (i === visibleTasks.length - 1) {
+          // Last task - check if cursor is below it
+          if (relativeMouseY > currentRelativeTop + (currentRect.height / 2)) {
+            targetTaskId = currentTask.id;
+            position = 'bottom';
+            dropY = currentRelativeBottom;
+          } else {
+            targetTaskId = currentTask.id;
+            position = 'top';
+            dropY = currentRelativeTop;
+          }
+          break;
+        } else {
+          // Between tasks
+          const nextTask = visibleTasks[i + 1];
+          const nextRect = nextTask.element.getBoundingClientRect();
+          const nextRelativeTop = nextRect.top - containerRect.top;
+          
+          const gapMiddle = (currentRelativeBottom + nextRelativeTop) / 2;
+          
+          if (relativeMouseY <= gapMiddle) {
+            if (relativeMouseY > currentRelativeTop + (currentRect.height / 2)) {
+              targetTaskId = currentTask.id;
+              position = 'bottom';
+              dropY = currentRelativeBottom;
+            } else {
+              targetTaskId = currentTask.id;
+              position = 'top';
+              dropY = currentRelativeTop;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    if (targetTaskId) {
+      dragState.dropTarget.overId = targetTaskId;
+      dragState.dropTarget.position = position;
+      dragState.dropTarget.top = dropY;
+      // Drop line positioned successfully
+    } else {
+      dragState.dropTarget.overId = null;
+      dragState.dropTarget.position = '';
+    }
   }
+
+  // Mouse tracking during drag
+  function handleMouseMove(event: MouseEvent) {
+    if (dragState.isDragging) {
+      mouseY = event.clientY;
+      
+      // Throttle calculations for better performance
+      if (!mouseTrackingThrottle) {
+        mouseTrackingThrottle = true;
+        requestAnimationFrame(() => {
+          calculateDropLinePositionFromCursor();
+          mouseTrackingThrottle = false;
+        });
+      }
+    }
+  }
+  
+  // Performance throttling for mouse tracking
+  let mouseTrackingThrottle = false;
 
   // Organize tasks into hierarchical structure with filtering
   function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[]) {
@@ -302,89 +421,11 @@
       isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedItem) && $taskSelection.selectedTaskIds.size > 1;
       multiSelectDragCount = $taskSelection.selectedTaskIds.size;
       
-      // Clear drop line state
+      // Clear drop line state - cursor tracking will handle positioning
       dragState.dropTarget.overId = null;
       dragState.dropTarget.position = '';
-    }
-    
-    // Handle drop line positioning during active drag (StackOverflow approach)
-    if (dragState.isDragging && info) {
-      const draggedItemId = info.id;
-      const currentItems = items;
       
-      // Find the dragged item's current position in the reordered array
-      const draggedIndex = currentItems.findIndex((item: any) => item.id === draggedItemId);
-      
-      // Find the original position of the dragged item before drag started
-      const originalIndex = dndItems.findIndex((item: any) => item.id === draggedItemId);
-      
-      if (draggedIndex >= 0 && originalIndex >= 0) {
-        // Find the non-shadow item to position the drop line
-        let targetItemIndex = draggedIndex;
-        let targetItem = currentItems[draggedIndex];
-        
-        // If current target is shadow, find the nearest real task
-        if (targetItem[SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
-          console.log('Shadow item detected at index', draggedIndex, 'finding nearest real task');
-          // Look for the nearest real task (prefer the one that's adjacent)
-          let foundRealTask = false;
-          
-          // First try items after the shadow
-          for (let i = draggedIndex + 1; i < currentItems.length; i++) {
-            if (!currentItems[i][SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
-              targetItem = currentItems[i];
-              targetItemIndex = i;
-              foundRealTask = true;
-              console.log('Found real task after shadow at index', i, 'task:', targetItem.task?.title);
-              break;
-            }
-          }
-          
-          // If not found after, try items before the shadow
-          if (!foundRealTask) {
-            for (let i = draggedIndex - 1; i >= 0; i--) {
-              if (!currentItems[i][SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
-                targetItem = currentItems[i];
-                targetItemIndex = i;
-                foundRealTask = true;
-                console.log('Found real task before shadow at index', i, 'task:', targetItem.task?.title);
-                break;
-              }
-            }
-          }
-        } else {
-          console.log('Real task at index', draggedIndex, 'task:', targetItem.task?.title);
-        }
-        
-        // Only proceed if we found a real task
-        if (!targetItem[SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
-          dragState.dropTarget.overId = targetItem.id;
-          
-          // Compare original vs new position to determine top/bottom
-          if (originalIndex > targetItemIndex) {
-            // Dragging up - show line at top of target
-            dragState.dropTarget.position = 'top';
-          } else if (originalIndex < targetItemIndex) {
-            // Dragging down - show line at bottom of target  
-            dragState.dropTarget.position = 'bottom';
-          } else {
-            // Same position - show line at bottom (could be top, user preference)
-            dragState.dropTarget.position = 'bottom';
-          }
-          
-          // Calculate position immediately (Svelte-idiomatic)
-          calculateDropLinePosition(targetItem.id);
-          console.log('Drop line state:', dragState.dropTarget);
-        } else {
-          // No real tasks found, clear drop line
-          dragState.dropTarget.overId = null;
-          dragState.dropTarget.position = '';
-        }
-      } else {
-        // Clear drop line if we can't determine position
-        dragState.dropTarget.overId = null;
-        dragState.dropTarget.position = '';
-      }
+      // Drag started - cursor tracking will handle drop line positioning
     }
     
     // Update dndItems to maintain reactivity during drag
@@ -401,6 +442,11 @@
     // Clear drop line state
     dragState.dropTarget.overId = null;
     dragState.dropTarget.position = '';
+    dragState.dropTarget.top = 0;
+    
+    // Reset mouse tracking
+    mouseY = 0;
+    mouseTrackingThrottle = false;
     
     // Reset multi-select drag state
     const wasMultiSelectDrag = isMultiSelectDrag;
@@ -547,7 +593,11 @@
     </div>
   {:else}
     <!-- Container for drop lines and tasks -->
-    <div class="drag-drop-container">
+    <div 
+      class="drag-drop-container"
+      bind:this={containerElement}
+      on:mousemove={handleMouseMove}
+    >
       <!-- Single absolute positioned drop line -->
       <div 
         class="drop-line-absolute"
