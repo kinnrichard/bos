@@ -494,16 +494,16 @@
           type: 'tasks',
           dragDisabled: false,
           dropTargetStyle: {}, // Disable default drop styling
-          morphDisabled: true,
+          morphDisabled: false,
           dropFromOthersDisabled: true,
-          centreDraggedOnCursor: true,
+          centreDraggedOnCursor: false,
+          draggedElementStyle: { opacity: '0', height: '0', minHeight: '0', padding: '0', margin: '0' },
           transformDraggedElement: (element) => {
             // Clean up ghost appearance - remove borders and selection styling
             element.style.border = 'none';
             element.style.outline = 'none';
             element.style.boxShadow = 'none';
-            element.style.background = 'rgba(0, 0, 0, 0.1)';
-            element.style.backdropFilter = 'blur(4px)';
+            element.style.background = 'transparent';
             element.classList.remove('selected');
             return element;
           }
@@ -1155,5 +1155,27 @@
   .status-emoji,
   .task-action-button {
     transition: all 0.15s ease;
+  }
+
+  /* Hide placeholder element during drag to prevent empty space */
+  :global(.task-item[aria-grabbed="true"]) {
+    opacity: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+  }
+
+  /* Alternative: Hide elements with the dragged class */
+  .task-item.dragging {
+    opacity: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
   }
 </style>
