@@ -22,9 +22,15 @@
 
   // Handle status toggle with "prevent all unchecked" logic
   function handleStatusToggle(option: { value: string; label: string }, event?: MouseEvent) {
-    // Easter egg: Option-click for exclusive selection
+    // Easter egg: Option-click for exclusive selection or toggle to all
     if (event?.altKey) {
-      selectedStatuses = [option.value];
+      // Check if already exclusively selected - if so, select all
+      if (selectedStatuses.length === 1 && selectedStatuses.includes(option.value)) {
+        selectedStatuses = statusOptions.map(opt => opt.value);
+      } else {
+        // Otherwise, select only this option
+        selectedStatuses = [option.value];
+      }
       return;
     }
     
