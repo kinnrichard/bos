@@ -123,7 +123,7 @@ function calculatePositionForPlacement(
       const triggerCenterY = triggerRect.top + (triggerRect.height / 2);
       arrowPosition = {
         top: triggerCenterY - 10, // Center arrow on trigger button (arrow height 20px / 2)
-        left: left + popoverWidth - 4 // Position arrow 4px closer to panel
+        left: left + popoverWidth - 7 // Position arrow 7px closer to panel (3px more)
       };
       
       break;
@@ -195,7 +195,7 @@ function calculatePositionForPlacement(
       // Calculate arrow position (pointing up to button)
       const triggerCenterXBottom = triggerRect.left + (triggerRect.width / 2);
       arrowPosition = {
-        top: top - 11, // Position arrow 1px closer to panel
+        top: top - 10, // Position arrow 2px closer to panel (1px more)
         left: triggerCenterXBottom - 10 // Center arrow on trigger button (arrow width 20px / 2)
       };
       
