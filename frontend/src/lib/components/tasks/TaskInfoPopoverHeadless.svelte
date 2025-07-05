@@ -1,19 +1,12 @@
 <script lang="ts">
-  import { createPopover } from 'svelte-headlessui';
-  import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import { tasksService, type Task } from '$lib/api/tasks';
   import { formatDateTime } from '$lib/utils/date';
-  import Portal from '../ui/Portal.svelte';
-  import { 
-    calculatePopoverPosition, 
-    debounce,
-    type PopoverPosition 
-  } from '$lib/utils/popover-positioning';
+  import BasePopover from '../ui/BasePopover.svelte';
   
   export let task: Task;
   export let jobId: string;
   
-  const popover = createPopover();
   const dispatch = createEventDispatcher();
   
   let taskDetails: any = null;
@@ -24,21 +17,13 @@
   let timelineContainer: HTMLElement;
   let currentTime = Date.now();
   let timer: any;
-  let panelElement: HTMLElement;
-  let buttonElement: HTMLElement;
   
-  // Portal positioning
-  let position: PopoverPosition = {
-    top: 0,
-    left: 0,
-    placement: 'left',
-    arrowPosition: { top: 0, left: 0 }
-  };
-  let isPositioned = false;
-  let mutationObserver: MutationObserver | null = null;
-  
+  // Forward popover instance from BasePopover
+  let basePopover: any;
+  export { basePopover as popover };
+
   // Update timer every second for in-progress tasks
-  $: if ($popover.expanded && task?.status === 'in_progress') {
+  $: if (basePopover && $basePopover.expanded && task?.status === 'in_progress') {
     timer = setInterval(() => {
       currentTime = Date.now();
     }, 1000);
@@ -50,126 +35,12 @@
   // Clean up timer when component is destroyed
   onDestroy(() => {
     if (timer) clearInterval(timer);
-    if (mutationObserver) {
-      mutationObserver.disconnect();
-      mutationObserver = null;
-    }
-    window.removeEventListener('scroll', debouncedUpdatePosition, true);
-    window.removeEventListener('resize', debouncedUpdatePosition);
   });
-  
-  // Set up scroll and resize listeners
-  onMount(() => {
-    window.addEventListener('scroll', debouncedUpdatePosition, true);
-    window.addEventListener('resize', debouncedUpdatePosition);
-  });
-  
-  // Handle keyboard events
-  function handleKeydown(event: KeyboardEvent) {
-    if (!$popover.expanded) return;
-    if (event.key === 'Escape') {
-      popover.close();
-    }
-  }
-  
-  // Handle outside clicks
-  function handleOutsideClick(event: MouseEvent) {
-    if (!$popover.expanded) return;
-    if (panelElement && !panelElement.contains(event.target as Node) && !buttonElement.contains(event.target as Node)) {
-      popover.close();
-    }
-  }
   
   // Load task details when popover becomes expanded
-  $: if ($popover.expanded && task && !taskDetails) {
+  $: if (basePopover && $basePopover.expanded && task && !taskDetails) {
     loadTaskDetails();
   }
-  
-  // Calculate position when popover opens
-  $: if ($popover.expanded && buttonElement) {
-    // Calculate initial position immediately using estimated dimensions
-    updatePositionImmediate();
-  }
-  
-  // Set up content change observer when panel is mounted
-  $: if ($popover.expanded && buttonElement && panelElement) {
-    setupContentObserver();
-    // Also do an immediate update with actual dimensions
-    tick().then(() => updatePosition());
-  }
-  
-  // Clean up observer when popover closes
-  $: if (!$popover.expanded && mutationObserver) {
-    mutationObserver.disconnect();
-    mutationObserver = null;
-  }
-  
-  function updatePositionImmediate() {
-    if (!buttonElement) return;
-    
-    // Use estimated dimensions for immediate positioning to avoid flicker
-    const estimatedDimensions = { width: 380, height: 500 };
-    const newPosition = calculatePopoverPosition(
-      { element: buttonElement, preferredPlacement: 'left' },
-      estimatedDimensions
-    );
-    
-    position = newPosition;
-    isPositioned = true;
-  }
-  
-  function updatePosition() {
-    if (!buttonElement || !panelElement) return;
-    
-    // Use actual panel dimensions for precise positioning
-    const panelRect = panelElement.getBoundingClientRect();
-    const actualDimensions = { 
-      width: panelRect.width || 380, 
-      height: panelRect.height || 500 
-    };
-    
-    const newPosition = calculatePopoverPosition(
-      { element: buttonElement, preferredPlacement: 'left' },
-      actualDimensions
-    );
-    
-    
-    position = newPosition;
-  }
-  
-  function setupContentObserver() {
-    if (!panelElement || mutationObserver) return;
-    
-    // Create observer to watch for content changes
-    mutationObserver = new MutationObserver((mutations) => {
-      // Check if any mutations actually changed content
-      const hasContentChange = mutations.some(mutation => 
-        mutation.type === 'childList' || 
-        mutation.type === 'characterData' ||
-        (mutation.type === 'attributes' && mutation.attributeName === 'style')
-      );
-      
-      if (hasContentChange) {
-        // Debounce position updates to avoid excessive recalculation
-        debouncedUpdatePosition();
-      }
-    });
-    
-    // Start observing changes to the panel content
-    mutationObserver.observe(panelElement, {
-      childList: true,       // Watch for added/removed child elements
-      subtree: true,         // Watch for changes in descendants
-      characterData: true,   // Watch for text content changes
-      attributes: true,      // Watch for attribute changes (like style)
-      attributeFilter: ['style', 'class'] // Only watch relevant attributes
-    });
-  }
-  
-  const debouncedUpdatePosition = debounce(() => {
-    if ($popover.expanded) {
-      updatePosition();
-    }
-  }, 10);
   
   // Reset state when task changes
   $: if (task) {
@@ -400,196 +271,166 @@
 </script>
 
 <div class="task-info-popover-container">
-  <!-- Info Button (Trigger) -->
-  <button 
-    class="task-action-button"
-    use:popover.button
-    bind:this={buttonElement}
-    title="Task details"
-    on:click|stopPropagation
+  <!-- Task Info Button (Trigger) -->
+  <BasePopover 
+    bind:popover={basePopover}
+    preferredPlacement="left"
+    panelWidth="380px"
   >
-    <span class="action-icon">ⓘ</span>
-  </button>
-</div>
+    <svelte:fragment slot="trigger" let:popover>
+      <button 
+        class="task-action-button"
+        use:popover.button
+        title="Task details"
+        on:click|stopPropagation
+      >
+        <span class="action-icon">ⓘ</span>
+      </button>
+    </svelte:fragment>
 
-<!-- Global event handlers (must be at top level) -->
-<svelte:window on:click={handleOutsideClick} on:keydown={handleKeydown} />
-
-<!-- Popover Panel (rendered via Portal) -->
-<Portal enabled={$popover.expanded}>
-  {#if $popover.expanded}
-    <!-- Separate arrow element -->
-    <div 
-      class="popover-arrow panel-{position.placement}"
-      style="
-        position: fixed;
-        top: {position.arrowPosition.top}px;
-        left: {position.arrowPosition.left}px;
-        opacity: {isPositioned ? 1 : 0};
-        transition: opacity 0.2s ease;
-        z-index: 2001;
-      "
-    ></div>
-
-    <div 
-      class="task-info-popover-panel"
-      use:popover.panel
-      bind:this={panelElement}
-      style="
-        position: fixed;
-        top: {position.top}px;
-        left: {position.left}px;
-        max-width: {position.maxWidth ? position.maxWidth + 'px' : '380px'};
-        max-height: {position.maxHeight ? position.maxHeight + 'px' : 'calc(100vh - 100px)'};
-        opacity: {isPositioned ? 1 : 0};
-        transition: opacity 0.2s ease;
-        z-index: 2000;
-      "
-    >
-      <!-- Popover content with scrolling -->
-      <div class="popover-content-scrollable">
-        <!-- Header -->
-        <div class="popover-header">
-          <h3>Task Info</h3>
-          {#if task.status === 'in_progress' || (task.accumulated_seconds && task.accumulated_seconds > 0)}
-            {@const _ = currentTime} <!-- Force reactivity -->
-            {@const duration = calculateCurrentDuration(task)}
-            <div class="header-duration">
-              <span class="timer-icon">⏱️</span>
-              <span class="timer-display" class:active={task.status === 'in_progress'}>
-                {formatTimeDuration(duration)}
-              </span>
-            </div>
-          {/if}
-        </div>
-
-        {#if loading}
-          <div class="timeline-section">
-            <div class="loading-state">
-              <span class="spinner">⏳</span>
-              <span>Loading task details...</span>
-            </div>
-          </div>
-        {:else if error}
-          <div class="timeline-section">
-            <div class="error-state">
-              <span>❌</span>
-              <span>{error}</span>
-              <button on:click={loadTaskDetails}>Retry</button>
-            </div>
-          </div>
-        {:else if taskDetails}
-          <!-- Timeline section -->
-          <div class="timeline-section">
-            <div class="timeline-container" bind:this={timelineContainer}>
-              {#each groupTimelineItems(getTimelineItems(taskDetails)) as item}
-                {#if item.type === 'header'}
-                  <div class="timeline-header">
-                    <div class="timeline-header-left">
-                      {#if item.user}
-                        <span class="timeline-header-icon user-avatar" style="background-color: #4A90E2; color: white;">
-                          {item.user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                        </span>
-                      {/if}
-                      <span class="timeline-header-user">{item.user?.name || 'System'}</span>
-                    </div>
-                    <span class="timeline-header-date">{formatHeaderDate(item.timestamp)}</span>
-                  </div>
-                {:else if item.type === 'created'}
-                  <div class="timeline-item">
-                    <div class="timeline-row">
-                      <div class="timeline-content">
-                        <span class="timeline-emoji">⚫</span>
-                        <span class="timeline-label">Created</span>
-                      </div>
-                      <div class="timeline-time">
-                        <span>{formatTimeOnly(item.timestamp)}</span>
-                      </div>
-                    </div>
-                  </div>
-                {:else if item.type === 'status_change'}
-                  <div class="timeline-item">
-                    <div class="timeline-row">
-                      <div class="timeline-content">
-                        <span class="timeline-emoji">{getStatusEmoji(item.status)}</span>
-                        <span class="timeline-label">{getStatusLabel(item.status)}</span>
-                      </div>
-                      <div class="timeline-time">
-                        <span>{formatTimeOnly(item.timestamp)}</span>
-                      </div>
-                    </div>
-                  </div>
-                {:else if item.type === 'note'}
-                  <div class="timeline-item timeline-item--note" data-note-id={item.note?.id}>
-                    <div class="timeline-row">
-                      <div class="timeline-content">
-                        <span class="timeline-emoji">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 19.8242 17.998"
-                            width="18"
-                            height="18"
-                            style="display: block;"
-                          >
-                            <path
-                              d="M3.06641 17.998L16.4062 17.998C18.4473 17.998 19.4629 16.9824 19.4629 14.9707L19.4629 3.04688C19.4629 1.03516 18.4473 0.0195312 16.4062 0.0195312L3.06641 0.0195312C1.02539 0.0195312 0 1.02539 0 3.04688L0 14.9707C0 16.9922 1.02539 17.998 3.06641 17.998ZM2.91992 16.4258C2.05078 16.4258 1.57227 15.9668 1.57227 15.0586L1.57227 5.84961C1.57227 4.95117 2.05078 4.48242 2.91992 4.48242L16.5332 4.48242C17.4023 4.48242 17.8906 4.95117 17.8906 5.84961L17.8906 15.0586C17.8906 15.9668 17.4023 16.4258 16.5332 16.4258Z"
-                              fill="currentColor"
-                              fill-opacity="0.85"
-                            />
-                            <path
-                              d="M4.61914 8.11523L14.873 8.11523C15.2148 8.11523 15.4785 7.8418 15.4785 7.5C15.4785 7.16797 15.2148 6.91406 14.873 6.91406L4.61914 6.91406C4.25781 6.91406 4.00391 7.16797 4.00391 7.5C4.00391 7.8418 4.25781 8.11523 4.61914 8.11523Z"
-                              fill="currentColor"
-                              fill-opacity="0.85"
-                            />
-                            <path
-                              d="M4.61914 11.0547L14.873 11.0547C15.2148 11.0547 15.4785 10.8008 15.4785 10.4688C15.4785 10.1172 15.2148 9.85352 14.873 9.85352L4.61914 9.85352C4.25781 9.85352 4.00391 10.1172 4.00391 10.4688C4.00391 10.8008 4.25781 11.0547 4.61914 11.0547Z"
-                              fill="currentColor"
-                              fill-opacity="0.85"
-                            />
-                            <path
-                              d="M4.61914 13.9941L11.1328 13.9941C11.4746 13.9941 11.7383 13.7402 11.7383 13.4082C11.7383 13.0664 11.4746 12.793 11.1328 12.793L4.61914 12.793C4.25781 12.793 4.00391 13.0664 4.00391 13.4082C4.00391 13.7402 4.25781 13.9941 4.61914 13.9941Z"
-                              fill="currentColor"
-                              fill-opacity="0.85"
-                            />
-                          </svg>
-                        </span>
-                        <span class="timeline-note">{item.content}</span>
-                      </div>
-                      <div class="timeline-time">
-                        <span>{formatTimeOnly(item.timestamp)}</span>
-                      </div>
-                    </div>
-                  </div>
-                {/if}
-              {/each}
-            </div>
-          </div>
-
-          <!-- Add note section -->
-          <div class="add-note-section">
-            <textarea
-              class="note-input"
-              bind:value={noteText}
-              on:keydown={handleNoteKeydown}
-              placeholder="Add a note..."
-              rows="2"
-              disabled={addingNote}
-            ></textarea>
-            <div class="note-actions">
-              <button
-                class="button button--primary"
-                on:click={addNote}
-                disabled={!noteText.trim() || addingNote}
-              >
-                {addingNote ? 'Adding...' : 'Add Note'}
-              </button>
-            </div>
+    <!-- Popover content with scrolling -->
+    <div class="popover-content-scrollable">
+      <!-- Header -->
+      <div class="popover-header">
+        <h3>Task Info</h3>
+        {#if task.status === 'in_progress' || (task.accumulated_seconds && task.accumulated_seconds > 0)}
+          {@const _ = currentTime} <!-- Force reactivity -->
+          {@const duration = calculateCurrentDuration(task)}
+          <div class="header-duration">
+            <span class="timer-icon">⏱️</span>
+            <span class="timer-display" class:active={task.status === 'in_progress'}>
+              {formatTimeDuration(duration)}
+            </span>
           </div>
         {/if}
       </div>
+
+      {#if loading}
+        <div class="timeline-section">
+          <div class="loading-state">
+            <span class="spinner">⏳</span>
+            <span>Loading task details...</span>
+          </div>
+        </div>
+      {:else if error}
+        <div class="timeline-section">
+          <div class="error-state">
+            <span>❌</span>
+            <span>{error}</span>
+            <button on:click={loadTaskDetails}>Retry</button>
+          </div>
+        </div>
+      {:else if taskDetails}
+        <!-- Timeline section -->
+        <div class="timeline-section">
+          <div class="timeline-container" bind:this={timelineContainer}>
+            {#each groupTimelineItems(getTimelineItems(taskDetails)) as item}
+              {#if item.type === 'header'}
+                <div class="timeline-header">
+                  <div class="timeline-header-left">
+                    {#if item.user}
+                      <span class="timeline-header-icon user-avatar" style="background-color: #4A90E2; color: white;">
+                        {item.user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </span>
+                    {/if}
+                    <span class="timeline-header-user">{item.user?.name || 'System'}</span>
+                  </div>
+                  <span class="timeline-header-date">{formatHeaderDate(item.timestamp)}</span>
+                </div>
+              {:else if item.type === 'created'}
+                <div class="timeline-item">
+                  <div class="timeline-row">
+                    <div class="timeline-content">
+                      <span class="timeline-emoji">⚫</span>
+                      <span class="timeline-label">Created</span>
+                    </div>
+                    <div class="timeline-time">
+                      <span>{formatTimeOnly(item.timestamp)}</span>
+                    </div>
+                  </div>
+                </div>
+              {:else if item.type === 'status_change'}
+                <div class="timeline-item">
+                  <div class="timeline-row">
+                    <div class="timeline-content">
+                      <span class="timeline-emoji">{getStatusEmoji(item.status)}</span>
+                      <span class="timeline-label">{getStatusLabel(item.status)}</span>
+                    </div>
+                    <div class="timeline-time">
+                      <span>{formatTimeOnly(item.timestamp)}</span>
+                    </div>
+                  </div>
+                </div>
+              {:else if item.type === 'note'}
+                <div class="timeline-item timeline-item--note" data-note-id={item.note?.id}>
+                  <div class="timeline-row">
+                    <div class="timeline-content">
+                      <span class="timeline-emoji">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 19.8242 17.998"
+                          width="18"
+                          height="18"
+                          style="display: block;"
+                        >
+                          <path
+                            d="M3.06641 17.998L16.4062 17.998C18.4473 17.998 19.4629 16.9824 19.4629 14.9707L19.4629 3.04688C19.4629 1.03516 18.4473 0.0195312 16.4062 0.0195312L3.06641 0.0195312C1.02539 0.0195312 0 1.02539 0 3.04688L0 14.9707C0 16.9922 1.02539 17.998 3.06641 17.998ZM2.91992 16.4258C2.05078 16.4258 1.57227 15.9668 1.57227 15.0586L1.57227 5.84961C1.57227 4.95117 2.05078 4.48242 2.91992 4.48242L16.5332 4.48242C17.4023 4.48242 17.8906 4.95117 17.8906 5.84961L17.8906 15.0586C17.8906 15.9668 17.4023 16.4258 16.5332 16.4258Z"
+                            fill="currentColor"
+                            fill-opacity="0.85"
+                          />
+                          <path
+                            d="M4.61914 8.11523L14.873 8.11523C15.2148 8.11523 15.4785 7.8418 15.4785 7.5C15.4785 7.16797 15.2148 6.91406 14.873 6.91406L4.61914 6.91406C4.25781 6.91406 4.00391 7.16797 4.00391 7.5C4.00391 7.8418 4.25781 8.11523 4.61914 8.11523Z"
+                            fill="currentColor"
+                            fill-opacity="0.85"
+                          />
+                          <path
+                            d="M4.61914 11.0547L14.873 11.0547C15.2148 11.0547 15.4785 10.8008 15.4785 10.4688C15.4785 10.1172 15.2148 9.85352 14.873 9.85352L4.61914 9.85352C4.25781 9.85352 4.00391 10.1172 4.00391 10.4688C4.00391 10.8008 4.25781 11.0547 4.61914 11.0547Z"
+                            fill="currentColor"
+                            fill-opacity="0.85"
+                          />
+                          <path
+                            d="M4.61914 13.9941L11.1328 13.9941C11.4746 13.9941 11.7383 13.7402 11.7383 13.4082C11.7383 13.0664 11.4746 12.793 11.1328 12.793L4.61914 12.793C4.25781 12.793 4.00391 13.0664 4.00391 13.4082C4.00391 13.7402 4.25781 13.9941 4.61914 13.9941Z"
+                            fill="currentColor"
+                            fill-opacity="0.85"
+                          />
+                        </svg>
+                      </span>
+                      <span class="timeline-note">{item.content}</span>
+                    </div>
+                    <div class="timeline-time">
+                      <span>{formatTimeOnly(item.timestamp)}</span>
+                    </div>
+                  </div>
+                </div>
+              {/if}
+            {/each}
+          </div>
+        </div>
+
+        <!-- Add note section -->
+        <div class="add-note-section">
+          <textarea
+            class="note-input"
+            bind:value={noteText}
+            on:keydown={handleNoteKeydown}
+            placeholder="Add a note..."
+            rows="2"
+            disabled={addingNote}
+          ></textarea>
+          <div class="note-actions">
+            <button
+              class="button button--primary"
+              on:click={addNote}
+              disabled={!noteText.trim() || addingNote}
+            >
+              {addingNote ? 'Adding...' : 'Add Note'}
+            </button>
+          </div>
+        </div>
+      {/if}
     </div>
-  {/if}
-</Portal>
+  </BasePopover>
+</div>
 
 <style>
   /* Note color variable to match Rails */
@@ -607,133 +448,6 @@
     pointer-events: auto !important;
     position: relative;
     z-index: 10;
-  }
-
-  .task-info-popover-panel {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    box-shadow: var(--shadow-lg);
-    width: 380px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    /* Position and z-index are handled via inline styles for portal */
-  }
-
-  /* Arrow styles - separate DOM elements with CSS border triangles */
-  .popover-arrow {
-    width: 20px;
-    height: 20px;
-    pointer-events: none;
-  }
-
-  /* Bottom placement (arrow points up to button) */
-  .panel-bottom::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 12px solid var(--border-primary);
-  }
-
-  .panel-bottom::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid var(--bg-secondary);
-  }
-
-  /* Top placement (arrow points down to button) */
-  .panel-top::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-top: 12px solid var(--border-primary);
-  }
-
-  .panel-top::after {
-    content: '';
-    position: absolute;
-    bottom: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-top: 10px solid var(--bg-secondary);
-  }
-
-  /* Left placement (arrow points right to button) */
-  .panel-left::before {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-top: 12px solid transparent;
-    border-bottom: 12px solid transparent;
-    border-left: 12px solid var(--border-primary);
-  }
-
-  .panel-left::after {
-    content: '';
-    position: absolute;
-    right: 2px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-top: 10px solid transparent;
-    border-bottom: 10px solid transparent;
-    border-left: 10px solid var(--bg-secondary);
-  }
-
-  /* Right placement (arrow points left to button) */
-  .panel-right::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-top: 12px solid transparent;
-    border-bottom: 12px solid transparent;
-    border-right: 12px solid var(--border-primary);
-  }
-
-  .panel-right::after {
-    content: '';
-    position: absolute;
-    left: 2px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-top: 10px solid transparent;
-    border-bottom: 10px solid transparent;
-    border-right: 10px solid var(--bg-secondary);
   }
 
   /* Popover content wrapper with scrolling */
