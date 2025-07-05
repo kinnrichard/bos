@@ -21,6 +21,8 @@
   let currentTime = Date.now();
   let timer: any;
   let panelElement: HTMLElement;
+  let buttonElement: HTMLElement;
+  let arrowPosition = { top: '50%' };
   
   // Update timer every second for in-progress tasks
   $: if ($popover.expanded && task?.status === 'in_progress') {
@@ -54,6 +56,26 @@
   // Load task details when popover becomes expanded
   $: if ($popover.expanded && task && !taskDetails) {
     loadTaskDetails();
+  }
+  
+  // Calculate arrow position when popover opens
+  $: if ($popover.expanded && buttonElement && panelElement) {
+    // Wait for DOM to update before calculating positions
+    setTimeout(() => updateArrowPosition(), 0);
+  }
+  
+  function updateArrowPosition() {
+    if (!buttonElement || !panelElement) return;
+    
+    const buttonRect = buttonElement.getBoundingClientRect();
+    const containerRect = buttonElement.parentElement.getBoundingClientRect();
+    
+    // Calculate the center of the button relative to the container
+    const buttonCenter = buttonRect.top + (buttonRect.height / 2);
+    const containerTop = containerRect.top;
+    const relativePosition = buttonCenter - containerTop;
+    
+    arrowPosition = { top: `${relativePosition}px` };
   }
   
   // Reset state when task changes
@@ -289,6 +311,7 @@
   <button 
     class="task-action-button"
     use:popover.button
+    bind:this={buttonElement}
     title="Task details"
   >
     <span class="action-icon">ⓘ</span>
@@ -296,24 +319,24 @@
 
   <!-- Popover Panel -->
   {#if $popover.expanded}
+    <!-- Arrow pointing to button (outside panel) -->
+    <div class="popover-arrow" style="top: {arrowPosition.top};">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="20" viewBox="0 0 12 20">
+        <path
+          d="M0 0 L0 20 L12 10 Z"
+          fill="var(--bg-secondary)"
+          stroke="var(--border-primary)"
+          stroke-width="1"
+          stroke-linejoin="miter"
+        />
+      </svg>
+    </div>
+
     <div 
       class="task-info-popover-panel"
       use:popover.panel
       bind:this={panelElement}
     >
-      <!-- Arrow pointing to button -->
-      <div class="popover-arrow">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="20" viewBox="0 0 12 20">
-          <path
-            d="M0 0 L0 20 L12 10 Z"
-            fill="var(--bg-secondary)"
-            stroke="var(--border-primary)"
-            stroke-width="1"
-            stroke-linejoin="miter"
-          />
-        </svg>
-      </div>
-
       <!-- Popover content with scrolling -->
       <div class="popover-content-scrollable">
         <!-- Header -->
@@ -498,13 +521,13 @@
   /* Arrow styles - positioned on the right side pointing to the button */
   .popover-arrow {
     position: absolute;
-    right: -12px;
-    top: 50%;
+    right: calc(100% + 8px - 12px); /* Align with panel's right position */
     transform: translateY(-50%);
     pointer-events: none;
-    z-index: 1;
+    z-index: 1001; /* Higher than panel's z-index of 1000 */
     width: 12px;
     height: 20px;
+    transition: top 0.2s ease;
   }
   
   .popover-arrow svg {
