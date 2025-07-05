@@ -10,26 +10,33 @@ export interface SortableActionOptions extends Partial<Options> {
   onMove?: (evt: MoveEvent, originalEvent: Event) => boolean | void | -1 | 1;
 }
 
+export type DropZoneInfo = {
+  mode: 'reorder' | 'nest';
+  position?: 'above' | 'below';
+  targetElement: HTMLElement;
+};
+
 /**
  * Svelte action for SortableJS integration
  * Based on the working Rails sortable controller patterns
  */
 export function sortable(node: HTMLElement, options: SortableActionOptions = {}) {
   let sortableInstance: Sortable;
+  let currentDropZone: DropZoneInfo | null = null;
   
   // Default configuration matching the Rails implementation
   const defaultOptions: Options = {
     animation: 200,
     easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'sortable-chosen',
-    dragClass: 'sortable-drag',
+    ghostClass: 'task-ghost', // Match component configuration
+    chosenClass: 'task-chosen', // Match component configuration  
+    dragClass: 'task-dragging', // Match component configuration
     dataIdAttr: 'data-task-id',
     handle: undefined, // Allow dragging from anywhere on the element
     disabled: false,
     multiDrag: true,
     multiDragKey: 'ctrl',
-    selectedClass: 'sortable-selected',
+    selectedClass: 'task-selected-for-drag', // Match component configuration
     fallbackTolerance: 0,
     emptyInsertThreshold: 5,
     scroll: true,
@@ -53,6 +60,41 @@ export function sortable(node: HTMLElement, options: SortableActionOptions = {})
     }
   };
 
+  // Drop zone detection based on cursor position within target task
+  function detectDropZone(moveEvent: MoveEvent, originalEvent: Event): DropZoneInfo | null {
+    const mouseEvent = originalEvent as MouseEvent;
+    const targetElement = moveEvent.related;
+    
+    if (!targetElement || !mouseEvent) return null;
+
+    const rect = targetElement.getBoundingClientRect();
+    const relativeY = mouseEvent.clientY - rect.top;
+    const heightRatio = relativeY / rect.height;
+
+    // Drop zones based on Rails logic:
+    // Top 30% = reorder above
+    // Bottom 30% = reorder below  
+    // Middle 40% = nest as subtask
+    if (heightRatio <= 0.3) {
+      return {
+        mode: 'reorder',
+        position: 'above',
+        targetElement
+      };
+    } else if (heightRatio >= 0.7) {
+      return {
+        mode: 'reorder',
+        position: 'below',
+        targetElement
+      };
+    } else {
+      return {
+        mode: 'nest',
+        targetElement
+      };
+    }
+  }
+
   function initSortable() {
     // Merge default options with user options
     const mergedOptions: Options = {
@@ -60,14 +102,14 @@ export function sortable(node: HTMLElement, options: SortableActionOptions = {})
       ...options,
       // Ensure callbacks are properly bound
       onStart: (evt) => {
-        addDropIndicator();
         options.onStart?.(evt);
       },
       onEnd: (evt) => {
-        removeDropIndicator();
         if (evt.item) {
           evt.item.style.opacity = '1';
         }
+        // Clear drop zone detection
+        currentDropZone = null;
         options.onEnd?.(evt);
       },
       onSort: options.onSort,
@@ -80,35 +122,6 @@ export function sortable(node: HTMLElement, options: SortableActionOptions = {})
     sortableInstance = Sortable.create(node, mergedOptions);
   }
 
-  function addDropIndicator() {
-    // Create blue drop line indicator similar to Rails implementation
-    if (!document.querySelector('.sortable-drop-indicator')) {
-      const indicator = document.createElement('div');
-      indicator.className = 'sortable-drop-indicator';
-      indicator.style.cssText = `
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, #007AFF, #0099FF);
-        border-radius: 2px;
-        opacity: 0;
-        transition: opacity 150ms ease;
-        box-shadow: 0 1px 4px rgba(0, 122, 255, 0.4);
-        pointer-events: none;
-        z-index: 1000;
-        display: none;
-      `;
-      document.body.appendChild(indicator);
-    }
-  }
-
-  function removeDropIndicator() {
-    const indicator = document.querySelector('.sortable-drop-indicator');
-    if (indicator && indicator.parentNode) {
-      indicator.parentNode.removeChild(indicator);
-    }
-  }
 
   function updateOptions(newOptions: SortableActionOptions) {
     if (sortableInstance) {
@@ -128,7 +141,6 @@ export function sortable(node: HTMLElement, options: SortableActionOptions = {})
       if (sortableInstance) {
         sortableInstance.destroy();
       }
-      removeDropIndicator();
     }
   };
 }
@@ -142,29 +154,62 @@ export function getMultiSelectedItems(sortableInstance: Sortable): HTMLElement[]
   return Array.from(selected) as HTMLElement[];
 }
 
-// Helper function to show drop indicator at specific position
-export function showDropIndicator(targetElement: HTMLElement, position: 'top' | 'bottom') {
-  const indicator = document.querySelector('.sortable-drop-indicator') as HTMLElement;
-  if (!indicator) return;
-
+// Visual feedback functions for drop zones
+export function addDropIndicator(targetElement: HTMLElement, position: 'above' | 'below') {
+  removeDropIndicator();
+  
+  const indicator = document.createElement('div');
+  indicator.className = 'sortable-drop-indicator';
+  indicator.style.cssText = `
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #007AFF, #0099FF);
+    border-radius: 2px;
+    opacity: 1;
+    box-shadow: 0 1px 4px rgba(0, 122, 255, 0.4);
+    pointer-events: none;
+    z-index: 1000;
+  `;
+  
   const rect = targetElement.getBoundingClientRect();
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
   const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-
+  
   indicator.style.left = rect.left + scrollLeft + 'px';
   indicator.style.width = rect.width + 'px';
-  indicator.style.top = (position === 'top' ? rect.top : rect.bottom) + scrollTop + 'px';
-  indicator.style.display = 'block';
-  indicator.style.opacity = '1';
+  indicator.style.top = (position === 'above' ? rect.top : rect.bottom) + scrollTop + 'px';
+  
+  document.body.appendChild(indicator);
 }
 
-// Helper function to hide drop indicator
-export function hideDropIndicator() {
-  const indicator = document.querySelector('.sortable-drop-indicator') as HTMLElement;
+export function addNestHighlight(targetElement: HTMLElement) {
+  removeNestHighlight();
+  targetElement.classList.add('sortable-nest-target');
+}
+
+export function removeDropIndicator() {
+  const indicator = document.querySelector('.sortable-drop-indicator');
   if (indicator) {
-    indicator.style.opacity = '0';
-    setTimeout(() => {
-      indicator.style.display = 'none';
-    }, 150);
+    indicator.remove();
   }
 }
+
+export function removeNestHighlight() {
+  const highlighted = document.querySelector('.sortable-nest-target');
+  if (highlighted) {
+    highlighted.classList.remove('sortable-nest-target');
+  }
+  
+  const invalid = document.querySelector('.sortable-nest-invalid');
+  if (invalid) {
+    invalid.classList.remove('sortable-nest-invalid');
+  }
+}
+
+export function clearAllVisualFeedback() {
+  removeDropIndicator();
+  removeNestHighlight();
+}
+

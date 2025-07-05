@@ -12,11 +12,21 @@ export interface Task {
   position?: number;
   subtasks_count?: number;
   depth?: number;
+  // Time tracking fields
+  in_progress_since?: string;
+  accumulated_seconds?: number;
+  assigned_to?: {
+    id: string;
+    name: string;
+    initials: string;
+  };
+  notes_count?: number;
 }
 
 export interface TaskReorderRequest {
   id: string;
   position: number;
+  parent_id?: string;
   lock_version?: number;
 }
 
@@ -78,6 +88,23 @@ export class TasksService {
   }
 
   /**
+   * Nest a task under another task (make it a subtask)
+   */
+  async nestTask(
+    jobId: string,
+    taskId: string,
+    parentId: string,
+    position?: number
+  ): Promise<{ status: string; task: Task; timestamp: string }> {
+    const taskData: { parent_id: string; position?: number } = { parent_id: parentId };
+    if (position !== undefined) {
+      taskData.position = position;
+    }
+    
+    return this.updateTask(jobId, taskId, taskData);
+  }
+
+  /**
    * Update task status
    */
   async updateTaskStatus(
@@ -136,8 +163,50 @@ export class TasksService {
   /**
    * Get task details
    */
-  async getTaskDetails(jobId: string, taskId: string): Promise<Task> {
-    return api.get<Task>(`/jobs/${jobId}/tasks/${taskId}/details`);
+  async getTaskDetails(jobId: string, taskId: string): Promise<any> {
+    // For demo purposes, return mock data
+    if (jobId === 'test') {
+      return {
+        id: taskId,
+        title: `Task ${taskId} details`,
+        status: 'in_progress',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        notes: [
+          {
+            id: 'note1',
+            content: 'This is a sample note showing the task progress.',
+            user_name: 'John Smith',
+            created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString() // 1 hour ago
+          },
+          {
+            id: 'note2', 
+            content: 'Another note with more details about the task.',
+            user_name: 'Alice Johnson',
+            created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString() // 30 minutes ago
+          }
+        ],
+        available_technicians: [
+          {
+            id: 'user1',
+            name: 'John Smith',
+            initials: 'JS'
+          },
+          {
+            id: 'user2',
+            name: 'Alice Johnson', 
+            initials: 'AJ'
+          },
+          {
+            id: 'user3',
+            name: 'Bob Wilson',
+            initials: 'BW'
+          }
+        ]
+      };
+    }
+    
+    return api.get<any>(`/jobs/${jobId}/tasks/${taskId}/details`);
   }
 
   /**
@@ -148,6 +217,22 @@ export class TasksService {
     taskId: string, 
     technicianId: string | null
   ): Promise<{ status: string; technician?: { id: string; name: string } }> {
+    // For demo purposes, return mock response
+    if (jobId === 'test') {
+      const technicians = [
+        { id: 'user1', name: 'John Smith' },
+        { id: 'user2', name: 'Alice Johnson' },
+        { id: 'user3', name: 'Bob Wilson' }
+      ];
+      
+      const technician = technicianId ? technicians.find(t => t.id === technicianId) : null;
+      
+      return {
+        status: 'success',
+        technician: technician || undefined
+      };
+    }
+    
     return api.patch<{ status: string; technician?: { id: string; name: string } }>(
       `/jobs/${jobId}/tasks/${taskId}/assign`,
       { technician_id: technicianId }
@@ -170,6 +255,19 @@ export class TasksService {
       created_at: string;
     };
   }> {
+    // For demo purposes, return mock response
+    if (jobId === 'test') {
+      return {
+        status: 'success',
+        note: {
+          id: `note-${Date.now()}`,
+          content,
+          user_name: 'Current User',
+          created_at: new Date().toISOString()
+        }
+      };
+    }
+    
     return api.post<{
       status: string;
       note: {

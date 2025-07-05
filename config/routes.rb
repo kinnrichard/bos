@@ -37,6 +37,9 @@ Rails.application.routes.draw do
           member do
             patch :reorder
             patch :update_status
+            get :details
+            patch :assign
+            post :notes, action: :add_note
           end
         end
         member do

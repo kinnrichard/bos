@@ -41,13 +41,11 @@ class Api::V1::TasksController < Api::V1::BaseController
         id: @task.id,
         attributes: {
           title: @task.title,
-          description: @task.description,
           status: @task.status,
           position: @task.position,
           parent_id: @task.parent_id,
           created_at: @task.created_at,
-          updated_at: @task.updated_at,
-          completed_at: @task.completed_at
+          updated_at: @task.updated_at
         },
         relationships: {
           assigned_to: {
@@ -56,6 +54,95 @@ class Api::V1::TasksController < Api::V1::BaseController
         }
       }
     }
+  end
+
+  # GET /api/v1/jobs/:job_id/tasks/:id/details
+  def details
+    # Load associated data for detailed view
+    @task = @job.tasks.includes(:assigned_to, notes: :user).find(params[:id])
+
+    render json: {
+      id: @task.id,
+      title: @task.title,
+      status: @task.status,
+      position: @task.position,
+      parent_id: @task.parent_id,
+      created_at: @task.created_at,
+      updated_at: @task.updated_at,
+      notes: @task.notes.map do |note|
+        {
+          id: note.id,
+          content: note.content,
+          user_name: note.user.name,
+          created_at: note.created_at
+        }
+      end,
+      available_technicians: User.technician.map do |user|
+        {
+          id: user.id,
+          name: user.name,
+          initials: user.initials
+        }
+      end
+    }
+  end
+
+  # PATCH /api/v1/jobs/:job_id/tasks/:id/assign
+  def assign
+    technician_id = params[:technician_id]
+
+    if technician_id.present?
+      technician = User.find(technician_id)
+      @task.update!(assigned_to: technician)
+
+      render json: {
+        status: "success",
+        technician: {
+          id: technician.id,
+          name: technician.name
+        }
+      }
+    else
+      @task.update!(assigned_to: nil)
+
+      render json: {
+        status: "success",
+        technician: nil
+      }
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "Technician not found" }, status: :not_found
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+  end
+
+  # POST /api/v1/jobs/:job_id/tasks/:id/notes
+  def add_note
+    content = params.dig(:note, :content)
+
+    if content.blank?
+      render json: { error: "Note content cannot be blank" }, status: :unprocessable_entity
+      return
+    end
+
+    note = @task.notes.build(
+      content: content,
+      user: current_user
+    )
+
+    if note.save
+      render json: {
+        status: "success",
+        note: {
+          id: note.id,
+          content: note.content,
+          user_name: note.user.name,
+          created_at: note.created_at
+        }
+      }
+    else
+      render json: { errors: note.errors.full_messages }, status: :unprocessable_entity
+    end
   end
 
   def create

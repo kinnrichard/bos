@@ -3,8 +3,9 @@
   import { selectedTaskStatuses, shouldShowTask } from '$lib/stores/taskFilter';
   import { taskSelection, type TaskSelectionState } from '$lib/stores/taskSelection';
   import { tasksService } from '$lib/api/tasks';
-  import { sortable, showDropIndicator, hideDropIndicator } from '$lib/utils/sortable-action';
+  import { sortable, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/sortable-action';
   import type { SortableEvent } from 'sortablejs';
+  import TaskInfoPopover from '../tasks/TaskInfoPopover.svelte';
 
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';
@@ -20,9 +21,67 @@
     subtasks_count?: number;
     depth?: number;
     position?: number;
-  }>;
+  }> = [];
   
-  export let jobId: string;
+  export let jobId: string = 'test';
+
+  // TEMP: Add static test tasks for nesting demo
+  if (tasks.length === 0) {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000); // 2 hours ago
+    
+    tasks = [
+      {
+        id: 'task-1',
+        title: 'First Task - Drag me onto another task to nest',
+        status: 'new_task',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        position: 1,
+        assigned_to: {
+          id: 'user1',
+          name: 'John Smith',
+          initials: 'JS'
+        },
+        notes_count: 2
+      },
+      {
+        id: 'task-2', 
+        title: 'Second Task - Currently in progress with live timer',
+        status: 'in_progress',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        position: 2,
+        in_progress_since: oneHourAgo.toISOString(),
+        accumulated_seconds: 30 * 60, // 30 minutes of previous work
+        assigned_to: {
+          id: 'user2',
+          name: 'Alice Johnson',
+          initials: 'AJ'
+        }
+      },
+      {
+        id: 'task-3',
+        title: 'Third Task - Completed with total time',
+        status: 'successfully_completed',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        position: 3,
+        accumulated_seconds: 2 * 60 * 60 + 15 * 60, // 2 hours 15 minutes total
+        notes_count: 1
+      },
+      {
+        id: 'task-4',
+        title: 'Fourth Task - Has notes but no assignment',
+        status: 'new_task',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        position: 4,
+        notes_count: 3
+      }
+    ];
+  }
 
   // Track collapsed/expanded state of tasks with subtasks
   let expandedTasks = new Set<string>();
@@ -30,12 +89,24 @@
   // Drag & drop state
   let isDragging = false;
   let feedback = '';
+  let currentDropZone: {mode: 'reorder' | 'nest', targetElement: HTMLElement, targetTaskId?: string} | null = null;
   
   // Multi-select state
   let flatTaskIds: string[] = [];
   
   // Track optimistic updates for rollback
   let optimisticUpdates = new Map<string, { originalPosition: number; originalParentId?: string }>();
+  
+  // New task creation state
+  let showNewTaskInput = false;
+  let newTaskTitle = '';
+  let newTaskInput: HTMLInputElement;
+  let isCreatingTask = false;
+  
+  // Task info popover state
+  let showTaskInfo = false;
+  let selectedTask: any = null;
+  let popoverPosition = { top: 0, left: 0 };
 
   // Organize tasks into hierarchical structure with filtering
   function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[]) {
@@ -143,6 +214,50 @@
     });
   }
 
+  // Time tracking utilities
+  function formatTimeDuration(seconds: number): string {
+    if (!seconds || seconds === 0) return '';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (hours >= 1) {
+      return `${hours.toFixed(1)}h`;
+    } else {
+      return `${Math.floor(minutes)}m`;
+    }
+  }
+
+  function calculateCurrentDuration(task: any): number {
+    if (task.status !== 'in_progress' || !task.in_progress_since) {
+      return task.accumulated_seconds || 0;
+    }
+    
+    const startTime = new Date(task.in_progress_since).getTime();
+    const currentTime = Date.now();
+    const currentSessionSeconds = Math.floor((currentTime - startTime) / 1000);
+    
+    return (task.accumulated_seconds || 0) + currentSessionSeconds;
+  }
+
+  // Update time tracking display every second for in-progress tasks
+  import { onMount, onDestroy } from 'svelte';
+  
+  let timeTrackingInterval: any;
+  let currentTime = Date.now();
+
+  onMount(() => {
+    timeTrackingInterval = setInterval(() => {
+      currentTime = Date.now();
+    }, 1000);
+  });
+
+  onDestroy(() => {
+    if (timeTrackingInterval) {
+      clearInterval(timeTrackingInterval);
+    }
+  });
+
   // Multi-select click handler
   function handleTaskClick(event: MouseEvent, taskId: string) {
     event.stopPropagation();
@@ -187,6 +302,109 @@
     if (nextSelected) return 'selection-top';
     
     return '';
+  }
+
+  // New task creation handlers
+  function showNewTaskForm() {
+    showNewTaskInput = true;
+    setTimeout(() => {
+      if (newTaskInput) {
+        newTaskInput.focus();
+      }
+    }, 0);
+  }
+
+  function hideNewTaskForm() {
+    showNewTaskInput = false;
+    newTaskTitle = '';
+  }
+
+  async function createNewTask() {
+    if (!newTaskTitle.trim() || isCreatingTask) return;
+    
+    isCreatingTask = true;
+    const title = newTaskTitle.trim();
+    
+    try {
+      const response = await tasksService.createTask(jobId, {
+        title,
+        status: 'new_task',
+        position: tasks.length + 1
+      });
+      
+      // Add the new task to our local tasks array
+      tasks = [...tasks, response.task];
+      
+      // Clear the form
+      hideNewTaskForm();
+      
+      feedback = 'Task created successfully!';
+      setTimeout(() => feedback = '', 2000);
+    } catch (error: any) {
+      console.error('Failed to create task:', error);
+      feedback = 'Failed to create task - please try again';
+      setTimeout(() => feedback = '', 3000);
+    } finally {
+      isCreatingTask = false;
+    }
+  }
+
+  async function handleNewTaskKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      await createNewTask();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      hideNewTaskForm();
+    }
+  }
+
+  // Task info popover handlers
+  function showTaskInfoPopover(task: any, event: MouseEvent) {
+    selectedTask = task;
+    
+    // Calculate popover position
+    const button = event.target as HTMLElement;
+    const buttonRect = button.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const popoverWidth = 400;
+    const popoverHeight = 500; // estimated
+    
+    let left = buttonRect.right + 10;
+    let top = buttonRect.top;
+    
+    // Adjust if popover would go off-screen
+    if (left + popoverWidth > viewportWidth) {
+      left = buttonRect.left - popoverWidth - 10;
+    }
+    
+    if (top + popoverHeight > viewportHeight) {
+      top = viewportHeight - popoverHeight - 20;
+    }
+    
+    if (top < 20) {
+      top = 20;
+    }
+    
+    popoverPosition = { top, left };
+    showTaskInfo = true;
+  }
+
+  function closeTaskInfo() {
+    showTaskInfo = false;
+    selectedTask = null;
+  }
+
+  function handleTaskUpdated(event: CustomEvent) {
+    const updatedTask = event.detail.task;
+    
+    // Update the task in our tasks array
+    const taskIndex = tasks.findIndex(t => t.id === updatedTask.id);
+    if (taskIndex !== -1) {
+      tasks[taskIndex] = { ...tasks[taskIndex], ...updatedTask };
+      tasks = [...tasks]; // Trigger reactivity
+    }
   }
 
   // Task status change handler with optimistic updates
@@ -249,6 +467,9 @@
   function handleSortEnd(event: SortableEvent) {
     isDragging = false;
     
+    // Clear all visual feedback
+    clearAllVisualFeedback();
+    
     // Remove multi-drag badge if it exists
     const badge = event.item.querySelector('.multi-drag-badge');
     if (badge) {
@@ -259,16 +480,195 @@
     if (event.oldIndex !== undefined && event.newIndex !== undefined && event.oldIndex !== event.newIndex) {
       handleTaskReorder(event);
     }
+
+    // Clear current drop zone
+    currentDropZone = null;
+  }
+
+  // Handle move detection during drag operations
+  function handleMoveDetection(evt: any, originalEvent: Event) {
+    console.log('onMove triggered:', evt, originalEvent);
+    
+    // Detect drop zone and provide visual feedback
+    const mouseEvent = originalEvent as MouseEvent;
+    const targetElement = evt.related;
+    
+    if (!targetElement || !mouseEvent) {
+      console.log('No target element or mouse event');
+      return true; // Allow the move
+    }
+
+    const rect = targetElement.getBoundingClientRect();
+    const relativeY = mouseEvent.clientY - rect.top;
+    const heightRatio = relativeY / rect.height;
+
+    console.log('Move detection:', { heightRatio, targetElement });
+
+    // Clear previous feedback
+    clearAllVisualFeedback();
+
+    // Determine drop zone based on cursor position
+    if (heightRatio <= 0.3) {
+      // Reorder above
+      console.log('Reorder above zone detected');
+      addDropIndicator(targetElement, 'above');
+      currentDropZone = { mode: 'reorder', targetElement, targetTaskId: targetElement.dataset.taskId };
+    } else if (heightRatio >= 0.7) {
+      // Reorder below
+      console.log('Reorder below zone detected');
+      addDropIndicator(targetElement, 'below');
+      currentDropZone = { mode: 'reorder', targetElement, targetTaskId: targetElement.dataset.taskId };
+    } else {
+      // Nest zone (middle 40%)
+      console.log('Nest zone detected');
+      const targetTaskId = targetElement.dataset.taskId;
+      currentDropZone = { mode: 'nest', targetElement, targetTaskId };
+      
+      if (targetTaskId) {
+        // Check if nesting is valid before showing highlight
+        const draggedElement = document.querySelector('.task-chosen');
+        const draggedTaskId = draggedElement?.getAttribute('data-task-id');
+        console.log('Dragged task:', draggedTaskId, 'Target task:', targetTaskId);
+        
+        if (draggedTaskId) {
+          const validation = isValidNesting(draggedTaskId, targetTaskId);
+          console.log('Validation result:', validation);
+          if (validation.valid) {
+            console.log('Adding nest highlight');
+            addNestHighlight(targetElement);
+          } else {
+            console.log('Showing invalid nesting indicator');
+            targetElement.classList.add('sortable-nest-invalid');
+          }
+        } else {
+          console.log('No dragged task found, adding nest highlight');
+          addNestHighlight(targetElement);
+        }
+      }
+    }
+    
+    return true; // Allow the move
+  }
+
+  // Validation functions for nesting
+  function isValidNesting(draggedTaskId: string, targetTaskId: string): {valid: boolean, reason?: string} {
+    // Rule 1: Can't nest task under itself
+    if (draggedTaskId === targetTaskId) {
+      return {valid: false, reason: 'Task cannot be nested under itself'};
+    }
+
+    const draggedTask = tasks.find(t => t.id === draggedTaskId);
+    const targetTask = tasks.find(t => t.id === targetTaskId);
+    
+    if (!draggedTask || !targetTask) {
+      return {valid: false, reason: 'Task not found'};
+    }
+
+    // Rule 2: Can't nest task under its own descendant (circular reference)
+    if (isDescendantOf(targetTaskId, draggedTaskId)) {
+      return {valid: false, reason: 'Cannot create circular reference - target is a descendant of the dragged task'};
+    }
+
+    // Rule 3: Reasonable depth limit (4 levels)
+    const targetDepth = getTaskDepth(targetTaskId);
+    if (targetDepth >= 4) {
+      return {valid: false, reason: 'Maximum nesting depth reached (4 levels)'};
+    }
+
+    return {valid: true};
+  }
+
+  function isDescendantOf(potentialDescendantId: string, ancestorId: string): boolean {
+    const potentialDescendant = tasks.find(t => t.id === potentialDescendantId);
+    if (!potentialDescendant || !potentialDescendant.parent_id) {
+      return false;
+    }
+
+    if (potentialDescendant.parent_id === ancestorId) {
+      return true;
+    }
+
+    return isDescendantOf(potentialDescendant.parent_id, ancestorId);
+  }
+
+  function getTaskDepth(taskId: string): number {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !task.parent_id) {
+      return 0;
+    }
+    return 1 + getTaskDepth(task.parent_id);
+  }
+
+  // Handle nesting a task under another task
+  async function handleTaskNesting(draggedTaskId: string, targetTaskId: string) {
+    // Validate nesting operation
+    const validation = isValidNesting(draggedTaskId, targetTaskId);
+    if (!validation.valid) {
+      feedback = validation.reason || 'Invalid nesting operation';
+      setTimeout(() => feedback = '', 3000);
+      return;
+    }
+
+    const draggedTask = tasks.find(t => t.id === draggedTaskId);
+    const targetTask = tasks.find(t => t.id === targetTaskId);
+    
+    if (!draggedTask || !targetTask) {
+      console.error('Could not find dragged or target task');
+      return;
+    }
+
+    // Store original state for rollback
+    optimisticUpdates.set(draggedTaskId, {
+      originalPosition: draggedTask.position || 0,
+      originalParentId: draggedTask.parent_id
+    });
+
+    try {
+      // Optimistic update: make task a child of target
+      const updatedTask = { ...draggedTask, parent_id: targetTaskId, position: 1 };
+      tasks = tasks.map(t => t.id === draggedTaskId ? updatedTask : t);
+
+      // Call API to nest the task
+      await tasksService.nestTask(jobId, draggedTaskId, targetTaskId, 1);
+      
+      // Clear optimistic updates on success
+      optimisticUpdates.clear();
+      
+    } catch (error: any) {
+      console.error('Failed to nest task:', error);
+      
+      // Rollback optimistic update
+      const original = optimisticUpdates.get(draggedTaskId);
+      if (original) {
+        const rolledBackTask = {
+          ...draggedTask,
+          position: original.originalPosition,
+          parent_id: original.originalParentId
+        };
+        tasks = tasks.map(t => t.id === draggedTaskId ? rolledBackTask : t);
+      }
+      
+      optimisticUpdates.clear();
+      feedback = 'Failed to nest task - please try again';
+      setTimeout(() => feedback = '', 3000);
+    }
   }
 
   async function handleTaskReorder(event: SortableEvent) {
     const draggedTaskId = event.item.dataset.taskId;
     if (!draggedTaskId) return;
 
+    // Check if this is a nesting operation
+    if (currentDropZone && currentDropZone.mode === 'nest' && currentDropZone.targetTaskId) {
+      await handleTaskNesting(draggedTaskId, currentDropZone.targetTaskId);
+      return;
+    }
+
+    // Handle regular reordering (existing logic)
     // Determine if this is a multi-select drag
     const isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedTaskId) && $taskSelection.selectedTaskIds.size > 1;
     
-    let positionUpdates: Array<{id: string, position: number}> = [];
+    let positionUpdates: Array<{id: string, position: number, parent_id?: string}> = [];
     
     if (isMultiSelectDrag) {
       // Handle multi-select drag: move all selected tasks as a contiguous group
@@ -393,11 +793,47 @@
 </script>
 
 <div class="task-list">
+  <!-- New Task Creation UI -->
+  <div class="new-task-section">
+    {#if showNewTaskInput}
+      <div class="new-task-input-container">
+        <div class="task-status-placeholder">
+          <span class="status-emoji">✨</span>
+        </div>
+        <input
+          bind:this={newTaskInput}
+          bind:value={newTaskTitle}
+          class="new-task-input"
+          placeholder="Task title..."
+          on:keydown={handleNewTaskKeydown}
+          on:blur={hideNewTaskForm}
+          disabled={isCreatingTask}
+        />
+        {#if isCreatingTask}
+          <div class="creating-indicator">
+            <span class="spinner">⏳</span>
+          </div>
+        {/if}
+      </div>
+    {:else}
+      <button 
+        class="new-task-placeholder"
+        on:click={showNewTaskForm}
+        disabled={isCreatingTask}
+      >
+        <div class="task-status-placeholder">
+          <span class="status-emoji">➕</span>
+        </div>
+        <div class="placeholder-text">New task...</div>
+      </button>
+    {/if}
+  </div>
+
   {#if tasks.length === 0}
     <div class="empty-state">
       <div class="empty-icon">📋</div>
       <h4>No tasks yet</h4>
-      <p>Tasks will appear here when they are added to this job.</p>
+      <p>Click "New task..." above to add your first task.</p>
     </div>
   {:else}
     <!-- Sortable tasks container -->
@@ -415,7 +851,8 @@
         fallbackTolerance: 0,
         emptyInsertThreshold: 5,
         onStart: handleSortStart,
-        onEnd: handleSortEnd
+        onEnd: handleSortEnd,
+        onMove: handleMoveDetection
       }}
     >
       {#each flattenedTasks as renderItem, index (renderItem.task.id)}
@@ -475,15 +912,47 @@
           <!-- Task Content -->
           <div class="task-content">
             <h5 class="task-title">{renderItem.task.title}</h5>
+            
+            <!-- Time Tracking Display -->
+            {#if renderItem.task.status === 'in_progress' || (renderItem.task.accumulated_seconds && renderItem.task.accumulated_seconds > 0)}
+              {@const _ = currentTime} <!-- Force reactivity on time changes -->
+              {@const duration = calculateCurrentDuration(renderItem.task)}
+              {@const formattedTime = formatTimeDuration(duration)}
+              {#if formattedTime}
+                <div class="time-tracking">
+                  <span class="time-icon">⏱️</span>
+                  <span class="time-duration" class:in-progress={renderItem.task.status === 'in_progress'}>
+                    {formattedTime}
+                  </span>
+                </div>
+              {/if}
+            {/if}
+          </div>
+
+          <!-- Task Metadata (Assignment & Notes) -->
+          <div class="task-metadata">
+            <!-- Assignment Indicator -->
+            {#if renderItem.task.assigned_to}
+              <div class="assigned-indicator" title="Assigned to {renderItem.task.assigned_to.name}">
+                <span class="assignee-initials">{renderItem.task.assigned_to.initials}</span>
+              </div>
+            {/if}
+
+            <!-- Notes Indicator -->
+            {#if renderItem.task.notes_count && renderItem.task.notes_count > 0}
+              <div class="notes-indicator" title="{renderItem.task.notes_count} note{renderItem.task.notes_count > 1 ? 's' : ''}">
+                <span class="notes-icon">📝</span>
+                <span class="notes-count">{renderItem.task.notes_count}</span>
+              </div>
+            {/if}
           </div>
 
           <!-- Task Actions -->
           <div class="task-actions">
             <button 
               class="task-action-button"
-              on:click|stopPropagation={() => console.log('Task details:', renderItem.task.id)}
-              title="Task details (coming soon)"
-              disabled
+              on:click|stopPropagation={(e) => showTaskInfoPopover(renderItem.task, e)}
+              title="Task details"
             >
               <span class="action-icon">ⓘ</span>
             </button>
@@ -503,6 +972,16 @@
 
   {/if}
 </div>
+
+<!-- Task Info Popover -->
+<TaskInfoPopover
+  bind:isVisible={showTaskInfo}
+  task={selectedTask}
+  {jobId}
+  position={popoverPosition}
+  on:close={closeTaskInfo}
+  on:task-updated={handleTaskUpdated}
+/>
 
 <style>
   .task-list {
@@ -797,20 +1276,29 @@
     }
   }
 
-  /* Global SortableJS drop indicator styles */
+  /* Visual feedback for drag & drop nesting */
   :global(.sortable-drop-indicator) {
     position: absolute;
-    left: 0;
-    right: 0;
     height: 3px;
     background: linear-gradient(90deg, #007AFF, #0099FF);
     border-radius: 2px;
-    opacity: 0;
-    transition: opacity 150ms ease;
     box-shadow: 0 1px 4px rgba(0, 122, 255, 0.4);
     pointer-events: none;
     z-index: 1000;
-    display: none;
+  }
+
+  :global(.sortable-nest-target) {
+    background-color: rgba(0, 122, 255, 0.15) !important;
+    border: 2px solid rgba(0, 122, 255, 0.4) !important;
+    border-radius: 8px !important;
+    transition: all 0.15s ease !important;
+  }
+
+  :global(.sortable-nest-invalid) {
+    background-color: rgba(255, 69, 58, 0.15) !important;
+    border: 2px solid rgba(255, 69, 58, 0.4) !important;
+    border-radius: 8px !important;
+    transition: all 0.15s ease !important;
   }
 
   /* Responsive adjustments */
@@ -912,11 +1400,178 @@
     }
   }
 
+  /* New Task Creation Styles */
+  .new-task-section {
+    margin-bottom: 16px;
+  }
+
+  .new-task-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border-primary);
+    border-radius: 8px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 14px;
+  }
+
+  .new-task-placeholder:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-blue);
+    color: var(--text-secondary);
+  }
+
+  .new-task-placeholder:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .new-task-input-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--accent-blue);
+    border-radius: 8px;
+    box-shadow: 0 0 0 2px rgba(0, 163, 255, 0.2);
+  }
+
+  .task-status-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    flex-shrink: 0;
+  }
+
+  .task-status-placeholder .status-emoji {
+    font-size: 14px;
+  }
+
+  .new-task-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    padding: 0;
+  }
+
+  .new-task-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .placeholder-text {
+    color: var(--text-tertiary);
+    font-size: 14px;
+  }
+
+  .creating-indicator {
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+  }
+
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Time Tracking Styles */
+  .time-tracking {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .time-icon {
+    font-size: 11px;
+  }
+
+  .time-duration {
+    font-weight: 500;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  }
+
+  .time-duration.in-progress {
+    color: var(--accent-blue);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Task Metadata Styles */
+  .task-metadata {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .assigned-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .assignee-initials {
+    line-height: 1;
+  }
+
+  .notes-indicator {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 6px;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .notes-icon {
+    font-size: 10px;
+  }
+
+  .notes-count {
+    font-weight: 500;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  }
+
   /* Smooth transitions */
   .task-item,
   .disclosure-button,
   .status-emoji,
-  .task-action-button {
+  .task-action-button,
+  .new-task-placeholder {
     transition: all 0.15s ease;
   }
 </style>
