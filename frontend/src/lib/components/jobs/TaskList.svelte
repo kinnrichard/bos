@@ -5,7 +5,7 @@
   import { tasksService } from '$lib/api/tasks';
   import { sortable, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/sortable-action';
   import type { SortableEvent } from 'sortablejs';
-  import TaskInfoPopover from '../tasks/TaskInfoPopover.svelte';
+  import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
 
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';
@@ -103,10 +103,6 @@
   let newTaskInput: HTMLInputElement;
   let isCreatingTask = false;
   
-  // Task info popover state
-  let showTaskInfo = false;
-  let selectedTask: any = null;
-  let popoverPosition = { top: 0, left: 0 };
 
   // Organize tasks into hierarchical structure with filtering
   function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[]) {
@@ -359,42 +355,6 @@
     }
   }
 
-  // Task info popover handlers
-  function showTaskInfoPopover(task: any, event: MouseEvent) {
-    selectedTask = task;
-    
-    // Calculate popover position
-    const button = event.target as HTMLElement;
-    const buttonRect = button.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const popoverWidth = 400;
-    const popoverHeight = 500; // estimated
-    
-    let left = buttonRect.right + 10;
-    let top = buttonRect.top;
-    
-    // Adjust if popover would go off-screen
-    if (left + popoverWidth > viewportWidth) {
-      left = buttonRect.left - popoverWidth - 10;
-    }
-    
-    if (top + popoverHeight > viewportHeight) {
-      top = viewportHeight - popoverHeight - 20;
-    }
-    
-    if (top < 20) {
-      top = 20;
-    }
-    
-    popoverPosition = { top, left };
-    showTaskInfo = true;
-  }
-
-  function closeTaskInfo() {
-    showTaskInfo = false;
-    selectedTask = null;
-  }
 
   function handleTaskUpdated(event: CustomEvent) {
     const updatedTask = event.detail.task;
@@ -949,13 +909,11 @@
 
           <!-- Task Actions -->
           <div class="task-actions">
-            <button 
-              class="task-action-button"
-              on:click|stopPropagation={(e) => showTaskInfoPopover(renderItem.task, e)}
-              title="Task details"
-            >
-              <span class="action-icon">ⓘ</span>
-            </button>
+            <TaskInfoPopoverHeadless 
+              task={renderItem.task}
+              {jobId}
+              on:task-updated={handleTaskUpdated}
+            />
           </div>
         </div>
       {/each}
@@ -973,15 +931,6 @@
   {/if}
 </div>
 
-<!-- Task Info Popover -->
-<TaskInfoPopover
-  bind:isVisible={showTaskInfo}
-  task={selectedTask}
-  {jobId}
-  position={popoverPosition}
-  on:close={closeTaskInfo}
-  on:task-updated={handleTaskUpdated}
-/>
 
 <style>
   .task-list {

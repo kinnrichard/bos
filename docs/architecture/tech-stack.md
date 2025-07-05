@@ -102,6 +102,8 @@ gem "pg", "~> 1.1"
 - CSS variables matching Rails app design
 - No SCSS/SASS in frontend
 
+Svelte 5 is different from what you're used to. Please review ./docs/architecture/svelte.md before writing any front-end code.
+
 ### LEGACY View Layer - Phlex (⚠️ DEPRECATED - DO NOT USE)
 ```ruby
 gem "phlex-rails", "~> 2.0.0"
