@@ -2,12 +2,6 @@ export interface PopoverPosition {
   top: number;
   left: number;
   placement: 'top' | 'bottom' | 'left' | 'right';
-  arrowPosition: {
-    top?: string;
-    left?: string;
-    right?: string;
-    bottom?: string;
-  };
   maxHeight?: number;
   maxWidth?: number;
 }
@@ -23,7 +17,6 @@ export interface TriggerElement {
 }
 
 const POPOVER_OFFSET = 8; // Distance between trigger and popover
-const ARROW_SIZE = 12; // Arrow width/height
 const VIEWPORT_PADDING = 20; // Minimum distance from viewport edge
 
 /**
@@ -101,7 +94,6 @@ function calculatePositionForPlacement(
   
   let top: number;
   let left: number;
-  let arrowPosition: PopoverPosition['arrowPosition'] = {};
   let maxHeight: number | undefined;
   let maxWidth: number | undefined;
   
@@ -122,22 +114,6 @@ function calculatePositionForPlacement(
         top = viewportHeight - popoverHeight - VIEWPORT_PADDING;
       }
       
-      // Calculate arrow position (pointing right) - center arrow on trigger button
-      const triggerCenter = triggerRect.top + (triggerRect.height / 2);
-      const arrowTop = triggerCenter - top - 10; // Subtract half arrow height (20px / 2)
-      const clampedArrowTop = Math.max(5, Math.min(popoverHeight - 25, arrowTop));
-      
-      // Position arrow slightly inside the right edge of the popover
-      const arrowLeftPos = left + popoverWidth - 5; // 5px inward from right edge
-      
-      // Use absolute positioning for arrow top (not relative to popover)
-      const arrowAbsoluteTop = triggerCenter - 10; // Center arrow on trigger
-      
-      
-      arrowPosition = {
-        top: `${arrowAbsoluteTop}px`,
-        left: `${arrowLeftPos}px`
-      };
       break;
       
     case 'right':
@@ -155,14 +131,6 @@ function calculatePositionForPlacement(
         top = viewportHeight - popoverHeight - VIEWPORT_PADDING;
       }
       
-      // Calculate arrow position (pointing left)
-      const triggerCenterRight = triggerRect.top + (triggerRect.height / 2);
-      const arrowTopRight = triggerCenterRight - top;
-      const clampedArrowTopRight = Math.max(10, Math.min(popoverHeight - 20, arrowTopRight));
-      arrowPosition = {
-        top: `${clampedArrowTopRight}px`,
-        left: `-${ARROW_SIZE}px`
-      };
       break;
       
     case 'top':
@@ -181,13 +149,6 @@ function calculatePositionForPlacement(
         left = viewportWidth - popoverWidth - VIEWPORT_PADDING;
       }
       
-      // Calculate arrow position (pointing down)
-      const triggerCenterTop = triggerRect.left + (triggerRect.width / 2);
-      const arrowLeft = triggerCenterTop - left;
-      arrowPosition = {
-        left: `${Math.max(10, Math.min(popoverWidth - 10, arrowLeft))}px`,
-        bottom: `-${ARROW_SIZE}px`
-      };
       break;
       
     case 'bottom':
@@ -205,13 +166,6 @@ function calculatePositionForPlacement(
         left = viewportWidth - popoverWidth - VIEWPORT_PADDING;
       }
       
-      // Calculate arrow position (pointing up)
-      const triggerCenterBottom = triggerRect.left + (triggerRect.width / 2);
-      const arrowLeftBottom = triggerCenterBottom - left;
-      arrowPosition = {
-        left: `${Math.max(10, Math.min(popoverWidth - 10, arrowLeftBottom))}px`,
-        top: `-${ARROW_SIZE}px`
-      };
       break;
   }
   
@@ -219,29 +173,11 @@ function calculatePositionForPlacement(
     top,
     left,
     placement,
-    arrowPosition,
     maxHeight,
     maxWidth
   };
 }
 
-/**
- * Get the appropriate arrow SVG path for a given placement
- */
-export function getArrowPath(placement: 'top' | 'bottom' | 'left' | 'right'): string {
-  switch (placement) {
-    case 'left':
-      return 'M0 0 L0 20 L12 10 Z'; // Points right
-    case 'right':
-      return 'M12 0 L12 20 L0 10 Z'; // Points left
-    case 'top':
-      return 'M0 0 L20 0 L10 12 Z'; // Points down
-    case 'bottom':
-      return 'M0 12 L20 12 L10 0 Z'; // Points up
-    default:
-      return 'M0 0 L0 20 L12 10 Z';
-  }
-}
 
 /**
  * Debounced position update for scroll/resize events

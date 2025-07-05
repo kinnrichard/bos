@@ -4,7 +4,6 @@
   import Portal from './Portal.svelte';
   import { 
     calculatePopoverPosition, 
-    getArrowPath, 
     debounce,
     type PopoverPosition 
   } from '$lib/utils/popover-positioning';
@@ -32,8 +31,7 @@
   let position: PopoverPosition = {
     top: 0,
     left: 0,
-    placement: 'bottom', // Default to bottom for better compatibility with existing behavior
-    arrowPosition: {}
+    placement: 'bottom' // Default to bottom for better compatibility with existing behavior
   };
   let isPositioned = false;
 
@@ -194,54 +192,14 @@
 <!-- Popover Panel (rendered via Portal) -->
 <Portal enabled={$popover.expanded}>
   {#if $popover.expanded}
-    <!-- Arrow pointing to button -->
-    <div 
-      class="popover-arrow" 
-      style="
-        top: {position.arrowPosition.top || 'auto'}; 
-        left: {position.arrowPosition.left || 'auto'}; 
-        right: {position.arrowPosition.right || 'auto'}; 
-        bottom: {position.arrowPosition.bottom || 'auto'};
-        opacity: {isPositioned ? 1 : 0};
-      "
-    >
-      {#if position.placement === 'left' || position.placement === 'right'}
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="20" viewBox="0 0 12 20">
-          <path
-            d={getArrowPath(position.placement)}
-            fill="var(--bg-secondary)"
-            stroke="var(--border-primary)"
-            stroke-width="1"
-            stroke-linejoin="miter"
-          />
-          <!-- Cover the connecting border -->
-          {#if position.placement === 'left'}
-            <path d="M0 0 L0 20" stroke="var(--bg-secondary)" stroke-width="2" />
-          {:else}
-            <path d="M12 0 L12 20" stroke="var(--bg-secondary)" stroke-width="2" />
-          {/if}
-        </svg>
-      {:else}
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="12" viewBox="0 0 20 12">
-          <path
-            d={getArrowPath(position.placement)}
-            fill="var(--bg-secondary)"
-            stroke="var(--border-primary)"
-            stroke-width="1"
-            stroke-linejoin="miter"
-          />
-          <!-- Cover the connecting border -->
-          {#if position.placement === 'top'}
-            <path d="M0 0 L20 0" stroke="var(--bg-secondary)" stroke-width="2" />
-          {:else}
-            <path d="M0 12 L20 12" stroke="var(--bg-secondary)" stroke-width="2" />
-          {/if}
-        </svg>
-      {/if}
-    </div>
-
     <div 
       class="popover-panel"
+      class:panel-top={position.placement === 'top'}
+      class:panel-bottom={position.placement === 'bottom'}
+      class:panel-left={position.placement === 'left'}
+      class:panel-right={position.placement === 'right'}
+      class:panel-center={panelPosition === 'center'}
+      class:panel-right-align={panelPosition === 'right'}
       use:popover.panel
       bind:this={panelElement}
       style="
@@ -299,23 +257,114 @@
     overflow: hidden;
   }
 
-  /* Arrow styles - positioned via portal with dynamic placement */
-  .popover-arrow {
-    position: fixed;
-    pointer-events: none;
-    z-index: 2001; /* Higher than panel's z-index */
-    transition: opacity 0.2s ease;
-    width: 20px;
-    height: 20px;
-    overflow: visible;
-  }
+  /* Arrow styles using CSS border triangles - much simpler and cleaner */
   
-  .popover-arrow svg {
-    filter: drop-shadow(1px 0 1px var(--border-primary));
-    display: block;
-    overflow: visible;
-    width: 100%;
-    height: 100%;
+  /* Bottom placement (arrow points up to button) */
+  .panel-bottom::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 12px solid var(--border-primary);
+  }
+
+  .panel-bottom::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid var(--bg-secondary);
+  }
+
+  /* Top placement (arrow points down to button) */
+  .panel-top::before {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 12px solid var(--border-primary);
+  }
+
+  .panel-top::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid var(--bg-secondary);
+  }
+
+  /* Left placement (arrow points right to button) */
+  .panel-left::before {
+    content: '';
+    position: absolute;
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-left: 12px solid var(--border-primary);
+  }
+
+  .panel-left::after {
+    content: '';
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid var(--bg-secondary);
+  }
+
+  /* Right placement (arrow points left to button) */
+  .panel-right::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-right: 12px solid var(--border-primary);
+  }
+
+  .panel-right::after {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 10px solid var(--bg-secondary);
   }
 
   .panel-content {
