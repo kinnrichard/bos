@@ -329,6 +329,12 @@
           stroke-width="1"
           stroke-linejoin="miter"
         />
+        <!-- Cover the left border where arrow meets panel -->
+        <path
+          d="M0 0 L0 20"
+          stroke="var(--bg-secondary)"
+          stroke-width="2"
+        />
       </svg>
     </div>
 
