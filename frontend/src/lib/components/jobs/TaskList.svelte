@@ -1891,9 +1891,10 @@
     z-index: 1000;
   }
 
-  :global(.drag-nest-target) {
-    background-color: rgba(0, 122, 255, 0.15) !important;
-    border: 2px solid rgba(0, 122, 255, 0.4) !important;
+  :global([role="button"][data-task-id].drag-nest-target) {
+    background-color: var(--accent-blue) !important;
+    color: white !important;
+    text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75) !important;
     border-radius: 8px !important;
     transition: all 0.15s ease !important;
   }
