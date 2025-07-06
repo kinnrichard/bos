@@ -322,7 +322,13 @@ class Api::V1::TasksController < Api::V1::BaseController
       status: "success",
       timestamp: Time.current,
       job_lock_version: @job.reload.lock_version,
-      tasks: @job.tasks.map { |t| { id: t.id, lock_version: t.lock_version } }
+      tasks: @job.tasks.order(:position).map { |t| {
+        id: t.id,
+        lock_version: t.lock_version,
+        position: t.position,
+        parent_id: t.parent_id,
+        title: t.title
+      } }
     }
   rescue ActiveRecord::StaleObjectError => e
     conflict_data = if e.record.is_a?(Job)
@@ -366,23 +372,103 @@ class Api::V1::TasksController < Api::V1::BaseController
       return
     end
 
-    # Transform relative_positions to the format expected by batch_reorder
-    transformed_params = {
-      positions: params[:relative_positions],
-      job_lock_version: params[:job_lock_version]
-    }
+    # Use a transaction to ensure all updates succeed or all fail
+    Task.transaction do
+      # If job lock_version is provided, verify it hasn't changed
+      if params[:job_lock_version]
+        expected_job_lock = params[:job_lock_version].to_i
+        if @job.lock_version != expected_job_lock
+          raise ActiveRecord::StaleObjectError.new(@job, "lock_version")
+        end
+      end
 
-    # Temporarily override params to use the existing logic
-    original_params = params.to_unsafe_h
-    params.merge!(transformed_params)
+      params[:relative_positions].each do |position_data|
+        task = @job.tasks.find(position_data[:id])
 
-    begin
-      # Reuse existing batch_reorder logic
-      batch_reorder
-    ensure
-      # Restore original params
-      @_params = original_params.with_indifferent_access
+        # Check lock_version if provided
+        if position_data[:lock_version]
+          expected_lock = position_data[:lock_version].to_i
+          if task.lock_version != expected_lock
+            raise ActiveRecord::StaleObjectError.new(task, "lock_version")
+          end
+        end
+
+        # Handle relative positioning using positioning gem syntax
+        position_update = {}
+
+        # Handle parent_id change
+        if position_data.key?(:parent_id)
+          position_update[:parent_id] = position_data[:parent_id]
+        end
+
+        # Handle relative positioning
+        if position_data[:before_task_id]
+          # Position before specific task
+          target_task = @job.tasks.find(position_data[:before_task_id])
+          position_update[:position] = { before: target_task }
+        elsif position_data[:after_task_id]
+          # Position after specific task
+          target_task = @job.tasks.find(position_data[:after_task_id])
+          position_update[:position] = { after: target_task }
+        elsif position_data[:position] == "first"
+          # Position at the beginning
+          position_update[:position] = :first
+        elsif position_data[:position] == "last"
+          # Position at the end
+          position_update[:position] = :last
+        end
+
+        # Apply the positioning update
+        task.update!(position_update)
+      end
     end
+
+    render json: {
+      status: "success",
+      timestamp: Time.current,
+      job_lock_version: @job.reload.lock_version,
+      tasks: @job.tasks.order(:position).map { |t| {
+        id: t.id,
+        lock_version: t.lock_version,
+        position: t.position,
+        parent_id: t.parent_id,
+        title: t.title
+      } }
+    }
+  rescue ActiveRecord::StaleObjectError => e
+    conflict_data = if e.record.is_a?(Job)
+      {
+        error: "Job has been modified by another user",
+        conflict: true,
+        current_state: {
+          job_lock_version: e.record.lock_version
+        }
+      }
+    else
+      {
+        error: "One or more tasks have been modified by another user",
+        conflict: true,
+        current_state: {
+          job_lock_version: @job.reload.lock_version,
+          tasks: @job.tasks.map do |task|
+            {
+              id: task.id,
+              title: task.title,
+              position: task.position,
+              parent_id: task.parent_id,
+              status: task.status,
+              lock_version: task.lock_version
+            }
+          end
+        }
+      }
+    end
+
+    render json: conflict_data, status: :conflict
+  rescue ActiveRecord::RecordNotFound
+    render json: {
+      error: "One or more tasks not found"
+    }, status: :not_found
   end
 
   def update_status

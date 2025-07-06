@@ -177,6 +177,7 @@ export class ClientActsAsList {
   /**
    * Convert relative positioning updates to integer position updates for client-side prediction
    * This maintains offline functionality by allowing immediate UI updates
+   * Updated to match Rails positioning gem behavior exactly
    */
   static convertRelativeToPositionUpdates(
     tasks: Task[],
@@ -191,23 +192,52 @@ export class ClientActsAsList {
       let targetPosition = 1;
       const targetParent = update.parent_id !== undefined ? update.parent_id : task.parent_id;
       
-      // Get tasks in the target scope
-      const scopeTasks = tasks.filter(t => (t.parent_id || null) === (targetParent || null))
-                              .filter(t => t.id !== update.id) // Exclude the moving task
-                              .sort((a, b) => a.position - b.position);
+      // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
+      // This is critical - we need the full scope to understand current positions
+      const allScopeTasks = tasks.filter(t => (t.parent_id || null) === (targetParent || null))
+                                 .sort((a, b) => a.position - b.position);
+      
+      // Get tasks excluding the moving task (for target identification)
+      const scopeTasksExcludingMoved = allScopeTasks.filter(t => t.id !== update.id);
       
       if (update.before_task_id) {
-        // Position before specific task
-        const beforeTask = scopeTasks.find(t => t.id === update.before_task_id);
+        // Position before specific task - positioning gem places at target's position, shifting others up
+        const beforeTask = allScopeTasks.find(t => t.id === update.before_task_id);
         targetPosition = beforeTask ? beforeTask.position : 1;
+        console.log('🔮 Client prediction: before task', {
+          movingTask: update.id.substring(0, 8),
+          beforeTask: beforeTask ? { id: beforeTask.id.substring(0, 8), position: beforeTask.position } : null,
+          targetPosition,
+          allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
+          note: 'positioning gem places at target position, shifts others up'
+        });
       } else if (update.after_task_id) {
-        // Position after specific task
-        const afterTask = scopeTasks.find(t => t.id === update.after_task_id);
-        targetPosition = afterTask ? afterTask.position + 1 : scopeTasks.length + 1;
+        // Position after specific task - positioning gem places immediately after target
+        const afterTask = allScopeTasks.find(t => t.id === update.after_task_id);
+        if (afterTask) {
+          // If the moving task is currently before the target, target shifts down by 1
+          const movingTask = allScopeTasks.find(t => t.id === update.id);
+          if (movingTask && movingTask.position < afterTask.position) {
+            targetPosition = afterTask.position; // Target moved down, so we take its original position
+          } else {
+            targetPosition = afterTask.position + 1; // Target stays, we go after it
+          }
+        } else {
+          targetPosition = scopeTasksExcludingMoved.length + 1;
+        }
+        console.log('🔮 Client prediction: after task', {
+          movingTask: update.id.substring(0, 8),
+          afterTask: afterTask ? { id: afterTask.id.substring(0, 8), position: afterTask.position } : null,
+          targetPosition,
+          allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
+          note: 'positioning gem places immediately after target, considering relative positions'
+        });
       } else if (update.position === 'first') {
         targetPosition = 1;
+        console.log('🔮 Client prediction: first position', { movingTask: update.id.substring(0, 8), targetPosition });
       } else if (update.position === 'last') {
-        targetPosition = scopeTasks.length + 1;
+        targetPosition = scopeTasksExcludingMoved.length + 1;
+        console.log('🔮 Client prediction: last position', { movingTask: update.id.substring(0, 8), targetPosition });
       }
       
       positionUpdates.push({
