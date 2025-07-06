@@ -5,6 +5,7 @@
   import { onDestroy } from 'svelte';
   import { createQuery } from '@tanstack/svelte-query';
   import { jobsService } from '$lib/api/jobs';
+  import { useTaskBatchDetailsQuery } from '$lib/api/hooks/tasks';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
@@ -40,6 +41,9 @@
       return failureCount < 3;
     }
   }) : null;
+
+  // Background fetch for task batch details - enabled only after job loads successfully
+  $: taskBatchDetailsQuery = useTaskBatchDetailsQuery(jobId, !!job && !isLoading);
 
   // Reactive statements for query state
   $: isLoading = $query?.isLoading || false;
@@ -127,7 +131,7 @@
 
   <!-- Job Detail Content -->
   {:else if job}
-    <JobDetailView {job} />
+    <JobDetailView {job} batchTaskDetails={$taskBatchDetailsQuery?.data} />
 
   <!-- Fallback (should not happen with proper loading states) -->
   {:else}

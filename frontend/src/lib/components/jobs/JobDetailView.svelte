@@ -6,6 +6,7 @@
   import StatusIndicator from './StatusIndicator.svelte';
 
   export let job: PopulatedJob;
+  export let batchTaskDetails: any = null; // Optional batch task details data
 
   $: statusEmoji = getJobStatusEmoji(job?.attributes?.status);
   $: priorityEmoji = getJobPriorityEmoji(job?.attributes?.priority);
@@ -37,7 +38,7 @@
         </span-->
       </div>
     </div>
-    <TaskList tasks={job?.tasks || []} jobId={job?.id} />
+    <TaskList tasks={job?.tasks || []} jobId={job?.id} {batchTaskDetails} />
   </div>
   
 </div>

@@ -1,11 +1,13 @@
 <script lang="ts">
   import { createEventDispatcher, onDestroy } from 'svelte';
   import { tasksService, type Task } from '$lib/api/tasks';
+  import { getContext } from 'svelte';
   import { formatDateTime } from '$lib/utils/date';
   import BasePopover from '../ui/BasePopover.svelte';
   
   export let task: Task;
   export let jobId: string;
+  export let batchTaskDetails: any = null; // Optional batch details data
   
   const dispatch = createEventDispatcher();
   
@@ -41,6 +43,11 @@
   $: if (basePopover && $basePopover.expanded && task && !taskDetails) {
     loadTaskDetails();
   }
+
+  // Check for batch details data when it becomes available
+  $: if (batchTaskDetails && batchTaskDetails.data && task && !taskDetails) {
+    checkBatchDetails();
+  }
   
   // Reset state when task changes
   $: if (task) {
@@ -48,7 +55,44 @@
     error = '';
   }
   
+  function checkBatchDetails() {
+    if (!batchTaskDetails?.data || !task) return;
+    
+    // Find this task's details in the batch data
+    const taskDetailData = batchTaskDetails.data.find((t: any) => t.id === task.id);
+    if (taskDetailData) {
+      // Transform the JSON:API format to match the expected format
+      taskDetails = {
+        id: taskDetailData.id,
+        title: taskDetailData.attributes.title,
+        status: taskDetailData.attributes.status,
+        position: taskDetailData.attributes.position,
+        parent_id: taskDetailData.attributes.parent_id,
+        created_at: taskDetailData.attributes.created_at,
+        updated_at: taskDetailData.attributes.updated_at,
+        completed_at: taskDetailData.attributes.completed_at,
+        notes: taskDetailData.attributes.notes || [],
+        activity_logs: taskDetailData.attributes.activity_logs || [],
+        // Don't include available_technicians - they're already cached via useUsersQuery
+      };
+      
+      // Auto-scroll to bottom after content loads
+      setTimeout(() => {
+        if (timelineContainer) {
+          timelineContainer.scrollTop = timelineContainer.scrollHeight;
+        }
+      }, 0);
+    }
+  }
+
   async function loadTaskDetails() {
+    // First check if we have batch details available
+    if (batchTaskDetails?.data) {
+      checkBatchDetails();
+      if (taskDetails) return; // Exit early if batch details provided the data
+    }
+    
+    // Fall back to individual API call if batch details not available
     loading = true;
     error = '';
     

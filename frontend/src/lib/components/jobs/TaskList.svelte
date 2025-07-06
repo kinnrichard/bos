@@ -24,6 +24,7 @@
   }> = [];
   
   export let jobId: string = 'test';
+  export let batchTaskDetails: any = null; // Optional batch task details data
 
   // TEMP: Add static test tasks for nesting demo
   if (tasks.length === 0) {
@@ -912,6 +913,7 @@
             <TaskInfoPopoverHeadless 
               task={renderItem.task}
               {jobId}
+              {batchTaskDetails}
               on:task-updated={handleTaskUpdated}
             />
           </div>

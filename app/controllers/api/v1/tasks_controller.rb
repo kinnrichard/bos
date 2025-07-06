@@ -1,10 +1,10 @@
 class Api::V1::TasksController < Api::V1::BaseController
   before_action :find_job
-  before_action :find_task, except: [ :index, :create, :reorder, :batch_reorder ]
+  before_action :find_task, except: [ :index, :create, :reorder, :batch_reorder, :batch_details ]
   before_action :set_current_user
 
   # Temporarily skip CSRF for testing
-  skip_before_action :verify_csrf_token_for_cookie_auth, only: [ :batch_reorder ]
+  skip_before_action :verify_csrf_token_for_cookie_auth, only: [ :batch_reorder, :batch_details ]
 
   def index
     @tasks = @job.tasks.includes(:assigned_to)
@@ -94,6 +94,52 @@ class Api::V1::TasksController < Api::V1::BaseController
           initials: user.initials
         }
       end
+    }
+  end
+
+  # GET /api/v1/jobs/:job_id/tasks/batch_details
+  def batch_details
+    # Load all tasks with their associated data in a single efficient query
+    @tasks = @job.tasks.includes(:assigned_to, notes: :user, activity_logs: :user).order(:position)
+
+    render json: {
+      data: @tasks.map do |task|
+        {
+          type: "tasks",
+          id: task.id,
+          attributes: {
+            title: task.title,
+            status: task.status,
+            position: task.position,
+            parent_id: task.parent_id,
+            created_at: task.created_at,
+            updated_at: task.updated_at,
+            notes: task.notes.order(:created_at).map do |note|
+              {
+                id: note.id,
+                content: note.content,
+                user_name: note.user.name,
+                created_at: note.created_at
+              }
+            end,
+            activity_logs: task.activity_logs.order(:created_at).map do |log|
+              {
+                id: log.id,
+                action: log.action,
+                user_name: log.user&.name,
+                created_at: log.created_at,
+                metadata: log.metadata
+              }
+            end
+          },
+          relationships: {
+            assigned_to: {
+              data: task.assigned_to ? { type: "users", id: task.assigned_to.id } : nil
+            }
+          }
+        }
+      end,
+      included: build_included_users_for_batch(@tasks)
     }
   end
 
@@ -367,6 +413,20 @@ class Api::V1::TasksController < Api::V1::BaseController
 
   def build_included_users
     users = @tasks.filter_map(&:assigned_to).uniq
+    users.map do |user|
+      {
+        type: "users",
+        id: user.id,
+        attributes: {
+          name: user.name,
+          email: user.email
+        }
+      }
+    end
+  end
+
+  def build_included_users_for_batch(tasks)
+    users = tasks.filter_map(&:assigned_to).uniq
     users.map do |user|
       {
         type: "users",

@@ -210,6 +210,104 @@ export class TasksService {
   }
 
   /**
+   * Get batch task details for all tasks in a job
+   */
+  async getBatchTaskDetails(jobId: string): Promise<{
+    data: Array<{
+      type: string;
+      id: string;
+      attributes: {
+        title: string;
+        status: string;
+        position: number;
+        parent_id?: string;
+        created_at: string;
+        updated_at: string;
+        completed_at?: string;
+        notes: Array<{
+          id: string;
+          content: string;
+          user_name: string;
+          created_at: string;
+        }>;
+        activity_logs: Array<{
+          id: string;
+          action: string;
+          user_name?: string;
+          created_at: string;
+          metadata: any;
+        }>;
+      };
+      relationships: {
+        assigned_to: {
+          data: { type: string; id: string } | null;
+        };
+      };
+    }>;
+    included: Array<{
+      type: string;
+      id: string;
+      attributes: {
+        name: string;
+        email: string;
+      };
+    }>;
+  }> {
+    // For demo purposes, return mock data
+    if (jobId === 'test') {
+      return {
+        data: [
+          {
+            type: 'tasks',
+            id: 'task1',
+            attributes: {
+              title: 'Test Task 1',
+              status: 'in_progress',
+              position: 1,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              notes: [
+                {
+                  id: 'note1',
+                  content: 'This is a batch-loaded note',
+                  user_name: 'John Smith',
+                  created_at: new Date().toISOString()
+                }
+              ],
+              activity_logs: [
+                {
+                  id: 'log1',
+                  action: 'status_changed',
+                  user_name: 'Alice Johnson',
+                  created_at: new Date().toISOString(),
+                  metadata: { from: 'new_task', to: 'in_progress' }
+                }
+              ]
+            },
+            relationships: {
+              assigned_to: {
+                data: { type: 'users', id: 'user1' }
+              }
+            }
+          }
+        ],
+        included: [
+          {
+            type: 'users',
+            id: 'user1',
+            attributes: {
+              name: 'John Smith',
+              email: 'john@example.com'
+            }
+          }
+        ]
+      };
+    }
+
+    return api.get(`/jobs/${jobId}/tasks/batch_details`);
+  }
+
+  /**
    * Assign task to technician
    */
   async assignTask(
