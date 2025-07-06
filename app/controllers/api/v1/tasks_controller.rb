@@ -303,7 +303,18 @@ class Api::V1::TasksController < Api::V1::BaseController
           end
         end
 
-        task.insert_at(position_data[:position].to_i)
+        # Handle both parent_id and position changes in a single atomic update
+        if position_data.key?(:parent_id)
+          # When changing parent, we need to update both parent_id and position together
+          # to avoid acts_as_list conflicts and lock version issues
+          task.update!(
+            parent_id: position_data[:parent_id],
+            position: position_data[:position].to_i
+          )
+        else
+          # If only position is changing, use acts_as_list method
+          task.insert_at(position_data[:position].to_i)
+        end
       end
     end
 

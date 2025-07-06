@@ -436,10 +436,7 @@
       badge.remove();
     }
     
-    // Handle the actual reordering or nesting
-    if (event.dropZone) {
-      handleTaskReorder(event);
-    }
+    // Reordering is handled by onSort event - no need for duplicate call here
 
   }
 
