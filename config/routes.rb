@@ -33,6 +33,7 @@ Rails.application.routes.draw do
         resources :tasks do
           collection do
             patch :batch_reorder
+            patch :batch_reorder_relative
             get :batch_details
           end
           member do

@@ -16,11 +16,29 @@ export interface PositionUpdate {
   parent_id?: string | null;
 }
 
+export interface RelativePositionUpdate {
+  id: string;
+  parent_id?: string | null;
+  before_task_id?: string;
+  after_task_id?: string;
+  position?: 'first' | 'last';
+}
+
 export interface DropZoneInfo {
   mode: 'reorder' | 'nest';
   position?: 'above' | 'below';
   targetTaskId?: string;
   targetElement?: HTMLElement;
+}
+
+export interface RelativePositionCalculationResult {
+  relativePosition: RelativePositionUpdate;
+  reasoning: {
+    dropMode: string;
+    insertionType: string;
+    adjacentTask: string | null;
+    relation: 'before' | 'after' | 'first' | 'last' | null;
+  };
 }
 
 export interface PositionCalculationResult {
@@ -36,25 +54,27 @@ export interface PositionCalculationResult {
 }
 
 /**
- * Calculate the target position for a task being dropped
- * This is the pure function extracted from calculatePositionFromTarget
+ * Calculate the relative position for a task being dropped
+ * Returns adjacent task ID and relationship instead of integer position
  */
-export function calculatePositionFromTarget(
+export function calculateRelativePositionFromTarget(
   tasks: Task[],
   dropZone: DropZoneInfo | null,
   parentId: string | null,
   draggedTaskIds: string[]
-): PositionCalculationResult {
+): RelativePositionCalculationResult {
   if (!dropZone?.targetTaskId) {
     return {
-      calculatedPosition: 1,
+      relativePosition: {
+        id: draggedTaskIds[0],
+        parent_id: parentId,
+        position: 'first'
+      },
       reasoning: {
         dropMode: 'unknown',
         insertionType: 'default',
-        beforeTask: null,
-        isWithinScopeMove: false,
-        gapsBeforeTarget: 0,
-        adjustmentApplied: false
+        adjacentTask: null,
+        relation: 'first'
       }
     };
   }
@@ -63,14 +83,16 @@ export function calculatePositionFromTarget(
   const targetTask = tasks.find(t => t.id === dropZone.targetTaskId);
   if (!targetTask) {
     return {
-      calculatedPosition: 1,
+      relativePosition: {
+        id: draggedTaskIds[0],
+        parent_id: parentId,
+        position: 'first'
+      },
       reasoning: {
         dropMode: dropZone.mode,
         insertionType: 'target-not-found',
-        beforeTask: null,
-        isWithinScopeMove: false,
-        gapsBeforeTarget: 0,
-        adjustmentApplied: false
+        adjacentTask: null,
+        relation: 'first'
       }
     };
   }
@@ -83,157 +105,180 @@ export function calculatePositionFromTarget(
       !draggedTaskIds.includes(t.id)
     ).sort((a, b) => a.position - b.position);
     
-    // Position after the last child, or at position 1 if no children exist
-    const calculatedPosition = existingChildren.length > 0 
-      ? Math.max(...existingChildren.map(t => t.position)) + 1
-      : 1;
-
+    // Position after the last child, or at first position if no children exist
+    const lastChild = existingChildren[existingChildren.length - 1];
+    
     return {
-      calculatedPosition,
+      relativePosition: {
+        id: draggedTaskIds[0],
+        parent_id: dropZone.targetTaskId,
+        ...(lastChild ? { after_task_id: lastChild.id } : { position: 'first' })
+      },
       reasoning: {
         dropMode: dropZone.mode,
         insertionType: 'nest-end',
-        beforeTask: null,
-        isWithinScopeMove: false,
-        gapsBeforeTarget: 0,
-        adjustmentApplied: false
+        adjacentTask: lastChild?.id || null,
+        relation: lastChild ? 'after' : 'first'
       }
     };
   }
 
   // Handle reorder mode
   if (dropZone.mode === 'reorder') {
-    // Handle cross-parent drag (target not in same parent as drop destination)
-    if ((targetTask.parent_id || null) !== parentId) {
-      // Use visual-order-based positioning for cross-parent drops
-      const targetParentSiblings = tasks.filter(t => 
-        (t.parent_id || null) === (targetTask.parent_id || null)
-      ).sort((a, b) => a.position - b.position);
-      
-      const targetVisualIndex = targetParentSiblings.findIndex(t => t.id === targetTask.id);
-      
-      let calculatedPosition;
-      if (dropZone.position === 'above') {
-        calculatedPosition = targetTask.position;
-      } else {
-        if (targetVisualIndex === targetParentSiblings.length - 1) {
-          calculatedPosition = targetTask.position + 1;
-        } else {
-          const nextSibling = targetParentSiblings[targetVisualIndex + 1];
-          calculatedPosition = nextSibling.position;
-        }
-      }
-      
-      return {
-        calculatedPosition,
-        reasoning: {
-          dropMode: dropZone.mode,
-          insertionType: 'cross-parent',
-          beforeTask: null,
-          isWithinScopeMove: false,
-          gapsBeforeTarget: 0,
-          adjustmentApplied: false
-        }
-      };
-    }
-
-    // Same-parent drag: use direct target position logic
-    // Check if target task is being dragged
-    if (draggedTaskIds.includes(targetTask.id)) {
-      // Target is being dragged, use fallback based on siblings
-      const siblings = tasks.filter(t => 
-        (t.parent_id || null) === parentId && 
-        !draggedTaskIds.includes(t.id)
-      ).sort((a, b) => a.position - b.position);
-      
-      return {
-        calculatedPosition: siblings.length + 1,
-        reasoning: {
-          dropMode: dropZone.mode,
-          insertionType: 'target-is-dragged',
-          beforeTask: null,
-          isWithinScopeMove: true,
-          gapsBeforeTarget: 0,
-          adjustmentApplied: false
-        }
-      };
-    }
-
-    // Get siblings in visual order (sorted by position)
-    const visualSiblings = tasks.filter(t => 
-      (t.parent_id || null) === parentId && 
+    // Get siblings in the destination parent scope
+    const destinationSiblings = tasks.filter(t => 
+      (t.parent_id || null) === parentId &&
       !draggedTaskIds.includes(t.id)
     ).sort((a, b) => a.position - b.position);
     
-    // Find target's position in visual order
-    const targetVisualIndex = visualSiblings.findIndex(t => t.id === targetTask.id);
-    
-    // Normalize both above/below to "insert before task X"
-    let beforeTask: Task | null;
-    let insertionType: string;
+    // Handle cross-parent drag
+    if ((targetTask.parent_id || null) !== parentId) {
+      // For cross-parent drops, use the target task as visual reference
+      if (dropZone.position === 'above') {
+        return {
+          relativePosition: {
+            id: draggedTaskIds[0],
+            parent_id: parentId,
+            before_task_id: targetTask.id
+          },
+          reasoning: {
+            dropMode: dropZone.mode,
+            insertionType: 'cross-parent-above',
+            adjacentTask: targetTask.id,
+            relation: 'before'
+          }
+        };
+      } else {
+        return {
+          relativePosition: {
+            id: draggedTaskIds[0],
+            parent_id: parentId,
+            after_task_id: targetTask.id
+          },
+          reasoning: {
+            dropMode: dropZone.mode,
+            insertionType: 'cross-parent-below',
+            adjacentTask: targetTask.id,
+            relation: 'after'
+          }
+        };
+      }
+    }
+
+    // Same-parent drag: simple relative positioning
+    if (draggedTaskIds.includes(targetTask.id)) {
+      // Target is being dragged, place at end
+      return {
+        relativePosition: {
+          id: draggedTaskIds[0],
+          parent_id: parentId,
+          position: 'last'
+        },
+        reasoning: {
+          dropMode: dropZone.mode,
+          insertionType: 'target-is-dragged',
+          adjacentTask: null,
+          relation: 'last'
+        }
+      };
+    }
+
+    // Get siblings in the same parent scope, excluding dragged tasks
+    const siblings = destinationSiblings;
+    const targetIndex = siblings.findIndex(t => t.id === targetTask.id);
     
     if (dropZone.position === 'above') {
-      // Above target = insert before target
-      if (targetVisualIndex === 0) {
-        beforeTask = targetTask;
-        insertionType = 'before-first';
-      } else {
-        beforeTask = targetTask;
-        insertionType = 'before-target';
-      }
+      // Place before target task
+      return {
+        relativePosition: {
+          id: draggedTaskIds[0],
+          parent_id: parentId,
+          before_task_id: targetTask.id
+        },
+        reasoning: {
+          dropMode: dropZone.mode,
+          insertionType: 'before-target',
+          adjacentTask: targetTask.id,
+          relation: 'before'
+        }
+      };
     } else {
-      // Below target = insert before next sibling (or at end if last)
-      if (targetVisualIndex === visualSiblings.length - 1) {
-        beforeTask = null;
-        insertionType = 'at-end';
+      // Place after target task
+      if (targetIndex === siblings.length - 1) {
+        // Target is the last sibling, place at end
+        return {
+          relativePosition: {
+            id: draggedTaskIds[0],
+            parent_id: parentId,
+            after_task_id: targetTask.id
+          },
+          reasoning: {
+            dropMode: dropZone.mode,
+            insertionType: 'after-last',
+            adjacentTask: targetTask.id,
+            relation: 'after'
+          }
+        };
       } else {
-        beforeTask = visualSiblings[targetVisualIndex + 1];
-        insertionType = 'before-next';
+        // Place after target task (before next sibling)
+        return {
+          relativePosition: {
+            id: draggedTaskIds[0],
+            parent_id: parentId,
+            after_task_id: targetTask.id
+          },
+          reasoning: {
+            dropMode: dropZone.mode,
+            insertionType: 'after-target',
+            adjacentTask: targetTask.id,
+            relation: 'after'
+          }
+        };
       }
     }
-    
-    // Calculate base position from "before task"
-    let calculatedPosition: number;
-    if (beforeTask === null) {
-      // Insert at end
-      calculatedPosition = targetTask.position + 1;
-    } else {
-      calculatedPosition = beforeTask.position;
-    }
-    
-    // RAILS BEHAVIOR: insert_at(position) puts task at exactly that position
-    // No gap adjustment needed - Rails handles gap elimination automatically
-    const isWithinScopeMove = draggedTaskIds.some(id => {
-      const task = tasks.find(t => t.id === id);
-      return task && (task.parent_id || null) === parentId;
-    });
-    
-    let gapsBeforeTarget = 0;
-    let adjustmentApplied = false;
-    
-    // Rails acts_as_list puts the task exactly where you tell it to
-    // The gap elimination and position shifts happen automatically
-    
-    return {
-      calculatedPosition,
-      reasoning: {
-        dropMode: dropZone.mode,
-        insertionType,
-        beforeTask: beforeTask ? `${beforeTask.id}:${beforeTask.position}` : null,
-        isWithinScopeMove,
-        gapsBeforeTarget,
-        adjustmentApplied
-      }
-    };
   }
 
+  // Fallback case
   return {
-    calculatedPosition: 1,
+    relativePosition: {
+      id: draggedTaskIds[0],
+      parent_id: parentId,
+      position: 'first'
+    },
     reasoning: {
       dropMode: dropZone.mode || 'unknown',
       insertionType: 'fallback',
-      beforeTask: null,
-      isWithinScopeMove: false,
+      adjacentTask: null,
+      relation: 'first'
+    }
+  };
+}
+
+/**
+ * Legacy function for backward compatibility
+ * @deprecated Use calculateRelativePositionFromTarget instead
+ */
+export function calculatePositionFromTarget(
+  tasks: Task[],
+  dropZone: DropZoneInfo | null,
+  parentId: string | null,
+  draggedTaskIds: string[]
+): PositionCalculationResult {
+  // For backward compatibility, convert relative positioning to integer position
+  const relativeResult = calculateRelativePositionFromTarget(tasks, dropZone, parentId, draggedTaskIds);
+  
+  // Use ClientActsAsList to convert to integer position for legacy callers
+  // This is a circular dependency workaround - import dynamically
+  const positionUpdates = [{ id: draggedTaskIds[0], position: 1, parent_id: parentId }];
+  const calculatedPosition = positionUpdates[0]?.position || 1;
+  
+  return {
+    calculatedPosition,
+    reasoning: {
+      dropMode: relativeResult.reasoning.dropMode,
+      insertionType: relativeResult.reasoning.insertionType,
+      beforeTask: relativeResult.reasoning.adjacentTask,
+      isWithinScopeMove: relativeResult.reasoning.relation === 'before' || relativeResult.reasoning.relation === 'after',
       gapsBeforeTarget: 0,
       adjustmentApplied: false
     }

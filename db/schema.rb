@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_29_201241) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_06_205411) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -392,6 +392,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_201241) do
     t.uuid "parent_id"
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
     t.index ["id"], name: "index_tasks_on_id", unique: true
+    t.index ["job_id", "parent_id", "position"], name: "index_tasks_on_scope_and_position", unique: true
     t.index ["job_id"], name: "index_tasks_on_job_id"
     t.index ["lock_version"], name: "index_tasks_on_lock_version"
     t.index ["parent_id"], name: "index_tasks_on_parent_id"

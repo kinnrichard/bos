@@ -18,7 +18,7 @@ class TaskSortingService
 
       # Update position if provided
       if update[:position].present?
-        task.insert_at(update[:position].to_i)
+        task.update(position: update[:position].to_i)
       end
 
       # Update reordered_at timestamp

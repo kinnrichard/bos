@@ -19,7 +19,7 @@ gem "rack-cors"
 gem "jsonapi-serializer"
 # gem "rack-attack" # Temporarily disabled for development
 # For drag-and-drop ordering
-gem "acts_as_list"
+gem "positioning"
 # Pagination
 gem "kaminari"
 

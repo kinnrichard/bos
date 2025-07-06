@@ -5,9 +5,9 @@
   import { tasksService } from '$lib/api/tasks';
   import { nativeDrag, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
-  import { calculatePositionFromTarget as railsCalculatePosition } from '$lib/utils/position-calculator';
+  import { calculateRelativePositionFromTarget, calculatePositionFromTarget as railsCalculatePosition } from '$lib/utils/position-calculator';
   import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
-  import type { Task as RailsTask, DropZoneInfo, PositionUpdate } from '$lib/utils/position-calculator';
+  import type { Task as RailsTask, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
 
   // Use static SVG URLs for better compatibility
@@ -660,8 +660,23 @@
         expandedTasks = expandedTasks; // Trigger Svelte reactivity
       }
 
-      // Call API to nest the task
-      await tasksService.nestTask(jobId, draggedTaskId, targetTaskId, newPosition);
+      // Calculate relative position for nesting
+      const relativePosition = calculateRelativePosition(null, targetTaskId, [draggedTaskId]);
+      
+      // Call API to nest the task using relative positioning
+      if (relativePosition.before_task_id) {
+        await tasksService.nestTaskRelative(jobId, draggedTaskId, targetTaskId, {
+          before_task_id: relativePosition.before_task_id
+        });
+      } else if (relativePosition.after_task_id) {
+        await tasksService.nestTaskRelative(jobId, draggedTaskId, targetTaskId, {
+          after_task_id: relativePosition.after_task_id
+        });
+      } else {
+        await tasksService.nestTaskRelative(jobId, draggedTaskId, targetTaskId, {
+          position: relativePosition.position as 'first' | 'last'
+        });
+      }
       
       // Clear optimistic updates on success
       optimisticUpdates.clear();
@@ -715,6 +730,21 @@
     // Determine if this is a multi-select drag
     const isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedTaskId) && $taskSelection.selectedTaskIds.size > 1;
     
+    // Calculate newParentId for both single and multi-select operations
+    let newParentId: string | null;
+    const dropIndex = event.newIndex!;
+    
+    if (event.dropZone?.mode === 'nest' && event.dropZone.targetTaskId) {
+      // For nesting: all tasks become children of the target task
+      newParentId = event.dropZone.targetTaskId;
+    } else if (event.dropZone?.mode === 'reorder' && event.dropZone.targetTaskId) {
+      // For reordering: use target task's parent
+      const targetTask = tasks.find(t => t.id === event.dropZone.targetTaskId);
+      newParentId = targetTask?.parent_id || null;
+    } else {
+      newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
+    }
+    
     let positionUpdates: Array<{id: string, position: number, parent_id?: string}> = [];
     
     if (isMultiSelectDrag) {
@@ -730,21 +760,7 @@
         return (flattenedA?.visualIndex || 0) - (flattenedB?.visualIndex || 0);
       });
       
-      const dropIndex = event.newIndex!;
-      
-      // Determine parent based on operation mode
-      let newParentId: string | null;
-      if (event.dropZone?.mode === 'nest' && event.dropZone.targetTaskId) {
-        // For nesting: all tasks become children of the target task
-        newParentId = event.dropZone.targetTaskId;
-        console.log(`🪆 Multi-nesting: moving ${selectedTaskIds.length} tasks under ${newParentId?.substring(0,8)}`);
-      } else if (event.dropZone?.mode === 'reorder' && event.dropZone.targetTaskId) {
-        // For reordering: use target task's parent
-        const targetTask = tasks.find(t => t.id === event.dropZone.targetTaskId);
-        newParentId = targetTask?.parent_id || null;
-      } else {
-        newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
-      }
+      console.log(`🪆 Multi-nesting: moving ${selectedTaskIds.length} tasks under ${newParentId?.substring(0,8)}`);
       
       // Calculate base position within the new parent
       let newPosition: number;
@@ -784,16 +800,6 @@
       
     } else {
       // Handle single task drag with hierarchical parent assignment
-      const dropIndex = event.newIndex!;
-      
-      // For reorder operations, use target task's parent; for nest operations, calculate parent
-      let newParentId: string | null;
-      if (event.dropZone?.mode === 'reorder' && event.dropZone.targetTaskId) {
-        const targetTask = tasks.find(t => t.id === event.dropZone.targetTaskId);
-        newParentId = targetTask?.parent_id || null;
-      } else {
-        newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
-      }
       
       // Calculate position within the new parent using the target task's position
       const newPosition = calculatePositionFromTarget(event.dropZone, newParentId, [draggedTaskId]);
@@ -829,17 +835,70 @@
     });
     
     try {
-      console.log('📡 Sending position updates to server:', {
+      // Get the task IDs that are being moved
+      const taskIdsToMove = isMultiSelectDrag 
+        ? Array.from($taskSelection.selectedTaskIds)
+        : [draggedTaskId];
+      
+      // Calculate relative positioning for each task
+      const relativeUpdates = taskIdsToMove.map(taskId => {
+        const currentTask = tasks.find(t => t.id === taskId);
+        if (!currentTask) return null;
+        
+        // Use the same drop zone for all tasks, but adjust for each task individually
+        return calculateRelativePosition(event.dropZone, newParentId, [taskId]);
+      }).filter(update => update !== null) as RelativePositionUpdate[];
+      
+      console.log('📡 Sending relative position updates to server:', {
         jobId,
-        positionUpdates,
+        relativeUpdates,
         draggedTaskId,
         dropZone: event.dropZone
       });
       
-      // Send batch reorder to server  
-      const serverResponse = await tasksService.batchReorderTasks(jobId, { positions: positionUpdates });
+      // Send batch reorder to server using relative positioning
+      const serverResponse = await tasksService.batchReorderTasksRelative(jobId, { 
+        relative_positions: relativeUpdates 
+      });
       
       console.log('✅ Server update successful', serverResponse);
+      
+      // 🔍 Log final task positions from server response
+      if (serverResponse.tasks) {
+        const finalPositions = serverResponse.tasks
+          .filter(t => (t.parent_id || null) === event.parentId)
+          .sort((a, b) => a.position - b.position)
+          .map(t => ({
+            id: t.id.substring(0, 8),
+            title: t.title?.substring(0, 15) + (t.title?.length > 15 ? '...' : ''),
+            position: t.position
+          }));
+        
+        console.log('📋 Final task order from server:', finalPositions);
+        
+        // Highlight the moved task
+        const movedTaskFinal = serverResponse.tasks.find(t => t.id === draggedTaskId);
+        if (movedTaskFinal) {
+          console.log('🎯 Moved task final position:', {
+            id: movedTaskFinal.id.substring(0, 8),
+            title: movedTaskFinal.title,
+            finalPosition: movedTaskFinal.position,
+            requestedPosition: positionUpdates[0]?.position
+          });
+        }
+      }
+      
+      // 🔍 Log client visual state after server response
+      const clientVisualState = tasks
+        .filter(t => (t.parent_id || null) === event.parentId)
+        .sort((a, b) => a.position - b.position)
+        .map(t => ({
+          id: t.id.substring(0, 8),
+          title: t.title?.substring(0, 15) + (t.title?.length > 15 ? '...' : ''),
+          position: t.position
+        }));
+      
+      console.log('🖥️ Client visual state after operation:', clientVisualState);
       
       // 🔍 Compare client prediction vs server reality
       await compareClientVsServer(clientPredictedPositions, taskStateBeforeOperation, positionUpdates, event);
@@ -1103,12 +1162,12 @@
     return dropZone; // Return as-is for now, let parent calculation handle it
   }
 
-  // Calculate position for acts_as_list using validated Rails-compatible logic
-  function calculatePositionFromTarget(dropZone: DropZoneInfo | null, parentId: string | null, draggedTaskIds: string[]): number {
+  // Calculate relative position using the new simplified API
+  function calculateRelativePosition(dropZone: DropZoneInfo | null, parentId: string | null, draggedTaskIds: string[]): RelativePositionUpdate {
     // Resolve any boundary ambiguity
     const resolvedDropZone = resolveParentChildBoundary(dropZone);
     
-    console.log('🎯 calculatePositionFromTarget called (Rails-compatible):', {
+    console.log('🎯 calculateRelativePosition called:', {
       dropZone,
       resolvedDropZone,
       parentId,
@@ -1119,18 +1178,33 @@
     const railsTasks: RailsTask[] = tasks.map(t => ({
       id: t.id,
       position: t.position,
-      parent_id: t.parent_id || null
+      parent_id: t.parent_id || null,
+      title: t.title
     }));
     
-    // Use the Rails-compatible position calculator
-    const result = railsCalculatePosition(railsTasks, resolvedDropZone, parentId, draggedTaskIds);
+    // Use the new relative position calculator
+    const result = calculateRelativePositionFromTarget(railsTasks, resolvedDropZone, parentId, draggedTaskIds);
     
-    console.log('🎯 Rails-compatible calculation result:', {
-      calculatedPosition: result.calculatedPosition,
+    console.log('🎯 Relative positioning result:', {
+      relativePosition: result.relativePosition,
       reasoning: result.reasoning
     });
     
-    return result.calculatedPosition;
+    return result.relativePosition;
+  }
+
+  // Legacy position calculation for client-side prediction (backward compatibility)
+  function calculatePositionFromTarget(dropZone: DropZoneInfo | null, parentId: string | null, draggedTaskIds: string[]): number {
+    // Use relative positioning and convert to integer for client prediction
+    const relativePosition = calculateRelativePosition(dropZone, parentId, draggedTaskIds);
+    
+    // Convert to integer position for optimistic updates
+    const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(
+      tasks.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id || null, title: t.title })),
+      [relativePosition]
+    );
+    
+    return positionUpdates[0]?.position || 1;
   }
   
 </script>

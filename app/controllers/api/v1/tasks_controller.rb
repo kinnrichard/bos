@@ -1,10 +1,10 @@
 class Api::V1::TasksController < Api::V1::BaseController
   before_action :find_job
-  before_action :find_task, except: [ :index, :create, :reorder, :batch_reorder, :batch_details ]
+  before_action :find_task, except: [ :index, :create, :reorder, :batch_reorder, :batch_reorder_relative, :batch_details ]
   before_action :set_current_user
 
   # Temporarily skip CSRF for testing
-  skip_before_action :verify_csrf_token_for_cookie_auth, only: [ :batch_reorder, :batch_details ]
+  skip_before_action :verify_csrf_token_for_cookie_auth, only: [ :batch_reorder, :batch_reorder_relative, :batch_details ]
 
   def index
     @tasks = @job.tasks.includes(:assigned_to)
@@ -358,6 +358,31 @@ class Api::V1::TasksController < Api::V1::BaseController
     render json: {
       error: "One or more tasks not found"
     }, status: :not_found
+  end
+
+  def batch_reorder_relative
+    if params[:relative_positions].blank?
+      render json: { error: "Relative positions parameter required" }, status: :unprocessable_entity
+      return
+    end
+
+    # Transform relative_positions to the format expected by batch_reorder
+    transformed_params = {
+      positions: params[:relative_positions],
+      job_lock_version: params[:job_lock_version]
+    }
+
+    # Temporarily override params to use the existing logic
+    original_params = params.to_unsafe_h
+    params.merge!(transformed_params)
+
+    begin
+      # Reuse existing batch_reorder logic
+      batch_reorder
+    ensure
+      # Restore original params
+      @_params = original_params.with_indifferent_access
+    end
   end
 
   def update_status

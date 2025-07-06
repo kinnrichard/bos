@@ -3,7 +3,7 @@
  * Extracted from TaskList.svelte for unit testing
  */
 
-import type { Task, PositionUpdate } from './position-calculator.js';
+import type { Task, PositionUpdate, RelativePositionUpdate } from './position-calculator.js';
 
 export interface ActsAsListResult {
   updatedTasks: Task[];
@@ -172,5 +172,66 @@ export class ClientActsAsList {
       errors,
       warnings
     };
+  }
+
+  /**
+   * Convert relative positioning updates to integer position updates for client-side prediction
+   * This maintains offline functionality by allowing immediate UI updates
+   */
+  static convertRelativeToPositionUpdates(
+    tasks: Task[],
+    relativeUpdates: RelativePositionUpdate[]
+  ): PositionUpdate[] {
+    const positionUpdates: PositionUpdate[] = [];
+    
+    relativeUpdates.forEach(update => {
+      const task = tasks.find(t => t.id === update.id);
+      if (!task) return;
+      
+      let targetPosition = 1;
+      const targetParent = update.parent_id !== undefined ? update.parent_id : task.parent_id;
+      
+      // Get tasks in the target scope
+      const scopeTasks = tasks.filter(t => (t.parent_id || null) === (targetParent || null))
+                              .filter(t => t.id !== update.id) // Exclude the moving task
+                              .sort((a, b) => a.position - b.position);
+      
+      if (update.before_task_id) {
+        // Position before specific task
+        const beforeTask = scopeTasks.find(t => t.id === update.before_task_id);
+        targetPosition = beforeTask ? beforeTask.position : 1;
+      } else if (update.after_task_id) {
+        // Position after specific task
+        const afterTask = scopeTasks.find(t => t.id === update.after_task_id);
+        targetPosition = afterTask ? afterTask.position + 1 : scopeTasks.length + 1;
+      } else if (update.position === 'first') {
+        targetPosition = 1;
+      } else if (update.position === 'last') {
+        targetPosition = scopeTasks.length + 1;
+      }
+      
+      positionUpdates.push({
+        id: update.id,
+        position: targetPosition,
+        parent_id: targetParent
+      });
+    });
+    
+    return positionUpdates;
+  }
+
+  /**
+   * Apply relative positioning updates with client-side prediction
+   * This is the main method for maintaining offline functionality
+   */
+  static applyRelativePositioning(
+    tasks: Task[],
+    relativeUpdates: RelativePositionUpdate[]
+  ): ActsAsListResult {
+    // Convert relative positioning to integer positions for client prediction
+    const positionUpdates = this.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+    
+    // Apply using existing position update logic
+    return this.applyPositionUpdates(tasks, positionUpdates);
   }
 }

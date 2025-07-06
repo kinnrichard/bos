@@ -55,8 +55,32 @@ class TasksController < ApplicationController
       @task.parent_id = params[:task][:parent_id]
 
       if @task.save
-        # Then insert at the specific position
-        @task.insert_at(params[:task][:position].to_i)
+        # Then update to the specific position using relative positioning
+        target_position = params[:task][:position].to_i
+        scope_tasks = @job.tasks.where(parent_id: @task.parent_id).order(:position)
+
+        if target_position == 1
+          @task.update(position: :first)
+        elsif target_position >= scope_tasks.count
+          @task.update(position: :last)
+        else
+          scope_tasks_without_current = scope_tasks.reject { |t| t.id == @task.id }
+
+          if target_position <= scope_tasks_without_current.count
+            after_task = scope_tasks_without_current[target_position - 2]
+            before_task = scope_tasks_without_current[target_position - 1]
+
+            if after_task
+              @task.update(position: { after: after_task })
+            elsif before_task
+              @task.update(position: { before: before_task })
+            else
+              @task.update(position: :first)
+            end
+          else
+            @task.update(position: :last)
+          end
+        end
 
         if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
           render_task_list_update
@@ -130,8 +154,8 @@ class TasksController < ApplicationController
       return
     end
 
-    position = params[:position].to_i
-    position = 1 if position < 1  # Ensure position is at least 1
+    target_position = params[:position].to_i
+    target_position = 1 if target_position < 1  # Ensure position is at least 1
 
     # Handle optimistic locking
     if params[:lock_version]
@@ -145,7 +169,38 @@ class TasksController < ApplicationController
       end
     end
 
-    @task.insert_at(position)
+    # Handle relative positioning - prioritize before/after task IDs over integer positions
+    if params[:before_task_id].present?
+      # Position before specific task
+      before_task = @job.tasks.find(params[:before_task_id])
+      @task.update(position: { before: before_task })
+    elsif params[:after_task_id].present?
+      # Position after specific task
+      after_task = @job.tasks.find(params[:after_task_id])
+      @task.update(position: { after: after_task })
+    elsif params[:position] == "first"
+      @task.update(position: :first)
+    elsif params[:position] == "last"
+      @task.update(position: :last)
+    else
+      # Fallback: handle integer positions (for backward compatibility)
+      scope_tasks = @job.tasks.where(parent_id: @task.parent_id).order(:position)
+
+      if target_position == 1
+        @task.update(position: :first)
+      elsif target_position >= scope_tasks.count
+        @task.update(position: :last)
+      else
+        scope_tasks_without_current = scope_tasks.reject { |t| t.id == @task.id }
+
+        if target_position <= scope_tasks_without_current.count && target_position > 1
+          after_task = scope_tasks_without_current[target_position - 2]
+          @task.update(position: { after: after_task }) if after_task
+        else
+          @task.update(position: :last)
+        end
+      end
+    end
 
     if request.headers["Accept"]&.include?("text/vnd.turbo-stream.html")
       render_task_list_update
@@ -174,6 +229,7 @@ class TasksController < ApplicationController
         end
       end
 
+      # Handle relative positioning updates
       params[:positions].each do |position_data|
         task = @job.tasks.find(position_data[:id])
 
@@ -185,7 +241,48 @@ class TasksController < ApplicationController
           end
         end
 
-        task.insert_at(position_data[:position].to_i)
+        # Handle parent_id change if provided
+        if position_data[:parent_id] != task.parent_id
+          task.parent_id = position_data[:parent_id]
+          task.save! # Save parent change first
+        end
+
+        # Handle relative positioning - prioritize before/after task IDs over integer positions
+        if position_data[:before_task_id].present?
+          # Position before specific task
+          before_task = @job.tasks.find(position_data[:before_task_id])
+          task.update(position: { before: before_task })
+        elsif position_data[:after_task_id].present?
+          # Position after specific task
+          after_task = @job.tasks.find(position_data[:after_task_id])
+          task.update(position: { after: after_task })
+        elsif position_data[:position] == "first" || position_data[:position] == :first
+          # Move to first position
+          task.update(position: :first)
+        elsif position_data[:position] == "last" || position_data[:position] == :last
+          # Move to last position
+          task.update(position: :last)
+        elsif position_data[:position].present?
+          # Fallback: handle integer positions (for backward compatibility)
+          target_position = position_data[:position].to_i
+          scope_tasks = @job.tasks.where(parent_id: task.parent_id).order(:position)
+
+          if target_position == 1
+            task.update(position: :first)
+          elsif target_position >= scope_tasks.count
+            task.update(position: :last)
+          else
+            # Find relative task for integer position
+            scope_tasks_without_current = scope_tasks.reject { |t| t.id == task.id }
+
+            if target_position <= scope_tasks_without_current.count && target_position > 1
+              after_task = scope_tasks_without_current[target_position - 2]
+              task.update(position: { after: after_task }) if after_task
+            else
+              task.update(position: :last)
+            end
+          end
+        end
       end
     end
 
@@ -269,7 +366,7 @@ class TasksController < ApplicationController
   end
 
   def task_params
-    params.require(:task).permit(:title, :status, :assigned_to_id, :parent_id, :position)
+    params.require(:task).permit(:title, :status, :assigned_to_id, :parent_id, :position, :before_task_id, :after_task_id)
   end
 
   def json_request?
@@ -385,6 +482,30 @@ class TasksController < ApplicationController
     Rails.logger.info "Turbo Stream response: #{turbo_stream_html[0..200]}..."
 
     render plain: turbo_stream_html, content_type: "text/vnd.turbo-stream.html"
+  end
+
+  def batch_reorder_relative
+    if params[:relative_positions].blank?
+      render json: { error: "Relative positions parameter required" }, status: :unprocessable_entity
+      return
+    end
+
+    # Transform relative_positions to the format expected by handle_batch_task_reorder
+    transformed_params = {
+      positions: params[:relative_positions],
+      job_lock_version: params[:job_lock_version]
+    }
+
+    # Temporarily override params to use the existing logic
+    original_params = params.to_unsafe_h
+    params.merge!(transformed_params)
+
+    begin
+      handle_batch_task_reorder
+    ensure
+      # Restore original params
+      @_params = original_params.with_indifferent_access
+    end
   end
 
   private

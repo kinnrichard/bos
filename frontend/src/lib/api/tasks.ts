@@ -30,8 +30,22 @@ export interface TaskReorderRequest {
   lock_version?: number;
 }
 
+export interface RelativeTaskReorderRequest {
+  id: string;
+  parent_id?: string;
+  before_task_id?: string;
+  after_task_id?: string;
+  position?: 'first' | 'last';
+  lock_version?: number;
+}
+
 export interface BatchTaskReorderRequest {
   positions: TaskReorderRequest[];
+  job_lock_version?: number;
+}
+
+export interface BatchRelativeTaskReorderRequest {
+  relative_positions: RelativeTaskReorderRequest[];
   job_lock_version?: number;
 }
 
@@ -88,6 +102,16 @@ export class TasksService {
   }
 
   /**
+   * Batch reorder multiple tasks using relative positioning
+   */
+  async batchReorderTasksRelative(
+    jobId: string, 
+    request: BatchRelativeTaskReorderRequest
+  ): Promise<TaskReorderResponse> {
+    return api.patch<TaskReorderResponse>(`/jobs/${jobId}/tasks/batch_reorder_relative`, request);
+  }
+
+  /**
    * Nest a task under another task (make it a subtask)
    */
   async nestTask(
@@ -99,6 +123,35 @@ export class TasksService {
     const taskData: { parent_id: string; position?: number } = { parent_id: parentId };
     if (position !== undefined) {
       taskData.position = position;
+    }
+    
+    return this.updateTask(jobId, taskId, taskData);
+  }
+
+  /**
+   * Nest a task using relative positioning
+   */
+  async nestTaskRelative(
+    jobId: string,
+    taskId: string,
+    parentId: string,
+    options: {
+      before_task_id?: string;
+      after_task_id?: string;
+      position?: 'first' | 'last';
+    } = {}
+  ): Promise<{ status: string; task: Task; timestamp: string }> {
+    const taskData: any = { parent_id: parentId };
+    
+    if (options.before_task_id) {
+      taskData.before_task_id = options.before_task_id;
+    } else if (options.after_task_id) {
+      taskData.after_task_id = options.after_task_id;
+    } else if (options.position === 'first') {
+      taskData.position = 'first';
+    } else {
+      // Default to 'last' for nesting
+      taskData.position = 'last';
     }
     
     return this.updateTask(jobId, taskId, taskData);
@@ -146,6 +199,8 @@ export class TasksService {
       assigned_to_id: string;
       parent_id: string;
       position: number;
+      before_task_id: string;
+      after_task_id: string;
     }>
   ): Promise<{ status: string; task: Task; timestamp: string }> {
     return api.patch<{ status: string; task: Task; timestamp: string }>(`/jobs/${jobId}/tasks/${taskId}`, {

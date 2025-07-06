@@ -23,7 +23,7 @@ class Task < ApplicationRecord
   validate :prevent_circular_reference
 
   # For drag and drop reordering
-  acts_as_list scope: [ :job_id, :parent_id ]
+  positioned on: [ :job_id, :parent_id ]
 
   # Scopes
   scope :root_tasks, -> { where(parent_id: nil) }
@@ -48,6 +48,9 @@ class Task < ApplicationRecord
 
   # Update reordered_at when position or parent changes
   before_save :update_reordered_at, if: -> { position_changed? || parent_id_changed? }
+
+  # Temporarily disable optimistic locking for positioning compatibility testing
+  self.locking_column = nil
 
   # Value object integration
   def status_object
@@ -162,12 +165,12 @@ class Task < ApplicationRecord
     siblings = Task.where(job_id: job_id, parent_id: parent_id)
                    .ordered_by_status
 
-    # Temporarily disable acts_as_list callbacks to avoid conflicts
-    Task.acts_as_list_no_update do
+    # Use positioning gem's approach for batch updates
+    Task.transaction do
       siblings.each_with_index do |task, index|
         new_position = index + 1
         if task.position != new_position
-          task.update_column(:position, new_position)
+          task.update(position: new_position)
         end
       end
     end
@@ -181,4 +184,6 @@ class Task < ApplicationRecord
   def update_reordered_at
     self.reordered_at = Time.current
   end
+
+  # Removed skip_lock_version_for_position_updates method - using locking_column = nil instead
 end

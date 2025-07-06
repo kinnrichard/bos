@@ -48,7 +48,7 @@ class TaskTest < ActiveSupport::TestCase
     assert_invalid parent, attribute: :parent_id
   end
 
-  test "acts as list within job and parent scope" do
+  test "positioned within job and parent scope" do
     # Clear existing tasks for this job
     @job.tasks.destroy_all
 
@@ -63,7 +63,7 @@ class TaskTest < ActiveSupport::TestCase
     assert_equal 3, task3.position
 
     # Move task3 to position 1
-    task3.insert_at(1)
+    task3.update(position: 1)
 
     assert_equal 2, task1.reload.position
     assert_equal 3, task2.reload.position
