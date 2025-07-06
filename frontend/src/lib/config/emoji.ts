@@ -88,6 +88,20 @@ export function getTaskStatusEmoji(status: string): string {
 }
 
 /**
+ * Get label for a task status
+ */
+export function getTaskStatusLabel(status: string): string {
+  switch (status) {
+    case 'new_task': return 'New Task';
+    case 'in_progress': return 'In Progress';
+    case 'paused': return 'Paused';
+    case 'successfully_completed': return 'Completed Successfully';
+    case 'cancelled': return 'Cancelled';
+    default: return status?.replace('_', ' ') || 'Unknown';
+  }
+}
+
+/**
  * Get emoji for a task priority
  */
 export function getTaskPriorityEmoji(priority: string): string {

@@ -3,6 +3,7 @@
   import { tasksService, type Task } from '$lib/api/tasks';
   import { getContext } from 'svelte';
   import { formatDateTime } from '$lib/utils/date';
+  import { getTaskStatusEmoji, getTaskStatusLabel } from '$lib/config/emoji';
   import BasePopover from '../ui/BasePopover.svelte';
   
   export let task: Task;
@@ -210,27 +211,6 @@
     }
   }
 
-  function getStatusEmoji(status: string): string {
-    switch (status) {
-      case 'new_task': return '⚪';
-      case 'in_progress': return '🔵';
-      case 'successfully_completed': return '✅';
-      case 'unsuccessfully_completed': return '❌';
-      case 'on_hold': return '⏸️';
-      default: return '❓';
-    }
-  }
-
-  function getStatusLabel(status: string): string {
-    switch (status) {
-      case 'new_task': return 'New Task';
-      case 'in_progress': return 'In Progress';
-      case 'successfully_completed': return 'Completed Successfully';
-      case 'unsuccessfully_completed': return 'Completed Unsuccessfully';
-      case 'on_hold': return 'On Hold';
-      default: return status?.replace('_', ' ') || 'Unknown';
-    }
-  }
 
   // Build timeline items from task details
   function getTimelineItems(taskDetails: any): any[] {
@@ -397,8 +377,8 @@
                 <div class="timeline-item">
                   <div class="timeline-row">
                     <div class="timeline-content">
-                      <span class="timeline-emoji">{getStatusEmoji(item.status)}</span>
-                      <span class="timeline-label">{getStatusLabel(item.status)}</span>
+                      <span class="timeline-emoji">{getTaskStatusEmoji(item.status)}</span>
+                      <span class="timeline-label">{getTaskStatusLabel(item.status)}</span>
                     </div>
                     <div class="timeline-time">
                       <span>{formatTimeOnly(item.timestamp)}</span>
