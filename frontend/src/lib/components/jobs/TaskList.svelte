@@ -1246,69 +1246,63 @@
       // Find target's position in visual order
       const targetVisualIndex = visualSiblings.findIndex(t => t.id === targetTask.id);
       
-      let calculatedPosition;
+      // Unified approach: Normalize both above/below to "insert before task X"
+      let beforeTask;
+      let insertionType;
+      
       if (resolvedDropZone.position === 'above') {
-        // Insert before target in visual order
+        // Above target = insert before target
         if (targetVisualIndex === 0) {
-          // Insert at the beginning
-          calculatedPosition = visualSiblings[0].position;
+          // Special case: above first item = insert at beginning
+          beforeTask = targetTask;
+          insertionType = 'before-first';
         } else {
-          // Insert at target's current position (will push target down)
-          const isMovingDown = draggedTask && draggedTask.position < targetTask.position;
-          
-          // Fix: Account for gap elimination when moving down
-          // Gap elimination shifts target positions down, so we need to adjust
-          if (isMovingDown) {
-            calculatedPosition = targetTask.position - 1;
-            console.log('⬆️ Above drop: target position (adjusted for gap elimination)', {
-              originalTargetPosition: targetTask.position,
-              calculatedPosition,
-              gapAdjustment: -1,
-              reason: 'Moving down - accounting for gap elimination shift'
-            });
-          } else {
-            calculatedPosition = targetTask.position;
-            console.log('⬆️ Above drop: target position (no adjustment)', {
-              targetPosition: targetTask.position,
-              calculatedPosition,
-              reason: 'Moving up - no gap elimination adjustment needed'
-            });
-          }
+          beforeTask = targetTask;
+          insertionType = 'before-target';
         }
       } else {
-        // Insert after target in visual order
+        // Below target = insert before next sibling (or at end if last)
         if (targetVisualIndex === visualSiblings.length - 1) {
-          // Insert at the end
-          calculatedPosition = targetTask.position + 1;
-          console.log('⬇️ Below drop: end position', calculatedPosition);
+          // Special case: below last item = insert at end
+          beforeTask = null;
+          insertionType = 'at-end';
         } else {
-          // Get the position that would place it between target and next sibling
-          const nextSibling = visualSiblings[targetVisualIndex + 1];
-          const isMovingDown = draggedTask && draggedTask.position < targetTask.position;
-          
-          // Fix: Account for gap elimination when moving down
-          // Gap elimination shifts target positions down, so we need to adjust
-          if (isMovingDown) {
-            calculatedPosition = nextSibling.position - 1;
-            console.log('⬇️ Below drop: between target and next sibling (adjusted for gap elimination)', {
-              targetPosition: targetTask.position,
-              nextSiblingPosition: nextSibling.position,
-              calculatedPosition,
-              nextSiblingId: nextSibling.id.substring(0,8),
-              gapAdjustment: -1,
-              reason: 'Moving down - accounting for gap elimination shift'
-            });
-          } else {
-            calculatedPosition = nextSibling.position;
-            console.log('⬇️ Below drop: between target and next sibling (no adjustment)', {
-              targetPosition: targetTask.position,
-              nextSiblingPosition: nextSibling.position,
-              calculatedPosition,
-              nextSiblingId: nextSibling.id.substring(0,8),
-              reason: 'Moving up - no gap elimination adjustment needed'
-            });
-          }
+          beforeTask = visualSiblings[targetVisualIndex + 1];
+          insertionType = 'before-next';
         }
+      }
+      
+      // Calculate base position from "before task"
+      let calculatedPosition;
+      if (beforeTask === null) {
+        // Insert at end
+        calculatedPosition = targetTask.position + 1;
+      } else {
+        calculatedPosition = beforeTask.position;
+      }
+      
+      // Apply gap elimination adjustment once (unified logic)
+      const isMovingDown = draggedTask && draggedTask.position < targetTask.position;
+      if (isMovingDown && insertionType !== 'at-end') {
+        // Gap elimination shifts positions down, so we need to adjust
+        calculatedPosition -= 1;
+        console.log('🔄 Unified drop positioning (adjusted for gap elimination):', {
+          dropMode: resolvedDropZone.position,
+          insertionType,
+          beforeTask: beforeTask ? `${beforeTask.id.substring(0,8)}:${beforeTask.position}` : 'null',
+          originalPosition: calculatedPosition + 1,
+          adjustedPosition: calculatedPosition,
+          gapAdjustment: -1,
+          reason: 'Moving down - accounting for gap elimination shift'
+        });
+      } else {
+        console.log('🎯 Unified drop positioning (no adjustment):', {
+          dropMode: resolvedDropZone.position,
+          insertionType,
+          beforeTask: beforeTask ? `${beforeTask.id.substring(0,8)}:${beforeTask.position}` : 'null',
+          calculatedPosition,
+          reason: isMovingDown ? 'At-end positioning' : 'Moving up - no gap elimination adjustment needed'
+        });
       }
       
       console.log('🎯 Final calculated position:', {
