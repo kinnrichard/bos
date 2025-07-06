@@ -175,15 +175,38 @@
           }
         });
         
-        // Step 2: Limited gap elimination - only affect tasks in operation range
+        // Step 2: Limited gap elimination - only apply to SOURCE scopes where tasks are being removed
         const nonMovingTasks = scopeTasks.filter(t => !movingItemIds.has(t.id));
         
-        // For each moving item, eliminate the gap it leaves behind
-        scopeUpdates.forEach(update => {
+        // Determine if this scope needs gap elimination (source scope vs destination scope)
+        const tasksLeavingThisScope = scopeUpdates.filter(update => {
+          const originalTask = tasks.find(t => t.id === update.id);
+          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
+          const newScope = update.parent_id || null;
+          // Task is leaving this scope if original scope matches current scope but new scope is different
+          return originalScope === scopeKey && newScope !== scopeKey;
+        });
+        
+        const tasksEnteringThisScope = scopeUpdates.filter(update => {
+          const originalTask = tasks.find(t => t.id === update.id);
+          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
+          const newScope = update.parent_id || null;
+          // Task is entering this scope if new scope matches current scope but original scope is different
+          return newScope === scopeKey && originalScope !== scopeKey;
+        });
+        
+        console.log(`🔍 Scope ${scopeKey} analysis:`, {
+          tasksLeaving: tasksLeavingThisScope.length,
+          tasksEntering: tasksEnteringThisScope.length,
+          totalUpdates: scopeUpdates.length
+        });
+        
+        // Only apply gap elimination for tasks that are LEAVING this scope
+        tasksLeavingThisScope.forEach(update => {
           const originalPosition = originalPositions.get(update.id);
           if (!originalPosition) return;
           
-          console.log(`🔄 Gap elimination for position ${originalPosition}, task ${update.id.substring(0,8)}`);
+          console.log(`🔄 Gap elimination for position ${originalPosition}, task ${update.id.substring(0,8)} LEAVING scope`);
           console.log(`📋 Before gap elimination:`, nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
           
           // Shift down all non-moving tasks that are after the gap
@@ -201,12 +224,25 @@
             nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
         });
         
-        // Step 3: Insert each moving item at its target position
-        scopeUpdates.forEach(update => {
+        // Log when gap elimination is skipped for entering tasks
+        if (tasksEnteringThisScope.length > 0) {
+          console.log(`⏭️ Skipping gap elimination for ${tasksEnteringThisScope.length} tasks ENTERING scope ${scopeKey}`);
+        }
+        
+        // Step 3: Insert each moving item at its target position (only for tasks entering/staying in this scope)
+        const tasksToInsertInThisScope = scopeUpdates.filter(update => {
+          const newScope = update.parent_id || null;
+          return newScope === scopeKey; // Only insert tasks that belong to this scope in the new arrangement
+        });
+        
+        tasksToInsertInThisScope.forEach(update => {
           const targetPosition = update.position;
           const originalPosition = originalPositions.get(update.id);
+          const originalTask = tasks.find(t => t.id === update.id);
+          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
+          const isMovingBetweenScopes = originalScope !== scopeKey;
           
-          console.log(`🎯 Inserting: ${update.id.substring(0,8)} ${originalPosition}→${targetPosition}`);
+          console.log(`🎯 Inserting: ${update.id.substring(0,8)} ${originalPosition}→${targetPosition}${isMovingBetweenScopes ? ' (ENTERING scope)' : ' (WITHIN scope)'}`);
           
           // Shift non-moving tasks at or after the insertion point up by 1
           nonMovingTasks.forEach(task => {
@@ -221,8 +257,21 @@
           const movingTask = taskMap.get(update.id);
           if (movingTask) {
             movingTask.position = targetPosition;
+            // Update parent_id for cross-scope moves
+            if (update.parent_id !== undefined) {
+              movingTask.parent_id = update.parent_id;
+            }
           }
         });
+        
+        // Log when insertion is skipped for leaving tasks
+        const tasksLeavingOnly = scopeUpdates.filter(update => {
+          const newScope = update.parent_id || null;
+          return newScope !== scopeKey; // Tasks leaving this scope
+        });
+        if (tasksLeavingOnly.length > 0) {
+          console.log(`⏭️ Skipping insertion for ${tasksLeavingOnly.length} tasks LEAVING scope ${scopeKey}`);
+        }
       });
       
       return Array.from(taskMap.values());
