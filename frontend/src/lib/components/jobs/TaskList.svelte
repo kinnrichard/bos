@@ -4,7 +4,7 @@
   import { taskSelection, type TaskSelectionState } from '$lib/stores/taskSelection';
   import { tasksService } from '$lib/api/tasks';
   import { nativeDrag, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
-  import type { DragSortEvent } from '$lib/utils/native-drag-action';
+  import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
 
   // Use static SVG URLs for better compatibility
@@ -90,7 +90,6 @@
   // Drag & drop state
   let isDragging = false;
   let feedback = '';
-  let currentDropZone: {mode: 'reorder' | 'nest', targetElement: HTMLElement, targetTaskId?: string} | null = null;
   
   // Multi-select state
   let flatTaskIds: string[] = [];
@@ -437,73 +436,39 @@
       badge.remove();
     }
     
-    // Handle the actual reordering
-    if (event.oldIndex !== undefined && event.newIndex !== undefined && event.oldIndex !== event.newIndex) {
+    // Handle the actual reordering or nesting
+    if (event.dropZone) {
       handleTaskReorder(event);
     }
 
-    // Clear current drop zone
-    currentDropZone = null;
   }
 
   // Handle move detection during drag operations
-  function handleMoveDetection(evt: any, originalEvent: Event) {
-    console.log('onMove triggered:', evt, originalEvent);
+  function handleMoveDetection(event: DragMoveEvent) {
+    console.log('onMove triggered:', event);
     
-    // Detect drop zone and provide visual feedback
-    const mouseEvent = originalEvent as MouseEvent;
-    const targetElement = evt.related;
+    const { dropZone, related: targetElement } = event;
     
-    if (!targetElement || !mouseEvent) {
-      console.log('No target element or mouse event');
-      return true; // Allow the move
+    if (!dropZone || !targetElement) {
+      console.log('No drop zone or target element');
+      return true;
     }
 
-    const rect = targetElement.getBoundingClientRect();
-    const relativeY = mouseEvent.clientY - rect.top;
-    const heightRatio = relativeY / rect.height;
+    console.log('Move detection:', { dropZone, targetElement });
 
-    console.log('Move detection:', { heightRatio, targetElement });
-
-    // Clear previous feedback
-    clearAllVisualFeedback();
-
-    // Determine drop zone based on cursor position
-    if (heightRatio <= 0.3) {
-      // Reorder above
-      console.log('Reorder above zone detected');
-      addDropIndicator(targetElement, 'above');
-      currentDropZone = { mode: 'reorder', targetElement, targetTaskId: targetElement.dataset.taskId };
-    } else if (heightRatio >= 0.7) {
-      // Reorder below
-      console.log('Reorder below zone detected');
-      addDropIndicator(targetElement, 'below');
-      currentDropZone = { mode: 'reorder', targetElement, targetTaskId: targetElement.dataset.taskId };
-    } else {
-      // Nest zone (middle 40%)
-      console.log('Nest zone detected');
-      const targetTaskId = targetElement.dataset.taskId;
-      currentDropZone = { mode: 'nest', targetElement, targetTaskId };
+    // Let native-drag-action handle visual feedback, but validate nesting
+    if (dropZone.mode === 'nest' && dropZone.targetTaskId) {
+      const draggedElement = event.dragged;
+      const draggedTaskId = draggedElement?.getAttribute('data-task-id');
       
-      if (targetTaskId) {
-        // Check if nesting is valid before showing highlight
-        const draggedElement = document.querySelector('.task-dragging');
-        const draggedTaskId = draggedElement?.getAttribute('data-task-id');
-        console.log('Dragged task:', draggedTaskId, 'Target task:', targetTaskId);
+      if (draggedTaskId) {
+        const validation = isValidNesting(draggedTaskId, dropZone.targetTaskId);
+        console.log('Validation result:', validation);
         
-        if (draggedTaskId) {
-          const validation = isValidNesting(draggedTaskId, targetTaskId);
-          console.log('Validation result:', validation);
-          if (validation.valid) {
-            console.log('Adding nest highlight');
-            addNestHighlight(targetElement);
-          } else {
-            console.log('Showing invalid nesting indicator');
-            // No invalid highlighting in new implementation
-          }
-        } else {
-          console.log('No dragged task found, adding nest highlight');
-          addNestHighlight(targetElement);
+        // Return false to prevent invalid nesting
+        if (!validation.valid) {
+          console.log('Invalid nesting prevented:', validation.reason);
+          return false;
         }
       }
     }
@@ -620,8 +585,8 @@
     if (!draggedTaskId) return;
 
     // Check if this is a nesting operation
-    if (currentDropZone && currentDropZone.mode === 'nest' && currentDropZone.targetTaskId) {
-      await handleTaskNesting(draggedTaskId, currentDropZone.targetTaskId);
+    if (event.dropZone && event.dropZone.mode === 'nest' && event.dropZone.targetTaskId) {
+      await handleTaskNesting(draggedTaskId, event.dropZone.targetTaskId);
       return;
     }
 
