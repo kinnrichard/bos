@@ -201,15 +201,29 @@ export class ClientActsAsList {
       const scopeTasksExcludingMoved = allScopeTasks.filter(t => t.id !== update.id);
       
       if (update.before_task_id) {
-        // Position before specific task - positioning gem places at target's position, shifting others up
+        // Position before specific task - positioning gem places immediately before target
         const beforeTask = allScopeTasks.find(t => t.id === update.before_task_id);
-        targetPosition = beforeTask ? beforeTask.position : 1;
+        const movingTask = allScopeTasks.find(t => t.id === update.id);
+        
+        if (beforeTask && movingTask) {
+          if (movingTask.position < beforeTask.position) {
+            // Moving task is currently before target - it will take position (target.position - 1)
+            targetPosition = beforeTask.position - 1;
+          } else {
+            // Moving task is currently after target - it will take target's current position
+            targetPosition = beforeTask.position;
+          }
+        } else {
+          targetPosition = 1;
+        }
+        
         console.log('🔮 Client prediction: before task', {
           movingTask: update.id.substring(0, 8),
           beforeTask: beforeTask ? { id: beforeTask.id.substring(0, 8), position: beforeTask.position } : null,
+          movingTaskCurrentPos: movingTask?.position,
           targetPosition,
           allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
-          note: 'positioning gem places at target position, shifts others up'
+          note: 'positioning gem places immediately before target, considering current positions'
         });
       } else if (update.after_task_id) {
         // Position after specific task - positioning gem places immediately after target
