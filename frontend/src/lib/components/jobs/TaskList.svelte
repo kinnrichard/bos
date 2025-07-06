@@ -142,32 +142,51 @@
         }
       });
       
-      // Normalize positions within each affected scope (only if gaps exist)
+      // Resolve position conflicts within each affected scope (true acts_as_list behavior)
       affectedScopes.forEach(scope => {
         const scopeKey = scope === 'null' ? null : scope;
         const scopeTasks = Array.from(taskMap.values())
           .filter(t => (t.parent_id || null) === scopeKey)
           .sort((a, b) => a.position - b.position);
         
-        // Check if there are gaps in the position sequence
-        const hasGaps = scopeTasks.some((task, index) => task.position !== index + 1);
+        console.log(`🔍 Processing scope ${scopeKey}, tasks:`, 
+          scopeTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
         
-        // Only renumber if there are actual gaps (true acts_as_list behavior)
-        if (hasGaps) {
-          console.log(`🔧 Gap detected in scope ${scopeKey}, renumbering:`, 
-            scopeTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
+        // Find the position updates that affect this scope
+        const scopeUpdates = positionUpdates.filter(update => {
+          const task = taskMap.get(update.id);
+          return task && (task.parent_id || null) === scopeKey;
+        });
+        
+        if (scopeUpdates.length === 0) {
+          console.log(`✅ No updates for scope ${scopeKey}, positions preserved`);
+          return;
+        }
+        
+        // Apply conflict resolution for each update
+        scopeUpdates.forEach(update => {
+          const updatedTask = taskMap.get(update.id);
+          const targetPosition = update.position;
+          const originalTask = tasks.find(t => t.id === update.id);
+          const originalPosition = originalTask?.position;
           
-          scopeTasks.forEach((task, index) => {
-            const oldPosition = task.position;
-            task.position = index + 1;
+          console.log(`🎯 Applying update: ${update.id.substring(0,8)} ${originalPosition}→${targetPosition}`);
+          
+          // Resolve conflicts: shift tasks at or after the target position
+          scopeTasks.forEach(task => {
+            if (task.id === update.id) {
+              // This is the task being moved - already has new position
+              return;
+            }
             
-            if (oldPosition !== task.position) {
-              console.log(`  📍 ${task.id.substring(0,8)}: ${oldPosition} → ${task.position}`);
+            // Only shift tasks that are at or after the insertion point
+            if (task.position >= targetPosition) {
+              const oldPosition = task.position;
+              task.position = task.position + 1;
+              console.log(`  ⬆️ Shift conflict: ${task.id.substring(0,8)} ${oldPosition}→${task.position}`);
             }
           });
-        } else {
-          console.log(`✅ No gaps in scope ${scopeKey}, positions preserved`);
-        }
+        });
       });
       
       return Array.from(taskMap.values());
