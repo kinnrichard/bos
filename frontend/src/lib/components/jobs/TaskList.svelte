@@ -860,21 +860,13 @@
     if (resolvedDropZone.mode === 'reorder') {
       // Handle cross-parent drag (target not in same parent as drop destination)
       if ((targetTask.parent_id || null) !== parentId) {
-        // Get existing children in the target parent, sorted by position
-        const targetParentChildren = tasks.filter(t => 
-          (t.parent_id || null) === parentId && 
-          !draggedTaskIds.includes(t.id)
-        ).sort((a, b) => a.position - b.position);
-        
+        // Use target-relative positioning instead of parent-boundary positioning
         if (resolvedDropZone.position === 'above') {
-          // Insert at the beginning - use position 1
-          return 1;
+          // Insert immediately before the target task
+          return targetTask.position;
         } else {
-          // Insert at the end - use position after last child
-          const lastPosition = targetParentChildren.length > 0 
-            ? Math.max(...targetParentChildren.map(t => t.position))
-            : 0;
-          return lastPosition + 1;
+          // Insert immediately after the target task
+          return targetTask.position + 1;
         }
       }
       
