@@ -1401,29 +1401,45 @@
         calculatedPosition = beforeTask.position;
       }
       
-      // Apply gap elimination adjustment once (unified logic)
-      const isMovingDown = draggedTask && draggedTask.position < targetTask.position;
-      if (isMovingDown && insertionType !== 'at-end') {
-        // Gap elimination shifts positions down, so we need to adjust
-        calculatedPosition -= 1;
-        console.log('🔄 Unified drop positioning (adjusted for gap elimination):', {
-          dropMode: resolvedDropZone.position,
-          insertionType,
-          beforeTask: beforeTask ? `${beforeTask.id.substring(0,8)}:${beforeTask.position}` : 'null',
-          originalPosition: calculatedPosition + 1,
-          adjustedPosition: calculatedPosition,
-          gapAdjustment: -1,
-          reason: 'Moving down - accounting for gap elimination shift'
+      // CRITICAL FIX: For within-scope moves, we need to account for gap elimination
+      // affecting the target task's position before we calculate insertion position
+      const isWithinScopeMove = draggedTaskIds.some(id => {
+        const task = tasks.find(t => t.id === id);
+        return task && (task.parent_id || null) === parentId;
+      });
+      
+      if (isWithinScopeMove) {
+        // Count how many dragged tasks will create gaps that affect the target position
+        const movingTasksInScope = draggedTaskIds.filter(id => {
+          const task = tasks.find(t => t.id === id);
+          return task && (task.parent_id || null) === parentId;
         });
-      } else {
-        console.log('🎯 Unified drop positioning (no adjustment):', {
-          dropMode: resolvedDropZone.position,
-          insertionType,
-          beforeTask: beforeTask ? `${beforeTask.id.substring(0,8)}:${beforeTask.position}` : 'null',
-          calculatedPosition,
-          reason: isMovingDown ? 'At-end positioning' : 'Moving up - no gap elimination adjustment needed'
-        });
+        
+        const gapsBeforeTarget = movingTasksInScope.filter(id => {
+          const task = tasks.find(t => t.id === id);
+          return task && task.position < targetTask.position;
+        }).length;
+        
+        if (gapsBeforeTarget > 0) {
+          // Gap elimination will shift the target task down by the number of gaps
+          calculatedPosition -= gapsBeforeTarget;
+          console.log('🔄 Within-scope move gap adjustment:', {
+            originalCalculation: calculatedPosition + gapsBeforeTarget,
+            adjustedCalculation: calculatedPosition,
+            gapsBeforeTarget,
+            reason: `Target task will be shifted down by ${gapsBeforeTarget} gap(s)`
+          });
+        }
       }
+      
+      console.log('🎯 Final position calculation:', {
+        dropMode: resolvedDropZone.position,
+        insertionType,
+        beforeTask: beforeTask ? `${beforeTask.id.substring(0,8)}:${beforeTask.position}` : 'null',
+        calculatedPosition,
+        isWithinScopeMove,
+        adjustmentApplied: isWithinScopeMove && draggedTask && draggedTask.position < targetTask.position
+      });
       
       console.log('🎯 Final calculated position:', {
         originalPosition: draggedTask?.position,
