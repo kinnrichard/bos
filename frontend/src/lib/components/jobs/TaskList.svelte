@@ -179,8 +179,8 @@
               return;
             }
             
-            // Only shift tasks that are at or after the insertion point
-            if (task.position >= targetPosition) {
+            // Only shift tasks that are after the insertion point (not at)
+            if (task.position > targetPosition) {
               const oldPosition = task.position;
               task.position = task.position + 1;
               console.log(`  ⬆️ Shift conflict: ${task.id.substring(0,8)} ${oldPosition}→${task.position}`);
