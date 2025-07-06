@@ -709,11 +709,6 @@
       return {valid: false, reason: 'Cannot create circular reference - target is a descendant of the dragged task'};
     }
 
-    // Rule 3: Reasonable depth limit (4 levels)
-    const targetDepth = getTaskDepth(targetTaskId);
-    if (targetDepth >= 4) {
-      return {valid: false, reason: 'Maximum nesting depth reached (4 levels)'};
-    }
 
     return {valid: true};
   }
@@ -741,13 +736,20 @@
 
   // Handle nesting a task under another task
   async function handleTaskNesting(draggedTaskId: string, targetTaskId: string) {
+    console.log(`🪆 Attempting to nest ${draggedTaskId.substring(0,8)} under ${targetTaskId.substring(0,8)}`);
+    
     // Validate nesting operation
     const validation = isValidNesting(draggedTaskId, targetTaskId);
+    console.log(`🔍 Nesting validation result:`, validation);
+    
     if (!validation.valid) {
+      console.log(`❌ Nesting blocked: ${validation.reason}`);
       feedback = validation.reason || 'Invalid nesting operation';
       setTimeout(() => feedback = '', 3000);
       return;
     }
+    
+    console.log(`✅ Nesting validation passed, proceeding with operation`);
 
     const draggedTask = tasks.find(t => t.id === draggedTaskId);
     const targetTask = tasks.find(t => t.id === targetTaskId);
@@ -777,6 +779,12 @@
       // Optimistic update: make task a child of target at the end
       const updatedTask = { ...draggedTask, parent_id: targetTaskId, position: newPosition };
       tasks = tasks.map(t => t.id === draggedTaskId ? updatedTask : t);
+
+      // Auto-expand the target task to make the newly nested child visible
+      if (!expandedTasks.has(targetTaskId)) {
+        expandedTasks.add(targetTaskId);
+        expandedTasks = expandedTasks; // Trigger Svelte reactivity
+      }
 
       // Call API to nest the task
       await tasksService.nestTask(jobId, draggedTaskId, targetTaskId, newPosition);
