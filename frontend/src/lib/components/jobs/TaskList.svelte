@@ -156,14 +156,21 @@
 
   $: hierarchicalTasks = organizeTasksHierarchically(tasks, $selectedTaskStatuses);
   
-  // Auto-expand tasks that have subtasks by default (only once on initial load)
+  // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
   $: {
     if (hierarchicalTasks.length > 0 && !hasAutoExpanded) {
-      hierarchicalTasks.forEach(task => {
-        if (task.subtasks && task.subtasks.length > 0) {
-          expandedTasks.add(task.id);
-        }
-      });
+      // Recursively expand all tasks with subtasks
+      function expandAllTasksWithSubtasks(taskList: any[]) {
+        taskList.forEach(task => {
+          if (task.subtasks && task.subtasks.length > 0) {
+            expandedTasks.add(task.id);
+            // Recursively expand subtasks that also have children
+            expandAllTasksWithSubtasks(task.subtasks);
+          }
+        });
+      }
+      
+      expandAllTasksWithSubtasks(hierarchicalTasks);
       expandedTasks = expandedTasks;
       hasAutoExpanded = true;
     }
