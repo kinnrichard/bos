@@ -572,12 +572,22 @@
     });
 
     try {
-      // Optimistic update: make task a child of target
-      const updatedTask = { ...draggedTask, parent_id: targetTaskId, position: 1 };
+      // Calculate position at the end of target's existing children
+      const existingChildren = tasks.filter(t => 
+        t.parent_id === targetTaskId && 
+        t.id !== draggedTaskId // Exclude the task being moved
+      );
+      
+      const newPosition = existingChildren.length > 0 
+        ? Math.max(...existingChildren.map(t => t.position)) + 1
+        : 1;
+
+      // Optimistic update: make task a child of target at the end
+      const updatedTask = { ...draggedTask, parent_id: targetTaskId, position: newPosition };
       tasks = tasks.map(t => t.id === draggedTaskId ? updatedTask : t);
 
       // Call API to nest the task
-      await tasksService.nestTask(jobId, draggedTaskId, targetTaskId, 1);
+      await tasksService.nestTask(jobId, draggedTaskId, targetTaskId, newPosition);
       
       // Clear optimistic updates on success
       optimisticUpdates.clear();
@@ -829,9 +839,21 @@
       return 1;
     }
     
-    // If nesting, the position is always 1 (first child of the target)
+    // If nesting, position at the end of target task's existing children
     if (resolvedDropZone.mode === 'nest') {
-      return 1;
+      // Get existing children of the target task, sorted by position
+      const existingChildren = tasks.filter(t => 
+        t.parent_id === resolvedDropZone.targetTaskId && 
+        !draggedTaskIds.includes(t.id)
+      ).sort((a, b) => a.position - b.position);
+      
+      // Position after the last child, or at position 1 if no children exist
+      if (existingChildren.length > 0) {
+        const lastPosition = Math.max(...existingChildren.map(t => t.position));
+        return lastPosition + 1;
+      } else {
+        return 1; // First child if no existing children
+      }
     }
     
     // For reordering, use actual database positions that acts_as_list expects
@@ -856,12 +878,26 @@
         }
       }
       
-      // Same-parent drag: use target task's actual database position
+      // Same-parent drag: calculate position based on target task's actual database position
+      // Get all sibling tasks (same parent) excluding the dragged tasks
+      const siblings = tasks.filter(t => 
+        (t.parent_id || null) === parentId && 
+        !draggedTaskIds.includes(t.id)
+      ).sort((a, b) => a.position - b.position);
+      
+      // Check if target task is being dragged (not in siblings list)
+      const targetInSiblings = siblings.find(s => s.id === targetTask.id);
+      
+      if (!targetInSiblings) {
+        // Target is being dragged, append to end of siblings
+        return siblings.length + 1;
+      }
+      
       if (resolvedDropZone.position === 'above') {
-        // Insert before the target - use target's current position
+        // Insert before target: use target's position
         return targetTask.position;
       } else {
-        // Insert after the target - use target's position + 1
+        // Insert after target: use target's position + 1
         return targetTask.position + 1;
       }
     }
