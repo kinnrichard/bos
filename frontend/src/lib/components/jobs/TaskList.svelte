@@ -878,7 +878,7 @@
         }
       }
       
-      // Same-parent drag: calculate position based on target task's actual database position
+      // Same-parent drag: calculate position based on direction of movement
       // Get all sibling tasks (same parent) excluding the dragged tasks
       const siblings = tasks.filter(t => 
         (t.parent_id || null) === parentId && 
@@ -893,12 +893,31 @@
         return siblings.length + 1;
       }
       
+      // Find the dragged task to determine direction of movement
+      const draggedTask = tasks.find(t => draggedTaskIds.includes(t.id));
+      if (!draggedTask) {
+        return targetTask.position; // Fallback
+      }
+      
+      const isDraggingDown = draggedTask.position < targetTask.position;
+      
       if (resolvedDropZone.position === 'above') {
-        // Insert before target: use target's position
-        return targetTask.position;
+        if (isDraggingDown) {
+          // Moving down: use target's position directly
+          return targetTask.position;
+        } else {
+          // Moving up: account for the gap left by dragged task
+          return targetTask.position - 1;
+        }
       } else {
-        // Insert after target: use target's position + 1
-        return targetTask.position + 1;
+        // position === 'below'
+        if (isDraggingDown) {
+          // Moving down: insert after target
+          return targetTask.position + 1;
+        } else {
+          // Moving up: gap closes naturally, use target position
+          return targetTask.position;
+        }
       }
     }
     
