@@ -193,6 +193,15 @@
           return originalScope === scopeKey && newScope !== scopeKey;
         });
         
+        // ADDITION: Also consider within-scope moves for gap elimination
+        const tasksMovingWithinThisScope = scopeUpdates.filter(update => {
+          const originalTask = tasks.find(t => t.id === update.id);
+          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
+          const newScope = update.parent_id || null;
+          // Task is moving within this scope if both original and new scope match
+          return originalScope === scopeKey && newScope === scopeKey;
+        });
+        
         const tasksEnteringThisScope = scopeUpdates.filter(update => {
           const originalTask = tasks.find(t => t.id === update.id);
           const originalScope = originalTask ? (originalTask.parent_id || null) : null;
@@ -203,14 +212,16 @@
         
         console.log(`🔍 Scope ${scopeKey} analysis:`, {
           tasksLeaving: tasksLeavingThisScope.length,
+          tasksMovingWithin: tasksMovingWithinThisScope.length,
           tasksEntering: tasksEnteringThisScope.length,
           totalUpdates: scopeUpdates.length
         });
         
-        // Apply gap elimination ONCE per scope (fixed: was applying once per leaving task)
-        if (tasksLeavingThisScope.length > 0) {
-          // Collect all gap positions that will be created by leaving tasks
-          const gapPositions = tasksLeavingThisScope.map(update => {
+        // Apply gap elimination ONCE per scope (for both leaving and within-scope moves)
+        const tasksCreatingGaps = [...tasksLeavingThisScope, ...tasksMovingWithinThisScope];
+        if (tasksCreatingGaps.length > 0) {
+          // Collect all gap positions that will be created by tasks leaving or moving within scope
+          const gapPositions = tasksCreatingGaps.map(update => {
             const originalTask = tasks.find(t => t.id === update.id);
             return originalTask ? originalTask.position : null;
           }).filter(pos => pos !== null).sort((a, b) => a - b);
@@ -220,7 +231,7 @@
           
           // For each non-moving task, calculate how many gaps are below it
           // FIXED: Only deduplicate gap positions for multi-task operations to prevent over-shifting
-          const shouldDeduplicateGaps = tasksLeavingThisScope.length > 1;
+          const shouldDeduplicateGaps = tasksCreatingGaps.length > 1;
           const effectiveGapPositions = shouldDeduplicateGaps ? [...new Set(gapPositions)] : gapPositions;
           nonMovingTasks.forEach(task => {
             const gapsBelowTask = effectiveGapPositions.filter(gapPos => gapPos < task.position).length;
@@ -234,9 +245,9 @@
           console.log(`📋 After gap elimination:`, nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
         }
         
-        // Log when gap elimination is skipped for entering tasks
+        // Log when gap elimination is skipped for entering tasks (they don't create gaps)
         if (tasksEnteringThisScope.length > 0) {
-          console.log(`⏭️ Skipping gap elimination for ${tasksEnteringThisScope.length} tasks ENTERING scope ${scopeKey}`);
+          console.log(`⏭️ Skipping gap elimination for ${tasksEnteringThisScope.length} tasks ENTERING scope ${scopeKey} (they don't create gaps)`);
         }
         
         // Step 3: Insert each moving item at its target position (only for tasks entering/staying in this scope)
