@@ -5,6 +5,9 @@
   import { tasksService } from '$lib/api/tasks';
   import { nativeDrag, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
+  import { calculatePositionFromTarget as railsCalculatePosition } from '$lib/utils/position-calculator';
+  import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
+  import type { Task as RailsTask, DropZoneInfo, PositionUpdate } from '$lib/utils/position-calculator';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
 
   // Use static SVG URLs for better compatibility
@@ -111,191 +114,47 @@
   // Track optimistic updates for rollback
   let optimisticUpdates = new Map<string, { originalPosition: number; originalParentId?: string }>();
   
-  // Client-side acts_as_list implementation for offline compatibility
+  // Rails-compatible client-side acts_as_list implementation
   class ClientActsAsList {
-    // Apply position updates and calculate all affected position changes
+    // Apply position updates using validated Rails-compatible logic
     static applyPositionUpdates(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): any[] {
-      const taskMap = new Map(tasks.map(t => [t.id, {...t}]));
+      // Convert to Rails task format
+      const railsTasks: RailsTask[] = tasks.map(t => ({
+        id: t.id,
+        position: t.position,
+        parent_id: t.parent_id || null
+      }));
       
-      // Apply the position updates
-      positionUpdates.forEach(update => {
-        const task = taskMap.get(update.id);
-        if (task) {
-          task.position = update.position;
-          if (update.parent_id !== undefined) {
-            task.parent_id = update.parent_id;
-          }
-        }
+      // Convert position updates to Rails format
+      const railsUpdates: PositionUpdate[] = positionUpdates.map(update => ({
+        id: update.id,
+        position: update.position,
+        parent_id: update.parent_id !== undefined ? (update.parent_id || null) : undefined
+      }));
+      
+      console.log('🔄 Using Rails-compatible ClientActsAsList:', {
+        tasksCount: railsTasks.length,
+        updatesCount: railsUpdates.length,
+        updates: railsUpdates
       });
       
-      // Get all affected scopes (parent_id groups)
-      const affectedScopes = new Set<string>();
-      positionUpdates.forEach(update => {
-        const task = taskMap.get(update.id);
-        if (task) {
-          affectedScopes.add(task.parent_id || 'null');
-          // Also include original parent if it changed
-          const originalTask = tasks.find(t => t.id === update.id);
-          if (originalTask && originalTask.parent_id !== task.parent_id) {
-            affectedScopes.add(originalTask.parent_id || 'null');
-          }
-        }
+      // Use the validated Rails-compatible logic
+      const result = RailsClientActsAsList.applyPositionUpdates(railsTasks, railsUpdates);
+      
+      console.log('🔄 Rails-compatible result:', {
+        updatedTasksCount: result.updatedTasks.length,
+        operationsCount: result.operations.length
       });
       
-      // Resolve position conflicts within each affected scope (true acts_as_list behavior)
-      affectedScopes.forEach(scope => {
-        const scopeKey = scope === 'null' ? null : scope;
-        const scopeTasks = Array.from(taskMap.values())
-          .filter(t => (t.parent_id || null) === scopeKey)
-          .sort((a, b) => a.position - b.position);
-        
-        console.log(`🔍 Processing scope ${scopeKey}, tasks:`, 
-          scopeTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
-        
-        // Find the position updates that affect this scope
-        // Include both: tasks moving TO this scope AND tasks moving FROM this scope
-        const scopeUpdates = positionUpdates.filter(update => {
-          const task = taskMap.get(update.id);
-          const originalTask = tasks.find(t => t.id === update.id);
-          const newScope = task ? (task.parent_id || null) : null;
-          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
-          
-          // Include if: task is moving TO this scope OR task is moving FROM this scope
-          return newScope === scopeKey || originalScope === scopeKey;
-        });
-        
-        if (scopeUpdates.length === 0) {
-          console.log(`✅ No updates for scope ${scopeKey}, positions preserved`);
-          return;
-        }
-        
-        // Implement true acts_as_list behavior: gap elimination + insertion shifts
-        
-        // Step 1: Remove moving items and collect their original positions
-        const movingItemIds = new Set(scopeUpdates.map(u => u.id));
-        const originalPositions = new Map();
-        scopeUpdates.forEach(update => {
-          const originalTask = tasks.find(t => t.id === update.id);
-          if (originalTask) {
-            originalPositions.set(update.id, originalTask.position);
-          }
-        });
-        
-        // Step 2: Unified gap elimination - apply once per scope, not per leaving task
-        const nonMovingTasks = scopeTasks.filter(t => !movingItemIds.has(t.id));
-        
-        // Determine if this scope needs gap elimination (source scope vs destination scope)
-        const tasksLeavingThisScope = scopeUpdates.filter(update => {
-          const originalTask = tasks.find(t => t.id === update.id);
-          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
-          const newScope = update.parent_id || null;
-          // Task is leaving this scope if original scope matches current scope but new scope is different
-          return originalScope === scopeKey && newScope !== scopeKey;
-        });
-        
-        // ADDITION: Also consider within-scope moves for gap elimination
-        const tasksMovingWithinThisScope = scopeUpdates.filter(update => {
-          const originalTask = tasks.find(t => t.id === update.id);
-          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
-          const newScope = update.parent_id || null;
-          // Task is moving within this scope if both original and new scope match
-          return originalScope === scopeKey && newScope === scopeKey;
-        });
-        
-        const tasksEnteringThisScope = scopeUpdates.filter(update => {
-          const originalTask = tasks.find(t => t.id === update.id);
-          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
-          const newScope = update.parent_id || null;
-          // Task is entering this scope if new scope matches current scope but original scope is different
-          return newScope === scopeKey && originalScope !== scopeKey;
-        });
-        
-        console.log(`🔍 Scope ${scopeKey} analysis:`, {
-          tasksLeaving: tasksLeavingThisScope.length,
-          tasksMovingWithin: tasksMovingWithinThisScope.length,
-          tasksEntering: tasksEnteringThisScope.length,
-          totalUpdates: scopeUpdates.length
-        });
-        
-        // Apply gap elimination ONCE per scope (for both leaving and within-scope moves)
-        const tasksCreatingGaps = [...tasksLeavingThisScope, ...tasksMovingWithinThisScope];
-        if (tasksCreatingGaps.length > 0) {
-          // Collect all gap positions that will be created by tasks leaving or moving within scope
-          const gapPositions = tasksCreatingGaps.map(update => {
-            const originalTask = tasks.find(t => t.id === update.id);
-            return originalTask ? originalTask.position : null;
-          }).filter(pos => pos !== null).sort((a, b) => a - b);
-          
-          console.log(`🔄 Gap elimination for scope ${scopeKey}: removing gaps at positions [${gapPositions.join(', ')}]`);
-          console.log(`📋 Before gap elimination:`, nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
-          
-          // For each non-moving task, calculate how many gaps are below it
-          // FIXED: Only deduplicate gap positions for multi-task operations to prevent over-shifting
-          const shouldDeduplicateGaps = tasksCreatingGaps.length > 1;
-          const effectiveGapPositions = shouldDeduplicateGaps ? [...new Set(gapPositions)] : gapPositions;
-          nonMovingTasks.forEach(task => {
-            const gapsBelowTask = effectiveGapPositions.filter(gapPos => gapPos < task.position).length;
-            if (gapsBelowTask > 0) {
-              const oldPosition = task.position;
-              task.position = task.position - gapsBelowTask;
-              console.log(`  ⬇️ Gap elimination: ${task.id.substring(0,8)} ${oldPosition}→${task.position} (${gapsBelowTask} ${shouldDeduplicateGaps ? 'unique ' : ''}gap${gapsBelowTask > 1 ? 's' : ''} below)`);
-            }
-          });
-          
-          console.log(`📋 After gap elimination:`, nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
-        }
-        
-        // Log when gap elimination is skipped for entering tasks (they don't create gaps)
-        if (tasksEnteringThisScope.length > 0) {
-          console.log(`⏭️ Skipping gap elimination for ${tasksEnteringThisScope.length} tasks ENTERING scope ${scopeKey} (they don't create gaps)`);
-        }
-        
-        // Step 3: Insert each moving item at its target position (only for tasks entering/staying in this scope)
-        const tasksToInsertInThisScope = scopeUpdates.filter(update => {
-          const newScope = update.parent_id || null;
-          return newScope === scopeKey; // Only insert tasks that belong to this scope in the new arrangement
-        });
-        
-        tasksToInsertInThisScope.forEach(update => {
-          const targetPosition = update.position;
-          const originalPosition = originalPositions.get(update.id);
-          const originalTask = tasks.find(t => t.id === update.id);
-          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
-          const isMovingBetweenScopes = originalScope !== scopeKey;
-          
-          console.log(`🎯 Inserting: ${update.id.substring(0,8)} ${originalPosition}→${targetPosition}${isMovingBetweenScopes ? ' (ENTERING scope)' : ' (WITHIN scope)'}`);
-          
-          // Shift non-moving tasks at or after the insertion point up by 1
-          nonMovingTasks.forEach(task => {
-            if (task.position >= targetPosition) {
-              const oldPosition = task.position;
-              task.position = task.position + 1;
-              console.log(`  ⬆️ Insertion shift: ${task.id.substring(0,8)} ${oldPosition}→${task.position}`);
-            }
-          });
-          
-          // Place the moving item at target position
-          const movingTask = taskMap.get(update.id);
-          if (movingTask) {
-            movingTask.position = targetPosition;
-            // Update parent_id for cross-scope moves
-            if (update.parent_id !== undefined) {
-              movingTask.parent_id = update.parent_id;
-            }
-          }
-        });
-        
-        // Log when insertion is skipped for leaving tasks
-        const tasksLeavingOnly = scopeUpdates.filter(update => {
-          const newScope = update.parent_id || null;
-          return newScope !== scopeKey; // Tasks leaving this scope
-        });
-        if (tasksLeavingOnly.length > 0) {
-          console.log(`⏭️ Skipping insertion for ${tasksLeavingOnly.length} tasks LEAVING scope ${scopeKey}`);
-        }
+      // Convert back to Svelte task format
+      return result.updatedTasks.map(railsTask => {
+        const originalTask = tasks.find(t => t.id === railsTask.id);
+        return {
+          ...originalTask,
+          position: railsTask.position,
+          parent_id: railsTask.parent_id
+        };
       });
-      
-      return Array.from(taskMap.values());
     }
     
     // Predict what server positions will be after operation
@@ -1244,215 +1103,34 @@
     return dropZone; // Return as-is for now, let parent calculation handle it
   }
 
-  // Calculate position for acts_as_list using actual database positions
+  // Calculate position for acts_as_list using validated Rails-compatible logic
   function calculatePositionFromTarget(dropZone: DropZoneInfo | null, parentId: string | null, draggedTaskIds: string[]): number {
     // Resolve any boundary ambiguity
     const resolvedDropZone = resolveParentChildBoundary(dropZone);
     
-    console.log('🎯 calculatePositionFromTarget called:', {
+    console.log('🎯 calculatePositionFromTarget called (Rails-compatible):', {
       dropZone,
       resolvedDropZone,
       parentId,
       draggedTaskIds
     });
     
-    // Find the dragged task to determine movement direction
-    const draggedTask = tasks.find(t => draggedTaskIds.includes(t.id));
-    console.log('🚀 Dragged task info:', {
-      id: draggedTask?.id?.substring(0, 8),
-      originalPosition: draggedTask?.position,
-      parent_id: draggedTask?.parent_id
+    // Convert Svelte tasks to Rails task format
+    const railsTasks: RailsTask[] = tasks.map(t => ({
+      id: t.id,
+      position: t.position,
+      parent_id: t.parent_id || null
+    }));
+    
+    // Use the Rails-compatible position calculator
+    const result = railsCalculatePosition(railsTasks, resolvedDropZone, parentId, draggedTaskIds);
+    
+    console.log('🎯 Rails-compatible calculation result:', {
+      calculatedPosition: result.calculatedPosition,
+      reasoning: result.reasoning
     });
     
-    if (!resolvedDropZone?.targetTaskId) {
-      console.log('❌ No target task ID, returning position 1');
-      return 1;
-    }
-    
-    // Find the target task
-    const targetTask = tasks.find(t => t.id === resolvedDropZone.targetTaskId);
-    if (!targetTask) {
-      console.log('❌ Target task not found, returning position 1');
-      return 1;
-    }
-    
-    console.log('📍 Target task found:', {
-      id: targetTask.id,
-      title: targetTask.title?.substring(0, 30) + '...',
-      position: targetTask.position,
-      parent_id: targetTask.parent_id
-    });
-    
-    // If nesting, position at the end of target task's existing children
-    if (resolvedDropZone.mode === 'nest') {
-      // Get existing children of the target task, sorted by position
-      const existingChildren = tasks.filter(t => 
-        t.parent_id === resolvedDropZone.targetTaskId && 
-        !draggedTaskIds.includes(t.id)
-      ).sort((a, b) => a.position - b.position);
-      
-      // Position after the last child, or at position 1 if no children exist
-      if (existingChildren.length > 0) {
-        const lastPosition = Math.max(...existingChildren.map(t => t.position));
-        return lastPosition + 1;
-      } else {
-        return 1; // First child if no existing children
-      }
-    }
-    
-    // For reordering, use actual database positions that acts_as_list expects
-    if (resolvedDropZone.mode === 'reorder') {
-      // Handle cross-parent drag (target not in same parent as drop destination)
-      if ((targetTask.parent_id || null) !== parentId) {
-        console.log('🔄 Cross-parent drag detected:', {
-          targetParent: targetTask.parent_id,
-          destinationParent: parentId,
-          position: resolvedDropZone.position
-        });
-        
-        // Use visual-order-based positioning for cross-parent drops
-        const targetParentSiblings = tasks.filter(t => 
-          (t.parent_id || null) === (targetTask.parent_id || null)
-        ).sort((a, b) => a.position - b.position);
-        
-        const targetVisualIndex = targetParentSiblings.findIndex(t => t.id === targetTask.id);
-        
-        let calculatedPosition;
-        if (resolvedDropZone.position === 'above') {
-          // Insert before target in visual order
-          calculatedPosition = targetTask.position;
-          console.log('⬆️ Above drop: visual position', calculatedPosition);
-        } else {
-          // Insert after target in visual order
-          if (targetVisualIndex === targetParentSiblings.length - 1) {
-            // Insert at the end
-            calculatedPosition = targetTask.position + 1;
-          } else {
-            // Get the position that would place it between target and next sibling
-            const nextSibling = targetParentSiblings[targetVisualIndex + 1];
-            calculatedPosition = nextSibling.position;
-          }
-          console.log('⬇️ Below drop: visual position', calculatedPosition);
-        }
-        
-        return calculatedPosition;
-      }
-      
-      // Same-parent drag: use direct target position logic
-      // Check if target task is being dragged
-      if (draggedTaskIds.includes(targetTask.id)) {
-        // Target is being dragged, use fallback based on siblings
-        const siblings = tasks.filter(t => 
-          (t.parent_id || null) === parentId && 
-          !draggedTaskIds.includes(t.id)
-        ).sort((a, b) => a.position - b.position);
-        return siblings.length + 1;
-      }
-      
-      // Calculate position based on visual order to match drop indicator
-      // Get siblings in visual order (sorted by position)
-      const visualSiblings = tasks.filter(t => 
-        (t.parent_id || null) === parentId && 
-        !draggedTaskIds.includes(t.id)
-      ).sort((a, b) => a.position - b.position);
-      
-      console.log('📊 Visual siblings analysis:', {
-        totalSiblings: visualSiblings.length,
-        siblingPositions: visualSiblings.map(t => `${t.id.substring(0,8)}:${t.position}`),
-        targetTask: `${targetTask.id.substring(0,8)}:${targetTask.position}`,
-        isMovingDown: draggedTask && draggedTask.position < targetTask.position
-      });
-      
-      // Find target's position in visual order
-      const targetVisualIndex = visualSiblings.findIndex(t => t.id === targetTask.id);
-      
-      // Unified approach: Normalize both above/below to "insert before task X"
-      let beforeTask;
-      let insertionType;
-      
-      if (resolvedDropZone.position === 'above') {
-        // Above target = insert before target
-        if (targetVisualIndex === 0) {
-          // Special case: above first item = insert at beginning
-          beforeTask = targetTask;
-          insertionType = 'before-first';
-        } else {
-          beforeTask = targetTask;
-          insertionType = 'before-target';
-        }
-      } else {
-        // Below target = insert before next sibling (or at end if last)
-        if (targetVisualIndex === visualSiblings.length - 1) {
-          // Special case: below last item = insert at end
-          beforeTask = null;
-          insertionType = 'at-end';
-        } else {
-          beforeTask = visualSiblings[targetVisualIndex + 1];
-          insertionType = 'before-next';
-        }
-      }
-      
-      // Calculate base position from "before task"
-      let calculatedPosition;
-      if (beforeTask === null) {
-        // Insert at end
-        calculatedPosition = targetTask.position + 1;
-      } else {
-        calculatedPosition = beforeTask.position;
-      }
-      
-      // CRITICAL FIX: For within-scope moves, we need to account for gap elimination
-      // affecting the target task's position before we calculate insertion position
-      const isWithinScopeMove = draggedTaskIds.some(id => {
-        const task = tasks.find(t => t.id === id);
-        return task && (task.parent_id || null) === parentId;
-      });
-      
-      if (isWithinScopeMove) {
-        // Count how many dragged tasks will create gaps that affect the target position
-        const movingTasksInScope = draggedTaskIds.filter(id => {
-          const task = tasks.find(t => t.id === id);
-          return task && (task.parent_id || null) === parentId;
-        });
-        
-        const gapsBeforeTarget = movingTasksInScope.filter(id => {
-          const task = tasks.find(t => t.id === id);
-          return task && task.position < targetTask.position;
-        }).length;
-        
-        if (gapsBeforeTarget > 0) {
-          // Gap elimination will shift the target task down by the number of gaps
-          calculatedPosition -= gapsBeforeTarget;
-          console.log('🔄 Within-scope move gap adjustment:', {
-            originalCalculation: calculatedPosition + gapsBeforeTarget,
-            adjustedCalculation: calculatedPosition,
-            gapsBeforeTarget,
-            reason: `Target task will be shifted down by ${gapsBeforeTarget} gap(s)`
-          });
-        }
-      }
-      
-      console.log('🎯 Final position calculation:', {
-        dropMode: resolvedDropZone.position,
-        insertionType,
-        beforeTask: beforeTask ? `${beforeTask.id.substring(0,8)}:${beforeTask.position}` : 'null',
-        calculatedPosition,
-        isWithinScopeMove,
-        adjustmentApplied: isWithinScopeMove && draggedTask && draggedTask.position < targetTask.position
-      });
-      
-      console.log('🎯 Final calculated position:', {
-        originalPosition: draggedTask?.position,
-        targetPosition: targetTask.position,
-        calculatedPosition,
-        movementDirection: draggedTask && draggedTask.position < targetTask.position ? 'DOWN' : 'UP',
-        dropMode: resolvedDropZone.position
-      });
-      
-      return calculatedPosition;
-    }
-    
-    return 1;
+    return result.calculatedPosition;
   }
   
 </script>
