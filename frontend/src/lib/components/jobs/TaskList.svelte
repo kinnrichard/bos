@@ -616,7 +616,7 @@
         positionUpdates.push({
           id: taskId,
           position: newPosition + index,
-          parent_id: newParentId || undefined
+          parent_id: newParentId
         });
       });
       
@@ -638,7 +638,7 @@
       positionUpdates.push({
         id: draggedTaskId,
         position: newPosition,
-        parent_id: newParentId || undefined
+        parent_id: newParentId
       });
     }
     
@@ -649,7 +649,7 @@
         return { 
           ...task, 
           position: update.position,
-          parent_id: update.parent_id !== undefined ? update.parent_id : task.parent_id
+          parent_id: update.parent_id
         };
       }
       return task;
@@ -717,29 +717,47 @@
       return targetItem?.task.id || null;
     }
     
-    // For reordering, determine parent based on surrounding context
-    const targetItem = flattenedTasks[dropIndex];
-    if (!targetItem) return null;
-    
-    const targetDepth = targetItem.depth;
-    
-    // Look backwards to find the appropriate parent at the target depth
-    for (let i = dropIndex - 1; i >= 0; i--) {
-      const item = flattenedTasks[i];
-      
-      if (item.depth < targetDepth) {
-        // Found a task at a shallower depth - this is the parent
-        return item.task.id;
-      }
-      
-      if (item.depth === targetDepth - 1) {
-        // Found a task at the exact parent depth
-        return item.task.id;
-      }
+    // For reordering, determine parent based on the depth we're inserting at
+    // If dropping at the very beginning, it's root level
+    if (dropIndex === 0) {
+      return null;
     }
     
-    // If we're at depth 0 or couldn't find a parent, return null (root level)
-    return targetDepth === 0 ? null : null;
+    // Look at the task immediately before the drop position
+    const previousItem = flattenedTasks[dropIndex - 1];
+    if (!previousItem) {
+      return null; // Root level
+    }
+    
+    // Also look at the task at the drop position (if it exists)
+    const targetItem = flattenedTasks[dropIndex];
+    
+    // Enhanced root level detection: if previous item is at depth 0, we're likely at root level too
+    if (previousItem.depth === 0) {
+      return null;
+    }
+    
+    // If there's a target item and previous item at the same depth,
+    // we're inserting at that same depth with the same parent
+    if (targetItem && previousItem.depth === targetItem.depth) {
+      return targetItem.task.parent_id || null;
+    }
+    
+    // If target item is deeper than previous, we're inserting at previous item's depth
+    // which means previous item's parent becomes our parent
+    if (targetItem && previousItem.depth < targetItem.depth) {
+      return previousItem.task.parent_id || null;
+    }
+    
+    // If no target item, we're appending after the last item
+    // Insert at the same level as the previous item
+    if (!targetItem) {
+      return previousItem.task.parent_id || null;
+    }
+    
+    // If target is at same/shallower depth than previous,
+    // we're inserting at the same level as the previous item
+    return previousItem.task.parent_id || null;
   }
   
   // Enhanced position calculation that considers hierarchical context
