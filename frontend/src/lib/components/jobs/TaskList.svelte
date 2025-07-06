@@ -153,9 +153,15 @@
           scopeTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
         
         // Find the position updates that affect this scope
+        // Include both: tasks moving TO this scope AND tasks moving FROM this scope
         const scopeUpdates = positionUpdates.filter(update => {
           const task = taskMap.get(update.id);
-          return task && (task.parent_id || null) === scopeKey;
+          const originalTask = tasks.find(t => t.id === update.id);
+          const newScope = task ? (task.parent_id || null) : null;
+          const originalScope = originalTask ? (originalTask.parent_id || null) : null;
+          
+          // Include if: task is moving TO this scope OR task is moving FROM this scope
+          return newScope === scopeKey || originalScope === scopeKey;
         });
         
         if (scopeUpdates.length === 0) {
