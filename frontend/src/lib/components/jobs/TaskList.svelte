@@ -590,67 +590,55 @@
       return;
     }
 
-    // Handle regular reordering (existing logic)
     // Determine if this is a multi-select drag
     const isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedTaskId) && $taskSelection.selectedTaskIds.size > 1;
     
     let positionUpdates: Array<{id: string, position: number, parent_id?: string}> = [];
     
     if (isMultiSelectDrag) {
-      // Handle multi-select drag: move all selected tasks as a contiguous group
+      // Handle multi-select drag with hierarchical parent assignment
       const selectedTaskIds = Array.from($taskSelection.selectedTaskIds);
-      const selectedTasks = selectedTaskIds
-        .map(id => tasks.find(t => t.id === id))
-        .filter(Boolean)
-        .sort((a, b) => (a!.position || 0) - (b!.position || 0));
+      const dropIndex = event.newIndex!;
       
-      const allTasks = tasks.slice().sort((a, b) => (a.position || 0) - (b.position || 0));
-      const nonSelectedTasks = allTasks.filter(task => !selectedTaskIds.includes(task.id));
+      // Calculate the new parent based on drop position
+      const newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
       
-      // Insert selected tasks as a group at the drop position
-      const insertPosition = event.newIndex!;
-      const reorderedTasks = [
-        ...nonSelectedTasks.slice(0, insertPosition),
-        ...selectedTasks,
-        ...nonSelectedTasks.slice(insertPosition)
-      ];
+      // Calculate position within the new parent
+      const newPosition = calculatePositionInParent(dropIndex, newParentId, selectedTaskIds);
       
-      // Calculate new positions for all tasks
-      reorderedTasks.forEach((task, index) => {
-        const newPosition = index + 1;
-        
-        optimisticUpdates.set(task.id, {
-          originalPosition: task.position || 0,
-          originalParentId: task.parent_id
+      // Update all selected tasks to have the same parent and consecutive positions
+      selectedTaskIds.forEach((taskId, index) => {
+        optimisticUpdates.set(taskId, {
+          originalPosition: tasks.find(t => t.id === taskId)?.position || 0,
+          originalParentId: tasks.find(t => t.id === taskId)?.parent_id
         });
         
         positionUpdates.push({
-          id: task.id,
-          position: newPosition
+          id: taskId,
+          position: newPosition + index,
+          parent_id: newParentId || undefined
         });
       });
       
     } else {
-      // Handle single task drag
-      const currentTasks = [...flattenedTasks.map(item => item.task)];
-      const draggedTask = currentTasks[event.oldIndex!];
-      const newIndex = event.newIndex!;
+      // Handle single task drag with hierarchical parent assignment
+      const dropIndex = event.newIndex!;
       
-      // Remove from old position
-      currentTasks.splice(event.oldIndex!, 1);
-      // Insert at new position
-      currentTasks.splice(newIndex, 0, draggedTask);
+      // Calculate the new parent based on drop position
+      const newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
       
-      positionUpdates = currentTasks.map((task, index) => {
-        optimisticUpdates.set(task.id, {
-          originalPosition: task.position || 0,
-          originalParentId: task.parent_id
-        });
-        
-        return {
-          id: task.id,
-          position: index + 1
-        };
+      // Calculate position within the new parent
+      const newPosition = calculatePositionInParent(dropIndex, newParentId, [draggedTaskId]);
+      
+      optimisticUpdates.set(draggedTaskId, {
+        originalPosition: tasks.find(t => t.id === draggedTaskId)?.position || 0,
+        originalParentId: tasks.find(t => t.id === draggedTaskId)?.parent_id
+      });
+      
+      positionUpdates.push({
+        id: draggedTaskId,
+        position: newPosition,
+        parent_id: newParentId || undefined
       });
     }
     
@@ -658,7 +646,11 @@
     tasks = tasks.map(task => {
       const update = positionUpdates.find(u => u.id === task.id);
       if (update) {
-        return { ...task, position: update.position };
+        return { 
+          ...task, 
+          position: update.position,
+          parent_id: update.parent_id !== undefined ? update.parent_id : task.parent_id
+        };
       }
       return task;
     });
@@ -715,6 +707,65 @@
     }
     
     return result;
+  }
+
+  // Calculate parent task based on drop position in flattened list
+  function calculateParentFromPosition(dropIndex: number, dropMode: 'reorder' | 'nest'): string | null {
+    // If explicitly nesting, the target becomes the parent
+    if (dropMode === 'nest') {
+      const targetItem = flattenedTasks[dropIndex];
+      return targetItem?.task.id || null;
+    }
+    
+    // For reordering, determine parent based on surrounding context
+    const targetItem = flattenedTasks[dropIndex];
+    if (!targetItem) return null;
+    
+    const targetDepth = targetItem.depth;
+    
+    // Look backwards to find the appropriate parent at the target depth
+    for (let i = dropIndex - 1; i >= 0; i--) {
+      const item = flattenedTasks[i];
+      
+      if (item.depth < targetDepth) {
+        // Found a task at a shallower depth - this is the parent
+        return item.task.id;
+      }
+      
+      if (item.depth === targetDepth - 1) {
+        // Found a task at the exact parent depth
+        return item.task.id;
+      }
+    }
+    
+    // If we're at depth 0 or couldn't find a parent, return null (root level)
+    return targetDepth === 0 ? null : null;
+  }
+  
+  // Enhanced position calculation that considers hierarchical context
+  function calculatePositionInParent(dropIndex: number, parentId: string | null, draggedTaskIds: string[]): number {
+    // Filter flattened tasks to only those with the same parent
+    const siblingsInFlattened = flattenedTasks.filter(item => {
+      const taskParentId = item.task.parent_id || null;
+      return taskParentId === parentId && !draggedTaskIds.includes(item.task.id);
+    });
+    
+    if (siblingsInFlattened.length === 0) {
+      return 1; // First child
+    }
+    
+    // Find where in the sibling list this drop index falls
+    let positionCount = 0;
+    for (let i = 0; i <= dropIndex && i < flattenedTasks.length; i++) {
+      const item = flattenedTasks[i];
+      const itemParentId = item.task.parent_id || null;
+      
+      if (itemParentId === parentId && !draggedTaskIds.includes(item.task.id)) {
+        positionCount++;
+      }
+    }
+    
+    return Math.max(1, positionCount);
   }
 </script>
 

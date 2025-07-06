@@ -142,8 +142,13 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
     const targetElement = dragOverElement;
 
     if (dropZone && targetElement) {
-      const newIndex = Array.from(node.children).indexOf(targetElement);
+      let newIndex = Array.from(node.children).indexOf(targetElement);
       const oldIndex = Array.from(node.children).indexOf(dragState.draggedElements[0]);
+
+      // Adjust newIndex based on drop position for reordering
+      if (dropZone.mode === 'reorder' && dropZone.position === 'below') {
+        newIndex += 1;
+      }
 
       options.onSort?.({
         item: dragState.draggedElements[0],
