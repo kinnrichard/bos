@@ -659,6 +659,13 @@
       // Calculate position within the new parent
       const newPosition = calculatePositionInParent(dropIndex, newParentId, [draggedTaskId]);
       
+      console.log('=== SINGLE TASK DRAG DEBUG ===');
+      console.log('draggedTaskId:', draggedTaskId);
+      console.log('dropIndex:', dropIndex);
+      console.log('newParentId:', newParentId);
+      console.log('calculated newPosition:', newPosition);
+      console.log('=== END SINGLE TASK DRAG DEBUG ===');
+      
       optimisticUpdates.set(draggedTaskId, {
         originalPosition: tasks.find(t => t.id === draggedTaskId)?.position || 0,
         originalParentId: tasks.find(t => t.id === draggedTaskId)?.parent_id
@@ -686,6 +693,10 @@
     
     try {
       // Send batch reorder to server  
+      console.log('=== SENDING TO SERVER ===');
+      console.log('positionUpdates:', positionUpdates);
+      console.log('=== END SENDING TO SERVER ===');
+      
       await tasksService.batchReorderTasks(jobId, { positions: positionUpdates });
       
       // Clear optimistic updates on success
@@ -791,28 +802,46 @@
   
   // Enhanced position calculation that considers hierarchical context
   function calculatePositionInParent(dropIndex: number, parentId: string | null, draggedTaskIds: string[]): number {
+    console.log('=== calculatePositionInParent DEBUG ===');
+    console.log('dropIndex:', dropIndex);
+    console.log('parentId:', parentId);
+    console.log('draggedTaskIds:', draggedTaskIds);
+    
     // Filter flattened tasks to only those with the same parent
     const siblingsInFlattened = flattenedTasks.filter(item => {
       const taskParentId = item.task.parent_id || null;
       return taskParentId === parentId && !draggedTaskIds.includes(item.task.id);
     });
     
+    console.log('siblingsInFlattened.length:', siblingsInFlattened.length);
+    console.log('siblingsInFlattened:', siblingsInFlattened.map(s => ({ id: s.task.id, title: s.task.title, position: s.task.position })));
+    
     if (siblingsInFlattened.length === 0) {
+      console.log('No siblings found, returning position 1');
       return 1; // First child
     }
     
     // Find where in the sibling list this drop index falls
     let positionCount = 0;
+    console.log('Scanning flattenedTasks from 0 to', dropIndex);
+    
     for (let i = 0; i <= dropIndex && i < flattenedTasks.length; i++) {
       const item = flattenedTasks[i];
       const itemParentId = item.task.parent_id || null;
       
+      console.log(`  [${i}] task ${item.task.id} (${item.task.title}) - parent: ${itemParentId}, isDragged: ${draggedTaskIds.includes(item.task.id)}`);
+      
       if (itemParentId === parentId && !draggedTaskIds.includes(item.task.id)) {
         positionCount++;
+        console.log(`    -> Counted as sibling #${positionCount}`);
       }
     }
     
-    return Math.max(1, positionCount);
+    const finalPosition = Math.max(1, positionCount);
+    console.log('Final calculated position:', finalPosition);
+    console.log('=== END calculatePositionInParent DEBUG ===');
+    
+    return finalPosition;
   }
 </script>
 
