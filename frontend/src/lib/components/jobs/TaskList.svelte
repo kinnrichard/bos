@@ -1000,7 +1000,7 @@
   }
 
   .task-item.task-chosen {
-    opacity: 0.8;
+    /* Removed opacity to eliminate dimming effect when clicking task rows */
   }
 
   .task-item.task-dragging {

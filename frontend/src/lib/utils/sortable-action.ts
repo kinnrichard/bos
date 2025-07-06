@@ -49,9 +49,7 @@ export function sortable(node: HTMLElement, options: SortableActionOptions = {})
     },
     // Clean ghost styling
     onChoose: function(evt) {
-      if (evt.item) {
-        evt.item.style.opacity = '0.5';
-      }
+      // Removed opacity change to prevent dimming when clicking task rows
     },
     onUnchoose: function(evt) {
       if (evt.item) {
