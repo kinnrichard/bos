@@ -1896,7 +1896,7 @@
     color: white !important;
     text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75) !important;
     border-radius: 8px !important;
-    transition: all 0.15s ease !important;
+    transition: none !important;
   }
 
 
