@@ -1254,9 +1254,27 @@
           calculatedPosition = visualSiblings[0].position;
         } else {
           // Insert at target's current position (will push target down)
-          calculatedPosition = targetTask.position;
+          const isMovingDown = draggedTask && draggedTask.position < targetTask.position;
+          
+          // Fix: Account for gap elimination when moving down
+          // Gap elimination shifts target positions down, so we need to adjust
+          if (isMovingDown) {
+            calculatedPosition = targetTask.position - 1;
+            console.log('⬆️ Above drop: target position (adjusted for gap elimination)', {
+              originalTargetPosition: targetTask.position,
+              calculatedPosition,
+              gapAdjustment: -1,
+              reason: 'Moving down - accounting for gap elimination shift'
+            });
+          } else {
+            calculatedPosition = targetTask.position;
+            console.log('⬆️ Above drop: target position (no adjustment)', {
+              targetPosition: targetTask.position,
+              calculatedPosition,
+              reason: 'Moving up - no gap elimination adjustment needed'
+            });
+          }
         }
-        console.log('⬆️ Above drop: visual position', calculatedPosition);
       } else {
         // Insert after target in visual order
         if (targetVisualIndex === visualSiblings.length - 1) {
