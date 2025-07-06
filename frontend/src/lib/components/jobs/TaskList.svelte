@@ -98,6 +98,60 @@
   // Track optimistic updates for rollback
   let optimisticUpdates = new Map<string, { originalPosition: number; originalParentId?: string }>();
   
+  // Client-side acts_as_list implementation for offline compatibility
+  class ClientActsAsList {
+    // Apply position updates and calculate all affected position changes
+    static applyPositionUpdates(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): any[] {
+      const taskMap = new Map(tasks.map(t => [t.id, {...t}]));
+      
+      // Apply the position updates
+      positionUpdates.forEach(update => {
+        const task = taskMap.get(update.id);
+        if (task) {
+          task.position = update.position;
+          if (update.parent_id !== undefined) {
+            task.parent_id = update.parent_id;
+          }
+        }
+      });
+      
+      // Get all affected scopes (parent_id groups)
+      const affectedScopes = new Set<string>();
+      positionUpdates.forEach(update => {
+        const task = taskMap.get(update.id);
+        if (task) {
+          affectedScopes.add(task.parent_id || 'null');
+          // Also include original parent if it changed
+          const originalTask = tasks.find(t => t.id === update.id);
+          if (originalTask && originalTask.parent_id !== task.parent_id) {
+            affectedScopes.add(originalTask.parent_id || 'null');
+          }
+        }
+      });
+      
+      // Normalize positions within each affected scope
+      affectedScopes.forEach(scope => {
+        const scopeKey = scope === 'null' ? null : scope;
+        const scopeTasks = Array.from(taskMap.values())
+          .filter(t => (t.parent_id || null) === scopeKey)
+          .sort((a, b) => a.position - b.position);
+        
+        // Renumber to eliminate gaps (acts_as_list behavior)
+        scopeTasks.forEach((task, index) => {
+          task.position = index + 1;
+        });
+      });
+      
+      return Array.from(taskMap.values());
+    }
+    
+    // Predict what server positions will be after operation
+    static predictServerPositions(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): Map<string, number> {
+      const updatedTasks = this.applyPositionUpdates(tasks, positionUpdates);
+      return new Map(updatedTasks.map(t => [t.id, t.position]));
+    }
+  }
+  
   // New task creation state
   let showNewTaskInput = false;
   let newTaskTitle = '';
@@ -695,17 +749,21 @@
       });
     }
     
-    // Apply optimistic updates
-    tasks = tasks.map(task => {
-      const update = positionUpdates.find(u => u.id === task.id);
-      if (update) {
-        return { 
-          ...task, 
-          position: update.position,
-          parent_id: update.parent_id
-        };
-      }
-      return task;
+    // 🔮 Client-side position prediction BEFORE server call
+    const taskStateBeforeOperation = tasks.map(t => ({...t})); // Deep snapshot
+    const clientPredictedPositions = ClientActsAsList.predictServerPositions(tasks, positionUpdates);
+    
+    console.log('🔮 Client position prediction:', {
+      positionUpdates,
+      predictedFinalPositions: Object.fromEntries(clientPredictedPositions),
+      tasksBeforeOperation: taskStateBeforeOperation.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id }))
+    });
+    
+    // Apply client-side position calculation immediately
+    tasks = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
+    
+    console.log('🎯 Client state updated:', {
+      newTaskPositions: tasks.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id }))
     });
     
     try {
@@ -717,9 +775,12 @@
       });
       
       // Send batch reorder to server  
-      await tasksService.batchReorderTasks(jobId, { positions: positionUpdates });
+      const serverResponse = await tasksService.batchReorderTasks(jobId, { positions: positionUpdates });
       
-      console.log('✅ Server update successful');
+      console.log('✅ Server update successful', serverResponse);
+      
+      // 🔍 Compare client prediction vs server reality
+      await compareClientVsServer(clientPredictedPositions, taskStateBeforeOperation, positionUpdates, event);
       
       // Clear optimistic updates on success
       optimisticUpdates.clear();
@@ -741,6 +802,89 @@
       });
       
       optimisticUpdates.clear();
+    }
+  }
+  
+  // Compare client predictions with server results
+  async function compareClientVsServer(
+    clientPredictions: Map<string, number>, 
+    taskStateBeforeOperation: any[], 
+    positionUpdates: Array<{id: string, position: number, parent_id?: string}>,
+    dragEvent: DragSortEvent
+  ) {
+    try {
+      // Fetch fresh task data from server to see actual results
+      const response = await fetch(`/api/v1/jobs/${jobId}/tasks/batch_details`);
+      const serverData = await response.json();
+      
+      // Extract actual server positions
+      const serverPositions = new Map<string, number>();
+      serverData.data.forEach((task: any) => {
+        serverPositions.set(task.id, task.attributes.position);
+      });
+      
+      // Find differences between client predictions and server reality
+      const differences: Array<{taskId: string, clientPrediction: number, serverActual: number, difference: number}> = [];
+      
+      clientPredictions.forEach((clientPos, taskId) => {
+        const serverPos = serverPositions.get(taskId);
+        if (serverPos !== undefined && clientPos !== serverPos) {
+          differences.push({
+            taskId,
+            clientPrediction: clientPos,
+            serverActual: serverPos,
+            difference: serverPos - clientPos
+          });
+        }
+      });
+      
+      if (differences.length > 0) {
+        console.group('🚨 CLIENT/SERVER POSITION MISMATCH DETECTED');
+        console.log('📊 Differences found:', differences);
+        console.log('🎯 Drag operation context:', {
+          draggedTaskId: dragEvent.item.dataset.taskId,
+          dropZone: dragEvent.dropZone,
+          oldIndex: dragEvent.oldIndex,
+          newIndex: dragEvent.newIndex
+        });
+        console.log('📋 Task state before operation:', taskStateBeforeOperation.map(t => ({ 
+          id: t.id, 
+          position: t.position, 
+          parent_id: t.parent_id,
+          title: t.title?.substring(0, 20) + '...' 
+        })));
+        console.log('🔄 Position updates sent:', positionUpdates);
+        console.log('🔮 Client predictions:', Object.fromEntries(clientPredictions));
+        console.log('📡 Server actual results:', Object.fromEntries(serverPositions));
+        console.log('⚠️ Analysis:', {
+          totalDifferences: differences.length,
+          maxDifference: Math.max(...differences.map(d => Math.abs(d.difference))),
+          avgDifference: differences.reduce((sum, d) => sum + Math.abs(d.difference), 0) / differences.length,
+          patternAnalysis: analyzePositionPattern(differences)
+        });
+        console.groupEnd();
+      } else {
+        console.log('✅ Client prediction matches server - no position discrepancies!');
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to compare client vs server positions:', error);
+    }
+  }
+  
+  // Analyze patterns in position differences to help debug
+  function analyzePositionPattern(differences: Array<{taskId: string, clientPrediction: number, serverActual: number, difference: number}>): string {
+    const diffs = differences.map(d => d.difference);
+    const uniqueDiffs = [...new Set(diffs)];
+    
+    if (uniqueDiffs.length === 1) {
+      return `All tasks off by same amount: ${uniqueDiffs[0]}`;
+    } else if (diffs.every(d => d > 0)) {
+      return 'All server positions higher than client predictions';
+    } else if (diffs.every(d => d < 0)) {
+      return 'All server positions lower than client predictions';
+    } else {
+      return 'Mixed pattern - some higher, some lower';
     }
   }
 
