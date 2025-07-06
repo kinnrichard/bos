@@ -142,17 +142,32 @@
         }
       });
       
-      // Normalize positions within each affected scope
+      // Normalize positions within each affected scope (only if gaps exist)
       affectedScopes.forEach(scope => {
         const scopeKey = scope === 'null' ? null : scope;
         const scopeTasks = Array.from(taskMap.values())
           .filter(t => (t.parent_id || null) === scopeKey)
           .sort((a, b) => a.position - b.position);
         
-        // Renumber to eliminate gaps (acts_as_list behavior)
-        scopeTasks.forEach((task, index) => {
-          task.position = index + 1;
-        });
+        // Check if there are gaps in the position sequence
+        const hasGaps = scopeTasks.some((task, index) => task.position !== index + 1);
+        
+        // Only renumber if there are actual gaps (true acts_as_list behavior)
+        if (hasGaps) {
+          console.log(`🔧 Gap detected in scope ${scopeKey}, renumbering:`, 
+            scopeTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
+          
+          scopeTasks.forEach((task, index) => {
+            const oldPosition = task.position;
+            task.position = index + 1;
+            
+            if (oldPosition !== task.position) {
+              console.log(`  📍 ${task.id.substring(0,8)}: ${oldPosition} → ${task.position}`);
+            }
+          });
+        } else {
+          console.log(`✅ No gaps in scope ${scopeKey}, positions preserved`);
+        }
       });
       
       return Array.from(taskMap.values());
