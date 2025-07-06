@@ -163,29 +163,65 @@
           return;
         }
         
-        // Apply conflict resolution for each update
+        // Implement true acts_as_list behavior: gap elimination + insertion shifts
+        
+        // Step 1: Remove moving items and collect their original positions
+        const movingItemIds = new Set(scopeUpdates.map(u => u.id));
+        const originalPositions = new Map();
         scopeUpdates.forEach(update => {
-          const updatedTask = taskMap.get(update.id);
-          const targetPosition = update.position;
           const originalTask = tasks.find(t => t.id === update.id);
-          const originalPosition = originalTask?.position;
+          if (originalTask) {
+            originalPositions.set(update.id, originalTask.position);
+          }
+        });
+        
+        // Step 2: Limited gap elimination - only affect tasks in operation range
+        const nonMovingTasks = scopeTasks.filter(t => !movingItemIds.has(t.id));
+        
+        // For each moving item, eliminate the gap it leaves behind
+        scopeUpdates.forEach(update => {
+          const originalPosition = originalPositions.get(update.id);
+          if (!originalPosition) return;
           
-          console.log(`🎯 Applying update: ${update.id.substring(0,8)} ${originalPosition}→${targetPosition}`);
+          console.log(`🔄 Gap elimination for position ${originalPosition}, task ${update.id.substring(0,8)}`);
+          console.log(`📋 Before gap elimination:`, nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
           
-          // Resolve conflicts: shift tasks at or after the target position
-          scopeTasks.forEach(task => {
-            if (task.id === update.id) {
-              // This is the task being moved - already has new position
-              return;
-            }
-            
-            // Only shift tasks that are after the insertion point (not at)
-            if (task.position > targetPosition) {
+          // Shift down all non-moving tasks that are after the gap
+          let shiftsApplied = 0;
+          nonMovingTasks.forEach(task => {
+            if (task.position > originalPosition) {
               const oldPosition = task.position;
-              task.position = task.position + 1;
-              console.log(`  ⬆️ Shift conflict: ${task.id.substring(0,8)} ${oldPosition}→${task.position}`);
+              task.position = task.position - 1;
+              shiftsApplied++;
+              console.log(`  ⬇️ Gap elimination: ${task.id.substring(0,8)} ${oldPosition}→${task.position}`);
             }
           });
+          
+          console.log(`📋 After gap elimination: ${shiftsApplied} tasks shifted, positions:`, 
+            nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
+        });
+        
+        // Step 3: Insert each moving item at its target position
+        scopeUpdates.forEach(update => {
+          const targetPosition = update.position;
+          const originalPosition = originalPositions.get(update.id);
+          
+          console.log(`🎯 Inserting: ${update.id.substring(0,8)} ${originalPosition}→${targetPosition}`);
+          
+          // Shift non-moving tasks at or after the insertion point up by 1
+          nonMovingTasks.forEach(task => {
+            if (task.position >= targetPosition) {
+              const oldPosition = task.position;
+              task.position = task.position + 1;
+              console.log(`  ⬆️ Insertion shift: ${task.id.substring(0,8)} ${oldPosition}→${task.position}`);
+            }
+          });
+          
+          // Place the moving item at target position
+          const movingTask = taskMap.get(update.id);
+          if (movingTask) {
+            movingTask.position = targetPosition;
+          }
         });
       });
       
@@ -1100,6 +1136,14 @@
       draggedTaskIds
     });
     
+    // Find the dragged task to determine movement direction
+    const draggedTask = tasks.find(t => draggedTaskIds.includes(t.id));
+    console.log('🚀 Dragged task info:', {
+      id: draggedTask?.id?.substring(0, 8),
+      originalPosition: draggedTask?.position,
+      parent_id: draggedTask?.parent_id
+    });
+    
     if (!resolvedDropZone?.targetTaskId) {
       console.log('❌ No target task ID, returning position 1');
       return 1;
@@ -1146,75 +1190,116 @@
           position: resolvedDropZone.position
         });
         
-        // Use target-relative positioning instead of parent-boundary positioning
+        // Use visual-order-based positioning for cross-parent drops
+        const targetParentSiblings = tasks.filter(t => 
+          (t.parent_id || null) === (targetTask.parent_id || null)
+        ).sort((a, b) => a.position - b.position);
+        
+        const targetVisualIndex = targetParentSiblings.findIndex(t => t.id === targetTask.id);
+        
         let calculatedPosition;
         if (resolvedDropZone.position === 'above') {
-          // Insert immediately before the target task
+          // Insert before target in visual order
           calculatedPosition = targetTask.position;
-          console.log('⬆️ Above drop: using target position', calculatedPosition);
+          console.log('⬆️ Above drop: visual position', calculatedPosition);
         } else {
-          // Insert immediately after the target task
-          calculatedPosition = targetTask.position + 1;
-          console.log('⬇️ Below drop: using target position + 1', calculatedPosition);
+          // Insert after target in visual order
+          if (targetVisualIndex === targetParentSiblings.length - 1) {
+            // Insert at the end
+            calculatedPosition = targetTask.position + 1;
+          } else {
+            // Get the position that would place it between target and next sibling
+            const nextSibling = targetParentSiblings[targetVisualIndex + 1];
+            calculatedPosition = nextSibling.position;
+          }
+          console.log('⬇️ Below drop: visual position', calculatedPosition);
         }
         
         return calculatedPosition;
       }
       
-      // Same-parent drag: calculate position based on direction of movement
-      // Get all sibling tasks (same parent) excluding the dragged tasks
-      const siblings = tasks.filter(t => 
+      // Same-parent drag: use direct target position logic
+      // Check if target task is being dragged
+      if (draggedTaskIds.includes(targetTask.id)) {
+        // Target is being dragged, use fallback based on siblings
+        const siblings = tasks.filter(t => 
+          (t.parent_id || null) === parentId && 
+          !draggedTaskIds.includes(t.id)
+        ).sort((a, b) => a.position - b.position);
+        return siblings.length + 1;
+      }
+      
+      // Calculate position based on visual order to match drop indicator
+      // Get siblings in visual order (sorted by position)
+      const visualSiblings = tasks.filter(t => 
         (t.parent_id || null) === parentId && 
         !draggedTaskIds.includes(t.id)
       ).sort((a, b) => a.position - b.position);
       
-      // Check if target task is being dragged (not in siblings list)
-      const targetInSiblings = siblings.find(s => s.id === targetTask.id);
-      
-      if (!targetInSiblings) {
-        // Target is being dragged, append to end of siblings
-        return siblings.length + 1;
-      }
-      
-      // Find the dragged task to determine direction of movement
-      const draggedTask = tasks.find(t => draggedTaskIds.includes(t.id));
-      if (!draggedTask) {
-        console.log('❌ Dragged task not found, using fallback position');
-        return targetTask.position; // Fallback
-      }
-      
-      const isDraggingDown = draggedTask.position < targetTask.position;
-      
-      console.log('↕️ Same-parent drag direction analysis:', {
-        draggedTask: { id: draggedTask.id, position: draggedTask.position },
-        targetTask: { id: targetTask.id, position: targetTask.position },
-        isDraggingDown,
-        dropPosition: resolvedDropZone.position
+      console.log('📊 Visual siblings analysis:', {
+        totalSiblings: visualSiblings.length,
+        siblingPositions: visualSiblings.map(t => `${t.id.substring(0,8)}:${t.position}`),
+        targetTask: `${targetTask.id.substring(0,8)}:${targetTask.position}`,
+        isMovingDown: draggedTask && draggedTask.position < targetTask.position
       });
+      
+      // Find target's position in visual order
+      const targetVisualIndex = visualSiblings.findIndex(t => t.id === targetTask.id);
       
       let calculatedPosition;
       if (resolvedDropZone.position === 'above') {
-        if (isDraggingDown) {
-          // Moving down: use target's position directly
-          calculatedPosition = targetTask.position;
-          console.log('⬇️ Above + Down: using target position', calculatedPosition);
+        // Insert before target in visual order
+        if (targetVisualIndex === 0) {
+          // Insert at the beginning
+          calculatedPosition = visualSiblings[0].position;
         } else {
-          // Moving up: account for the gap left by dragged task
-          calculatedPosition = targetTask.position - 1;
-          console.log('⬆️ Above + Up: using target position - 1', calculatedPosition);
+          // Insert at target's current position (will push target down)
+          calculatedPosition = targetTask.position;
         }
+        console.log('⬆️ Above drop: visual position', calculatedPosition);
       } else {
-        // position === 'below'
-        if (isDraggingDown) {
-          // Moving down: insert after target
+        // Insert after target in visual order
+        if (targetVisualIndex === visualSiblings.length - 1) {
+          // Insert at the end
           calculatedPosition = targetTask.position + 1;
-          console.log('⬇️ Below + Down: using target position + 1', calculatedPosition);
+          console.log('⬇️ Below drop: end position', calculatedPosition);
         } else {
-          // Moving up: gap closes naturally, use target position
-          calculatedPosition = targetTask.position;
-          console.log('⬆️ Below + Up: using target position', calculatedPosition);
+          // Get the position that would place it between target and next sibling
+          const nextSibling = visualSiblings[targetVisualIndex + 1];
+          const isMovingDown = draggedTask && draggedTask.position < targetTask.position;
+          
+          // Fix: Account for gap elimination when moving down
+          // Gap elimination shifts target positions down, so we need to adjust
+          if (isMovingDown) {
+            calculatedPosition = nextSibling.position - 1;
+            console.log('⬇️ Below drop: between target and next sibling (adjusted for gap elimination)', {
+              targetPosition: targetTask.position,
+              nextSiblingPosition: nextSibling.position,
+              calculatedPosition,
+              nextSiblingId: nextSibling.id.substring(0,8),
+              gapAdjustment: -1,
+              reason: 'Moving down - accounting for gap elimination shift'
+            });
+          } else {
+            calculatedPosition = nextSibling.position;
+            console.log('⬇️ Below drop: between target and next sibling (no adjustment)', {
+              targetPosition: targetTask.position,
+              nextSiblingPosition: nextSibling.position,
+              calculatedPosition,
+              nextSiblingId: nextSibling.id.substring(0,8),
+              reason: 'Moving up - no gap elimination adjustment needed'
+            });
+          }
         }
       }
+      
+      console.log('🎯 Final calculated position:', {
+        originalPosition: draggedTask?.position,
+        targetPosition: targetTask.position,
+        calculatedPosition,
+        movementDirection: draggedTask && draggedTask.position < targetTask.position ? 'DOWN' : 'UP',
+        dropMode: resolvedDropZone.position
+      });
       
       return calculatedPosition;
     }
