@@ -3,8 +3,8 @@
   import { selectedTaskStatuses, shouldShowTask } from '$lib/stores/taskFilter';
   import { taskSelection, type TaskSelectionState } from '$lib/stores/taskSelection';
   import { tasksService } from '$lib/api/tasks';
-  import { sortable, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/sortable-action';
-  import type { SortableEvent } from 'sortablejs';
+  import { nativeDrag, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
+  import type { DragSortEvent } from '$lib/utils/native-drag-action';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
 
   // Use static SVG URLs for better compatibility
@@ -397,7 +397,7 @@
   }
 
   // SortableJS event handlers
-  function handleSortStart(event: SortableEvent) {
+  function handleSortStart(event: DragSortEvent) {
     isDragging = true;
     
     // Check for multi-select drag
@@ -425,7 +425,7 @@
     }
   }
 
-  function handleSortEnd(event: SortableEvent) {
+  function handleSortEnd(event: DragSortEvent) {
     isDragging = false;
     
     // Clear all visual feedback
@@ -487,7 +487,7 @@
       
       if (targetTaskId) {
         // Check if nesting is valid before showing highlight
-        const draggedElement = document.querySelector('.task-chosen');
+        const draggedElement = document.querySelector('.task-dragging');
         const draggedTaskId = draggedElement?.getAttribute('data-task-id');
         console.log('Dragged task:', draggedTaskId, 'Target task:', targetTaskId);
         
@@ -499,7 +499,7 @@
             addNestHighlight(targetElement);
           } else {
             console.log('Showing invalid nesting indicator');
-            targetElement.classList.add('sortable-nest-invalid');
+            // No invalid highlighting in new implementation
           }
         } else {
           console.log('No dragged task found, adding nest highlight');
@@ -615,7 +615,7 @@
     }
   }
 
-  async function handleTaskReorder(event: SortableEvent) {
+  async function handleTaskReorder(event: DragSortEvent) {
     const draggedTaskId = event.item.dataset.taskId;
     if (!draggedTaskId) return;
 
@@ -800,19 +800,10 @@
     <!-- Sortable tasks container -->
     <div 
       class="tasks-container"
-      use:sortable={{
-        animation: 200,
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-        ghostClass: 'task-ghost',
-        chosenClass: 'task-chosen',
-        dragClass: 'task-dragging',
-        multiDrag: true,
-        multiDragKey: 'ctrl',
-        selectedClass: 'task-selected-for-drag',
-        fallbackTolerance: 0,
-        emptyInsertThreshold: 5,
+      use:nativeDrag={{
         onStart: handleSortStart,
         onEnd: handleSortEnd,
+        onSort: handleTaskReorder,
         onMove: handleMoveDetection
       }}
     >
@@ -1228,7 +1219,7 @@
   }
 
   /* Visual feedback for drag & drop nesting */
-  :global(.sortable-drop-indicator) {
+  :global(.drag-drop-indicator) {
     position: absolute;
     height: 3px;
     background: linear-gradient(90deg, #007AFF, #0099FF);
@@ -1238,19 +1229,13 @@
     z-index: 1000;
   }
 
-  :global(.sortable-nest-target) {
+  :global(.drag-nest-target) {
     background-color: rgba(0, 122, 255, 0.15) !important;
     border: 2px solid rgba(0, 122, 255, 0.4) !important;
     border-radius: 8px !important;
     transition: all 0.15s ease !important;
   }
 
-  :global(.sortable-nest-invalid) {
-    background-color: rgba(255, 69, 58, 0.15) !important;
-    border: 2px solid rgba(255, 69, 58, 0.4) !important;
-    border-radius: 8px !important;
-    transition: all 0.15s ease !important;
-  }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
