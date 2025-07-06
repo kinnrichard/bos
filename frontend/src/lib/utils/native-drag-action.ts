@@ -198,57 +198,10 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
 
   // Set draggable attribute on all current and future task elements
   function setupDraggableAttributes() {
-    if (!node) {
-      console.warn('setupDraggableAttributes: node is null or undefined');
-      return;
-    }
-
     const draggableElements = node.querySelectorAll('[data-task-id]');
-    console.log('setupDraggableAttributes: Found', draggableElements.length, 'elements with data-task-id');
-    
-    if (draggableElements.length === 0) {
-      console.warn('setupDraggableAttributes: No elements with data-task-id found in container');
-      return;
-    }
-    
-    let successCount = 0;
-    
-    draggableElements.forEach((el, index) => {
-      try {
-        const taskId = el.getAttribute('data-task-id');
-        const wasDraggable = el.getAttribute('draggable') === 'true';
-        
-        // Validate element is actually a DOM element
-        if (!(el instanceof HTMLElement)) {
-          console.warn(`Element ${index + 1} is not an HTMLElement:`, el);
-          return;
-        }
-        
-        el.setAttribute('draggable', 'true');
-        successCount++;
-        
-        if (!wasDraggable) {
-          console.log(`Made element ${index + 1} draggable: task-${taskId}`);
-        }
-      } catch (error) {
-        console.error(`Error setting draggable on element ${index + 1}:`, error);
-      }
+    draggableElements.forEach(el => {
+      el.setAttribute('draggable', 'true');
     });
-    
-    // Verify all elements are now draggable
-    const draggableCount = node.querySelectorAll('[data-task-id][draggable="true"]').length;
-    console.log('setupDraggableAttributes: Successfully updated', successCount, 'elements, total draggable elements:', draggableCount);
-    
-    // Additional verification: check for grandchild elements specifically
-    const grandchildElements = node.querySelectorAll('[data-task-id][style*="--depth: 2"]');
-    if (grandchildElements.length > 0) {
-      console.log('setupDraggableAttributes: Found', grandchildElements.length, 'grandchild elements (depth 2)');
-      grandchildElements.forEach((el, index) => {
-        const taskId = el.getAttribute('data-task-id');
-        const isDraggable = el.getAttribute('draggable') === 'true';
-        console.log(`Grandchild ${index + 1}: task-${taskId}, draggable=${isDraggable}`);
-      });
-    }
   }
 
   // Add container event listeners (using event delegation for dragstart)
