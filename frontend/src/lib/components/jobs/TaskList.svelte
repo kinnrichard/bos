@@ -825,9 +825,17 @@
 
     // Check if this is a nesting operation
     if (event.dropZone && event.dropZone.mode === 'nest' && event.dropZone.targetTaskId) {
-      console.log('🪆 Nesting operation detected, delegating to handleTaskNesting');
-      await handleTaskNesting(draggedTaskId, event.dropZone.targetTaskId);
-      return;
+      console.log('🪆 Nesting operation detected');
+      
+      // For single-task nesting, delegate to existing function
+      const isMultiSelectNest = $taskSelection.selectedTaskIds.has(draggedTaskId) && $taskSelection.selectedTaskIds.size > 1;
+      if (!isMultiSelectNest) {
+        await handleTaskNesting(draggedTaskId, event.dropZone.targetTaskId);
+        return;
+      }
+      
+      // Handle multi-task nesting here (will be processed by the multi-select logic below)
+      console.log('🪆 Multi-task nesting detected, processing with multi-select logic');
     }
 
     // Determine if this is a multi-select drag
@@ -838,21 +846,55 @@
     if (isMultiSelectDrag) {
       // Handle multi-select drag with hierarchical parent assignment
       const selectedTaskIds = Array.from($taskSelection.selectedTaskIds);
+      
+      // Sort selected tasks by their current visual order to preserve relative order
+      selectedTaskIds.sort((a, b) => {
+        const taskA = tasks.find(t => t.id === a);
+        const taskB = tasks.find(t => t.id === b);
+        const flattenedA = flattenedTasks.find(item => item.task.id === a);
+        const flattenedB = flattenedTasks.find(item => item.task.id === b);
+        return (flattenedA?.visualIndex || 0) - (flattenedB?.visualIndex || 0);
+      });
+      
       const dropIndex = event.newIndex!;
       
-      // For reorder operations, use target task's parent; for nest operations, calculate parent
+      // Determine parent based on operation mode
       let newParentId: string | null;
-      if (event.dropZone?.mode === 'reorder' && event.dropZone.targetTaskId) {
+      if (event.dropZone?.mode === 'nest' && event.dropZone.targetTaskId) {
+        // For nesting: all tasks become children of the target task
+        newParentId = event.dropZone.targetTaskId;
+        console.log(`🪆 Multi-nesting: moving ${selectedTaskIds.length} tasks under ${newParentId?.substring(0,8)}`);
+      } else if (event.dropZone?.mode === 'reorder' && event.dropZone.targetTaskId) {
+        // For reordering: use target task's parent
         const targetTask = tasks.find(t => t.id === event.dropZone.targetTaskId);
         newParentId = targetTask?.parent_id || null;
       } else {
         newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
       }
       
-      // Calculate position within the new parent using the target task's position
-      const newPosition = calculatePositionFromTarget(event.dropZone, newParentId, selectedTaskIds);
+      // Calculate base position within the new parent
+      let newPosition: number;
+      if (event.dropZone?.mode === 'nest') {
+        // For nesting: position at the end of existing children
+        const existingChildren = tasks.filter(t => 
+          t.parent_id === newParentId && 
+          !selectedTaskIds.includes(t.id) // Exclude tasks being moved
+        );
+        newPosition = existingChildren.length > 0 
+          ? Math.max(...existingChildren.map(t => t.position)) + 1
+          : 1;
+        
+        // Auto-expand the target task to show newly nested children
+        if (newParentId && !expandedTasks.has(newParentId)) {
+          expandedTasks.add(newParentId);
+          expandedTasks = expandedTasks; // Trigger Svelte reactivity
+        }
+      } else {
+        // For reordering: use existing position calculation
+        newPosition = calculatePositionFromTarget(event.dropZone, newParentId, selectedTaskIds);
+      }
       
-      // Update all selected tasks to have the same parent and consecutive positions
+      // Update all selected tasks with consecutive positions maintaining their relative order
       selectedTaskIds.forEach((taskId, index) => {
         optimisticUpdates.set(taskId, {
           originalPosition: tasks.find(t => t.id === taskId)?.position || 0,
@@ -1447,6 +1489,7 @@
           class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
           class:has-subtasks={renderItem.hasSubtasks}
           class:selected={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
+          class:task-selected-for-drag={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
           class:multi-select-active={$taskSelection.isMultiSelectActive}
           class:selection-top={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
           class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
@@ -1674,6 +1717,12 @@
   }
 
   .task-item.multi-select-active.selected {
+    background-color: var(--accent-blue) !important;
+    color: white !important;
+    text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
+  }
+
+  .task-item.task-selected-for-drag {
     background-color: var(--accent-blue) !important;
     color: white !important;
     text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
