@@ -92,6 +92,19 @@
   let isDragging = false;
   let feedback = '';
   
+  // Development alerts state
+  let developmentAlerts: Array<{
+    id: string;
+    type: string;
+    message: string;
+    details?: any;
+    timestamp: number;
+    actions?: Array<{label: string, action: () => void}>;
+  }> = [];
+  
+  // Development environment detection
+  const isDevelopment = import.meta.env.DEV || import.meta.env.NODE_ENV === 'development';
+  
   // Multi-select state
   let flatTaskIds: string[] = [];
   
@@ -839,6 +852,9 @@
       });
       
       if (differences.length > 0) {
+        const maxDifference = Math.max(...differences.map(d => Math.abs(d.difference)));
+        const patternAnalysis = analyzePositionPattern(differences);
+        
         console.group('🚨 CLIENT/SERVER POSITION MISMATCH DETECTED');
         console.log('📊 Differences found:', differences);
         console.log('🎯 Drag operation context:', {
@@ -858,11 +874,29 @@
         console.log('📡 Server actual results:', Object.fromEntries(serverPositions));
         console.log('⚠️ Analysis:', {
           totalDifferences: differences.length,
-          maxDifference: Math.max(...differences.map(d => Math.abs(d.difference))),
+          maxDifference,
           avgDifference: differences.reduce((sum, d) => sum + Math.abs(d.difference), 0) / differences.length,
-          patternAnalysis: analyzePositionPattern(differences)
+          patternAnalysis
         });
         console.groupEnd();
+        
+        // Show development user alert
+        showDevelopmentAlert({
+          type: 'position-mismatch',
+          message: `Position sync issue detected: ${differences.length} task${differences.length > 1 ? 's' : ''} affected (max difference: ${maxDifference})`,
+          details: {
+            differences,
+            patternAnalysis,
+            operationContext: {
+              draggedTaskId: dragEvent.item.dataset.taskId,
+              dropZone: dragEvent.dropZone
+            }
+          },
+          actions: [
+            { label: 'View Console', action: viewConsoleDetails },
+            { label: 'Refresh Tasks', action: refreshTasks }
+          ]
+        });
       } else {
         console.log('✅ Client prediction matches server - no position discrepancies!');
       }
@@ -886,6 +920,41 @@
     } else {
       return 'Mixed pattern - some higher, some lower';
     }
+  }
+  
+  // Development alert system
+  function showDevelopmentAlert(alert: {
+    type: string;
+    message: string;
+    details?: any;
+    actions?: Array<{label: string, action: () => void}>;
+  }) {
+    if (!isDevelopment) return;
+    
+    const alertWithId = {
+      ...alert,
+      id: `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now()
+    };
+    
+    developmentAlerts = [...developmentAlerts, alertWithId];
+    
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+      dismissDevelopmentAlert(alertWithId.id);
+    }, 10000);
+  }
+  
+  function dismissDevelopmentAlert(alertId: string) {
+    developmentAlerts = developmentAlerts.filter(alert => alert.id !== alertId);
+  }
+  
+  function viewConsoleDetails() {
+    console.log('📋 Check the console above for detailed position mismatch debugging information');
+  }
+  
+  function refreshTasks() {
+    window.location.reload();
   }
 
   // Recursive function to render task tree
@@ -1293,6 +1362,36 @@
   {/if}
 </div>
 
+<!-- Development Alerts (only visible in development) -->
+{#if isDevelopment && developmentAlerts.length > 0}
+  <div class="development-alerts">
+    {#each developmentAlerts as alert (alert.id)}
+      <div class="development-alert" class:position-mismatch={alert.type === 'position-mismatch'}>
+        <div class="alert-header">
+          <div class="alert-icon">🚨</div>
+          <div class="alert-message">{alert.message}</div>
+          <button class="alert-dismiss" on:click={() => dismissDevelopmentAlert(alert.id)}>×</button>
+        </div>
+        
+        {#if alert.details?.patternAnalysis}
+          <div class="alert-details">
+            <strong>Pattern:</strong> {alert.details.patternAnalysis}
+          </div>
+        {/if}
+        
+        {#if alert.actions}
+          <div class="alert-actions">
+            {#each alert.actions as action}
+              <button class="alert-action-button" on:click={action.action}>
+                {action.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/each}
+  </div>
+{/if}
 
 <style>
   .task-list {
@@ -1878,5 +1977,122 @@
   .task-action-button,
   .new-task-placeholder {
     transition: all 0.15s ease;
+  }
+
+  /* Development Alerts */
+  .development-alerts {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+  }
+
+  .development-alert {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    border: 2px solid #ff4757;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(255, 75, 87, 0.3);
+    color: white;
+    font-size: 14px;
+    line-height: 1.4;
+    pointer-events: auto;
+    animation: slideInRight 0.3s ease-out;
+    backdrop-filter: blur(10px);
+  }
+
+  .development-alert.position-mismatch {
+    background: linear-gradient(135deg, #ffa726, #ff9800);
+    border-color: #ff8f00;
+    box-shadow: 0 8px 32px rgba(255, 152, 0, 0.3);
+  }
+
+  .alert-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .alert-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .alert-message {
+    flex: 1;
+    font-weight: 600;
+  }
+
+  .alert-dismiss {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .alert-dismiss:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .alert-details {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    font-size: 13px;
+    border-left: 3px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .alert-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .alert-action-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .alert-action-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 </style>
