@@ -616,8 +616,16 @@
     const draggedTaskId = event.item.dataset.taskId;
     if (!draggedTaskId) return;
 
+    console.log('🎬 handleTaskReorder started:', {
+      draggedTaskId,
+      dropZone: event.dropZone,
+      newIndex: event.newIndex,
+      oldIndex: event.oldIndex
+    });
+
     // Check if this is a nesting operation
     if (event.dropZone && event.dropZone.mode === 'nest' && event.dropZone.targetTaskId) {
+      console.log('🪆 Nesting operation detected, delegating to handleTaskNesting');
       await handleTaskNesting(draggedTaskId, event.dropZone.targetTaskId);
       return;
     }
@@ -701,8 +709,17 @@
     });
     
     try {
+      console.log('📡 Sending position updates to server:', {
+        jobId,
+        positionUpdates,
+        draggedTaskId,
+        dropZone: event.dropZone
+      });
+      
       // Send batch reorder to server  
       await tasksService.batchReorderTasks(jobId, { positions: positionUpdates });
+      
+      console.log('✅ Server update successful');
       
       // Clear optimistic updates on success
       optimisticUpdates.clear();
@@ -829,15 +846,31 @@
     // Resolve any boundary ambiguity
     const resolvedDropZone = resolveParentChildBoundary(dropZone);
     
+    console.log('🎯 calculatePositionFromTarget called:', {
+      dropZone,
+      resolvedDropZone,
+      parentId,
+      draggedTaskIds
+    });
+    
     if (!resolvedDropZone?.targetTaskId) {
+      console.log('❌ No target task ID, returning position 1');
       return 1;
     }
     
     // Find the target task
     const targetTask = tasks.find(t => t.id === resolvedDropZone.targetTaskId);
     if (!targetTask) {
+      console.log('❌ Target task not found, returning position 1');
       return 1;
     }
+    
+    console.log('📍 Target task found:', {
+      id: targetTask.id,
+      title: targetTask.title?.substring(0, 30) + '...',
+      position: targetTask.position,
+      parent_id: targetTask.parent_id
+    });
     
     // If nesting, position at the end of target task's existing children
     if (resolvedDropZone.mode === 'nest') {
@@ -860,14 +893,25 @@
     if (resolvedDropZone.mode === 'reorder') {
       // Handle cross-parent drag (target not in same parent as drop destination)
       if ((targetTask.parent_id || null) !== parentId) {
+        console.log('🔄 Cross-parent drag detected:', {
+          targetParent: targetTask.parent_id,
+          destinationParent: parentId,
+          position: resolvedDropZone.position
+        });
+        
         // Use target-relative positioning instead of parent-boundary positioning
+        let calculatedPosition;
         if (resolvedDropZone.position === 'above') {
           // Insert immediately before the target task
-          return targetTask.position;
+          calculatedPosition = targetTask.position;
+          console.log('⬆️ Above drop: using target position', calculatedPosition);
         } else {
           // Insert immediately after the target task
-          return targetTask.position + 1;
+          calculatedPosition = targetTask.position + 1;
+          console.log('⬇️ Below drop: using target position + 1', calculatedPosition);
         }
+        
+        return calculatedPosition;
       }
       
       // Same-parent drag: calculate position based on direction of movement
@@ -888,29 +932,44 @@
       // Find the dragged task to determine direction of movement
       const draggedTask = tasks.find(t => draggedTaskIds.includes(t.id));
       if (!draggedTask) {
+        console.log('❌ Dragged task not found, using fallback position');
         return targetTask.position; // Fallback
       }
       
       const isDraggingDown = draggedTask.position < targetTask.position;
       
+      console.log('↕️ Same-parent drag direction analysis:', {
+        draggedTask: { id: draggedTask.id, position: draggedTask.position },
+        targetTask: { id: targetTask.id, position: targetTask.position },
+        isDraggingDown,
+        dropPosition: resolvedDropZone.position
+      });
+      
+      let calculatedPosition;
       if (resolvedDropZone.position === 'above') {
         if (isDraggingDown) {
           // Moving down: use target's position directly
-          return targetTask.position;
+          calculatedPosition = targetTask.position;
+          console.log('⬇️ Above + Down: using target position', calculatedPosition);
         } else {
           // Moving up: account for the gap left by dragged task
-          return targetTask.position - 1;
+          calculatedPosition = targetTask.position - 1;
+          console.log('⬆️ Above + Up: using target position - 1', calculatedPosition);
         }
       } else {
         // position === 'below'
         if (isDraggingDown) {
           // Moving down: insert after target
-          return targetTask.position + 1;
+          calculatedPosition = targetTask.position + 1;
+          console.log('⬇️ Below + Down: using target position + 1', calculatedPosition);
         } else {
           // Moving up: gap closes naturally, use target position
-          return targetTask.position;
+          calculatedPosition = targetTask.position;
+          console.log('⬆️ Below + Up: using target position', calculatedPosition);
         }
       }
+      
+      return calculatedPosition;
     }
     
     return 1;
