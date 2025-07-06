@@ -219,12 +219,14 @@
           console.log(`📋 Before gap elimination:`, nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
           
           // For each non-moving task, calculate how many gaps are below it
+          // FIXED: Only count distinct gap positions (prevent double-counting when multiple tasks leave same position)
+          const uniqueGapPositions = [...new Set(gapPositions)];
           nonMovingTasks.forEach(task => {
-            const gapsBelowTask = gapPositions.filter(gapPos => gapPos < task.position).length;
+            const gapsBelowTask = uniqueGapPositions.filter(gapPos => gapPos < task.position).length;
             if (gapsBelowTask > 0) {
               const oldPosition = task.position;
               task.position = task.position - gapsBelowTask;
-              console.log(`  ⬇️ Gap elimination: ${task.id.substring(0,8)} ${oldPosition}→${task.position} (${gapsBelowTask} gap${gapsBelowTask > 1 ? 's' : ''} below)`);
+              console.log(`  ⬇️ Gap elimination: ${task.id.substring(0,8)} ${oldPosition}→${task.position} (${gapsBelowTask} unique gap${gapsBelowTask > 1 ? 's' : ''} below)`);
             }
           });
           
