@@ -632,8 +632,8 @@
       // Calculate the new parent based on drop position
       const newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
       
-      // Calculate position within the new parent
-      const newPosition = calculatePositionInParent(dropIndex, newParentId, selectedTaskIds);
+      // Calculate position within the new parent using the target task's position
+      const newPosition = calculatePositionFromTarget(event.dropZone, newParentId, selectedTaskIds);
       
       // Update all selected tasks to have the same parent and consecutive positions
       selectedTaskIds.forEach((taskId, index) => {
@@ -656,12 +656,13 @@
       // Calculate the new parent based on drop position
       const newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
       
-      // Calculate position within the new parent
-      const newPosition = calculatePositionInParent(dropIndex, newParentId, [draggedTaskId]);
+      // Calculate position within the new parent using the target task's position
+      const newPosition = calculatePositionFromTarget(event.dropZone, newParentId, [draggedTaskId]);
       
       console.log('=== SINGLE TASK DRAG DEBUG ===');
       console.log('draggedTaskId:', draggedTaskId);
       console.log('dropIndex:', dropIndex);
+      console.log('dropZone:', event.dropZone);
       console.log('newParentId:', newParentId);
       console.log('calculated newPosition:', newPosition);
       console.log('=== END SINGLE TASK DRAG DEBUG ===');
@@ -800,6 +801,84 @@
     return previousItem.task.parent_id || null;
   }
   
+  // Calculate position based on the target task's actual position (where blue line appears)
+  function calculatePositionFromTarget(dropZone: DropZoneInfo | null, parentId: string | null, draggedTaskIds: string[]): number {
+    console.log('=== calculatePositionFromTarget DEBUG ===');
+    console.log('dropZone mode:', dropZone?.mode);
+    console.log('dropZone position:', dropZone?.position);
+    console.log('dropZone targetTaskId:', dropZone?.targetTaskId);
+    console.log('parentId:', parentId);
+    console.log('draggedTaskIds:', draggedTaskIds);
+    
+    if (!dropZone?.targetTaskId) {
+      console.log('No target task ID, returning position 1');
+      return 1;
+    }
+    
+    // Find the target task
+    const targetTask = tasks.find(t => t.id === dropZone.targetTaskId);
+    if (!targetTask) {
+      console.log('Target task not found, returning position 1');
+      return 1;
+    }
+    
+    console.log('Target task:', { id: targetTask.id, title: targetTask.title, position: targetTask.position, parent_id: targetTask.parent_id });
+    
+    // If nesting, the position is always 1 (first child of the target)
+    if (dropZone.mode === 'nest') {
+      console.log('Nesting mode, returning position 1');
+      return 1;
+    }
+    
+    // For reordering, calculate based on target's position within the same parent
+    if (dropZone.mode === 'reorder') {
+      // Get all siblings with same parent (including dragged tasks for now)
+      const allSiblings = tasks.filter(t => 
+        (t.parent_id || null) === parentId
+      ).sort((a, b) => a.position - b.position);
+      
+      console.log('All siblings (before filtering):', allSiblings.map(s => ({ 
+        id: s.id, 
+        title: s.title, 
+        position: s.position,
+        isDragged: draggedTaskIds.includes(s.id)
+      })));
+      
+      // Find target task's position among ALL siblings (before filtering)
+      const targetPositionInOriginalList = allSiblings.findIndex(s => s.id === targetTask.id);
+      console.log('Target position in original list:', targetPositionInOriginalList);
+      
+      if (targetPositionInOriginalList === -1) {
+        console.log('Target not found in siblings, returning position 1');
+        return 1;
+      }
+      
+      // Get the dragged task to understand its original position
+      const draggedTask = tasks.find(t => t.id === draggedTaskIds[0]);
+      console.log('Dragged task:', draggedTask ? { id: draggedTask.id, position: draggedTask.position } : 'not found');
+      console.log('Target task position:', targetTask.position);
+      
+      let finalPosition: number;
+      
+      if (dropZone.position === 'above') {
+        // Insert before the target task
+        finalPosition = targetTask.position;
+        console.log('Above drop: inserting at target position', targetTask.position);
+      } else {
+        // Insert after the target task
+        finalPosition = targetTask.position + 1;
+        console.log('Below drop: inserting after target position', targetTask.position, '→', targetTask.position + 1);
+      }
+      
+      console.log('Final calculated position:', finalPosition);
+      console.log('=== END calculatePositionFromTarget DEBUG ===');
+      return finalPosition;
+    }
+    
+    console.log('Unknown drop mode, returning position 1');
+    return 1;
+  }
+  
   // Enhanced position calculation that considers hierarchical context
   function calculatePositionInParent(dropIndex: number, parentId: string | null, draggedTaskIds: string[]): number {
     console.log('=== calculatePositionInParent DEBUG ===');
@@ -825,7 +904,7 @@
     let positionCount = 0;
     console.log('Scanning flattenedTasks from 0 to', dropIndex);
     
-    for (let i = 0; i <= dropIndex && i < flattenedTasks.length; i++) {
+    for (let i = 0; i < dropIndex && i < flattenedTasks.length; i++) {
       const item = flattenedTasks[i];
       const itemParentId = item.task.parent_id || null;
       
