@@ -181,7 +181,7 @@
           }
         });
         
-        // Step 2: Limited gap elimination - only apply to SOURCE scopes where tasks are being removed
+        // Step 2: Unified gap elimination - apply once per scope, not per leaving task
         const nonMovingTasks = scopeTasks.filter(t => !movingItemIds.has(t.id));
         
         // Determine if this scope needs gap elimination (source scope vs destination scope)
@@ -207,28 +207,29 @@
           totalUpdates: scopeUpdates.length
         });
         
-        // Only apply gap elimination for tasks that are LEAVING this scope
-        tasksLeavingThisScope.forEach(update => {
-          const originalPosition = originalPositions.get(update.id);
-          if (!originalPosition) return;
+        // Apply gap elimination ONCE per scope (fixed: was applying once per leaving task)
+        if (tasksLeavingThisScope.length > 0) {
+          // Collect all gap positions that will be created by leaving tasks
+          const gapPositions = tasksLeavingThisScope.map(update => {
+            const originalTask = tasks.find(t => t.id === update.id);
+            return originalTask ? originalTask.position : null;
+          }).filter(pos => pos !== null).sort((a, b) => a - b);
           
-          console.log(`🔄 Gap elimination for position ${originalPosition}, task ${update.id.substring(0,8)} LEAVING scope`);
+          console.log(`🔄 Gap elimination for scope ${scopeKey}: removing gaps at positions [${gapPositions.join(', ')}]`);
           console.log(`📋 Before gap elimination:`, nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
           
-          // Shift down all non-moving tasks that are after the gap
-          let shiftsApplied = 0;
+          // For each non-moving task, calculate how many gaps are below it
           nonMovingTasks.forEach(task => {
-            if (task.position > originalPosition) {
+            const gapsBelowTask = gapPositions.filter(gapPos => gapPos < task.position).length;
+            if (gapsBelowTask > 0) {
               const oldPosition = task.position;
-              task.position = task.position - 1;
-              shiftsApplied++;
-              console.log(`  ⬇️ Gap elimination: ${task.id.substring(0,8)} ${oldPosition}→${task.position}`);
+              task.position = task.position - gapsBelowTask;
+              console.log(`  ⬇️ Gap elimination: ${task.id.substring(0,8)} ${oldPosition}→${task.position} (${gapsBelowTask} gap${gapsBelowTask > 1 ? 's' : ''} below)`);
             }
           });
           
-          console.log(`📋 After gap elimination: ${shiftsApplied} tasks shifted, positions:`, 
-            nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
-        });
+          console.log(`📋 After gap elimination:`, nonMovingTasks.map(t => `${t.id.substring(0,8)}:${t.position}`));
+        }
         
         // Log when gap elimination is skipped for entering tasks
         if (tasksEnteringThisScope.length > 0) {
