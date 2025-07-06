@@ -176,6 +176,30 @@
   // Update flat task IDs for multi-select functionality
   $: flatTaskIds = flattenedTasks.map(item => item.task.id);
 
+  // Reference to the tasks container element for drag action updates
+  let tasksContainer: HTMLElement;
+  let dragActionInstance: any;
+
+  // Store action instance for manual updates
+  function storeDragAction(node: HTMLElement, options: any) {
+    dragActionInstance = nativeDrag(node, options);
+    return dragActionInstance;
+  }
+
+  // Trigger drag action update when flattened tasks change (to handle new grandchildren)
+  $: if (dragActionInstance && flattenedTasks) {
+    // Wait for DOM to update before setting draggable attributes
+    tick().then(() => {
+      console.log('Setting up draggable attributes for', flattenedTasks.length, 'tasks');
+      dragActionInstance.update({
+        onStart: handleSortStart,
+        onEnd: handleSortEnd,
+        onSort: handleTaskReorder,
+        onMove: handleMoveDetection
+      });
+    });
+  }
+
   function toggleTaskExpansion(taskId: string) {
     if (expandedTasks.has(taskId)) {
       expandedTasks.delete(taskId);
@@ -237,7 +261,7 @@
   }
 
   // Update time tracking display every second for in-progress tasks
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   
   let timeTrackingInterval: any;
   let currentTime = Date.now();
@@ -831,12 +855,13 @@
     <!-- Sortable tasks container -->
     <div 
       class="tasks-container"
-      use:nativeDrag={{
+      use:storeDragAction={{
         onStart: handleSortStart,
         onEnd: handleSortEnd,
         onSort: handleTaskReorder,
         onMove: handleMoveDetection
       }}
+      bind:this={tasksContainer}
     >
       {#each flattenedTasks as renderItem, index (renderItem.task.id)}
         <div 

@@ -56,9 +56,11 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
   function handleDragStart(event: DragEvent) {
     if (!event.target || !event.dataTransfer) return;
     
-    const draggedElement = event.target as HTMLElement;
-    const taskId = draggedElement.getAttribute('data-task-id');
+    // Use event delegation - find the draggable element
+    const draggedElement = (event.target as HTMLElement).closest('[data-task-id]') as HTMLElement;
+    if (!draggedElement) return;
     
+    const taskId = draggedElement.getAttribute('data-task-id');
     if (!taskId) return;
 
     // Get all selected elements for multi-drag
@@ -194,38 +196,83 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
     dragOverElement = null;
   }
 
-  // Set up drag events on all draggable children
-  function setupDragEvents() {
+  // Set draggable attribute on all current and future task elements
+  function setupDraggableAttributes() {
+    if (!node) {
+      console.warn('setupDraggableAttributes: node is null or undefined');
+      return;
+    }
+
     const draggableElements = node.querySelectorAll('[data-task-id]');
-    draggableElements.forEach(el => {
-      el.setAttribute('draggable', 'true');
-      el.addEventListener('dragstart', handleDragStart);
+    console.log('setupDraggableAttributes: Found', draggableElements.length, 'elements with data-task-id');
+    
+    if (draggableElements.length === 0) {
+      console.warn('setupDraggableAttributes: No elements with data-task-id found in container');
+      return;
+    }
+    
+    let successCount = 0;
+    
+    draggableElements.forEach((el, index) => {
+      try {
+        const taskId = el.getAttribute('data-task-id');
+        const wasDraggable = el.getAttribute('draggable') === 'true';
+        
+        // Validate element is actually a DOM element
+        if (!(el instanceof HTMLElement)) {
+          console.warn(`Element ${index + 1} is not an HTMLElement:`, el);
+          return;
+        }
+        
+        el.setAttribute('draggable', 'true');
+        successCount++;
+        
+        if (!wasDraggable) {
+          console.log(`Made element ${index + 1} draggable: task-${taskId}`);
+        }
+      } catch (error) {
+        console.error(`Error setting draggable on element ${index + 1}:`, error);
+      }
     });
+    
+    // Verify all elements are now draggable
+    const draggableCount = node.querySelectorAll('[data-task-id][draggable="true"]').length;
+    console.log('setupDraggableAttributes: Successfully updated', successCount, 'elements, total draggable elements:', draggableCount);
+    
+    // Additional verification: check for grandchild elements specifically
+    const grandchildElements = node.querySelectorAll('[data-task-id][style*="--depth: 2"]');
+    if (grandchildElements.length > 0) {
+      console.log('setupDraggableAttributes: Found', grandchildElements.length, 'grandchild elements (depth 2)');
+      grandchildElements.forEach((el, index) => {
+        const taskId = el.getAttribute('data-task-id');
+        const isDraggable = el.getAttribute('draggable') === 'true';
+        console.log(`Grandchild ${index + 1}: task-${taskId}, draggable=${isDraggable}`);
+      });
+    }
   }
 
-  // Add container event listeners
+  // Add container event listeners (using event delegation for dragstart)
+  node.addEventListener('dragstart', handleDragStart); // Event delegation
   node.addEventListener('dragover', handleDragOver);
   node.addEventListener('dragleave', handleDragLeave);
   node.addEventListener('drop', handleDrop);
   node.addEventListener('dragend', handleDragEnd);
 
-  // Initial setup
-  setupDragEvents();
+  // Initial setup - only set draggable attributes
+  setupDraggableAttributes();
 
   return {
     update(newOptions: DragActionOptions) {
       Object.assign(options, newOptions);
+      // Re-setup draggable attributes for any new elements
+      setupDraggableAttributes();
     },
     destroy() {
+      node.removeEventListener('dragstart', handleDragStart);
       node.removeEventListener('dragover', handleDragOver);
       node.removeEventListener('dragleave', handleDragLeave);
       node.removeEventListener('drop', handleDrop);
       node.removeEventListener('dragend', handleDragEnd);
-      
-      const draggableElements = node.querySelectorAll('[data-task-id]');
-      draggableElements.forEach(el => {
-        el.removeEventListener('dragstart', handleDragStart);
-      });
     }
   };
 }
