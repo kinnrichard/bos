@@ -201,12 +201,21 @@
   }
 
   function toggleTaskExpansion(taskId: string) {
+    console.log('toggleTaskExpansion called for task:', taskId);
+    console.log('Before toggle - expandedTasks has task:', expandedTasks.has(taskId));
+    console.log('Before toggle - expandedTasks size:', expandedTasks.size);
+    
     if (expandedTasks.has(taskId)) {
       expandedTasks.delete(taskId);
+      console.log('Collapsed task:', taskId);
     } else {
       expandedTasks.add(taskId);
+      console.log('Expanded task:', taskId);
     }
     expandedTasks = expandedTasks;
+    
+    console.log('After toggle - expandedTasks has task:', expandedTasks.has(taskId));
+    console.log('After toggle - expandedTasks size:', expandedTasks.size);
   }
 
   function isTaskExpanded(taskId: string): boolean {
@@ -713,6 +722,10 @@
     const result = [];
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     const isExpanded = isTaskExpanded(task.id);
+    
+    if (depth === 0) {
+      console.log(`Root task ${task.id}: hasSubtasks=${hasSubtasks}, isExpanded=${isExpanded}, subtasks.length=${task.subtasks?.length || 0}`);
+    }
     
     result.push({
       task,
