@@ -906,19 +906,34 @@
     tasksToDelete = Array.from($taskSelection.selectedTaskIds);
     showDeleteConfirmationModal = true;
     
-    // Focus the modal container first to capture events, then the delete button
+    // Ensure modal gets focus immediately for keyboard event capture
     await tick();
     if (modalContainer) {
       modalContainer.focus();
+      // Prevent focus from escaping the modal
+      modalContainer.addEventListener('focusout', handleModalFocusOut);
     }
-    if (deleteButton) {
-      deleteButton.focus();
+  }
+
+  function handleModalFocusOut(event: FocusEvent) {
+    // If focus is leaving the modal but modal is still open, return focus to modal
+    if (showDeleteConfirmationModal && modalContainer && !modalContainer.contains(event.relatedTarget as Node)) {
+      setTimeout(() => {
+        if (showDeleteConfirmationModal && modalContainer) {
+          modalContainer.focus();
+        }
+      }, 0);
     }
   }
 
   function cancelDeleteConfirmation() {
     showDeleteConfirmationModal = false;
     tasksToDelete = [];
+    
+    // Clean up focus event listener
+    if (modalContainer) {
+      modalContainer.removeEventListener('focusout', handleModalFocusOut);
+    }
     
     // Return focus to task list container
     if (taskListContainer) {
@@ -927,6 +942,9 @@
   }
 
   function handleModalKeydown(event: KeyboardEvent) {
+    // Prevent all keyboard events from bubbling to main UI
+    event.stopPropagation();
+    
     if (event.key === 'Escape') {
       event.preventDefault();
       cancelDeleteConfirmation();
@@ -934,6 +952,18 @@
       event.preventDefault();
       if (!isDeletingTasks) {
         confirmDeleteTasks();
+      }
+    } else if (event.key === 'Tab') {
+      // Keep focus within modal by cycling between buttons
+      event.preventDefault();
+      const buttons = modalContainer?.querySelectorAll('button:not(:disabled)');
+      if (buttons && buttons.length > 0) {
+        const focusedButton = document.activeElement;
+        const currentIndex = Array.from(buttons).indexOf(focusedButton as HTMLButtonElement);
+        const nextIndex = event.shiftKey 
+          ? (currentIndex - 1 + buttons.length) % buttons.length
+          : (currentIndex + 1) % buttons.length;
+        (buttons[nextIndex] as HTMLButtonElement).focus();
       }
     }
   }
@@ -2060,8 +2090,8 @@
 <!-- Delete Confirmation Modal -->
 {#if showDeleteConfirmationModal}
   <Portal>
-    <div class="modal-backdrop" on:click={cancelDeleteConfirmation} on:keydown|stopPropagation={handleModalKeydown}>
-      <div class="modal-container" bind:this={modalContainer} on:click|stopPropagation tabindex="-1">
+    <div class="modal-backdrop" on:click={cancelDeleteConfirmation}>
+      <div class="modal-container" bind:this={modalContainer} on:click|stopPropagation on:keydown|stopPropagation={handleModalKeydown} tabindex="-1" autofocus>
         <div class="warning-icon">
           <svg class="w-12 h-12" viewBox="0 0 24.5703 30.0293" xmlns="http://www.w3.org/2000/svg">
             <g>
