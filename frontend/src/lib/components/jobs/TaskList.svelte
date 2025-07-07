@@ -2063,26 +2063,18 @@
     <div class="modal-backdrop" on:click={cancelDeleteConfirmation} on:keydown|stopPropagation={handleModalKeydown}>
       <div class="modal-container" bind:this={modalContainer} on:click|stopPropagation tabindex="-1">
         <div class="warning-icon">
-          <svg class="w-12 h-12" viewBox="0 0 26.6504 24.0723" xmlns="http://www.w3.org/2000/svg">
+          <svg class="w-12 h-12" viewBox="0 0 24.5703 30.0293" xmlns="http://www.w3.org/2000/svg">
             <g>
-              <rect height="24.0723" opacity="0" width="26.6504" x="0" y="0"></rect>
-              <path d="M3.26172 23.8672L23.0176 23.8672C25.0586 23.8672 26.2891 22.4414 26.2891 20.6348C26.2891 20.0488 26.123 19.4434 25.8008 18.8867L15.9277 1.62109C15.3125 0.537109 14.2285 0 13.1445 0C12.0508 0 10.9766 0.537109 10.3613 1.62109L0.488281 18.8867C0.15625 19.4531 0 20.0488 0 20.6348C0 22.4414 1.23047 23.8672 3.26172 23.8672Z" fill="#ffd60a"></path>
-              <path d="M13.1445 15.5078C12.5781 15.5078 12.2656 15.1758 12.2559 14.5898L12.0996 7.71484C12.0898 7.12891 12.5195 6.70898 13.1348 6.70898C13.7402 6.70898 14.1797 7.13867 14.1699 7.72461L14.0137 14.5898C14.0039 15.1855 13.6816 15.5078 13.1445 15.5078ZM13.1445 19.5801C12.4512 19.5801 11.8652 19.0234 11.8652 18.3496C11.8652 17.666 12.4414 17.1094 13.1445 17.1094C13.8379 17.1094 14.4238 17.6562 14.4238 18.3496C14.4238 19.0332 13.8281 19.5801 13.1445 19.5801Z" fill="white"></path>
+              <rect height="30.0293" opacity="0" width="24.5703" x="0" y="0"/>
+              <path d="M8.26172 24.1113C7.8418 24.1113 7.56836 23.8477 7.54883 23.4473L7.14844 9.35547C7.13867 8.94531 7.41211 8.69141 7.85156 8.69141C8.24219 8.69141 8.53516 8.93555 8.54492 9.3457L8.96484 23.4375C8.97461 23.8379 8.69141 24.1113 8.26172 24.1113ZM12.1094 24.1113C11.6895 24.1113 11.3867 23.8379 11.3867 23.4375L11.3867 9.35547C11.3867 8.95508 11.6895 8.69141 12.1094 8.69141C12.5293 8.69141 12.832 8.95508 12.832 9.35547L12.832 23.4375C12.832 23.8379 12.5293 24.1113 12.1094 24.1113ZM15.9473 24.1113C15.5176 24.1113 15.2441 23.8379 15.2539 23.4473L15.6641 9.35547C15.6738 8.94531 15.9668 8.69141 16.3672 8.69141C16.7969 8.69141 17.0703 8.95508 17.0605 9.36523L16.6602 23.4473C16.6406 23.8574 16.3672 24.1113 15.9473 24.1113ZM6.66992 5.58594L8.37891 5.58594L8.37891 2.90039C8.37891 2.11914 8.91602 1.61133 9.75586 1.61133L14.4336 1.61133C15.2734 1.61133 15.8105 2.11914 15.8105 2.90039L15.8105 5.58594L17.5195 5.58594L17.5195 2.80273C17.5195 1.06445 16.3965 0 14.5312 0L9.6582 0C7.80273 0 6.66992 1.06445 6.66992 2.80273ZM0.810547 6.43555L23.3984 6.43555C23.8477 6.43555 24.209 6.06445 24.209 5.625C24.209 5.17578 23.8477 4.80469 23.3984 4.80469L0.810547 4.80469C0.380859 4.80469 0 5.18555 0 5.625C0 6.07422 0.380859 6.43555 0.810547 6.43555ZM6.37695 27.8906L17.8516 27.8906C19.5312 27.8906 20.7129 26.748 20.8008 25.0684L21.7285 6.18164L2.49023 6.18164L3.41797 25.0781C3.50586 26.7578 4.66797 27.8906 6.37695 27.8906Z" fill="#ff453a"/>
             </g>
           </svg>
         </div>
         
         <h2 class="modal-title">
-          Are you sure you want to delete {#if tasksToDelete.length === 1}
-            {@const taskToDelete = tasks.find(t => t.id === tasksToDelete[0])}
-            {#if taskToDelete}"{taskToDelete.title}"{:else}"this task"{/if}
-          {:else}"{tasksToDelete.length} tasks"{/if}?
+          Are you sure you want to delete {#if tasksToDelete.length === 1}{@const taskToDelete = tasks.find(t => t.id === tasksToDelete[0])}{#if taskToDelete}“{taskToDelete.title}”{:else}"this task"{/if}{:else}"{tasksToDelete.length} tasks"{/if}?
         </h2>
-        
-        <p class="modal-description">
-          This item will be deleted immediately. You can't undo this action.
-        </p>
-        
+                
         <div class="modal-buttons">
           <button class="button button--secondary" on:click={cancelDeleteConfirmation} disabled={isDeletingTasks}>
             Cancel
@@ -2795,7 +2787,7 @@
 
   .button--danger {
     background: #991b1b;
-    color: #fca5a5;
+    color: #fff;
   }
 
   .button--danger:hover:not(:disabled) {
