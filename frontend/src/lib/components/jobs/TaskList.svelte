@@ -782,8 +782,24 @@
       const result = await tasksService.createTask(jobId, taskData);
       
       if (result.status === 'success') {
-        // Add to local tasks list
-        tasks = [...tasks, result.task];
+        // Insert new task at correct position in array
+        if (insertNewTaskAfter) {
+          const afterIndex = tasks.findIndex(t => t.id === insertNewTaskAfter);
+          if (afterIndex !== -1) {
+            // Insert after the selected task
+            tasks = [
+              ...tasks.slice(0, afterIndex + 1),
+              result.task,
+              ...tasks.slice(afterIndex + 1)
+            ];
+          } else {
+            // Fallback: append at end if target task not found
+            tasks = [...tasks, result.task];
+          }
+        } else {
+          // No specific position: append at end
+          tasks = [...tasks, result.task];
+        }
         
         // Clear inline state
         cancelInlineNewTask();
