@@ -353,6 +353,9 @@
   let showDeleteConfirmationModal = false;
   let tasksToDelete: string[] = [];
   let isDeletingTasks = false;
+  let deleteButton: HTMLButtonElement;
+  let deletingTaskIds = new Set<string>();
+  const animationDuration = 300; // ms for height collapse animation
   
 
   // Organize tasks into hierarchical structure with filtering
@@ -901,14 +904,37 @@
   }
 
   // Task deletion functions
-  function showDeleteConfirmation() {
+  async function showDeleteConfirmation() {
     tasksToDelete = Array.from($taskSelection.selectedTaskIds);
     showDeleteConfirmationModal = true;
+    
+    // Focus the delete button after modal is rendered
+    await tick();
+    if (deleteButton) {
+      deleteButton.focus();
+    }
   }
 
   function cancelDeleteConfirmation() {
     showDeleteConfirmationModal = false;
     tasksToDelete = [];
+    
+    // Return focus to task list container
+    if (taskListContainer) {
+      taskListContainer.focus();
+    }
+  }
+
+  function handleModalKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelDeleteConfirmation();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (!isDeletingTasks) {
+        confirmDeleteTasks();
+      }
+    }
   }
 
   async function confirmDeleteTasks() {
@@ -917,22 +943,45 @@
     isDeletingTasks = true;
 
     try {
-      // Delete tasks in parallel for better performance
+      // Phase 1: Start deletion animation by marking tasks as deleting
+      tasksToDelete.forEach(taskId => {
+        deletingTaskIds.add(taskId);
+      });
+      
+      // Trigger reactivity
+      deletingTaskIds = deletingTaskIds;
+
+      // Delete tasks in parallel while animation is running
       const deletePromises = tasksToDelete.map(taskId => 
         tasksService.deleteTask(jobId, taskId)
       );
 
-      await Promise.all(deletePromises);
+      // Wait for both API calls and animation to complete
+      const [, ] = await Promise.all([
+        Promise.all(deletePromises),
+        new Promise(resolve => setTimeout(resolve, animationDuration))
+      ]);
 
-      // Remove deleted tasks from the UI immediately (optimistic update)
+      // Phase 2: Remove tasks from UI after animation completes
       tasks = tasks.filter(task => !tasksToDelete.includes(task.id));
+
+      // Clear deletion animation state
+      tasksToDelete.forEach(taskId => {
+        deletingTaskIds.delete(taskId);
+      });
+      deletingTaskIds = deletingTaskIds;
 
       // Clear selection
       taskSelection.clearSelection();
 
-      // Close modal
+      // Close modal and return focus
       showDeleteConfirmationModal = false;
       tasksToDelete = [];
+      
+      // Return focus to task list container
+      if (taskListContainer) {
+        taskListContainer.focus();
+      }
 
       // Show success feedback
       feedback = `Successfully deleted ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
@@ -940,6 +989,13 @@
 
     } catch (error: any) {
       console.error('Failed to delete tasks:', error);
+      
+      // Clear animation state on error
+      tasksToDelete.forEach(taskId => {
+        deletingTaskIds.delete(taskId);
+      });
+      deletingTaskIds = deletingTaskIds;
+      
       feedback = `Failed to delete tasks: ${error.message || 'Unknown error'}`;
       setTimeout(() => feedback = '', 5000);
     } finally {
@@ -1759,6 +1815,7 @@
           class:selection-top={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
           class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
           class:selection-bottom={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-bottom'}
+          class:task-deleting={deletingTaskIds.has(renderItem.task.id)}
           style="--depth: {renderItem.depth || 0}"
           data-task-id={renderItem.task.id}
           role="button"
@@ -2000,11 +2057,10 @@
 <!-- Delete Confirmation Modal -->
 {#if showDeleteConfirmationModal}
   <Portal>
-    <div class="modal-backdrop" on:click={cancelDeleteConfirmation} on:keydown={(e) => e.key === 'Escape' && cancelDeleteConfirmation()}>
-      <div class="modal-container" on:click|stopPropagation>
+    <div class="modal-backdrop" on:click={cancelDeleteConfirmation}>
+      <div class="modal-container" on:click|stopPropagation on:keydown={handleModalKeydown}>
         <div class="modal-header">
           <h3>Delete {tasksToDelete.length === 1 ? 'Task' : `${tasksToDelete.length} Tasks`}</h3>
-          <button class="modal-close" on:click={cancelDeleteConfirmation} title="Close">×</button>
         </div>
         
         <div class="modal-body">
@@ -2027,7 +2083,7 @@
           <button class="button button--secondary" on:click={cancelDeleteConfirmation} disabled={isDeletingTasks}>
             Cancel
           </button>
-          <button class="button button--danger" on:click={confirmDeleteTasks} disabled={isDeletingTasks}>
+          <button class="button button--danger" bind:this={deleteButton} on:click={confirmDeleteTasks} disabled={isDeletingTasks}>
             {#if isDeletingTasks}
               <span class="spinner">⏳</span>
               Deleting...
@@ -2093,12 +2149,23 @@
     border-radius: 8px !important;
     background: none !important;
     background-color: transparent !important;
-    transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
     cursor: pointer;
     user-select: none;
     position: relative;
     will-change: transform;
     outline: none; /* Remove browser focus ring */
+    overflow: hidden;
+  }
+
+  /* Task deletion animation */
+  .task-item.task-deleting {
+    height: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none;
+    transform: scale(0.95);
   }
 
   /* SortableJS classes */
@@ -2742,7 +2809,7 @@
   .modal-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     padding: 20px 24px;
     border-bottom: 1px solid var(--border-secondary);
   }
@@ -2754,26 +2821,6 @@
     color: var(--text-primary);
   }
 
-  .modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-  }
-
-  .modal-close:hover {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-  }
 
   .modal-body {
     padding: 24px;
