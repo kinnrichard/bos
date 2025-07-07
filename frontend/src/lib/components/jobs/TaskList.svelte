@@ -745,94 +745,30 @@
       newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
     }
     
-    let positionUpdates: Array<{id: string, position: number, parent_id?: string}> = [];
+    // Store original state for potential rollback
+    const taskStateBeforeOperation = tasks.map(t => ({...t})); // Deep snapshot
     
+    // Store optimistic update info for rollback
     if (isMultiSelectDrag) {
-      // Handle multi-select drag with hierarchical parent assignment
       const selectedTaskIds = Array.from($taskSelection.selectedTaskIds);
-      
-      // Sort selected tasks by their current visual order to preserve relative order
-      selectedTaskIds.sort((a, b) => {
-        const taskA = tasks.find(t => t.id === a);
-        const taskB = tasks.find(t => t.id === b);
-        const flattenedA = flattenedTasks.find(item => item.task.id === a);
-        const flattenedB = flattenedTasks.find(item => item.task.id === b);
-        return (flattenedA?.visualIndex || 0) - (flattenedB?.visualIndex || 0);
-      });
-      
-      console.log(`🪆 Multi-nesting: moving ${selectedTaskIds.length} tasks under ${newParentId?.substring(0,8)}`);
-      
-      // Calculate base position within the new parent
-      let newPosition: number;
-      if (event.dropZone?.mode === 'nest') {
-        // For nesting: position at the end of existing children
-        const existingChildren = tasks.filter(t => 
-          t.parent_id === newParentId && 
-          !selectedTaskIds.includes(t.id) // Exclude tasks being moved
-        );
-        newPosition = existingChildren.length > 0 
-          ? Math.max(...existingChildren.map(t => t.position)) + 1
-          : 1;
-        
-        // Auto-expand the target task to show newly nested children
-        if (newParentId && !expandedTasks.has(newParentId)) {
-          expandedTasks.add(newParentId);
-          expandedTasks = expandedTasks; // Trigger Svelte reactivity
-        }
-      } else {
-        // For reordering: use existing position calculation
-        newPosition = calculatePositionFromTarget(event.dropZone, newParentId, selectedTaskIds);
-      }
-      
-      // Update all selected tasks with consecutive positions maintaining their relative order
-      selectedTaskIds.forEach((taskId, index) => {
+      selectedTaskIds.forEach(taskId => {
         optimisticUpdates.set(taskId, {
           originalPosition: tasks.find(t => t.id === taskId)?.position || 0,
           originalParentId: tasks.find(t => t.id === taskId)?.parent_id
         });
-        
-        positionUpdates.push({
-          id: taskId,
-          position: newPosition + index,
-          parent_id: newParentId
-        });
       });
-      
     } else {
-      // Handle single task drag with hierarchical parent assignment
-      
-      // Calculate position within the new parent using the target task's position
-      const newPosition = calculatePositionFromTarget(event.dropZone, newParentId, [draggedTaskId]);
-      
-      
       optimisticUpdates.set(draggedTaskId, {
         originalPosition: tasks.find(t => t.id === draggedTaskId)?.position || 0,
         originalParentId: tasks.find(t => t.id === draggedTaskId)?.parent_id
       });
-      
-      positionUpdates.push({
-        id: draggedTaskId,
-        position: newPosition,
-        parent_id: newParentId
-      });
     }
     
-    // 🔮 Client-side position prediction BEFORE server call
-    const taskStateBeforeOperation = tasks.map(t => ({...t})); // Deep snapshot
-    const clientPredictedPositions = ClientActsAsList.predictServerPositions(tasks, positionUpdates);
-    
-    console.log('🔮 Client position prediction:', {
-      positionUpdates,
-      predictedFinalPositions: Object.fromEntries(clientPredictedPositions),
-      tasksBeforeOperation: taskStateBeforeOperation.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id }))
-    });
-    
-    // Apply client-side position calculation immediately
-    tasks = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
-    
-    console.log('🎯 Client state updated:', {
-      newTaskPositions: tasks.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id }))
-    });
+    // Auto-expand target task for nesting operations
+    if (event.dropZone?.mode === 'nest' && newParentId && !expandedTasks.has(newParentId)) {
+      expandedTasks.add(newParentId);
+      expandedTasks = expandedTasks; // Trigger Svelte reactivity
+    }
     
     try {
       // Get the task IDs that are being moved
@@ -916,6 +852,24 @@
         dropZone: event.dropZone
       });
       
+      // 🔮 Client-side position prediction BEFORE server call
+      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+      const clientPredictedPositions = RailsClientActsAsList.predictServerPositions(tasks, positionUpdates);
+      
+      console.log('🔮 Client position prediction based on relative updates:', {
+        relativeUpdates,
+        convertedToPositions: positionUpdates,
+        predictedFinalPositions: Object.fromEntries(clientPredictedPositions),
+        tasksBeforeOperation: taskStateBeforeOperation.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id }))
+      });
+      
+      // Apply client-side position calculation for optimistic updates
+      tasks = RailsClientActsAsList.applyRelativePositioning(tasks, relativeUpdates).updatedTasks;
+      
+      console.log('🎯 Client state updated from relative positioning:', {
+        newTaskPositions: tasks.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id }))
+      });
+      
       // Send batch reorder to server using relative positioning
       const serverResponse = await tasksService.batchReorderTasksRelative(jobId, { 
         relative_positions: relativeUpdates 
@@ -943,7 +897,7 @@
             id: movedTaskFinal.id.substring(0, 8),
             title: movedTaskFinal.title,
             finalPosition: movedTaskFinal.position,
-            requestedPosition: positionUpdates[0]?.position
+            requestedRelativeUpdate: relativeUpdates[0]
           });
         }
       }
@@ -961,7 +915,7 @@
       console.log('🖥️ Client visual state after operation:', clientVisualState);
       
       // 🔍 Compare client prediction vs server reality
-      await compareClientVsServer(clientPredictedPositions, taskStateBeforeOperation, positionUpdates, event);
+      await compareClientVsServer(clientPredictedPositions, taskStateBeforeOperation, relativeUpdates, event);
       
       // Clear optimistic updates on success
       optimisticUpdates.clear();
@@ -990,7 +944,7 @@
   async function compareClientVsServer(
     clientPredictions: Map<string, number>, 
     taskStateBeforeOperation: any[], 
-    positionUpdates: Array<{id: string, position: number, parent_id?: string}>,
+    relativeUpdates: RelativePositionUpdate[],
     dragEvent: DragSortEvent
   ) {
     try {
@@ -1037,7 +991,7 @@
           parent_id: t.parent_id,
           title: t.title?.substring(0, 20) + '...' 
         })));
-        console.log('🔄 Position updates sent:', positionUpdates);
+        console.log('🔄 Relative updates sent:', relativeUpdates);
         console.log('🔮 Client predictions:', Object.fromEntries(clientPredictions));
         console.log('📡 Server actual results:', Object.fromEntries(serverPositions));
         console.log('⚠️ Analysis:', {

@@ -25,8 +25,8 @@ export interface ActsAsListOperation {
  */
 export class ClientActsAsList {
   /**
-   * Apply position updates matching Rails acts_as_list behavior
-   * Based on actual Rails test results
+   * Apply position updates matching Rails positioning gem behavior
+   * Uses minimal shifting for cross-parent moves, standard acts_as_list for same-parent moves
    */
   static applyPositionUpdates(
     tasks: Task[], 
@@ -44,6 +44,8 @@ export class ClientActsAsList {
       const targetPosition = update.position;
       const originalParent = movingTask.parent_id || null;
       const targetParent = update.parent_id !== undefined ? (update.parent_id || null) : originalParent;
+      
+      const isCrossParentMove = originalParent !== targetParent;
       
       // Step 1: Remove task from original position (creates gap)
       const originalScope = originalParent;
@@ -74,22 +76,43 @@ export class ClientActsAsList {
         .filter(t => (t.parent_id || null) === targetScope && t.id !== update.id)
         .sort((a, b) => a.position - b.position);
       
-      // Shift tasks at or after target position up by 1
-      targetScopeTasks.forEach(task => {
-        if (task.position >= targetPosition) {
-          const oldPosition = task.position;
-          task.position = task.position + 1;
-          
-          operations.push({
-            type: 'insertion',
-            scope: targetScope,
-            taskId: task.id,
-            oldPosition,
-            newPosition: task.position,
-            reason: `Shifted up by insertion at position ${targetPosition}`
-          });
-        }
-      });
+      if (isCrossParentMove) {
+        // Cross-parent move: positioning gem uses minimal shifting
+        // For cross-parent moves, tasks at or after target position get shifted up
+        targetScopeTasks.forEach(task => {
+          if (task.position >= targetPosition) {
+            const oldPosition = task.position;
+            task.position = task.position + 1;
+            
+            operations.push({
+              type: 'insertion',
+              scope: targetScope,
+              taskId: task.id,
+              oldPosition,
+              newPosition: task.position,
+              reason: `Cross-parent: shifted up by insertion at position ${targetPosition}`
+            });
+          }
+        });
+      } else {
+        // Same-parent move: use standard acts_as_list behavior
+        // All tasks at or after target position get shifted
+        targetScopeTasks.forEach(task => {
+          if (task.position >= targetPosition) {
+            const oldPosition = task.position;
+            task.position = task.position + 1;
+            
+            operations.push({
+              type: 'insertion',
+              scope: targetScope,
+              taskId: task.id,
+              oldPosition,
+              newPosition: task.position,
+              reason: `Same-parent: shifted up by insertion at position ${targetPosition}`
+            });
+          }
+        });
+      }
       
       // Place moving task at target position
       const oldPosition = movingTask.position;
@@ -102,7 +125,7 @@ export class ClientActsAsList {
         taskId: movingTask.id,
         oldPosition,
         newPosition: targetPosition,
-        reason: `Moved to target position ${targetPosition}`
+        reason: `Moved to target position ${targetPosition} (${isCrossParentMove ? 'cross-parent' : 'same-parent'})`
       });
     });
     
@@ -216,7 +239,9 @@ export class ClientActsAsList {
               targetPosition = beforeTask.position;
             }
           } else {
-            // Cross-parent move: moving task enters new scope before target
+            // Cross-parent move: positioning gem takes target's current position, shifts target up
+            // For "before Task X", the moving task takes Task X's current position and Task X shifts up
+            // This is different from same-parent moves where we calculate position - 1
             targetPosition = beforeTask.position;
           }
         } else {
@@ -232,7 +257,9 @@ export class ClientActsAsList {
           isCrossParentMove: movingTask ? (movingTask.parent_id || null) !== (targetParent || null) : 'unknown',
           targetPosition,
           allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
-          note: 'positioning gem places immediately before target, considering current positions and parent scope'
+          note: movingTask && (movingTask.parent_id || null) !== (targetParent || null) 
+            ? 'Cross-parent: takes target position, target shifts up'
+            : 'Same-parent: takes position before target'
         });
       } else if (update.after_task_id) {
         // Position after specific task - positioning gem places immediately after target
