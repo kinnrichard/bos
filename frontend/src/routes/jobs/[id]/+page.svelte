@@ -159,34 +159,6 @@
     min-height: 100vh;
   }
 
-  .page-navigation {
-    margin-bottom: 24px;
-  }
-
-  .back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: 6px;
-    transition: all 0.15s ease;
-  }
-
-  .back-button:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
-  .back-arrow {
-    font-size: 16px;
-    font-weight: bold;
-  }
 
   .job-detail-loading {
     padding: 20px 0;
@@ -239,15 +211,41 @@
     margin-top: 20px;
   }
 
+  .button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .button--primary {
+    background: var(--accent-blue);
+    color: white;
+  }
+
+  .button--primary:hover {
+    background: var(--accent-blue-hover);
+  }
+
+  .button--secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+  }
+
+  .button--secondary:hover {
+    background: var(--bg-quaternary);
+  }
+
   /* Responsive layout */
   @media (max-width: 768px) {
     .job-detail-container {
       padding: 16px;
     }
 
-    .page-navigation {
-      margin-bottom: 16px;
-    }
 
     .error-actions {
       flex-direction: column;
@@ -271,10 +269,6 @@
 
   /* High contrast mode support */
   @media (prefers-contrast: high) {
-    .back-button {
-      border: 1px solid var(--border-primary);
-    }
-
     .error-details {
       border-width: 2px;
     }

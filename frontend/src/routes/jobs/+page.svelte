@@ -144,6 +144,17 @@
     margin: 0 auto;
   }
 
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
   .jobs-list {
     display: flex;
     flex-direction: column;
@@ -201,6 +212,61 @@
     color: var(--text-tertiary);
     font-size: 14px;
     margin: 0;
+  }
+
+  .empty-state-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 40px 20px;
+  }
+
+  .empty-state {
+    text-align: center;
+    max-width: 400px;
+  }
+
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .empty-state h2 {
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    font-size: 24px;
+  }
+
+  .empty-state p {
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .button--primary {
+    background: var(--accent-blue);
+    color: white;
+  }
+
+  .button--primary:hover {
+    background: var(--accent-blue-hover);
+  }
+
+  .button--primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   /* Responsive layout */

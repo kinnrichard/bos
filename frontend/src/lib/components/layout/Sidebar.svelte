@@ -140,18 +140,6 @@
     margin-bottom: 30px;
   }
 
-  .brand-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-    color: var(--text-primary);
-    transition: opacity 0.15s ease;
-  }
-
-  .brand-link:hover {
-    opacity: 0.8;
-  }
 
   /* Sidebar logo styling */
   .brand-section .logo-container {
@@ -165,16 +153,6 @@
     width: auto;
   }
 
-  .brand-icon {
-    font-size: 24px;
-    color: var(--accent-blue);
-  }
-
-  .brand-name {
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
 
 
 
@@ -274,12 +252,6 @@
 
   /* High contrast mode support */
   @media (prefers-contrast: high) {
-    .brand-section,
-    .client-section,
-    .footer-nav {
-      border-width: 2px;
-    }
-
     .nav-link.active {
       border: 2px solid var(--accent-blue-hover);
     }
@@ -287,9 +259,7 @@
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
-    .nav-link,
-    .client-link,
-    .brand-link {
+    .nav-link {
       transition: none;
     }
   }

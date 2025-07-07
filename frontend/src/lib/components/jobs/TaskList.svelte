@@ -2172,21 +2172,6 @@
     transform: scale(0.95);
   }
 
-  /* Native drag classes */
-  .task-item.task-ghost {
-    opacity: 0.5;
-    background-color: rgba(0, 122, 255, 0.1) !important;
-  }
-
-  .task-item.task-chosen {
-    /* Removed opacity to eliminate dimming effect when clicking task rows */
-  }
-
-  .task-item.task-dragging {
-    opacity: 0.9;
-    transform: rotate(5deg);
-    z-index: 1000;
-  }
 
   .task-item.task-selected-for-drag {
     background-color: rgba(0, 122, 255, 0.2) !important;
@@ -2377,45 +2362,6 @@
     pointer-events: auto;
   }
 
-  .task-action-button {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: none;
-    border: none;
-    color: var(--accent-blue);
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    opacity: 0;
-    pointer-events: none;
-    margin-top: 2.75px;
-  }
-
-  .task-item:hover .task-action-button {
-    opacity: 0.7;
-    pointer-events: auto;
-  }
-
-  .task-action-button:hover {
-    opacity: 1 !important;
-  }
-
-  .task-action-button:active {
-    transform: scale(0.95);
-  }
-
-  .task-action-button:disabled {
-    opacity: 0;
-    cursor: not-allowed;
-  }
-
-  .action-icon {
-    font-size: 18px;
-  }
 
   .task-list-footer {
     margin-top: 20px;
@@ -2511,14 +2457,6 @@
       font-size: 12px;
     }
 
-    .task-action-button {
-      width: 20px;
-      height: 20px;
-    }
-
-    .action-icon {
-      font-size: 12px;
-    }
   }
 
   /* Touch support for tablets */
@@ -2538,10 +2476,6 @@
       min-height: 44px;
     }
     
-    .task-action-button {
-      opacity: 0.7;
-      pointer-events: auto;
-    }
     
     .task-item::before {
       content: '⋮⋮';
@@ -2562,9 +2496,6 @@
       background-color: rgba(255, 255, 255, 0.1) !important;
     }
 
-    .task-action-button {
-      border: 1px solid var(--border-primary);
-    }
     
     .task-item.selected {
       background-color: var(--accent-blue) !important;
@@ -2661,9 +2592,7 @@
   /* Smooth transitions */
   .task-item,
   .disclosure-button,
-  .status-emoji,
-  .task-action-button,
-  .new-task-placeholder {
+  .status-emoji {
     transition: all 0.15s ease;
   }
 

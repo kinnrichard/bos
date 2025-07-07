@@ -463,9 +463,6 @@
     flex-direction: column;
   }
 
-  .task-info-popover.hidden {
-    display: none;
-  }
 
   /* Arrow styles */
   .popover-arrow {

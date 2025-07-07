@@ -177,17 +177,6 @@
     gap: 12px;
   }
 
-  /* Logo */
-  .logo-container {
-    display: flex;
-    align-items: center;
-    margin-right: 8px;
-  }
-
-  .logo {
-    height: 28px;
-    width: auto;
-  }
 
   /* Icon styling for CircularButton content */
 
@@ -322,21 +311,12 @@
       min-width: 150px;
     }
 
-    .action-btn {
-      width: 28px;
-      height: 28px;
-    }
 
     .action-icon-svg {
       width: 16px;
       height: 16px;
     }
 
-    .user-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 16px;
-    }
 
     .user-initials {
       font-size: 12px;
@@ -345,8 +325,7 @@
 
   /* High contrast mode support */
   @media (prefers-contrast: high) {
-    .search-input-wrapper,
-    .action-btn {
+    .search-input-wrapper {
       border-width: 2px;
     }
 
@@ -357,10 +336,7 @@
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
-    .search-input-wrapper,
-    .action-btn,
-    .sidebar-toggle,
-    .user-avatar {
+    .search-input-wrapper {
       transition: none;
     }
   }
