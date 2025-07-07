@@ -25,9 +25,9 @@
       // Check if this is a wrapped response from the API directly vs populated response
       if (response && typeof response === 'object' && 'data' in response && !('client' in response)) {
         console.log('[JobPage] Got wrapped JSON:API response, extracting and using raw data');
-        console.log('[JobPage] Raw job data:', response.data);
+        console.log('[JobPage] Raw job data:', (response as any).data);
         // Return the raw job data - it's in JSON:API format but better than wrapped
-        return response.data;
+        return (response as any).data;
       }
       
       return response;

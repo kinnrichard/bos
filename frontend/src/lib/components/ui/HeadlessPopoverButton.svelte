@@ -12,7 +12,7 @@
   export let buttonClass: string = '';
 
   // Convert panelPosition to preferred placement
-  $: preferredPlacement = panelPosition === 'center' ? 'bottom' : 'bottom';
+  $: preferredPlacement = panelPosition === 'center' ? 'bottom' : 'bottom' as 'top' | 'bottom' | 'left' | 'right';
 
   // Forward popover instance from BasePopover
   let basePopover: any;

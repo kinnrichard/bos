@@ -2,6 +2,7 @@
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
+  import type { User } from '$lib/types/job';
 
   // Mock data for testing
   const mockUsers = [
@@ -11,7 +12,7 @@
         name: 'Test Technician',
         email: 'test@example.com',
         initials: 'TT',
-        avatar_style: {}
+        avatar_style: 'blue'
       }
     },
     {
@@ -20,7 +21,7 @@
         name: 'Demo User',
         email: 'demo@example.com',
         initials: 'DU',
-        avatar_style: {}
+        avatar_style: 'green'
       }
     },
     {
@@ -29,7 +30,7 @@
         name: 'Sample Person',
         email: 'sample@example.com', 
         initials: 'SP',
-        avatar_style: {}
+        avatar_style: 'purple'
       }
     }
   ];
@@ -41,10 +42,10 @@
   // Simulated optimistic technicians derived from local state
   $: optimisticTechnicians = Array.from(localSelectedIds)
     .map(id => mockUsers.find(user => user.id === id))
-    .filter(Boolean);
+    .filter((user): user is User => Boolean(user));
 
   // Handle technician toggle - immediate local update (idiomatic Svelte)
-  function handleUserToggle(user, isCurrentlySelected) {
+  function handleUserToggle(user: User, isCurrentlySelected: boolean) {
     const newSelectedIds = new Set(localSelectedIds);
     
     if (isCurrentlySelected) {
@@ -68,7 +69,7 @@
   $: extraCount = Math.max(0, optimisticTechnicians.length - 2);
   $: hasAssignments = optimisticTechnicians.length > 0;
 
-  let popover;
+  let popover: any;
 </script>
 
 <svelte:head>
@@ -114,7 +115,7 @@
         <PopoverOptionList
           options={mockUsers}
           loading={loading}
-          onOptionClick={(user) => {
+          onOptionClick={(user: User) => {
             const isCurrentlySelected = localSelectedIds.has(user.id);
             handleUserToggle(user, isCurrentlySelected);
           }}
@@ -142,7 +143,7 @@
   <div class="debug-section">
     <h3>Debug Info</h3>
     <p><strong>Selected IDs:</strong> {Array.from(localSelectedIds).join(', ') || 'None'}</p>
-    <p><strong>Optimistic Technicians:</strong> {optimisticTechnicians.map(t => t.attributes.name).join(', ') || 'None'}</p>
+    <p><strong>Optimistic Technicians:</strong> {optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ') || 'None'}</p>
     <p><strong>Loading:</strong> {isLoading}</p>
     
     <div class="test-buttons">
