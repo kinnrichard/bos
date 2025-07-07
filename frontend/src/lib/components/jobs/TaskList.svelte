@@ -2398,10 +2398,19 @@
     gap: 8px;
     flex-shrink: 0;
     pointer-events: none;
+    opacity: 0;
   }
 
   .task-actions > * {
     pointer-events: auto;
+  }
+
+  .task-item:hover .task-actions {
+    opacity: 1;
+  }
+
+  .task-actions:focus-within {
+    opacity: 1;
   }
 
 
