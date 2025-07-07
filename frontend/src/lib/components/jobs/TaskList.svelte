@@ -782,18 +782,28 @@
       const result = await tasksService.createTask(jobId, taskData);
       
       if (result.status === 'success') {
-        // Insert new task at correct position in array
+        // Insert new task at correct position based on visual hierarchy
         if (insertNewTaskAfter) {
-          const afterIndex = tasks.findIndex(t => t.id === insertNewTaskAfter);
-          if (afterIndex !== -1) {
-            // Insert after the selected task
-            tasks = [
-              ...tasks.slice(0, afterIndex + 1),
-              result.task,
-              ...tasks.slice(afterIndex + 1)
-            ];
+          // Find position in the visual hierarchy (what user sees)
+          const visualIndex = flatTaskIds.indexOf(insertNewTaskAfter);
+          if (visualIndex !== -1 && visualIndex < flatTaskIds.length - 1) {
+            // Get the task that should come after our new task in the visual order
+            const nextTaskId = flatTaskIds[visualIndex + 1];
+            const nextTaskIndex = tasks.findIndex(t => t.id === nextTaskId);
+            
+            if (nextTaskIndex !== -1) {
+              // Insert before the next task in the flat array
+              tasks = [
+                ...tasks.slice(0, nextTaskIndex),
+                result.task,
+                ...tasks.slice(nextTaskIndex)
+              ];
+            } else {
+              // Fallback: append at end
+              tasks = [...tasks, result.task];
+            }
           } else {
-            // Fallback: append at end if target task not found
+            // Selected task is last in visual order, or not found - append at end
             tasks = [...tasks, result.task];
           }
         } else {
