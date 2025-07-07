@@ -32,7 +32,7 @@ export interface TaskReorderRequest {
 
 export interface RelativeTaskReorderRequest {
   id: string;
-  parent_id?: string;
+  parent_id?: string | null;
   before_task_id?: string;
   after_task_id?: string;
   position?: 'first' | 'last';
@@ -54,7 +54,14 @@ export interface TaskReorderResponse {
   timestamp: string;
   lock_version?: number;
   job_lock_version?: number;
-  tasks?: Array<{ id: string; lock_version: number }>;
+  tasks?: Array<{
+    id: string;
+    title: string;
+    position: number;
+    parent_id?: string;
+    status: string;
+    lock_version: number;
+  }>;
 }
 
 export interface TaskReorderError {

@@ -1458,7 +1458,7 @@
       // 🔍 Log final task positions from server response
       if (serverResponse.tasks) {
         const finalPositions = serverResponse.tasks
-          .filter(t => (t.parent_id || null) === event.parentId)
+          .filter(t => (t.parent_id || null) === newParentId)
           .sort((a, b) => (a.position || 0) - (b.position || 0))
           .map(t => ({
             id: t.id.substring(0, 8),
@@ -1482,7 +1482,7 @@
       
       // 🔍 Log client visual state after server response
       const clientVisualState = tasks
-        .filter(t => (t.parent_id || null) === event.parentId)
+        .filter(t => (t.parent_id || null) === newParentId)
         .sort((a, b) => (a.position || 0) - (b.position || 0))
         .map(t => ({
           id: t.id.substring(0, 8),
