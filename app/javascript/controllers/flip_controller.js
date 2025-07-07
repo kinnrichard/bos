@@ -16,7 +16,7 @@ export default class extends Controller {
   connect() {
     this.captureInitialPositions()
     
-    // Listen for custom events from sortable controller
+    // Listen for custom events from native drag controller
     this.element.addEventListener('flip:capture', this.handleFlipCapture.bind(this))
     this.element.addEventListener('flip:animate', this.handleFlipAnimate.bind(this))
     

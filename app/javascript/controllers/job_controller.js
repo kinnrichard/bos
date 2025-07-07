@@ -113,7 +113,7 @@ export default class extends Controller {
     // Use capture phase to intercept before browser default
     document.addEventListener("keydown", this.handleKeydown, true)
     
-    // Listen for events from Sortable controller
+    // Listen for events from native drag controller
     this.handleTaskReorder = this.handleTaskReorder.bind(this)
     this.handleTasksReorder = this.handleTasksReorder.bind(this)
     this.handleTaskParentChanged = this.handleTaskParentChanged.bind(this)
@@ -1294,14 +1294,7 @@ export default class extends Controller {
             titleElement.blur()
           }
           
-          // Reinitialize Sortable if needed
-          const sortableController = this.application.getControllerForElementAndIdentifier(
-            this.element,
-            'sortable'
-          )
-          if (sortableController && sortableController.refresh) {
-            sortableController.refresh()
-          }
+          // Reinitialize native drag if needed
           
           // Initialize the new task element
           this.initializeNewTaskElement(task.id)
@@ -1411,14 +1404,7 @@ export default class extends Controller {
         // Automatically focus the new task placeholder for quick entry
         this.showNewTaskInput()
         
-        // Refresh sortable controller to set up drag handlers on new task
-        const sortableController = this.application.getControllerForElementAndIdentifier(
-          this.element,
-          'sortable'
-        )
-        if (sortableController && sortableController.refresh) {
-          sortableController.refresh()
-        }
+        // Native drag handlers are automatically set up
         
         // Initialize the new task element to fix click/selection issues
         this.initializeNewTaskElement(result.task.id)
@@ -1709,7 +1695,7 @@ export default class extends Controller {
         console.log('Processing Turbo Stream response...')
         return response.text().then(html => {
           console.log('Turbo Stream HTML:', html.substring(0, 200) + '...')
-          // Use our custom renderer that refreshes sortable controllers
+          // Use our custom renderer that refreshes native drag controllers
           Bos.renderTurboStreamMessage(html)
           console.log('Turbo Stream processed')
         }).catch(error => {
@@ -2055,7 +2041,7 @@ export default class extends Controller {
     }
   }
   
-  // Handle Sortable.js events
+  // Handle native drag events
   handleTaskReorder(event) {
     const { taskId, oldIndex, newIndex, items } = event.detail
     
@@ -2110,7 +2096,7 @@ export default class extends Controller {
     })
   }
   
-  // Handle batch reorder from new sortable controller
+  // Handle batch reorder from native drag controller
   handleTasksReorder(event) {
     const { positions } = event.detail
     
@@ -2172,11 +2158,7 @@ export default class extends Controller {
       }, 100)
     }
     
-    // Refresh sortable if needed
-    const sortableController = this.application.getControllerForElementAndIdentifier(this.element, 'sortable')
-    if (sortableController) {
-      sortableController.refresh()
-    }
+    // Native drag handlers are automatically refreshed
   }
   
   // Update a single task's position
@@ -2337,14 +2319,7 @@ export default class extends Controller {
         // Store reference to the current input
         this.currentNewTaskInput = input
         
-        // Refresh sortable controller to set up drag handlers on new task
-        const sortableController = this.application.getControllerForElementAndIdentifier(
-          this.element,
-          'sortable'
-        )
-        if (sortableController && sortableController.refresh) {
-          sortableController.refresh()
-        }
+        // Native drag handlers are automatically set up
         
         // Initialize the new task element
         this.initializeNewTaskElement(result.task.id)

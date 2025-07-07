@@ -56,24 +56,12 @@ Object.assign(window.Bos, {
 // Now import controllers after Bos is set up
 import "controllers"
 
-// Custom Turbo Stream renderer that refreshes sortable controllers
+// Custom Turbo Stream renderer that refreshes native drag controllers
 Bos.renderTurboStreamMessage = (html) => {
   // First render the Turbo Stream
   const result = Turbo.renderStreamMessage(html)
   
-  // Then refresh all sortable controllers on the page
-  requestAnimationFrame(() => {
-    document.querySelectorAll('[data-controller~="sortable"]').forEach(element => {
-      // Try to get the Stimulus controller instance
-      const application = window.Stimulus || document.querySelector('[data-controller]')?._stimulusApplication
-      if (application) {
-        const controller = application.getControllerForElementAndIdentifier(element, 'sortable')
-        if (controller?.refresh) {
-          controller.refresh()
-        }
-      }
-    })
-  })
+  // Native drag handlers are automatically refreshed with new elements
   
   return result
 }

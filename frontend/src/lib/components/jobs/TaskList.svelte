@@ -1027,7 +1027,7 @@
     }
   }
 
-  // SortableJS event handlers
+  // Native drag event handlers
   function handleSortStart(event: DragSortEvent) {
     isDragging = true;
     
@@ -2194,7 +2194,7 @@
     transform: scale(0.95);
   }
 
-  /* SortableJS classes */
+  /* Native drag classes */
   .task-item.task-ghost {
     opacity: 0.5;
     background-color: rgba(0, 122, 255, 0.1) !important;

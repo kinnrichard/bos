@@ -25,7 +25,7 @@ test.describe('Task Drag & Drop Indicators', () => {
     await secondTask.hover();
     
     // Check that a drop indicator appears
-    const dropIndicator = page.locator('.sortable-drop-indicator');
+    const dropIndicator = page.locator('.native-drop-indicator');
     await expect(dropIndicator).toBeVisible();
     
     // Verify the indicator styling
