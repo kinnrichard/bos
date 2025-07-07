@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy, onMount, tick } from 'svelte';
   import { getTaskStatusEmoji } from '$lib/config/emoji';
   import { selectedTaskStatuses, shouldShowTask } from '$lib/stores/taskFilter';
   import { taskSelection, type TaskSelectionState } from '$lib/stores/taskSelection';
@@ -113,6 +114,11 @@
   
   // Track optimistic updates for rollback
   let optimisticUpdates = new Map<string, { originalPosition: number; originalParentId?: string }>();
+  
+  // Clean up any lingering visual feedback when component is destroyed
+  onDestroy(() => {
+    clearAllVisualFeedback();
+  });
   
   // Rails-compatible client-side acts_as_list implementation
   class ClientActsAsList {
@@ -335,7 +341,6 @@
   }
 
   // Update time tracking display every second for in-progress tasks
-  import { onMount, onDestroy, tick } from 'svelte';
   
   let timeTrackingInterval: any;
   let currentTime = Date.now();
@@ -710,6 +715,9 @@
     } catch (error: any) {
       console.error('Failed to nest task:', error);
       
+      // Clear any lingering visual feedback including badges
+      clearAllVisualFeedback();
+      
       // Rollback optimistic update
       const original = optimisticUpdates.get(draggedTaskId);
       if (original) {
@@ -729,7 +737,11 @@
 
   async function handleTaskReorder(event: DragSortEvent) {
     const draggedTaskId = event.item.dataset.taskId;
-    if (!draggedTaskId) return;
+    if (!draggedTaskId) {
+      // Clean up any badges if we exit early
+      clearAllVisualFeedback();
+      return;
+    }
 
     console.log('🎬 handleTaskReorder started:', {
       draggedTaskId,
@@ -959,6 +971,9 @@
       
     } catch (error: any) {
       console.error('Failed to reorder tasks:', error);
+      
+      // Clear any lingering visual feedback including badges
+      clearAllVisualFeedback();
       
       // Rollback optimistic updates
       tasks = tasks.map(task => {

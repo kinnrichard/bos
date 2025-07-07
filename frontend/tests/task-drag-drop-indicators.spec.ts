@@ -132,6 +132,9 @@ test.describe('Task Drag & Drop Indicators', () => {
     // Complete the drag
     await page.mouse.up();
     await expect(dropIndicator).toHaveCount(0);
+    
+    // Verify that multi-drag badges are cleaned up after the drag
+    await expect(multiBadge).toHaveCount(0);
   });
 
   test('should position drop indicator at full width', async ({ page }) => {
@@ -171,6 +174,49 @@ test.describe('Task Drag & Drop Indicators', () => {
     
     // Complete the drag and verify instant cleanup
     await page.mouse.up();
+    await expect(dropIndicator).toHaveCount(0);
+  });
+
+  test('should clean up multi-drag badges when operations fail', async ({ page }) => {
+    // Mock network failure to simulate error scenarios
+    await page.route('**/api/v1/jobs/*/tasks/batch_reorder*', route => {
+      route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Server error' }),
+      });
+    });
+
+    const tasks = page.locator('.task-item');
+    const firstTask = tasks.first();
+    const secondTask = tasks.nth(1);
+    
+    // Multi-select first two tasks
+    await firstTask.click();
+    await secondTask.click({ modifiers: ['Meta'] });
+    
+    // Start dragging from first task
+    await firstTask.hover();
+    await page.mouse.down();
+    
+    // Move to trigger multi-drag badge appearance
+    await tasks.nth(2).hover();
+    
+    // Check for multi-drag badge
+    const multiBadge = page.locator('.multi-drag-badge');
+    await expect(multiBadge).toBeVisible();
+    
+    // Complete the drag (this will trigger the mocked failure)
+    await page.mouse.up();
+    
+    // Wait a moment for the error to be processed
+    await page.waitForTimeout(100);
+    
+    // Verify that multi-drag badges are cleaned up even after failure
+    await expect(multiBadge).toHaveCount(0);
+    
+    // Also verify drop indicators are cleaned up
+    const dropIndicator = page.locator('.sortable-drop-indicator');
     await expect(dropIndicator).toHaveCount(0);
   });
 });

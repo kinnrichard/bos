@@ -198,6 +198,34 @@ export class ClientActsAsList {
   }
 
   /**
+   * Normalize positions within each scope to eliminate gaps (match positioning gem behavior)
+   * The positioning gem automatically renumbers positions to be 1, 2, 3, ... with no gaps
+   */
+  static normalizePositions(tasks: Task[]): Task[] {
+    const normalizedTasks = [...tasks];
+    
+    // Group tasks by scope (parent_id)
+    const scopes = new Map<string | null, Task[]>();
+    normalizedTasks.forEach(task => {
+      const scope = task.parent_id || null;
+      if (!scopes.has(scope)) {
+        scopes.set(scope, []);
+      }
+      scopes.get(scope)!.push(task);
+    });
+    
+    // Normalize positions within each scope
+    scopes.forEach((scopeTasks, scope) => {
+      const sortedTasks = scopeTasks.sort((a, b) => a.position - b.position);
+      sortedTasks.forEach((task, index) => {
+        task.position = index + 1; // Start from 1, no gaps
+      });
+    });
+    
+    return normalizedTasks;
+  }
+
+  /**
    * Convert relative positioning updates to integer position updates for client-side prediction
    * This maintains offline functionality by allowing immediate UI updates
    * Updated to match Rails positioning gem behavior exactly
@@ -206,10 +234,26 @@ export class ClientActsAsList {
     tasks: Task[],
     relativeUpdates: RelativePositionUpdate[]
   ): PositionUpdate[] {
+    // Step 1: Normalize positions to eliminate gaps (matching positioning gem behavior)
+    const normalizedTasks = this.normalizePositions(tasks);
+    
+    // Log normalization effect for debugging
+    const originalPositions = tasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position, parent: t.parent_id || 'null' }));
+    const normalizedPositions = normalizedTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position, parent: t.parent_id || 'null' }));
+    
+    const hasNormalizationChanges = originalPositions.some((orig, i) => orig.pos !== normalizedPositions[i].pos);
+    if (hasNormalizationChanges) {
+      console.log('🔧 Position normalization applied:', {
+        original: originalPositions,
+        normalized: normalizedPositions,
+        changes: originalPositions.filter((orig, i) => orig.pos !== normalizedPositions[i].pos)
+      });
+    }
+    
     const positionUpdates: PositionUpdate[] = [];
     
     relativeUpdates.forEach(update => {
-      const task = tasks.find(t => t.id === update.id);
+      const task = normalizedTasks.find(t => t.id === update.id);
       if (!task) return;
       
       let targetPosition = 1;
@@ -217,7 +261,7 @@ export class ClientActsAsList {
       
       // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
       // This is critical - we need the full scope to understand current positions
-      const allScopeTasks = tasks.filter(t => (t.parent_id || null) === (targetParent || null))
+      const allScopeTasks = normalizedTasks.filter(t => (t.parent_id || null) === (targetParent || null))
                                  .sort((a, b) => a.position - b.position);
       
       // Get tasks excluding the moving task (for target identification)
@@ -226,7 +270,7 @@ export class ClientActsAsList {
       if (update.before_task_id) {
         // Position before specific task - positioning gem places immediately before target
         const beforeTask = allScopeTasks.find(t => t.id === update.before_task_id);
-        const movingTask = tasks.find(t => t.id === update.id); // Search in full task list, not just target scope
+        const movingTask = normalizedTasks.find(t => t.id === update.id); // Search in full task list, not just target scope
         
         if (beforeTask) {
           if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
@@ -248,7 +292,7 @@ export class ClientActsAsList {
           targetPosition = 1;
         }
         
-        console.log('🔮 Client prediction: before task', {
+        console.log('🔮 Client prediction: before task (with normalization)', {
           movingTask: update.id.substring(0, 8),
           beforeTask: beforeTask ? { id: beforeTask.id.substring(0, 8), position: beforeTask.position } : null,
           movingTaskCurrentPos: movingTask?.position,
@@ -264,7 +308,7 @@ export class ClientActsAsList {
       } else if (update.after_task_id) {
         // Position after specific task - positioning gem places immediately after target
         const afterTask = allScopeTasks.find(t => t.id === update.after_task_id);
-        const movingTask = tasks.find(t => t.id === update.id); // Search in full task list, not just target scope
+        const movingTask = normalizedTasks.find(t => t.id === update.id); // Search in full task list, not just target scope
         
         if (afterTask) {
           if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
@@ -281,7 +325,7 @@ export class ClientActsAsList {
         } else {
           targetPosition = scopeTasksExcludingMoved.length + 1;
         }
-        console.log('🔮 Client prediction: after task', {
+        console.log('🔮 Client prediction: after task (with normalization)', {
           movingTask: update.id.substring(0, 8),
           afterTask: afterTask ? { id: afterTask.id.substring(0, 8), position: afterTask.position } : null,
           movingTaskCurrentPos: movingTask?.position,

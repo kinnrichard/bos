@@ -346,7 +346,13 @@ export function removeNestHighlight() {
   }
 }
 
+function removeMultiDragBadges() {
+  const badges = document.querySelectorAll('.multi-drag-badge');
+  badges.forEach(badge => badge.remove());
+}
+
 export function clearAllVisualFeedback() {
   removeDropIndicator();
   removeNestHighlight();
+  removeMultiDragBadges();
 }
