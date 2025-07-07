@@ -1497,60 +1497,27 @@
 </script>
 
 <div class="task-list" bind:this={taskListContainer}>
-  <!-- New Task Creation UI -->
-  <div class="new-task-section">
-    {#if showNewTaskInput}
-      <div class="new-task-input-container">
-        <div class="task-status-placeholder">
-          <span class="status-emoji">✨</span>
-        </div>
-        <input
-          bind:this={newTaskInput}
-          bind:value={newTaskTitle}
-          class="new-task-input"
-          placeholder="Task title..."
-          on:keydown={handleNewTaskKeydown}
-          on:blur={hideNewTaskForm}
-          disabled={isCreatingTask}
-        />
-        {#if isCreatingTask}
-          <div class="creating-indicator">
-            <span class="spinner">⏳</span>
-          </div>
-        {/if}
-      </div>
-    {:else}
-      <button 
-        class="new-task-placeholder"
-        on:click={showNewTaskForm}
-        disabled={isCreatingTask}
-      >
-        <div class="task-status-placeholder">
-          <span class="status-emoji">➕</span>
-        </div>
-        <div class="placeholder-text">New task...</div>
-      </button>
-    {/if}
-  </div>
 
   {#if tasks.length === 0}
     <div class="empty-state">
       <div class="empty-icon">📋</div>
       <h4>No tasks yet</h4>
-      <p>Click "New task..." above to add your first task.</p>
+      <p>Click "Add a Task" below to get started.</p>
     </div>
-  {:else}
-    <!-- Sortable tasks container -->
-    <div 
-      class="tasks-container"
-      use:storeDragAction={{
-        onStart: handleSortStart,
-        onEnd: handleSortEnd,
-        onSort: handleTaskReorder,
-        onMove: handleMoveDetection
-      }}
-      bind:this={tasksContainer}
-    >
+  {/if}
+  
+  <!-- Tasks container - always show to include new task row -->
+  <div 
+    class="tasks-container"
+    use:storeDragAction={{
+      onStart: handleSortStart,
+      onEnd: handleSortEnd,
+      onSort: handleTaskReorder,
+      onMove: handleMoveDetection
+    }}
+    bind:this={tasksContainer}
+  >
+    {#if tasks.length > 0}
       {#each flattenedTasks as renderItem, index (renderItem.task.id)}
         <div 
           class="task-item"
@@ -1670,17 +1637,63 @@
           </div>
         </div>
       {/each}
-    </div>
-
-    <!-- Error feedback only -->
-    {#if feedback && feedback.includes('Failed')}
-      <div class="task-list-footer">
-        <div class="feedback-message error">
-          {feedback}
-        </div>
-      </div>
     {/if}
+      
+    <!-- Add New Task Row -->
+      <div 
+        class="task-item task-item-add-new"
+        style="--depth: 0"
+      >
+        <!-- Disclosure Spacer -->
+        <div class="disclosure-spacer"></div>
 
+        <!-- Invisible Status for Spacing -->
+        <div class="task-status">
+          <div class="status-emoji" style="opacity: 0">⭐</div>
+        </div>
+        
+        <!-- Task Content -->
+        <div class="task-content">
+          {#if showNewTaskInput}
+            <input 
+              class="task-title task-title-input"
+              bind:value={newTaskTitle}
+              bind:this={newTaskInput}
+              placeholder="Task title..."
+              on:keydown={handleNewTaskKeydown}
+              on:blur={hideNewTaskForm}
+              disabled={isCreatingTask}
+            />
+            {#if isCreatingTask}
+              <div class="creating-indicator">
+                <span class="spinner">⏳</span>
+              </div>
+            {/if}
+          {:else}
+            <h5 
+              class="task-title add-task-placeholder"
+              on:click={showNewTaskForm}
+            >
+              Add a Task
+            </h5>
+          {/if}
+        </div>
+
+        <!-- Task Metadata (empty for spacing) -->
+        <div class="task-metadata"></div>
+
+        <!-- Task Actions (empty - no info button) -->
+        <div class="task-actions"></div>
+      </div>
+  </div>
+
+  <!-- Error feedback only -->
+  {#if feedback && feedback.includes('Failed')}
+    <div class="task-list-footer">
+      <div class="feedback-message error">
+        {feedback}
+      </div>
+    </div>
   {/if}
 </div>
 
@@ -1940,6 +1953,34 @@
     resize: none;
   }
 
+  /* Add New Task Row Styling */
+  .task-item-add-new {
+    /* Exclude from selection and hover effects */
+    pointer-events: none;
+  }
+
+  .task-item-add-new .task-content {
+    /* Re-enable pointer events for the text area only */
+    pointer-events: auto;
+  }
+
+  .add-task-placeholder {
+    opacity: 0.5;
+    cursor: pointer;
+  }
+
+  .add-task-placeholder:hover {
+    opacity: 0.7;
+  }
+
+  .creating-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
   .task-actions {
     display: flex;
     align-items: center;
@@ -2147,88 +2188,7 @@
     }
   }
 
-  /* New Task Creation Styles */
-  .new-task-section {
-    margin-bottom: 16px;
-  }
-
-  .new-task-placeholder {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 16px;
-    background: var(--bg-secondary);
-    border: 1px dashed var(--border-primary);
-    border-radius: 8px;
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    font-size: 14px;
-  }
-
-  .new-task-placeholder:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-    color: var(--text-secondary);
-  }
-
-  .new-task-placeholder:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .new-task-input-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--bg-secondary);
-    border: 2px solid var(--accent-blue);
-    border-radius: 8px;
-    box-shadow: 0 0 0 2px rgba(0, 163, 255, 0.2);
-  }
-
-  .task-status-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--bg-tertiary);
-    flex-shrink: 0;
-  }
-
-  .task-status-placeholder .status-emoji {
-    font-size: 14px;
-  }
-
-  .new-task-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text-primary);
-    font-size: 14px;
-    outline: none;
-    padding: 0;
-  }
-
-  .new-task-input::placeholder {
-    color: var(--text-tertiary);
-  }
-
-  .placeholder-text {
-    color: var(--text-tertiary);
-    font-size: 14px;
-  }
-
-  .creating-indicator {
-    display: flex;
-    align-items: center;
-    color: var(--text-secondary);
-  }
-
+  /* Spinner animation for new task creation */
   .spinner {
     animation: spin 1s linear infinite;
   }
