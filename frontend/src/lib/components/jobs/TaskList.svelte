@@ -354,6 +354,7 @@
   let tasksToDelete: string[] = [];
   let isDeletingTasks = false;
   let deleteButton: HTMLButtonElement;
+  let modalContainer: HTMLElement;
   let deletingTaskIds = new Set<string>();
   const animationDuration = 300; // ms for height collapse animation
   
@@ -908,8 +909,11 @@
     tasksToDelete = Array.from($taskSelection.selectedTaskIds);
     showDeleteConfirmationModal = true;
     
-    // Focus the delete button after modal is rendered
+    // Focus the modal container first to capture events, then the delete button
     await tick();
+    if (modalContainer) {
+      modalContainer.focus();
+    }
     if (deleteButton) {
       deleteButton.focus();
     }
@@ -941,10 +945,22 @@
     if (tasksToDelete.length === 0 || isDeletingTasks) return;
 
     isDeletingTasks = true;
+    const tasksToDeleteCopy = [...tasksToDelete]; // Copy for async operations
 
     try {
-      // Phase 1: Start deletion animation by marking tasks as deleting
-      tasksToDelete.forEach(taskId => {
+      // Phase 1: Close modal and return focus first
+      showDeleteConfirmationModal = false;
+      
+      // Return focus to task list container
+      if (taskListContainer) {
+        taskListContainer.focus();
+      }
+
+      // Clear selection
+      taskSelection.clearSelection();
+
+      // Phase 2: Start deletion animation by marking tasks as deleting
+      tasksToDeleteCopy.forEach(taskId => {
         deletingTaskIds.add(taskId);
       });
       
@@ -952,7 +968,7 @@
       deletingTaskIds = deletingTaskIds;
 
       // Delete tasks in parallel while animation is running
-      const deletePromises = tasksToDelete.map(taskId => 
+      const deletePromises = tasksToDeleteCopy.map(taskId => 
         tasksService.deleteTask(jobId, taskId)
       );
 
@@ -962,26 +978,14 @@
         new Promise(resolve => setTimeout(resolve, animationDuration))
       ]);
 
-      // Phase 2: Remove tasks from UI after animation completes
-      tasks = tasks.filter(task => !tasksToDelete.includes(task.id));
+      // Phase 3: Remove tasks from UI after animation completes
+      tasks = tasks.filter(task => !tasksToDeleteCopy.includes(task.id));
 
       // Clear deletion animation state
-      tasksToDelete.forEach(taskId => {
+      tasksToDeleteCopy.forEach(taskId => {
         deletingTaskIds.delete(taskId);
       });
       deletingTaskIds = deletingTaskIds;
-
-      // Clear selection
-      taskSelection.clearSelection();
-
-      // Close modal and return focus
-      showDeleteConfirmationModal = false;
-      tasksToDelete = [];
-      
-      // Return focus to task list container
-      if (taskListContainer) {
-        taskListContainer.focus();
-      }
 
       // Show success feedback
       feedback = `Successfully deleted ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
@@ -991,7 +995,7 @@
       console.error('Failed to delete tasks:', error);
       
       // Clear animation state on error
-      tasksToDelete.forEach(taskId => {
+      tasksToDeleteCopy.forEach(taskId => {
         deletingTaskIds.delete(taskId);
       });
       deletingTaskIds = deletingTaskIds;
@@ -1000,6 +1004,7 @@
       setTimeout(() => feedback = '', 5000);
     } finally {
       isDeletingTasks = false;
+      tasksToDelete = []; // Clear the original array
     }
   }
 
@@ -2057,8 +2062,8 @@
 <!-- Delete Confirmation Modal -->
 {#if showDeleteConfirmationModal}
   <Portal>
-    <div class="modal-backdrop" on:click={cancelDeleteConfirmation}>
-      <div class="modal-container" on:click|stopPropagation on:keydown={handleModalKeydown}>
+    <div class="modal-backdrop" on:click={cancelDeleteConfirmation} on:keydown|stopPropagation={handleModalKeydown}>
+      <div class="modal-container" bind:this={modalContainer} on:click|stopPropagation tabindex="-1">
         <div class="modal-header">
           <h3>Delete {tasksToDelete.length === 1 ? 'Task' : `${tasksToDelete.length} Tasks`}</h3>
         </div>
@@ -2804,6 +2809,7 @@
     max-height: 90vh;
     overflow: hidden;
     border: 1px solid var(--border-secondary);
+    outline: none; /* Remove focus ring on modal container */
   }
 
   .modal-header {
