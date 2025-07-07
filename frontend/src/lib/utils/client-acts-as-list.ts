@@ -203,14 +203,20 @@ export class ClientActsAsList {
       if (update.before_task_id) {
         // Position before specific task - positioning gem places immediately before target
         const beforeTask = allScopeTasks.find(t => t.id === update.before_task_id);
-        const movingTask = allScopeTasks.find(t => t.id === update.id);
+        const movingTask = tasks.find(t => t.id === update.id); // Search in full task list, not just target scope
         
-        if (beforeTask && movingTask) {
-          if (movingTask.position < beforeTask.position) {
-            // Moving task is currently before target - it will take position (target.position - 1)
-            targetPosition = beforeTask.position - 1;
+        if (beforeTask) {
+          if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
+            // Same-parent move: consider relative positions
+            if (movingTask.position < beforeTask.position) {
+              // Moving task is currently before target - it will take position (target.position - 1)
+              targetPosition = beforeTask.position - 1;
+            } else {
+              // Moving task is currently after target - it will take target's current position
+              targetPosition = beforeTask.position;
+            }
           } else {
-            // Moving task is currently after target - it will take target's current position
+            // Cross-parent move: moving task enters new scope before target
             targetPosition = beforeTask.position;
           }
         } else {
@@ -221,20 +227,29 @@ export class ClientActsAsList {
           movingTask: update.id.substring(0, 8),
           beforeTask: beforeTask ? { id: beforeTask.id.substring(0, 8), position: beforeTask.position } : null,
           movingTaskCurrentPos: movingTask?.position,
+          movingTaskCurrentParent: movingTask?.parent_id || 'null',
+          targetParent: targetParent || 'null',
+          isCrossParentMove: movingTask ? (movingTask.parent_id || null) !== (targetParent || null) : 'unknown',
           targetPosition,
           allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
-          note: 'positioning gem places immediately before target, considering current positions'
+          note: 'positioning gem places immediately before target, considering current positions and parent scope'
         });
       } else if (update.after_task_id) {
         // Position after specific task - positioning gem places immediately after target
         const afterTask = allScopeTasks.find(t => t.id === update.after_task_id);
+        const movingTask = tasks.find(t => t.id === update.id); // Search in full task list, not just target scope
+        
         if (afterTask) {
-          // If the moving task is currently before the target, target shifts down by 1
-          const movingTask = allScopeTasks.find(t => t.id === update.id);
-          if (movingTask && movingTask.position < afterTask.position) {
-            targetPosition = afterTask.position; // Target moved down, so we take its original position
+          if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
+            // Same-parent move: consider relative positions
+            if (movingTask.position < afterTask.position) {
+              targetPosition = afterTask.position; // Target moved down, so we take its original position
+            } else {
+              targetPosition = afterTask.position + 1; // Target stays, we go after it
+            }
           } else {
-            targetPosition = afterTask.position + 1; // Target stays, we go after it
+            // Cross-parent move: moving task enters new scope after target
+            targetPosition = afterTask.position + 1;
           }
         } else {
           targetPosition = scopeTasksExcludingMoved.length + 1;
@@ -242,9 +257,13 @@ export class ClientActsAsList {
         console.log('🔮 Client prediction: after task', {
           movingTask: update.id.substring(0, 8),
           afterTask: afterTask ? { id: afterTask.id.substring(0, 8), position: afterTask.position } : null,
+          movingTaskCurrentPos: movingTask?.position,
+          movingTaskCurrentParent: movingTask?.parent_id || 'null',
+          targetParent: targetParent || 'null',
+          isCrossParentMove: movingTask ? (movingTask.parent_id || null) !== (targetParent || null) : 'unknown',
           targetPosition,
           allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
-          note: 'positioning gem places immediately after target, considering relative positions'
+          note: 'positioning gem places immediately after target, considering current positions and parent scope'
         });
       } else if (update.position === 'first') {
         targetPosition = 1;
