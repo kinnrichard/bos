@@ -2064,27 +2064,28 @@
   <Portal>
     <div class="modal-backdrop" on:click={cancelDeleteConfirmation} on:keydown|stopPropagation={handleModalKeydown}>
       <div class="modal-container" bind:this={modalContainer} on:click|stopPropagation tabindex="-1">
-        <div class="modal-header">
-          <h3>Delete {tasksToDelete.length === 1 ? 'Task' : `${tasksToDelete.length} Tasks`}</h3>
+        <div class="warning-icon">
+          <svg class="w-12 h-12" viewBox="0 0 26.6504 24.0723" xmlns="http://www.w3.org/2000/svg">
+            <g>
+              <rect height="24.0723" opacity="0" width="26.6504" x="0" y="0"></rect>
+              <path d="M3.26172 23.8672L23.0176 23.8672C25.0586 23.8672 26.2891 22.4414 26.2891 20.6348C26.2891 20.0488 26.123 19.4434 25.8008 18.8867L15.9277 1.62109C15.3125 0.537109 14.2285 0 13.1445 0C12.0508 0 10.9766 0.537109 10.3613 1.62109L0.488281 18.8867C0.15625 19.4531 0 20.0488 0 20.6348C0 22.4414 1.23047 23.8672 3.26172 23.8672Z" fill="#ffd60a"></path>
+              <path d="M13.1445 15.5078C12.5781 15.5078 12.2656 15.1758 12.2559 14.5898L12.0996 7.71484C12.0898 7.12891 12.5195 6.70898 13.1348 6.70898C13.7402 6.70898 14.1797 7.13867 14.1699 7.72461L14.0137 14.5898C14.0039 15.1855 13.6816 15.5078 13.1445 15.5078ZM13.1445 19.5801C12.4512 19.5801 11.8652 19.0234 11.8652 18.3496C11.8652 17.666 12.4414 17.1094 13.1445 17.1094C13.8379 17.1094 14.4238 17.6562 14.4238 18.3496C14.4238 19.0332 13.8281 19.5801 13.1445 19.5801Z" fill="white"></path>
+            </g>
+          </svg>
         </div>
         
-        <div class="modal-body">
-          <p>
-            Are you sure you want to delete {tasksToDelete.length === 1 ? 'this task' : `these ${tasksToDelete.length} tasks`}?
-          </p>
-          {#if tasksToDelete.length === 1}
+        <h2 class="modal-title">
+          Are you sure you want to delete {#if tasksToDelete.length === 1}
             {@const taskToDelete = tasks.find(t => t.id === tasksToDelete[0])}
-            {#if taskToDelete}
-              <div class="task-preview">
-                <span class="status-emoji">{getTaskStatusEmoji(taskToDelete.status)}</span>
-                <span class="task-title-preview">{taskToDelete.title}</span>
-              </div>
-            {/if}
-          {/if}
-          <p class="warning-text">This action cannot be undone.</p>
-        </div>
+            {#if taskToDelete}"{taskToDelete.title}"{:else}"this task"{/if}
+          {:else}"{tasksToDelete.length} tasks"{/if}?
+        </h2>
         
-        <div class="modal-footer">
+        <p class="modal-description">
+          This item will be deleted immediately. You can't undo this action.
+        </p>
+        
+        <div class="modal-buttons">
           <button class="button button--secondary" on:click={cancelDeleteConfirmation} disabled={isDeletingTasks}>
             Cancel
           </button>
@@ -2093,7 +2094,7 @@
               <span class="spinner">⏳</span>
               Deleting...
             {:else}
-              Delete {tasksToDelete.length === 1 ? 'Task' : 'Tasks'}
+              Delete
             {/if}
           </button>
         </div>
@@ -2801,98 +2802,60 @@
   }
 
   .modal-container {
-    background: var(--bg-primary);
-    border-radius: 12px;
+    background: #000000;
+    border: 1px solid #374151;
+    border-radius: 24px;
+    padding: 32px;
+    width: 100%;
+    max-width: 28rem;
+    outline: none;
     box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
-    max-width: 480px;
-    width: 90%;
-    max-height: 90vh;
-    overflow: hidden;
-    border: 1px solid var(--border-secondary);
-    outline: none; /* Remove focus ring on modal container */
   }
 
-  .modal-header {
+  .warning-icon {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-secondary);
+    margin-bottom: 24px;
   }
 
-  .modal-header h3 {
-    margin: 0;
-    font-size: 18px;
+  .warning-icon svg {
+    height: 48px;
+    width: 48px;
+  }
+
+  .modal-title {
+    color: white;
+    font-size: 24px;
     font-weight: 600;
-    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.3;
   }
 
-
-  .modal-body {
-    padding: 24px;
-  }
-
-  .modal-body p {
-    margin: 0 0 16px 0;
-    color: var(--text-primary);
+  .modal-description {
+    color: #d1d5db;
+    margin-bottom: 32px;
     font-size: 16px;
     line-height: 1.5;
   }
 
-  .modal-body p:last-child {
-    margin-bottom: 0;
-  }
-
-  .task-preview {
+  .modal-buttons {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    margin: 16px 0;
-    border: 1px solid var(--border-secondary);
-  }
-
-  .task-preview .status-emoji {
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-
-  .task-title-preview {
-    color: var(--text-primary);
-    font-weight: 500;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .warning-text {
-    color: var(--text-danger) !important;
-    font-size: 14px !important;
-    font-weight: 500;
-  }
-
-  .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 20px 24px;
-    border-top: 1px solid var(--border-secondary);
-    background: var(--bg-secondary);
+    gap: 16px;
   }
 
   .button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
+    border-radius: 9999px;
+    padding: 12px 32px;
     font-weight: 500;
+    flex: 1;
+    border: none;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
+    font-size: 16px;
   }
 
   .button:disabled {
@@ -2901,22 +2864,21 @@
   }
 
   .button--secondary {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-secondary);
-  }
-
-  .button--secondary:hover:not(:disabled) {
-    background: var(--bg-tertiary);
-  }
-
-  .button--danger {
-    background: var(--status-danger-bg);
+    background: #374151;
     color: white;
   }
 
+  .button--secondary:hover:not(:disabled) {
+    background: #4b5563;
+  }
+
+  .button--danger {
+    background: #991b1b;
+    color: #fca5a5;
+  }
+
   .button--danger:hover:not(:disabled) {
-    background: var(--status-danger-text);
+    background: #7f1d1d;
   }
 
   .spinner {
