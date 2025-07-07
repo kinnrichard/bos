@@ -161,8 +161,9 @@
         isSelected={(option) => localSelectedIds.has(option.id)}
       >
         <svelte:fragment slot="option-content" let:option>
+          {@const userOption = option}
           <div class="technician-avatar popover-option-left-content">
-            <UserAvatar user={option} size="xs" />
+            <UserAvatar user={userOption} size="xs" />
           </div>
           <span class="popover-option-main-label">{option.attributes.name}</span>
           

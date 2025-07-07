@@ -10,6 +10,7 @@
   // Search functionality
   let searchQuery = '';
   let searchFocused = false;
+  let filterPopover: any;
 
   function handleSearch() {
     if (searchQuery.trim()) {
@@ -94,7 +95,7 @@
     <!-- Search -->
     <!-- Job detail page controls -->
     {#if $currentPage === 'job-detail' && $currentJob && $currentJob.id}
-      <FilterPopover onFilterChange={handleTaskStatusFilter} />
+      <FilterPopover onFilterChange={handleTaskStatusFilter} bind:popover={filterPopover} />
     {/if}
 
     <!-- Page-specific actions -->

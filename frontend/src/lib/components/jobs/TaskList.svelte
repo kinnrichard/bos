@@ -16,7 +16,8 @@
   const chevronRight = '/icons/chevron-right.svg';
   const chevronDown = '/icons/chevron-down.svg';
 
-  export let tasks: Array<{
+  // Extended Task interface for UI components with additional display properties
+  interface UITask {
     id: string;
     title: string;
     status: string;
@@ -26,7 +27,18 @@
     subtasks_count?: number;
     depth?: number;
     position?: number;
-  }> = [];
+    // Optional UI-specific properties for display/demo purposes
+    assigned_to?: {
+      id: string;
+      name: string;
+      initials: string;
+    };
+    notes_count?: number;
+    in_progress_since?: string;
+    accumulated_seconds?: number;
+  }
+
+  export let tasks: Array<UITask> = [];
   
   export let jobId: string = 'test';
   export let batchTaskDetails: any = null; // Optional batch task details data
@@ -86,7 +98,7 @@
         position: 4,
         notes_count: 3
       }
-    ];
+    ] as UITask[];
   }
 
   // Track collapsed/expanded state of tasks with subtasks
@@ -177,7 +189,7 @@
     const activeElement = document.activeElement;
     const isEditing = activeElement?.tagName === 'INPUT' || 
                      activeElement?.tagName === 'TEXTAREA' || 
-                     activeElement?.isContentEditable ||
+                     (activeElement as HTMLElement)?.isContentEditable ||
                      editingTaskId !== null ||
                      showInlineNewTaskInput;
 
@@ -288,7 +300,7 @@
       // Convert to Rails task format
       const railsTasks: RailsTask[] = tasks.map(t => ({
         id: t.id,
-        position: t.position,
+        position: t.position || 0,
         parent_id: t.parent_id || null
       }));
       
@@ -814,9 +826,13 @@
       isCreatingTask = true;
       
       // Build task data with relative positioning
-      const taskData = { 
+      const taskData: {
+        title: string;
+        parent_id?: string;
+        after_task_id?: string;
+      } = { 
         title: inlineNewTaskTitle.trim(),
-        parent_id: parentId
+        parent_id: parentId || undefined
       };
 
       // Use relative positioning if inserting after a specific task
@@ -1188,7 +1204,7 @@
       );
       
       const newPosition = existingChildren.length > 0 
-        ? Math.max(...existingChildren.map(t => t.position)) + 1
+        ? Math.max(...existingChildren.map(t => t.position || 0)) + 1
         : 1;
 
       // Optimistic update: make task a child of target at the end
@@ -1287,7 +1303,7 @@
       newParentId = event.dropZone.targetTaskId;
     } else if (event.dropZone?.mode === 'reorder' && event.dropZone.targetTaskId) {
       // For reordering: use target task's parent
-      const targetTask = tasks.find(t => t.id === event.dropZone.targetTaskId);
+      const targetTask = tasks.find(t => t.id === event.dropZone!.targetTaskId);
       newParentId = targetTask?.parent_id || null;
     } else {
       newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
@@ -1365,7 +1381,7 @@
               const existingChildren = tasks.filter(t => 
                 t.parent_id === newParentId && 
                 !sortedTaskIds.includes(t.id)
-              ).sort((a, b) => a.position - b.position);
+              ).sort((a, b) => (a.position || 0) - (b.position || 0));
               
               if (existingChildren.length > 0) {
                 // Position after the last existing child
@@ -1426,7 +1442,7 @@
       tasks = RailsClientActsAsList.applyRelativePositioning(tasks, relativeUpdates).updatedTasks;
       
       console.log('🎯 Client state updated from relative positioning:', {
-        newTaskPositions: tasks.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id }))
+        newTaskPositions: tasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id }))
       });
       
       // Send batch reorder to server using relative positioning
@@ -1440,7 +1456,7 @@
       if (serverResponse.tasks) {
         const finalPositions = serverResponse.tasks
           .filter(t => (t.parent_id || null) === event.parentId)
-          .sort((a, b) => a.position - b.position)
+          .sort((a, b) => (a.position || 0) - (b.position || 0))
           .map(t => ({
             id: t.id.substring(0, 8),
             title: t.title?.substring(0, 15) + (t.title?.length > 15 ? '...' : ''),
@@ -1464,7 +1480,7 @@
       // 🔍 Log client visual state after server response
       const clientVisualState = tasks
         .filter(t => (t.parent_id || null) === event.parentId)
-        .sort((a, b) => a.position - b.position)
+        .sort((a, b) => (a.position || 0) - (b.position || 0))
         .map(t => ({
           id: t.id.substring(0, 8),
           title: t.title?.substring(0, 15) + (t.title?.length > 15 ? '...' : ''),
@@ -1753,7 +1769,7 @@
     // Convert Svelte tasks to Rails task format
     const railsTasks: RailsTask[] = tasks.map(t => ({
       id: t.id,
-      position: t.position,
+      position: t.position || 0,
       parent_id: t.parent_id || null,
       title: t.title
     }));
@@ -1776,7 +1792,7 @@
     
     // Convert to integer position for optimistic updates
     const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(
-      tasks.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id || null, title: t.title })),
+      tasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id || null, title: t.title })),
       [relativePosition]
     );
     

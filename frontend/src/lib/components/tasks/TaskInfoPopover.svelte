@@ -174,7 +174,7 @@
   function getTimelineItems(taskDetails: any): any[] {
     if (!taskDetails) return [];
     
-    let items = [];
+    let items: any[] = [];
     
     // Add activity logs (created, status changes, etc.)
     if (taskDetails.activity_logs) {
@@ -228,8 +228,8 @@
   // Group timeline items by user and date
   function groupTimelineItems(items: any[]): any[] {
     const grouped: any[] = [];
-    let currentUser = null;
-    let currentDate = null;
+    let currentUser: any = null;
+    let currentDate: any = null;
     
     items.forEach(item => {
       const itemDate = new Date(item.timestamp).toDateString();
