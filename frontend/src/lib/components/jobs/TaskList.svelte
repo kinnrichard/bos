@@ -841,13 +841,73 @@
         : [draggedTaskId];
       
       // Calculate relative positioning for each task
-      const relativeUpdates = taskIdsToMove.map(taskId => {
-        const currentTask = tasks.find(t => t.id === taskId);
-        if (!currentTask) return null;
+      const relativeUpdates: RelativePositionUpdate[] = [];
+      
+      if (isMultiSelectDrag && taskIdsToMove.length > 1) {
+        // For multi-task operations: use sequential positioning to avoid circular references
+        // Sort tasks by visual order (already done in multi-select logic above)
+        const sortedTaskIds = Array.from($taskSelection.selectedTaskIds);
+        sortedTaskIds.sort((a, b) => {
+          const flattenedA = flattenedTasks.find(item => item.task.id === a);
+          const flattenedB = flattenedTasks.find(item => item.task.id === b);
+          return (flattenedA?.visualIndex || 0) - (flattenedB?.visualIndex || 0);
+        });
         
-        // Use the same drop zone for all tasks, but adjust for each task individually
-        return calculateRelativePosition(event.dropZone, newParentId, [taskId]);
-      }).filter(update => update !== null) as RelativePositionUpdate[];
+        console.log('🔗 Sequential multi-task positioning:', {
+          sortedTaskIds: sortedTaskIds.map(id => id.substring(0, 8)),
+          targetParent: newParentId?.substring(0, 8) || 'null',
+          dropMode: event.dropZone?.mode
+        });
+        
+        sortedTaskIds.forEach((taskId, index) => {
+          const currentTask = tasks.find(t => t.id === taskId);
+          if (!currentTask) return;
+          
+          if (index === 0) {
+            // First task: position appropriately without considering other moving tasks
+            if (event.dropZone?.mode === 'nest') {
+              // For nesting: find existing children (excluding tasks being moved)
+              const existingChildren = tasks.filter(t => 
+                t.parent_id === newParentId && 
+                !sortedTaskIds.includes(t.id)
+              ).sort((a, b) => a.position - b.position);
+              
+              if (existingChildren.length > 0) {
+                // Position after the last existing child
+                const lastChild = existingChildren[existingChildren.length - 1];
+                relativeUpdates.push({
+                  id: taskId,
+                  parent_id: newParentId,
+                  after_task_id: lastChild.id
+                });
+              } else {
+                // No existing children, place at first position
+                relativeUpdates.push({
+                  id: taskId,
+                  parent_id: newParentId,
+                  position: 'first'
+                });
+              }
+            } else {
+              // For reordering: use the calculated drop position but exclude moving tasks from consideration
+              const firstTaskRelativePos = calculateRelativePosition(event.dropZone, newParentId, [taskId]);
+              relativeUpdates.push(firstTaskRelativePos);
+            }
+          } else {
+            // Subsequent tasks: position after the previous task in the sequence
+            const previousTaskId = sortedTaskIds[index - 1];
+            relativeUpdates.push({
+              id: taskId,
+              parent_id: newParentId,
+              after_task_id: previousTaskId
+            });
+          }
+        });
+      } else {
+        // Single task operation: use standard relative positioning
+        const singleTaskUpdate = calculateRelativePosition(event.dropZone, newParentId, taskIdsToMove);
+        relativeUpdates.push(singleTaskUpdate);
+      }
       
       console.log('📡 Sending relative position updates to server:', {
         jobId,
