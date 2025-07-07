@@ -84,7 +84,7 @@ export function useUserQuery(id: string, enabled: boolean = true) {
  */
 export function useUserLookup() {
   const usersQuery = useUsersQuery();
-  const data = usersQuery.data;
+  const data = (usersQuery as any).data;
   
   return {
     ...usersQuery,

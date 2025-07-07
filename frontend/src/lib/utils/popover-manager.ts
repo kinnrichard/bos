@@ -115,7 +115,7 @@ export function createManagedPopover() {
   };
   
   // Subscribe to base popover state changes to update our managed instance
-  const unsubscribe = subscribe((state) => {
+  const unsubscribe = subscribe((state: any) => {
     const wasOpen = managedInstance.isOpen;
     const isNowOpen = state.expanded;
     

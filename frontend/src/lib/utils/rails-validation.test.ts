@@ -38,8 +38,7 @@ describe('Rails Validation Tests', () => {
       
       Object.entries(railsResult.final_positions).forEach(([taskId, expectedPosition]) => {
         const actualPosition = finalPositions.get(`task${taskId}`);
-        expect(actualPosition).toBe(expectedPosition, 
-          `Task ${taskId} should be at position ${expectedPosition}, got ${actualPosition}`);
+        expect(actualPosition, `Task ${taskId} should be at position ${expectedPosition}, got ${actualPosition}`).toBe(expectedPosition);
       });
       
       console.log('✓ Single task move matches Rails behavior');
@@ -77,8 +76,7 @@ describe('Rails Validation Tests', () => {
       
       Object.entries(railsResult.final_positions).forEach(([taskId, expectedPosition]) => {
         const actualPosition = finalPositions.get(`task${taskId}`);
-        expect(actualPosition).toBe(expectedPosition,
-          `Task ${taskId} should be at position ${expectedPosition}, got ${actualPosition}`);
+        expect(actualPosition, `Task ${taskId} should be at position ${expectedPosition}, got ${actualPosition}`).toBe(expectedPosition);
       });
       
       console.log('✓ Multi task move matches Rails behavior');
@@ -116,8 +114,7 @@ describe('Rails Validation Tests', () => {
       
       Object.entries(railsResult.final_positions).forEach(([taskId, expectedPosition]) => {
         const actualPosition = finalPositions.get(`task${taskId}`);
-        expect(actualPosition).toBe(expectedPosition,
-          `Task ${taskId} should be at position ${expectedPosition}, got ${actualPosition}`);
+        expect(actualPosition, `Task ${taskId} should be at position ${expectedPosition}, got ${actualPosition}`).toBe(expectedPosition);
       });
       
       console.log('✓ Three task move matches Rails behavior');

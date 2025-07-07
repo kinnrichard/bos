@@ -58,11 +58,14 @@ export function createOptimisticMutation<TData, TVariables, TError = Error>(
         return { previousData, queryKey };
       },
 
-      onError: (error: TError, variables: TVariables, context?: { previousData?: TData; queryKey: any[] }) => {
+      onError: (error: TError, variables: TVariables, context: unknown) => {
+        // Type guard for context structure
+        const mutationContext = context as { previousData?: TData; queryKey?: any[] } | undefined;
+        
         // Rollback optimistic updates if enabled
-        if (config.rollbackOnError !== false && context?.previousData && context?.queryKey) {
-          queryClient.setQueryData(context.queryKey, context.previousData);
-          console.log('Rolled back optimistic update due to error:', { queryKey: context.queryKey, error });
+        if (config.rollbackOnError !== false && mutationContext?.previousData && mutationContext?.queryKey) {
+          queryClient.setQueryData(mutationContext.queryKey, mutationContext.previousData);
+          console.log('Rolled back optimistic update due to error:', { queryKey: mutationContext.queryKey, error });
         }
 
         // Call custom error handler

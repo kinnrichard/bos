@@ -4,6 +4,11 @@
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import type { User } from '$lib/types/job';
 
+  // Helper function to safely cast popover options to User type
+  function asUser(option: any): User {
+    return option as User;
+  }
+
   // Mock data for testing
   const mockUsers = [
     {
@@ -124,7 +129,7 @@
             {@const isSelected = localSelectedIds.has(option.id)}
             
             <div class="technician-avatar">
-              <UserAvatar user={option} size="xs" />
+              <UserAvatar user={asUser(option)} size="xs" />
             </div>
             <span class="technician-name">{option.attributes.name}</span>
             

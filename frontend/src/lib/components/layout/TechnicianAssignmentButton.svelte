@@ -11,6 +11,11 @@
   import { tick } from 'svelte';
   import '$lib/styles/popover-common.css';
 
+  // Helper function to safely cast popover options to User type
+  function asUser(option: any): User {
+    return option as User;
+  }
+
   export let jobId: string;
   
   // Optional props to provide initial data while job query loads
@@ -162,7 +167,7 @@
       >
         <svelte:fragment slot="option-content" let:option>
           <div class="technician-avatar popover-option-left-content">
-            <UserAvatar user={option} size="xs" />
+            <UserAvatar user={asUser(option)} size="xs" />
           </div>
           <span class="popover-option-main-label">{option.attributes.name}</span>
           
