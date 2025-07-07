@@ -251,12 +251,6 @@ export default class extends Controller {
         this.closeStatusMenu()
       }
     }
-    
-    // Clear selection if clicking outside tasks
-    if (!event.target.closest('.task-item') && 
-        !event.metaKey && !event.ctrlKey) {
-      this.clearSelection()
-    }
   }
   
   // Task title click handling - handle selection if cmd/shift held

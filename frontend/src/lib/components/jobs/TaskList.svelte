@@ -115,9 +115,59 @@
   // Track optimistic updates for rollback
   let optimisticUpdates = new Map<string, { originalPosition: number; originalParentId?: string }>();
   
+  // Outside click and keyboard handling for task deselection
+  let taskListContainer: HTMLElement;
+
+  function handleOutsideClick(event: MouseEvent) {
+    // Don't deselect if:
+    // - No tasks are selected
+    // - Modifier keys are held (for multi-select)
+    // - Clicking within task elements
+    if (!$taskSelection.selectedTaskIds.size ||
+        event.metaKey || event.ctrlKey || event.shiftKey) {
+      return;
+    }
+
+    // Check if click target is outside the task list or within non-task areas
+    const target = event.target as Element;
+    const isClickOutsideTaskList = !taskListContainer?.contains(target);
+    const isClickOnTaskElement = target.closest('.task-item');
+    const isClickOnTaskAction = target.closest('.task-actions, .status-emoji, .disclosure-button');
+
+    // Deselect if clicking outside task list, or inside task list but not on actual tasks
+    if (isClickOutsideTaskList || (!isClickOnTaskElement && !isClickOnTaskAction)) {
+      taskSelection.clearSelection();
+    }
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    // ESC key clears selection
+    if (event.key === 'Escape' && $taskSelection.selectedTaskIds.size > 0) {
+      // Don't clear if actively editing
+      const activeElement = document.activeElement;
+      const isEditing = activeElement?.tagName === 'INPUT' || 
+                       activeElement?.tagName === 'TEXTAREA' || 
+                       activeElement?.isContentEditable;
+      
+      if (!isEditing) {
+        event.preventDefault();
+        taskSelection.clearSelection();
+      }
+    }
+  }
+
+  onMount(() => {
+    // Add event listeners for outside click and keyboard
+    document.addEventListener('click', handleOutsideClick);
+    document.addEventListener('keydown', handleKeydown);
+  });
+
   // Clean up any lingering visual feedback when component is destroyed
   onDestroy(() => {
     clearAllVisualFeedback();
+    // Remove event listeners
+    document.removeEventListener('click', handleOutsideClick);
+    document.removeEventListener('keydown', handleKeydown);
   });
   
   // Rails-compatible client-side acts_as_list implementation
@@ -1275,7 +1325,7 @@
   
 </script>
 
-<div class="task-list">
+<div class="task-list" bind:this={taskListContainer}>
   <!-- New Task Creation UI -->
   <div class="new-task-section">
     {#if showNewTaskInput}
