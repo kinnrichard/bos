@@ -227,20 +227,30 @@
         event.preventDefault();
         showNewTaskForm();
       } else if (selectedCount === 1) {
-        // Single selection: create inline new task as sibling
+        // Single selection: check if it's the last task
         event.preventDefault();
         const selectedTaskId = Array.from($taskSelection.selectedTaskIds)[0];
-        insertNewTaskAfter = selectedTaskId;
-        showInlineNewTaskInput = true;
-        inlineNewTaskTitle = '';
-        taskSelection.clearSelection(); // Clear selection when creating new task
+        const selectedTaskIndex = flatTaskIds.indexOf(selectedTaskId);
+        const isLastTask = selectedTaskIndex === flatTaskIds.length - 1;
         
-        // Focus inline input after DOM update
-        tick().then(() => {
-          if (inlineNewTaskInput) {
-            inlineNewTaskInput.focus();
-          }
-        });
+        if (isLastTask) {
+          // Last task selected: activate bottom "New Task" row (cleaner UX)
+          taskSelection.clearSelection();
+          showNewTaskForm();
+        } else {
+          // Not last task: create inline new task as sibling
+          insertNewTaskAfter = selectedTaskId;
+          showInlineNewTaskInput = true;
+          inlineNewTaskTitle = '';
+          taskSelection.clearSelection(); // Clear selection when creating new task
+          
+          // Focus inline input after DOM update
+          tick().then(() => {
+            if (inlineNewTaskInput) {
+              inlineNewTaskInput.focus();
+            }
+          });
+        }
       }
       // Multiple selections: do nothing
     }
@@ -570,7 +580,7 @@
     newTaskTitle = '';
   }
 
-  async function createNewTask() {
+  async function createNewTask(shouldSelectAfterCreate: boolean = false) {
     if (!newTaskTitle.trim() || isCreatingTask) return;
     
     isCreatingTask = true;
@@ -585,6 +595,11 @@
       
       // Add the new task to our local tasks array
       tasks = [...tasks, response.task];
+      
+      // Select the newly created task only if requested (Return key, not blur)
+      if (shouldSelectAfterCreate) {
+        taskSelection.selectTask(response.task.id);
+      }
       
       // Clear the form
       hideNewTaskForm();
@@ -603,7 +618,7 @@
   async function handleNewTaskKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      await createNewTask();
+      await createNewTask(true); // Return key should select newly created task
     } else if (event.key === 'Escape') {
       event.preventDefault();
       hideNewTaskForm();
@@ -613,7 +628,7 @@
   function handleNewTaskBlur() {
     // Save on blur if there's content, otherwise cancel
     if (newTaskTitle.trim() !== '' && !isCreatingTask) {
-      createNewTask();
+      createNewTask(false); // Blur should not select newly created task
     } else if (!isCreatingTask) {
       hideNewTaskForm();
     }
@@ -769,7 +784,7 @@
   }
 
   // Inline new task functions
-  async function createInlineTask(parentId: string | null) {
+  async function createInlineTask(parentId: string | null, shouldSelectAfterCreate: boolean = false) {
     if (inlineNewTaskTitle.trim() === '') {
       cancelInlineNewTask();
       return;
@@ -829,8 +844,10 @@
         // This ensures subsequent new tasks will be positioned after this one
         insertNewTaskAfter = result.task.id;
         
-        // Select the newly created task
-        taskSelection.selectTask(result.task.id);
+        // Select the newly created task only if requested (Return key, not blur)
+        if (shouldSelectAfterCreate) {
+          taskSelection.selectTask(result.task.id);
+        }
         
         feedback = 'Task created successfully';
         setTimeout(() => feedback = '', 2000);
@@ -853,7 +870,7 @@
   function handleInlineNewTaskKeydown(event: KeyboardEvent, parentId: string | null) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      createInlineTask(parentId);
+      createInlineTask(parentId, true); // Return key should select newly created task
     } else if (event.key === 'Escape') {
       event.preventDefault();
       cancelInlineNewTask();
@@ -863,7 +880,7 @@
   function handleInlineNewTaskBlur(parentId: string | null) {
     // Save on blur, but only if not already creating a task (prevents double submission)
     if (!isCreatingTask) {
-      createInlineTask(parentId);
+      createInlineTask(parentId, false); // Blur should not select newly created task
     }
   }
 
