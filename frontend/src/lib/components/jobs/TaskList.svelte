@@ -140,15 +140,47 @@
     }
   }
 
+  // Arrow key navigation for single task selection
+  function handleArrowNavigation(direction: 'up' | 'down') {
+    if ($taskSelection.selectedTaskIds.size !== 1) return;
+    
+    const currentTaskId = Array.from($taskSelection.selectedTaskIds)[0];
+    const currentIndex = flatTaskIds.indexOf(currentTaskId);
+    
+    if (currentIndex === -1) return;
+    
+    let nextIndex;
+    if (direction === 'up') {
+      nextIndex = currentIndex > 0 ? currentIndex - 1 : flatTaskIds.length - 1; // Wrap to bottom
+    } else {
+      nextIndex = currentIndex < flatTaskIds.length - 1 ? currentIndex + 1 : 0; // Wrap to top
+    }
+    
+    const nextTaskId = flatTaskIds[nextIndex];
+    taskSelection.selectTask(nextTaskId);
+    
+    // Scroll new selection into view
+    scrollTaskIntoView(nextTaskId);
+  }
+
+  // Scroll selected task into view
+  function scrollTaskIntoView(taskId: string) {
+    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+    if (taskElement) {
+      taskElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
   function handleKeydown(event: KeyboardEvent) {
+    // Don't handle keys if actively editing
+    const activeElement = document.activeElement;
+    const isEditing = activeElement?.tagName === 'INPUT' || 
+                     activeElement?.tagName === 'TEXTAREA' || 
+                     activeElement?.isContentEditable ||
+                     editingTaskId !== null;
+
     // ESC key clears selection
     if (event.key === 'Escape' && $taskSelection.selectedTaskIds.size > 0) {
-      // Don't clear if actively editing
-      const activeElement = document.activeElement;
-      const isEditing = activeElement?.tagName === 'INPUT' || 
-                       activeElement?.tagName === 'TEXTAREA' || 
-                       activeElement?.isContentEditable;
-      
       if (!isEditing) {
         event.preventDefault();
         taskSelection.clearSelection();
@@ -158,6 +190,26 @@
           (document.activeElement as HTMLElement).blur();
         }
       }
+    }
+
+    // Arrow key navigation
+    if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !isEditing) {
+      const selectedCount = $taskSelection.selectedTaskIds.size;
+      
+      if (selectedCount === 0) {
+        // No selection: down arrow selects first, up arrow selects last
+        event.preventDefault(); // Prevent page scroll
+        if (flatTaskIds.length > 0) {
+          const taskId = event.key === 'ArrowDown' ? flatTaskIds[0] : flatTaskIds[flatTaskIds.length - 1];
+          taskSelection.selectTask(taskId);
+          scrollTaskIntoView(taskId);
+        }
+      } else if (selectedCount === 1) {
+        // Single selection: navigate through tasks
+        event.preventDefault(); // Prevent page scroll
+        handleArrowNavigation(event.key === 'ArrowUp' ? 'up' : 'down');
+      }
+      // Multiple selections: do nothing (don't handle arrow keys)
     }
   }
 
@@ -230,6 +282,12 @@
   let newTaskTitle = '';
   let newTaskInput: HTMLInputElement;
   let isCreatingTask = false;
+  
+  // Task title editing state
+  let editingTaskId: string | null = null;
+  let editingTitle = '';
+  let originalTitle = '';
+  let titleInput: HTMLInputElement;
   
 
   // Organize tasks into hierarchical structure with filtering
@@ -551,6 +609,114 @@
       }
       setTimeout(() => feedback = '', 3000);
     }
+  }
+
+  // Task title editing functions
+  function handleTitleClick(event: MouseEvent, taskId: string, currentTitle: string) {
+    event.stopPropagation(); // Prevent task selection
+    
+    // Store click position for cursor positioning
+    const clickX = event.clientX;
+    const titleElement = event.target as HTMLElement;
+    
+    // Enter edit mode
+    editingTaskId = taskId;
+    editingTitle = currentTitle;
+    originalTitle = currentTitle;
+    
+    // Focus the input after DOM update
+    tick().then(() => {
+      if (titleInput) {
+        titleInput.focus();
+        
+        // Calculate cursor position based on click location
+        try {
+          // Get the title element's bounding box
+          const titleRect = titleElement.getBoundingClientRect();
+          const relativeX = clickX - titleRect.left;
+          
+          // Create a temporary span to measure text width
+          const tempSpan = document.createElement('span');
+          tempSpan.style.cssText = window.getComputedStyle(titleElement).cssText;
+          tempSpan.style.position = 'absolute';
+          tempSpan.style.visibility = 'hidden';
+          tempSpan.style.whiteSpace = 'nowrap';
+          document.body.appendChild(tempSpan);
+          
+          // Find the closest character position
+          let bestPosition = 0;
+          let bestDistance = Infinity;
+          
+          for (let i = 0; i <= currentTitle.length; i++) {
+            tempSpan.textContent = currentTitle.substring(0, i);
+            const textWidth = tempSpan.getBoundingClientRect().width;
+            const distance = Math.abs(relativeX - textWidth);
+            
+            if (distance < bestDistance) {
+              bestDistance = distance;
+              bestPosition = i;
+            }
+          }
+          
+          // Clean up
+          document.body.removeChild(tempSpan);
+          
+          // Set cursor position
+          titleInput.setSelectionRange(bestPosition, bestPosition);
+        } catch (e) {
+          // Fallback if cursor positioning fails
+          titleInput.setSelectionRange(editingTitle.length, editingTitle.length);
+        }
+      }
+    });
+  }
+
+  async function saveTitle(taskId: string, newTitle: string) {
+    if (newTitle.trim() === '' || newTitle === originalTitle) {
+      cancelEdit();
+      return;
+    }
+
+    try {
+      const result = await tasksService.updateTask(jobId, taskId, { title: newTitle.trim() });
+      
+      if (result.status === 'success') {
+        editingTaskId = null;
+        editingTitle = '';
+        originalTitle = '';
+        
+        // Use existing task update handler to maintain consistency
+        handleTaskUpdated({ detail: result } as CustomEvent);
+      }
+    } catch (error) {
+      console.error('Failed to update task title:', error);
+      feedback = 'Failed to update task title - please try again';
+      setTimeout(() => feedback = '', 3000);
+      
+      // Revert to original title
+      editingTitle = originalTitle;
+    }
+  }
+
+  function cancelEdit() {
+    editingTaskId = null;
+    editingTitle = '';
+    originalTitle = '';
+  }
+
+  function handleEditKeydown(event: KeyboardEvent, taskId: string) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      saveTitle(taskId, editingTitle);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelEdit();
+    }
+  }
+
+  function handleEditBlur(taskId: string) {
+    // Save on blur
+    saveTitle(taskId, editingTitle);
   }
 
   // SortableJS event handlers
@@ -1403,7 +1569,7 @@
           role="button"
           tabindex="0"
           aria-label="Task: {renderItem.task.title}. {$taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
-          on:click={(e) => handleTaskClick(e, renderItem.task.id)}
+          on:click={(e) => editingTaskId === renderItem.task.id ? null : handleTaskClick(e, renderItem.task.id)}
           on:keydown={(e) => handleTaskKeydown(e, renderItem.task.id)}
         >
           <!-- Disclosure Triangle (if has subtasks) -->
@@ -1442,7 +1608,22 @@
           
           <!-- Task Content -->
           <div class="task-content">
-            <h5 class="task-title">{renderItem.task.title}</h5>
+            {#if editingTaskId === renderItem.task.id}
+              <input 
+                class="task-title task-title-input"
+                bind:value={editingTitle}
+                bind:this={titleInput}
+                on:keydown={(e) => handleEditKeydown(e, renderItem.task.id)}
+                on:blur={() => handleEditBlur(renderItem.task.id)}
+              />
+            {:else}
+              <h5 
+                class="task-title"
+                on:click={(e) => handleTitleClick(e, renderItem.task.id, renderItem.task.title)}
+              >
+                {renderItem.task.title}
+              </h5>
+            {/if}
             
             <!-- Time Tracking Display -->
             {#if renderItem.task.status === 'in_progress' || (renderItem.task.accumulated_seconds && renderItem.task.accumulated_seconds > 0)}
@@ -1586,11 +1767,12 @@
     border-radius: 8px !important;
     background: none !important;
     background-color: transparent !important;
-    transition: all 0.2s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     user-select: none;
     position: relative;
     will-change: transform;
+    outline: none; /* Remove browser focus ring */
   }
 
   /* SortableJS classes */
@@ -1743,6 +1925,19 @@
     width: fit-content;
     max-width: 100%;
     user-select: text;
+  }
+
+  .task-title-input {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    color: inherit;
+    outline: none;
+    width: fit-content;
+    min-width: 75px;
+    max-width: 100%;
+    resize: none;
   }
 
   .task-actions {
