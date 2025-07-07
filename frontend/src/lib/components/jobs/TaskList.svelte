@@ -152,6 +152,11 @@
       if (!isEditing) {
         event.preventDefault();
         taskSelection.clearSelection();
+        
+        // Remove focus ring by blurring the currently focused element
+        if (document.activeElement && document.activeElement !== document.body) {
+          (document.activeElement as HTMLElement).blur();
+        }
       }
     }
   }
