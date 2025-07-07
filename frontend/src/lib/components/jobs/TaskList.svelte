@@ -177,11 +177,17 @@
     const isEditing = activeElement?.tagName === 'INPUT' || 
                      activeElement?.tagName === 'TEXTAREA' || 
                      activeElement?.isContentEditable ||
-                     editingTaskId !== null;
+                     editingTaskId !== null ||
+                     showInlineNewTaskInput;
 
-    // ESC key clears selection
-    if (event.key === 'Escape' && $taskSelection.selectedTaskIds.size > 0) {
-      if (!isEditing) {
+    // ESC key handling
+    if (event.key === 'Escape') {
+      if (showInlineNewTaskInput) {
+        // Cancel inline new task
+        event.preventDefault();
+        cancelInlineNewTask();
+      } else if ($taskSelection.selectedTaskIds.size > 0 && !isEditing) {
+        // Clear selection if not editing
         event.preventDefault();
         taskSelection.clearSelection();
         
@@ -210,6 +216,32 @@
         handleArrowNavigation(event.key === 'ArrowUp' ? 'up' : 'down');
       }
       // Multiple selections: do nothing (don't handle arrow keys)
+    }
+
+    // Return key for new task creation
+    if (event.key === 'Enter' && !isEditing) {
+      const selectedCount = $taskSelection.selectedTaskIds.size;
+      
+      if (selectedCount === 0) {
+        // No selection: activate bottom "Add a Task" row
+        event.preventDefault();
+        showNewTaskForm();
+      } else if (selectedCount === 1) {
+        // Single selection: create inline new task as sibling
+        event.preventDefault();
+        const selectedTaskId = Array.from($taskSelection.selectedTaskIds)[0];
+        insertNewTaskAfter = selectedTaskId;
+        showInlineNewTaskInput = true;
+        inlineNewTaskTitle = '';
+        
+        // Focus inline input after DOM update
+        tick().then(() => {
+          if (inlineNewTaskInput) {
+            inlineNewTaskInput.focus();
+          }
+        });
+      }
+      // Multiple selections: do nothing
     }
   }
 
@@ -288,6 +320,12 @@
   let editingTitle = '';
   let originalTitle = '';
   let titleInput: HTMLInputElement;
+  
+  // Inline new task state (for Return key with selection)
+  let insertNewTaskAfter: string | null = null;
+  let showInlineNewTaskInput = false;
+  let inlineNewTaskTitle = '';
+  let inlineNewTaskInput: HTMLInputElement;
   
 
   // Organize tasks into hierarchical structure with filtering
@@ -717,6 +755,84 @@
   function handleEditBlur(taskId: string) {
     // Save on blur
     saveTitle(taskId, editingTitle);
+  }
+
+  // Inline new task functions
+  async function createInlineTask(parentId: string | null) {
+    if (inlineNewTaskTitle.trim() === '') {
+      cancelInlineNewTask();
+      return;
+    }
+
+    try {
+      isCreatingTask = true;
+      
+      // Calculate the correct position for the new task
+      let position = 1;
+      
+      if (insertNewTaskAfter) {
+        const selectedTask = tasks.find(t => t.id === insertNewTaskAfter);
+        if (selectedTask) {
+          // Position the new task right after the selected task
+          position = (selectedTask.position || 0) + 1;
+        }
+      } else {
+        // Default: append at end
+        const siblings = tasks.filter(t => t.parent_id === parentId);
+        if (siblings.length > 0) {
+          position = Math.max(...siblings.map(t => t.position || 0)) + 1;
+        }
+      }
+      
+      const taskData = { 
+        title: inlineNewTaskTitle.trim(),
+        parent_id: parentId,
+        position: position
+      };
+
+      const result = await tasksService.createTask(jobId, taskData);
+      
+      if (result.status === 'success') {
+        // Add to local tasks list
+        tasks = [...tasks, result.task];
+        
+        // Clear inline state
+        cancelInlineNewTask();
+        
+        // Select the newly created task
+        taskSelection.selectTask(result.task.id);
+        
+        feedback = 'Task created successfully';
+        setTimeout(() => feedback = '', 2000);
+      }
+    } catch (error) {
+      console.error('Failed to create inline task:', error);
+      feedback = 'Failed to create task - please try again';
+      setTimeout(() => feedback = '', 3000);
+    } finally {
+      isCreatingTask = false;
+    }
+  }
+
+  function cancelInlineNewTask() {
+    insertNewTaskAfter = null;
+    showInlineNewTaskInput = false;
+    inlineNewTaskTitle = '';
+  }
+
+  function handleInlineNewTaskKeydown(event: KeyboardEvent, parentId: string | null) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      createInlineTask(parentId);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelInlineNewTask();
+    }
+  }
+
+  function handleInlineNewTaskBlur(parentId: string | null) {
+    // Save on blur
+    createInlineTask(parentId);
   }
 
   // SortableJS event handlers
@@ -1636,6 +1752,46 @@
             />
           </div>
         </div>
+        
+        <!-- Inline New Task Row (appears after this task if selected) -->
+        {#if insertNewTaskAfter === renderItem.task.id && showInlineNewTaskInput}
+          <div 
+            class="task-item task-item-add-new"
+            style="--depth: {renderItem.depth || 0}"
+          >
+            <!-- Disclosure Spacer -->
+            <div class="disclosure-spacer"></div>
+
+            <!-- Invisible Status for Spacing -->
+            <div class="task-status">
+              <div class="status-emoji" style="opacity: 0">⭐</div>
+            </div>
+            
+            <!-- Task Content -->
+            <div class="task-content">
+              <input 
+                class="task-title task-title-input"
+                bind:value={inlineNewTaskTitle}
+                bind:this={inlineNewTaskInput}
+                placeholder="Task title..."
+                on:keydown={(e) => handleInlineNewTaskKeydown(e, renderItem.task.parent_id)}
+                on:blur={() => handleInlineNewTaskBlur(renderItem.task.parent_id)}
+                disabled={isCreatingTask}
+              />
+              {#if isCreatingTask}
+                <div class="creating-indicator">
+                  <span class="spinner">⏳</span>
+                </div>
+              {/if}
+            </div>
+
+            <!-- Task Metadata (empty for spacing) -->
+            <div class="task-metadata"></div>
+
+            <!-- Task Actions (empty - no info button) -->
+            <div class="task-actions"></div>
+          </div>
+        {/if}
       {/each}
     {/if}
       
