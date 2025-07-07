@@ -908,11 +908,31 @@
     
     // Ensure modal gets focus immediately for keyboard event capture
     await tick();
-    if (modalContainer) {
-      modalContainer.focus();
-      // Prevent focus from escaping the modal
-      modalContainer.addEventListener('focusout', handleModalFocusOut);
-    }
+    // Use setTimeout to ensure DOM is fully rendered
+    setTimeout(() => {
+      if (modalContainer) {
+        // Try to focus the modal container first
+        modalContainer.focus();
+        // Prevent focus from escaping the modal
+        modalContainer.addEventListener('focusout', handleModalFocusOut);
+        
+        // If modal container didn't get focus, try focusing the delete button
+        setTimeout(() => {
+          if (showDeleteConfirmationModal) {
+            const activeElement = document.activeElement;
+            if (!modalContainer.contains(activeElement)) {
+              // Try delete button as fallback since buttons are more reliably focusable
+              if (deleteButton) {
+                deleteButton.focus();
+              } else {
+                // Final fallback to modal container
+                modalContainer.focus();
+              }
+            }
+          }
+        }, 10);
+      }
+    }, 0);
   }
 
   function handleModalFocusOut(event: FocusEvent) {
