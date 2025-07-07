@@ -202,9 +202,25 @@ class Api::V1::TasksController < Api::V1::BaseController
   end
 
   def create
-    @task = @job.tasks.build(task_params)
+    task_data = task_params
+    after_task_id = task_data.delete(:after_task_id)
+
+    @task = @job.tasks.build(task_data)
 
     if @task.save
+      # Handle relative positioning after task is saved
+      if after_task_id.present?
+        begin
+          target_task = @job.tasks.find(after_task_id)
+          @task.update!(position: { after: target_task })
+        rescue ActiveRecord::RecordNotFound
+          # Target task not found - silently append at end (no user feedback)
+        rescue => e
+          # Any other positioning error - silently append at end
+          Rails.logger.warn "Task positioning failed: #{e.message}"
+        end
+      end
+
       render json: {
         status: "success",
         task: task_attributes(@task)
@@ -517,7 +533,7 @@ class Api::V1::TasksController < Api::V1::BaseController
   end
 
   def task_params
-    params.require(:task).permit(:title, :status, :parent_id, :position, :assigned_to_id)
+    params.require(:task).permit(:title, :status, :parent_id, :position, :assigned_to_id, :after_task_id)
   end
 
   def task_attributes(task)

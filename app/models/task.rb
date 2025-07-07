@@ -1,7 +1,7 @@
 class Task < ApplicationRecord
   include Loggable
 
-  belongs_to :job, touch: true
+  belongs_to :job
   belongs_to :assigned_to, class_name: "User", optional: true
   belongs_to :parent, class_name: "Task", optional: true, counter_cache: :subtasks_count
 
@@ -48,6 +48,10 @@ class Task < ApplicationRecord
 
   # Update reordered_at when position or parent changes
   before_save :update_reordered_at, if: -> { position_changed? || parent_id_changed? }
+
+  # Touch job updated_at without incrementing lock_version
+  after_save :touch_job_updated_at
+  after_destroy :touch_job_updated_at
 
   # Temporarily disable optimistic locking for positioning compatibility testing
   self.locking_column = nil
@@ -183,6 +187,12 @@ class Task < ApplicationRecord
 
   def update_reordered_at
     self.reordered_at = Time.current
+  end
+
+  def touch_job_updated_at
+    # Update job's updated_at timestamp without incrementing lock_version
+    # This preserves the "last activity" tracking without causing lock conflicts
+    job.update_column(:updated_at, Time.current) if job.present?
   end
 
   # Removed skip_lock_version_for_position_updates method - using locking_column = nil instead

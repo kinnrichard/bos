@@ -180,6 +180,7 @@ export class TasksService {
       status?: string;
       parent_id?: string;
       position?: number;
+      after_task_id?: string;
     }
   ): Promise<{ status: string; task: Task }> {
     return api.post<{ status: string; task: Task }>(`/jobs/${jobId}/tasks`, {

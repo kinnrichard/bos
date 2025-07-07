@@ -767,28 +767,17 @@
     try {
       isCreatingTask = true;
       
-      // Calculate the correct position for the new task
-      let position = 1;
-      
-      if (insertNewTaskAfter) {
-        const selectedTask = tasks.find(t => t.id === insertNewTaskAfter);
-        if (selectedTask) {
-          // Position the new task right after the selected task
-          position = (selectedTask.position || 0) + 1;
-        }
-      } else {
-        // Default: append at end
-        const siblings = tasks.filter(t => t.parent_id === parentId);
-        if (siblings.length > 0) {
-          position = Math.max(...siblings.map(t => t.position || 0)) + 1;
-        }
-      }
-      
+      // Build task data with relative positioning
       const taskData = { 
         title: inlineNewTaskTitle.trim(),
-        parent_id: parentId,
-        position: position
+        parent_id: parentId
       };
+
+      // Use relative positioning if inserting after a specific task
+      if (insertNewTaskAfter) {
+        taskData.after_task_id = insertNewTaskAfter;
+      }
+      // If no specific position, server will append at end automatically
 
       const result = await tasksService.createTask(jobId, taskData);
       
