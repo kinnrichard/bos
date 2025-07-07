@@ -2720,21 +2720,20 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.25);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(1px);
   }
 
   .modal-container {
     background: #000000;
     border: 1px solid #374151;
-    border-radius: 24px;
-    padding: 32px;
-    width: 100%;
-    max-width: 28rem;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 20rem;
     outline: none;
     box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
   }
@@ -2742,27 +2741,22 @@
   .warning-icon {
     display: flex;
     align-items: center;
-    margin-bottom: 24px;
-  }
-
-  .warning-icon svg {
+    margin-bottom: 16px;
     height: 48px;
     width: 48px;
   }
 
   .modal-title {
     color: white;
-    font-size: 24px;
+    font-size: 16px;
     font-weight: 600;
-    margin-bottom: 8px;
-    line-height: 1.3;
+    margin-bottom: 16px;
   }
 
   .modal-description {
     color: #d1d5db;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
     font-size: 16px;
-    line-height: 1.5;
   }
 
   .modal-buttons {
@@ -2772,7 +2766,7 @@
 
   .button {
     border-radius: 9999px;
-    padding: 12px 32px;
+    padding: 6px 12px;
     font-weight: 500;
     flex: 1;
     border: none;
@@ -2781,7 +2775,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 3px;
     font-size: 16px;
   }
 
