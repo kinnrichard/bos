@@ -8,7 +8,7 @@
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
   import { calculateRelativePositionFromTarget, calculatePositionFromTarget as railsCalculatePosition } from '$lib/utils/position-calculator';
   import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
-  import type { Task as RailsTask, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
+  import type { Task, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
   import Portal from '../ui/Portal.svelte';
 
@@ -16,29 +16,7 @@
   const chevronRight = '/icons/chevron-right.svg';
   const chevronDown = '/icons/chevron-down.svg';
 
-  // Extended Task interface for UI components with additional display properties
-  interface UITask {
-    id: string;
-    title: string;
-    status: string;
-    created_at: string;
-    updated_at: string;
-    parent_id?: string;
-    subtasks_count?: number;
-    depth?: number;
-    position?: number;
-    // Optional UI-specific properties for display/demo purposes
-    assigned_to?: {
-      id: string;
-      name: string;
-      initials: string;
-    };
-    notes_count?: number;
-    in_progress_since?: string;
-    accumulated_seconds?: number;
-  }
-
-  export let tasks: Array<UITask> = [];
+  export let tasks: Array<Task> = [];
   
   export let jobId: string = 'test';
   export let batchTaskDetails: any = null; // Optional batch task details data
@@ -98,7 +76,7 @@
         position: 4,
         notes_count: 3
       }
-    ] as UITask[];
+    ] as Task[];
   }
 
   // Track collapsed/expanded state of tasks with subtasks
@@ -301,7 +279,7 @@
     // Apply position updates using validated Rails-compatible logic
     static applyPositionUpdates(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): any[] {
       // Convert to Rails task format
-      const railsTasks: RailsTask[] = tasks.map(t => ({
+      const railsTasks: Task[] = tasks.map(t => ({
         id: t.id,
         position: t.position || 0,
         parent_id: t.parent_id || null
@@ -1770,7 +1748,7 @@
     });
     
     // Convert Svelte tasks to Rails task format
-    const railsTasks: RailsTask[] = tasks.map(t => ({
+    const railsTasks: Task[] = tasks.map(t => ({
       id: t.id,
       position: t.position || 0,
       parent_id: t.parent_id || null,

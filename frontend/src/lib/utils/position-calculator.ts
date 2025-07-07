@@ -5,9 +5,10 @@
 
 export interface Task {
   id: string;
-  position: number;
-  parent_id?: string | null;
+  position?: number;
+  parent_id?: string;
   title?: string;
+  status?: string;
 }
 
 export interface PositionUpdate {
@@ -18,7 +19,7 @@ export interface PositionUpdate {
 
 export interface RelativePositionUpdate {
   id: string;
-  parent_id?: string | null;
+  parent_id?: string;
   before_task_id?: string;
   after_task_id?: string;
   position?: 'first' | 'last';
@@ -103,7 +104,7 @@ export function calculateRelativePositionFromTarget(
     const existingChildren = tasks.filter(t => 
       t.parent_id === dropZone.targetTaskId && 
       !draggedTaskIds.includes(t.id)
-    ).sort((a, b) => a.position - b.position);
+    ).sort((a, b) => (a.position || 0) - (b.position || 0));
     
     // Position after the last child, or at first position if no children exist
     const lastChild = existingChildren[existingChildren.length - 1];
@@ -128,13 +129,13 @@ export function calculateRelativePositionFromTarget(
     // Get all siblings in the destination parent scope (including target task for position calculations)
     const allSiblings = tasks.filter(t => 
       (t.parent_id || null) === parentId
-    ).sort((a, b) => a.position - b.position);
+    ).sort((a, b) => (a.position || 0) - (b.position || 0));
     
     // Get siblings excluding dragged tasks (for finding next/previous tasks)
     const destinationSiblings = tasks.filter(t => 
       (t.parent_id || null) === parentId &&
       !draggedTaskIds.includes(t.id)
-    ).sort((a, b) => a.position - b.position);
+    ).sort((a, b) => (a.position || 0) - (b.position || 0));
     
     // Handle cross-parent drag
     if ((targetTask.parent_id || null) !== parentId) {
@@ -193,12 +194,12 @@ export function calculateRelativePositionFromTarget(
     const targetIndex = siblings.findIndex(t => t.id === targetTask.id);
     
     console.log('🔍 Sibling analysis for same-parent drag:', {
-      targetTask: { id: targetTask.id.substring(0, 8), title: targetTask.title, position: targetTask.position },
+      targetTask: { id: targetTask.id.substring(0, 8), title: targetTask.title, position: targetTask.position || 0 },
       allSiblings: allSiblings.map((s, idx) => ({ 
         index: idx,
         id: s.id.substring(0, 8), 
         title: s.title, 
-        position: s.position,
+        position: s.position || 0,
         isTarget: s.id === targetTask.id
       })),
       destinationSiblings: destinationSiblings.map((s, idx) => ({ 

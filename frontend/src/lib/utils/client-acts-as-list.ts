@@ -51,20 +51,20 @@ export class ClientActsAsList {
       const originalScope = originalParent;
       const originalScopeTasks = Array.from(taskMap.values())
         .filter(t => (t.parent_id || null) === originalScope && t.id !== update.id)
-        .sort((a, b) => a.position - b.position);
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
       
       // Gap elimination: shift tasks after the original position down
       originalScopeTasks.forEach(task => {
-        if (task.position > originalPosition) {
-          const oldPosition = task.position;
-          task.position = task.position - 1;
+        if ((task.position ?? 0) > (originalPosition ?? 0)) {
+          const oldPosition = task.position ?? 0;
+          task.position = (task.position ?? 0) - 1;
           
           operations.push({
             type: 'gap-elimination',
             scope: originalScope,
             taskId: task.id,
             oldPosition,
-            newPosition: task.position,
+            newPosition: task.position ?? 0,
             reason: `Shifted down to fill gap at position ${originalPosition}`
           });
         }
@@ -74,22 +74,22 @@ export class ClientActsAsList {
       const targetScope = targetParent;
       const targetScopeTasks = Array.from(taskMap.values())
         .filter(t => (t.parent_id || null) === targetScope && t.id !== update.id)
-        .sort((a, b) => a.position - b.position);
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
       
       if (isCrossParentMove) {
         // Cross-parent move: positioning gem uses minimal shifting
         // For cross-parent moves, tasks at or after target position get shifted up
         targetScopeTasks.forEach(task => {
-          if (task.position >= targetPosition) {
-            const oldPosition = task.position;
-            task.position = task.position + 1;
+          if ((task.position ?? 0) >= targetPosition) {
+            const oldPosition = task.position ?? 0;
+            task.position = (task.position ?? 0) + 1;
             
             operations.push({
               type: 'insertion',
               scope: targetScope,
               taskId: task.id,
               oldPosition,
-              newPosition: task.position,
+              newPosition: task.position ?? 0,
               reason: `Cross-parent: shifted up by insertion at position ${targetPosition}`
             });
           }
@@ -98,16 +98,16 @@ export class ClientActsAsList {
         // Same-parent move: use standard acts_as_list behavior
         // All tasks at or after target position get shifted
         targetScopeTasks.forEach(task => {
-          if (task.position >= targetPosition) {
-            const oldPosition = task.position;
-            task.position = task.position + 1;
+          if ((task.position ?? 0) >= targetPosition) {
+            const oldPosition = task.position ?? 0;
+            task.position = (task.position ?? 0) + 1;
             
             operations.push({
               type: 'insertion',
               scope: targetScope,
               taskId: task.id,
               oldPosition,
-              newPosition: task.position,
+              newPosition: task.position ?? 0,
               reason: `Same-parent: shifted up by insertion at position ${targetPosition}`
             });
           }
@@ -115,7 +115,7 @@ export class ClientActsAsList {
       }
       
       // Place moving task at target position
-      const oldPosition = movingTask.position;
+      const oldPosition = movingTask.position ?? 0;
       movingTask.position = targetPosition;
       movingTask.parent_id = targetParent;
       
@@ -143,7 +143,7 @@ export class ClientActsAsList {
     positionUpdates: PositionUpdate[]
   ): Map<string, number> {
     const result = this.applyPositionUpdates(tasks, positionUpdates);
-    return new Map(result.updatedTasks.map(t => [t.id, t.position]));
+    return new Map(result.updatedTasks.map(t => [t.id, t.position ?? 0]));
   }
   
   /**
@@ -169,7 +169,7 @@ export class ClientActsAsList {
     
     // Validate each scope
     scopes.forEach((scopeTasks, scope) => {
-      const positions = scopeTasks.map(t => t.position).sort((a, b) => a - b);
+      const positions = scopeTasks.map(t => t.position ?? 0).sort((a, b) => a - b);
       
       // Check for duplicates
       const duplicates = positions.filter((pos, index) => positions.indexOf(pos) !== index);
@@ -262,7 +262,7 @@ export class ClientActsAsList {
       // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
       // This is critical - we need the full scope to understand current positions
       const allScopeTasks = normalizedTasks.filter(t => (t.parent_id || null) === (targetParent || null))
-                                 .sort((a, b) => a.position - b.position);
+                                 .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
       
       // Get tasks excluding the moving task (for target identification)
       const scopeTasksExcludingMoved = allScopeTasks.filter(t => t.id !== update.id);
