@@ -421,18 +421,7 @@
     margin-top: 2px;
   }
 
-  /* Size variants */
-  .form-input.small {
-    /* Padding and font-size handled by style props */
-  }
-
-  .form-input.normal {
-    /* Padding and font-size handled by style props */
-  }
-
-  .form-input.large {
-    /* Padding and font-size handled by style props */
-  }
+  /* Size variants handled by style props - no CSS needed */
 
   /* Special input types */
   .form-input[type="date"],

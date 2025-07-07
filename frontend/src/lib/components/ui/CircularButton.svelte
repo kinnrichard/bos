@@ -66,18 +66,7 @@
     font-family: inherit;
   }
 
-  /* Size variants */
-  .circular-button.small {
-    /* 28x28 size handled by style props */
-  }
-
-  .circular-button.normal {
-    /* 36x36 size handled by style props */
-  }
-
-  .circular-button.large {
-    /* 44x44 size handled by style props */
-  }
+  /* Size variants handled by style props - no CSS needed */
 
   /* Variant styles */
   .circular-button.default:hover:not(:disabled) {
@@ -162,11 +151,7 @@
   }
 
   /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .circular-button {
-      /* Slightly smaller touch targets on mobile if needed */
-    }
-  }
+  /* Mobile styles handled by existing responsive design */
 
   /* High contrast mode support */
   @media (prefers-contrast: high) {

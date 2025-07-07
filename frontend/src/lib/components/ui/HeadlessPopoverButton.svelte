@@ -7,7 +7,7 @@
   export let loading: boolean = false;
   export let panelWidth: string = '240px';
   export let panelPosition: 'center' | 'right' = 'center';
-  export let topOffset: string = '12px'; // Not used in new system but kept for compatibility
+  export const topOffset: string = '12px'; // Not used in new system but kept for compatibility
   export let contentPadding: string = '16px';
   export let buttonClass: string = '';
 
@@ -64,9 +64,7 @@
     border-color: var(--accent-blue);
   }
 
-  .panel-content {
-    /* Padding set via style prop for flexibility */
-  }
+  /* Panel content padding handled by style props */
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {

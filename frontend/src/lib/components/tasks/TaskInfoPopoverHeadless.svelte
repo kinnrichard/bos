@@ -22,6 +22,11 @@
   let currentTime = Date.now();
   let timer: any;
   
+  // Helper function to generate user initials with proper typing
+  function getUserInitials(name: string): string {
+    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+  }
+  
   // Forward popover instance from BasePopover
   let basePopover: any;
   export { basePopover as popover };
@@ -355,7 +360,7 @@
                   <div class="timeline-header-left">
                     {#if item.user}
                       <span class="timeline-header-icon user-avatar" style="background-color: #4A90E2; color: white;">
-                        {item.user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        {getUserInitials(item.user.name)}
                       </span>
                     {/if}
                     <span class="timeline-header-user">{item.user?.name || 'System'}</span>

@@ -77,10 +77,7 @@
     word-break: break-word;
   }
 
-  /* Variant styles */
-  .error-message.inline {
-    /* Minimal styling for inline errors */
-  }
+  /* Inline variant uses minimal default styling */
 
   .error-message.block {
     background-color: rgba(239, 68, 68, 0.1);

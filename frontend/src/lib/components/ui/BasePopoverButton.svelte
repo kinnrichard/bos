@@ -139,9 +139,7 @@
     border-bottom: 10px solid var(--bg-secondary);
   }
 
-  .panel-content {
-    /* Padding set via style prop for flexibility */
-  }
+  /* Panel content padding handled by style props */
 
   /* Responsive adjustments */
   @media (max-width: 768px) {

@@ -122,10 +122,9 @@
         >
           <svelte:fragment slot="option-content" let:option>
             {@const isSelected = localSelectedIds.has(option.id)}
-            {@const userOption = option}
             
             <div class="technician-avatar">
-              <UserAvatar user={userOption} size="xs" />
+              <UserAvatar user={option} size="xs" />
             </div>
             <span class="technician-name">{option.attributes.name}</span>
             

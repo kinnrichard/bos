@@ -217,18 +217,7 @@
     opacity: 0.6;
   }
 
-  /* Size variants handled by style props */
-  .form-select.small {
-    /* Padding and font-size handled by style props */
-  }
-
-  .form-select.normal {
-    /* Padding and font-size handled by style props */
-  }
-
-  .form-select.large {
-    /* Padding and font-size handled by style props */
-  }
+  /* Size variants handled by style props - no CSS needed */
 
   /* Adjust arrow position for different sizes */
   .form-select.small + .select-arrow {

@@ -216,13 +216,6 @@
     }
 
 
-    .page-header__actions {
-      width: 100%;
-    }
-
-    .page-header__actions .button {
-      width: 100%;
-    }
   }
 
   @media (max-width: 480px) {
