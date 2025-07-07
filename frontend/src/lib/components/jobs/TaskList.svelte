@@ -610,6 +610,15 @@
     }
   }
 
+  function handleNewTaskBlur() {
+    // Save on blur if there's content, otherwise cancel
+    if (newTaskTitle.trim() !== '' && !isCreatingTask) {
+      createNewTask();
+    } else if (!isCreatingTask) {
+      hideNewTaskForm();
+    }
+  }
+
 
   function handleTaskUpdated(event: CustomEvent) {
     const updatedTask = event.detail.task;
@@ -816,6 +825,10 @@
         // Clear inline state
         cancelInlineNewTask();
         
+        // Update insertNewTaskAfter to point to the newly created task
+        // This ensures subsequent new tasks will be positioned after this one
+        insertNewTaskAfter = result.task.id;
+        
         // Select the newly created task
         taskSelection.selectTask(result.task.id);
         
@@ -848,8 +861,10 @@
   }
 
   function handleInlineNewTaskBlur(parentId: string | null) {
-    // Save on blur
-    createInlineTask(parentId);
+    // Save on blur, but only if not already creating a task (prevents double submission)
+    if (!isCreatingTask) {
+      createInlineTask(parentId);
+    }
   }
 
   // SortableJS event handlers
@@ -1765,6 +1780,7 @@
               task={renderItem.task}
               {jobId}
               {batchTaskDetails}
+              isSelected={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
               on:task-updated={handleTaskUpdated}
             />
           </div>
@@ -1834,7 +1850,7 @@
               bind:this={newTaskInput}
               placeholder="New Task"
               on:keydown={handleNewTaskKeydown}
-              on:blur={hideNewTaskForm}
+              on:blur={handleNewTaskBlur}
               disabled={isCreatingTask}
             />
             {#if isCreatingTask}
@@ -2181,6 +2197,7 @@
     transition: all 0.15s ease;
     opacity: 0;
     pointer-events: none;
+    margin-top: 2.75px;
   }
 
   .task-item:hover .task-action-button {

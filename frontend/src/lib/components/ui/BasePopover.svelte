@@ -210,7 +210,9 @@
 
 <style>
   .base-popover-trigger {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .base-popover-panel {

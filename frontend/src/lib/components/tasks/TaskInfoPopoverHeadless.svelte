@@ -9,6 +9,7 @@
   export let task: Task;
   export let jobId: string;
   export let batchTaskDetails: any = null; // Optional batch details data
+  export let isSelected: boolean = false; // Whether this task is selected
   
   const dispatch = createEventDispatcher();
   
@@ -308,7 +309,7 @@
         title="Task details"
         on:click|stopPropagation
       >
-        <span class="action-icon">ⓘ</span>
+        <img src="/icons/{isSelected ? 'info' : 'info-blue'}.svg" alt="Info" class="action-icon" />
       </button>
     </svelte:fragment>
 
@@ -472,6 +473,13 @@
     pointer-events: auto !important;
     position: relative;
     z-index: 10;
+    margin-top: 2.75px !important;
+  }
+
+  /* Action icon (SVG) styling */
+  .action-icon {
+    width: 18px;
+    height: 18px;
   }
 
   /* Popover content wrapper with scrolling */

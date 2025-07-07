@@ -2,22 +2,41 @@
 
 # TouchableConcern provides automatic cache invalidation for belongs_to relationships
 #
-# Usage:
+# Basic Usage:
 #   class Task < ApplicationRecord
 #     include Touchable
 #     belongs_to :job  # Automatically gets touch: true
 #   end
 #
-# Configuration:
+# Configuration Options:
 #   class MyModel < ApplicationRecord
 #     include Touchable
 #
-#     # Opt out of auto-touch for specific associations
+#     # Skip all touching for specific associations
 #     touchable_config skip_touch: [:some_association]
 #
 #     # Or specify only certain associations to touch
 #     touchable_config only_touch: [:job, :client]
+#
+#     # Disable all touchable behavior
+#     touchable_config disabled: true
 #   end
+#
+# Manual Timestamp Updates (without lock version changes):
+#   class Task < ApplicationRecord
+#     include Touchable
+#     belongs_to :job, touch: false  # Gets manual timestamp updates automatically
+#   end
+#
+#   # This will:
+#   # - NOT add touch: true (no lock version increment)
+#   # - Add after_save/after_destroy callbacks that update job.updated_at
+#   # - Preserve "last activity" tracking without optimistic locking conflicts
+#
+# Precedence Rules:
+#   1. skip_touch: [:job] = no touching at all (neither auto nor manual)
+#   2. touch: false + job in TOUCHABLE_PARENTS = manual timestamp updates
+#   3. no explicit config + job in TOUCHABLE_PARENTS = automatic touch: true
 
 module Touchable
   extend ActiveSupport::Concern
@@ -65,6 +84,10 @@ module Touchable
         options[:touch] = true unless options.key?(:touch)
 
         Rails.logger.debug "[Touchable] Auto-adding touch: true to #{self.name}##{name}" if Rails.env.development?
+      elsif should_manual_touch?(name, options)
+        # Add manual touch callbacks for associations that need timestamp updates without lock version changes
+        setup_manual_touch_callbacks(name)
+        Rails.logger.debug "[Touchable] Setting up manual touch for #{self.name}##{name}" if Rails.env.development?
       end
 
       super(name, scope, **options)
@@ -72,6 +95,54 @@ module Touchable
 
 
     private
+
+    def should_manual_touch?(association_name, options)
+      # Check if this association should use manual touching (touch: false but needs timestamp updates)
+      return false if touchable_options[:disabled]
+
+      # Only set up manual touch if touch is explicitly set to false
+      return false unless options[:touch] == false
+
+      # Respect skip_touch configuration - if explicitly skipped, no touching at all
+      skip_list = Array(touchable_options[:skip_touch]) + SKIP_AUTO_TOUCH
+      return false if skip_list.include?(association_name.to_s)
+
+      # If only_touch is specified, only touch those associations
+      if touchable_options[:only_touch].present?
+        return false unless Array(touchable_options[:only_touch]).include?(association_name.to_s)
+      end
+
+      # And if it's a touchable parent that we want to keep timestamps updated
+      association_name_str = association_name.to_s
+      TOUCHABLE_PARENTS.include?(association_name_str)
+    end
+
+    def setup_manual_touch_callbacks(association_name)
+      # Add callbacks to manually update associated record's timestamp without lock version
+      after_save_method = :"manual_touch_#{association_name}"
+      after_destroy_method = :"manual_touch_#{association_name}_on_destroy"
+
+      Rails.logger.info "[Touchable] Setting up manual touch callbacks for #{self.name}##{association_name}"
+
+      define_method(after_save_method) do
+        associated_record = public_send(association_name)
+        if associated_record.present?
+          Rails.logger.info "[Touchable] Manual touch executing: #{associated_record.class.name}##{associated_record.id}"
+          associated_record.update_column(:updated_at, Time.current)
+        end
+      end
+
+      define_method(after_destroy_method) do
+        associated_record = public_send(association_name)
+        if associated_record.present?
+          Rails.logger.info "[Touchable] Manual touch on destroy: #{associated_record.class.name}##{associated_record.id}"
+          associated_record.update_column(:updated_at, Time.current)
+        end
+      end
+
+      after_save after_save_method
+      after_destroy after_destroy_method
+    end
 
     def should_auto_touch?(association_name, options)
       # Skip if touchable is disabled for this model

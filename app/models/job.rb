@@ -51,6 +51,9 @@ class Job < ApplicationRecord
   # Set defaults
   after_initialize :set_defaults, if: :new_record?
 
+  # Temporarily disable optimistic locking to prevent stale object errors
+  self.locking_column = nil
+
   # Computed datetime methods
   def due_at
     return nil unless due_on

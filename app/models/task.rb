@@ -1,6 +1,9 @@
 class Task < ApplicationRecord
   include Loggable
 
+  # Disable all touchable behavior for Task to prevent conflicts
+  touchable_config disabled: true
+
   belongs_to :job, touch: false
   belongs_to :assigned_to, class_name: "User", optional: true
   belongs_to :parent, class_name: "Task", optional: true, counter_cache: :subtasks_count
@@ -52,6 +55,7 @@ class Task < ApplicationRecord
   # Touch job updated_at without incrementing lock_version
   after_save :touch_job_updated_at
   after_destroy :touch_job_updated_at
+
 
   # Temporarily disable optimistic locking for positioning compatibility testing
   self.locking_column = nil
