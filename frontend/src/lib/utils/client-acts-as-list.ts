@@ -313,15 +313,35 @@ export class ClientActsAsList {
   /**
    * Apply relative positioning updates with client-side prediction
    * This is the main method for maintaining offline functionality
+   * Processes updates sequentially to handle cumulative effects
    */
   static applyRelativePositioning(
     tasks: Task[],
     relativeUpdates: RelativePositionUpdate[]
   ): ActsAsListResult {
-    // Convert relative positioning to integer positions for client prediction
-    const positionUpdates = this.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+    let currentTasks = [...tasks]; // Work with a copy
+    let allOperations: ActsAsListOperation[] = [];
     
-    // Apply using existing position update logic
-    return this.applyPositionUpdates(tasks, positionUpdates);
+    // Process each relative update sequentially
+    relativeUpdates.forEach(relativeUpdate => {
+      // Convert this single relative update using current task state
+      const positionUpdate = this.convertRelativeToPositionUpdates(currentTasks, [relativeUpdate])[0];
+      
+      if (positionUpdate) {
+        // Apply this single position update
+        const result = this.applyPositionUpdates(currentTasks, [positionUpdate]);
+        
+        // Update our working task state for the next iteration
+        currentTasks = result.updatedTasks;
+        
+        // Accumulate operations
+        allOperations = [...allOperations, ...result.operations];
+      }
+    });
+    
+    return {
+      updatedTasks: currentTasks,
+      operations: allOperations
+    };
   }
 }

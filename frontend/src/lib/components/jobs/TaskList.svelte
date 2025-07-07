@@ -781,16 +781,23 @@
       
       if (isMultiSelectDrag && taskIdsToMove.length > 1) {
         // For multi-task operations: use sequential positioning to avoid circular references
-        // Sort tasks by visual order (already done in multi-select logic above)
+        // Sort tasks by their current position to maintain visual order
         const sortedTaskIds = Array.from($taskSelection.selectedTaskIds);
         sortedTaskIds.sort((a, b) => {
-          const flattenedA = flattenedTasks.find(item => item.task.id === a);
-          const flattenedB = flattenedTasks.find(item => item.task.id === b);
-          return (flattenedA?.visualIndex || 0) - (flattenedB?.visualIndex || 0);
+          const taskA = tasks.find(t => t.id === a);
+          const taskB = tasks.find(t => t.id === b);
+          return (taskA?.position || 0) - (taskB?.position || 0);
         });
         
         console.log('🔗 Sequential multi-task positioning:', {
-          sortedTaskIds: sortedTaskIds.map(id => id.substring(0, 8)),
+          sortedTaskIds: sortedTaskIds.map(id => {
+            const task = tasks.find(t => t.id === id);
+            return {
+              id: id.substring(0, 8),
+              position: task?.position,
+              title: task?.title?.substring(0, 15) + '...'
+            };
+          }),
           targetParent: newParentId?.substring(0, 8) || 'null',
           dropMode: event.dropZone?.mode
         });
@@ -852,13 +859,13 @@
         dropZone: event.dropZone
       });
       
-      // 🔮 Client-side position prediction BEFORE server call
-      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
-      const clientPredictedPositions = RailsClientActsAsList.predictServerPositions(tasks, positionUpdates);
+      // 🔮 Client-side position prediction BEFORE server call using sequential processing
+      const predictionResult = RailsClientActsAsList.applyRelativePositioning(tasks, relativeUpdates);
+      const clientPredictedPositions = new Map(predictionResult.updatedTasks.map(t => [t.id, t.position]));
       
       console.log('🔮 Client position prediction based on relative updates:', {
         relativeUpdates,
-        convertedToPositions: positionUpdates,
+        sequentialOperations: predictionResult.operations,
         predictedFinalPositions: Object.fromEntries(clientPredictedPositions),
         tasksBeforeOperation: taskStateBeforeOperation.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id }))
       });
