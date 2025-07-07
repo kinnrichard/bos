@@ -223,7 +223,7 @@
       const selectedCount = $taskSelection.selectedTaskIds.size;
       
       if (selectedCount === 0) {
-        // No selection: activate bottom "Add a Task" row
+        // No selection: activate bottom "New Task" row
         event.preventDefault();
         showNewTaskForm();
       } else if (selectedCount === 1) {
@@ -233,6 +233,7 @@
         insertNewTaskAfter = selectedTaskId;
         showInlineNewTaskInput = true;
         inlineNewTaskTitle = '';
+        taskSelection.clearSelection(); // Clear selection when creating new task
         
         // Focus inline input after DOM update
         tick().then(() => {
@@ -652,6 +653,7 @@
   // Task title editing functions
   function handleTitleClick(event: MouseEvent, taskId: string, currentTitle: string) {
     event.stopPropagation(); // Prevent task selection
+    taskSelection.clearSelection(); // Clear any existing selection when editing
     
     // Store click position for cursor positioning
     const clickX = event.clientX;
@@ -1633,7 +1635,7 @@
     <div class="empty-state">
       <div class="empty-icon">📋</div>
       <h4>No tasks yet</h4>
-      <p>Click "Add a Task" below to get started.</p>
+      <p>Click "New Task" below to get started.</p>
     </div>
   {/if}
   
@@ -1788,7 +1790,7 @@
                 class="task-title task-title-input"
                 bind:value={inlineNewTaskTitle}
                 bind:this={inlineNewTaskInput}
-                placeholder="Task title..."
+                placeholder="New Task"
                 on:keydown={(e) => handleInlineNewTaskKeydown(e, renderItem.task.parent_id)}
                 on:blur={() => handleInlineNewTaskBlur(renderItem.task.parent_id)}
                 disabled={isCreatingTask}
@@ -1830,7 +1832,7 @@
               class="task-title task-title-input"
               bind:value={newTaskTitle}
               bind:this={newTaskInput}
-              placeholder="Task title..."
+              placeholder="New Task"
               on:keydown={handleNewTaskKeydown}
               on:blur={hideNewTaskForm}
               disabled={isCreatingTask}
@@ -1845,7 +1847,7 @@
               class="task-title add-task-placeholder"
               on:click={showNewTaskForm}
             >
-              Add a Task
+              New Task
             </h5>
           {/if}
         </div>

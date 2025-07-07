@@ -9,7 +9,7 @@ test.describe('Return Key Shortcuts for Task Creation', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('Return with no selection should activate bottom "Add a Task" row', async ({ page }) => {
+  test('Return with no selection should activate bottom "New Task" row', async ({ page }) => {
     // Clear any existing selection
     await page.click('body'); // Click outside to clear selection
     
