@@ -608,6 +608,32 @@
     return 1 + getTaskDepth(task.parent_id);
   }
 
+  // Calculate visual order mapping for hierarchical tasks
+  function createVisualOrderMap(tasks: Array<{ id: string; parent_id?: string; position?: number }>): Map<string, number> {
+    const visualOrderMap = new Map<string, number>();
+    let visualIndex = 0;
+
+    // Recursive function to traverse hierarchy and assign visual indices
+    function traverseAndIndex(parentId: string | null, depth: number = 0) {
+      // Get tasks for this parent, sorted by position
+      const childTasks = tasks
+        .filter(t => (t.parent_id || null) === parentId)
+        .sort((a, b) => (a.position || 0) - (b.position || 0));
+
+      // Assign visual index to each task and recurse into children
+      childTasks.forEach(task => {
+        visualOrderMap.set(task.id, visualIndex++);
+        // Recursively process children
+        traverseAndIndex(task.id, depth + 1);
+      });
+    }
+
+    // Start with top-level tasks (parent_id = null)
+    traverseAndIndex(null);
+    
+    return visualOrderMap;
+  }
+
   // Handle nesting a task under another task
   async function handleTaskNesting(draggedTaskId: string, targetTaskId: string) {
     console.log(`🪆 Attempting to nest ${draggedTaskId.substring(0,8)} under ${targetTaskId.substring(0,8)}`);
@@ -781,12 +807,13 @@
       
       if (isMultiSelectDrag && taskIdsToMove.length > 1) {
         // For multi-task operations: use sequential positioning to avoid circular references
-        // Sort tasks by their current position to maintain visual order
+        // Sort tasks by their visual order in the hierarchy (not just position within parent)
+        const visualOrderMap = createVisualOrderMap(tasks);
         const sortedTaskIds = Array.from($taskSelection.selectedTaskIds);
         sortedTaskIds.sort((a, b) => {
-          const taskA = tasks.find(t => t.id === a);
-          const taskB = tasks.find(t => t.id === b);
-          return (taskA?.position || 0) - (taskB?.position || 0);
+          const visualOrderA = visualOrderMap.get(a) || 0;
+          const visualOrderB = visualOrderMap.get(b) || 0;
+          return visualOrderA - visualOrderB;
         });
         
         console.log('🔗 Sequential multi-task positioning:', {
@@ -795,11 +822,14 @@
             return {
               id: id.substring(0, 8),
               position: task?.position,
-              title: task?.title?.substring(0, 15) + '...'
+              visualOrder: visualOrderMap.get(id),
+              title: task?.title?.substring(0, 15) + '...',
+              parent: task?.parent_id?.substring(0, 8) || 'null'
             };
           }),
           targetParent: newParentId?.substring(0, 8) || 'null',
-          dropMode: event.dropZone?.mode
+          dropMode: event.dropZone?.mode,
+          note: 'Sorted by visual hierarchy order, not position within parent'
         });
         
         sortedTaskIds.forEach((taskId, index) => {
