@@ -10,6 +10,7 @@
   import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
   import type { Task as RailsTask, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
+  import Portal from '../ui/Portal.svelte';
 
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';
@@ -254,6 +255,16 @@
       }
       // Multiple selections: do nothing
     }
+
+    // Delete key for task deletion
+    if ((event.key === 'Delete' || event.key === 'Backspace') && !isEditing) {
+      const selectedCount = $taskSelection.selectedTaskIds.size;
+      
+      if (selectedCount > 0) {
+        event.preventDefault();
+        showDeleteConfirmation();
+      }
+    }
   }
 
   onMount(() => {
@@ -337,6 +348,11 @@
   let showInlineNewTaskInput = false;
   let inlineNewTaskTitle = '';
   let inlineNewTaskInput: HTMLInputElement;
+
+  // Task deletion state
+  let showDeleteConfirmationModal = false;
+  let tasksToDelete: string[] = [];
+  let isDeletingTasks = false;
   
 
   // Organize tasks into hierarchical structure with filtering
@@ -881,6 +897,53 @@
     // Save on blur, but only if not already creating a task (prevents double submission)
     if (!isCreatingTask) {
       createInlineTask(parentId, false); // Blur should not select newly created task
+    }
+  }
+
+  // Task deletion functions
+  function showDeleteConfirmation() {
+    tasksToDelete = Array.from($taskSelection.selectedTaskIds);
+    showDeleteConfirmationModal = true;
+  }
+
+  function cancelDeleteConfirmation() {
+    showDeleteConfirmationModal = false;
+    tasksToDelete = [];
+  }
+
+  async function confirmDeleteTasks() {
+    if (tasksToDelete.length === 0 || isDeletingTasks) return;
+
+    isDeletingTasks = true;
+
+    try {
+      // Delete tasks in parallel for better performance
+      const deletePromises = tasksToDelete.map(taskId => 
+        tasksService.deleteTask(jobId, taskId)
+      );
+
+      await Promise.all(deletePromises);
+
+      // Remove deleted tasks from the UI immediately (optimistic update)
+      tasks = tasks.filter(task => !tasksToDelete.includes(task.id));
+
+      // Clear selection
+      taskSelection.clearSelection();
+
+      // Close modal
+      showDeleteConfirmationModal = false;
+      tasksToDelete = [];
+
+      // Show success feedback
+      feedback = `Successfully deleted ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
+      setTimeout(() => feedback = '', 3000);
+
+    } catch (error: any) {
+      console.error('Failed to delete tasks:', error);
+      feedback = `Failed to delete tasks: ${error.message || 'Unknown error'}`;
+      setTimeout(() => feedback = '', 5000);
+    } finally {
+      isDeletingTasks = false;
     }
   }
 
@@ -1934,6 +1997,50 @@
   </div>
 {/if}
 
+<!-- Delete Confirmation Modal -->
+{#if showDeleteConfirmationModal}
+  <Portal>
+    <div class="modal-backdrop" on:click={cancelDeleteConfirmation} on:keydown={(e) => e.key === 'Escape' && cancelDeleteConfirmation()}>
+      <div class="modal-container" on:click|stopPropagation>
+        <div class="modal-header">
+          <h3>Delete {tasksToDelete.length === 1 ? 'Task' : `${tasksToDelete.length} Tasks`}</h3>
+          <button class="modal-close" on:click={cancelDeleteConfirmation} title="Close">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <p>
+            Are you sure you want to delete {tasksToDelete.length === 1 ? 'this task' : `these ${tasksToDelete.length} tasks`}?
+          </p>
+          {#if tasksToDelete.length === 1}
+            {@const taskToDelete = tasks.find(t => t.id === tasksToDelete[0])}
+            {#if taskToDelete}
+              <div class="task-preview">
+                <span class="status-emoji">{getTaskStatusEmoji(taskToDelete.status)}</span>
+                <span class="task-title-preview">{taskToDelete.title}</span>
+              </div>
+            {/if}
+          {/if}
+          <p class="warning-text">This action cannot be undone.</p>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="button button--secondary" on:click={cancelDeleteConfirmation} disabled={isDeletingTasks}>
+            Cancel
+          </button>
+          <button class="button button--danger" on:click={confirmDeleteTasks} disabled={isDeletingTasks}>
+            {#if isDeletingTasks}
+              <span class="spinner">⏳</span>
+              Deleting...
+            {:else}
+              Delete {tasksToDelete.length === 1 ? 'Task' : 'Tasks'}
+            {/if}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Portal>
+{/if}
+
 <style>
   .task-list {
     display: flex;
@@ -2604,5 +2711,167 @@
       transform: translateX(0);
       opacity: 1;
     }
+  }
+
+  /* Delete Confirmation Modal Styles */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-container {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
+    max-width: 480px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    border: 1px solid var(--border-secondary);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-secondary);
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+
+  .modal-close:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  .modal-body {
+    padding: 24px;
+  }
+
+  .modal-body p {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .modal-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .task-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin: 16px 0;
+    border: 1px solid var(--border-secondary);
+  }
+
+  .task-preview .status-emoji {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .task-title-preview {
+    color: var(--text-primary);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .warning-text {
+    color: var(--text-danger) !important;
+    font-size: 14px !important;
+    font-weight: 500;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border-secondary);
+    background: var(--bg-secondary);
+  }
+
+  .button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .button--secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-secondary);
+  }
+
+  .button--secondary:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+  }
+
+  .button--danger {
+    background: var(--status-danger-bg);
+    color: white;
+  }
+
+  .button--danger:hover:not(:disabled) {
+    background: var(--status-danger-text);
+  }
+
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 </style>

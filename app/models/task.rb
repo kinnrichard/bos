@@ -28,9 +28,15 @@ class Task < ApplicationRecord
   # For drag and drop reordering
   positioned on: [ :job_id, :parent_id ]
 
+  # Soft delete scope - only show non-deleted tasks by default
+  scope :not_deleted, -> { where(deleted_at: nil) }
+  default_scope { not_deleted }
+
   # Scopes
   scope :root_tasks, -> { where(parent_id: nil) }
   scope :subtasks_of, ->(task) { where(parent_id: task.id) }
+  scope :deleted, -> { unscoped.where.not(deleted_at: nil) }
+  scope :with_deleted, -> { unscoped }
 
   # Consistent ordering by status - cancelled tasks go to the bottom
   scope :ordered_by_status, -> {
@@ -115,6 +121,28 @@ class Task < ApplicationRecord
   # Check if this is a subtask
   def is_subtask?
     parent_id.present?
+  end
+
+  # Soft delete methods
+  def soft_delete!
+    return false if deleted?
+
+    # Check if task has non-deleted subtasks
+    if subtasks.not_deleted.exists?
+      errors.add(:base, "Cannot delete task with active subtasks. Please delete or move subtasks first.")
+      return false
+    end
+
+    update!(deleted_at: Time.current)
+    true
+  end
+
+  def deleted?
+    deleted_at.present?
+  end
+
+  def restore!
+    update!(deleted_at: nil) if deleted?
   end
 
   # Get the root task (top-level parent)

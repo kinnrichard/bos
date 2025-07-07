@@ -247,11 +247,22 @@ class Api::V1::TasksController < Api::V1::BaseController
   end
 
   def destroy
-    @task.destroy
+    if @task.soft_delete!
+      render json: {
+        status: "success",
+        message: "Task deleted successfully"
+      }
+    else
+      render json: {
+        error: @task.errors.full_messages.join(", "),
+        details: @task.errors.messages
+      }, status: :unprocessable_entity
+    end
+  rescue => e
+    Rails.logger.error "Task deletion failed: #{e.message}"
     render json: {
-      status: "success",
-      message: "Task deleted successfully"
-    }
+      error: "Failed to delete task: #{e.message}"
+    }, status: :internal_server_error
   end
 
   # Individual task reorder
