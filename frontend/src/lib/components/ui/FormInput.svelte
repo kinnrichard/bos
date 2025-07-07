@@ -441,21 +441,25 @@
     /* Ensure consistent appearance across browsers */
     -webkit-appearance: none;
     -moz-appearance: textfield;
+    appearance: none;
   }
 
   .form-input[type="number"] {
     -moz-appearance: textfield;
+    appearance: textfield;
   }
 
   .form-input[type="number"]::-webkit-outer-spin-button,
   .form-input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
+    appearance: none;
     margin: 0;
   }
 
   /* Search input specific styling */
   .form-input[type="search"] {
     -webkit-appearance: none;
+    appearance: none;
   }
 
   .form-input[type="search"]::-webkit-search-decoration,

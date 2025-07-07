@@ -89,7 +89,6 @@
           class="form-input"
           placeholder="your@email.com"
           required
-          autofocus
           disabled={loading}
           on:keydown={handleKeydown}
         />

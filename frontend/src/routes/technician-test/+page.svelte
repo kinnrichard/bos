@@ -115,16 +115,17 @@
         <PopoverOptionList
           options={mockUsers}
           loading={loading}
-          onOptionClick={(user: User) => {
+          onOptionClick={(user) => {
             const isCurrentlySelected = localSelectedIds.has(user.id);
             handleUserToggle(user, isCurrentlySelected);
           }}
         >
           <svelte:fragment slot="option-content" let:option>
             {@const isSelected = localSelectedIds.has(option.id)}
+            {@const userOption = option}
             
             <div class="technician-avatar">
-              <UserAvatar user={option} size="xs" />
+              <UserAvatar user={userOption} size="xs" />
             </div>
             <span class="technician-name">{option.attributes.name}</span>
             
