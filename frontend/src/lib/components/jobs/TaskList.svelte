@@ -1276,7 +1276,7 @@
     const isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedTaskId) && $taskSelection.selectedTaskIds.size > 1;
     
     // Calculate newParentId for both single and multi-select operations
-    let newParentId: string | null;
+    let newParentId: string | undefined;
     const dropIndex = event.newIndex!;
     
     if (event.dropZone?.mode === 'nest' && event.dropZone.targetTaskId) {
@@ -1285,7 +1285,7 @@
     } else if (event.dropZone?.mode === 'reorder' && event.dropZone.targetTaskId) {
       // For reordering: use target task's parent
       const targetTask = tasks.find(t => t.id === event.dropZone!.targetTaskId);
-      newParentId = targetTask?.parent_id || null;
+      newParentId = targetTask?.parent_id;
     } else {
       newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
     }
@@ -1382,7 +1382,7 @@
               }
             } else {
               // For reordering: use the calculated drop position but exclude moving tasks from consideration
-              const firstTaskRelativePos = calculateRelativePosition(event.dropZone, newParentId, [taskId]);
+              const firstTaskRelativePos = calculateRelativePosition(event.dropZone, newParentId ?? null, [taskId]);
               relativeUpdates.push(firstTaskRelativePos);
             }
           } else {
@@ -1397,7 +1397,7 @@
         });
       } else {
         // Single task operation: use standard relative positioning
-        const singleTaskUpdate = calculateRelativePosition(event.dropZone, newParentId, taskIdsToMove);
+        const singleTaskUpdate = calculateRelativePosition(event.dropZone, newParentId ?? null, taskIdsToMove);
         relativeUpdates.push(singleTaskUpdate);
       }
       
@@ -1410,7 +1410,7 @@
       
       // 🔮 Client-side position prediction BEFORE server call using sequential processing
       const predictionResult = RailsClientActsAsList.applyRelativePositioning(tasks, relativeUpdates);
-      const clientPredictedPositions = new Map(predictionResult.updatedTasks.map(t => [t.id, t.position]));
+      const clientPredictedPositions = new Map(predictionResult.updatedTasks.map(t => [t.id, t.position ?? 0]));
       
       console.log('🔮 Client position prediction based on relative updates:', {
         relativeUpdates,
@@ -1440,7 +1440,7 @@
           .sort((a, b) => (a.position || 0) - (b.position || 0))
           .map(t => ({
             id: t.id.substring(0, 8),
-            title: t.title?.substring(0, 15) + (t.title?.length > 15 ? '...' : ''),
+            title: t.title?.substring(0, 15) + ((t.title?.length ?? 0) > 15 ? '...' : ''),
             position: t.position
           }));
         
@@ -1464,7 +1464,7 @@
         .sort((a, b) => (a.position || 0) - (b.position || 0))
         .map(t => ({
           id: t.id.substring(0, 8),
-          title: t.title?.substring(0, 15) + (t.title?.length > 15 ? '...' : ''),
+          title: t.title?.substring(0, 15) + ((t.title?.length ?? 0) > 15 ? '...' : ''),
           position: t.position
         }));
       
@@ -1666,23 +1666,23 @@
   }
 
   // Calculate parent task based on drop position in flattened list
-  function calculateParentFromPosition(dropIndex: number, dropMode: 'reorder' | 'nest'): string | null {
+  function calculateParentFromPosition(dropIndex: number, dropMode: 'reorder' | 'nest'): string | undefined {
     // If explicitly nesting, the target becomes the parent
     if (dropMode === 'nest') {
       const targetItem = flattenedTasks[dropIndex];
-      return targetItem?.task.id || null;
+      return targetItem?.task.id;
     }
     
     // For reordering, determine parent based on the depth we're inserting at
     // If dropping at the very beginning, it's root level
     if (dropIndex === 0) {
-      return null;
+      return undefined;
     }
     
     // Look at the task immediately before the drop position
     const previousItem = flattenedTasks[dropIndex - 1];
     if (!previousItem) {
-      return null; // Root level
+      return undefined; // Root level
     }
     
     // Also look at the task at the drop position (if it exists)
@@ -1690,7 +1690,7 @@
     
     // Enhanced root level detection: if previous item is at depth 0, we're likely at root level too
     if (previousItem.depth === 0) {
-      return null;
+      return undefined;
     }
     
     // If there's a target item and previous item at the same depth,
@@ -1751,7 +1751,7 @@
     const railsTasks: Task[] = tasks.map(t => ({
       id: t.id,
       position: t.position || 0,
-      parent_id: t.parent_id || null,
+      parent_id: t.parent_id,
       title: t.title
     }));
     
@@ -1773,7 +1773,7 @@
     
     // Convert to integer position for optimistic updates
     const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(
-      tasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id || null, title: t.title })),
+      tasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id, title: t.title })),
       [relativePosition]
     );
     

@@ -9,6 +9,14 @@ export interface Task {
   parent_id?: string;
   title?: string;
   status?: string;
+  created_at?: string;
+  updated_at?: string;
+  notes_count?: number;
+  assigned_to?: {
+    id: string;
+    name: string;
+    initials: string;
+  };
 }
 
 export interface PositionUpdate {
