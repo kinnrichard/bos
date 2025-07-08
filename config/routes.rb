@@ -13,8 +13,7 @@ Rails.application.routes.draw do
       # CSRF test endpoint for development debugging
       get "csrf_test", to: "health#csrf_test" if Rails.env.development?
 
-      # CSRF token endpoint for frontend tests
-      get "csrf_token", to: "health#csrf_token" if Rails.env.test?
+      # CSRF token endpoint removed - tests now use production /health endpoint
 
       # Authentication endpoints
       namespace :auth do
@@ -29,8 +28,8 @@ Rails.application.routes.draw do
       # API documentation
       get "documentation", to: "documentation#index"
 
-      # Test endpoints (only available in test environment)
-      if Rails.env.test?
+      # Test endpoints (available in test and development environments for integration testing)
+      if Rails.env.test? || Rails.env.development?
         namespace :test do
           post :reset_database
           post :seed_database

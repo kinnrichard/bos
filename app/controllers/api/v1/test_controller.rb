@@ -6,7 +6,7 @@ require Rails.root.join("test", "test_environment")
 
 class Api::V1::TestController < Api::V1::BaseController
   skip_before_action :authenticate_request
-  skip_before_action :verify_csrf_token_for_cookie_auth
+  # Enable CSRF protection for test controller to match production behavior
 
   before_action :ensure_test_environment!
 
@@ -283,13 +283,13 @@ class Api::V1::TestController < Api::V1::BaseController
   private
 
   def ensure_test_environment!
-    unless Rails.env.test?
+    unless Rails.env.test? || Rails.env.development?
       render json: {
         errors: [ {
           status: "403",
           code: "FORBIDDEN_ENVIRONMENT",
           title: "Forbidden",
-          detail: "Test endpoints only available in test environment"
+          detail: "Test endpoints only available in test and development environments"
         } ]
       }, status: :forbidden
     end

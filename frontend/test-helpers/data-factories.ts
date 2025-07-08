@@ -62,14 +62,14 @@ export class DataFactory {
   }
 
   /**
-   * Get CSRF token for API calls
+   * Get CSRF token for API calls using production endpoint
    */
   private async getCsrfToken(): Promise<string> {
     if (this.csrfToken) {
       return this.csrfToken;
     }
 
-    const csrfResponse = await this.page.request.get(`${this.baseUrl}/csrf_token`, {
+    const csrfResponse = await this.page.request.get(`${this.baseUrl}/health`, {
       headers: { 'Accept': 'application/json' }
     });
 
@@ -77,8 +77,15 @@ export class DataFactory {
       throw new Error(`Failed to get CSRF token: ${csrfResponse.status()}`);
     }
 
-    const csrfData = await csrfResponse.json();
-    this.csrfToken = csrfData.csrf_token;
+    // Extract CSRF token from response headers (same as production)
+    const headers = csrfResponse.headers();
+    const csrfToken = headers['x-csrf-token'] || headers['X-CSRF-Token'];
+    if (!csrfToken) {
+      console.error('Available headers:', Object.keys(headers));
+      throw new Error('CSRF token not found in health response headers');
+    }
+
+    this.csrfToken = csrfToken;
     return this.csrfToken;
   }
 
@@ -208,7 +215,11 @@ export class DataFactory {
     }
 
     const result = await response.json();
-    return result.data.attributes;
+    const jobResult = {
+      id: result.data.id,
+      ...result.data.attributes
+    };
+    return jobResult;
   }
 
   /**

@@ -11,7 +11,7 @@ export interface TestUser {
   id: string;
   email: string;
   name: string;
-  role: 'owner' | 'admin' | 'technician' | 'technician_lead';
+  role: 'owner' | 'admin' | 'technician' | 'customer_specialist';
   password: string;
 }
 
@@ -38,8 +38,8 @@ export class AuthHelper {
    * Login with real API call
    */
   async login(email: string, password: string): Promise<AuthTokens> {
-    // First get CSRF token
-    const csrfResponse = await this.page.request.get(`${this.baseUrl}/api/v1/csrf_token`, {
+    // First get CSRF token from production health endpoint
+    const csrfResponse = await this.page.request.get(`${this.baseUrl}/api/v1/health`, {
       headers: { 'Accept': 'application/json' }
     });
 
@@ -47,8 +47,13 @@ export class AuthHelper {
       throw new Error(`Failed to get CSRF token: ${csrfResponse.status()}`);
     }
 
-    const csrfData = await csrfResponse.json();
-    const csrfToken = csrfData.csrf_token;
+    // Extract CSRF token from response headers (same as production)
+    const headers = csrfResponse.headers();
+    const csrfToken = headers['x-csrf-token'] || headers['X-CSRF-Token'];
+    if (!csrfToken) {
+      console.error('Available headers:', Object.keys(headers));
+      throw new Error('CSRF token not found in health response headers');
+    }
 
     // Perform login
     const loginResponse = await this.page.request.post(`${this.baseUrl}/api/v1/auth/login`, {
@@ -196,7 +201,7 @@ export class AuthHelper {
     const credentials = {
       owner: { email: 'owner@bos-test.local', password: 'password123' },
       admin: { email: 'admin@bos-test.local', password: 'password123' },
-      technician_lead: { email: 'techlead@bos-test.local', password: 'password123' },
+      customer_specialist: { email: 'customer@bos-test.local', password: 'password123' },
       technician: { email: 'tech@bos-test.local', password: 'password123' }
     };
 
@@ -288,11 +293,11 @@ export class UserFactory {
         role: 'admin',
         password: 'password123'
       },
-      technician_lead: {
-        id: 'test-tech-lead',
-        email: 'techlead@bos-test.local',
-        name: 'Test Tech Lead',
-        role: 'technician_lead',
+      customer_specialist: {
+        id: 'test-customer-specialist',
+        email: 'customer@bos-test.local',
+        name: 'Test Customer Specialist',
+        role: 'customer_specialist',
         password: 'password123'
       },
       technician: {

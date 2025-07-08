@@ -1,479 +1,424 @@
 # Testing Guide
 
-This guide covers how to run and work with tests in the BOS project, with a focus on our comprehensive TaskList testing framework.
+This guide covers how to run and work with tests in the BOS project, with comprehensive frontend testing using Playwright and backend testing with Rails.
 
-## Prerequisites
+## Quick Start Commands
 
-Before running tests, ensure you have:
-
-1. **Test database setup**:
-   ```bash
-   RAILS_ENV=test rake test:db:setup
-   ```
-
-2. **Playwright installed** (for frontend tests):
-   ```bash
-   # If not already installed
-   npm install playwright
-   npx playwright install
-   ```
-
-3. **Test environment verified**:
-   ```bash
-   RAILS_ENV=test rake test:db:verify
-   ```
-
-## Quick Start
-
-### **✅ WORKING**: Test Infrastructure Setup
-
+### **Frontend Tests (Primary)**
 ```bash
-# 1. Setup test database with comprehensive seed data
-RAILS_ENV=test rails db:test:seed
+# Basic test execution
+npm test                     # Run all tests with default hybrid strategy
+npm run test:headed          # Run with visible browser (debugging)
+npm run test:debug           # Interactive debugging mode
 
-# 2. Verify test data is loaded correctly
-RAILS_ENV=test rails runner "puts 'Users: ' + User.count.to_s; puts 'Jobs: ' + Job.count.to_s; puts 'Tasks: ' + Task.count.to_s"
+# Test strategies
+npm run test:mocked          # Fast tests with mocked APIs
+npm run test:real-db         # Full integration with real Rails backend
+npm run test:unit           # Unit tests only (*.unit.spec.ts)
+npm run test:integration    # Integration tests (*.integration.spec.ts)
+npm run test:e2e            # End-to-end tests (*.e2e.spec.ts)
 
-# 3. Start Rails server in test mode (required for Playwright)
-RAILS_ENV=test rails server -b 0.0.0.0
-
-# 4. In a separate terminal, run Playwright tests
-npx playwright test
+# Specific tests
+npx playwright test tests/jobs.spec.ts                    # Single test file
+npx playwright test tests/jobs.spec.ts --project=hybrid-chromium  # Specific browser
 ```
 
-### Current Status
-✅ **Infrastructure Complete**: Test database seeding, fixture alignment, and Playwright setup working  
-✅ **Test Data**: 5 test users, 6 clients, 5 jobs, 60+ tasks with comprehensive scenarios  
-✅ **Foreign Key Issues Resolved**: All database constraint errors fixed with proper cleanup ordering  
-✅ **Test Environment Management**: Robust cleanup and seeding with PostgreSQL support  
-⚠️ **Application Error**: Sessions controller missing `Views::Sessions::NewView` class (500 error)  
-
-**Result**: Test infrastructure is complete and working. Application-level Views module needs to be addressed for browser testing.
-
-## TaskList Testing Framework
-
-Our TaskList component has a comprehensive testing framework with multiple test suites:
-
-### Test Suites
-
-#### 1. Comprehensive Tests
-**Purpose**: Complete functional testing of all TaskList features
-
+### **Backend Setup (Required for Integration Tests)**
 ```bash
-RAILS_ENV=test rake test:tasklist:comprehensive
+# 1. Setup test database
+RAILS_ENV=test rails db:test:prepare
+
+# 2. Start Rails test server (in separate terminal)
+RAILS_ENV=test rails server -p 3001
+
+# 3. Verify backend is running
+curl http://localhost:3001/api/v1/health
 ```
 
-**What it tests**:
-- Task creation, editing, deletion
-- Status management (all status transitions)
-- Drag & drop functionality
-- Multi-select operations
-- Keyboard navigation
-- Filtering and search
-- Error handling
+## Test Architecture
 
-#### 2. Focused Feature Tests
-**Purpose**: Deep testing of specific features and edge cases
+### **Comprehensive Test Configuration**
 
-```bash
-rake test:tasklist:focused
+Our testing framework uses a **hybrid approach** with multiple strategies:
+
+#### **Test Strategies**
+- **`mocked`**: Fast unit tests with API mocking
+- **`real-db`**: Full integration tests with Rails backend
+- **`hybrid`**: Automatic strategy selection based on test content
+
+#### **Test Categories** 
+Tests are automatically categorized by filename:
+```
+tests/
+├── *.unit.spec.ts          # Unit tests (mocked APIs)
+├── *.integration.spec.ts   # Integration tests (real backend)
+├── *.e2e.spec.ts          # End-to-end tests (full system)
+├── *.api.spec.ts          # API-focused tests
+└── *.spec.ts              # Hybrid tests (auto-strategy)
 ```
 
-**What it tests**:
-- Special characters in task titles
-- Rapid task creation
-- Complex drag & drop scenarios
-- Keyboard shortcuts
-- Performance under stress
-- Error recovery
+#### **Browser Projects**
+Each test category runs across multiple browsers:
+- `unit-chromium/firefox`
+- `integration-chromium/firefox` 
+- `e2e-chromium`
+- `hybrid-chromium/firefox/webkit`
 
-#### 3. Regression Tests
-**Purpose**: Protect critical functionality during refactoring
+## Environment Configuration
 
+### **Port Configuration**
+The system automatically handles port configuration:
+- **Development**: Frontend (5173) → Backend (3000)
+- **Testing**: Frontend (4173) → Backend (3001)
+
+This is handled by:
+- `vite.config.test.ts` - Test-specific Vite configuration
+- Environment variables embedded at build time
+- No manual port redirection needed
+
+### **Environment Variables**
 ```bash
-rake test:tasklist:regression
+# Test environment (automatically loaded)
+PUBLIC_API_URL=http://localhost:3001/api/v1
+
+# Debug modes
+DEBUG=true                   # Verbose output
+PLAYWRIGHT_HEADFUL=true     # Visual browser mode
 ```
 
-**What it tests**:
-- Core functionality preservation
-- Data persistence
-- UI stability
-- Integration with different user roles
+## Test Execution
 
-### Test Execution Options
-
-#### Debug Mode (Visual Browser)
+### **Development Workflow**
 ```bash
-# Run tests with visible browser for debugging
-rake test:tasklist:debug
+# 1. Start Rails backend
+RAILS_ENV=test rails server -p 3001
 
-# Or manually set environment variables
-DEBUG=true PLAYWRIGHT_HEADFUL=true rake test:tasklist:comprehensive
+# 2. Run frontend tests
+npm test                    # All tests
+npm run test:headed        # Visual debugging
+npm run test:integration   # Backend integration only
 ```
 
-#### CI Mode (Headless)
+### **Continuous Integration**
 ```bash
-# Optimized for continuous integration
-rake test:tasklist:ci
+# Headless mode for CI
+CI=true npm test
+
+# Specific test suites
+npm run test:unit          # Fast unit tests
+npm run test:e2e           # Full system tests
 ```
 
-#### Specific Tests
-```bash
-# Run specific test file
-rake test:tasklist:specific[tasklist_comprehensive_test]
+## File Structure
 
-# Run specific test method
-rake test:tasklist:specific[tasklist_comprehensive_test,task_creation]
-
-# Traditional Rails way
-rails test test/playwright/tasklist_comprehensive_test.rb -n test_loads_task_list_and_displays_tasks_correctly
+### **Frontend Test Organization**
+```
+frontend/
+├── tests/                          # Test files
+│   ├── jobs.spec.ts               # Job management tests
+│   ├── login.spec.ts              # Authentication tests
+│   └── *.{unit,integration,e2e}.spec.ts
+├── test-helpers/                   # Test utilities
+│   ├── config.ts                  # Hybrid test configuration
+│   ├── auth.ts                    # Authentication helpers
+│   ├── data-factories.ts          # Test data creation
+│   └── database.ts                # Database utilities
+├── playwright.config.ts           # Main Playwright config
+├── vite.config.ts                 # Development Vite config
+└── vite.config.test.ts            # Test-specific Vite config
 ```
 
-## Traditional Rails Tests
+### **Test Helper Classes**
+```typescript
+// Authentication
+const auth = new AuthHelper(page);
+await auth.setupAuthenticatedSession('admin');
 
-### Model Tests
+// Test data
+const dataFactory = new DataFactory(page);
+const client = await dataFactory.createClient({name: 'Test Client'});
+const job = await dataFactory.createJob({title: 'Test Job', client_id: client.id});
+
+// Database management
+const db = new TestDatabase();
+await db.cleanup();
+```
+
+## Writing Tests
+
+### **Basic Test Structure**
+```typescript
+import { test, expect } from '@playwright/test';
+import { AuthHelper } from '../test-helpers/auth';
+import { DataFactory } from '../test-helpers/data-factories';
+
+test.describe('Feature Tests', () => {
+  let auth: AuthHelper;
+  let dataFactory: DataFactory;
+
+  test.beforeEach(async ({ page }) => {
+    auth = new AuthHelper(page);
+    dataFactory = new DataFactory(page);
+  });
+
+  test('should test feature functionality', async ({ page }) => {
+    // Setup authentication
+    await auth.setupAuthenticatedSession('admin');
+    
+    // Create test data
+    const testData = await dataFactory.createJob({
+      title: 'Test Job',
+      status: 'in_progress'
+    });
+
+    // Navigate and test
+    await page.goto('/jobs');
+    await expect(page.locator('.job-card')).toBeVisible();
+  });
+});
+```
+
+### **Test Categories**
+
+#### **Unit Tests** (`*.unit.spec.ts`)
+- Fast execution with mocked APIs
+- Focus on component logic and UI interactions
+- No backend dependencies
+
+#### **Integration Tests** (`*.integration.spec.ts`)
+- Real API calls to test backend
+- Database interactions
+- Full request/response cycle
+
+#### **E2E Tests** (`*.e2e.spec.ts`)
+- Complete user workflows
+- Cross-page navigation
+- Real data persistence
+
+## Debugging
+
+### **Visual Debugging**
 ```bash
-# Run all model tests
+# Run with visible browser
+npm run test:headed
+
+# Interactive debugging with pause
+npm run test:debug
+
+# Debug specific test
+npx playwright test tests/jobs.spec.ts --debug
+```
+
+### **Debug Output**
+```bash
+# Verbose logging
+DEBUG=true npm test
+
+# Network request logging
+DEBUG=true npm run test:headed
+```
+
+### **Screenshots and Reports**
+```bash
+# Generate test report
+npm run test:report
+
+# Screenshots saved automatically on failure to:
+# test-results/[test-name]/test-failed-*.png
+```
+
+## Troubleshooting
+
+### **Common Issues**
+
+#### **Port Configuration Problems**
+```bash
+# Check if Rails server is running on correct port
+curl http://localhost:3001/api/v1/health
+
+# Verify built frontend uses correct API URL
+grep -r "localhost:300[0-9]" .svelte-kit/output/client/
+
+# Should show: localhost:3001 (not 3000)
+```
+
+#### **Frontend Build Issues**
+```bash
+# Rebuild with test configuration
+npm run build:test
+
+# Verify environment variables
+npm run preview:test
+# Should show: [Vite Test] API Target: http://localhost:3001
+```
+
+#### **Database Connection Problems**
+```bash
+# Reset test database
+RAILS_ENV=test rails db:test:prepare
+
+# Verify test data
+RAILS_ENV=test rails runner "puts User.count"
+```
+
+#### **Authentication Failures**
+- Ensure Rails test server is running on port 3001
+- Check that CSRF tokens are being generated
+- Verify cookie-based authentication is working
+
+### **Debug Commands**
+```bash
+# Environment status
+curl http://localhost:3001/api/v1/health
+curl http://localhost:4173/
+
+# Test configuration verification
+DEBUG=true npm test -- --list
+
+# Clean and restart
+rm -rf .svelte-kit/ test-results/
+npm run build:test
+```
+
+## Backend Testing (Rails)
+
+### **Traditional Rails Tests**
+```bash
+# Model tests
 rails test test/models/
 
-# Specific model
-rails test test/models/task_test.rb
-rails test test/models/job_test.rb
-```
-
-### Controller Tests
-```bash
-# Run all controller tests
+# Controller tests
 rails test test/controllers/
 
-# Specific controller
-rails test test/controllers/tasks_controller_test.rb
-```
-
-### Integration Tests
-```bash
-# Run all integration tests
+# Integration tests
 rails test test/integration/
 ```
 
-## Test Database Management
-
-### Setup and Seeding
+### **TaskList Testing Framework**
 ```bash
-# Full setup (creates schema, seeds data)
-rake test:db:setup
-# OR: rake db:test:seed
+# Comprehensive TaskList tests
+rake test:tasklist:comprehensive
+rake test:tasklist:smoke
+rake test:tasklist:regression
 
-# Quick setup (faster, assumes schema exists)
-rake db:test:quick_setup
-
-# Reset everything
-rake test:db:reset
-# OR: rake db:test:reset
-
-# Just add seed data
-rake db:test:seed
-```
-
-### Verification
-```bash
-# Verify test data exists
-rake test:db:verify
-# OR: rake db:test:verify
-
-# Check database status
-rake db:test:status
-```
-
-## Test Data
-
-### Available Test Scenarios
-
-The framework provides predefined test data scenarios:
-
-- **`:simple`** - Basic jobs with few tasks
-- **`:complex`** - Jobs with hierarchical task structures  
-- **`:mixed_status`** - Jobs with tasks in various statuses
-- **`:large`** - Jobs with many tasks (performance testing)
-- **`:empty`** - Jobs with no tasks (creation testing)
-
-### Test Users
-
-Available test user roles:
-- **`:admin`** - Full permissions
-- **`:owner`** - Business owner permissions
-- **`:technician`** - Technical staff permissions
-- **`:tech_lead`** - Lead technician permissions
-
-## Debugging Tests
-
-### Visual Debugging
-```bash
-# Run with visible browser
+# Debug mode
 DEBUG=true PLAYWRIGHT_HEADFUL=true rake test:tasklist:comprehensive
 ```
 
-### Screenshots
-Tests automatically capture screenshots in debug mode:
-- Saved to `tmp/screenshots/`
-- Timestamped for easy identification
-- Available in failed test runs
-
-### Console Output
+### **Database Management**
 ```bash
-# Verbose test output
-DEBUG=true rake test:tasklist:comprehensive
+# Setup test database
+rake test:db:setup
+rake db:test:seed
+
+# Verify test data
+rake test:db:verify
+
+# Reset if needed
+rake test:db:reset
 ```
 
-### Pausing Tests
-In debug mode, tests can be paused for manual inspection:
-```ruby
-# This will pause in debug mode for manual browser inspection
-TestEnvironment.pause_for_debug
-```
+## CI/CD Integration
 
-## Writing New Tests
-
-### Using the TaskList Page Object
-```ruby
-class MyTaskListTest < ApplicationPlaywrightTestCase
-  setup do
-    TestEnvironment.setup_test_data!
-    @task_list = TaskListPage.new(@page)
-    login_as_test_user(:admin)
-  end
-
-  test "my custom functionality" do
-    # Navigate to a test job
-    job = TestEnvironment.get_test_job(:simple)
-    @task_list.visit_job(job)
-    
-    # Use high-level page object methods
-    @task_list.create_task("My Test Task")
-    @task_list.change_task_status(0, "in_progress")
-    
-    # Make assertions
-    assert @task_list.has_task?("My Test Task")
-    assert_equal "in_progress", @task_list.get_task_status(0)
-  end
-end
-```
-
-### Using Test Helpers
-```ruby
-test "using helpers directly" do
-  navigate_to_job(:simple)
-  create_new_task("Helper Test Task")
-  change_task_status(0, "successfully_completed")
-  
-  assert_task_exists("Helper Test Task")
-  assert_task_has_status(0, "successfully_completed")
-end
-```
-
-## Test Organization
-
-### File Structure
-```
-test/
-├── fixtures/           # Test data fixtures
-├── models/            # Model unit tests
-├── controllers/       # Controller tests
-├── integration/       # Integration tests
-├── playwright/        # Frontend E2E tests
-│   ├── tasklist_comprehensive_test.rb
-│   ├── tasklist_focused_tests.rb
-│   └── tasklist_regression_test.rb
-├── support/           # Test helpers and utilities
-│   ├── tasklist_test_helpers.rb
-│   └── page_objects/
-│       └── task_list_page.rb
-├── test_helper.rb     # Main test configuration
-└── test_environment.rb # Test environment management
-```
-
-### Test Naming Conventions
-- Test files: `*_test.rb`
-- Test methods: `test "descriptive name"`
-- Page objects: `*_page.rb`
-- Helpers: `*_helpers.rb`
-
-## Continuous Integration
-
-### Running Tests in CI
-```bash
-# Headless mode for CI environments
-CI=true rake test:tasklist:ci
-
-# Traditional Rails tests
-RAILS_ENV=test rails test
-```
-
-### GitHub Actions Example
+### **GitHub Actions Example**
 ```yaml
 - name: Setup Test Database
-  run: rake test_db:setup
+  run: RAILS_ENV=test rails db:test:prepare
 
-- name: Run TaskList Tests
-  run: CI=true rake test:tasklist:ci
+- name: Start Rails Test Server
+  run: RAILS_ENV=test rails server -p 3001 &
+
+- name: Install Playwright
+  run: npx playwright install
+
+- name: Run Frontend Tests
+  run: CI=true npm test
   env:
     RAILS_ENV: test
 
-- name: Run Unit Tests  
+- name: Run Rails Tests
   run: rails test
   env:
     RAILS_ENV: test
 ```
 
-## Performance Considerations
-
-### Parallel Testing
+### **Parallel Testing**
 ```bash
-# Control parallel workers (default uses all CPU cores)
-PARALLEL_WORKERS=2 rails test
+# Control test parallelization
+PARALLEL_WORKERS=2 npm test
 
-# TaskList tests run with reduced parallelization for stability
-rake test:tasklist:all
+# CI-optimized settings automatically applied when CI=true
 ```
 
-### Test Speed
-- **Smoke test**: ~30 seconds (quick verification)
-- **Comprehensive**: ~5-10 minutes (full functionality)
-- **All TaskList tests**: ~10-15 minutes (complete suite)
+## Performance
 
-## Troubleshooting
+### **Test Speed Optimization**
+- **Unit tests**: ~30 seconds (fastest)
+- **Integration tests**: ~2-5 minutes (backend required)
+- **E2E tests**: ~5-10 minutes (full system)
 
-### Common Issues
-
-#### Test Database Problems
+### **Best Practices**
 ```bash
-# Reset and try again
-rake test:db:reset
-rake test:db:verify
+# Before committing
+npm run test:unit          # Quick validation
+npm run test:integration   # Feature validation
+
+# Before major releases
+npm test                   # Full test suite
 ```
 
-#### Browser/Playwright Issues
-```bash
-# Reinstall Playwright
-npx playwright install
+## Advanced Configuration
 
-# Check browser availability
-DEBUG=true rake test:tasklist:smoke
+### **Custom Test Environments**
+```typescript
+// test-helpers/config.ts
+export const HYBRID_CONFIG = {
+  defaultStrategy: 'hybrid',
+  database: {
+    host: 'localhost',
+    port: 3001,
+    resetBetweenTests: false
+  },
+  performance: {
+    parallelWorkers: 2,
+    timeout: 30000
+  }
+};
 ```
 
-#### Test Data Issues
+### **Environment Overrides**
 ```bash
-# Verify test data exists
-rake test:db:verify
+# Force specific strategy
+TEST_STRATEGY=real_db npm test
 
-# Recreate test data
-rake db:test:seed
+# Debug mode
+DEBUG=true PLAYWRIGHT_HEADFUL=true npm test
+
+# CI mode
+CI=true npm test
 ```
 
-#### Flaky Tests
-```bash
-# Run with debug mode to see what's happening
-DEBUG=true PLAYWRIGHT_HEADFUL=true rake test:tasklist:specific[test_name]
+## Migration Notes
 
-# Check for timing issues - increase timeouts if needed
-```
+### **From Old Test Setup**
+If you're migrating from the old port redirection setup:
+1. Remove any `page.route()` request interception
+2. Use the new comprehensive test configuration
+3. Build tests with `npm run build:test` instead of manual environment variables
 
-### Debug Commands
-```bash
-# Environment status
-rake db:test:status
-
-# Clean and start fresh
-rake test:tasklist:clean
-rake test:db:setup
-
-# Verbose output
-DEBUG=true rake test:tasklist:smoke
-```
-
-## Maintenance
-
-### Cleaning Test Artifacts
-```bash
-# Clean screenshots, logs, and temp files
-rake test:tasklist:clean
-```
-
-### Updating Test Data
-```bash
-# Modify db/test_seeds.rb then:
-rake test:db:reset
-```
-
-### Test Reports
-```bash
-# Generate test coverage and status report
-rake test:tasklist:report
-```
-
-## Best Practices
-
-### Before Committing
-```bash
-# Always run regression tests before major changes
-rake test:tasklist:regression
-
-# Run relevant tests for your changes
-rake test:tasklist:focused  # for feature changes
-rails test test/models/     # for model changes
-```
-
-### When Refactoring
-```bash
-# 1. Run comprehensive tests before changes
-rake test:tasklist:comprehensive
-
-# 2. Make your changes
-
-# 3. Run regression tests to verify nothing broke
-rake test:tasklist:regression
-
-# 4. Run full suite to be sure
-rake test:tasklist:all
-```
-
-### For New Features
-```bash
-# 1. Write tests first
-# 2. Run them to see them fail
-# 3. Implement the feature
-# 4. Run tests to see them pass
-rake test:tasklist:comprehensive
-```
-
-## Help and Reference
-
-### Available Commands
-```bash
-# Show all TaskList test commands
-rake test:tasklist:help
-
-# Show all test-related rake tasks
-rake -T test
-```
-
-### Getting Help
-```bash
-# Comprehensive testing documentation
-cat README_TASKLIST_TESTING.md
-
-# Test framework code
-ls test/support/
-```
+### **Updated Commands**
+- ❌ Old: `PUBLIC_API_URL=... npm test`
+- ✅ New: `npm run test:real-db`
 
 ## Summary
 
 This testing framework provides:
-- ✅ **Comprehensive coverage** of TaskList functionality
-- ✅ **Multiple test suites** for different purposes
+- ✅ **Comprehensive port configuration** with automatic environment handling
+- ✅ **Multiple test strategies** (mocked, real-db, hybrid)
+- ✅ **Modern frontend testing** with Playwright
+- ✅ **Backend integration** with Rails API
 - ✅ **Debug-friendly** tools and visual modes
 - ✅ **CI/CD ready** configuration
-- ✅ **Easy-to-use** rake commands
-- ✅ **Maintainable** Page Object Model pattern
+- ✅ **Maintainable** test organization
 
-Start with `rake test:tasklist:smoke` to verify everything works, then use `rake test:tasklist:all` for full testing coverage.
+**Quick start**: Run `npm test` to execute all tests, or `npm run test:headed` for visual debugging.

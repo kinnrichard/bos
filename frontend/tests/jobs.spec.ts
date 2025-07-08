@@ -30,7 +30,12 @@ test.describe('Jobs List Page (SVELTE-005)', () => {
       client_id: client.id
     });
 
-    await page.goto('/jobs');
+    console.log(`Created job with ID: ${job.id}`);
+    
+    // Wait a moment for the job to be fully created
+    await page.waitForTimeout(1000);
+
+    await page.goto('/jobs?scope=all');
     
     // Wait for SvelteKit to fully load
     await page.waitForLoadState('domcontentloaded');
@@ -63,17 +68,31 @@ test.describe('Jobs List Page (SVELTE-005)', () => {
     await expect(page.locator('h1')).toContainText('Jobs');
 
     // Debug: Check what the API returns (using authenticated session)
-    const apiResponse = await page.request.get('http://localhost:3001/api/v1/jobs', {
+    const cookies = await page.context().cookies();
+    console.log('Page cookies:', cookies.map(c => `${c.name}=${c.value}`));
+    
+    const apiResponse = await page.request.get('http://localhost:3001/api/v1/jobs?scope=all', {
       headers: { 
         'Accept': 'application/json',
-        'Cookie': await page.context().cookies().then(cookies => 
-          cookies.map(c => `${c.name}=${c.value}`).join('; ')
-        )
+        'Cookie': cookies.map(c => `${c.name}=${c.value}`).join('; ')
       }
     });
     const apiData = await apiResponse.json();
     console.log('API Response status:', apiResponse.status());
     console.log('API Response data:', JSON.stringify(apiData, null, 2));
+    
+    // Check if our specific job exists
+    const specificJobResponse = await page.request.get(`http://localhost:3001/api/v1/jobs/${job.id}`, {
+      headers: { 
+        'Accept': 'application/json',
+        'Cookie': cookies.map(c => `${c.name}=${c.value}`).join('; ')
+      }
+    });
+    console.log('Specific job response status:', specificJobResponse.status());
+    if (specificJobResponse.ok()) {
+      const specificJobData = await specificJobResponse.json();
+      console.log('Specific job data:', JSON.stringify(specificJobData, null, 2));
+    }
 
     // Check if there are jobs or empty state
     const hasJobs = page.locator('.job-card-inline');
