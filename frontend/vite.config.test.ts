@@ -8,7 +8,7 @@ export default defineConfig(() => {
 	// Test-specific API target
 	const apiTarget = env.PUBLIC_API_URL ? 
 		env.PUBLIC_API_URL.replace('/api/v1', '') : 
-		'http://localhost:3001';
+		'http://localhost:3000';
 		
 	console.log(`[Vite Test] API Target: ${apiTarget}`);
 	console.log(`[Vite Test] PUBLIC_API_URL: ${env.PUBLIC_API_URL}`);
@@ -29,7 +29,7 @@ export default defineConfig(() => {
 		// Ensure test environment variables are embedded during build
 		define: {
 			'import.meta.env.PUBLIC_API_URL': JSON.stringify(
-				env.PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+				env.PUBLIC_API_URL || 'http://localhost:3000/api/v1'
 			),
 			'import.meta.env.PUBLIC_APP_NAME': JSON.stringify(
 				env.PUBLIC_APP_NAME || 'bŏs'

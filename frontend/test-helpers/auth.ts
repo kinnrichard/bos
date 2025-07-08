@@ -78,6 +78,15 @@ export class AuthHelper {
     const loginData = await loginResponse.json();
     const userData = loginData.included?.find((item: any) => item.type === 'users');
 
+    // IMPORTANT: Copy authentication cookies from request context to browser context
+    // This ensures that page.goto() requests will have the same session cookies
+    const requestCookies = await this.page.request.storageState();
+    if (requestCookies.cookies && requestCookies.cookies.length > 0) {
+      // Add cookies to the browser context so page.goto() can use them
+      await this.page.context().addCookies(requestCookies.cookies);
+      console.log(`[AUTH] Transferred ${requestCookies.cookies.length} authentication cookies to browser context`);
+    }
+
     return {
       accessToken: 'cookie-based', // Rails uses cookie-based auth
       refreshToken: 'cookie-based',

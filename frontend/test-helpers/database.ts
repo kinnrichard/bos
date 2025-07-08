@@ -13,7 +13,7 @@ export interface DatabaseConfig {
 }
 
 export const DEFAULT_DB_CONFIG: DatabaseConfig = {
-  railsPort: parseInt(process.env.RAILS_TEST_PORT || '3001'),
+  railsPort: parseInt(process.env.RAILS_TEST_PORT || process.env.RAILS_PORT || '3000'),
   railsHost: process.env.RAILS_TEST_HOST || 'localhost',
   testDatabaseName: 'bos_test',
   apiBasePath: '/api/v1'

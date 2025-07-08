@@ -71,7 +71,7 @@ test.describe('Jobs List Page (SVELTE-005)', () => {
     const cookies = await page.context().cookies();
     console.log('Page cookies:', cookies.map(c => `${c.name}=${c.value}`));
     
-    const apiResponse = await page.request.get('http://localhost:3001/api/v1/jobs?scope=all', {
+    const apiResponse = await page.request.get('http://localhost:3000/api/v1/jobs?scope=all', {
       headers: { 
         'Accept': 'application/json',
         'Cookie': cookies.map(c => `${c.name}=${c.value}`).join('; ')
@@ -82,7 +82,7 @@ test.describe('Jobs List Page (SVELTE-005)', () => {
     console.log('API Response data:', JSON.stringify(apiData, null, 2));
     
     // Check if our specific job exists
-    const specificJobResponse = await page.request.get(`http://localhost:3001/api/v1/jobs/${job.id}`, {
+    const specificJobResponse = await page.request.get(`http://localhost:3000/api/v1/jobs/${job.id}`, {
       headers: { 
         'Accept': 'application/json',
         'Cookie': cookies.map(c => `${c.name}=${c.value}`).join('; ')
@@ -164,14 +164,14 @@ test.describe('Jobs List Page (SVELTE-005)', () => {
     requests.forEach(req => {
       console.log(`  ${req}`);
       if (req.includes('localhost:3000')) {
-        console.error('ERROR: Request made to wrong port 3000!');
+        console.log('✅ Request made to correct port 3000');
       } else if (req.includes('localhost:3001')) {
-        console.log('✅ Request made to correct port 3001');
+        console.error('ERROR: Request made to wrong port 3001!');
       }
     });
 
     // Check if we can manually verify the API works
-    const apiResponse = await page.request.get('http://localhost:3001/api/v1/jobs');
+    const apiResponse = await page.request.get('http://localhost:3000/api/v1/jobs');
     console.log('Direct API test status:', apiResponse.status());
     console.log('Direct API test response:', await apiResponse.json());
 

@@ -50,7 +50,7 @@ export const HYBRID_CONFIG: HybridTestConfig = {
   
   database: {
     host: process.env.RAILS_TEST_HOST || 'localhost',
-    port: parseInt(process.env.RAILS_TEST_PORT || '3001'),
+    port: parseInt(process.env.RAILS_TEST_PORT || '3000'),
     resetBetweenTests: false,
     isolationStrategy: 'cleanup',
     seedData: true
@@ -58,7 +58,7 @@ export const HYBRID_CONFIG: HybridTestConfig = {
   
   rails: {
     host: process.env.RAILS_TEST_HOST || 'localhost',
-    port: parseInt(process.env.RAILS_TEST_PORT || '3001'),
+    port: parseInt(process.env.RAILS_TEST_PORT || '3000'),
     startCommand: process.env.RAILS_START_COMMAND,
     waitTimeout: 30000
   },
