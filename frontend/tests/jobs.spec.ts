@@ -126,21 +126,12 @@ test.describe('Jobs List Page (SVELTE-005)', () => {
   });
 
   test('should display empty state when no jobs', async ({ page }) => {
-    // Capture network requests to debug the port issue
+    // Capture network requests to verify correct port usage
     const requests: string[] = [];
     page.on('request', request => {
       if (request.url().includes('/api/')) {
         requests.push(`${request.method()} ${request.url()}`);
       }
-    });
-
-    // Intercept and redirect API requests to the correct port
-    await page.route('**/api/v1/**', async route => {
-      const originalUrl = route.request().url();
-      const correctedUrl = originalUrl.replace('localhost:3000', 'localhost:3001');
-      console.log(`Redirecting ${originalUrl} to ${correctedUrl}`);
-      
-      await route.continue({ url: correctedUrl });
     });
 
     // Don't create any jobs, so the database will be empty
@@ -149,9 +140,16 @@ test.describe('Jobs List Page (SVELTE-005)', () => {
     // Wait for page to load and requests to complete
     await page.waitForLoadState('networkidle');
     
-    // Debug: Print all API requests made
+    // Debug: Print all API requests made and verify correct port
     console.log('API requests made:');
-    requests.forEach(req => console.log(`  ${req}`));
+    requests.forEach(req => {
+      console.log(`  ${req}`);
+      if (req.includes('localhost:3000')) {
+        console.error('ERROR: Request made to wrong port 3000!');
+      } else if (req.includes('localhost:3001')) {
+        console.log('✅ Request made to correct port 3001');
+      }
+    });
 
     // Check if we can manually verify the API works
     const apiResponse = await page.request.get('http://localhost:3001/api/v1/jobs');

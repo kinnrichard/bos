@@ -211,7 +211,7 @@ export function createHybridPlaywrightConfig(
         timeout: 120 * 1000,
         reuseExistingServer: false, // Force fresh build with correct API URL
         env: {
-          PUBLIC_API_URL: `http://${config.rails.host}:${config.rails.port}/api/v1`,
+          // Test environment variables are now handled by vite.config.test.ts
           ...process.env
         },
       },
