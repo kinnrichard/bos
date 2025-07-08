@@ -276,7 +276,7 @@
   .panel-bottom::after {
     content: '';
     position: absolute;
-    top: -10px;
+    top: -9px;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
@@ -305,7 +305,7 @@
   .panel-top::after {
     content: '';
     position: absolute;
-    bottom: -10px;
+    bottom: -9px;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
@@ -334,7 +334,7 @@
   .panel-left::after {
     content: '';
     position: absolute;
-    right: -10px;
+    right: -9px;
     top: 50%;
     transform: translateY(-50%);
     width: 0;
@@ -363,7 +363,7 @@
   .panel-right::after {
     content: '';
     position: absolute;
-    left: -10px;
+    left: -9px;
     top: 50%;
     transform: translateY(-50%);
     width: 0;
