@@ -21,64 +21,7 @@
   export let jobId: string = 'test';
   export let batchTaskDetails: any = null; // Optional batch task details data
 
-  // TEMP: Add static test tasks for nesting demo
-  if (tasks.length === 0) {
-    const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
-    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000); // 2 hours ago
-    
-    tasks = [
-      {
-        id: 'task-1',
-        title: 'First Task - Drag me onto another task to nest',
-        status: 'new_task',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        position: 1,
-        assigned_to: {
-          id: 'user1',
-          name: 'John Smith',
-          initials: 'JS'
-        },
-        notes_count: 2
-      },
-      {
-        id: 'task-2', 
-        title: 'Second Task - Currently in progress with live timer',
-        status: 'in_progress',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        position: 2,
-        in_progress_since: oneHourAgo.toISOString(),
-        accumulated_seconds: 30 * 60, // 30 minutes of previous work
-        assigned_to: {
-          id: 'user2',
-          name: 'Alice Johnson',
-          initials: 'AJ'
-        }
-      },
-      {
-        id: 'task-3',
-        title: 'Third Task - Completed with total time',
-        status: 'successfully_completed',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        position: 3,
-        accumulated_seconds: 2 * 60 * 60 + 15 * 60, // 2 hours 15 minutes total
-        notes_count: 1
-      },
-      {
-        id: 'task-4',
-        title: 'Fourth Task - Has notes but no assignment',
-        status: 'new_task',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        position: 4,
-        notes_count: 3
-      }
-    ] as Task[];
-  }
-
+  
   // Track collapsed/expanded state of tasks with subtasks
   let expandedTasks = new Set<string>();
   let hasAutoExpanded = false;
