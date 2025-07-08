@@ -24,7 +24,10 @@ class CsrfTokenManager {
    * This is the main method that components should call
    */
   async getToken(): Promise<string | null> {
-    if (!browser) return null;
+    // In test environment, force browser-like behavior even if browser flag is false
+    // This is needed because SvelteKit may serve server chunks during tests
+    const isBrowserLike = browser || (typeof window !== 'undefined' && typeof document !== 'undefined');
+    if (!isBrowserLike) return null;
 
     // If we have a fresh token, return it immediately
     if (this.token && this.isTokenFresh()) {

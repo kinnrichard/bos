@@ -8,7 +8,8 @@ import { build, files, version } from '$service-worker';
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
 // Create a unique cache name for this deployment
-const CACHE = `cache-${version}`;
+// Force cache update for API fix
+const CACHE = `cache-${version}-api-fix`;
 
 const ASSETS = [
 	...build, // the app itself
@@ -40,8 +41,19 @@ sw.addEventListener('fetch', (event) => {
 	// ignore non-GET requests
 	if (event.request.method !== 'GET') return;
 
+	const url = new URL(event.request.url);
+	
+	// Skip intercepting API requests entirely - let them go through Vite's proxy
+	// This allows the development/test proxy to handle routing to the correct backend
+	if (url.pathname.startsWith('/api/')) {
+		console.log('[SW] Skipping API request:', url.pathname);
+		// Don't intercept - let the browser handle this request normally
+		// In development/test: Vite proxy will route to backend
+		// In production: Direct API calls (same origin)
+		return;
+	}
+
 	async function respond() {
-		const url = new URL(event.request.url);
 		const cache = await caches.open(CACHE);
 
 		// `build`/`files` can always be served from the cache
@@ -52,7 +64,7 @@ sw.addEventListener('fetch', (event) => {
 			}
 		}
 
-		// for everything else, try the network first, but
+		// for everything else (non-API), try the network first, but
 		// fall back to the cache if offline
 		try {
 			const response = await fetch(event.request);

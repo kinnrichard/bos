@@ -38,10 +38,22 @@ export default defineConfig(() => {
 				env.PUBLIC_APP_VERSION || '0.0.1'
 			),
 		},
-		// Test-specific build options
+		// Test-specific build options for proper client-side rendering
 		build: {
 			sourcemap: true,
 			minify: false, // Easier debugging in tests
+			target: 'es2020', // Modern browser target for better debugging
 		},
+		// Preview configuration to serve client-side build only
+		preview: {
+			port: 4173,
+			strictPort: false,
+			// Ensure we serve the client build, not server chunks
+			headers: {
+				'Cache-Control': 'no-cache'
+			}
+		},
+		// Ensure proper client-side mode for tests
+		mode: 'test'
 	};
 });

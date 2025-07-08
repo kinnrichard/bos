@@ -7,7 +7,8 @@
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins ENV.fetch("FRONTEND_URL", "http://localhost:5173")
+    # Support both development (5173) and test (4173) frontend servers
+    origins ENV.fetch("FRONTEND_URL", "http://localhost:5173"), "http://localhost:4173"
 
     resource "/api/*",
       headers: :any,

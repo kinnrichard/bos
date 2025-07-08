@@ -52,6 +52,31 @@ test.describe('Jobs List Page (SVELTE-005)', () => {
     const h1Content = await page.locator('h1').first().textContent().catch(() => null);
     console.log('H1 content:', h1Content);
     
+    // Debug: Check what TanStack Query sees by reading console messages
+    const messages = await page.evaluate(() => {
+      // Capture console logs from the browser
+      const logs: string[] = [];
+      const originalLog = console.log;
+      const originalError = console.error;
+      const originalWarn = console.warn;
+      
+      console.log = (...args) => {
+        logs.push(`LOG: ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}`);
+        originalLog.apply(console, args);
+      };
+      console.error = (...args) => {
+        logs.push(`ERROR: ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}`);
+        originalError.apply(console, args);
+      };
+      console.warn = (...args) => {
+        logs.push(`WARN: ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}`);
+        originalWarn.apply(console, args);
+      };
+      
+      return logs;
+    });
+    console.log('Browser console messages captured:', messages.slice(-10)); // Last 10 messages
+    
     // Debug: Check page content
     const pageContent = await page.textContent('body');
     console.log('Page content preview:', pageContent?.substring(0, 1000));
