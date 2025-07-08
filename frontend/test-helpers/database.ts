@@ -147,6 +147,23 @@ export class TestDatabase {
       return { valid: false, message: `Connection error: ${error}` };
     }
   }
+
+  /**
+   * Clean up test data (safer than full reset)
+   */
+  async cleanup(): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/test/cleanup`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to cleanup test data: ${response.status} ${response.statusText}`);
+    }
+  }
 }
 
 /**

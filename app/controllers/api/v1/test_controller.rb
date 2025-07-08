@@ -244,13 +244,20 @@ class Api::V1::TestController < Api::V1::BaseController
     # This is safer than full database reset for running tests
 
     begin
-      # Delete test entities created in the last hour
-      cutoff_time = 1.hour.ago
+      # Use database reset for reliable cleanup
+      ActiveRecord::Base.transaction do
+        # Temporarily disable foreign key checks
+        ActiveRecord::Base.connection.execute("SET session_replication_role = replica;")
 
-      Task.where("created_at > ? AND title LIKE 'Test Task%'", cutoff_time).delete_all
-      Job.where("created_at > ? AND title LIKE 'Test Job%'", cutoff_time).delete_all
-      Client.where("created_at > ? AND name LIKE 'Test Client%'", cutoff_time).delete_all
-      User.where("created_at > ? AND email LIKE '%@example.com'", cutoff_time).delete_all
+        # Now delete all data
+        [ Task, Job, Device, ContactMethod, Person, Client ].each(&:delete_all)
+
+        # Clean up test users but keep seed users for authentication
+        User.where("email LIKE '%@example.com' OR email LIKE '%test%'").delete_all
+
+        # Re-enable foreign key checks
+        ActiveRecord::Base.connection.execute("SET session_replication_role = DEFAULT;")
+      end
 
       render json: {
         data: {
