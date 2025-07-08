@@ -147,6 +147,23 @@ export function createHybridPlaywrightConfig(
       screenshot: 'only-on-failure',
       video: 'retain-on-failure',
     },
+
+    // Set environment variables for tests
+    use: {
+      ...overrides.use,
+      baseURL: 'http://localhost:4173', // Svelte dev server
+      trace: 'on-first-retry',
+      screenshot: 'only-on-failure',
+      video: 'retain-on-failure',
+      // Override API URL for tests to point to test Rails server
+      extraHTTPHeaders: overrides.use?.extraHTTPHeaders || {},
+    },
+
+    // Environment variables for test execution
+    env: {
+      PUBLIC_API_URL: `http://${config.rails.host}:${config.rails.port}/api/v1`,
+      ...process.env
+    },
     
     projects: [
       // Unit tests - fast, mocked APIs
@@ -189,10 +206,14 @@ export function createHybridPlaywrightConfig(
     webServer: [
       // Svelte frontend server
       {
-        command: 'npm run build && npm run preview',
+        command: 'npm run build:test && npm run preview:test',
         port: 4173,
         timeout: 120 * 1000,
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: false, // Force fresh build with correct API URL
+        env: {
+          PUBLIC_API_URL: `http://${config.rails.host}:${config.rails.port}/api/v1`,
+          ...process.env
+        },
       },
       
       // Rails backend server (conditional)

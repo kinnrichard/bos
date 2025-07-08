@@ -1,7 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { AuthHelper } from '../test-helpers/auth';
 
 test.describe('Login functionality', () => {
+  let auth: AuthHelper;
+
   test.beforeEach(async ({ page }) => {
+    // Initialize auth helper
+    auth = new AuthHelper(page);
+    
+    // Clear any existing authentication
+    await auth.clearAuth();
+    
     // Navigate to login page
     await page.goto('/login');
   });
@@ -18,8 +27,8 @@ test.describe('Login functionality', () => {
     const passwordInput = page.locator('input[type="password"]');
     const submitButton = page.getByRole('button', { name: /sign in/i });
 
-    // Fill in credentials
-    await emailInput.fill('test@example.com');
+    // Fill in real test credentials
+    await emailInput.fill('admin@bos-test.local');
     await passwordInput.fill('password123');
 
     // Click submit button (should prevent double submission due to loading guard)
@@ -39,13 +48,13 @@ test.describe('Login functionality', () => {
     expect(hasLoadingText || isButtonDisabled).toBe(true);
   });
 
-  test('should show proper error message for rate limiting', async ({ page }) => {
+  test('should show proper error message for invalid credentials', async ({ page }) => {
     const emailInput = page.locator('input[type="email"]');
     const passwordInput = page.locator('input[type="password"]');
     const submitButton = page.getByRole('button', { name: /sign in/i });
 
-    // Fill in credentials
-    await emailInput.fill('test@example.com');
+    // Fill in invalid credentials
+    await emailInput.fill('admin@bos-test.local');
     await passwordInput.fill('wrongpassword');
 
     // Submit form

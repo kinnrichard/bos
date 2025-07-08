@@ -16,6 +16,8 @@
 		"test:debug": "DEBUG=true playwright test --debug",
 		"test:headed": "playwright test --headed",
 		"test:report": "playwright show-report",
+		"build:test": "PUBLIC_API_URL=http://localhost:3001/api/v1 vite build",
+		"preview:test": "PUBLIC_API_URL=http://localhost:3001/api/v1 vite preview",
 		"sync": "svelte-kit sync",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
