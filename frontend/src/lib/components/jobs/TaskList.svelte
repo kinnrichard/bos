@@ -2370,13 +2370,12 @@
 
   /* Add New Task Row Styling */
   .task-item-add-new {
-    /* Allow full pointer events to test gap hover behavior */
-    gap: 8px;
+    /* Allow full pointer events for complete hover detection */
   }
 
   .task-item-add-new .task-status {
-    /* Remove margin-right to use flex gap instead */
-    margin-right: 0;
+    /* Restore margin-right to maintain visual alignment with other task rows */
+    margin-right: 8px;
   }
 
   .add-task-placeholder {
