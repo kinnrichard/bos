@@ -2370,21 +2370,13 @@
 
   /* Add New Task Row Styling */
   .task-item-add-new {
-    /* Exclude from selection and hover effects */
-    pointer-events: none;
+    /* Allow full pointer events to test gap hover behavior */
+    gap: 8px;
   }
 
-  .task-item-add-new > * {
-    /* Re-enable pointer events for all child elements to allow full-row hover */
-    pointer-events: auto;
-  }
-
-  .task-item-add-new .disclosure-spacer,
-  .task-item-add-new .task-metadata,
-  .task-item-add-new .task-actions {
-    /* Prevent unwanted interactions on non-interactive areas */
-    cursor: default;
-    user-select: none;
+  .task-item-add-new .task-status {
+    /* Remove margin-right to use flex gap instead */
+    margin-right: 0;
   }
 
   .add-task-placeholder {
@@ -2401,8 +2393,17 @@
     --placeholder-opacity: 0.7;
   }
 
+  .task-item-add-new .status-emoji {
+    /* Disable hover state entirely for add-new rows to prevent interference */
+    cursor: default;
+  }
+
   .task-item-add-new .status-emoji:hover {
-    opacity: 0.6; /* Match the default SVG opacity, no change on hover */
+    /* Completely disable hover effects for add-new task status emojis */
+    opacity: inherit;
+    transform: none;
+    background: none;
+    cursor: default;
   }
 
   .creating-indicator {
