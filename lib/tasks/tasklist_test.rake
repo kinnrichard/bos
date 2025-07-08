@@ -1,105 +1,88 @@
 # TaskList Test Management Rake Tasks
-# Provides convenient commands for running TaskList-specific tests
+# NOTE: Ruby Playwright tests have been archived due to API-only Rails architecture
+# Use frontend/tests/ for TaskList UI testing with proper Svelte + mocked API setup
 
 namespace :test do
   namespace :tasklist do
-    desc "Run all TaskList Playwright tests"
-    task all: :environment do
-      puts "🧪 Running all TaskList Playwright tests..."
+    desc "Run TaskList API tests (Ruby backend)"
+    task api: :environment do
+      puts "🧪 Running TaskList API tests..."
 
       # Ensure test environment is ready
       Rake::Task["db:test:quick_setup"].invoke
 
-      # Run all TaskList tests
-      test_files = [
-        "test/playwright/tasklist_comprehensive_test.rb",
-        "test/playwright/tasklist_focused_tests.rb",
-        "test/playwright/tasklist_regression_test.rb"
-      ]
+      # Run Rails API-focused tests
+      test_files = Dir[Rails.root.join("test/models/*task*.rb")] +
+                   Dir[Rails.root.join("test/controllers/*task*.rb")] +
+                   Dir[Rails.root.join("test/integration/*task*.rb")]
+
+      if test_files.empty?
+        puts "⚠️  No TaskList API tests found. Consider adding tests for Task model and related API endpoints."
+        return
+      end
 
       success = true
-
       test_files.each do |file|
-        if File.exist?(Rails.root.join(file))
-          puts "\\n📂 Running #{file}..."
-          result = system("rails test #{file}")
-          success &&= result
-        else
-          puts "⚠️  Test file not found: #{file}"
-        end
+        puts "\\n📂 Running #{File.basename(file)}..."
+        result = system("rails test #{file}")
+        success &&= result
       end
 
       if success
-        puts "\\n✅ All TaskList tests passed!"
+        puts "\\n✅ All TaskList API tests passed!"
       else
-        puts "\\n❌ Some TaskList tests failed!"
+        puts "\\n❌ Some TaskList API tests failed!"
         exit 1
       end
     end
 
-    desc "Run comprehensive TaskList functionality tests"
-    task comprehensive: :environment do
-      puts "🧪 Running comprehensive TaskList tests..."
-      Rake::Task["db:test:quick_setup"].invoke
+    desc "Run TaskList frontend tests (Svelte UI)"
+    task frontend: :environment do
+      puts "🧪 Running TaskList frontend tests..."
 
-      system("rails test test/playwright/tasklist_comprehensive_test.rb")
+      unless Dir.exist?("frontend")
+        puts "❌ Frontend directory not found. Make sure you're in the Rails root directory."
+        exit 1
+      end
+
+      puts "\\n📂 Running Svelte TaskList tests..."
+      Dir.chdir("frontend") do
+        success = system("npm run test")
+        unless success
+          puts "\\n❌ Frontend tests failed!"
+          exit 1
+        end
+      end
+
+      puts "\\n✅ TaskList frontend tests passed!"
     end
 
-    desc "Run focused TaskList feature tests"
-    task focused: :environment do
-      puts "🧪 Running focused TaskList feature tests..."
-      Rake::Task["db:test:quick_setup"].invoke
+    desc "Run all TaskList tests (API + Frontend)"
+    task all: :environment do
+      puts "🧪 Running all TaskList tests (API + Frontend)..."
 
-      system("rails test test/playwright/tasklist_focused_tests.rb")
+      Rake::Task["test:tasklist:api"].invoke
+      Rake::Task["test:tasklist:frontend"].invoke
+
+      puts "\\n🎉 All TaskList tests passed!"
     end
 
-    desc "Run TaskList regression tests"
-    task regression: :environment do
-      puts "🧪 Running TaskList regression tests..."
-      Rake::Task["db:test:quick_setup"].invoke
-
-      system("rails test test/playwright/tasklist_regression_test.rb")
-    end
-
-    desc "Run TaskList tests with debug mode"
+    desc "Run TaskList frontend tests with debug mode"
     task debug: :environment do
-      puts "🧪 Running TaskList tests in debug mode..."
-      Rake::Task["db:test:quick_setup"].invoke
+      puts "🧪 Running TaskList frontend tests in debug mode..."
 
-      ENV["DEBUG"] = "true"
-      ENV["PLAYWRIGHT_HEADFUL"] = "true"
-
-      Rake::Task["test:tasklist:comprehensive"].invoke
+      Dir.chdir("frontend") do
+        ENV["DEBUG"] = "true"
+        system("npm run test:debug")
+      end
     end
 
-    desc "Run TaskList tests in headless mode (CI)"
+    desc "Run TaskList tests in CI mode"
     task ci: :environment do
       puts "🧪 Running TaskList tests for CI..."
 
       ENV["CI"] = "true"
-      ENV["PLAYWRIGHT_HEADFUL"] = "false"
-      ENV["DEBUG"] = "false"
-
       Rake::Task["test:tasklist:all"].invoke
-    end
-
-    desc "Run a specific TaskList test method"
-    task :specific, [ :test_file, :test_method ] => :environment do |t, args|
-      test_file = args[:test_file] || "tasklist_comprehensive_test"
-      test_method = args[:test_method]
-
-      puts "🧪 Running specific test: #{test_file}#{test_method ? "##{test_method}" : ""}..."
-      Rake::Task["db:test:quick_setup"].invoke
-
-      file_path = "test/playwright/#{test_file}.rb"
-      unless file_path.include?("test/playwright/")
-        file_path = "test/playwright/#{test_file}_test.rb"
-      end
-
-      command = "rails test #{file_path}"
-      command += " -n test_#{test_method}" if test_method
-
-      system(command)
     end
 
     desc "Setup test environment and run quick smoke test"
@@ -142,10 +125,11 @@ namespace :test do
         puts "\\n🎉 TaskList smoke test completed successfully!"
         puts "\\n🚀 Ready for full TaskList testing!"
         puts "\\nNext steps:"
-        puts "  1. Install Playwright for browser testing:"
-        puts "     npm install playwright"
-        puts "     npx playwright install"
-        puts "  2. Run comprehensive tests:"
+        puts "  1. Run Rails API tests:"
+        puts "     rake test:tasklist:api"
+        puts "  2. Run frontend tests:"
+        puts "     rake test:tasklist:frontend"
+        puts "  3. Run all tests:"
         puts "     rake test:tasklist:all"
 
       rescue => e
@@ -189,7 +173,10 @@ namespace :test do
 
       report_data = {
         timestamp: Time.current,
-        test_files: Dir[Rails.root.join("test/playwright/tasklist_*.rb")].map(&:basename),
+        api_test_files: (Dir[Rails.root.join("test/models/*task*.rb")] +
+                        Dir[Rails.root.join("test/controllers/*task*.rb")] +
+                        Dir[Rails.root.join("test/integration/*task*.rb")]).map(&:basename),
+        frontend_test_files: Dir[Rails.root.join("frontend/tests/*.spec.ts")].map(&:basename),
         test_data_status: TestEnvironment.verify_test_data!,
         environment: {
           rails_env: Rails.env,
@@ -201,8 +188,10 @@ namespace :test do
       puts "\\n📋 TaskList Test Report"
       puts "=" * 50
       puts "Generated: #{report_data[:timestamp]}"
-      puts "Test Files: #{report_data[:test_files].count}"
-      report_data[:test_files].each { |file| puts "  - #{file}" }
+      puts "API Test Files: #{report_data[:api_test_files].count}"
+      report_data[:api_test_files].each { |file| puts "  - #{file}" }
+      puts "Frontend Test Files: #{report_data[:frontend_test_files].count}"
+      report_data[:frontend_test_files].each { |file| puts "  - #{file}" }
       puts "Environment: #{report_data[:environment][:rails_env]}"
       puts "Ruby: #{report_data[:environment][:ruby_version]}"
       puts "Rails: #{report_data[:environment][:rails_version]}"
@@ -223,24 +212,21 @@ namespace :test do
         Available tasks:
 
         🧪 Running Tests:
-        rake test:tasklist:all           # Run all TaskList tests
-        rake test:tasklist:comprehensive # Run comprehensive functionality tests
-        rake test:tasklist:focused       # Run focused feature tests
-        rake test:tasklist:regression    # Run regression tests
+        rake test:tasklist:all           # Run all TaskList tests (API + Frontend)
+        rake test:tasklist:api           # Run Rails API tests only
+        rake test:tasklist:frontend      # Run Svelte frontend tests only#{'  '}
         rake test:tasklist:smoke         # Quick smoke test
 
         🐛 Debugging:
-        rake test:tasklist:debug         # Run tests with visual browser
+        rake test:tasklist:debug         # Run frontend tests with debug mode
 
         🏗️  CI/CD:
         rake test:tasklist:ci            # Run tests in CI mode
 
-        🎯 Specific Tests:
-        rake test:tasklist:specific[test_file,test_method]
-
-        Examples:
-        rake test:tasklist:specific[tasklist_comprehensive_test,basic_functionality]
-        rake test:tasklist:specific[tasklist_focused_tests,task_creation]
+        🎯 Frontend Tests (use npm directly for specific tests):
+        cd frontend && npm test                    # Run all frontend tests
+        cd frontend && npm run test:debug          # Debug frontend tests
+        cd frontend && npx playwright test jobs.spec.ts  # Specific test file
 
         🧹 Maintenance:
         rake test:tasklist:clean         # Clean test artifacts
@@ -252,16 +238,16 @@ namespace :test do
         rake test:db:verify              # Verify test data
 
         💡 Tips:
-        - Use DEBUG=true for verbose output
-        - Use PLAYWRIGHT_HEADFUL=true to see browser
-        - Tests automatically setup required test data
-        - Screenshots saved to tmp/screenshots/ in debug mode
+        - Rails API tests: Focus on models, controllers, and API endpoints
+        - Frontend tests: Run in frontend/ directory with proper mocked APIs
+        - Ruby Playwright tests archived due to API-only Rails architecture
+        - Use frontend tests for all UI/UX testing scenarios
       HELP
     end
   end
 
   # Alias for convenience
-  task tasklist: "test:tasklist:all"
+  task tasklist: "test:tasklist:help"
 end
 
 # Default task shows help

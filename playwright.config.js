@@ -2,18 +2,17 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-/**
+ * DEPRECATED: Ruby Playwright tests have been archived due to API-only Rails architecture.
+ * 
+ * For TaskList testing:
+ * - Rails API tests: Use Rails test suite (rake test)
+ * - Frontend UI tests: Use frontend/playwright.config.ts
+ * 
+ * This config is maintained for potential future root-level testing needs.
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './test',
+  testDir: './test/system', // Updated to avoid conflict - no tests here currently
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
