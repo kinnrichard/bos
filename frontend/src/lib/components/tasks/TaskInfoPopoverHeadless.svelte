@@ -310,8 +310,8 @@
     <svelte:fragment slot="trigger" let:popover>
       <button 
         class="task-action-button"
-        use:popover.button
         title="Task details"
+        use:popover.button
         on:click|stopPropagation
       >
         <img src="/icons/{isSelected ? 'info' : 'info-blue'}.svg" alt="Info" class="action-icon" />
