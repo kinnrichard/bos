@@ -2395,7 +2395,6 @@
   .task-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
     flex-shrink: 0;
     pointer-events: none;
     opacity: 0;

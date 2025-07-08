@@ -1,7 +1,8 @@
 <script lang="ts">
   import { createPopover } from '@melt-ui/svelte';
   import Portal from './Portal.svelte';
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
+  import { calculatePopoverPosition, type PopoverPosition } from '$lib/utils/popover-positioning';
 
   // Core popover props
   export let preferredPlacement: 'top' | 'bottom' | 'left' | 'right' = 'bottom';
@@ -34,6 +35,10 @@
 
   let buttonElement: HTMLElement;
   let panelElement: HTMLElement;
+  
+  // Arrow positioning state
+  let arrowPosition: { top: number; left: number } = { top: 0, left: 0 };
+  let arrowPositioned = false;
 
   // Update the exported popover object to provide compatibility
   $: {
@@ -48,6 +53,115 @@
       },
       expanded: $open
     };
+  }
+
+  // Disable custom arrow positioning for now
+  // $: if ($open && buttonElement && panelElement) {
+  //   calculateArrowPosition();
+  // }
+
+  // Reset arrow position when popover closes
+  $: if (!$open) {
+    arrowPositioned = false;
+  }
+
+  async function calculateArrowPosition() {
+    // Wait for next tick to ensure panel is positioned
+    await tick();
+    
+    if (!buttonElement || !panelElement) return;
+    
+    // Find the actual button element inside the wrapper
+    const actualButton = buttonElement.querySelector('button') || buttonElement;
+    const triggerRect = actualButton.getBoundingClientRect();
+    const panelRect = panelElement.getBoundingClientRect();
+    
+    // Calculate arrow position relative to the trigger button
+    const triggerCenterX = triggerRect.left + (triggerRect.width / 2);
+    const triggerCenterY = triggerRect.top + (triggerRect.height / 2);
+    
+    let arrowLeft: number;
+    let arrowTop: number;
+    
+    // Debug logging
+    console.log('Arrow positioning debug:', {
+      placement: preferredPlacement,
+      triggerRect: { top: triggerRect.top, left: triggerRect.left, width: triggerRect.width, height: triggerRect.height },
+      panelRect: { top: panelRect.top, left: panelRect.left, width: panelRect.width, height: panelRect.height },
+      triggerCenterY,
+      triggerCenterX
+    });
+    
+    switch (preferredPlacement) {
+      case 'left':
+        // Arrow points right to button - check if we should use default centering
+        const panelCenterY = panelRect.top + (panelRect.height / 2);
+        const distanceFromCenter = Math.abs(triggerCenterY - panelCenterY);
+        
+        // If trigger is close to panel center (within 20px), use centered arrow
+        if (distanceFromCenter <= 20) {
+          arrowLeft = panelRect.width - 1;
+          arrowTop = panelRect.height / 2; // Center the arrow
+          console.log('Left placement - using centered arrow:', { arrowLeft, arrowTop });
+        } else {
+          // Use positioned arrow when trigger is far from center
+          arrowLeft = panelRect.width - 1;
+          let relativeTop = triggerCenterY - panelRect.top;
+          arrowTop = Math.max(12, Math.min(
+            Math.max(0, relativeTop), 
+            panelRect.height - 12
+          ));
+          console.log('Left placement - using positioned arrow:', { 
+            arrowLeft, 
+            arrowTop, 
+            triggerCenterY, 
+            panelCenterY,
+            distanceFromCenter,
+            relativeTop 
+          });
+        }
+        break;
+        
+      case 'right':
+        // Arrow points left to button
+        arrowLeft = 1; // Position arrow at left edge of panel
+        arrowTop = Math.max(12, Math.min(
+          triggerCenterY - panelRect.top,
+          panelRect.height - 12
+        ));
+        break;
+        
+      case 'bottom':
+        // Arrow points up to button - position relative to panel
+        arrowTop = 1; // Position arrow at top edge of panel
+        arrowLeft = Math.max(12, Math.min(
+          triggerCenterX - panelRect.left, // Distance from panel left to trigger center
+          panelRect.width - 12 // Don't go beyond 12px from right edge
+        ));
+        break;
+        
+      case 'top':
+        // Arrow points down to button
+        arrowTop = panelRect.height - 1; // Position arrow at bottom edge of panel
+        arrowLeft = Math.max(12, Math.min(
+          triggerCenterX - panelRect.left,
+          panelRect.width - 12
+        ));
+        break;
+        
+      default:
+        arrowLeft = 0;
+        arrowTop = 0;
+    }
+    
+    arrowPosition = { left: arrowLeft, top: arrowTop };
+    arrowPositioned = true;
+    
+    // Apply CSS custom properties for arrow positioning
+    panelElement.style.setProperty('--arrow-left', arrowLeft + 'px');
+    panelElement.style.setProperty('--arrow-top', arrowTop + 'px');
+    
+    console.log('Final arrow position:', { arrowLeft, arrowTop });
   }
 
   // Fallback outside click handler in case Melt UI's doesn't work
