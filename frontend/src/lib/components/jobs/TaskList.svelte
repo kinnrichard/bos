@@ -579,18 +579,63 @@
   }
 
   // New task creation handlers
-  function showNewTaskForm() {
+  function showNewTaskForm(event?: MouseEvent) {
     showNewTaskInput = true;
     setTimeout(() => {
       if (newTaskInput) {
         newTaskInput.focus();
+        
+        // Position cursor based on click location if provided
+        if (event) {
+          positionCursorAtClick(event);
+        }
       }
     }, 0);
+  }
+
+  function positionCursorAtClick(event: MouseEvent) {
+    if (!newTaskInput) return;
+    
+    // Wait for next frame to ensure input is fully rendered
+    requestAnimationFrame(() => {
+      const clickX = event.clientX;
+      const inputRect = newTaskInput.getBoundingClientRect();
+      const relativeX = clickX - inputRect.left;
+      
+      // Create a temporary span to measure text width
+      const tempSpan = document.createElement('span');
+      tempSpan.style.visibility = 'hidden';
+      tempSpan.style.position = 'absolute';
+      tempSpan.style.whiteSpace = 'pre';
+      tempSpan.style.font = window.getComputedStyle(newTaskInput).font;
+      tempSpan.textContent = newTaskInput.placeholder;
+      
+      document.body.appendChild(tempSpan);
+      
+      const charWidth = tempSpan.offsetWidth / newTaskInput.placeholder.length;
+      const cursorPosition = Math.max(0, Math.min(
+        Math.round(relativeX / charWidth),
+        newTaskInput.placeholder.length
+      ));
+      
+      document.body.removeChild(tempSpan);
+      
+      // Set cursor position
+      newTaskInput.setSelectionRange(cursorPosition, cursorPosition);
+    });
   }
 
   function hideNewTaskForm() {
     showNewTaskInput = false;
     newTaskTitle = '';
+  }
+
+  function handleNewTaskRowClick(event: MouseEvent) {
+    // Only activate if not already in input mode
+    if (!showNewTaskInput) {
+      event.stopPropagation();
+      showNewTaskForm(event);
+    }
   }
 
   async function createNewTask(shouldSelectAfterCreate: boolean = false) {
@@ -2024,6 +2069,7 @@
       <div 
         class="task-item task-item-add-new"
         style="--depth: 0"
+        on:click={handleNewTaskRowClick}
       >
         <!-- Disclosure Spacer -->
         <div class="disclosure-spacer"></div>
