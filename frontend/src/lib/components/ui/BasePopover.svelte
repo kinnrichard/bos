@@ -11,7 +11,7 @@
 
   // Create the Melt UI popover
   const {
-    elements: { trigger: meltTrigger, content, arrow },
+    elements: { trigger: meltTrigger, content },
     states: { open }
   } = createPopover({
     positioning: {
@@ -19,7 +19,6 @@
       gutter: 8,
       offset: { mainAxis: 4 }
     },
-    arrowSize: 8,
     disableFocusTrap: false,
     closeOnOutsideClick: true,
     preventScroll: false,
@@ -98,16 +97,13 @@
     <div 
       use:content
       bind:this={panelElement}
-      class="base-popover-panel"
+      class="base-popover-panel panel-{preferredPlacement}"
       style="
         width: {panelWidth};
         max-width: calc(100vw - 40px);
         max-height: calc(100vh - 100px);
       "
     >
-      <!-- Melt UI arrow -->
-      <div use:arrow class="popover-arrow"></div>
-      
       <div class="popover-content-wrapper">
         <slot close={closePopover} popover={{
           subscribe: popover.subscribe,
@@ -135,25 +131,133 @@
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-    overflow: hidden;
+    /* Remove overflow: hidden to allow arrows to extend outside panel */
     z-index: 2000;
   }
 
   .popover-content-wrapper {
     width: 100%;
     height: 100%;
+    overflow: hidden; /* Apply overflow to content wrapper instead of panel */
+    border-radius: var(--radius-lg); /* Maintain rounded corners on content */
   }
 
-  .popover-arrow {
+  /* CSS Arrow styles - using ::before and ::after pseudo-elements */
+  
+  /* Bottom placement (arrow points up to button) */
+  .panel-bottom::before {
+    content: '';
     position: absolute;
-    z-index: 2001;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 12px solid var(--border-primary);
+    z-index: 1;
   }
 
-  /* Arrow styles will be handled by Melt UI positioning */
-  :global(.popover-arrow svg) {
-    fill: var(--bg-secondary);
-    stroke: var(--border-primary);
-    stroke-width: 1px;
+  .panel-bottom::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid var(--bg-secondary);
+    z-index: 2;
+  }
+
+  /* Top placement (arrow points down to button) */
+  .panel-top::before {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 12px solid var(--border-primary);
+    z-index: 1;
+  }
+
+  .panel-top::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid var(--bg-secondary);
+    z-index: 2;
+  }
+
+  /* Left placement (arrow points right to button) */
+  .panel-left::before {
+    content: '';
+    position: absolute;
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-left: 12px solid var(--border-primary);
+    z-index: 1;
+  }
+
+  .panel-left::after {
+    content: '';
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid var(--bg-secondary);
+    z-index: 2;
+  }
+
+  /* Right placement (arrow points left to button) */
+  .panel-right::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-right: 12px solid var(--border-primary);
+    z-index: 1;
+  }
+
+  .panel-right::after {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 10px solid var(--bg-secondary);
+    z-index: 2;
   }
 
   /* Responsive adjustments */
