@@ -1,12 +1,51 @@
 import { test, expect } from '@playwright/test';
+import { AuthHelper } from '../test-helpers/auth';
+import { TestDatabase } from '../test-helpers/database';
+import { DataFactory } from '../test-helpers/data-factories';
 
 test.describe('Return Key Shortcuts for Task Creation', () => {
+  let db: TestDatabase;
+  let auth: AuthHelper;
+  let dataFactory: DataFactory;
+  let jobId: string;
+
   test.beforeEach(async ({ page }) => {
-    // Navigate to a job page
-    await page.goto('http://localhost:5173/jobs/test');
+    // Initialize helpers
+    db = new TestDatabase();
+    auth = new AuthHelper(page);
+    dataFactory = new DataFactory(page);
     
-    // Wait for the page to load
-    await page.waitForLoadState('networkidle');
+    // Authenticate as admin user
+    await auth.setupAuthenticatedSession('admin');
+    
+    // Create test data (job with client and some tasks for shortcuts to work with)
+    const client = await dataFactory.createClient({ name: `Test Client ${Date.now()}-${Math.random().toString(36).substring(7)}` });
+    const job = await dataFactory.createJob({
+      title: `Test Job ${Date.now()}`,
+      status: 'in_progress',
+      priority: 'high',
+      client_id: client.id
+    });
+    
+    jobId = job.id;
+    
+    // Create a few tasks to work with for selection scenarios
+    await dataFactory.createTask({
+      title: `Existing Task 1 ${Date.now()}`,
+      job_id: job.id,
+      status: 'new_task'
+    });
+    await dataFactory.createTask({
+      title: `Existing Task 2 ${Date.now()}`,
+      job_id: job.id,
+      status: 'in_progress'
+    });
+    
+    // Navigate to the specific job detail page
+    await page.goto(`/jobs/${jobId}`);
+    
+    // Wait for tasks to load
+    await expect(page.locator('[data-task-id]').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('Return with no selection should activate bottom "New Task" row', async ({ page }) => {
@@ -16,84 +55,95 @@ test.describe('Return Key Shortcuts for Task Creation', () => {
     // Press Return
     await page.keyboard.press('Enter');
     
-    // Should show the new task input
-    await expect(page.locator('.new-task-input')).toBeVisible();
-    await expect(page.locator('.new-task-input')).toBeFocused();
+    // Should show the new task input (bottom textbox)
+    await expect(page.getByRole('textbox', { name: 'New Task' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'New Task' })).toBeFocused();
   });
 
   test('Return with one task selected should create inline new task as sibling', async ({ page }) => {
-    // Select a single task
-    await page.click('.task-item:first-child .task-content');
+    // Select a single task (click on the task button)
+    const firstTask = page.locator('[data-task-id]').first();
+    await firstTask.click();
     
     // Verify task is selected
-    await expect(page.locator('.task-item:first-child')).toHaveClass(/task-selected/);
+    await expect(firstTask).toHaveClass(/selected/);
     
     // Press Return
     await page.keyboard.press('Enter');
     
     // Should show inline new task input after the selected task
-    await expect(page.locator('.task-item-add-new input')).toBeVisible();
+    await expect(page.locator('.task-item-add-new input')).toBeVisible({ timeout: 3000 });
     await expect(page.locator('.task-item-add-new input')).toBeFocused();
   });
 
   test('Return with multiple tasks selected should do nothing', async ({ page }) => {
     // Select multiple tasks
-    await page.click('.task-item:first-child .task-content');
-    await page.keyboard.down('Meta'); // Cmd on Mac
-    await page.click('.task-item:nth-child(2) .task-content');
-    await page.keyboard.up('Meta');
+    const firstTask = page.locator('[data-task-id]').first();
+    const secondTask = page.locator('[data-task-id]').nth(1);
+    
+    await firstTask.click();
+    await secondTask.click({ modifiers: ['Meta'] }); // Cmd+click for multi-select
     
     // Verify multiple tasks are selected
-    await expect(page.locator('.task-item.task-selected')).toHaveCount(2);
+    await expect(page.locator('[data-task-id].selected')).toHaveCount(2);
     
     // Press Return
     await page.keyboard.press('Enter');
     
-    // Should not create any new task inputs
-    await expect(page.locator('.new-task-input')).not.toBeVisible();
-    await expect(page.locator('.task-item-add-new input')).not.toBeVisible();
+    // Should not create any new task inputs (check that no new input appears)
+    // The bottom "New Task" textbox should remain unfocused
+    await expect(page.getByRole('textbox', { name: 'New Task' })).not.toBeFocused();
+    // And no inline task creation should happen
+    await page.waitForTimeout(1000); // Give time for any potential UI changes
+    const inlineInputs = page.locator('.task-item-add-new input');
+    const inlineInputCount = await inlineInputs.count();
+    expect(inlineInputCount).toBe(0);
   });
 
   test('Return while editing should not trigger shortcuts', async ({ page }) => {
     // Click on a task title to start editing
-    await page.click('.task-item:first-child .task-title');
+    const firstTaskTitle = page.locator('[data-task-id]').first().locator('h5');
+    await firstTaskTitle.click();
     
-    // Verify we're in edit mode
-    await expect(page.locator('.task-title-input')).toBeVisible();
-    await expect(page.locator('.task-title-input')).toBeFocused();
+    // Verify we're in edit mode (look for input or contenteditable)
+    const editInput = page.locator('input[type="text"]').or(page.locator('[contenteditable="true"]'));
+    await expect(editInput).toBeVisible({ timeout: 3000 });
+    await expect(editInput).toBeFocused();
     
     // Press Return
     await page.keyboard.press('Enter');
     
     // Should save the edit, not create new task
-    await expect(page.locator('.task-title-input')).not.toBeVisible();
-    await expect(page.locator('.new-task-input')).not.toBeVisible();
+    await expect(editInput).not.toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole('textbox', { name: 'New Task' })).not.toBeFocused();
     await expect(page.locator('.task-item-add-new input')).not.toBeVisible();
   });
 
   test('Escape should cancel inline new task creation', async ({ page }) => {
     // Select a single task
-    await page.click('.task-item:first-child .task-content');
+    const firstTask = page.locator('[data-task-id]').first();
+    await firstTask.click();
     
     // Press Return to create inline task
     await page.keyboard.press('Enter');
     
     // Verify inline input is visible
-    await expect(page.locator('.task-item-add-new input')).toBeVisible();
+    await expect(page.locator('.task-item-add-new input')).toBeVisible({ timeout: 3000 });
     
     // Press Escape
     await page.keyboard.press('Escape');
     
     // Inline input should be hidden
-    await expect(page.locator('.task-item-add-new input')).not.toBeVisible();
+    await expect(page.locator('.task-item-add-new input')).not.toBeVisible({ timeout: 3000 });
   });
 
   test('Creating inline task should position it correctly', async ({ page }) => {
     // Count initial tasks
-    const initialTaskCount = await page.locator('.task-item:not(.task-item-add-new)').count();
+    const initialTaskCount = await page.locator('[data-task-id]').count();
     
     // Select a single task
-    await page.click('.task-item:first-child .task-content');
+    const firstTask = page.locator('[data-task-id]').first();
+    await firstTask.click();
     
     // Press Return to create inline task
     await page.keyboard.press('Enter');
@@ -105,13 +155,13 @@ test.describe('Return Key Shortcuts for Task Creation', () => {
     await page.keyboard.press('Enter');
     
     // Wait for task to be created
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     
     // Should have one more task
-    await expect(page.locator('.task-item:not(.task-item-add-new)')).toHaveCount(initialTaskCount + 1);
+    await expect(page.locator('[data-task-id]')).toHaveCount(initialTaskCount + 1);
     
     // New task should be positioned after the originally selected task
     // This is more complex to test precisely, but we can verify the task was created
-    await expect(page.locator('.task-item')).toContainText('New test task');
+    await expect(page.getByRole('heading', { name: 'New test task' })).toBeVisible();
   });
 });
