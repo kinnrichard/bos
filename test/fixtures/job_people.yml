@@ -1,13 +1,13 @@
 # Job-person associations
 
-open_job_john:
-  job: open_job
+simple_website_alice:
+  job: simple_website_job
+  person: alice_johnson
+
+enterprise_john:
+  job: enterprise_deployment
   person: john_doe
 
-in_progress_job_jane:
-  job: in_progress_job
-  person: jane_smith
-
-urgent_job_bob:
-  job: urgent_job
+mobile_bob:
+  job: mobile_app_project
   person: bob_wilson

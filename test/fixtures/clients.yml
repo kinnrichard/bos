@@ -1,21 +1,26 @@
-# Test clients with normalized names
+# Test clients that match the actual database schema
 
 acme:
   name: Acme Corporation
   client_type: business
-  name_normalized: acme corporation
+  name_normalized: acmecorporation
 
 techstartup:
   name: TechStartup Inc
   client_type: business
-  name_normalized: techstartup inc
+  name_normalized: techstartupinc
 
 individual_client:
   name: John Doe Consulting
-  client_type: individual
-  name_normalized: john doe consulting
+  client_type: residential
+  name_normalized: johndoeconsulting
 
 inactive_client:
   name: Old Client Co
   client_type: business
-  name_normalized: old client co
+  name_normalized: oldclientco
+
+enterprise_client:
+  name: Global Enterprises Ltd
+  client_type: business
+  name_normalized: globalenterprisesltd

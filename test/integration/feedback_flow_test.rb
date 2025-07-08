@@ -1,5 +1,5 @@
 require "test_helper"
-require "playwright_test_case"
+require "application_playwright_test_case"
 
 class FeedbackFlowTest < ApplicationPlaywrightTestCase
   def setup

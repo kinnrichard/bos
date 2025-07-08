@@ -1,51 +1,51 @@
-# Test jobs with various statuses and priorities
+# Test jobs that match the actual database schema
 
-open_job:
-  client: acme
-  title: Fix Server Issues
-  description: Server is running slow
-  status: 0  # open
-  priority: 2  # normal
-  created_by: admin
-  due_on: <%= 3.days.from_now.to_date %>
-  due_time: "14:00:00"
-
-in_progress_job:
-  client: acme
-  title: Install Updates
-  description: Monthly security updates
+simple_website_job:
+  client: individual_client
+  title: Simple Website Setup
+  description: Basic website setup for small business client
   status: 1  # in_progress
-  priority: 1  # high
-  created_by: admin
+  priority: 2  # normal
+  created_by: technician
   start_on: <%= Date.current %>
   start_time: "09:00:00"
 
-urgent_job:
-  client: techstartup
-  title: Emergency Database Recovery
-  description: Database corruption detected
+enterprise_deployment:
+  client: acme
+  title: Enterprise Software Deployment
+  description: Multi-phase enterprise software deployment with complex task dependencies
   status: 1  # in_progress
   priority: 0  # critical
-  created_by: owner
-  due_on: <%= Date.current %>
-  due_time: "17:00:00"
+  created_by: admin
+  start_on: <%= 1.week.from_now.to_date %>
+  start_time: "08:00:00"
 
-completed_job:
-  client: individual_client
-  title: Setup New Workstation
-  description: Configure development environment
-  status: 5  # successfully_completed
-  priority: 2  # normal
-  created_by: technician
-  start_on: <%= 2.days.ago.to_date %>
-  start_time: "10:00:00"
-
-overdue_job:
-  client: acme
-  title: Overdue Maintenance
-  description: This should have been done yesterday
-  status: 0  # open
+mobile_app_project:
+  client: techstartup
+  title: Mobile App Development
+  description: Cross-platform mobile app with diverse task statuses
+  status: 1  # in_progress
   priority: 1  # high
   created_by: admin
-  due_on: <%= 2.days.ago.to_date %>
-  due_time: "15:00:00"
+  start_on: <%= 3.days.from_now.to_date %>
+  start_time: "10:00:00"
+
+system_migration:
+  client: enterprise_client
+  title: System Migration Project
+  description: Large system migration with many reorderable tasks
+  status: 1  # in_progress
+  priority: 2  # normal
+  created_by: admin
+  start_on: <%= 1.week.from_now.to_date %>
+  start_time: "09:00:00"
+
+empty_project:
+  client: acme
+  title: Empty Project Template
+  description: Empty job for testing task creation workflows
+  status: 0  # open
+  priority: 3  # low
+  created_by: admin
+  start_on: <%= 2.weeks.from_now.to_date %>
+  start_time: "10:00:00"

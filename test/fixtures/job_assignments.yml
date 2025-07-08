@@ -1,17 +1,17 @@
 # Job assignments linking jobs to technicians
 
-open_job_tech:
-  job: open_job
+simple_website_tech:
+  job: simple_website_job
   user: technician
 
-in_progress_job_tech:
-  job: in_progress_job
+enterprise_tech:
+  job: enterprise_deployment
   user: technician
 
-urgent_job_admin:
-  job: urgent_job
+mobile_admin:
+  job: mobile_app_project
   user: admin
 
-urgent_job_owner:
-  job: urgent_job
+migration_owner:
+  job: system_migration
   user: owner

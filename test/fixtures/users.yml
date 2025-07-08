@@ -4,26 +4,26 @@ owner:
   name: Owner User
   email: owner@example.com
   password_digest: <%= BCrypt::Password.create("password123") %>
-  role: 3
+  role: owner
   resort_tasks_on_status_change: true
 
 admin:
   name: Admin User
   email: admin@example.com
   password_digest: <%= BCrypt::Password.create("password123") %>
-  role: 0
+  role: admin
   resort_tasks_on_status_change: true
 
 technician:
   name: Tech User
   email: tech@example.com
   password_digest: <%= BCrypt::Password.create("password123") %>
-  role: 1
+  role: technician
   resort_tasks_on_status_change: false
 
 technician_two:
   name: Tech User Two
   email: tech2@example.com
   password_digest: <%= BCrypt::Password.create("password123") %>
-  role: 1
+  role: technician
   resort_tasks_on_status_change: true

@@ -1,80 +1,348 @@
-# Test tasks with various statuses and assignments
+# Test tasks with comprehensive scenarios for TaskList testing
 
-# Tasks for open_job
+# =============================================
+# SIMPLE WEBSITE JOB TASKS - Linear workflow for basic testing
+# =============================================
+
+simple_consultation:
+  job: simple_website_job
+  title: Initial consultation
+  status: 3  # successfully_completed
+  position: 10
+  assigned_to: technician
+
+simple_domain:
+  job: simple_website_job
+  title: Domain setup
+  status: 3  # successfully_completed  
+  position: 20
+  assigned_to: technician
+
+simple_install:
+  job: simple_website_job
+  title: Install WordPress
+  status: 1  # in_progress
+  position: 30
+  assigned_to: technician
+
+simple_theme:
+  job: simple_website_job
+  title: Theme customization
+  status: 0  # new_task
+  position: 40
+
+simple_content:
+  job: simple_website_job
+  title: Content migration
+  status: 0  # new_task
+  position: 50
+
+simple_launch:
+  job: simple_website_job
+  title: Testing and launch
+  status: 0  # new_task
+  position: 60
+
+# =============================================
+# ENTERPRISE DEPLOYMENT - Complex hierarchical structure
+# =============================================
+
+# Phase 1: Planning (Parent task with subtasks)
+enterprise_planning:
+  job: enterprise_deployment
+  title: Planning Phase
+  status: 3  # successfully_completed
+  position: 10
+
+enterprise_requirements:
+  job: enterprise_deployment
+  title: Requirements gathering
+  status: 3  # successfully_completed
+  position: 10
+
+enterprise_architecture:
+  job: enterprise_deployment
+  title: Architecture design
+  status: 3  # successfully_completed
+  position: 20
+
+enterprise_timeline:
+  job: enterprise_deployment
+  title: Timeline planning
+  status: 3  # successfully_completed
+  position: 30
+
+# Phase 2: Development (Parent task with subtasks)
+enterprise_development:
+  job: enterprise_deployment
+  title: Development Phase
+  status: 1  # in_progress
+  position: 20
+  assigned_to: admin
+
+enterprise_database:
+  job: enterprise_deployment
+  title: Database setup
+  status: 3  # successfully_completed
+  position: 100
+  assigned_to: technician
+
+enterprise_api:
+  job: enterprise_deployment
+  title: API development
+  status: 1  # in_progress
+  position: 110
+  assigned_to: admin
+
+enterprise_frontend:
+  job: enterprise_deployment
+  title: Frontend integration
+  status: 0  # new_task
+  position: 120
+
+enterprise_security:
+  job: enterprise_deployment
+  title: Security implementation
+  status: 0  # new_task
+  position: 130
+
+# Phase 3: Testing (Parent task with subtasks)
+enterprise_testing:
+  job: enterprise_deployment
+  title: Testing & Deployment
+  status: 0  # new_task
+  position: 30
+
+enterprise_unit_tests:
+  job: enterprise_deployment
+  title: Unit testing
+  status: 0  # new_task
+  position: 140
+
+enterprise_integration_tests:
+  job: enterprise_deployment
+  title: Integration testing
+  status: 0  # new_task
+  position: 150
+
+enterprise_uat:
+  job: enterprise_deployment
+  title: User acceptance testing
+  status: 0  # new_task
+  position: 160
+
+enterprise_deploy:
+  job: enterprise_deployment
+  title: Production deployment
+  status: 0  # new_task
+  position: 170
+
+# =============================================
+# MOBILE APP PROJECT - Mixed statuses for filtering tests
+# =============================================
+
+mobile_kickoff:
+  job: mobile_app_project
+  title: Project kickoff
+  status: 3  # successfully_completed
+  position: 10
+  assigned_to: admin
+
+mobile_design:
+  job: mobile_app_project
+  title: UI/UX design
+  status: 3  # successfully_completed
+  position: 20
+
+mobile_ios:
+  job: mobile_app_project
+  title: iOS development
+  status: 1  # in_progress
+  position: 30
+  assigned_to: technician
+
+mobile_android:
+  job: mobile_app_project
+  title: Android development
+  status: 1  # in_progress
+  position: 40
+  assigned_to: technician_two
+
+mobile_backend:
+  job: mobile_app_project
+  title: Backend API
+  status: 2  # paused
+  position: 50
+
+mobile_database:
+  job: mobile_app_project
+  title: Database optimization
+  status: 4  # cancelled
+  position: 60
+
+mobile_testing:
+  job: mobile_app_project
+  title: Testing framework
+  status: 4  # cancelled
+  position: 70
+
+mobile_store:
+  job: mobile_app_project
+  title: App store submission
+  status: 0  # new_task
+  position: 80
+
+mobile_marketing:
+  job: mobile_app_project
+  title: Marketing materials
+  status: 0  # new_task
+  position: 90
+
+# =============================================
+# SYSTEM MIGRATION - Large job for drag & drop testing (20 tasks)
+# =============================================
+
+migration_task_01:
+  job: system_migration
+  title: Migration Task 1
+  status: 3  # successfully_completed
+  position: 10
+
+migration_task_02:
+  job: system_migration
+  title: Migration Task 2
+  status: 3  # successfully_completed
+  position: 20
+
+migration_task_03:
+  job: system_migration
+  title: Migration Task 3
+  status: 1  # in_progress
+  position: 30
+
+migration_task_04:
+  job: system_migration
+  title: Migration Task 4
+  status: 1  # in_progress
+  position: 40
+
+migration_task_05:
+  job: system_migration
+  title: Migration Task 5
+  status: 0  # new_task
+  position: 50
+
+migration_task_06:
+  job: system_migration
+  title: Migration Task 6
+  status: 0  # new_task
+  position: 60
+
+migration_task_07:
+  job: system_migration
+  title: Migration Task 7
+  status: 0  # new_task
+  position: 70
+
+migration_task_08:
+  job: system_migration
+  title: Migration Task 8
+  status: 0  # new_task
+  position: 80
+
+migration_task_09:
+  job: system_migration
+  title: Migration Task 9
+  status: 0  # new_task
+  position: 90
+
+migration_task_10:
+  job: system_migration
+  title: Migration Task 10
+  status: 0  # new_task
+  position: 100
+
+migration_task_11:
+  job: system_migration
+  title: Migration Task 11
+  status: 0  # new_task
+  position: 110
+
+migration_task_12:
+  job: system_migration
+  title: Migration Task 12
+  status: 0  # new_task
+  position: 120
+
+migration_task_13:
+  job: system_migration
+  title: Migration Task 13
+  status: 0  # new_task
+  position: 130
+
+migration_task_14:
+  job: system_migration
+  title: Migration Task 14
+  status: 0  # new_task
+  position: 140
+
+migration_task_15:
+  job: system_migration
+  title: Migration Task 15
+  status: 0  # new_task
+  position: 150
+
+migration_task_16:
+  job: system_migration
+  title: Migration Task 16
+  status: 0  # new_task
+  position: 160
+
+migration_task_17:
+  job: system_migration
+  title: Migration Task 17
+  status: 0  # new_task
+  position: 170
+
+migration_task_18:
+  job: system_migration
+  title: Migration Task 18
+  status: 0  # new_task
+  position: 180
+
+migration_task_19:
+  job: system_migration
+  title: Migration Task 19
+  status: 0  # new_task
+  position: 190
+
+migration_task_20:
+  job: system_migration
+  title: Migration Task 20
+  status: 0  # new_task
+  position: 200
+
+# =============================================
+# LEGACY TASKS - Backwards compatibility
+# =============================================
+
+# Tasks for empty_project
 open_task_1:
-  job: open_job
+  job: empty_project
   title: Check server logs
-  status: 0  # pending
+  status: 0  # new_task
   position: 10
   assigned_to: technician
 
 open_task_2:
-  job: open_job
+  job: empty_project
   title: Analyze performance metrics
-  status: 0  # pending
+  status: 0  # new_task
   position: 20
   assigned_to: technician
 
 open_task_3:
-  job: open_job
+  job: empty_project
   title: Apply optimizations
-  status: 0  # pending
+  status: 0  # new_task
   position: 30
-
-# Tasks for in_progress_job
-progress_task_1:
-  job: in_progress_job
-  title: Download updates
-  status: 2  # completed
-  position: 10
-  assigned_to: technician
-
-progress_task_2:
-  job: in_progress_job
-  title: Install updates
-  status: 1  # in_progress
-  position: 20
-  assigned_to: technician
-
-progress_task_3:
-  job: in_progress_job
-  title: Verify installation
-  status: 0  # pending
-  position: 30
-
-# Tasks for urgent_job
-urgent_task_1:
-  job: urgent_job
-  title: Stop database service
-  status: 2  # completed
-  position: 10
-  assigned_to: admin
-
-urgent_task_2:
-  job: urgent_job
-  title: Run recovery tool
-  status: 1  # in_progress
-  position: 20
-  assigned_to: admin
-
-# Tasks with subtasks
-parent_task:
-  job: in_progress_job
-  title: Complex task with subtasks
-  status: 0  # pending
-  position: 40
-  subtasks_count: 2
-
-subtask_1:
-  job: in_progress_job
-  title: Subtask one
-  status: 0  # pending
-  position: 50
-  parent: parent_task
-
-subtask_2:
-  job: in_progress_job
-  title: Subtask two
-  status: 0  # pending
-  position: 60
-  parent: parent_task

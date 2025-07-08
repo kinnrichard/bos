@@ -27,8 +27,8 @@ module PlaywrightHelper
     @playwright = @playwright_execution.playwright
 
     @browser = @playwright.chromium.launch(
-      headless: !ENV["PLAYWRIGHT_HEADFUL"],
-      args: ENV["CI"] ? [ "--no-sandbox", "--disable-setuid-sandbox" ] : []
+      headless: true,
+      timeout: 30000
     )
 
     @context = @browser.new_context(
@@ -57,20 +57,20 @@ module PlaywrightHelper
     "http://#{host}:#{port}"
   end
 
-  # Get the host for the test server
+  # Get the host for the test server (can be overridden by test case)
   def host
     "localhost"
   end
 
-  # Get the port for the test server
+  # Get the port for the test server (can be overridden by test case)
   def port
-    Capybara.current_session.server.port
+    3000
   end
 
   # Navigate to a path relative to the root
   def visit(path)
     url = path.start_with?("http") ? path : "#{root_url}#{path}"
-    @page.goto(url)
+    @page.goto(url, timeout: 30000)
   end
 
   # Common assertions

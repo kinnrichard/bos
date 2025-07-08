@@ -3,6 +3,7 @@ require "capybara/rails"
 
 class ApplicationPlaywrightTestCase < ActiveSupport::TestCase
   include PlaywrightHelper
+  include TaskListTestHelpers
 
   # Use transactional fixtures for database cleanup
   self.use_transactional_tests = true
@@ -33,10 +34,17 @@ class ApplicationPlaywrightTestCase < ActiveSupport::TestCase
   # Start server once for all tests
   setup do
     self.class.start_test_server
+    TestEnvironment.before_test
+
+    # Ensure we have test data for Playwright tests
+    unless User.exists? && Job.exists?
+      TestEnvironment.setup_test_data!
+    end
   end
 
   teardown do
     # Playwright cleanup is handled by PlaywrightHelper
+    TestEnvironment.after_test
   end
 
   private
@@ -50,13 +58,19 @@ class ApplicationPlaywrightTestCase < ActiveSupport::TestCase
     self.class.test_server_app&.port || 9887
   end
 
-  # Helper to sign in a user
-  def sign_in_as(user)
-    visit "/login"
-    fill_in "Email", with: user.email
-    fill_in "Password", with: "password123" # Assuming test users have this password
-    click_on "Sign In"
-    wait_for_navigation
+  # Enhanced helper to sign in a user (works with both User objects and roles)
+  def sign_in_as(user_or_role)
+    if user_or_role.is_a?(User)
+      user = user_or_role
+      visit "/login"
+      fill_in "Email", with: user.email
+      fill_in "Password", with: "password123"
+      click_on "Sign In"
+      wait_for_navigation
+    else
+      # Use our enhanced login helper for roles
+      login_as_test_user(user_or_role)
+    end
   end
 
   # Helper to wait for an element

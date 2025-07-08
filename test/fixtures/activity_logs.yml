@@ -10,9 +10,9 @@ client_created:
 job_updated:
   user: technician
   action: updated
-  loggable: open_job (Job)
+  loggable: empty_project (Job)
   client: acme
-  job: open_job
+  job: empty_project
   metadata: 
     changes:
       status: [0, 1]

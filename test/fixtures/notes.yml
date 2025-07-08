@@ -1,7 +1,7 @@
 # Notes attached to various notables
 
 job_note:
-  notable: open_job (Job)
+  notable: empty_project (Job)
   user: admin
   content: "Initial assessment shows hardware failure"
 
@@ -11,7 +11,7 @@ client_note:
   content: "Prefer email communication"
 
 task_note:
-  notable: parent_task (Task)
+  notable: simple_consultation (Task)
   user: admin
   content: "Waiting for parts to arrive"
 
