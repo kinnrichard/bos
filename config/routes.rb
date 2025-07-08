@@ -26,6 +26,21 @@ Rails.application.routes.draw do
       # API documentation
       get "documentation", to: "documentation#index"
 
+      # Test endpoints (only available in test environment)
+      if Rails.env.test?
+        namespace :test do
+          post :reset_database
+          post :seed_database
+          get :verify_data
+          post :create_client
+          post :create_user
+          post :begin_transaction
+          post :rollback_transaction
+          post :commit_transaction
+          delete :cleanup
+        end
+      end
+
       # Resource endpoints
       resources :users, only: [ :index ]
 
