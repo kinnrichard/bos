@@ -1,33 +1,29 @@
 <script lang="ts">
   import { createPopover } from '@melt-ui/svelte';
   import Portal from './Portal.svelte';
-  import { 
-    calculatePopoverPosition, 
-    debounce,
-    type PopoverPosition 
-  } from '$lib/utils/popover-positioning';
-  import { onDestroy, onMount, tick } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
 
   // Core popover props
   export let preferredPlacement: 'top' | 'bottom' | 'left' | 'right' = 'bottom';
-  export let trigger: HTMLElement | undefined = undefined;
+  export const trigger: HTMLElement | undefined = undefined; // External reference only
   export let panelWidth: string = '240px';
   export let enabled: boolean = true;
 
   // Create the Melt UI popover
   const {
-    elements: { trigger: meltTrigger, content, arrow, close: meltClose },
+    elements: { trigger: meltTrigger, content, arrow },
     states: { open }
   } = createPopover({
     positioning: {
       placement: preferredPlacement,
-      gutter: 5,
+      gutter: 8,
       offset: { mainAxis: 4 }
     },
     arrowSize: 8,
     disableFocusTrap: false,
     closeOnOutsideClick: true,
-    preventScroll: false
+    preventScroll: false,
+    portal: null // Use portal for proper event handling
   });
 
   // Export a popover-like API for compatibility with existing code
@@ -39,19 +35,6 @@
 
   let buttonElement: HTMLElement;
   let panelElement: HTMLElement;
-  let mutationObserver: MutationObserver | null = null;
-
-  // Portal positioning - for custom positioning if needed
-  let position: PopoverPosition = {
-    top: 0,
-    left: 0,
-    placement: preferredPlacement,
-    arrowPosition: { top: 0, left: 0 }
-  };
-  let isPositioned = false;
-
-  // Use provided trigger element or button element
-  $: triggerElement = trigger || buttonElement;
 
   // Update the exported popover object to provide compatibility
   $: {
@@ -68,106 +51,28 @@
     };
   }
 
-  // Set up scroll and resize listeners
+  // Fallback outside click handler in case Melt UI's doesn't work
+  function handleOutsideClick(event: MouseEvent) {
+    if (!$open || !enabled) return;
+    
+    const target = event.target as Node;
+    if (!target) return;
+    
+    // Check if click is outside both panel and trigger
+    if (panelElement && !panelElement.contains(target) && 
+        buttonElement && !buttonElement.contains(target)) {
+      open.set(false);
+    }
+  }
+
+  // Set up fallback outside click listener
   onMount(() => {
-    window.addEventListener('scroll', debouncedUpdatePosition, true);
-    window.addEventListener('resize', debouncedUpdatePosition);
+    window.addEventListener('click', handleOutsideClick, true);
   });
 
   onDestroy(() => {
-    if (mutationObserver) {
-      mutationObserver.disconnect();
-      mutationObserver = null;
-    }
-    window.removeEventListener('scroll', debouncedUpdatePosition, true);
-    window.removeEventListener('resize', debouncedUpdatePosition);
+    window.removeEventListener('click', handleOutsideClick, true);
   });
-
-  // Calculate position when popover opens (if custom positioning is needed)
-  $: if ($open && triggerElement && panelElement) {
-    updatePositionImmediate();
-    setupContentObserver();
-    tick().then(() => updatePosition());
-  }
-
-  // Clean up observer when popover closes
-  $: if (!$open && mutationObserver) {
-    mutationObserver.disconnect();
-    mutationObserver = null;
-  }
-
-  function updatePositionImmediate() {
-    if (!triggerElement) return;
-    
-    // Convert panelWidth to number for calculations
-    let estimatedWidth = 240;
-    if (panelWidth.endsWith('px')) {
-      estimatedWidth = parseInt(panelWidth.replace('px', ''));
-    } else if (panelWidth === 'max-content') {
-      estimatedWidth = 300; // Reasonable estimate
-    }
-
-    // Use estimated dimensions for immediate positioning
-    const estimatedDimensions = { width: estimatedWidth, height: 200 };
-
-    const newPosition = calculatePopoverPosition(
-      { element: triggerElement, preferredPlacement },
-      estimatedDimensions
-    );
-    
-    position = newPosition;
-    isPositioned = true;
-  }
-
-  function updatePosition() {
-    if (!triggerElement || !panelElement) return;
-    
-    // Use actual panel dimensions for precise positioning
-    const panelRect = panelElement.getBoundingClientRect();
-    const actualDimensions = { 
-      width: panelRect.width || 240, 
-      height: panelRect.height || 200 
-    };
-
-    const newPosition = calculatePopoverPosition(
-      { element: triggerElement, preferredPlacement },
-      actualDimensions
-    );
-    
-    position = newPosition;
-  }
-
-  function setupContentObserver() {
-    if (!panelElement || mutationObserver) return;
-    
-    // Create observer to watch for content changes
-    mutationObserver = new MutationObserver((mutations) => {
-      const hasContentChange = mutations.some(mutation => 
-        mutation.type === 'childList' || 
-        mutation.type === 'characterData' ||
-        (mutation.type === 'attributes' && mutation.attributeName === 'style')
-      );
-      
-      if (hasContentChange) {
-        debouncedUpdatePosition();
-      }
-    });
-    
-    // Start observing changes to the panel content
-    mutationObserver.observe(panelElement, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ['style', 'class']
-    });
-  }
-
-  const debouncedUpdatePosition = debounce(() => {
-    if ($open) {
-      updatePosition();
-    }
-  }, 10);
 
   // Provide close function to slot content
   const closePopover = () => open.set(false);
@@ -185,9 +90,11 @@
       }} />
     </div>
   {/if}
+</div>
 
+<!-- Render popover content in Portal for proper event isolation -->
+<Portal enabled={$open && enabled}>
   {#if $open && enabled}
-    <!-- Use Melt UI content without Portal to avoid conflicts -->
     <div 
       use:content
       bind:this={panelElement}
@@ -198,7 +105,7 @@
         max-height: calc(100vh - 100px);
       "
     >
-      <!-- Optional arrow -->
+      <!-- Melt UI arrow -->
       <div use:arrow class="popover-arrow"></div>
       
       <div class="popover-content-wrapper">
@@ -210,7 +117,7 @@
       </div>
     </div>
   {/if}
-</div>
+</Portal>
 
 <style>
   .base-popover-container {
