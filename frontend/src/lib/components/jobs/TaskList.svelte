@@ -2374,10 +2374,17 @@
     pointer-events: none;
   }
 
-  .task-item-add-new .task-content,
-  .task-item-add-new .task-status {
-    /* Re-enable pointer events for the text area and status icon area */
+  .task-item-add-new > * {
+    /* Re-enable pointer events for all child elements to allow full-row hover */
     pointer-events: auto;
+  }
+
+  .task-item-add-new .disclosure-spacer,
+  .task-item-add-new .task-metadata,
+  .task-item-add-new .task-actions {
+    /* Prevent unwanted interactions on non-interactive areas */
+    cursor: default;
+    user-select: none;
   }
 
   .add-task-placeholder {
