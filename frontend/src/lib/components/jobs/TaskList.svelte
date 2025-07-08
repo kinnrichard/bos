@@ -1987,7 +1987,9 @@
 
             <!-- Invisible Status for Spacing -->
             <div class="task-status">
-              <div class="status-emoji" style="opacity: 0">⭐</div>
+              <div class="status-emoji">
+                <img src="/icons/plus-circle.svg" alt="Add task" style="width: 16px; height: 16px; opacity: 0.6; pointer-events: none;" />
+              </div>
             </div>
             
             <!-- Task Content -->
@@ -2028,7 +2030,9 @@
 
         <!-- Invisible Status for Spacing -->
         <div class="task-status">
-          <div class="status-emoji" style="opacity: 0">⭐</div>
+          <div class="status-emoji">
+            <img src="/icons/plus-circle.svg" alt="Add task" style="width: 16px; height: 16px; opacity: 0.6; pointer-events: none;" />
+          </div>
         </div>
         
         <!-- Task Content -->
@@ -2370,18 +2374,28 @@
     pointer-events: none;
   }
 
-  .task-item-add-new .task-content {
-    /* Re-enable pointer events for the text area only */
+  .task-item-add-new .task-content,
+  .task-item-add-new .task-status {
+    /* Re-enable pointer events for the text area and status icon area */
     pointer-events: auto;
   }
 
   .add-task-placeholder {
-    opacity: 0.5;
+    opacity: var(--placeholder-opacity, 0);
     cursor: pointer;
+    transition: opacity 0.2s ease;
   }
 
-  .add-task-placeholder:hover {
-    opacity: 0.7;
+  .task-item-add-new {
+    --placeholder-opacity: 0;
+  }
+
+  .task-item-add-new:hover {
+    --placeholder-opacity: 0.7;
+  }
+
+  .task-item-add-new .status-emoji:hover {
+    opacity: 0.6; /* Match the default SVG opacity, no change on hover */
   }
 
   .creating-indicator {
