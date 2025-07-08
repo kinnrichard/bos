@@ -1,18 +1,56 @@
 import { test, expect } from '@playwright/test';
+import { AuthHelper } from '../test-helpers/auth';
+import { TestDatabase } from '../test-helpers/database';
+import { DataFactory } from '../test-helpers/data-factories';
 
 test.describe('Task Drag & Drop and Multi-Select Features', () => {
+  let db: TestDatabase;
+  let auth: AuthHelper;
+  let dataFactory: DataFactory;
+  let jobId: string;
+
   test.beforeEach(async ({ page }) => {
-    // Navigate to jobs list page first
-    await page.goto('/jobs');
+    // Initialize helpers
+    db = new TestDatabase();
+    auth = new AuthHelper(page);
+    dataFactory = new DataFactory(page);
     
-    // Wait for jobs to load and click on the first job
-    await page.waitForSelector('.job-card', { timeout: 10000 });
+    // Authenticate as admin user
+    await auth.setupAuthenticatedSession('admin');
     
-    // Click on the first job to go to the job detail page
-    await page.click('.job-card:first-child');
+    // Create test data (job with client and tasks) so drag/drop has content
+    const client = await dataFactory.createClient({ name: `Test Client ${Date.now()}-${Math.random().toString(36).substring(7)}` });
+    const job = await dataFactory.createJob({
+      title: `Test Job ${Date.now()}`,
+      status: 'in_progress',
+      priority: 'high',
+      client_id: client.id
+    });
+    
+    jobId = job.id;
+    
+    // Create multiple tasks for drag/drop and multi-select testing
+    await dataFactory.createTask({
+      title: `Task 1 ${Date.now()}`,
+      job_id: job.id,
+      status: 'new_task'
+    });
+    await dataFactory.createTask({
+      title: `Task 2 ${Date.now()}`,
+      job_id: job.id,
+      status: 'in_progress'
+    });
+    await dataFactory.createTask({
+      title: `Task 3 ${Date.now()}`,
+      job_id: job.id,
+      status: 'successfully_completed'
+    });
+    
+    // Navigate to the specific job detail page (where tasks can be manipulated)
+    await page.goto(`/jobs/${jobId}`);
     
     // Wait for tasks to load on the job detail page
-    await page.waitForSelector('[data-task-id]', { timeout: 10000 });
+    await expect(page.locator('[data-task-id]').first()).toBeVisible({ timeout: 10000 });
   });
 
   test.describe('Drag & Drop Functionality (SVELTE-007)', () => {
@@ -20,7 +58,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
       // Wait for tasks to be visible
       const taskItems = await page.locator('[data-task-id]').all();
       if (taskItems.length < 2) {
-        test.skip(taskItems.length < 2, 'Need at least 2 tasks for drag and drop test');
+        test.skip('Need at least 2 tasks for drag and drop test');
       }
 
       // Get initial order
@@ -49,7 +87,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
     test('should show visual feedback during drag', async ({ page }) => {
       const taskItems = await page.locator('[data-task-id]').all();
       if (taskItems.length < 1) {
-        test.skip(taskItems.length < 1, 'Need at least 1 task for drag feedback test');
+        test.skip('Need at least 1 task for drag feedback test');
       }
 
       const firstTask = page.locator('[data-task-id]').first();
@@ -83,7 +121,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
 
       const taskItems = await page.locator('[data-task-id]').all();
       if (taskItems.length < 2) {
-        test.skip(taskItems.length < 2, 'Need at least 2 tasks for rollback test');
+        test.skip('Need at least 2 tasks for rollback test');
       }
 
       // Get initial order
@@ -121,7 +159,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
       
       const taskItems = await page.locator('[data-task-id]').all();
       if (taskItems.length < 1) {
-        test.skip(taskItems.length < 1, 'Need at least 1 task for touch test');
+        test.skip('Need at least 1 task for touch test');
       }
 
       const firstTask = page.locator('[data-task-id]').first();
@@ -157,7 +195,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
       const secondTask = page.locator('[data-task-id]').nth(1);
       
       if (!await secondTask.isVisible()) {
-        test.skip(!await secondTask.isVisible(), 'Need at least 2 tasks for multi-select test');
+        test.skip('Need at least 2 tasks for multi-select test');
       }
 
       const modifierKey = process.platform === 'darwin' ? 'Meta' : 'Control';
@@ -185,7 +223,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
     test('should select range with Shift+click', async ({ page }) => {
       const tasks = await page.locator('[data-task-id]').all();
       if (tasks.length < 3) {
-        test.skip(tasks.length < 3, 'Need at least 3 tasks for range selection test');
+        test.skip('Need at least 3 tasks for range selection test');
       }
 
       // Select first task
@@ -206,7 +244,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
     test('should clear all selections', async ({ page }) => {
       const tasks = await page.locator('[data-task-id]').all();
       if (tasks.length < 2) {
-        test.skip(tasks.length < 2, 'Need at least 2 tasks for clear selection test');
+        test.skip('Need at least 2 tasks for clear selection test');
       }
 
       // Select multiple tasks
@@ -247,7 +285,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
     test('should maintain selection during page interactions', async ({ page }) => {
       const tasks = await page.locator('[data-task-id]').all();
       if (tasks.length < 2) {
-        test.skip(tasks.length < 2, 'Need at least 2 tasks for selection persistence test');
+        test.skip('Need at least 2 tasks for selection persistence test');
       }
 
       // Select multiple tasks
@@ -391,7 +429,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
     test('should handle rapid interactions gracefully', async ({ page }) => {
       const tasks = await page.locator('[data-task-id]').all();
       if (tasks.length < 3) {
-        test.skip(tasks.length < 3, 'Need at least 3 tasks for rapid interaction test');
+        test.skip('Need at least 3 tasks for rapid interaction test');
       }
 
       // Rapidly click multiple tasks

@@ -232,11 +232,13 @@ export class DataFactory {
       throw new Error('job_id is required to create a task');
     }
 
-    const taskData: TaskData = {
+    // Remove job_id and description from the data sent to API since they're not permitted
+    const { job_id, description, ...cleanData } = data;
+    
+    const taskData = {
       title: `Test Task ${Date.now()}`,
-      description: 'Test task description',
       status: 'new_task',
-      ...data
+      ...cleanData
     };
 
     const csrfToken = await this.getCsrfToken();
@@ -256,7 +258,23 @@ export class DataFactory {
     }
 
     const result = await response.json();
-    return result.data.attributes;
+    
+    // Handle different possible response structures
+    if (result.data) {
+      const taskResult = {
+        id: result.data.id,
+        ...result.data.attributes,
+        job_id: data.job_id // Add back the job_id for consistency
+      };
+      return taskResult;
+    } else {
+      // Fallback for simpler response structure
+      const taskResult = {
+        ...result,
+        job_id: data.job_id
+      };
+      return taskResult;
+    }
   }
 
   /**
