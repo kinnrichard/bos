@@ -108,8 +108,7 @@ class Api::V1::TestController < Api::V1::BaseController
         attributes: {
           id: client.id.to_s,
           name: client.name,
-          code: client.code,
-          status: client.status,
+          client_type: client.client_type,
           created_at: client.created_at.iso8601,
           updated_at: client.updated_at.iso8601
         }
@@ -289,7 +288,7 @@ class Api::V1::TestController < Api::V1::BaseController
   end
 
   def client_params
-    params.require(:client).permit(:name, :code, :status, :address, :phone, :email)
+    params.require(:client).permit(:name, :client_type)
   end
 
   def user_params

@@ -81,7 +81,9 @@ export class DataFactory {
     });
 
     if (!response.ok()) {
-      throw new Error(`Failed to create client: ${response.status()}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorDetail = errorData.errors?.[0]?.detail || 'Unknown error';
+      throw new Error(`Failed to create client: ${response.status()} - ${errorDetail}`);
     }
 
     const result = await response.json();

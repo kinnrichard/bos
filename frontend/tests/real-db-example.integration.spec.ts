@@ -32,8 +32,8 @@ testWithRealDB.describe('Job Management with Real Database', () => {
   }) => {
     // Create test data via API
     const client = await factory.createClient({
-      name: 'Test Integration Client',
-      status: 'active'
+      name: `Test Integration Client ${Date.now()}`,
+      client_type: 'residential'
     });
     
     const job = await factory.createJob({
