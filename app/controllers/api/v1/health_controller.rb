@@ -1,5 +1,6 @@
 class Api::V1::HealthController < Api::V1::BaseController
   skip_before_action :authenticate_request
+  skip_before_action :verify_csrf_token_for_cookie_auth
 
   def show
     # Include CSRF token in response headers for authenticated requests
@@ -37,6 +38,21 @@ class Api::V1::HealthController < Api::V1::BaseController
       csrf_token_in_session: session[:_csrf_token].present?,
       csrf_token_preview: session[:_csrf_token]&.first(10),
       current_user_present: current_user.present?
+    }
+  end
+
+  # CSRF token endpoint for frontend tests
+  def csrf_token
+    return head :not_found unless Rails.env.test?
+
+    # Generate CSRF token for test environment
+    # Ensure session is initialized
+    session[:_csrf_token] ||= SecureRandom.base64(32)
+    token = session[:_csrf_token]
+
+    render json: {
+      csrf_token: token,
+      timestamp: Time.current.iso8601
     }
   end
 

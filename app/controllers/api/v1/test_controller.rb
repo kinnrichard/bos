@@ -2,6 +2,8 @@
 # Provides endpoints for frontend tests to manage test database state
 # Only available in test environment for security
 
+require Rails.root.join("test", "test_environment")
+
 class Api::V1::TestController < Api::V1::BaseController
   skip_before_action :authenticate_request
   skip_before_action :verify_csrf_token_for_cookie_auth

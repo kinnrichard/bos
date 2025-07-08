@@ -186,8 +186,8 @@ module TestEnvironment
   # =============================================
 
   def use_fixtures?
-    # Use fixtures if SKIP_FIXTURES is not set
-    ENV["SKIP_FIXTURES"] != "true"
+    # Skip fixtures for now due to foreign key constraint issues
+    false
   end
 
   def load_fixtures!
@@ -212,43 +212,81 @@ module TestEnvironment
   def load_test_seeds!
     puts "🌱 Loading comprehensive seed data..."
 
-    seed_file = Rails.root.join("db", "test_seeds.rb")
-
-    if File.exist?(seed_file)
-      load seed_file
-    else
-      puts "⚠️  Seed file not found, using basic test data"
-      create_basic_test_data!
-    end
+    # Always use basic test data for now due to fixture issues
+    puts "📝 Using basic test data (fixtures have foreign key issues)"
+    create_basic_test_data!
   end
 
   def create_basic_test_data!
-    # Minimal test data if seeds aren't available
-    admin = User.find_or_create_by(email: "admin@test.local") do |u|
+    puts "🔧 Creating comprehensive basic test data..."
+
+    # Create 4 test users with different roles (using frontend test expected emails)
+    users = []
+    users << User.find_or_create_by(email: "admin@bos-test.local") do |u|
       u.name = "Test Admin"
       u.password = "password123"
       u.role = "admin"
     end
 
-    client = Client.find_or_create_by(code: "TEST") do |c|
-      c.name = "Test Client"
-      c.status = "active"
+    users << User.find_or_create_by(email: "tech@bos-test.local") do |u|
+      u.name = "Test Tech"
+      u.password = "password123"
+      u.role = "technician"
     end
 
-    job = Job.find_or_create_by(title: "Test Job") do |j|
-      j.client = client
-      j.created_by = admin
-      j.status = "active"
+    users << User.find_or_create_by(email: "techlead@bos-test.local") do |u|
+      u.name = "Test Tech Lead"
+      u.password = "password123"
+      u.role = "technician"
     end
 
+    users << User.find_or_create_by(email: "owner@bos-test.local") do |u|
+      u.name = "Test Owner"
+      u.password = "password123"
+      u.role = "owner"
+    end
+
+    # Create 3 clients
+    clients = []
     3.times do |i|
-      Task.find_or_create_by(title: "Test Task #{i + 1}", job: job) do |t|
-        t.status = "new_task"
-        t.position = (i + 1) * 10
+      clients << Client.find_or_create_by(name: "Test Client #{i + 1}") do |c|
+        c.client_type = i.even? ? "residential" : "business"
       end
     end
 
-    puts "✅ Basic test data created"
+    # Create 3 jobs
+    jobs = []
+    3.times do |i|
+      jobs << Job.find_or_create_by(title: "Test Job #{i + 1}") do |j|
+        j.client = clients[i]
+        j.created_by = users[0] # admin
+        j.status = [ "open", "in_progress", "paused" ][i]
+      end
+    end
+
+    # Create 10+ tasks across the jobs
+    task_count = 0
+    jobs.each_with_index do |job, job_index|
+      tasks_per_job = [ 4, 3, 4 ][job_index] # 4 + 3 + 4 = 11 tasks total
+      tasks_per_job.times do |i|
+        Task.find_or_create_by(title: "Test Task #{task_count + 1}", job: job) do |t|
+          t.status = [ "new_task", "in_progress", "successfully_completed" ][i % 3]
+          t.position = (task_count + 1) * 10
+        end
+        task_count += 1
+      end
+    end
+
+    # Create 3 devices
+    3.times do |i|
+      Device.find_or_create_by(name: "Test Device #{i + 1}") do |d|
+        d.client = clients[i]
+        d.model = "Test Model #{i + 1}"
+        d.location = "Test Location #{i + 1}"
+      end
+    end
+
+    puts "✅ Comprehensive basic test data created (#{User.count} users, #{Client.count} clients, #{Job.count} jobs, #{Task.count} tasks, #{Device.count} devices)"
   end
 
   # =============================================

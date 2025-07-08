@@ -134,6 +134,14 @@ export class TestDatabase {
       }
 
       const data = await response.json();
+      
+      // Handle JSON:API format from Rails
+      if (data.data && data.data.attributes) {
+        const attrs = data.data.attributes;
+        return { valid: attrs.valid || false, message: attrs.message || 'Unknown status' };
+      }
+      
+      // Handle direct format (fallback)
       return { valid: data.valid || false, message: data.message || 'Unknown status' };
     } catch (error) {
       return { valid: false, message: `Connection error: ${error}` };

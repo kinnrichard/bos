@@ -13,6 +13,9 @@ Rails.application.routes.draw do
       # CSRF test endpoint for development debugging
       get "csrf_test", to: "health#csrf_test" if Rails.env.development?
 
+      # CSRF token endpoint for frontend tests
+      get "csrf_token", to: "health#csrf_token" if Rails.env.test?
+
       # Authentication endpoints
       namespace :auth do
         post "login", to: "sessions#create"
