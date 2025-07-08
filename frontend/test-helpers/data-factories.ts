@@ -11,8 +11,8 @@ export interface JobData {
   id?: string;
   title: string;
   description?: string;
-  status: 'active' | 'completed' | 'cancelled' | 'on_hold';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'in_progress' | 'paused' | 'waiting_for_customer' | 'waiting_for_scheduled_appointment' | 'successfully_completed' | 'cancelled';
+  priority: 'critical' | 'high' | 'normal' | 'low' | 'proactive_followup';
   due_on?: string;
   due_time?: string;
   client_id?: string;
@@ -34,11 +34,9 @@ export interface TaskData {
 export interface ClientData {
   id?: string;
   name: string;
-  code?: string;
-  status: 'active' | 'inactive';
-  address?: string;
-  phone?: string;
-  email?: string;
+  client_type: 'residential' | 'business';
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface UserData {
@@ -55,6 +53,8 @@ export interface UserData {
 export class DataFactory {
   private page: Page;
   private baseUrl: string;
+  private isAuthenticated: boolean = false;
+  private csrfToken: string | null = null;
 
   constructor(page: Page) {
     this.page = page;
@@ -62,20 +62,63 @@ export class DataFactory {
   }
 
   /**
+   * Get CSRF token for API calls
+   */
+  private async getCsrfToken(): Promise<string> {
+    if (this.csrfToken) {
+      return this.csrfToken;
+    }
+
+    const csrfResponse = await this.page.request.get(`${this.baseUrl}/csrf_token`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!csrfResponse.ok()) {
+      throw new Error(`Failed to get CSRF token: ${csrfResponse.status()}`);
+    }
+
+    const csrfData = await csrfResponse.json();
+    this.csrfToken = csrfData.csrf_token;
+    return this.csrfToken;
+  }
+
+  /**
+   * Ensure user is authenticated before making API calls
+   */
+  private async ensureAuthenticated(): Promise<void> {
+    if (this.isAuthenticated) {
+      return;
+    }
+
+    // Import auth helper to set up authenticated session
+    const { AuthHelper } = await import('./auth');
+    const auth = new AuthHelper(this.page);
+    
+    try {
+      await auth.setupAuthenticatedSession('admin');
+      this.isAuthenticated = true;
+    } catch (error) {
+      throw new Error(`Failed to authenticate for API calls: ${error}`);
+    }
+  }
+
+  /**
    * Create a client via API
    */
   async createClient(data: Partial<ClientData> = {}): Promise<ClientData> {
+    await this.ensureAuthenticated();
     const clientData: ClientData = {
       name: `Test Client ${Date.now()}`,
-      code: `TEST${Date.now()}`,
-      status: 'active',
+      client_type: 'residential',
       ...data
     };
 
+    const csrfToken = await this.getCsrfToken();
     const response = await this.page.request.post(`${this.baseUrl}/test/create_client`, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
       },
       data: { client: clientData }
     });
@@ -94,6 +137,7 @@ export class DataFactory {
    * Create a user via API
    */
   async createUser(data: Partial<UserData> = {}): Promise<UserData> {
+    await this.ensureAuthenticated();
     const userData: UserData = {
       name: `Test User ${Date.now()}`,
       email: `test${Date.now()}@example.com`,
@@ -102,16 +146,20 @@ export class DataFactory {
       ...data
     };
 
+    const csrfToken = await this.getCsrfToken();
     const response = await this.page.request.post(`${this.baseUrl}/test/create_user`, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
       },
       data: { user: userData }
     });
 
     if (!response.ok()) {
-      throw new Error(`Failed to create user: ${response.status()}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorDetail = errorData.errors?.[0]?.detail || errorData.message || 'Unknown error';
+      throw new Error(`Failed to create user: ${response.status()} - ${errorDetail}`);
     }
 
     const result = await response.json();
@@ -122,6 +170,8 @@ export class DataFactory {
    * Create a job via API
    */
   async createJob(data: Partial<JobData> = {}): Promise<JobData> {
+    await this.ensureAuthenticated();
+
     // Ensure we have a client
     let clientId = data.client_id;
     if (!clientId) {
@@ -129,25 +179,32 @@ export class DataFactory {
       clientId = client.id!;
     }
 
-    const jobData: JobData = {
+    // Note: created_by_id is set automatically by the API based on current_user
+    const { created_by_id, ...cleanData } = data; // Remove created_by_id if provided
+
+    const jobData = {
       title: `Test Job ${Date.now()}`,
       description: 'Test job description',
-      status: 'active',
-      priority: 'medium',
+      status: 'open',
+      priority: 'normal',
       client_id: clientId,
-      ...data
+      ...cleanData
     };
 
+    const csrfToken = await this.getCsrfToken();
     const response = await this.page.request.post(`${this.baseUrl}/jobs`, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
       },
       data: { job: jobData }
     });
 
     if (!response.ok()) {
-      throw new Error(`Failed to create job: ${response.status()}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorDetail = errorData.errors?.[0]?.detail || errorData.message || 'Unknown error';
+      throw new Error(`Failed to create job: ${response.status()} - ${errorDetail}`);
     }
 
     const result = await response.json();
@@ -158,6 +215,8 @@ export class DataFactory {
    * Create a task via API
    */
   async createTask(data: Partial<TaskData>): Promise<TaskData> {
+    await this.ensureAuthenticated();
+    
     if (!data.job_id) {
       throw new Error('job_id is required to create a task');
     }
@@ -169,16 +228,20 @@ export class DataFactory {
       ...data
     };
 
+    const csrfToken = await this.getCsrfToken();
     const response = await this.page.request.post(`${this.baseUrl}/jobs/${data.job_id}/tasks`, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
       },
       data: { task: taskData }
     });
 
     if (!response.ok()) {
-      throw new Error(`Failed to create task: ${response.status()}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorDetail = errorData.errors?.[0]?.detail || errorData.message || 'Unknown error';
+      throw new Error(`Failed to create task: ${response.status()} - ${errorDetail}`);
     }
 
     const result = await response.json();
@@ -312,8 +375,8 @@ export class TestScenarios {
   }> {
     const { job, tasks } = await this.factory.createJobWithTasks({
       title: 'Simple Installation Job',
-      priority: 'medium',
-      status: 'active'
+      priority: 'normal',
+      status: 'open'
     }, 3);
 
     const cleanup = async () => {
@@ -338,7 +401,7 @@ export class TestScenarios {
     const job = await this.factory.createJob({
       title: 'Complex Network Installation',
       priority: 'high',
-      status: 'active'
+      status: 'in_progress'
     });
 
     const tasks = await this.factory.createMixedStatusTasks(job.id!);
@@ -399,7 +462,7 @@ export class TestScenarios {
   }> {
     const job = await this.factory.createJob({
       title: 'Empty Project Template',
-      status: 'active'
+      status: 'open'
     });
 
     const cleanup = async () => {

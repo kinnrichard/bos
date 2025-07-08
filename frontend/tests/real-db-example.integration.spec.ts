@@ -39,7 +39,7 @@ testWithRealDB.describe('Job Management with Real Database', () => {
     const job = await factory.createJob({
       title: 'Real DB Test Job',
       description: 'Testing with actual database',
-      status: 'active',
+      status: 'open',
       priority: 'high',
       client_id: client.id
     });
