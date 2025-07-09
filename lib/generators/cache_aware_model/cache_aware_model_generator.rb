@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rails/generators"
+
 # Generator for creating models with automatic cache invalidation setup
 #
 # Usage:

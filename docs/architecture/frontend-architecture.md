@@ -80,7 +80,7 @@ frontend/
 
 ### 5. JWT Authentication
 - **Reasoning**: Stateless, works well with API architecture
-- **Storage**: Secure httpOnly cookies (to be implemented)
+- **Storage**: Secure httpOnly cookies (implemented)
 
 ## Component Guidelines
 
@@ -349,7 +349,7 @@ test('create new client', async ({ page }) => {
 - Use `{@html}` carefully and only with sanitized content
 
 ### CSRF Protection
-- Include CSRF token in API requests (to be implemented)
+- Include CSRF token in API requests (implemented)
 - Use SameSite cookies
 
 ### Content Security Policy

@@ -9,16 +9,16 @@ bŏs is a client/job/task management system designed for IT company technicians 
 - **Devices** - IT equipment associated with each client
 - **People** - Contacts and personnel at client organizations
 
-This documentation is optimized for AI development agents to understand the codebase structure, conventions, and patterns necessary for effective contribution.
+This documentation is optimized for AI development agents to understand the current Svelte-based architecture and patterns necessary for effective contribution.
 
 ## Quick Start for AI Agents
 
 Before making any changes:
-1. Read the [Phlex component guidelines](./architecture/frontend-architecture.md#phlex-components) - Phlex is unconventional
-2. Review [Apple-like UI patterns](./architecture/ui-ux-spec.md) for CSS/JS work
+1. Read the [Frontend Architecture](./architecture/frontend-architecture.md) - Svelte + TypeScript patterns
+2. Review [Coding Standards](./architecture/coding-standards.md) - Current development practices
 3. Always write Playwright tests for new features
-4. Run `rails tmp:clear && rails assets:clobber && rails assets:precompile && rm -f public/assets/.manifest.json` after styling changes
-5. Commit and push after each completed, tested story
+4. Run `npm run check && npm run lint` before committing
+5. Use `—CC` signature when committing changes
 
 ## Documentation Structure
 
@@ -28,27 +28,23 @@ Before making any changes:
 
 ### Essential Reading (Start Here)
 1. [Coding Standards](./architecture/coding-standards.md) - Project conventions and style
-2. [Phlex Best Practices](./architecture/frontend-architecture.md#phlex-components) - Critical for UI work
-3. [Testing Strategy](./architecture/testing-strategy.md) - Playwright-first approach
-4. [Tech Stack](./architecture/tech-stack.md) - Versions and constraints
+2. [Frontend Architecture](./architecture/frontend-architecture.md) - Svelte + TypeScript patterns
+3. [Testing Guide](./testing-guide.md) - Comprehensive testing strategy
+4. [API Specification](./api/API_SPECIFICATION.md) - JSON API documentation
 
 ### Architecture Documentation
 
 #### Project Structure
-- [Unified Project Structure](./architecture/unified-project-structure.md) - Where code belongs
-- [Frontend Architecture](./architecture/frontend-architecture.md) - Phlex components and Stimulus
-- [Backend Architecture](./architecture/backend-architecture.md) - Rails patterns and services
+- [Frontend Architecture](./architecture/frontend-architecture.md) - Svelte + TypeScript frontend
+- [Backend Architecture](./architecture/backend-architecture.md) - Rails API patterns
 
 #### API and Data
-- [REST API Specification](./architecture/rest-api-spec.md) - Endpoint documentation
-- [API Authentication](./api/API_AUTHENTICATION.md) - Authentication methods and security
-- [API Specification](./api/API_SPECIFICATION.md) - Detailed API documentation
+- [API Specification](./api/API_SPECIFICATION.md) - JSON API documentation
 - [Data Models](./architecture/data-models.md) - Business entity definitions
 - [Database Schema](./architecture/database-schema.md) - PostgreSQL structure
 
 #### UI/UX Guidelines
 - [UI/UX Specification](./architecture/ui-ux-spec.md) - Apple-like interface patterns
-- [Components Catalog](./architecture/components.md) - Phlex component library
 - [Core Workflows](./architecture/core-workflows.md) - User interaction flows
 
 #### Development Practices
@@ -58,70 +54,71 @@ Before making any changes:
 - [Troubleshooting Guide](./architecture/troubleshooting-guide.md) - Common issues
 
 ### Product Requirements Documents
-- [Svelte Migration PRD](./prd/SVELTE_MIGRATION_PRD.md) - Frontend framework migration plan
-- [Bug to PR Automation](./prd/bug-to-pr-automation/) - Automated issue resolution system
-  - [Architecture](./prd/bug-to-pr-automation/architecture.md) - System design
+- [Svelte Migration PRD](./PRDs/svelte-migration.md) - Frontend framework migration plan
 
 ### User Stories and Epics
-- [Svelte Migration Stories](./stories/SVELTE_MIGRATION_STORIES.md) - Implementation stories
-- [Bug to PR Implementation Stories](./stories/bug-to-pr-implementation-stories.md) - Automation stories
-- [Device Compliance Management Epic](./stories/device-compliance-management-epic.md) - Device tracking
-- [Multi-Target Jobs Epic](./stories/multi-target-jobs-epic.md) - Job management enhancements
+- [Svelte Migration Stories](./stories/in-progress/SVELTE_MIGRATION_STORIES.md) - Implementation stories
 
 ### Development Guides
-- [Claude Automation Setup](./guides/claude-automation-setup.md) - AI assistant configuration
-- [Bug to PR Automation Guide](./guides/README-bug-to-pr-automation.md) - Setup instructions
-- [Test Plan Critical Areas](./guides/test-plan-critical-areas.md) - Testing focus areas
+- [Testing Guide](./testing-guide.md) - Comprehensive testing strategy
 
-### Standards and Conventions
-- [Style Guide](./standards/STYLE_GUIDE.md) - Code formatting and conventions
-- [Technical Decisions](./standards/TECHNICAL_DECISIONS.md) - Architectural choices
+### Migration Documentation
+- [Legacy Rails API](./legacy/rails-api-spec.md) - Legacy Rails API documentation
+- [Legacy Phlex Components](./legacy/phlex-migration.md) - Legacy component patterns
 
-### Workflows
-- [Feature Request Workflow](./workflows/feature-request-workflow.md) - Development process
 
 ## Key Technologies
 
-- **Backend**: Rails 8.0.2, Ruby 3.4.4, PostgreSQL
-- **Frontend**: Phlex-Rails (components), Stimulus.js (behavior), SCSS (styling)
-- **Testing**: Playwright (primary), Rails system tests
+- **Backend**: Rails 8.0.2, Ruby 3.4.4, PostgreSQL (JSON API)
+- **Frontend**: SvelteKit, Svelte 4, TypeScript, Tailwind CSS
+- **Testing**: Playwright (primary), Rails Minitest
 - **Deployment**: Kamal, Docker
 
 ## Critical Workflows for AI Agents
 
-### After Making UI Changes
+### Frontend Development
 ```bash
-# Clear and rebuild all assets
-rails tmp:clear && rails assets:clobber && rails assets:precompile && rm -f public/assets/.manifest.json
+# Start development server
+cd frontend && npm run dev
+
+# Type checking and linting
+npm run check
+npm run lint
+
+# Build for production
+npm run build
 ```
 
-### Debugging Workflow
+### Backend Development
 ```bash
-# Enable all debugging during development
-DEBUG=bos:* npm run dev
+# Start Rails API server
+rails server
 
-# Enable specific debugging areas
-DEBUG=bos:technician-assignment,bos:api npm run dev:quiet
+# Run tests
+rails test
 
-# Browser console debugging
-bosDebug.enable('bos:*')        # Enable all
-bosDebug.enable('bos:reactive') # Enable specific namespace
-bosDebug.disable()              # Disable all
+# Fix style issues
+rubocop -A
 ```
 
 ### Testing Workflow
 ```bash
-# Run Playwright tests for feature
-bundle exec ruby test/playwright/[test_file].rb
+# Run all frontend tests
+cd frontend && npm test
 
-# Run all tests before committing
-bundle exec rails test:all
+# Run with visible browser
+npm run test:headed
+
+# Run specific test categories
+npm run test:unit
+npm run test:integration
 ```
 
 ### Git Workflow
 ```bash
 # After completing a story
-rubocop -A  # Auto-fix style issues
+npm run check && npm run lint  # Frontend
+rubocop -A                      # Backend
 git add .
 git commit -m "Complete story: [description] —CC"
 git push
@@ -129,17 +126,17 @@ git push
 
 ## Project-Specific Conventions
 
-1. **Phlex Components** - Ruby objects that render HTML, not ERB templates
-2. **Stimulus Controllers** - Attach behavior to HTML via data attributes
+1. **Svelte Components** - TypeScript components with reactive state
+2. **Tailwind CSS** - Utility-first styling with dark theme
 3. **Apple-like UI** - Precise spacing, shadows, and animations matter
 4. **Test Everything** - Playwright tests required for all UI changes
-5. **Asset Pipeline** - Always rebuild after CSS/JS changes
+5. **JSON API** - Rails backend serves JSON, frontend consumes via API
 
 ## Getting Help
 
-- Review existing Phlex components in `app/views/components/`
-- Check Stimulus controllers in `app/javascript/controllers/`
-- Reference Playwright tests in `test/playwright/`
+- Review existing Svelte components in `frontend/src/lib/components/`
+- Check API endpoints in `app/controllers/api/v1/`
+- Reference Playwright tests in `frontend/tests/`
 - See working examples in the codebase before implementing new patterns
 
 ## Maintenance Notes

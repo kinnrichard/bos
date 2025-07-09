@@ -15,44 +15,59 @@ class SidebarStatsService
   private
 
   def calculate_stats
+    # For simplicity and to avoid SQL syntax issues, let's use ActiveRecord::Base.sanitize_sql_array
+    successfully_completed_status = Job.statuses[:successfully_completed]
+    cancelled_status = Job.statuses[:cancelled]
+
+    if @client
+      sql = ActiveRecord::Base.sanitize_sql_array([
+        <<~SQL,
+          SELECT#{' '}
+            COUNT(CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.user_id = ? THEN 1 END) as my_jobs,
+            COUNT(CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.id IS NULL THEN 1 END) as unassigned,
+            COUNT(DISTINCT CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.user_id IS NOT NULL AND job_assignments.user_id != ? THEN jobs.id END) as others,
+            COUNT(CASE WHEN jobs.status IN (?, ?) THEN 1 END) as closed,
+            COUNT(CASE WHEN jobs.start_on IS NOT NULL THEN 1 END) as scheduled
+          FROM jobs
+          LEFT JOIN job_assignments ON job_assignments.job_id = jobs.id
+          WHERE jobs.client_id = ?
+        SQL
+        successfully_completed_status, cancelled_status, @user.id,
+        successfully_completed_status, cancelled_status,
+        successfully_completed_status, cancelled_status, @user.id,
+        successfully_completed_status, cancelled_status,
+        @client.id
+      ])
+    else
+      sql = ActiveRecord::Base.sanitize_sql_array([
+        <<~SQL,
+          SELECT#{' '}
+            COUNT(CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.user_id = ? THEN 1 END) as my_jobs,
+            COUNT(CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.id IS NULL THEN 1 END) as unassigned,
+            COUNT(DISTINCT CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.user_id IS NOT NULL AND job_assignments.user_id != ? THEN jobs.id END) as others,
+            COUNT(CASE WHEN jobs.status IN (?, ?) THEN 1 END) as closed,
+            COUNT(CASE WHEN jobs.start_on IS NOT NULL THEN 1 END) as scheduled
+          FROM jobs
+          LEFT JOIN job_assignments ON job_assignments.job_id = jobs.id
+        SQL
+        successfully_completed_status, cancelled_status, @user.id,
+        successfully_completed_status, cancelled_status,
+        successfully_completed_status, cancelled_status, @user.id,
+        successfully_completed_status, cancelled_status
+      ])
+    end
+
+    result = ActiveRecord::Base.connection.exec_query(sql, "SidebarStats").first
+
     {
-      my_jobs: my_jobs_count,
-      unassigned: unassigned_count,
-      others: others_count,
-      closed: closed_count,
-      scheduled: scheduled_count
+      my_jobs: result["my_jobs"],
+      unassigned: result["unassigned"],
+      others: result["others"],
+      closed: result["closed"],
+      scheduled: result["scheduled"]
     }
   end
 
-  def base_scope
-    @client ? @client.jobs : Job.all
-  end
-
-  def active_scope
-    base_scope.active
-  end
-
-  def my_jobs_count
-    active_scope.joins(:job_assignments)
-                .where(job_assignments: { user_id: @user.id })
-                .count
-  end
-
-  def unassigned_count
-    active_scope.unassigned.count
-  end
-
-  def others_count
-    active_scope.assigned_to_others(@user).count
-  end
-
-  def closed_count
-    base_scope.closed.count
-  end
-
-  def scheduled_count
-    base_scope.where.not(start_on: nil).count
-  end
 
   def cache_key
     client_part = @client ? "client_#{@client.id}" : "all_clients"
