@@ -25,13 +25,15 @@
   <!-- Client and job name section -->
   <span class="job-name-section">
     {#if showClient}
-      <a 
-        href="/clients/{job.client.id}" 
+      <button 
         class="client-name-prefix client-link"
-        on:click|stopPropagation
+        on:click={(e) => {
+          e.stopPropagation();
+          window.location.href = `/clients/${job.client.id}`;
+        }}
       >
         {job.client.name}
-      </a>
+      </button>
     {/if}
     <span class="job-name">{job.attributes.title}</span>
   </span>

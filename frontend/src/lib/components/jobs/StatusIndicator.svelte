@@ -81,7 +81,7 @@
 
 <div class="status-indicator">
   <!-- Primary Status -->
-  <div class="status-badge primary" style="color: {statusInfo.color}">
+  <div class="status-badge primary" style="color: {statusInfo.color}" data-status={status}>
     <span class="status-emoji">{statusEmoji}</span>
     <span class="status-label">{statusInfo.label}</span>
   </div>
@@ -170,17 +170,17 @@
   }
 
   /* Status-specific styling based on status type */
-  .status-badge.primary:has(.status-label:contains('Completed')) {
+  .status-badge.primary[data-status="successfully_completed"] {
     background-color: rgba(50, 215, 75, 0.1);
     border-color: rgba(50, 215, 75, 0.2);
   }
 
-  .status-badge.primary:has(.status-label:contains('In Progress')) {
+  .status-badge.primary[data-status="in_progress"] {
     background-color: rgba(0, 163, 255, 0.1);
     border-color: rgba(0, 163, 255, 0.2);
   }
 
-  .status-badge.primary:has(.status-label:contains('Cancelled')) {
+  .status-badge.primary[data-status="cancelled"] {
     background-color: rgba(255, 69, 58, 0.1);
     border-color: rgba(255, 69, 58, 0.2);
   }

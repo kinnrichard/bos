@@ -38,15 +38,15 @@
   	  <!-- Current Client Section -->
   	  {#if $currentClient}
   	    <li class="nav-item">
-  	      <a 
-  	        href="#"
+  	      <button 
   	        class="nav-link"
+  	        type="button"
   	      >
   	        <span class="nav-icon">
   	          {getClientTypeEmoji($currentClient.client_type)}
   	        </span>
   	        <span class="nav-label">{$currentClient.name}</span>
-  	      </a>
+  	      </button>
   	    </li>
         <!-- Invisible spacer -->
         <li class="nav-spacer" aria-hidden="true"></li>
