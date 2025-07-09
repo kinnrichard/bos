@@ -1,6 +1,9 @@
 // Task status filter store - start with all statuses selected
 let selectedTaskStatuses = $state<string[]>(['new_task', 'in_progress', 'paused', 'successfully_completed', 'cancelled']);
 
+// Export for external access
+export { selectedTaskStatuses };
+
 // Helper function to check if a task should be visible based on filters
 export function shouldShowTask(task: any, statuses: string[]): boolean {
   // If no filters selected, show all tasks

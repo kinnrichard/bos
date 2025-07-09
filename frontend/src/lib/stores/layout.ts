@@ -24,6 +24,9 @@ let currentJob = $state<PopulatedJob | null>(null);
 // Mobile breakpoint detection
 let isMobile = $state(false);
 
+// Export reactive state for external access
+export { sidebarVisible, currentClient, currentJob, isMobile };
+
 // Initialize mobile detection if in browser
 if (browser) {
   const mediaQuery = window.matchMedia('(max-width: 768px)');
