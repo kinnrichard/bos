@@ -9,6 +9,10 @@ class ActivityLogTest < ActiveSupport::TestCase
     sign_in_as @user
   end
 
+  teardown do
+    User.current_user = nil
+  end
+
   test "valid activity log attributes" do
     log = ActivityLog.new(
       user: @user,
@@ -506,5 +510,102 @@ class ActivityLogTest < ActiveSupport::TestCase
     assert_includes admin_acme_logs, admin_acme_log
     assert_not_includes admin_acme_logs, tech_acme_log
     assert_not_includes admin_acme_logs, admin_other_log
+  end
+
+  # Tests for foreign key constraint issue fixes
+  test "should not create activity log when current_user is nil during model creation" do
+    ActivityLog.delete_all
+    User.current_user = nil
+
+    # Create a user without current_user set - should not create activity log
+    user = User.create!(name: "Test User", email: "test@example.com", password: "password123", role: "admin")
+
+    # Ensure no activity log was created during user creation
+    assert_equal 0, ActivityLog.count
+  end
+
+  test "should not create activity log when user is not persisted" do
+    ActivityLog.delete_all
+
+    # Create a user without saving it
+    user = User.new(name: "Test User", email: "test@example.com", password: "password123", role: "admin")
+    User.current_user = user
+
+    client = Client.create!(name: "Test Client", client_type: "residential")
+
+    # Should not create activity log because current_user is not persisted
+    assert_equal 0, ActivityLog.count
+  end
+
+  test "should create activity log when current_user is properly set and persisted" do
+    ActivityLog.delete_all
+
+    # Create and save a user first
+    user = User.create!(name: "Test User", email: "test@example.com", password: "password123", role: "admin")
+    User.current_user = user
+
+    # Now create a client - should create activity log
+    client = Client.create!(name: "Test Client", client_type: "residential")
+
+    # Should create activity log because current_user is persisted
+    assert_equal 1, ActivityLog.count
+
+    log = ActivityLog.first
+    assert_equal user, log.user
+    assert_equal "created", log.action
+    assert_equal client, log.loggable
+  end
+
+  test "should not create activity log when DISABLE_ACTIVITY_LOGGING is set" do
+    ActivityLog.delete_all
+
+    # Create and save a user first
+    user = User.create!(name: "Test User", email: "test@example.com", password: "password123", role: "admin")
+    User.current_user = user
+
+    # Disable activity logging
+    ENV["DISABLE_ACTIVITY_LOGGING"] = "true"
+
+    # Now create a client - should NOT create activity log
+    client = Client.create!(name: "Test Client", client_type: "residential")
+
+    # Should not create activity log because it's disabled
+    assert_equal 0, ActivityLog.count
+  ensure
+    ENV["DISABLE_ACTIVITY_LOGGING"] = nil
+  end
+
+  test "test environment should work without foreign key violations" do
+    ActivityLog.delete_all
+
+    # This test simulates the test environment setup process
+    without_activity_logging do
+      # Create users like the test environment does
+      user1 = User.create!(name: "Test Admin", email: "admin@bos-test.local", password: "password123", role: "admin")
+      user2 = User.create!(name: "Test Tech", email: "tech@bos-test.local", password: "password123", role: "technician")
+
+      # Create clients
+      client = Client.create!(name: "Test Client", client_type: "residential")
+
+      # Create jobs
+      job = Job.create!(title: "Test Job", client: client, created_by: user1, status: "open")
+
+      # Verify no activity logs were created
+      assert_equal 0, ActivityLog.count
+    end
+
+    # Now enable activity logging and verify it works
+    user = User.first
+    User.current_user = user
+
+    new_client = Client.create!(name: "Another Client", client_type: "business")
+
+    # Should create activity log now
+    assert_equal 1, ActivityLog.count
+
+    log = ActivityLog.first
+    assert_equal user, log.user
+    assert_equal "created", log.action
+    assert_equal new_client, log.loggable
   end
 end

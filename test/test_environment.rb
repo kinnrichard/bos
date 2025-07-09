@@ -66,6 +66,10 @@ module TestEnvironment
   def clear_all_data!
     ensure_test_environment!
 
+    # Disable activity logging during cleanup to prevent foreign key issues
+    original_disable_logging = ENV["DISABLE_ACTIVITY_LOGGING"]
+    ENV["DISABLE_ACTIVITY_LOGGING"] = "true"
+
     # Use transaction and disable foreign key checks temporarily for reliable cleanup
     ActiveRecord::Base.transaction do
       # Disable foreign key checks for PostgreSQL
@@ -74,8 +78,10 @@ module TestEnvironment
       end
 
       # Order matters for foreign key constraints - delete dependent records first
+      # ActivityLog is the most dependent table and should be cleared first
       models_in_dependency_order = [
-        ActivityLog,      # References tasks, jobs, users
+        ActivityLog,      # References tasks, jobs, users - MUST be first
+        RefreshToken,     # References users
         Task,            # References jobs, users (parent tasks handled by self-reference)
         JobAssignment,   # References jobs, users
         JobPerson,       # References jobs, people
@@ -85,8 +91,7 @@ module TestEnvironment
         Person,          # References clients
         Device,          # References clients
         Client,          # References users
-        RefreshToken,    # References users
-        User             # Base table
+        User             # Base table - should be last
       ]
 
       models_in_dependency_order.each do |model|
@@ -108,6 +113,9 @@ module TestEnvironment
     puts "🚨 Error during data cleanup: #{e.message}"
     # Fallback: try to clear tables individually with foreign key checks disabled
     clear_all_data_fallback!
+  ensure
+    # Restore original activity logging setting
+    ENV["DISABLE_ACTIVITY_LOGGING"] = original_disable_logging
   end
 
   def clear_all_data_fallback!
@@ -118,8 +126,8 @@ module TestEnvironment
     # Try truncating tables directly (PostgreSQL specific)
     if ActiveRecord::Base.connection.adapter_name.downcase.include?("postgresql")
       table_names = %w[
-        activity_logs tasks job_assignments job_people notes jobs
-        contact_methods people devices clients refresh_tokens users
+        activity_logs refresh_tokens tasks job_assignments job_people notes jobs
+        contact_methods people devices clients users
       ]
 
       table_names.each do |table|
@@ -132,8 +140,8 @@ module TestEnvironment
       end
     else
       # For other databases, try delete_all without foreign key checks
-      [ ActivityLog, Task, JobAssignment, JobPerson, Note, Job,
-       ContactMethod, Person, Device, Client, RefreshToken, User ].each do |model|
+      [ ActivityLog, RefreshToken, Task, JobAssignment, JobPerson, Note, Job,
+       ContactMethod, Person, Device, Client, User ].each do |model|
         begin
           model.delete_all
         rescue => e
@@ -220,71 +228,102 @@ module TestEnvironment
   def create_basic_test_data!
     puts "🔧 Creating comprehensive basic test data..."
 
-    # Create 4 test users with different roles (using frontend test expected emails)
-    users = []
-    users << User.find_or_create_by(email: "admin@bos-test.local") do |u|
-      u.name = "Test Admin"
-      u.password = "password123"
-      u.role = "admin"
-    end
+    # Disable activity logging during test data creation to prevent foreign key issues
+    ENV["DISABLE_ACTIVITY_LOGGING"] = "true"
 
-    users << User.find_or_create_by(email: "tech@bos-test.local") do |u|
-      u.name = "Test Tech"
-      u.password = "password123"
-      u.role = "technician"
-    end
-
-    users << User.find_or_create_by(email: "techlead@bos-test.local") do |u|
-      u.name = "Test Tech Lead"
-      u.password = "password123"
-      u.role = "technician"
-    end
-
-    users << User.find_or_create_by(email: "owner@bos-test.local") do |u|
-      u.name = "Test Owner"
-      u.password = "password123"
-      u.role = "owner"
-    end
-
-    # Create 3 clients
-    clients = []
-    3.times do |i|
-      clients << Client.find_or_create_by(name: "Test Client #{i + 1}") do |c|
-        c.client_type = i.even? ? "residential" : "business"
+    # Use aggressive cleanup with foreign key constraints disabled
+    ActiveRecord::Base.transaction do
+      # Disable foreign key checks for the entire process
+      if ActiveRecord::Base.connection.adapter_name.downcase.include?("postgresql")
+        ActiveRecord::Base.connection.execute("SET session_replication_role = replica;")
       end
-    end
 
-    # Create 3 jobs
-    jobs = []
-    3.times do |i|
-      jobs << Job.find_or_create_by(title: "Test Job #{i + 1}") do |j|
-        j.client = clients[i]
-        j.created_by = users[0] # admin
-        j.status = [ "open", "in_progress", "paused" ][i]
+      # First ensure ActivityLog table is completely clean
+      begin
+        ActiveRecord::Base.connection.execute("DELETE FROM activity_logs;")
+        puts "  🧹 Force-cleared activity logs table" if debug_mode?
+      rescue => e
+        puts "  ⚠️  Could not clear activity logs: #{e.message}" if debug_mode?
       end
-    end
 
-    # Create 10+ tasks across the jobs
-    task_count = 0
-    jobs.each_with_index do |job, job_index|
-      tasks_per_job = [ 4, 3, 4 ][job_index] # 4 + 3 + 4 = 11 tasks total
-      tasks_per_job.times do |i|
-        Task.find_or_create_by(title: "Test Task #{task_count + 1}", job: job) do |t|
-          t.status = [ "new_task", "in_progress", "successfully_completed" ][i % 3]
-          t.position = (task_count + 1) * 10
+      # Create 4 test users with different roles (using frontend test expected emails)
+      users = []
+
+      users << User.find_or_create_by(email: "admin@bos-test.local") do |u|
+        u.name = "Test Admin"
+        u.password = "password123"
+        u.role = "admin"
+      end
+
+      users << User.find_or_create_by(email: "tech@bos-test.local") do |u|
+        u.name = "Test Tech"
+        u.password = "password123"
+        u.role = "technician"
+      end
+
+      users << User.find_or_create_by(email: "techlead@bos-test.local") do |u|
+        u.name = "Test Tech Lead"
+        u.password = "password123"
+        u.role = "technician"
+      end
+
+      users << User.find_or_create_by(email: "owner@bos-test.local") do |u|
+        u.name = "Test Owner"
+        u.password = "password123"
+        u.role = "owner"
+      end
+
+      # Clean any ActivityLogs that might have been created during user creation
+      ActiveRecord::Base.connection.execute("DELETE FROM activity_logs;")
+
+      # Create 3 clients
+      clients = []
+      3.times do |i|
+        clients << Client.find_or_create_by(name: "Test Client #{i + 1}") do |c|
+          c.client_type = i.even? ? "residential" : "business"
         end
-        task_count += 1
       end
-    end
 
-    # Create 3 devices
-    3.times do |i|
-      Device.find_or_create_by(name: "Test Device #{i + 1}") do |d|
-        d.client = clients[i]
-        d.model = "Test Model #{i + 1}"
-        d.location = "Test Location #{i + 1}"
+      # Create 3 jobs
+      jobs = []
+      3.times do |i|
+        jobs << Job.find_or_create_by(title: "Test Job #{i + 1}") do |j|
+          j.client = clients[i]
+          j.created_by = users[0] # admin
+          j.status = [ "open", "in_progress", "paused" ][i]
+        end
       end
-    end
+
+      # Create 10+ tasks across the jobs
+      task_count = 0
+      jobs.each_with_index do |job, job_index|
+        tasks_per_job = [ 4, 3, 4 ][job_index] # 4 + 3 + 4 = 11 tasks total
+        tasks_per_job.times do |i|
+          Task.find_or_create_by(title: "Test Task #{task_count + 1}", job: job) do |t|
+            t.status = [ "new_task", "in_progress", "successfully_completed" ][i % 3]
+            t.position = (task_count + 1) * 10
+          end
+          task_count += 1
+        end
+      end
+
+      # Create 3 devices
+      3.times do |i|
+        Device.find_or_create_by(name: "Test Device #{i + 1}") do |d|
+          d.client = clients[i]
+          d.model = "Test Model #{i + 1}"
+          d.location = "Test Location #{i + 1}"
+        end
+      end
+
+      # Re-enable foreign key checks
+      if ActiveRecord::Base.connection.adapter_name.downcase.include?("postgresql")
+        ActiveRecord::Base.connection.execute("SET session_replication_role = DEFAULT;")
+      end
+    end # End transaction
+
+    # Re-enable activity logging after test data creation
+    ENV["DISABLE_ACTIVITY_LOGGING"] = nil
 
     puts "✅ Comprehensive basic test data created (#{User.count} users, #{Client.count} clients, #{Job.count} jobs, #{Task.count} tasks, #{Device.count} devices)"
   end

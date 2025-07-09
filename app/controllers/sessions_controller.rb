@@ -16,12 +16,14 @@ class SessionsController < ApplicationController
       session[:user_id] = user.id
 
       # Log the login
-      ActivityLog.create!(
-        user: user,
-        action: "logged_in",
-        loggable: user,
-        metadata: { ip_address: request.remote_ip }
-      )
+      unless Rails.env.test? && ENV["DISABLE_ACTIVITY_LOGGING"] == "true"
+        ActivityLog.create!(
+          user: user,
+          action: "logged_in",
+          loggable: user,
+          metadata: { ip_address: request.remote_ip }
+        )
+      end
 
       redirect_to params[:return_to].presence || root_path, notice: "Welcome back, #{user.name}!"
     else

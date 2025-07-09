@@ -14,6 +14,12 @@ module Loggable
     user ||= User.current_user if defined?(User.current_user)
     return unless user
 
+    # Ensure user exists in database before creating activity log
+    return unless user.persisted?
+
+    # Skip if activity logging is disabled (e.g., during test setup)
+    return if Rails.env.test? && ENV["DISABLE_ACTIVITY_LOGGING"] == "true"
+
     ActivityLog.create!(
       user: user,
       action: action,
@@ -28,11 +34,13 @@ module Loggable
 
   def log_creation
     return unless User.current_user
+    return if Rails.env.test? && ENV["DISABLE_ACTIVITY_LOGGING"] == "true"
     log_action("created")
   end
 
   def log_update
     return unless User.current_user
+    return if Rails.env.test? && ENV["DISABLE_ACTIVITY_LOGGING"] == "true"
     return if saved_changes.keys == [ "updated_at" ] # Skip if only timestamp changed
 
     changes_data = {}

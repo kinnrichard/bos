@@ -2,6 +2,7 @@ class Api::V1::BaseController < ActionController::API
   include ActionController::Cookies
   include ActionController::HttpAuthentication::Token::ControllerMethods
   include Authenticatable
+  include SetCurrentUser
   include ApiErrorHandler
   include ApiCsrfProtection
   include UuidFindable

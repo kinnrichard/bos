@@ -26,6 +26,15 @@ module ActiveSupport
       TestEnvironment.after_test
     end
 
+    # Helper method to run code without activity logging
+    def without_activity_logging(&block)
+      original_value = ENV["DISABLE_ACTIVITY_LOGGING"]
+      ENV["DISABLE_ACTIVITY_LOGGING"] = "true"
+      yield
+    ensure
+      ENV["DISABLE_ACTIVITY_LOGGING"] = original_value
+    end
+
     # Add more helper methods to be used by all tests here...
 
     # Authentication helpers

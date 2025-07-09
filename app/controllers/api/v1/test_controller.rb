@@ -99,6 +99,10 @@ class Api::V1::TestController < Api::V1::BaseController
 
   # POST /api/v1/test/create_client
   def create_client
+    # Disable activity logging during test client creation to prevent foreign key issues
+    original_logging_state = ENV["DISABLE_ACTIVITY_LOGGING"]
+    ENV["DISABLE_ACTIVITY_LOGGING"] = "true"
+
     client = Client.create!(client_params)
 
     render json: {
@@ -123,10 +127,17 @@ class Api::V1::TestController < Api::V1::BaseController
         detail: e.message
       } ]
     }, status: :unprocessable_entity
+  ensure
+    # Restore original activity logging state
+    ENV["DISABLE_ACTIVITY_LOGGING"] = original_logging_state
   end
 
   # POST /api/v1/test/create_user
   def create_user
+    # Disable activity logging during test user creation to prevent foreign key issues
+    original_logging_state = ENV["DISABLE_ACTIVITY_LOGGING"]
+    ENV["DISABLE_ACTIVITY_LOGGING"] = "true"
+
     user = User.create!(user_params)
 
     render json: {
@@ -152,6 +163,9 @@ class Api::V1::TestController < Api::V1::BaseController
         detail: e.message
       } ]
     }, status: :unprocessable_entity
+  ensure
+    # Restore original activity logging state
+    ENV["DISABLE_ACTIVITY_LOGGING"] = original_logging_state
   end
 
 
@@ -249,8 +263,8 @@ class Api::V1::TestController < Api::V1::BaseController
         # Temporarily disable foreign key checks
         ActiveRecord::Base.connection.execute("SET session_replication_role = replica;")
 
-        # Now delete all data
-        [ Task, Job, Device, ContactMethod, Person, Client ].each(&:delete_all)
+        # Now delete all data in dependency order (ActivityLog first)
+        [ ActivityLog, RefreshToken, Task, Job, Device, ContactMethod, Person, Client ].each(&:delete_all)
 
         # Clean up test users but keep seed users for authentication
         User.where("email LIKE '%@example.com' OR email LIKE '%test%'").delete_all
