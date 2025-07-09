@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { sidebarVisible, isMobile, currentPage, layoutActions, currentJob } from '$lib/stores/layout';
-  import { taskFilterActions } from '$lib/stores/taskFilter';
+  import { layout, getCurrentPage, layoutActions } from '$lib/stores/layout.svelte';
+  import { taskFilterActions } from '$lib/stores/taskFilter.svelte';
   import FilterPopover from './FilterPopover.svelte';
   import JobStatusButton from './JobStatusButton.svelte';
   import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
@@ -30,7 +30,7 @@
   }
 
   // Page-specific actions based on current page
-  $: pageActions = getPageActions($currentPage);
+  $: pageActions = getPageActions(getCurrentPage());
 
   function getPageActions(page: string) {
     switch (page) {
@@ -68,7 +68,7 @@
   <div class="toolbar-left">
 
     <!-- Sidebar toggle (only show when sidebar is hidden) -->
-    {#if !$sidebarVisible}
+    {#if !layout.sidebarVisible}
       <CircularButton
         variant="default"
         size="normal"
@@ -80,13 +80,13 @@
     {/if}
 
     <!-- Job status button (only show on job detail page) -->
-    {#if $currentPage === 'job-detail' && $currentJob && $currentJob.id}
+    {#if getCurrentPage() === 'job-detail' && layout.currentJob && layout.currentJob.id}
       <JobStatusButton />
       <TechnicianAssignmentButton 
-        jobId={$currentJob.id}
-        initialTechnicians={$currentJob.technicians || []}
+        jobId={layout.currentJob.id}
+        initialTechnicians={layout.currentJob.technicians || []}
       />
-      <SchedulePriorityEditPopover jobId={$currentJob.id} initialJob={$currentJob} />  
+      <SchedulePriorityEditPopover jobId={layout.currentJob.id} initialJob={layout.currentJob} />  
     {/if}
   </div>
 
@@ -94,7 +94,7 @@
   <div class="toolbar-right">
     <!-- Search -->
     <!-- Job detail page controls -->
-    {#if $currentPage === 'job-detail' && $currentJob && $currentJob.id}
+    {#if getCurrentPage() === 'job-detail' && layout.currentJob && layout.currentJob.id}
       <FilterPopover onFilterChange={handleTaskStatusFilter} bind:popover={filterPopover} />
     {/if}
 

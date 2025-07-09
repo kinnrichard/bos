@@ -9,7 +9,7 @@
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
-  import { layoutActions } from '$lib/stores/layout';
+  import { layoutActions } from '$lib/stores/layout.svelte';
 
   // Get job ID from URL params
   $: jobId = $page.params.id;

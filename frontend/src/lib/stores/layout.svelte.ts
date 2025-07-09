@@ -16,46 +16,43 @@ export interface Client {
   };
 }
 
-// Layout state stores
-let sidebarVisible = $state(true);
-let currentClient = $state<Client | null>(null);
-let currentJob = $state<PopulatedJob | null>(null);
-
-// Mobile breakpoint detection
-let isMobile = $state(false);
-
-// Export reactive state for external access
-export { sidebarVisible, currentClient, currentJob, isMobile };
+// Layout state object - proper Svelte 5 pattern
+export const layout = $state({
+  sidebarVisible: true,
+  currentClient: null as Client | null,
+  currentJob: null as PopulatedJob | null,
+  isMobile: false
+});
 
 // Initialize mobile detection if in browser
 if (browser) {
   const mediaQuery = window.matchMedia('(max-width: 768px)');
-  isMobile = mediaQuery.matches;
+  layout.isMobile = mediaQuery.matches;
   
   mediaQuery.addEventListener('change', (e) => {
-    isMobile = e.matches;
+    layout.isMobile = e.matches;
     // Auto-hide sidebar on mobile by default
     if (e.matches) {
-      sidebarVisible = false;
+      layout.sidebarVisible = false;
     } else {
-      sidebarVisible = true;
+      layout.sidebarVisible = true;
     }
   });
 }
 
-// Derived stores
-export const currentPage = $derived.by(() => {
-  const $page = page;
-  if (!$page?.route?.id) return 'home';
+// Derived page state - function to get current page
+export function getCurrentPage() {
+  const currentPage = page;
+  if (!currentPage?.route?.id) return 'home';
   
   // Extract page type from route
-  if ($page.route.id === '/jobs/[id]') return 'job-detail';
-  if ($page.route.id.includes('/jobs')) return 'jobs';
-  if ($page.route.id.includes('/clients')) return 'clients';
-  if ($page.route.id.includes('/people')) return 'people';
-  if ($page.route.id.includes('/devices')) return 'devices';
+  if (currentPage.route.id === '/jobs/[id]') return 'job-detail';
+  if (currentPage.route.id.includes('/jobs')) return 'jobs';
+  if (currentPage.route.id.includes('/clients')) return 'clients';
+  if (currentPage.route.id.includes('/people')) return 'people';
+  if (currentPage.route.id.includes('/devices')) return 'devices';
   return 'home';
-});
+}
 
 // Client type helper functions
 export function getClientTypeEmoji(clientType: ClientType): string {
@@ -69,47 +66,30 @@ export function getClientTypeLabel(clientType: ClientType): string {
 // Layout actions
 export const layoutActions = {
   toggleSidebar: () => {
-    sidebarVisible = !sidebarVisible;
+    layout.sidebarVisible = !layout.sidebarVisible;
   },
   
   showSidebar: () => {
-    sidebarVisible = true;
+    layout.sidebarVisible = true;
   },
   
   hideSidebar: () => {
-    sidebarVisible = false;
+    layout.sidebarVisible = false;
   },
   
   setCurrentClient: (client: Client | null) => {
-    currentClient = client;
+    layout.currentClient = client;
   },
   
   setCurrentJob: (job: PopulatedJob | null) => {
-    currentJob = job;
-  },
-  
-  // Getters for current state
-  get sidebarVisible() {
-    return sidebarVisible;
-  },
-  
-  get currentClient() {
-    return currentClient;
-  },
-  
-  get currentJob() {
-    return currentJob;
-  },
-  
-  get isMobile() {
-    return isMobile;
+    layout.currentJob = job;
   }
 };
 
 // Initialize with mock client data for now (will be replaced with API data)
 if (browser) {
   // Mock Vital Planet client data
-  currentClient = {
+  layout.currentClient = {
     id: 'vital-planet-uuid',
     name: 'Vital Planet',
     client_type: 'business',

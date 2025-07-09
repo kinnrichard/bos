@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { currentClient, getClientTypeEmoji, isMobile, layoutActions } from '$lib/stores/layout';
+  import { layout, getClientTypeEmoji, layoutActions } from '$lib/stores/layout.svelte';
   import { mainNavItems, footerNavItems, brandConfig, getActiveNavItem } from '$lib/config/navigation';
 
   // Reactive active item tracking
@@ -36,16 +36,16 @@
   <nav class="main-nav">
     <ul class="nav-list">
   	  <!-- Current Client Section -->
-  	  {#if $currentClient}
+  	  {#if layout.currentClient}
   	    <li class="nav-item">
   	      <button 
   	        class="nav-link"
   	        type="button"
   	      >
   	        <span class="nav-icon">
-  	          {getClientTypeEmoji($currentClient.client_type)}
+  	          {getClientTypeEmoji(layout.currentClient.client_type)}
   	        </span>
-  	        <span class="nav-label">{$currentClient.name}</span>
+  	        <span class="nav-label">{layout.currentClient.name}</span>
   	      </button>
   	    </li>
         <!-- Invisible spacer -->

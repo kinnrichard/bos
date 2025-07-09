@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { sidebarVisible, isMobile } from '$lib/stores/layout';
+  import { layout, layoutActions } from '$lib/stores/layout.svelte';
   import Sidebar from './Sidebar.svelte';
   import Toolbar from './Toolbar.svelte';
 
@@ -10,18 +10,18 @@
 
 <div class="app-container">
   <!-- Sidebar -->
-  {#if showSidebar && $sidebarVisible}
-    <div class="sidebar-container" class:mobile={$isMobile}>
+  {#if showSidebar && layout.sidebarVisible}
+    <div class="sidebar-container" class:mobile={layout.isMobile}>
       <Sidebar />
     </div>
   {/if}
 
   <!-- Mobile backdrop -->
-  {#if $isMobile && $sidebarVisible && showSidebar}
+  {#if layout.isMobile && layout.sidebarVisible && showSidebar}
     <div 
       class="mobile-backdrop"
-      on:click={() => sidebarVisible.set(false)}
-      on:keydown={(e) => e.key === 'Escape' && sidebarVisible.set(false)}
+      on:click={layoutActions.hideSidebar}
+      on:keydown={(e) => e.key === 'Escape' && layoutActions.hideSidebar()}
       role="button"
       tabindex="-1"
     ></div>

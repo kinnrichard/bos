@@ -2,7 +2,7 @@
   import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import { useUpdateJobStatusMutation } from '$lib/api/hooks/jobs';
-  import { currentJob } from '$lib/stores/layout';
+  import { layout } from '$lib/stores/layout.svelte';
   import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
@@ -25,17 +25,17 @@
   ];
 
   // Get job status emoji with comprehensive null checks
-  $: jobStatusEmoji = ($currentJob?.attributes?.status) ? getJobStatusEmoji($currentJob.attributes.status) : '📝';
-  $: currentStatus = $currentJob?.attributes?.status || 'open';
+  $: jobStatusEmoji = (layout.currentJob?.attributes?.status) ? getJobStatusEmoji(layout.currentJob.attributes.status) : '📝';
+  $: currentStatus = layout.currentJob?.attributes?.status || 'open';
 
   // Handle status change using standardized mutation
   function handleStatusChange(statusOption: any) {
     const newStatus = statusOption.value;
-    if (!$currentJob || newStatus === currentStatus) return;
+    if (!layout.currentJob || newStatus === currentStatus) return;
     
     // Use the standardized mutation with optimistic updates
     $updateStatusMutation.mutate({
-      jobId: $currentJob.id,
+      jobId: layout.currentJob.id,
       status: newStatus
     });
     

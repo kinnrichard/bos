@@ -3,7 +3,7 @@
 // TODO: Migrate all popover components to use new Popover, PopoverButton, PopoverPanel components
 import { onDestroy } from 'svelte';
 import { writable } from 'svelte/store';
-import { popoverStore, type PopoverInstance } from '$lib/stores/popover';
+import { popover, popoverActions, type PopoverInstance } from '$lib/stores/popover.svelte';
 
 // Simple createPopover polyfill for legacy components
 function createPopover() {
@@ -68,7 +68,7 @@ export function createManagedPopover() {
   };
   
   // Register with global store
-  popoverStore.register(popoverId, managedInstance);
+  popoverActions.register(popoverId, managedInstance);
   
   // Create reactive store that syncs with base popover
   const { subscribe, set } = basePopover;
@@ -84,14 +84,14 @@ export function createManagedPopover() {
     // Enhanced open method that coordinates with global store
     open: () => {
       // First close any other open popovers
-      popoverStore.setOpen(popoverId, true);
+      popoverActions.setOpen(popoverId, true);
       // Then open this one
       originalOpen();
     },
     
     // Enhanced close method
     close: () => {
-      popoverStore.setOpen(popoverId, false);
+      popoverActions.setOpen(popoverId, false);
       originalClose();
     },
     
@@ -121,14 +121,14 @@ export function createManagedPopover() {
     
     if (wasOpen !== isNowOpen) {
       managedInstance.isOpen = isNowOpen;
-      popoverStore.setOpen(popoverId, isNowOpen);
+      popoverActions.setOpen(popoverId, isNowOpen);
     }
   });
   
   // Cleanup on component destroy
   onDestroy(() => {
     unsubscribe();
-    popoverStore.unregister(popoverId);
+    popoverActions.unregister(popoverId);
   });
   
   return managedPopover;
@@ -138,12 +138,12 @@ export function createManagedPopover() {
  * Utility to check if any popover is currently open
  */
 export function isAnyPopoverOpen(): boolean {
-  return popoverStore.getActiveCount() > 0;
+  return popoverActions.getActiveCount() > 0;
 }
 
 /**
  * Utility to close all open popovers
  */
 export function closeAllPopovers(): void {
-  popoverStore.closeAll();
+  popoverActions.closeAll();
 }

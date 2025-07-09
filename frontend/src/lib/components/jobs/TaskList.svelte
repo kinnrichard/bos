@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
   import { getTaskStatusEmoji } from '$lib/config/emoji';
-  import { selectedTaskStatuses, shouldShowTask } from '$lib/stores/taskFilter';
-  import { taskSelection, type TaskSelectionState } from '$lib/stores/taskSelection';
+  import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
+  import { taskSelection, getSelectedTaskIds, type TaskSelectionState } from '$lib/stores/taskSelection.svelte';
   import { tasksService } from '$lib/api/tasks';
   import { nativeDrag, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
@@ -60,7 +60,7 @@
     // - No tasks are selected
     // - Modifier keys are held (for multi-select)
     // - Clicking within task elements
-    if (!$taskSelection.selectedTaskIds.size ||
+    if (!taskSelection.selectedTaskIds.size ||
         event.metaKey || event.ctrlKey || event.shiftKey) {
       return;
     }
@@ -79,9 +79,9 @@
 
   // Arrow key navigation for single task selection
   function handleArrowNavigation(direction: 'up' | 'down') {
-    if ($taskSelection.selectedTaskIds.size !== 1) return;
+    if (taskSelection.selectedTaskIds.size !== 1) return;
     
-    const currentTaskId = Array.from($taskSelection.selectedTaskIds)[0];
+    const currentTaskId = Array.from(taskSelection.selectedTaskIds)[0];
     const currentIndex = flatTaskIds.indexOf(currentTaskId);
     
     if (currentIndex === -1) return;
@@ -123,7 +123,7 @@
         // Cancel inline new task
         event.preventDefault();
         cancelInlineNewTask();
-      } else if ($taskSelection.selectedTaskIds.size > 0 && !isEditing) {
+      } else if (taskSelection.selectedTaskIds.size > 0 && !isEditing) {
         // Clear selection if not editing
         event.preventDefault();
         taskSelection.clearSelection();
@@ -137,7 +137,7 @@
 
     // Arrow key navigation
     if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !isEditing) {
-      const selectedCount = $taskSelection.selectedTaskIds.size;
+      const selectedCount = taskSelection.selectedTaskIds.size;
       
       if (selectedCount === 0) {
         // No selection: down arrow selects first, up arrow selects last
@@ -157,7 +157,7 @@
 
     // Return key for new task creation
     if (event.key === 'Enter' && !isEditing) {
-      const selectedCount = $taskSelection.selectedTaskIds.size;
+      const selectedCount = taskSelection.selectedTaskIds.size;
       
       if (selectedCount === 0) {
         // No selection: activate bottom "New Task" row
@@ -166,7 +166,7 @@
       } else if (selectedCount === 1) {
         // Single selection: check if it's the last task
         event.preventDefault();
-        const selectedTaskId = Array.from($taskSelection.selectedTaskIds)[0];
+        const selectedTaskId = Array.from(taskSelection.selectedTaskIds)[0];
         const selectedTaskIndex = flatTaskIds.indexOf(selectedTaskId);
         const isLastTask = selectedTaskIndex === flatTaskIds.length - 1;
         
@@ -194,7 +194,7 @@
 
     // Delete key for task deletion
     if ((event.key === 'Delete' || event.key === 'Backspace') && !isEditing) {
-      const selectedCount = $taskSelection.selectedTaskIds.size;
+      const selectedCount = taskSelection.selectedTaskIds.size;
       
       if (selectedCount > 0) {
         event.preventDefault();
@@ -344,7 +344,7 @@
     return rootTasks;
   }
 
-  $: hierarchicalTasks = organizeTasksHierarchically(tasks, $selectedTaskStatuses);
+  $: hierarchicalTasks = organizeTasksHierarchically(tasks, taskFilter.selectedStatuses);
   
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
   $: {
@@ -891,7 +891,7 @@
 
   // Task deletion functions
   async function showDeleteConfirmation() {
-    tasksToDelete = Array.from($taskSelection.selectedTaskIds);
+    tasksToDelete = Array.from(taskSelection.selectedTaskIds);
     showDeleteConfirmationModal = true;
     
     // Ensure modal gets focus immediately for keyboard event capture
@@ -1051,7 +1051,7 @@
     const selectedCount = $taskSelection.selectedTaskIds.size;
     const draggedTaskId = event.item.dataset.taskId;
     
-    if (draggedTaskId && $taskSelection.selectedTaskIds.has(draggedTaskId) && selectedCount > 1) {
+    if (draggedTaskId && taskSelection.selectedTaskIds.has(draggedTaskId) && selectedCount > 1) {
       // Show multi-drag badge
       const badge = document.createElement('div');
       badge.className = 'multi-drag-badge';
@@ -1300,7 +1300,7 @@
       console.log('🪆 Nesting operation detected');
       
       // For single-task nesting, delegate to existing function
-      const isMultiSelectNest = $taskSelection.selectedTaskIds.has(draggedTaskId) && $taskSelection.selectedTaskIds.size > 1;
+      const isMultiSelectNest = taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
       if (!isMultiSelectNest) {
         await handleTaskNesting(draggedTaskId, event.dropZone.targetTaskId);
         return;
@@ -1311,7 +1311,7 @@
     }
 
     // Determine if this is a multi-select drag
-    const isMultiSelectDrag = $taskSelection.selectedTaskIds.has(draggedTaskId) && $taskSelection.selectedTaskIds.size > 1;
+    const isMultiSelectDrag = taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
     
     // Calculate newParentId for both single and multi-select operations
     let newParentId: string | undefined;
@@ -1333,7 +1333,7 @@
     
     // Store optimistic update info for rollback
     if (isMultiSelectDrag) {
-      const selectedTaskIds = Array.from($taskSelection.selectedTaskIds);
+      const selectedTaskIds = Array.from(taskSelection.selectedTaskIds);
       selectedTaskIds.forEach(taskId => {
         optimisticUpdates.set(taskId, {
           originalPosition: tasks.find(t => t.id === taskId)?.position || 0,
@@ -1356,7 +1356,7 @@
     try {
       // Get the task IDs that are being moved
       const taskIdsToMove = isMultiSelectDrag 
-        ? Array.from($taskSelection.selectedTaskIds)
+        ? Array.from(taskSelection.selectedTaskIds)
         : [draggedTaskId];
       
       // Calculate relative positioning for each task
@@ -1366,7 +1366,7 @@
         // For multi-task operations: use sequential positioning to avoid circular references
         // Sort tasks by their visual order in the hierarchy (not just position within parent)
         const visualOrderMap = createVisualOrderMap(tasks);
-        const sortedTaskIds = Array.from($taskSelection.selectedTaskIds);
+        const sortedTaskIds = Array.from(taskSelection.selectedTaskIds);
         sortedTaskIds.sort((a, b) => {
           const visualOrderA = visualOrderMap.get(a) || 0;
           const visualOrderB = visualOrderMap.get(b) || 0;
@@ -1849,9 +1849,9 @@
           class:in-progress={renderItem.task.status === 'in_progress'}
           class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
           class:has-subtasks={renderItem.hasSubtasks}
-          class:selected={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
-          class:task-selected-for-drag={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
-          class:multi-select-active={$taskSelection.isMultiSelectActive}
+          class:selected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
+          class:task-selected-for-drag={taskSelection.selectedTaskIds.has(renderItem.task.id)}
+          class:multi-select-active={taskSelection.isMultiSelectActive}
           class:selection-top={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
           class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
           class:selection-bottom={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-bottom'}
@@ -1860,7 +1860,7 @@
           data-task-id={renderItem.task.id}
           role="button"
           tabindex="0"
-          aria-label="Task: {renderItem.task.title}. {$taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
+          aria-label="Task: {renderItem.task.title}. {taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
           on:click={(e) => editingTaskId === renderItem.task.id ? null : handleTaskClick(e, renderItem.task.id)}
           on:keydown={(e) => handleTaskKeydown(e, renderItem.task.id)}
         >
@@ -1957,7 +1957,7 @@
               task={renderItem.task}
               {jobId}
               {batchTaskDetails}
-              isSelected={$taskSelection.selectedTaskIds.has(renderItem.task.id)}
+              isSelected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
               bind:popover={taskPopovers[renderItem.task.id]}
               on:task-updated={handleTaskUpdated}
             />
