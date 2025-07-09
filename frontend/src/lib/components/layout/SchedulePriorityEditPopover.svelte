@@ -18,9 +18,9 @@
   const updateJobMutation = useUpdateJobMutation();
 
   // Derived state from TanStack Query cache
-  $: job = $jobQuery.data || initialJob;
-  $: isLoading = $updateJobMutation.isPending;
-  $: error = $updateJobMutation.error;
+  $: job = jobQuery.data || initialJob;
+  $: isLoading = updateJobMutation.isPending;
+  $: error = updateJobMutation.error;
   $: errorMessage = getPopoverErrorMessage(error);
 
   // Local form state
@@ -74,7 +74,7 @@
 
     // Only submit if there are changes
     if (Object.keys(updates).length > 0) {
-      $updateJobMutation.mutate({ 
+      updateJobMutation.mutate({ 
         id: job.id, 
         data: updates 
       }, {

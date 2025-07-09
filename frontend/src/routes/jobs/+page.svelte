@@ -2,14 +2,16 @@
   import { page } from '$app/stores';
   import { browser } from '$app/environment';
   import { invalidateAll } from '$app/navigation';
-  import { createQuery } from '@tanstack/svelte-query';
+  import { createSafeQuery } from '$lib/utils/safe-query.svelte';
   import { jobsService } from '$lib/api/jobs';
+  
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobCard from '$lib/components/jobs/JobCard.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import type { JobStatus, JobPriority } from '$lib/types/job';
+  import { derived, writable } from 'svelte/store';
 
-  // Extract query parameters for filtering
+  // Extract query parameters for filtering and convert to stores
   $: url = $page.url;
   $: scope = url.searchParams.get('scope') || 'all';
   $: status = url.searchParams.get('status') as JobStatus | undefined;
@@ -17,16 +19,17 @@
   $: currentPage = parseInt(url.searchParams.get('page') || '1');
   $: per_page = parseInt(url.searchParams.get('per_page') || '20');
 
-  // Create the query on the client side only
-  $: query = browser ? createQuery({
+  // Create reactive query using safe query wrapper
+  const queryResult = createSafeQuery(() => ({
     queryKey: ['jobs', { scope, status, priority, page: currentPage, per_page }],
     queryFn: async () => {
+      console.log('[JOBS PAGE] Query function executing with params:', { scope, status, priority, page: currentPage, per_page });
       const response = await jobsService.getJobsWithScope({
         scope: scope as 'all' | 'mine',
-        status,
-        priority,
+        status: status,
+        priority: priority,
         page: currentPage,
-        per_page,
+        per_page: per_page,
         include: 'client,technicians,tasks' // Include related data
       });
       
@@ -48,24 +51,33 @@
       };
     },
     staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
-  }) : null;
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  }));
 
-  // Reactive statements for query state
-  $: isLoading = $query?.isLoading || false;
-  $: error = $query?.error;
-  $: jobs = $query?.data?.jobs || [];
-  $: meta = $query?.data?.meta;
-  // $: links = $query.data?.links;
+  // Access query state directly from the safe query result
+  $: isLoading = $queryResult.isLoading;
+  $: error = $queryResult.error;
+  $: jobs = $queryResult.data?.jobs ?? [];
+  $: meta = $queryResult.data?.meta ?? null;
+  
+  // Debug query state
+  $: console.log('[JOBS PAGE] Query state:', {
+    isLoading: $queryResult.isLoading,
+    isPending: $queryResult.isPending,
+    status: $queryResult.status,
+    fetchStatus: $queryResult.fetchStatus,
+    hasData: !!$queryResult.data,
+    dataJobsCount: $queryResult.data?.jobs?.length || 0
+  });
 
   // Handle retry
   function handleRetry() {
-    $query?.refetch();
+    $queryResult.refetch();
   }
 
   // Handle refresh
   function handleRefresh() {
-    $query?.refetch();
+    $queryResult.refetch();
   }
 </script>
 

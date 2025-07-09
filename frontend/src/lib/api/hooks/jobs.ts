@@ -20,24 +20,24 @@ export function useJobsQuery(params: {
   client_id?: string;
   technician_id?: string;
 } = {}) {
-  return createQuery({
+  return createQuery(() => ({
     queryKey: ['jobs', params],
     queryFn: () => jobsService.getJobs(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-  });
+  }));
 }
 
 /**
  * Query hook for fetching single job with populated relationships
  */
 export function useJobQuery(id: string, enabled: boolean = true) {
-  return createQuery({
+  return createQuery(() => ({
     queryKey: ['job', id],
     queryFn: () => jobsService.getJobWithDetails(id),
     enabled: enabled && !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  }));
 }
 
 /**
@@ -46,7 +46,7 @@ export function useJobQuery(id: string, enabled: boolean = true) {
 export function useCreateJobMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (jobData: JobCreateRequest) => jobsService.createJob(jobData),
     onSuccess: (data: JsonApiResponse<JobResource>) => {
       // Invalidate and refetch jobs list
@@ -58,7 +58,7 @@ export function useCreateJobMutation() {
     onError: (error) => {
       console.error('Failed to create job:', error);
     }
-  });
+  }));
 }
 
 /**
@@ -67,7 +67,7 @@ export function useCreateJobMutation() {
 export function useUpdateJobMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: ({ id, data }: { id: string; data: JobUpdateRequest }) => 
       jobsService.updateJob(id, data),
     onMutate: async ({ id, data }) => {
@@ -107,7 +107,7 @@ export function useUpdateJobMutation() {
       queryClient.invalidateQueries({ queryKey: ['job', id] });
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
     }
-  });
+  }));
 }
 
 /**
@@ -116,7 +116,7 @@ export function useUpdateJobMutation() {
 export function useDeleteJobMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (id: string) => jobsService.deleteJob(id),
     onSuccess: (_, id) => {
       // Remove job from cache
@@ -128,7 +128,7 @@ export function useDeleteJobMutation() {
     onError: (error) => {
       console.error('Failed to delete job:', error);
     }
-  });
+  }));
 }
 
 /**
@@ -161,7 +161,7 @@ export function useUpdateJobStatusMutation() {
 export function useBulkUpdateJobStatusMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: ({ 
       jobIds, 
       status 
@@ -178,5 +178,5 @@ export function useBulkUpdateJobStatusMutation() {
     onError: (error) => {
       console.error('Failed to bulk update jobs:', error);
     }
-  });
+  }));
 }

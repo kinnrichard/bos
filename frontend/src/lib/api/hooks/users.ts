@@ -7,7 +7,7 @@ import { debugTechAssignment, debugAPI } from '$lib/utils/debug';
  * Query hook for fetching all users
  */
 export function useUsersQuery() {
-  return createQuery({
+  return createQuery(() => ({
     queryKey: ['users'],
     queryFn: () => usersService.getUsers(),
     staleTime: 10 * 60 * 1000, // 10 minutes - users don't change often
@@ -17,14 +17,14 @@ export function useUsersQuery() {
       return failureCount < 2; // Conservative retry approach
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
+  }));
 }
 
 /**
  * Query hook for fetching technicians specifically
  */
 export function useTechniciansQuery() {
-  return createQuery({
+  return createQuery(() => ({
     queryKey: ['users', 'technicians'],
     queryFn: () => usersService.getTechnicians(),
     staleTime: 10 * 60 * 1000, // 10 minutes
@@ -34,7 +34,7 @@ export function useTechniciansQuery() {
       return failureCount < 2;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
+  }));
 }
 
 /**
@@ -44,7 +44,7 @@ export function useTechniciansQuery() {
 export function useUserQuery(id: string, enabled: boolean = true) {
   const queryClient = useQueryClient();
   
-  return createQuery({
+  return createQuery(() => ({
     queryKey: ['user', id],
     queryFn: async () => {
       // First try to get from users cache
@@ -75,7 +75,7 @@ export function useUserQuery(id: string, enabled: boolean = true) {
     enabled: enabled && !!id,
     staleTime: 10 * 60 * 1000,
     retry: false, // Don't retry since this is cache-based
-  });
+  }));
 }
 
 /**
@@ -84,21 +84,20 @@ export function useUserQuery(id: string, enabled: boolean = true) {
  */
 export function useUserLookup() {
   const usersQuery = useUsersQuery();
-  const data = (usersQuery as any).data;
   
   return {
     ...usersQuery,
     getUserById: (id: string): User | undefined => {
-      if (!data) return undefined;
-      return data.find((u: User) => u.id === id);
+      if (!usersQuery.data) return undefined;
+      return usersQuery.data.find((u: User) => u.id === id);
     },
     getUsersByIds: (ids: string[]): User[] => {
-      if (!data) return [];
-      return ids.map(id => data.find((u: User) => u.id === id)).filter(Boolean) as User[];
+      if (!usersQuery.data) return [];
+      return ids.map(id => usersQuery.data.find((u: User) => u.id === id)).filter(Boolean) as User[];
     },
     isUserLoaded: (id: string): boolean => {
-      if (!data) return false;
-      return data.some((u: User) => u.id === id);
+      if (!usersQuery.data) return false;
+      return usersQuery.data.some((u: User) => u.id === id);
     }
   };
 }
@@ -110,7 +109,7 @@ export function useUserLookup() {
 export function useUpdateJobTechniciansMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: async ({ jobId, technicianIds }: { jobId: string; technicianIds: string[] }) => {
       debugTechAssignment('API call: Updating job %s technicians to: %o', jobId, technicianIds);
       
@@ -136,7 +135,7 @@ export function useUpdateJobTechniciansMutation() {
       return failureCount < 1; // Conservative retry - only once
     },
     retryDelay: 1000, // 1 second delay before retry
-  });
+  }));
 }
 
 // Note: Don't use useQueryClient() at module level - only in hooks/components

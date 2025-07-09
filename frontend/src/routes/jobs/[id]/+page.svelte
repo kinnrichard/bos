@@ -3,19 +3,20 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onDestroy } from 'svelte';
-  import { createQuery } from '@tanstack/svelte-query';
+  import { createSafeQuery } from '$lib/utils/safe-query.svelte';
   import { jobsService } from '$lib/api/jobs';
   import { useTaskBatchDetailsQuery } from '$lib/api/hooks/tasks';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import { layoutActions } from '$lib/stores/layout.svelte';
+  import { derived, writable } from 'svelte/store';
 
   // Get job ID from URL params
   $: jobId = $page.params.id;
 
-  // Create the query on the client side only
-  $: query = browser && jobId ? createQuery({
+  // Create reactive query using safe query wrapper
+  const queryResult = createSafeQuery(() => ({
     queryKey: ['job', jobId],
     queryFn: async () => {
       console.log('[JobPage] Executing query with key:', ['job', jobId]);
@@ -40,29 +41,19 @@
       }
       return failureCount < 3;
     }
-  }) : null;
+  }));
+
+  // Access query state directly from the safe query result
+  $: isLoading = $queryResult.isLoading;
+  $: error = $queryResult.error;
+  $: job = $queryResult.data;
 
   // Background fetch for task batch details - enabled only after job loads successfully
   $: taskBatchDetailsQuery = useTaskBatchDetailsQuery(jobId, !!job && !isLoading);
-
-  // Reactive statements for query state
-  $: isLoading = $query?.isLoading || false;
-  $: error = $query?.error;
-  $: job = $query?.data;
   
-  // Debug logging for query state changes
-  $: if (typeof isLoading !== 'undefined') {
-    console.log('[JobPage] Query state changed:', {
-      isLoading,
-      hasError: !!error,
-      hasJob: !!job,
-      jobId: jobId
-    });
-    if (job) {
-      console.log('[JobPage] CURRENT job data structure:', JSON.parse(JSON.stringify(job)));
-      console.log('[JobPage] Job title from data:', job?.attributes?.title);
-      console.log('[JobPage] Job client from data:', job?.client?.name);
-    }
+  // Log job data structure for debugging
+  $: if (job) {
+    console.log('[JobPage] Job data loaded:', job?.attributes?.title);
   }
 
   // Update current job in layout store when job data changes
@@ -84,7 +75,7 @@
 
   // Handle retry
   function handleRetry() {
-    $query?.refetch();
+    $queryResult.refetch();
   }
 </script>
 
@@ -131,7 +122,7 @@
 
   <!-- Job Detail Content -->
   {:else if job}
-    <JobDetailView {job} batchTaskDetails={$taskBatchDetailsQuery?.data} />
+    <JobDetailView {job} batchTaskDetails={taskBatchDetailsQuery?.data} />
 
   <!-- Fallback (should not happen with proper loading states) -->
   {:else}

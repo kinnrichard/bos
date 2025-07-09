@@ -30,14 +30,14 @@
   const updateTechniciansMutation = useUpdateJobTechniciansMutation();
 
   // Derived state from TanStack Query cache - fallback to initial data
-  $: job = $jobQuery.data; // Now returns PopulatedJob directly
-  $: availableUsers = $usersQuery.data || [];
+  $: job = jobQuery.data; // Now returns PopulatedJob directly
+  $: availableUsers = usersQuery.data || [];
   // Use populated technicians from job.technicians instead of relationships
   $: assignedTechnicians = job?.technicians || initialTechnicians;
   $: assignedTechniciansForDisplay = assignedTechnicians;
   
-  $: isLoading = $updateTechniciansMutation.isPending;
-  $: error = $updateTechniciansMutation.error;
+  $: isLoading = updateTechniciansMutation.isPending;
+  $: error = updateTechniciansMutation.error;
   $: errorMessage = getPopoverErrorMessage(error);
   
   // Local state for immediate UI responsiveness (optimistic updates)
@@ -60,7 +60,7 @@
   
   // Derive optimistic display data separately - this only updates when users list or localSelectedIds change
   $: {
-    const userList = $usersQuery.data || [];
+    const userList = usersQuery.data || [];
     optimisticTechnicians = Array.from(localSelectedIds)
       .map(id => userList.find(user => user.id === id))
       .filter(Boolean) as User[];
@@ -102,7 +102,7 @@
     
     // TanStack Query mutation handles API call and cache updates
     try {
-      $updateTechniciansMutation.mutate({ jobId, technicianIds });
+      updateTechniciansMutation.mutate({ jobId, technicianIds });
     } catch (error) {
       debugTechAssignment('Error during mutation: %o', error);
       console.error('TechnicianAssignmentButton mutation error:', error);
@@ -146,18 +146,18 @@
   <svelte:fragment slot="panel-content" let:error let:loading>
     <h3 class="popover-title">Assigned To</h3>
     
-    {#if $usersQuery.isError}
+    {#if usersQuery.isError}
       <div class="popover-error-message">{POPOVER_ERRORS.LOAD_USERS}</div>
     {:else if error}
       <div class="popover-error-message">{error}</div>
     {/if}
 
-    {#if $usersQuery.isLoading}
+    {#if usersQuery.isLoading}
       <div class="popover-loading-indicator">Loading users...</div>
     {:else}
       <PopoverOptionList
         options={availableUsers.filter(validateUserData)}
-        loading={$usersQuery.isLoading}
+        loading={usersQuery.isLoading}
         maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
         onOptionClick={(user, event) => {
           const isCurrentlySelected = localSelectedIds.has(user.id);
