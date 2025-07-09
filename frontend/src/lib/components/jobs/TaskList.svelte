@@ -2,7 +2,7 @@
   import { onDestroy, onMount, tick } from 'svelte';
   import { getTaskStatusEmoji } from '$lib/config/emoji';
   import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
-  import { taskSelection, getSelectedTaskIds, type TaskSelectionState } from '$lib/stores/taskSelection.svelte';
+  import { taskSelection, getSelectedTaskIds, taskSelectionActions, type TaskSelectionState } from '$lib/stores/taskSelection.svelte';
   import { tasksService } from '$lib/api/tasks';
   import { nativeDrag, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
@@ -73,7 +73,7 @@
 
     // Deselect if clicking outside task list, or inside task list but not on actual tasks
     if (isClickOutsideTaskList || (!isClickOnTaskElement && !isClickOnTaskAction)) {
-      taskSelection.clearSelection();
+      taskSelectionActions.clearSelection();
     }
   }
 
@@ -94,7 +94,7 @@
     }
     
     const nextTaskId = flatTaskIds[nextIndex];
-    taskSelection.selectTask(nextTaskId);
+    taskSelectionActions.selectTask(nextTaskId);
     
     // Scroll new selection into view
     scrollTaskIntoView(nextTaskId);
@@ -126,7 +126,7 @@
       } else if (taskSelection.selectedTaskIds.size > 0 && !isEditing) {
         // Clear selection if not editing
         event.preventDefault();
-        taskSelection.clearSelection();
+        taskSelectionActions.clearSelection();
         
         // Remove focus ring by blurring the currently focused element
         if (document.activeElement && document.activeElement !== document.body) {
@@ -144,7 +144,7 @@
         event.preventDefault(); // Prevent page scroll
         if (flatTaskIds.length > 0) {
           const taskId = event.key === 'ArrowDown' ? flatTaskIds[0] : flatTaskIds[flatTaskIds.length - 1];
-          taskSelection.selectTask(taskId);
+          taskSelectionActions.selectTask(taskId);
           scrollTaskIntoView(taskId);
         }
       } else if (selectedCount === 1) {
@@ -172,14 +172,14 @@
         
         if (isLastTask) {
           // Last task selected: activate bottom "New Task" row (cleaner UX)
-          taskSelection.clearSelection();
+          taskSelectionActions.clearSelection();
           showNewTaskForm();
         } else {
           // Not last task: create inline new task as sibling
           insertNewTaskAfter = selectedTaskId;
           showInlineNewTaskInput = true;
           inlineNewTaskTitle = '';
-          taskSelection.clearSelection(); // Clear selection when creating new task
+          taskSelectionActions.clearSelection(); // Clear selection when creating new task
           
           // Focus inline input after DOM update
           tick().then(() => {
@@ -480,11 +480,11 @@
     event.stopPropagation();
     
     if (event.shiftKey) {
-      taskSelection.selectRange(taskId, flatTaskIds);
+      taskSelectionActions.handleRangeSelect(taskId, flatTaskIds);
     } else if (event.ctrlKey || event.metaKey) {
-      taskSelection.toggleTask(taskId);
+      taskSelectionActions.toggleTask(taskId);
     } else {
-      taskSelection.selectTask(taskId);
+      taskSelectionActions.selectTask(taskId);
     }
   }
 
@@ -599,7 +599,7 @@
       
       // Select the newly created task only if requested (Return key, not blur)
       if (shouldSelectAfterCreate) {
-        taskSelection.selectTask(response.task.id);
+        taskSelectionActions.selectTask(response.task.id);
       }
       
       // Clear the form
@@ -678,7 +678,7 @@
   // Task title editing functions
   function handleTitleClick(event: MouseEvent, taskId: string, currentTitle: string) {
     event.stopPropagation(); // Prevent task selection
-    taskSelection.clearSelection(); // Clear any existing selection when editing
+    taskSelectionActions.clearSelection(); // Clear any existing selection when editing
     
     // Store click position for cursor positioning
     const clickX = event.clientX;
@@ -851,7 +851,7 @@
         
         // Select the newly created task only if requested (Return key, not blur)
         if (shouldSelectAfterCreate) {
-          taskSelection.selectTask(result.task.id);
+          taskSelectionActions.selectTask(result.task.id);
         }
         
         feedback = 'Task created successfully';
@@ -992,7 +992,7 @@
       }
 
       // Clear selection
-      taskSelection.clearSelection();
+      taskSelectionActions.clearSelection();
 
       // Phase 2: Start deletion animation by marking tasks as deleting
       tasksToDeleteCopy.forEach(taskId => {
@@ -1852,9 +1852,9 @@
           class:selected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
           class:task-selected-for-drag={taskSelection.selectedTaskIds.has(renderItem.task.id)}
           class:multi-select-active={taskSelection.isMultiSelectActive}
-          class:selection-top={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-top'}
-          class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-middle'}
-          class:selection-bottom={getSelectionPositionClass(renderItem.task.id, index, $taskSelection) === 'selection-bottom'}
+          class:selection-top={getSelectionPositionClass(renderItem.task.id, index, taskSelection) === 'selection-top'}
+          class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, taskSelection) === 'selection-middle'}
+          class:selection-bottom={getSelectionPositionClass(renderItem.task.id, index, taskSelection) === 'selection-bottom'}
           class:task-deleting={deletingTaskIds.has(renderItem.task.id)}
           style="--depth: {renderItem.depth || 0}"
           data-task-id={renderItem.task.id}
