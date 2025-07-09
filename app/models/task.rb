@@ -201,12 +201,13 @@ class Task < ApplicationRecord
     siblings = Task.where(job_id: job_id, parent_id: parent_id)
                    .ordered_by_status
 
-    # Use positioning gem's approach for batch updates
+    # Use positioning gem's approach with optimized checks
     Task.transaction do
       siblings.each_with_index do |task, index|
         new_position = index + 1
+        # Only update if position actually changed - reduces unnecessary DB calls
         if task.position != new_position
-          task.update(position: new_position)
+          task.update!(position: new_position)
         end
       end
     end

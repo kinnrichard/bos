@@ -30,6 +30,9 @@ class User < ApplicationRecord
   before_validation :downcase_email
   before_validation :strip_name
 
+  after_save :invalidate_technicians_cache, if: :should_invalidate_technicians_cache?
+  after_destroy :invalidate_technicians_cache, if: :technician?
+
   # Thread-safe current user storage
   thread_cattr_accessor :current_user
 
@@ -90,5 +93,13 @@ class User < ApplicationRecord
 
   def password_required?
     new_record? || password.present?
+  end
+
+  def should_invalidate_technicians_cache?
+    technician? || (saved_change_to_role? && role_before_last_save == "technician")
+  end
+
+  def invalidate_technicians_cache
+    Rails.cache.delete("available_technicians_data")
   end
 end

@@ -87,13 +87,7 @@ class Api::V1::TasksController < Api::V1::BaseController
           metadata: log.metadata
         }
       end,
-      available_technicians: User.technician.map do |user|
-        {
-          id: user.id,
-          name: user.name,
-          initials: user.initials
-        }
-      end
+      available_technicians: available_technicians_data
     }
   end
 
@@ -585,6 +579,18 @@ class Api::V1::TasksController < Api::V1::BaseController
           email: user.email
         }
       }
+    end
+  end
+
+  def available_technicians_data
+    Rails.cache.fetch("available_technicians_data", expires_in: 5.minutes) do
+      User.technician.map do |user|
+        {
+          id: user.id,
+          name: user.name,
+          initials: user.initials
+        }
+      end
     end
   end
 end

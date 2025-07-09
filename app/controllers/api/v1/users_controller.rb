@@ -3,10 +3,21 @@ class Api::V1::UsersController < Api::V1::BaseController
 
   # GET /api/v1/users
   def index
-    @users = User.all
+    page = params[:page]&.to_i || 1
+    per_page = params[:per_page]&.to_i || 25
+    per_page = [ per_page, 100 ].min # Cap at 100 to prevent abuse
+
+    @users = User.offset((page - 1) * per_page).limit(per_page)
+    @total_count = User.count
 
     render json: {
-      data: @users.map { |user| user_data(user) }
+      data: @users.map { |user| user_data(user) },
+      meta: {
+        current_page: page,
+        per_page: per_page,
+        total_count: @total_count,
+        total_pages: (@total_count.to_f / per_page).ceil
+      }
     }
   end
 

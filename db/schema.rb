@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_07_161458) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_09_052231) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -25,10 +25,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_161458) do
     t.uuid "client_id"
     t.uuid "job_id"
     t.uuid "loggable_id"
+    t.index ["action", "loggable_type", "loggable_id"], name: "index_activity_logs_on_action_and_loggable"
     t.index ["client_id"], name: "index_activity_logs_on_client_id"
+    t.index ["created_at"], name: "index_activity_logs_on_created_at"
     t.index ["id"], name: "index_activity_logs_on_id", unique: true
     t.index ["job_id"], name: "index_activity_logs_on_job_id"
     t.index ["loggable_id"], name: "index_activity_logs_on_loggable_id"
+    t.index ["loggable_type", "loggable_id", "action"], name: "index_activity_logs_on_loggable_and_action"
     t.index ["loggable_type", "loggable_id"], name: "index_activity_logs_on_loggable_type_and_uuid"
     t.index ["user_id"], name: "index_activity_logs_on_user_id"
   end
@@ -123,8 +126,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_161458) do
     t.uuid "created_by_id"
     t.index ["client_id"], name: "index_jobs_on_client_id"
     t.index ["created_by_id"], name: "index_jobs_on_created_by_id"
+    t.index ["due_on", "due_time"], name: "index_jobs_on_due_date_time"
     t.index ["id"], name: "index_jobs_on_id", unique: true
     t.index ["lock_version"], name: "index_jobs_on_lock_version"
+    t.index ["status", "created_at"], name: "index_jobs_on_status_and_created_at"
   end
 
   create_table "notes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -424,7 +429,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_161458) do
     t.datetime "updated_at", null: false
     t.string "password_digest"
     t.boolean "resort_tasks_on_status_change", default: true, null: false
+    t.index ["email"], name: "index_users_on_email"
     t.index ["id"], name: "index_users_on_id", unique: true
+    t.index ["role"], name: "index_users_on_role"
   end
 
   add_foreign_key "activity_logs", "clients"
