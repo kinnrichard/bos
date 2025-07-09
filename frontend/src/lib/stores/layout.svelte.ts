@@ -40,19 +40,6 @@ if (browser) {
   });
 }
 
-// Derived page state - function to get current page
-export function getCurrentPage() {
-  const currentPage = page;
-  if (!currentPage?.route?.id) return 'home';
-  
-  // Extract page type from route
-  if (currentPage.route.id === '/jobs/[id]') return 'job-detail';
-  if (currentPage.route.id.includes('/jobs')) return 'jobs';
-  if (currentPage.route.id.includes('/clients')) return 'clients';
-  if (currentPage.route.id.includes('/people')) return 'people';
-  if (currentPage.route.id.includes('/devices')) return 'devices';
-  return 'home';
-}
 
 // Client type helper functions
 export function getClientTypeEmoji(clientType: ClientType): string {

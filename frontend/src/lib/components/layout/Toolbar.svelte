@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { layout, getCurrentPage, layoutActions } from '$lib/stores/layout.svelte';
+  import { layout, layoutActions } from '$lib/stores/layout.svelte';
+  import { page } from '$app/stores';
   import { taskFilterActions } from '$lib/stores/taskFilter.svelte';
   import FilterPopover from './FilterPopover.svelte';
   import JobStatusButton from './JobStatusButton.svelte';
@@ -29,8 +30,22 @@
     }
   }
 
+  // Get current page from route
+  function getCurrentPage() {
+    if (!$page?.route?.id) return 'home';
+    
+    // Extract page type from route
+    if ($page.route.id === '/jobs/[id]') return 'job-detail';
+    if ($page.route.id.includes('/jobs')) return 'jobs';
+    if ($page.route.id.includes('/clients')) return 'clients';
+    if ($page.route.id.includes('/people')) return 'people';
+    if ($page.route.id.includes('/devices')) return 'devices';
+    return 'home';
+  }
+
   // Page-specific actions based on current page
-  $: pageActions = getPageActions(getCurrentPage());
+  $: currentPage = getCurrentPage();
+  $: pageActions = getPageActions(currentPage);
 
   function getPageActions(page: string) {
     switch (page) {
@@ -80,7 +95,7 @@
     {/if}
 
     <!-- Job status button (only show on job detail page) -->
-    {#if getCurrentPage() === 'job-detail' && layout.currentJob && layout.currentJob.id}
+    {#if currentPage === 'job-detail' && layout.currentJob && layout.currentJob.id}
       <JobStatusButton />
       <TechnicianAssignmentButton 
         jobId={layout.currentJob.id}
@@ -94,7 +109,7 @@
   <div class="toolbar-right">
     <!-- Search -->
     <!-- Job detail page controls -->
-    {#if getCurrentPage() === 'job-detail' && layout.currentJob && layout.currentJob.id}
+    {#if currentPage === 'job-detail' && layout.currentJob && layout.currentJob.id}
       <FilterPopover onFilterChange={handleTaskStatusFilter} bind:popover={filterPopover} />
     {/if}
 
