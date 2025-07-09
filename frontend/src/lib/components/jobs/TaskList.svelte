@@ -1976,7 +1976,7 @@
             <!-- Invisible Status for Spacing -->
             <div class="task-status">
               <div class="status-emoji">
-                <img src="/icons/plus-circle.svg" alt="Add task" style="width: 16px; height: 16px; opacity: 0.6; pointer-events: none;" />
+                <img src="/icons/plus-circle.svg" alt="Add task" style="width: 16px; height: 16px; opacity: 0.6;" />
               </div>
             </div>
             
@@ -2357,13 +2357,8 @@
     resize: none;
   }
 
-  /* Add New Task Row Styling */
-  .task-item-add-new {
-    /* Allow full pointer events for complete hover detection */
-  }
-
   .task-item-add-new .task-status {
-    /* Restore margin-right to maintain visual alignment with other task rows */
+    /* visual alignment with other task rows */
     margin-right: 8px;
   }
 
@@ -2408,10 +2403,6 @@
     flex-shrink: 0;
     pointer-events: none;
     opacity: 0;
-  }
-
-  .task-actions > * {
-    pointer-events: auto;
   }
 
   .task-item:hover .task-actions {

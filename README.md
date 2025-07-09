@@ -1,5 +1,17 @@
 # README
 
+## starting up
+
+```bash
+rails server
+```
+
+then in another window:
+
+```bash
+npm run dev
+````
+
 ## how to kill the rails server
 
 ```bash
