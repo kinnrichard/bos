@@ -1048,7 +1048,7 @@
     isDragging = true;
     
     // Check for multi-select drag
-    const selectedCount = $taskSelection.selectedTaskIds.size;
+    const selectedCount = taskSelection.selectedTaskIds.size;
     const draggedTaskId = event.item.dataset.taskId;
     
     if (draggedTaskId && taskSelection.selectedTaskIds.has(draggedTaskId) && selectedCount > 1) {
