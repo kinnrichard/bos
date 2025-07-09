@@ -1,5 +1,3 @@
-import { writable } from 'svelte/store';
-
 export interface PopoverInstance {
   id: string;
   isOpen: boolean;
@@ -12,77 +10,63 @@ interface PopoverState {
 }
 
 function createPopoverStore() {
-  const { subscribe, set, update } = writable<PopoverState>({
+  let state = $state<PopoverState>({
     instances: new Map(),
     activeCount: 0
   });
 
   return {
-    subscribe,
+    // Getter for current state
+    get state() {
+      return state;
+    },
     
     // Register a new popover instance
     register: (id: string, instance: PopoverInstance) => {
-      update(state => {
-        state.instances.set(id, instance);
-        return state;
-      });
+      state.instances.set(id, instance);
     },
     
     // Unregister a popover instance
     unregister: (id: string) => {
-      update(state => {
-        state.instances.delete(id);
-        return state;
-      });
+      state.instances.delete(id);
     },
     
     // Update the open state of a specific popover
     setOpen: (id: string, isOpen: boolean) => {
-      update(state => {
-        const instance = state.instances.get(id);
-        if (instance) {
-          instance.isOpen = isOpen;
-          
-          // If opening this popover, close all others
-          if (isOpen) {
-            state.instances.forEach((otherInstance, otherId) => {
-              if (otherId !== id && otherInstance.isOpen) {
-                otherInstance.close();
-                otherInstance.isOpen = false;
-              }
-            });
-          }
-          
-          // Update active count
-          state.activeCount = Array.from(state.instances.values())
-            .filter(inst => inst.isOpen).length;
+      const instance = state.instances.get(id);
+      if (instance) {
+        instance.isOpen = isOpen;
+        
+        // If opening this popover, close all others
+        if (isOpen) {
+          state.instances.forEach((otherInstance, otherId) => {
+            if (otherId !== id && otherInstance.isOpen) {
+              otherInstance.close();
+              otherInstance.isOpen = false;
+            }
+          });
         }
-        return state;
-      });
+        
+        // Update active count
+        state.activeCount = Array.from(state.instances.values())
+          .filter(inst => inst.isOpen).length;
+      }
     },
     
     // Close all open popovers
     closeAll: () => {
-      update(state => {
-        state.instances.forEach(instance => {
-          if (instance.isOpen) {
-            instance.close();
-            instance.isOpen = false;
-          }
-        });
-        state.activeCount = 0;
-        return state;
+      state.instances.forEach(instance => {
+        if (instance.isOpen) {
+          instance.close();
+          instance.isOpen = false;
+        }
       });
+      state.activeCount = 0;
     },
     
     // Get count of currently open popovers
     getActiveCount: () => {
-      let count = 0;
-      update(state => {
-        count = state.activeCount;
-        return state;
-      });
-      return count;
+      return state.activeCount;
     }
   };
 }

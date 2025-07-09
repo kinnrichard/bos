@@ -1,7 +1,5 @@
-import { writable, derived } from 'svelte/store';
-
 // Task status filter store - start with all statuses selected
-export const selectedTaskStatuses = writable<string[]>(['new_task', 'in_progress', 'paused', 'successfully_completed', 'cancelled']);
+let selectedTaskStatuses = $state<string[]>(['new_task', 'in_progress', 'paused', 'successfully_completed', 'cancelled']);
 
 // Helper function to check if a task should be visible based on filters
 export function shouldShowTask(task: any, statuses: string[]): boolean {
@@ -13,18 +11,20 @@ export function shouldShowTask(task: any, statuses: string[]): boolean {
 }
 
 // Derived store that provides the filter function
-export const taskFilter = derived(
-  selectedTaskStatuses,
-  ($statuses) => (task: any) => shouldShowTask(task, $statuses)
-);
+export const taskFilter = $derived((task: any) => shouldShowTask(task, selectedTaskStatuses));
 
 // Actions for managing task filters
 export const taskFilterActions = {
   setStatuses: (statuses: string[]) => {
-    selectedTaskStatuses.set(statuses);
+    selectedTaskStatuses = statuses;
   },
   
   clearFilters: () => {
-    selectedTaskStatuses.set([]);
+    selectedTaskStatuses = [];
+  },
+  
+  // Getter for current statuses
+  get statuses() {
+    return selectedTaskStatuses;
   }
 };

@@ -1,4 +1,3 @@
-import { writable, derived } from 'svelte/store';
 import { page } from '$app/stores';
 import { browser } from '$app/environment';
 import type { PopulatedJob } from '$lib/types/job';
@@ -18,31 +17,32 @@ export interface Client {
 }
 
 // Layout state stores
-export const sidebarVisible = writable(true);
-export const currentClient = writable<Client | null>(null);
-export const currentJob = writable<PopulatedJob | null>(null);
+let sidebarVisible = $state(true);
+let currentClient = $state<Client | null>(null);
+let currentJob = $state<PopulatedJob | null>(null);
 
 // Mobile breakpoint detection
-export const isMobile = writable(false);
+let isMobile = $state(false);
 
 // Initialize mobile detection if in browser
 if (browser) {
   const mediaQuery = window.matchMedia('(max-width: 768px)');
-  isMobile.set(mediaQuery.matches);
+  isMobile = mediaQuery.matches;
   
   mediaQuery.addEventListener('change', (e) => {
-    isMobile.set(e.matches);
+    isMobile = e.matches;
     // Auto-hide sidebar on mobile by default
     if (e.matches) {
-      sidebarVisible.set(false);
+      sidebarVisible = false;
     } else {
-      sidebarVisible.set(true);
+      sidebarVisible = true;
     }
   });
 }
 
 // Derived stores
-export const currentPage = derived(page, ($page) => {
+export const currentPage = $derived.by(() => {
+  const $page = page;
   if (!$page?.route?.id) return 'home';
   
   // Extract page type from route
@@ -66,30 +66,47 @@ export function getClientTypeLabel(clientType: ClientType): string {
 // Layout actions
 export const layoutActions = {
   toggleSidebar: () => {
-    sidebarVisible.update(visible => !visible);
+    sidebarVisible = !sidebarVisible;
   },
   
   showSidebar: () => {
-    sidebarVisible.set(true);
+    sidebarVisible = true;
   },
   
   hideSidebar: () => {
-    sidebarVisible.set(false);
+    sidebarVisible = false;
   },
   
   setCurrentClient: (client: Client | null) => {
-    currentClient.set(client);
+    currentClient = client;
   },
   
   setCurrentJob: (job: PopulatedJob | null) => {
-    currentJob.set(job);
+    currentJob = job;
+  },
+  
+  // Getters for current state
+  get sidebarVisible() {
+    return sidebarVisible;
+  },
+  
+  get currentClient() {
+    return currentClient;
+  },
+  
+  get currentJob() {
+    return currentJob;
+  },
+  
+  get isMobile() {
+    return isMobile;
   }
 };
 
 // Initialize with mock client data for now (will be replaced with API data)
 if (browser) {
   // Mock Vital Planet client data
-  currentClient.set({
+  currentClient = {
     id: 'vital-planet-uuid',
     name: 'Vital Planet',
     client_type: 'business',
@@ -98,5 +115,5 @@ if (browser) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
-  });
+  };
 }
