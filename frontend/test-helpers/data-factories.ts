@@ -110,45 +110,71 @@ export class DataFactory {
   }
 
   /**
-   * Get an existing test client from the database setup
-   * Since there's no client creation API, we use the pre-seeded test clients
+   * Get an existing test client from the real clients API
    */
   async getTestClient(index: number = 0): Promise<ClientData> {
     await this.ensureAuthenticated();
     
-    // Use the test database verification endpoint to get client info
-    const response = await this.page.request.get(`${this.baseUrl}/test/verify_data`, {
+    // Use the real clients API to get existing clients
+    const response = await this.page.request.get(`${this.baseUrl}/clients`, {
       headers: { 'Accept': 'application/json' }
     });
 
     if (!response.ok()) {
-      throw new Error(`Failed to get test data info: ${response.status()}`);
+      throw new Error(`Failed to get clients: ${response.status()}`);
     }
 
     const result = await response.json();
-    const clientCount = result.data?.attributes?.counts?.clients || 0;
+    const clients = result.data || [];
     
-    if (clientCount === 0) {
+    if (clients.length === 0) {
       throw new Error('No test clients available. Run database seed first.');
     }
 
-    // Return a mock client data based on the test environment setup
-    // The actual IDs will be determined by the Rails backend
+    const client = clients[index] || clients[0]; // Use specified index or first client
+    
     return {
-      id: `test-client-${index + 1}`,
-      name: `Test Client ${index + 1}`,
-      client_type: index % 2 === 0 ? 'residential' : 'business'
+      id: client.id,
+      name: client.attributes.name,
+      client_type: client.attributes.client_type,
+      created_at: client.attributes.created_at,
+      updated_at: client.attributes.updated_at
     };
   }
 
   /**
-   * Create a client via API (if API endpoint becomes available)
-   * Currently not implemented - use getTestClient() instead
+   * Create a client via API using the real clients endpoint
    */
   async createClient(data: Partial<ClientData> = {}): Promise<ClientData> {
-    // For now, return a test client since there's no client creation API
-    console.warn('Client creation API not available, using test client instead');
-    return this.getTestClient(0);
+    await this.ensureAuthenticated();
+
+    const clientData = {
+      name: `Test Client ${Date.now()}`,
+      client_type: 'residential' as const,
+      ...data
+    };
+
+    const csrfToken = await this.getCsrfToken();
+    const response = await this.page.request.post(`${this.baseUrl}/clients`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      data: { client: clientData }
+    });
+
+    if (!response.ok()) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorDetail = errorData.errors?.[0]?.detail || errorData.message || 'Unknown error';
+      throw new Error(`Failed to create client: ${response.status()} - ${errorDetail}`);
+    }
+
+    const result = await response.json();
+    return {
+      id: result.data.id,
+      ...result.data.attributes
+    };
   }
 
   /**
@@ -201,34 +227,11 @@ export class DataFactory {
   }
 
   /**
-   * Get a real client ID from existing jobs in the test database
+   * Get a real client ID from the clients API
    */
   private async getTestClientId(index: number = 0): Promise<string> {
-    // Query existing jobs to get their client IDs
-    const response = await this.page.request.get(`${this.baseUrl}/jobs`, {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!response.ok()) {
-      throw new Error(`Failed to get jobs for client ID: ${response.status()}`);
-    }
-
-    const result = await response.json();
-    const jobs = result.data || [];
-    
-    if (jobs.length === 0) {
-      throw new Error('No test jobs available to get client ID. Run database seed first.');
-    }
-
-    // Get client ID from existing job
-    const job = jobs[index] || jobs[0]; // Use specified index or first job
-    const clientId = job.attributes?.client_id || job.relationships?.client?.data?.id;
-    
-    if (!clientId) {
-      throw new Error('Could not find client ID in existing jobs');
-    }
-
-    return String(clientId);
+    const client = await this.getTestClient(index);
+    return client.id!;
   }
 
   /**
@@ -422,8 +425,12 @@ export class DataFactory {
    * Delete test entity by ID
    */
   async deleteEntity(entityType: 'jobs' | 'tasks' | 'clients' | 'users', id: string): Promise<void> {
+    const csrfToken = await this.getCsrfToken();
     const response = await this.page.request.delete(`${this.baseUrl}/${entityType}/${id}`, {
-      headers: { 'Accept': 'application/json' }
+      headers: { 
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
+      }
     });
 
     if (!response.ok() && response.status() !== 404) {

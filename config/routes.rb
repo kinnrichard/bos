@@ -34,8 +34,6 @@ Rails.application.routes.draw do
           post :reset_database
           post :seed_database
           get :verify_data
-          post :create_client
-          post :create_user
           post :begin_transaction
           post :rollback_transaction
           post :commit_transaction
@@ -45,6 +43,7 @@ Rails.application.routes.draw do
 
       # Resource endpoints
       resources :users, only: [ :index ]
+      resources :clients
 
       resources :jobs do
         resources :tasks do

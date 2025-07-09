@@ -97,76 +97,6 @@ class Api::V1::TestController < Api::V1::BaseController
     end
   end
 
-  # POST /api/v1/test/create_client
-  def create_client
-    # Disable activity logging during test client creation to prevent foreign key issues
-    original_logging_state = ENV["DISABLE_ACTIVITY_LOGGING"]
-    ENV["DISABLE_ACTIVITY_LOGGING"] = "true"
-
-    client = Client.create!(client_params)
-
-    render json: {
-      data: {
-        type: "clients",
-        id: client.id.to_s,
-        attributes: {
-          id: client.id.to_s,
-          name: client.name,
-          client_type: client.client_type,
-          created_at: client.created_at.iso8601,
-          updated_at: client.updated_at.iso8601
-        }
-      }
-    }, status: :created
-  rescue => e
-    render json: {
-      errors: [ {
-        status: "422",
-        code: "CREATION_FAILED",
-        title: "Client Creation Failed",
-        detail: e.message
-      } ]
-    }, status: :unprocessable_entity
-  ensure
-    # Restore original activity logging state
-    ENV["DISABLE_ACTIVITY_LOGGING"] = original_logging_state
-  end
-
-  # POST /api/v1/test/create_user
-  def create_user
-    # Disable activity logging during test user creation to prevent foreign key issues
-    original_logging_state = ENV["DISABLE_ACTIVITY_LOGGING"]
-    ENV["DISABLE_ACTIVITY_LOGGING"] = "true"
-
-    user = User.create!(user_params)
-
-    render json: {
-      data: {
-        type: "users",
-        id: user.id.to_s,
-        attributes: {
-          id: user.id.to_s,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          created_at: user.created_at.iso8601,
-          updated_at: user.updated_at.iso8601
-        }
-      }
-    }, status: :created
-  rescue => e
-    render json: {
-      errors: [ {
-        status: "422",
-        code: "CREATION_FAILED",
-        title: "User Creation Failed",
-        detail: e.message
-      } ]
-    }, status: :unprocessable_entity
-  ensure
-    # Restore original activity logging state
-    ENV["DISABLE_ACTIVITY_LOGGING"] = original_logging_state
-  end
 
 
   # POST /api/v1/test/begin_transaction
@@ -307,13 +237,5 @@ class Api::V1::TestController < Api::V1::BaseController
         } ]
       }, status: :forbidden
     end
-  end
-
-  def client_params
-    params.require(:client).permit(:name, :client_type)
-  end
-
-  def user_params
-    params.require(:user).permit(:name, :email, :password, :role)
   end
 end
