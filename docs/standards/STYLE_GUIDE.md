@@ -335,8 +335,6 @@ Fallback to custom SVG icons that match SF Symbol metrics:
 
 ## Platform Integration
 
-- Respect system appearance (light/dark mode)
-- Support native keyboard shortcuts
-- Use system drag and drop
-- Integrate with system notifications
-- Follow macOS windowing conventions
+- Support keyboard shortcuts in a way that feels worthy of a native app
+- Use native-feeling drag and drop
+- Build with a target of eventually making a progressive web app with offline support

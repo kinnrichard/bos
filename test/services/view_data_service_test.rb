@@ -2,7 +2,7 @@ require "test_helper"
 
 class ViewDataServiceTest < ActiveSupport::TestCase
   setup do
-    @job = jobs(:open_job)
+    @job = jobs(:empty_project)  # Use the correct fixture name
     @client = clients(:acme)
     @user = users(:admin)
   end
@@ -43,7 +43,7 @@ class ViewDataServiceTest < ActiveSupport::TestCase
   end
 
   test "task_list_data returns last status changes" do
-    task = tasks(:progress_task_2)  # Use an in_progress task
+    task = tasks(:simple_install)  # Use an in_progress task
     tasks_tree = [ { task: task, subtasks: [] } ]
 
     # Create a status change log
@@ -57,7 +57,61 @@ class ViewDataServiceTest < ActiveSupport::TestCase
     data = ViewDataService.task_list_data(tasks_tree: tasks_tree)
 
     assert data.key?(:last_status_changes)
+    assert data.key?(:time_in_progress)
     assert_kind_of Hash, data[:last_status_changes]
+    assert_kind_of Hash, data[:time_in_progress]
+  end
+
+  test "bulk_calculate_time_in_progress handles multiple tasks efficiently" do
+    task1 = tasks(:simple_install)
+    task2 = tasks(:simple_theme)
+
+    # Create status change logs for both tasks
+    ActivityLog.create!(
+      user: @user,
+      action: "status_changed",
+      loggable: task1,
+      metadata: { new_status: "in_progress" },
+      created_at: 1.hour.ago
+    )
+
+    ActivityLog.create!(
+      user: @user,
+      action: "status_changed",
+      loggable: task1,
+      metadata: { new_status: "successfully_completed" },
+      created_at: 30.minutes.ago
+    )
+
+    ActivityLog.create!(
+      user: @user,
+      action: "status_changed",
+      loggable: task2,
+      metadata: { new_status: "in_progress" },
+      created_at: 45.minutes.ago
+    )
+
+    # Set task2 to in_progress status for current time calculation
+    task2.update!(status: :in_progress)
+
+    # Test bulk calculation
+    tasks_tree = [
+      { task: task1, subtasks: [] },
+      { task: task2, subtasks: [] }
+    ]
+
+    data = ViewDataService.task_list_data(tasks_tree: tasks_tree)
+
+    # Should have time data for both tasks
+    assert data[:time_in_progress].key?(task1.id)
+    assert data[:time_in_progress].key?(task2.id)
+
+    # Task1 should have 30 minutes (1 hour in progress, completed 30 min ago)
+    assert_operator data[:time_in_progress][task1.id], :>, 25.minutes
+    assert_operator data[:time_in_progress][task1.id], :<, 35.minutes
+
+    # Task2 should have ~45 minutes (still in progress)
+    assert_operator data[:time_in_progress][task2.id], :>, 40.minutes
   end
 
   test "job_card_data includes necessary associations" do

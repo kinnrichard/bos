@@ -49,11 +49,8 @@ class ViewDataService
         .group(:loggable_id)
         .maximum(:created_at)
 
-      # Precompute time in progress for all tasks
-      time_in_progress = {}
-      tasks_tree.each do |node|
-        compute_time_in_progress(node, time_in_progress)
-      end
+      # Bulk calculate time in progress for all tasks
+      time_in_progress = bulk_calculate_time_in_progress(task_ids)
 
       {
         last_status_changes: last_status_changes,
@@ -80,15 +77,61 @@ class ViewDataService
       end
     end
 
-    def compute_time_in_progress(node, time_in_progress)
-      task = node[:task]
-      # For now, use the existing method but this should be optimized later
-      time_in_progress[task.id] = task.time_in_progress
+    # Bulk calculate time in progress for multiple tasks
+    def bulk_calculate_time_in_progress(task_ids)
+      return {} if task_ids.empty?
 
-      # Recurse for subtasks
-      node[:subtasks].each do |subtask_node|
-        compute_time_in_progress(subtask_node, time_in_progress)
-      end if node[:subtasks].any?
+      # Get all status change logs for these tasks in one query
+      status_logs = ActivityLog
+        .where(loggable_type: "Task", loggable_id: task_ids)
+        .where(action: "status_changed")
+        .order(:loggable_id, :created_at)
+        .pluck(:loggable_id, :created_at, :metadata)
+
+      # Get current status for tasks that are currently in_progress
+      current_in_progress = Task
+        .where(id: task_ids, status: :in_progress)
+        .pluck(:id)
+        .to_set
+
+      # Calculate time in progress for each task
+      time_by_task = {}
+
+      # Group logs by task ID
+      logs_by_task = status_logs.group_by(&:first)
+
+      logs_by_task.each do |task_id, logs|
+        total_seconds = 0
+        in_progress_start = nil
+
+        logs.each do |log|
+          _, created_at, metadata = log
+          new_status = metadata["new_status"]
+
+          if new_status == "in_progress"
+            # Task went into in_progress
+            in_progress_start = created_at
+          elsif in_progress_start.present?
+            # Task left in_progress status
+            total_seconds += (created_at - in_progress_start)
+            in_progress_start = nil
+          end
+        end
+
+        # If currently in_progress, add time from last start to now
+        if current_in_progress.include?(task_id) && in_progress_start.present?
+          total_seconds += (Time.current - in_progress_start)
+        end
+
+        time_by_task[task_id] = total_seconds
+      end
+
+      # Fill in zero for tasks with no in_progress time
+      task_ids.each do |task_id|
+        time_by_task[task_id] ||= 0
+      end
+
+      time_by_task
     end
   end
 end

@@ -3,7 +3,7 @@ require "test_helper"
 class JobsControllerTest < ActionDispatch::IntegrationTest
   setup do
     @client = clients(:acme)
-    @job = jobs(:open_job)
+    @job = jobs(:empty_project)  # Use the correct fixture name
     @owner = users(:owner)
     @admin = users(:admin)
     @technician = users(:technician)
