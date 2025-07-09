@@ -50,7 +50,10 @@ export function createSafeQuery<T = any>(optionsOrFactory: SafeQueryOptions | ((
     const options = getOptions();
     const enabled = options.enabled ?? true;
     
-    if (!enabled || !browser) return;
+    if (!enabled || !browser) {
+      console.log('[SAFE QUERY] Query execution skipped - enabled:', enabled, 'browser:', browser);
+      return;
+    }
 
     const queryKeyString = JSON.stringify(options.queryKey);
     

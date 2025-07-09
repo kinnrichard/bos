@@ -14,10 +14,12 @@
 
   // Get job ID from URL params
   $: jobId = $page.params.id;
+  $: console.log('[JobPage] Job ID from URL params:', jobId);
 
   // Create reactive query using safe query wrapper
   const queryResult = createSafeQuery(() => ({
     queryKey: ['job', jobId],
+    enabled: !!jobId, // Only execute when jobId is available
     queryFn: async () => {
       console.log('[JobPage] Executing query with key:', ['job', jobId]);
       const response = await jobsService.getJobWithDetails(jobId);
