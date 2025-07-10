@@ -25,7 +25,12 @@ RAILS_ENV=test rails server -p 3000
 ````
 
 
-## Zero server 
+## Zero server starting
+
+this might work:
+```bash
+node scripts/zero-dev-server.js > zero-server.log 2>&1 &
+```
 
 ⏺ Zero Database Server Management
 

@@ -1,5 +1,6 @@
 class Api::V1::ZeroTokensController < Api::V1::BaseController
-  skip_before_action :authenticate_user!, only: [ :create ]
+  # Users must be authenticated to get Zero tokens
+  # CSRF protection is required for security
 
   def create
     # For development, we'll use a simple user lookup

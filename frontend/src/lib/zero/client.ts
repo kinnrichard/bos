@@ -1,6 +1,7 @@
 import { Zero } from '@rocicorp/zero';
 import { schema, type ZeroClient } from './generated-schema';
 import { browser } from '$app/environment';
+import { csrfTokenManager } from '$lib/api/csrf';
 
 let zero: ZeroClient | null = null;
 
@@ -9,16 +10,30 @@ async function getZeroToken(): Promise<string> {
   if (!browser) return '';
   
   try {
+    // Get CSRF token for the POST request
+    const csrfToken = await csrfTokenManager.getToken();
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+    
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    } else {
+      console.warn('[Zero] No CSRF token available - request will likely fail');
+    }
+    
     const response = await fetch('/api/v1/zero/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // For development, let the controller create a default user
+      headers,
+      credentials: 'include', // Include cookies for authentication
       body: JSON.stringify({})
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Zero] Token fetch error response:', errorText);
       throw new Error(`Token fetch failed: ${response.status}`);
     }
     
