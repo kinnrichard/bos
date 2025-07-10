@@ -9,7 +9,7 @@ rails server
 then in another window:
 
 ```bash
-npm run dev
+cd frontend; npm run dev
 ````
 
 ## how to kill the rails server
