@@ -1,6 +1,6 @@
 {
   "logLevel": "info",
-  "authSecret": "zerosecretkey_dev_only_change_in_production",
+  "authSecret": "dev-secret-change-in-production",
   "upstream": {
     "host": "localhost",
     "port": 5432,

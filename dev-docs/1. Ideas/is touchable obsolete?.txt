@@ -1,0 +1,75 @@
+Ran into this when observing test failures.
+
+Touchable originally existed such that cache invalidation would work with our Rails API. But now with Zero, we may not need touchable. We can try disabling it once Zero is working and APIs are dead.
+
+
+
+⏺ Based on my analysis of the test failure and the codebase, I can now explain exactly what's happening with the
+  activity logging failure:
+
+  What's Happening During the Test
+
+  When a Job is created, two activity logs are created, not one:
+
+  1. Job ActivityLog: action: "created", loggable: Job
+  2. Client ActivityLog: action: "updated", loggable: Client
+
+  Root Cause
+
+  The issue is in the Touchable concern:
+
+  1. Job includes Touchable - which automatically adds touch: true to the belongs_to :client association
+  2. When @client.jobs.create! runs:
+    - Job's after_create :log_creation callback runs → creates ActivityLog for Job with action "created"
+    - Job's touch: true on client association updates the Client's updated_at timestamp
+    - Client's after_update :log_update callback runs → creates ActivityLog for Client with action "updated"
+  3. The test calls ActivityLog.last - which returns the Client's "updated" log (created last), not the Job's
+  "created" log
+
+  The Test Failures
+
+  1. First Test: assert_difference "ActivityLog.count", 1 - This fails because 2 logs are created, not 1
+  2. Test Logic: ActivityLog.last gets the Client's log, not the Job's log
+  3. Assertion: assert_equal job, log.loggable fails because log.loggable is the Client, not the Job
+
+╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Ready to code?                                                                                                      │
+│                                                                                                                     │
+│ Here is Claude's plan:                                                                                              │
+│ ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │
+│ │ Plan to Fix Activity Logging Tests                                                                              │ │
+│ │                                                                                                                 │ │
+│ │ I'll fix the activity logging tests by updating them to reflect the actual behavior of the system:              │ │
+│ │                                                                                                                 │ │
+│ │ Changes to make:                                                                                                │ │
+│ │                                                                                                                 │ │
+│ │ 1. Update test_activity_logging_on_create:                                                                      │ │
+│ │   - Change assert_difference "ActivityLog.count", 1 to assert_difference "ActivityLog.count", 2 (Job + Client   │ │
+│ │ logs)                                                                                                           │ │
+│ │   - Replace log = ActivityLog.last with log = ActivityLog.where(loggable: job, action: "created").last          │ │
+│ │   - This will correctly find the Job's creation log instead of the Client's update log                          │ │
+│ │ 2. Update test_activity_logging_on_update:                                                                      │ │
+│ │   - Change assert_difference "ActivityLog.count", 1 to assert_difference "ActivityLog.count", 2 (Job + Client   │ │
+│ │ logs)                                                                                                           │ │
+│ │   - Replace log = ActivityLog.last with log = ActivityLog.where(loggable: job).where(action: ["updated",        │ │
+│ │ "renamed"]).last                                                                                                │ │
+│ │   - This will correctly find the Job's update/rename log instead of the Client's update log                     │ │
+│ │ 3. Add a test helper method (optional):                                                                         │ │
+│ │   - Create find_activity_log_for(object, action = nil) to make future tests easier                              │ │
+│ │   - This would encapsulate the logic for finding the correct activity log                                       │ │
+│ │                                                                                                                 │ │
+│ │ Why this approach:                                                                                              │ │
+│ │                                                                                                                 │ │
+│ │ - Reflects actual behavior: The system correctly creates 2 logs when a Job is created (Job creation + Client    │ │
+│ │ update from touch)                                                                                              │ │
+│ │ - Maintains functionality: The Touchable concern's cache invalidation behavior is preserved                     │ │
+│ │ - Accurate testing: Tests will verify the actual behavior rather than incorrect assumptions                     │ │
+│ │                                                                                                                 │ │
+│ │ Alternative approaches considered:                                                                              │ │
+│ │                                                                                                                 │ │
+│ │ - Disable auto-touching: Would break cache invalidation                                                         │ │
+│ │ - Change application logic: Would require architectural changes                                                 │ │
+│ │ - Mock activity logging: Would reduce test coverage                                                             │ │
+│ │                                                                                                                 │ │
+│ │ The chosen approach maintains the existing system behavior while fixing the test assumptions.                   │ │
+│ ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │

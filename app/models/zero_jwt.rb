@@ -6,17 +6,21 @@ class ZeroJwt
   attribute :sub, :string
   attribute :exp, :integer
 
-  def self.generate(user_id:, expires_in: 24.hours)
+  def self.generate(user_id:, expires_in: 7.days)
     payload = {
-      sub: user_id,
-      exp: expires_in.from_now.to_i
+      sub: user_id.to_s,  # Zero requires sub to be a string
+      exp: Time.now.to_i + expires_in.to_i
     }
 
-    JWT.encode(payload, Rails.application.credentials.zero_auth_secret || ENV["ZERO_AUTH_SECRET"])
+    # Use the same secret as zero-config.json
+    secret = ENV["ZERO_AUTH_SECRET"] || "dev-secret-change-in-production"
+    JWT.encode(payload, secret)
   end
 
   def self.decode(token)
-    payload = JWT.decode(token, Rails.application.credentials.zero_auth_secret || ENV["ZERO_AUTH_SECRET"]).first
+    # Use the same secret as zero-config.json
+    secret = ENV["ZERO_AUTH_SECRET"] || "dev-secret-change-in-production"
+    payload = JWT.decode(token, secret).first
     new(
       user_id: payload["sub"],
       sub: payload["sub"],
