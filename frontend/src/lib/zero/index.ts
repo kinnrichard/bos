@@ -1,6 +1,6 @@
 // Zero client and configuration exports
 export { initZero, getZero, closeZero } from './client';
-export { schema, type ZeroClient } from './schema';
+export { schema, type ZeroClient } from './generated-schema';
 
 // Zero reactive hooks for Svelte
 export {
@@ -32,7 +32,7 @@ export {
 export {
   useClientsQuery,
   useClientQuery,
-  useClientByUuidQuery,
+  useClientByNameQuery,
   useClientWithRelationsQuery,
   useClientsPaginatedQuery,
   useClientSearchQuery,
@@ -41,7 +41,6 @@ export {
   createClient,
   updateClient,
   deleteClient,
-  restoreClient,
 } from './clients';
 
 // Zero job hooks and mutations

@@ -1,5 +1,5 @@
 import { Zero } from '@rocicorp/zero';
-import { schema, type ZeroClient } from './schema';
+import { schema, type ZeroClient } from './generated-schema';
 import { browser } from '$app/environment';
 
 let zero: ZeroClient | null = null;

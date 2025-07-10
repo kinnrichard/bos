@@ -8,7 +8,6 @@ import { getZero } from './client';
 export function useClientsQuery() {
   const zero = getZero();
   return useQuery(zero.query.clients
-    .where('deleted_at', 'IS', null) // Only active clients
     .orderBy('name_normalized', 'asc'));
 }
 
@@ -23,22 +22,20 @@ export function useClientQuery(id: string, enabled: boolean = true) {
   const zero = getZero();
   return useQuery(zero.query.clients
     .where('id', id)
-    .where('deleted_at', 'IS', null)
     .one());
 }
 
 /**
- * Zero query hook for a specific client by UUID
+ * Zero query hook for a specific client by name (since UUID doesn't exist in schema)
  */
-export function useClientByUuidQuery(uuid: string, enabled: boolean = true) {
-  if (!enabled || !uuid) {
+export function useClientByNameQuery(name: string, enabled: boolean = true) {
+  if (!enabled || !name) {
     return { current: null, resultType: 'unknown' as const };
   }
   
   const zero = getZero();
   return useQuery(zero.query.clients
-    .where('uuid', uuid)
-    .where('deleted_at', 'IS', null)
+    .where('name', name)
     .one());
 }
 
@@ -53,18 +50,14 @@ export function useClientWithRelationsQuery(id: string, enabled: boolean = true)
   const zero = getZero();
   return useQuery(zero.query.clients
     .where('id', id)
-    .where('deleted_at', 'IS', null)
     .related('jobs', (jobs) => 
-      jobs.where('deleted_at', 'IS', null)
-          .orderBy('created_at', 'desc')
+      jobs.orderBy('created_at', 'desc')
     )
     .related('people', (people) => 
-      people.where('deleted_at', 'IS', null)
-            .orderBy('name', 'asc')
+      people.orderBy('name', 'asc')
     )
     .related('devices', (devices) => 
-      devices.where('deleted_at', 'IS', null)
-             .orderBy('name', 'asc')
+      devices.orderBy('name', 'asc')
     )
     .one());
 }
@@ -81,18 +74,18 @@ export function useClientsPaginatedQuery(options: {
   const { page = 1, per_page = 20, search } = options;
   
   const zero = getZero();
-  let query = zero.query.clients
-    .where('deleted_at', 'IS', null);
+  let query = zero.query.clients;
   
   // Add search filter if provided
   if (search) {
     query = query.where('name_normalized', 'LIKE', `%${search.toLowerCase()}%`);
   }
   
+  // Note: Zero doesn't support offset() in current API
+  // Client-side pagination will be handled by the reactive query system
   query = query
     .orderBy('name_normalized', 'asc')
-    .limit(per_page)
-    .offset((page - 1) * per_page);
+    .limit(per_page);
     
   return useQuery(query);
 }
@@ -107,7 +100,6 @@ export function useClientSearchQuery(searchTerm: string, enabled: boolean = true
   
   const zero = getZero();
   return useQuery(zero.query.clients
-    .where('deleted_at', 'IS', null)
     .where('name_normalized', 'LIKE', `%${searchTerm.toLowerCase()}%`)
     .orderBy('name_normalized', 'asc')
     .limit(10)); // Limit search results
@@ -120,13 +112,10 @@ export function useClientSearchQuery(searchTerm: string, enabled: boolean = true
  */
 export async function createClient(clientData: {
   name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
+  client_type?: string;
 }) {
   const zero = getZero();
   const id = crypto.randomUUID();
-  const uuid = crypto.randomUUID();
   const now = new Date().toISOString();
   
   // Create normalized name for consistent searching/sorting
@@ -134,17 +123,14 @@ export async function createClient(clientData: {
 
   await zero.mutate.clients.insert({
     id,
-    uuid,
     name: clientData.name,
     name_normalized,
-    email: clientData.email || null,
-    phone: clientData.phone || null,
-    address: clientData.address || null,
+    client_type: clientData.client_type || null,
     created_at: now,
     updated_at: now,
   });
 
-  return { id, uuid };
+  return { id };
 }
 
 /**
@@ -152,9 +138,7 @@ export async function createClient(clientData: {
  */
 export async function updateClient(id: string, data: Partial<{
   name: string;
-  email: string;
-  phone: string;
-  address: string;
+  client_type: string;
 }>) {
   const zero = getZero();
   const now = new Date().toISOString();
@@ -174,30 +158,12 @@ export async function updateClient(id: string, data: Partial<{
 }
 
 /**
- * Delete a client (soft delete)
+ * Delete a client (hard delete - no soft delete available)
  */
 export async function deleteClient(id: string) {
   const zero = getZero();
-  const now = new Date().toISOString();
-
-  await zero.mutate.clients.update({
+  await zero.mutate.clients.delete({
     id,
-    deleted_at: now,
-    updated_at: now,
-  });
-}
-
-/**
- * Restore a deleted client
- */
-export async function restoreClient(id: string) {
-  const zero = getZero();
-  const now = new Date().toISOString();
-
-  await zero.mutate.clients.update({
-    id,
-    deleted_at: null,
-    updated_at: now,
   });
 }
 
@@ -213,7 +179,6 @@ export function useClientStatsQuery(clientId: string, enabled: boolean = true) {
   const zero = getZero();
   return useQuery(zero.query.jobs
     .where('client_id', clientId)
-    .where('deleted_at', 'IS', null)
     .related('tasks'));
 }
 
@@ -228,23 +193,19 @@ export function useClientLookup() {
     isLoading: !clientsQuery,
     error: null, // Zero handles errors internally
     getClientById: (id: string) => {
-      if (!clientsQuery.value) return undefined;
-      return clientsQuery.value.find((c: any) => c.id === id);
-    },
-    getClientByUuid: (uuid: string) => {
-      if (!clientsQuery.value) return undefined;  
-      return clientsQuery.value.find((c: any) => c.uuid === uuid);
+      if (!clientsQuery.current) return undefined;
+      return clientsQuery.current.find((c: any) => c.id === id);
     },
     getClientsByIds: (ids: string[]) => {
-      if (!clientsQuery.value) return [];
+      if (!clientsQuery.current) return [];
       return ids.map(id => 
-        clientsQuery.value.find((c: any) => c.id === id)
+        clientsQuery.current.find((c: any) => c.id === id)
       ).filter(Boolean);
     },
     searchClients: (term: string) => {
-      if (!clientsQuery.value || !term) return [];
+      if (!clientsQuery.current || !term) return [];
       const normalizedTerm = term.toLowerCase();
-      return clientsQuery.value.filter((c: any) => 
+      return clientsQuery.current.filter((c: any) => 
         c.name_normalized.includes(normalizedTerm)
       );
     }
