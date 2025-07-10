@@ -1,5 +1,6 @@
 import { useQuery } from 'zero-svelte-query';
 import { getZero } from './client';
+import { browser } from '$app/environment';
 
 // Reactive Zero query hooks for Svelte components
 
@@ -7,6 +8,10 @@ import { getZero } from './client';
  * Query hook for users
  */
 export function useUsers() {
+  if (!browser) {
+    return { current: [], resultType: 'unknown' as const };
+  }
+  
   const zero = getZero();
   return useQuery(zero.query.users.orderBy('name', 'asc'));
 }
@@ -23,6 +28,10 @@ export function useUser(id: string) {
  * Query hook for clients
  */
 export function useClients() {
+  if (!browser) {
+    return { current: [], resultType: 'unknown' as const };
+  }
+  
   const zero = getZero();
   return useQuery(zero.query.clients.orderBy('name', 'asc'));
 }

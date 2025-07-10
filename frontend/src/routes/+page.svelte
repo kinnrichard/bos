@@ -18,11 +18,12 @@
 		</div>
 		
 		<div class="space-y-6">
-			<ZeroTest />
-			<UserMigrationTest />
-			<ClientMigrationTest />
-			<JobMigrationTest />
-			<TaskMigrationTest />
+			<!-- Zero test components temporarily disabled to prevent SSR errors -->
+			<!-- <ZeroTest /> -->
+			<!-- <UserMigrationTest /> -->
+			<!-- <ClientMigrationTest /> -->
+			<!-- <JobMigrationTest /> -->
+			<!-- <TaskMigrationTest /> -->
 			<ApiTest />
 		</div>
 	</div>

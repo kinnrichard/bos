@@ -8,6 +8,7 @@ let zero: ZeroClient | null = null;
 const zeroConfig = {
   schema,
   server: browser ? window.location.origin : 'http://localhost:3000',
+  userID: 'dev-user-123', // Required by Zero - in production this should be dynamic
   // For development, we'll use memory store first
   kvStore: 'mem' as const,
   logLevel: 'info' as const,
@@ -29,6 +30,11 @@ export function initZero(): ZeroClient {
 
 // Get the current Zero client instance
 export function getZero(): ZeroClient {
+  if (!browser) {
+    // Return a mock client for SSR to prevent errors
+    return {} as ZeroClient;
+  }
+  
   if (!zero) {
     return initZero();
   }
