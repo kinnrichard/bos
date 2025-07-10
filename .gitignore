@@ -46,3 +46,21 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 .DS_Store
+
+# User-specific configuration
+.claude/
+.cursor/
+.swarm/
+.taskmaster/
+.roomodes
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Log files
+*.log
+
+# SQLite files
+*.sqlite*

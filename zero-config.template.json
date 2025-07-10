@@ -1,0 +1,27 @@
+{
+  "logLevel": "info",
+  "authSecret": "${ZERO_AUTH_SECRET:-dev-secret-change-in-production}",
+  "upstream": {
+    "host": "${DB_HOST:-localhost}",
+    "port": "${DB_PORT:-5432}",
+    "database": "${DB_NAME:-bos_development}",
+    "user": "${DB_USER:-$USER}",
+    "password": "${DB_PASSWORD:-}"
+  },
+  "cvr": {
+    "host": "${ZERO_CVR_DB_HOST:-localhost}", 
+    "port": "${ZERO_CVR_DB_PORT:-5432}",
+    "database": "${ZERO_CVR_DB_NAME:-bos_zero_cvr_development}",
+    "user": "${ZERO_CVR_DB_USER:-$USER}",
+    "password": "${ZERO_CVR_DB_PASSWORD:-}"
+  },
+  "cdb": {
+    "host": "${ZERO_CDB_DB_HOST:-localhost}",
+    "port": "${ZERO_CDB_DB_PORT:-5432}", 
+    "database": "${ZERO_CDB_DB_NAME:-bos_zero_cdb_development}", 
+    "user": "${ZERO_CDB_DB_USER:-$USER}",
+    "password": "${ZERO_CDB_DB_PASSWORD:-}"
+  },
+  "port": "${ZERO_CACHE_PORT:-4848}",
+  "change-streamer-port": "${ZERO_WS_PORT:-4849}"
+}
