@@ -4,11 +4,38 @@ import { browser } from '$app/environment';
 
 let zero: ZeroClient | null = null;
 
+// Fetch JWT token for Zero authentication
+async function getZeroToken(): Promise<string> {
+  if (!browser) return '';
+  
+  try {
+    const response = await fetch('/api/v1/zero/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // For development, let the controller create a default user
+      body: JSON.stringify({})
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Token fetch failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.token;
+  } catch (error) {
+    console.error('Failed to fetch Zero token:', error);
+    return '';
+  }
+}
+
 // Zero client configuration
 const zeroConfig = {
   schema,
-  server: browser ? window.location.origin : 'http://localhost:3000',
-  userID: 'dev-user-123', // Required by Zero - in production this should be dynamic
+  server: browser ? `${window.location.protocol}//${window.location.hostname}:4848` : 'http://localhost:4848',
+  userID: 'dev-user-123', // Will be overridden by JWT
+  auth: browser ? getZeroToken : undefined,
   // For development, we'll use memory store first
   kvStore: 'mem' as const,
   logLevel: 'info' as const,

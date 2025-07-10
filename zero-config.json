@@ -1,0 +1,24 @@
+{
+  "logLevel": "info",
+  "authSecret": "zerosecretkey_dev_only_change_in_production",
+  "upstream": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "bos_development",
+    "user": "claude"
+  },
+  "cvr": {
+    "host": "localhost", 
+    "port": 5432,
+    "database": "bos_development_cvr",
+    "user": "claude"
+  },
+  "cdb": {
+    "host": "localhost",
+    "port": 5432, 
+    "database": "bos_development_cdb",
+    "user": "claude"
+  },
+  "port": 4848,
+  "change-streamer-port": 4849
+}

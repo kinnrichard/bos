@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@rocicorp/zero": "^0.21.2025070200",
     "html2canvas": "^1.4.1",
     "puppeteer": "^24.10.2"
   },

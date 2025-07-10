@@ -13,10 +13,23 @@ default: &default
   port: <%= ENV.fetch("DB_PORT", 5432) %>
 
 development:
-  <<: *default
-  database: <%= ENV.fetch("DB_NAME", "bos_development") %>
-  username: <%= ENV.fetch("DB_USER", ENV['USER'] || ENV['USERNAME']) %>
-  password: <%= ENV.fetch("DB_PASSWORD", "") %>
+  primary:
+    <<: *default
+    database: <%= ENV.fetch("DB_NAME", "bos_development") %>
+    username: <%= ENV.fetch("DB_USER", ENV['USER'] || ENV['USERNAME']) %>
+    password: <%= ENV.fetch("DB_PASSWORD", "") %>
+  zero_cvr:
+    <<: *default
+    database: <%= ENV.fetch("DB_NAME", "bos_development") %>_cvr
+    username: <%= ENV.fetch("DB_USER", ENV['USER'] || ENV['USERNAME']) %>
+    password: <%= ENV.fetch("DB_PASSWORD", "") %>
+    migrations_paths: db/cvr_migrate
+  zero_cdb:
+    <<: *default
+    database: <%= ENV.fetch("DB_NAME", "bos_development") %>_cdb
+    username: <%= ENV.fetch("DB_USER", ENV['USER'] || ENV['USERNAME']) %>
+    password: <%= ENV.fetch("DB_PASSWORD", "") %>
+    migrations_paths: db/cdb_migrate
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".

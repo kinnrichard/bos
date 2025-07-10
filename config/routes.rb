@@ -22,6 +22,9 @@ Rails.application.routes.draw do
         post "logout", to: "sessions#destroy"
       end
 
+      # Zero JWT token endpoint
+      post "zero/token", to: "zero_tokens#create"
+
       # WebSocket connection info
       get "websocket/connection_info", to: "websocket#connection_info"
 
