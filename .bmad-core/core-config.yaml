@@ -1,16 +1,16 @@
 version: 4.27.0
 markdownExploder: true
 prd:
-  prdFile: docs/prd.md
+  prdFile: dev-docs/bmad-context/prd.md
   prdVersion: v4
   prdSharded: true
-  prdShardedLocation: docs/prd
+  prdShardedLocation: dev-docs/bmad-context/prd-sharded
   epicFilePattern: epic-{n}*.md
 architecture:
-  architectureFile: docs/architecture.md
+  architectureFile: dev-docs/bmad-context/architecture.md
   architectureVersion: v4
   architectureSharded: true
-  architectureShardedLocation: docs/architecture
+  architectureShardedLocation: dev-docs/bmad-context/architecture-sharded
 customTechnicalDocuments: null
 devLoadAlwaysFiles:
   - docs/architecture/coding-standards.md

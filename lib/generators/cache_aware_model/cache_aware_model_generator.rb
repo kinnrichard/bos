@@ -8,7 +8,9 @@ require "rails/generators"
 #   rails generate cache_aware_model TaskComment task:belongs_to content:text
 #   rails generate cache_aware_model JobNote job:belongs_to title:string body:text --touchable-config="skip_touch: [:job]"
 
-class CacheAwareModelGenerator < Rails::Generators::NamedBase
+module Generators
+  module CacheAwareModel
+    class CacheAwareModelGenerator < Rails::Generators::NamedBase
   source_root File.expand_path("templates", __dir__)
 
   argument :attributes, type: :array, default: [], banner: "field[:type][:index] field[:type][:index]"
@@ -109,5 +111,7 @@ class CacheAwareModelGenerator < Rails::Generators::NamedBase
     end
 
     scenarios
+  end
+    end
   end
 end
