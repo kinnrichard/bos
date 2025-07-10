@@ -306,20 +306,20 @@ class JobWorkflowTest < ActionDispatch::IntegrationTest
   # Due date handling
   test "due date management throughout workflow" do
     # Set initial due date
-    due_date = 3.days.from_now
+    due_datetime = 3.days.from_now.change(hour: 17, min: 0)
     patch client_job_path(@client, @job), params: {
       job: {
-        due_on: due_date.to_date,
-        due_time: "17:00"
+        due_at: due_datetime,
+        due_time_set: true
       }
     }
 
     @job.reload
-    assert_equal due_date.to_date, @job.due_on
-    assert_equal "17:00", @job.due_time.strftime("%H:%M")
+    assert_equal due_datetime, @job.due_at
+    assert @job.due_time_set?
 
     # Job becomes overdue
-    travel_to due_date + 1.day do
+    travel_to due_datetime + 1.day do
       assert @job.overdue?
 
       # Complete overdue job

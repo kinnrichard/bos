@@ -5,10 +5,10 @@ class JobSerializer < ApplicationSerializer
 
   timestamp_attributes :created_at, :updated_at
 
-  attribute :due_on
-  attribute :due_time
-  attribute :start_on
-  attribute :start_time
+  attribute :due_at
+  attribute :due_time_set
+  attribute :starts_at
+  attribute :start_time_set
 
   # Relationships - clean and simple with UUID primary keys
   belongs_to :client
@@ -30,9 +30,8 @@ class JobSerializer < ApplicationSerializer
   end
 
   attribute :is_overdue do |job|
-    if job.due_on && job.due_time
-      due_datetime = Time.zone.parse("#{job.due_on} #{job.due_time}")
-      due_datetime < Time.current && !job.successfully_completed?
+    if job.due_at
+      job.due_at < Time.current && !job.successfully_completed?
     else
       false
     end

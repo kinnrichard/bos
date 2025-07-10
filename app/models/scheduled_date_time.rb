@@ -11,7 +11,7 @@ class ScheduledDateTime < ApplicationRecord
 
   # Validations
   validates :scheduled_type, presence: true
-  validates :scheduled_date, presence: true
+  validates :scheduled_at, presence: true
   validates :scheduled_type, inclusion: {
     in: %w[due start followup],
     message: "%{value} is not a valid scheduled type"
@@ -33,11 +33,11 @@ class ScheduledDateTime < ApplicationRecord
   scope :due_dates, -> { where(scheduled_type: "due") }
   scope :start_dates, -> { where(scheduled_type: "start") }
   scope :followup_dates, -> { where(scheduled_type: "followup") }
-  scope :upcoming, -> { where("scheduled_date >= ?", Date.current).order(:scheduled_date, :scheduled_time) }
-  scope :past, -> { where("scheduled_date < ?", Date.current).order(scheduled_date: :desc, scheduled_time: :desc) }
-  scope :for_date, ->(date) { where(scheduled_date: date) }
-  scope :with_time, -> { where.not(scheduled_time: nil) }
-  scope :without_time, -> { where(scheduled_time: nil) }
+  scope :upcoming, -> { where("scheduled_at >= ?", Date.current.beginning_of_day).order(:scheduled_at) }
+  scope :past, -> { where("scheduled_at < ?", Date.current.beginning_of_day).order(scheduled_at: :desc) }
+  scope :for_date, ->(date) { where(scheduled_at: date.beginning_of_day..date.end_of_day) }
+  scope :with_time, -> { where(scheduled_time_set: true) }
+  scope :without_time, -> { where(scheduled_time_set: false) }
 
   # Class methods
   def self.scheduled_types
@@ -62,23 +62,14 @@ class ScheduledDateTime < ApplicationRecord
   end
 
   def datetime
-    return scheduled_date.to_datetime unless scheduled_time
-
-    DateTime.new(
-      scheduled_date.year,
-      scheduled_date.month,
-      scheduled_date.day,
-      scheduled_time.hour,
-      scheduled_time.min,
-      scheduled_time.sec
-    )
+    scheduled_at
   end
 
   def display_datetime
-    if scheduled_time
-      TimeFormat.datetime(datetime)
+    if scheduled_time_set?
+      TimeFormat.datetime(scheduled_at)
     else
-      TimeFormat.date(scheduled_date, format: :medium)
+      TimeFormat.date(scheduled_at.to_date, format: :medium)
     end
   end
 end

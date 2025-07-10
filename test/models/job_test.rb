@@ -118,18 +118,17 @@ class JobTest < ActiveSupport::TestCase
 
   test "scheduling attributes" do
     # Use specific date and time to avoid timezone issues
-    start_date = Date.parse("2024-01-15")
-    start_time = Time.zone.parse("09:00:00")
+    start_datetime = Time.zone.parse("2024-01-15 09:00:00")
 
     job = @client.jobs.create!(
       title: "Scheduled Job",
       created_by: @user,
-      start_on_date: start_date.to_datetime,
-      start_time: start_time
+      starts_at: start_datetime,
+      start_time_set: true
     )
 
-    assert_equal start_date, job.start_on_date.to_date
-    assert_equal "09:00:00", job.start_time.strftime("%H:%M:%S")
+    assert_equal start_datetime, job.starts_at
+    assert job.start_time_set?
   end
 
   test "activity logging on create" do

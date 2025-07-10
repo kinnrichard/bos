@@ -1,7 +1,7 @@
 class ScheduledDateTimeSerializer < ApplicationSerializer
   set_type :scheduled_date_times
 
-  attributes :scheduled_type, :scheduled_date, :scheduled_time, :notes
+  attributes :scheduled_type, :scheduled_at, :scheduled_time_set, :notes
 
   timestamp_attributes :created_at, :updated_at
 
@@ -49,32 +49,25 @@ class ScheduledDateTimeSerializer < ApplicationSerializer
 
   # DateTime attributes
   attribute :scheduled_at do |scheduled|
-    if scheduled.scheduled_date && scheduled.scheduled_time
-      Time.zone.parse("#{scheduled.scheduled_date} #{scheduled.scheduled_time}").iso8601
-    elsif scheduled.scheduled_date
-      scheduled.scheduled_date.to_time.in_time_zone.iso8601
-    end
+    scheduled.scheduled_at&.iso8601
   end
 
   attribute :scheduled_end_at do |scheduled|
-    if scheduled.scheduled_date && scheduled.scheduled_time
-      start_time = Time.zone.parse("#{scheduled.scheduled_date} #{scheduled.scheduled_time}")
-      (start_time + 60.minutes).iso8601
-    elsif scheduled.scheduled_date
-      (scheduled.scheduled_date.to_time.in_time_zone + 60.minutes).iso8601
+    if scheduled.scheduled_at
+      (scheduled.scheduled_at + 60.minutes).iso8601
     end
   end
 
   # Status flags
   attribute :is_past do |scheduled|
-    scheduled.scheduled_date && scheduled.scheduled_date < Date.current
+    scheduled.scheduled_at && scheduled.scheduled_at < Date.current.beginning_of_day
   end
 
   attribute :is_future do |scheduled|
-    scheduled.scheduled_date && scheduled.scheduled_date > Date.current
+    scheduled.scheduled_at && scheduled.scheduled_at > Date.current.end_of_day
   end
 
   attribute :is_today do |scheduled|
-    scheduled.scheduled_date && scheduled.scheduled_date == Date.current
+    scheduled.scheduled_at && scheduled.scheduled_at.to_date == Date.current
   end
 end

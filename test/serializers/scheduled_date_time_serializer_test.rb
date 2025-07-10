@@ -14,8 +14,8 @@ class ScheduledDateTimeSerializerTest < ActiveSupport::TestCase
   test "serializes basic attributes" do
     attributes = @serialization[:data][:attributes]
 
-    assert_equal @scheduled_date_time.scheduled_date, attributes[:scheduledDate]
-    assert_equal @scheduled_date_time.scheduled_time, attributes[:scheduledTime]
+    assert_equal @scheduled_date_time.scheduled_at, attributes[:scheduledAt]
+    assert_equal @scheduled_date_time.scheduled_time_set, attributes[:scheduledTimeSet]
     assert_equal 60, attributes[:durationMinutes] # Default duration
     assert_equal @scheduled_date_time.scheduled_type, attributes[:scheduleType]
     assert_equal "confirmed", attributes[:status]
@@ -41,20 +41,18 @@ class ScheduledDateTimeSerializerTest < ActiveSupport::TestCase
 
   test "computes scheduled times correctly" do
     # Set a specific date and time
-    date = Date.today
-    time = "14:30:00"
+    expected_start = Time.zone.parse("#{Date.today} 14:30:00")
     duration = 60
 
     @scheduled_date_time.update!(
-      scheduled_date: date,
-      scheduled_time: time
+      scheduled_at: expected_start,
+      scheduled_time_set: true
     )
 
     serialization = ScheduledDateTimeSerializer.new(@scheduled_date_time).serializable_hash
     attributes = serialization[:data][:attributes]
 
-    # Check scheduledAt combines date and time
-    expected_start = Time.zone.parse("#{date} #{time}")
+    # Check scheduledAt
     assert_equal expected_start.iso8601, attributes[:scheduledAt]
 
     # Check scheduledEndAt adds duration
@@ -64,7 +62,7 @@ class ScheduledDateTimeSerializerTest < ActiveSupport::TestCase
 
   test "computes time status flags correctly" do
     # Past schedule
-    @scheduled_date_time.update!(scheduled_date: 1.day.ago.to_date)
+    @scheduled_date_time.update!(scheduled_at: 1.day.ago.to_datetime)
     serialization = ScheduledDateTimeSerializer.new(@scheduled_date_time).serializable_hash
     attributes = serialization[:data][:attributes]
 
@@ -73,7 +71,7 @@ class ScheduledDateTimeSerializerTest < ActiveSupport::TestCase
     assert_not attributes[:isToday]
 
     # Future schedule
-    @scheduled_date_time.update!(scheduled_date: 1.day.from_now.to_date)
+    @scheduled_date_time.update!(scheduled_at: 1.day.from_now.to_datetime)
     serialization = ScheduledDateTimeSerializer.new(@scheduled_date_time).serializable_hash
     attributes = serialization[:data][:attributes]
 
@@ -82,7 +80,7 @@ class ScheduledDateTimeSerializerTest < ActiveSupport::TestCase
     assert_not attributes[:isToday]
 
     # Today's schedule
-    @scheduled_date_time.update!(scheduled_date: Date.today)
+    @scheduled_date_time.update!(scheduled_at: Date.today.to_datetime)
     serialization = ScheduledDateTimeSerializer.new(@scheduled_date_time).serializable_hash
     attributes = serialization[:data][:attributes]
 
@@ -111,11 +109,10 @@ class ScheduledDateTimeSerializerTest < ActiveSupport::TestCase
   test "transforms keys to camelCase" do
     attributes = @serialization[:data][:attributes]
 
-    assert attributes.key?(:scheduledDate)
-    assert attributes.key?(:scheduledTime)
+    assert attributes.key?(:scheduledAt)
+    assert attributes.key?(:scheduledTimeSet)
     assert attributes.key?(:durationMinutes)
     assert attributes.key?(:scheduleType)
-    assert attributes.key?(:scheduledAt)
     assert attributes.key?(:scheduledEndAt)
     assert attributes.key?(:isPast)
     assert attributes.key?(:isFuture)

@@ -45,8 +45,8 @@ class Job < ApplicationRecord
   }
   scope :closed, -> { where(status: [ :successfully_completed, :cancelled ]) }
   scope :active, -> { where.not(status: [ :successfully_completed, :cancelled ]) }
-  scope :overdue, -> { where("due_on < ?", Date.current).or(where(due_on: Date.current, due_time: ...Time.current)) }
-  scope :upcoming, -> { where("due_on >= ?", Date.current) }
+  scope :overdue, -> { where("due_at < ?", Time.current) }
+  scope :upcoming, -> { where("due_at >= ?", Date.current.beginning_of_day) }
 
   # Set defaults
   after_initialize :set_defaults, if: :new_record?
@@ -54,33 +54,15 @@ class Job < ApplicationRecord
   # Temporarily disable optimistic locking to prevent stale object errors
   self.locking_column = nil
 
-  # Computed datetime methods
-  def due_at
-    return nil unless due_on
-    if due_time
-      DateTime.new(due_on.year, due_on.month, due_on.day, due_time.hour, due_time.min, due_time.sec)
-    else
-      due_on.to_datetime
-    end
-  end
-
-  def start_at
-    return nil unless start_on
-    if start_time
-      DateTime.new(start_on.year, start_on.month, start_on.day, start_time.hour, start_time.min, start_time.sec)
-    else
-      start_on.to_datetime
-    end
-  end
-
+  # Convenience methods for date/time handling
   def overdue?
     return false unless due_at
     due_at < Time.current
   end
 
   def days_until_due
-    return nil unless due_on
-    (due_on - Date.current).to_i
+    return nil unless due_at
+    ((due_at.to_date - Date.current).to_i)
   end
 
   # Scheduled DateTime helpers

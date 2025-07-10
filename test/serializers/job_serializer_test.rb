@@ -2,7 +2,7 @@ require "test_helper"
 
 class JobSerializerTest < ActiveSupport::TestCase
   setup do
-    @job = jobs(:open_job)
+    @job = jobs(:simple_website_job)
     @serializer = JobSerializer.new(@job)
     @serialization = @serializer.serializable_hash
   end
@@ -30,10 +30,10 @@ class JobSerializerTest < ActiveSupport::TestCase
   test "serializes date and time attributes" do
     attributes = @serialization[:data][:attributes]
 
-    assert_equal @job.due_on, attributes[:dueOn]
-    assert_equal @job.due_time, attributes[:dueTime]
-    assert_nil attributes[:startOn] if @job.start_on.nil?
-    assert_nil attributes[:startTime] if @job.start_time.nil?
+    assert_equal @job.due_at, attributes[:dueAt]
+    assert_equal @job.due_time_set, attributes[:dueTimeSet]
+    assert_equal @job.starts_at, attributes[:startsAt]
+    assert_equal @job.start_time_set, attributes[:startTimeSet]
   end
 
   test "serializes computed attributes" do
@@ -66,7 +66,7 @@ class JobSerializerTest < ActiveSupport::TestCase
 
   test "calculates overdue status correctly" do
     # Set job as overdue
-    @job.update!(due_on: 1.day.ago.to_date, due_time: "17:00:00")
+    @job.update!(due_at: 1.day.ago.to_datetime.change(hour: 17), due_time_set: true)
 
     serialization = JobSerializer.new(@job).serializable_hash
     assert serialization[:data][:attributes][:isOverdue]
