@@ -7,10 +7,10 @@ module ZeroSchemaGenerator
       # UUID handling - Rails UUIDs become Zero strings
       uuid: ->(_column) { "string()" },
 
-      # Rails enum to Zero string
+      # Rails enum to Zero number (PostgreSQL stores as integers)
       integer: ->(column) {
         if column[:enum]
-          "string()"  # Rails enums become Zero strings
+          "number()"  # Rails enums are stored as integers in PostgreSQL
         else
           "number()"
         end
@@ -20,12 +20,12 @@ module ZeroSchemaGenerator
       jsonb: ->(_column) { "json()" },
       json: ->(_column) { "json()" },
 
-      # Temporal types - converted to ISO 8601 strings
-      datetime: ->(_column) { "string()" },
-      timestamp: ->(_column) { "string()" },
-      timestamptz: ->(_column) { "string()" },
-      date: ->(_column) { "string()" },
-      time: ->(_column) { "string()" },
+      # Temporal types - Zero sees PostgreSQL timestamps as numbers
+      datetime: ->(_column) { "number()" },
+      timestamp: ->(_column) { "number()" },
+      timestamptz: ->(_column) { "number()" },
+      date: ->(_column) { "number()" },
+      time: ->(_column) { "number()" },
 
       # Standard types
       string: ->(_column) { "string()" },
@@ -44,9 +44,9 @@ module ZeroSchemaGenerator
 
     # Special handling for common Rails patterns
     COLUMN_OVERRIDES = {
-      # Common Rails timestamp columns
-      "created_at" => "string()",
-      "updated_at" => "string()",
+      # Common Rails timestamp columns (PostgreSQL timestamps as numbers)
+      "created_at" => "number()",
+      "updated_at" => "number()",
 
       # Rails locking columns
       "lock_version" => "number()",

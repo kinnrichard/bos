@@ -10,7 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_09_052231) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_10_223735) do
+  create_schema "zero"
+  create_schema "zero_0"
+
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -112,21 +115,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_09_052231) do
     t.string "title"
     t.integer "status"
     t.integer "priority"
-    t.datetime "due_date"
-    t.datetime "start_on_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "description"
-    t.date "due_on"
-    t.time "due_time"
-    t.date "start_on"
-    t.time "start_time"
     t.integer "lock_version", default: 0, null: false
     t.uuid "client_id"
     t.uuid "created_by_id"
+    t.datetime "due_at", precision: nil
+    t.boolean "due_time_set", default: false, null: false
+    t.datetime "starts_at", precision: nil
+    t.boolean "start_time_set", default: false, null: false
     t.index ["client_id"], name: "index_jobs_on_client_id"
     t.index ["created_by_id"], name: "index_jobs_on_created_by_id"
-    t.index ["due_on", "due_time"], name: "index_jobs_on_due_date_time"
     t.index ["id"], name: "index_jobs_on_id", unique: true
     t.index ["lock_version"], name: "index_jobs_on_lock_version"
     t.index ["status", "created_at"], name: "index_jobs_on_status_and_created_at"
@@ -198,16 +198,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_09_052231) do
   create_table "scheduled_date_times", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "schedulable_type", null: false
     t.string "scheduled_type", null: false
-    t.date "scheduled_date", null: false
-    t.time "scheduled_time"
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "schedulable_id"
+    t.datetime "scheduled_at", precision: nil
+    t.boolean "scheduled_time_set", default: false, null: false
     t.index ["id"], name: "index_scheduled_date_times_on_id", unique: true
     t.index ["schedulable_id"], name: "index_scheduled_date_times_on_schedulable_id"
     t.index ["schedulable_type", "schedulable_id"], name: "index_scheduled_date_times_on_schedulable_type_and_uuid"
-    t.index ["scheduled_date"], name: "index_scheduled_date_times_on_scheduled_date"
     t.index ["scheduled_type"], name: "index_scheduled_date_times_on_scheduled_type"
   end
 
@@ -432,6 +431,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_09_052231) do
     t.index ["email"], name: "index_users_on_email"
     t.index ["id"], name: "index_users_on_id", unique: true
     t.index ["role"], name: "index_users_on_role"
+  end
+
+  create_table "versions", force: :cascade do |t|
+    t.string "whodunnit"
+    t.datetime "created_at"
+    t.bigint "item_id", null: false
+    t.string "item_type", null: false
+    t.string "event", null: false
+    t.text "object"
+    t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
 
   add_foreign_key "activity_logs", "clients"
