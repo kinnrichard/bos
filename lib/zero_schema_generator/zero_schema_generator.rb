@@ -20,6 +20,25 @@ module ZeroSchemaGenerator
       puts "🔄 Converting to Zero format..."
       zero_schema = build_zero_schema(rails_schema)
 
+      puts "🛡️ Validating generated schema..."
+      validation_result = self.class.validate_schema(zero_schema)
+
+      if validation_result[:errors].any?
+        puts "❌ Schema validation failed:"
+        validation_result[:errors].each { |error| puts "  - #{error}" }
+        raise "Schema generation failed validation. Fix errors and try again."
+      end
+
+      if validation_result[:warnings].any?
+        puts "⚠️ Schema validation warnings:"
+        validation_result[:warnings].each { |warning| puts "  - #{warning}" }
+      end
+
+      puts "✅ Schema validation passed (#{validation_result[:stats][:table_count]} tables, #{validation_result[:stats][:relationship_count]} relationships)"
+
+      puts "🔍 Detecting schema changes..."
+      change_detection = detect_schema_changes(zero_schema)
+
       puts "📝 Writing schema files..."
       write_schema_files(zero_schema)
 
@@ -28,7 +47,9 @@ module ZeroSchemaGenerator
         schema_path: @output_path,
         types_path: @types_path,
         tables_count: rails_schema[:tables].count,
-        generated_at: Time.current
+        generated_at: Time.current,
+        validation: validation_result,
+        changes: change_detection
       }
     end
 
@@ -37,14 +58,92 @@ module ZeroSchemaGenerator
       FileUtils.mkdir_p(File.dirname(@output_path))
       FileUtils.mkdir_p(File.dirname(@types_path)) if @types_path != @output_path
 
+      # Backup existing file if it has customizations
+      if File.exist?(@output_path)
+        existing_content = File.read(@output_path)
+        customizations = detect_customizations(existing_content)
+
+        if customizations.any?
+          backup_path = "#{@output_path}.backup.#{Time.current.strftime('%Y%m%d_%H%M%S')}"
+          File.write(backup_path, existing_content)
+          puts "💾 Backed up existing schema with customizations to: #{backup_path}"
+          puts "🔧 Found customizations: #{customizations.join(', ')}"
+          puts "📝 Consider moving customizations to a separate file or custom schema extension"
+        end
+      end
+
+      # Add enhanced header with customization guidance
+      enhanced_schema = add_customization_header(zero_schema)
+
       # Write main schema file
-      File.write(@output_path, zero_schema)
+      File.write(@output_path, enhanced_schema)
 
       # Generate TypeScript types file if different path
       if @types_path != @output_path
         types_content = generate_typescript_types
         File.write(@types_path, types_content)
       end
+    end
+
+    def detect_schema_changes(new_schema_content)
+      return { first_generation: true } unless File.exist?(@output_path)
+
+      existing_content = File.read(@output_path)
+      changes = {
+        first_generation: false,
+        has_changes: false,
+        new_tables: [],
+        removed_tables: [],
+        modified_tables: [],
+        new_relationships: [],
+        removed_relationships: [],
+        customizations: [],
+        migration_notes: []
+      }
+
+      # Extract table names from both schemas
+      existing_tables = extract_table_names(existing_content)
+      new_tables = extract_table_names(new_schema_content)
+
+      # Detect table changes
+      changes[:new_tables] = new_tables - existing_tables
+      changes[:removed_tables] = existing_tables - new_tables
+
+      # Detect relationship changes
+      existing_relationships = extract_relationship_names(existing_content)
+      new_relationships = extract_relationship_names(new_schema_content)
+
+      changes[:new_relationships] = new_relationships - existing_relationships
+      changes[:removed_relationships] = existing_relationships - new_relationships
+
+      # Detect potential customizations (comments, custom imports, etc.)
+      changes[:customizations] = detect_customizations(existing_content)
+
+      # Generate migration notes
+      changes[:migration_notes] = generate_migration_notes(changes)
+
+      changes[:has_changes] = (
+        changes[:new_tables].any? ||
+        changes[:removed_tables].any? ||
+        changes[:new_relationships].any? ||
+        changes[:removed_relationships].any?
+      )
+
+      if changes[:has_changes]
+        puts "📋 Schema changes detected:"
+        puts "  + #{changes[:new_tables].length} new tables: #{changes[:new_tables].join(', ')}" if changes[:new_tables].any?
+        puts "  - #{changes[:removed_tables].length} removed tables: #{changes[:removed_tables].join(', ')}" if changes[:removed_tables].any?
+        puts "  + #{changes[:new_relationships].length} new relationships" if changes[:new_relationships].any?
+        puts "  - #{changes[:removed_relationships].length} removed relationships" if changes[:removed_relationships].any?
+      else
+        puts "📋 No schema changes detected"
+      end
+
+      if changes[:customizations].any?
+        puts "⚠️ #{changes[:customizations].length} potential customizations detected - will be preserved"
+      end
+
+      changes
     end
 
     private
@@ -282,9 +381,9 @@ module ZeroSchemaGenerator
     end
 
     def generate_table_type_exports(table_names)
-      table_names.map do |name|
-        "export type #{name.classify} = typeof #{name}.inferZodType._type;"
-      end.join("\n")
+      # Zero tables don't have inferZodType - remove broken type exports
+      # The schema export provides type safety through Zero<typeof schema>
+      ""
     end
 
     def generate_typescript_types
@@ -346,19 +445,125 @@ module ZeroSchemaGenerator
       Rails.root.join("frontend", "src", "lib", "types", "generated.ts").to_s
     end
 
+    def extract_table_names(schema_content)
+      schema_content.scan(/const (\w+) = table\('([^']+)'\)/).map { |_, table_name| table_name }
+    end
+
+    def extract_relationship_names(schema_content)
+      schema_content.scan(/const (\w+Relationships) = relationships\(/).flatten
+    end
+
+    def detect_customizations(existing_content)
+      customizations = []
+
+      # Check for custom comments (not generated ones)
+      custom_comments = existing_content.scan(/\/\/(?! Generated| \w+ table| \w+ relationships)(.+)/).flatten
+      customizations.concat(custom_comments.map { |comment| "Custom comment: #{comment.strip}" })
+
+      # Check for custom imports
+      if existing_content.include?("import") && !existing_content.match(/^import \{\s*createSchema,/)
+        customizations << "Custom import statements detected"
+      end
+
+      # Check for custom exports beyond standard ones
+      custom_exports = existing_content.scan(/export (?:const|type|function) (\w+)/).flatten
+      standard_exports = [ "schema", "ZeroClient" ]
+      custom_exports_filtered = custom_exports - standard_exports
+
+      if custom_exports_filtered.any?
+        customizations << "Custom exports: #{custom_exports_filtered.join(', ')}"
+      end
+
+      customizations
+    end
+
+    def add_customization_header(schema_content)
+      header = <<~TYPESCRIPT
+        // 🤖 AUTO-GENERATED ZERO SCHEMA
+        // Generated at: #{Time.current.iso8601}
+        //#{' '}
+        // ⚠️  DO NOT EDIT THIS FILE DIRECTLY
+        // This file is automatically generated from your Rails schema.
+        // Any manual changes will be overwritten on the next generation.
+        //
+        // 🔧 FOR CUSTOMIZATIONS:
+        // 1. Create a separate file like 'custom-schema-extensions.ts'
+        // 2. Import and extend this schema in your application code
+        // 3. Use Zero's schema composition features for custom relationships
+        //
+        // 🔄 TO REGENERATE: Run `rails zero:generate_schema`
+        // 📚 DOCS: https://zero.rocicorp.dev/docs/schema
+
+      TYPESCRIPT
+
+      # Replace the existing header
+      schema_content.sub(/^\/\/ Generated Zero Schema.*?(?=import)/m, header)
+    end
+
+    def generate_migration_notes(changes)
+      notes = []
+
+      if changes[:new_tables].any?
+        notes << "NEW TABLES: #{changes[:new_tables].join(', ')} - Update your queries to use these new tables"
+      end
+
+      if changes[:removed_tables].any?
+        notes << "REMOVED TABLES: #{changes[:removed_tables].join(', ')} - Remove any queries using these tables"
+      end
+
+      if changes[:new_relationships].any?
+        notes << "NEW RELATIONSHIPS: #{changes[:new_relationships].length} added - Update your joins and includes"
+      end
+
+      if changes[:removed_relationships].any?
+        notes << "REMOVED RELATIONSHIPS: #{changes[:removed_relationships].length} removed - Update affected queries"
+      end
+
+      notes
+    end
+
     def self.validate_schema(schema_content)
-      # Basic validation of generated schema
+      # Enhanced validation of generated schema
       required_imports = [ "createSchema", "table", "string", "number", "boolean" ]
       missing_imports = required_imports.reject { |import| schema_content.include?(import) }
 
       errors = []
+      warnings = []
+
+      # Check required imports
       errors << "Missing required imports: #{missing_imports.join(', ')}" if missing_imports.any?
+
+      # Check exports
       errors << "Missing schema export" unless schema_content.include?("export const schema")
       errors << "Missing ZeroClient type export" unless schema_content.include?("export type ZeroClient")
 
+      # Check for common Anti-patterns
+      if schema_content.include?("inferZodType")
+        errors << "Schema contains 'inferZodType' which doesn't exist in Zero API"
+      end
+
+      if schema_content.include?(".offset(") || schema_content.include?(".value")
+        warnings << "Schema may contain deprecated Zero query methods (.offset, .value)"
+      end
+
+      # Check syntax patterns
+      unless schema_content.match(/const \w+ = table\('/)
+        errors << "No table definitions found in schema"
+      end
+
+      unless schema_content.match(/relationships\(\w+, \(\{ one, many \}\) =>/)
+        warnings << "No relationships found in schema"
+      end
+
       {
         valid: errors.empty?,
-        errors: errors
+        errors: errors,
+        warnings: warnings,
+        stats: {
+          table_count: schema_content.scan(/const \w+ = table\('/).length,
+          relationship_count: schema_content.scan(/relationships\(/).length,
+          import_count: required_imports.count { |import| schema_content.include?(import) }
+        }
       }
     end
   end
