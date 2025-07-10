@@ -14,9 +14,11 @@ module Authenticatable
     if Rails.env.development? && !@current_user
       user_id = cookies.signed[:user_id]
       token = cookies.signed[:auth_token]
+      session_user_id = session[:user_id]
       Rails.logger.info "AUTH DEBUG: Authentication failed for #{request.method} #{request.path}"
       Rails.logger.info "AUTH DEBUG: user_id cookie: #{user_id.present? ? user_id : 'MISSING'}"
       Rails.logger.info "AUTH DEBUG: auth_token cookie: #{token.present? ? 'PRESENT' : 'MISSING'}"
+      Rails.logger.info "AUTH DEBUG: session user_id: #{session_user_id.present? ? session_user_id : 'MISSING'}"
       Rails.logger.info "AUTH DEBUG: Current user found: #{@current_user ? @current_user.id : 'NONE'}"
     end
 
@@ -28,15 +30,23 @@ module Authenticatable
   end
 
   def current_user_from_token
-    # Simple cookie-based authentication (temporary)
+    # Try signed cookie authentication first (API auth)
     user_id = cookies.signed[:user_id]
     token = cookies.signed[:auth_token]
 
-    return nil unless user_id.present? && token.present?
+    if user_id.present? && token.present?
+      user = User.find_by(id: user_id)
+      return user if user
+    end
 
-    User.find_by(id: user_id)
+    # Fallback to session-based authentication (main app login)
+    if session[:user_id].present?
+      return User.find_by(id: session[:user_id])
+    end
+
+    nil
   rescue StandardError => e
-    Rails.logger.info "JWT decode error: #{e.message}"
+    Rails.logger.info "Authentication error: #{e.message}"
     nil
   end
 
