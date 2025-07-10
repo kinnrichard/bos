@@ -57,9 +57,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
     test('should reorder tasks via drag and drop', async ({ page }) => {
       // Wait for tasks to be visible
       const taskItems = await page.locator('[data-task-id]').all();
-      if (taskItems.length < 2) {
-        test.skip('Need at least 2 tasks for drag and drop test');
-      }
+      test.skip(taskItems.length < 2, 'Need at least 2 tasks for drag and drop test');
 
       // Get initial order
       const initialOrder = await page.locator('[data-task-id]').evaluateAll(
@@ -86,9 +84,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
 
     test('should show visual feedback during drag', async ({ page }) => {
       const taskItems = await page.locator('[data-task-id]').all();
-      if (taskItems.length < 1) {
-        test.skip('Need at least 1 task for drag feedback test');
-      }
+      test.skip(taskItems.length < 1, 'Need at least 1 task for drag feedback test');
 
       const firstTask = page.locator('[data-task-id]').first();
       
@@ -120,9 +116,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
       });
 
       const taskItems = await page.locator('[data-task-id]').all();
-      if (taskItems.length < 2) {
-        test.skip('Need at least 2 tasks for rollback test');
-      }
+      test.skip(taskItems.length < 2, 'Need at least 2 tasks for rollback test');
 
       // Get initial order
       const initialOrder = await page.locator('[data-task-id]').evaluateAll(
@@ -158,9 +152,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
       await page.setViewportSize({ width: 768, height: 1024 });
       
       const taskItems = await page.locator('[data-task-id]').all();
-      if (taskItems.length < 1) {
-        test.skip('Need at least 1 task for touch test');
-      }
+      test.skip(taskItems.length < 1, 'Need at least 1 task for touch test');
 
       const firstTask = page.locator('[data-task-id]').first();
       
@@ -194,9 +186,8 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
       const firstTask = page.locator('[data-task-id]').first();
       const secondTask = page.locator('[data-task-id]').nth(1);
       
-      if (!await secondTask.isVisible()) {
-        test.skip('Need at least 2 tasks for multi-select test');
-      }
+      const secondTaskVisible = await secondTask.isVisible();
+      test.skip(!secondTaskVisible, 'Need at least 2 tasks for multi-select test');
 
       const modifierKey = process.platform === 'darwin' ? 'Meta' : 'Control';
       
@@ -222,9 +213,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
 
     test('should select range with Shift+click', async ({ page }) => {
       const tasks = await page.locator('[data-task-id]').all();
-      if (tasks.length < 3) {
-        test.skip('Need at least 3 tasks for range selection test');
-      }
+      test.skip(tasks.length < 3, 'Need at least 3 tasks for range selection test');
 
       // Select first task
       await page.locator('[data-task-id]').first().click();
@@ -243,9 +232,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
 
     test('should clear all selections', async ({ page }) => {
       const tasks = await page.locator('[data-task-id]').all();
-      if (tasks.length < 2) {
-        test.skip('Need at least 2 tasks for clear selection test');
-      }
+      test.skip(tasks.length < 2, 'Need at least 2 tasks for clear selection test');
 
       // Select multiple tasks
       await page.locator('[data-task-id]').first().click();
@@ -284,9 +271,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
 
     test('should maintain selection during page interactions', async ({ page }) => {
       const tasks = await page.locator('[data-task-id]').all();
-      if (tasks.length < 2) {
-        test.skip('Need at least 2 tasks for selection persistence test');
-      }
+      test.skip(tasks.length < 2, 'Need at least 2 tasks for selection persistence test');
 
       // Select multiple tasks
       await page.locator('[data-task-id]').first().click();
@@ -431,9 +416,7 @@ test.describe('Task Drag & Drop and Multi-Select Features', () => {
 
     test('should handle rapid interactions gracefully', async ({ page }) => {
       const tasks = await page.locator('[data-task-id]').all();
-      if (tasks.length < 3) {
-        test.skip('Need at least 3 tasks for rapid interaction test');
-      }
+      test.skip(tasks.length < 3, 'Need at least 3 tasks for rapid interaction test');
 
       // Rapidly click multiple tasks
       for (let i = 0; i < 3; i++) {

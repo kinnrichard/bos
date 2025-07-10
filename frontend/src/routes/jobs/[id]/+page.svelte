@@ -124,7 +124,7 @@
 
   <!-- Job Detail Content -->
   {:else if job}
-    <JobDetailView {job} batchTaskDetails={taskBatchDetailsQuery?.data} />
+    <JobDetailView {job} batchTaskDetails={$taskBatchDetailsQuery?.data} />
 
   <!-- Fallback (should not happen with proper loading states) -->
   {:else}

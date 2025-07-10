@@ -5,6 +5,7 @@
 	"scripts": {
 		"dev": "DEBUG=bos:* vite dev",
 		"dev:quiet": "vite dev",
+		"dev:zero": "node ../scripts/zero-dev-server.js",
 		"build": "vite build",
 		"preview": "vite preview",
 		"test": "playwright test",
@@ -54,8 +55,10 @@
 	"type": "module",
 	"dependencies": {
 		"@melt-ui/svelte": "^0.86.6",
+		"@rocicorp/zero": "^0.21.2025070200",
 		"@tanstack/svelte-query": "^5.80.12",
 		"debug": "^4.4.1",
-		"qs": "^6.14.0"
+		"qs": "^6.14.0",
+		"zero-svelte-query": "^0.9.0"
 	}
 }

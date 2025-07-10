@@ -7,34 +7,34 @@ import { debugTechAssignment, debugAPI } from '$lib/utils/debug';
  * Query hook for fetching all users
  */
 export function useUsersQuery() {
-  return createQuery(() => ({
+  return createQuery({
     queryKey: ['users'],
     queryFn: () => usersService.getUsers(),
     staleTime: 10 * 60 * 1000, // 10 minutes - users don't change often
     gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: (failureCount, error) => {
+    retry: (failureCount, error: Error) => {
       debugAPI('Users query failed, attempt %d: %o', failureCount + 1, error);
       return failureCount < 2; // Conservative retry approach
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  }));
+  });
 }
 
 /**
  * Query hook for fetching technicians specifically
  */
 export function useTechniciansQuery() {
-  return createQuery(() => ({
+  return createQuery({
     queryKey: ['users', 'technicians'],
     queryFn: () => usersService.getTechnicians(),
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: (failureCount, error) => {
+    retry: (failureCount, error: Error) => {
       debugAPI('Technicians query failed, attempt %d: %o', failureCount + 1, error);
       return failureCount < 2;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  }));
+  });
 }
 
 /**
@@ -44,7 +44,7 @@ export function useTechniciansQuery() {
 export function useUserQuery(id: string, enabled: boolean = true) {
   const queryClient = useQueryClient();
   
-  return createQuery(() => ({
+  return createQuery({
     queryKey: ['user', id],
     queryFn: async () => {
       // First try to get from users cache
@@ -75,7 +75,7 @@ export function useUserQuery(id: string, enabled: boolean = true) {
     enabled: enabled && !!id,
     staleTime: 10 * 60 * 1000,
     retry: false, // Don't retry since this is cache-based
-  }));
+  });
 }
 
 /**
@@ -88,16 +88,26 @@ export function useUserLookup() {
   return {
     ...usersQuery,
     getUserById: (id: string): User | undefined => {
-      if (!usersQuery.data) return undefined;
-      return usersQuery.data.find((u: User) => u.id === id);
+      // Access the store value using get() from svelte/store
+      const store = usersQuery;
+      if (!store || !('data' in store)) return undefined;
+      const queryData = (store as any).data;
+      if (!queryData) return undefined;
+      return queryData.find((u: User) => u.id === id);
     },
     getUsersByIds: (ids: string[]): User[] => {
-      if (!usersQuery.data) return [];
-      return ids.map(id => usersQuery.data.find((u: User) => u.id === id)).filter(Boolean) as User[];
+      const store = usersQuery;
+      if (!store || !('data' in store)) return [];
+      const queryData = (store as any).data;
+      if (!queryData) return [];
+      return ids.map(id => queryData.find((u: User) => u.id === id)).filter(Boolean) as User[];
     },
     isUserLoaded: (id: string): boolean => {
-      if (!usersQuery.data) return false;
-      return usersQuery.data.some((u: User) => u.id === id);
+      const store = usersQuery;
+      if (!store || !('data' in store)) return false;
+      const queryData = (store as any).data;
+      if (!queryData) return false;
+      return queryData.some((u: User) => u.id === id);
     }
   };
 }
@@ -109,7 +119,7 @@ export function useUserLookup() {
 export function useUpdateJobTechniciansMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation(() => ({
+  return createMutation({
     mutationFn: async ({ jobId, technicianIds }: { jobId: string; technicianIds: string[] }) => {
       debugTechAssignment('API call: Updating job %s technicians to: %o', jobId, technicianIds);
       
@@ -124,10 +134,10 @@ export function useUpdateJobTechniciansMutation() {
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
     },
-    onError: (error: unknown, { jobId }) => {
+    onError: (error: Error, { jobId }) => {
       debugTechAssignment('API error: Job %s technicians update failed: %o', jobId, error);
     },
-    retry: (failureCount: number, error: unknown) => {
+    retry: (failureCount: number, error: Error) => {
       // Don't retry on authentication or validation errors
       if ((error as any)?.code === 'INVALID_CSRF_TOKEN' || (error as any)?.status === 422) {
         return false;
@@ -135,7 +145,7 @@ export function useUpdateJobTechniciansMutation() {
       return failureCount < 1; // Conservative retry - only once
     },
     retryDelay: 1000, // 1 second delay before retry
-  }));
+  });
 }
 
 // Note: Don't use useQueryClient() at module level - only in hooks/components

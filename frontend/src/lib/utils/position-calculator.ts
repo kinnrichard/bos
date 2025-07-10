@@ -76,7 +76,7 @@ export function calculateRelativePositionFromTarget(
     return {
       relativePosition: {
         id: draggedTaskIds[0],
-        parent_id: parentId,
+        parent_id: parentId ?? undefined,
         position: 'first'
       },
       reasoning: {
@@ -94,7 +94,7 @@ export function calculateRelativePositionFromTarget(
     return {
       relativePosition: {
         id: draggedTaskIds[0],
-        parent_id: parentId,
+        parent_id: parentId ?? undefined,
         position: 'first'
       },
       reasoning: {
@@ -152,7 +152,7 @@ export function calculateRelativePositionFromTarget(
         return {
           relativePosition: {
             id: draggedTaskIds[0],
-            parent_id: parentId,
+            parent_id: parentId ?? undefined,
             before_task_id: targetTask.id
           },
           reasoning: {
@@ -166,7 +166,7 @@ export function calculateRelativePositionFromTarget(
         return {
           relativePosition: {
             id: draggedTaskIds[0],
-            parent_id: parentId,
+            parent_id: parentId ?? undefined,
             after_task_id: targetTask.id
           },
           reasoning: {
@@ -185,7 +185,7 @@ export function calculateRelativePositionFromTarget(
       return {
         relativePosition: {
           id: draggedTaskIds[0],
-          parent_id: parentId,
+          parent_id: parentId ?? undefined,
           position: 'last'
         },
         reasoning: {
@@ -226,7 +226,7 @@ export function calculateRelativePositionFromTarget(
       return {
         relativePosition: {
           id: draggedTaskIds[0],
-          parent_id: parentId,
+          parent_id: parentId ?? undefined,
           before_task_id: targetTask.id
         },
         reasoning: {
@@ -241,7 +241,7 @@ export function calculateRelativePositionFromTarget(
       return {
         relativePosition: {
           id: draggedTaskIds[0],
-          parent_id: parentId,
+          parent_id: parentId ?? undefined,
           after_task_id: targetTask.id
         },
         reasoning: {
@@ -258,7 +258,7 @@ export function calculateRelativePositionFromTarget(
   return {
     relativePosition: {
       id: draggedTaskIds[0],
-      parent_id: parentId,
+      parent_id: parentId ?? undefined,
       position: 'first'
     },
     reasoning: {
@@ -285,7 +285,7 @@ export function calculatePositionFromTarget(
   
   // Use ClientActsAsList to convert to integer position for legacy callers
   // This is a circular dependency workaround - import dynamically
-  const positionUpdates = [{ id: draggedTaskIds[0], position: 1, parent_id: parentId }];
+  const positionUpdates = [{ id: draggedTaskIds[0], position: 1, parent_id: parentId ?? undefined }];
   const calculatedPosition = positionUpdates[0]?.position || 1;
   
   return {

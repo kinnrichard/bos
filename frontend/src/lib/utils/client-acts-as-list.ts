@@ -117,7 +117,7 @@ export class ClientActsAsList {
       // Place moving task at target position
       const oldPosition = movingTask.position ?? 0;
       movingTask.position = targetPosition;
-      movingTask.parent_id = targetParent;
+      movingTask.parent_id = targetParent ?? undefined;
       
       operations.push({
         type: 'insertion',
@@ -216,7 +216,7 @@ export class ClientActsAsList {
     
     // Normalize positions within each scope
     scopes.forEach((scopeTasks, scope) => {
-      const sortedTasks = scopeTasks.sort((a, b) => a.position - b.position);
+      const sortedTasks = scopeTasks.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
       sortedTasks.forEach((task, index) => {
         task.position = index + 1; // Start from 1, no gaps
       });
@@ -275,18 +275,18 @@ export class ClientActsAsList {
         if (beforeTask) {
           if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
             // Same-parent move: consider relative positions
-            if (movingTask.position < beforeTask.position) {
+            if ((movingTask.position ?? 0) < (beforeTask.position ?? 0)) {
               // Moving task is currently before target - it will take position (target.position - 1)
-              targetPosition = beforeTask.position - 1;
+              targetPosition = (beforeTask.position ?? 0) - 1;
             } else {
               // Moving task is currently after target - it will take target's current position
-              targetPosition = beforeTask.position;
+              targetPosition = beforeTask.position ?? 0;
             }
           } else {
             // Cross-parent move: positioning gem takes target's current position, shifts target up
             // For "before Task X", the moving task takes Task X's current position and Task X shifts up
             // This is different from same-parent moves where we calculate position - 1
-            targetPosition = beforeTask.position;
+            targetPosition = beforeTask.position ?? 0;
           }
         } else {
           targetPosition = 1;
@@ -313,14 +313,14 @@ export class ClientActsAsList {
         if (afterTask) {
           if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
             // Same-parent move: consider relative positions
-            if (movingTask.position < afterTask.position) {
-              targetPosition = afterTask.position; // Target moved down, so we take its original position
+            if ((movingTask.position ?? 0) < (afterTask.position ?? 0)) {
+              targetPosition = afterTask.position ?? 0; // Target moved down, so we take its original position
             } else {
-              targetPosition = afterTask.position + 1; // Target stays, we go after it
+              targetPosition = (afterTask.position ?? 0) + 1; // Target stays, we go after it
             }
           } else {
             // Cross-parent move: moving task enters new scope after target
-            targetPosition = afterTask.position + 1;
+            targetPosition = (afterTask.position ?? 0) + 1;
           }
         } else {
           targetPosition = scopeTasksExcludingMoved.length + 1;
