@@ -19,11 +19,11 @@
 		
 		<div class="space-y-6">
 			<!-- Zero test components temporarily disabled to prevent SSR errors -->
-			<!-- <ZeroTest /> -->
-			<!-- <UserMigrationTest /> -->
-			<!-- <ClientMigrationTest /> -->
-			<!-- <JobMigrationTest /> -->
-			<!-- <TaskMigrationTest /> -->
+			<ZeroTest />
+			<UserMigrationTest />
+			<ClientMigrationTest />
+			<JobMigrationTest />
+			<TaskMigrationTest />
 			<ApiTest />
 		</div>
 	</div>

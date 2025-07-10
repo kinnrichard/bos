@@ -23,6 +23,7 @@ Rails.application.routes.draw do
       end
 
       # Zero JWT token endpoint
+      get "zero/token", to: "zero_tokens#create"
       post "zero/token", to: "zero_tokens#create"
 
       # WebSocket connection info
