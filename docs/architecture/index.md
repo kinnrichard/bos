@@ -1,111 +1,48 @@
-# bŏs Architecture Documentation
+# Rails-to-Zero Schema Generator Architecture
 
-## Overview
+## Table of Contents
 
-This directory contains detailed technical documentation for the bŏs client/job/task management system. Each document focuses on specific architectural aspects to help AI agents understand and contribute effectively to the codebase.
-
-## Documentation Categories
-
-### 🏗️ Core Architecture
-Essential documentation that every AI agent should review:
-
-- **[Coding Standards](./coding-standards.md)** - Ruby, JavaScript, and CSS conventions
-- **[Tech Stack](./tech-stack.md)** - Technologies, versions, and constraints  
-- **[Unified Project Structure](./unified-project-structure.md)** - Directory organization and file placement
-- **[Testing Strategy](./testing-strategy.md)** - Playwright-first testing approach
-
-### 🎨 Frontend Architecture
-Critical for UI/UX work - READ THESE FIRST for any frontend tasks:
-
-- **[Frontend Architecture](./frontend-architecture.md)** ⚡ - Phlex components and Stimulus patterns
-- **[UI/UX Specification](./ui-ux-spec.md)** 🍎 - Apple-like interface guidelines
-- **[Components Catalog](./components.md)** - Reusable Phlex component library
-- **[Core Workflows](./core-workflows.md)** - User interaction flows
-
-### 🔧 Backend Architecture
-Rails patterns and service design:
-
-- **[Backend Architecture](./backend-architecture.md)** - Service layers and patterns
-- **[REST API Specification](./rest-api-spec.md)** - Endpoint documentation
-- **[Data Models](./data-models.md)** - Business entity specifications
-- **[Database Schema](./database-schema.md)** - PostgreSQL table structures
-
-### 🚀 Operations & Performance
-Deployment and optimization:
-
-- **[Deployment Guide](./deployment-guide.md)** - Kamal deployment process
-- **[Performance Guidelines](./performance-guidelines.md)** - Optimization patterns
-- **[Troubleshooting Guide](./troubleshooting-guide.md)** - Common issues and solutions
-
-## Reading Order by Task Type
-
-### For Frontend/UI Tasks
-1. [Frontend Architecture](./frontend-architecture.md) - Understand Phlex first!
-2. [UI/UX Specification](./ui-ux-spec.md) - Apple-like patterns
-3. [Components Catalog](./components.md) - Reuse existing components
-4. [Coding Standards](./coding-standards.md#scss-conventions) - CSS/SCSS rules
-
-### For Backend/API Tasks
-1. [Backend Architecture](./backend-architecture.md) - Service patterns
-2. [Data Models](./data-models.md) - Entity relationships
-3. [REST API Specification](./rest-api-spec.md) - Endpoint patterns
-4. [Database Schema](./database-schema.md) - Table structures
-
-### For Full-Stack Features
-1. [Core Workflows](./core-workflows.md) - End-to-end flows
-2. [Frontend Architecture](./frontend-architecture.md) - UI layer
-3. [Backend Architecture](./backend-architecture.md) - Service layer
-4. [Testing Strategy](./testing-strategy.md) - Test all layers
-
-### For Bug Fixes
-1. [Troubleshooting Guide](./troubleshooting-guide.md) - Known issues
-2. [Testing Strategy](./testing-strategy.md) - Write regression tests
-3. Architecture doc for affected area
-
-## Key Architectural Decisions
-
-### Why Phlex?
-- Component-based architecture using Ruby objects instead of ERB templates
-- Better encapsulation and testing
-- Type-safe component interfaces
-- See [Frontend Architecture](./frontend-architecture.md#why-phlex) for details
-
-### Why Stimulus?
-- Lightweight JavaScript framework that works with server-rendered HTML
-- Progressive enhancement approach
-- Integrates seamlessly with Turbo
-- See [Frontend Architecture](./frontend-architecture.md#stimulus-controllers) for patterns
-
-### Why Playwright?
-- Modern, reliable browser automation
-- Better than Puppeteer for testing (keep Puppeteer only for specific automation)
-- Supports all browsers
-- See [Testing Strategy](./testing-strategy.md#playwright-tests) for examples
-
-## Quick Reference
-
-### Critical Commands
-```bash
-# After CSS/JS changes
-rails tmp:clear && rails assets:clobber && rails assets:precompile && rm -f public/assets/.manifest.json
-
-# Run tests
-bundle exec ruby test/playwright/[test_name].rb
-
-# Before committing
-rubocop -A
-```
-
-### File Locations
-- Phlex components: `app/views/components/`
-- Stimulus controllers: `app/javascript/controllers/`
-- SCSS files: `app/assets/stylesheets/`
-- Playwright tests: `test/playwright/`
-
-## Documentation Maintenance
-
-Update these docs when:
-- Introducing new patterns or components
-- Changing architectural decisions
-- Adding major features
-- Discovering important gotchas
+- [Rails-to-Zero Schema Generator Architecture](#table-of-contents)
+  - [Executive Summary](./executive-summary.md)
+  - [Problem Statement](./problem-statement.md)
+    - [Current State Analysis](./problem-statement.md#current-state-analysis)
+    - [Business Impact](./problem-statement.md#business-impact)
+  - [High-Level Architecture](./high-level-architecture.md)
+  - [Technical Architecture](./technical-architecture.md)
+    - [Core Components](./technical-architecture.md#core-components)
+      - [1. Rails Schema Introspector](./technical-architecture.md#1-rails-schema-introspector)
+      - [2. Type Mapping Engine](./technical-architecture.md#2-type-mapping-engine)
+      - [3. Relationship Analyzer](./technical-architecture.md#3-relationship-analyzer)
+      - [4. Zero Schema Generator](./technical-architecture.md#4-zero-schema-generator)
+    - [Schema Template System](./technical-architecture.md#schema-template-system)
+  - [Implementation Strategy](./implementation-strategy.md)
+    - [Phase 1: Foundation (Week 1)](./implementation-strategy.md#phase-1-foundation-week-1)
+    - [Phase 2: Relationships (Week 2)](./implementation-strategy.md#phase-2-relationships-week-2)
+    - [Phase 3: Production Ready (Week 3)](./implementation-strategy.md#phase-3-production-ready-week-3)
+    - [Phase 4: Integration (Week 4)](./implementation-strategy.md#phase-4-integration-week-4)
+  - [Data Flow Architecture](./data-flow-architecture.md)
+    - [Schema Generation Flow](./data-flow-architecture.md#schema-generation-flow)
+    - [Change Detection Flow](./data-flow-architecture.md#change-detection-flow)
+  - [Configuration System](./configuration-system.md)
+    - [Generator Configuration](./configuration-system.md#generator-configuration)
+    - [Manual Customization System](./configuration-system.md#manual-customization-system)
+  - [Error Handling & Validation](./error-handling-validation.md)
+    - [Schema Validation Pipeline](./error-handling-validation.md#schema-validation-pipeline)
+    - [Migration Safety Checks](./error-handling-validation.md#migration-safety-checks)
+  - [Performance Considerations](./performance-considerations.md)
+    - [Optimization Strategies](./performance-considerations.md#optimization-strategies)
+  - [Integration Points](./integration-points.md)
+    - [Rails Task Integration](./integration-points.md#rails-task-integration)
+    - [CI/CD Integration](./integration-points.md#cicd-integration)
+  - [Testing Strategy](./testing-strategy.md)
+    - [Unit Test Coverage](./testing-strategy.md#unit-test-coverage)
+    - [Integration Test Framework](./testing-strategy.md#integration-test-framework)
+  - [Security Considerations](./security-considerations.md)
+    - [Access Control](./security-considerations.md#access-control)
+    - [Data Privacy](./security-considerations.md#data-privacy)
+  - [Monitoring & Observability](./monitoring-observability.md)
+    - [Generation Metrics](./monitoring-observability.md#generation-metrics)
+    - [Health Checks](./monitoring-observability.md#health-checks)
+  - [Future Enhancements](./future-enhancements.md)
+    - [Phase 5+: Advanced Features](./future-enhancements.md#phase-5-advanced-features)
+  - [Conclusion](./conclusion.md)
