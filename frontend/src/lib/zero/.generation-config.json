@@ -1,21 +1,7 @@
 {
   "excludeTables": [
     "ar_internal_metadata",
-    "schema_migrations",
-    "activity_logs",
-    "contact_methods",
-    "jobs",
-    "clients",
-    "devices",
-    "job_assignments",
-    "job_people",
-    "job_targets",
-    "notes",
-    "people",
-    "scheduled_date_time_users",
-    "scheduled_date_times",
-    "task_completions",
-    "users"
+    "schema_migrations"
   ],
   "excludePatterns": {},
   "customNaming": {},

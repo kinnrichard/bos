@@ -7,16 +7,13 @@
 // import { createUser, updateUser, customUserLogic } from './user';
 
 
-// Main export file for clients mutations
+// Main export file for users mutations
 // This file merges generated and custom mutations
 
 // Export all generated mutations
-export * from './client.generated';
+export * from './user.generated';
 
 // Export all custom mutations  
-export * from './client.custom';
-
-// Export Zero client initialization functions
-export { initZero, getZero, getZeroAsync, getZeroState, closeZero, reinitializeZero } from './zero-client';
+export * from './user.custom';
 
 // Note: Custom mutations with the same name will override generated ones

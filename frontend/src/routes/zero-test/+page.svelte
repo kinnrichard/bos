@@ -1,7 +1,8 @@
 <script>
   import { onMount } from 'svelte';
-  import { getZero } from '$lib/zero/client';
+  import { getZeroAsync, getZeroState, initZero } from '$lib/zero/client';
   import { useClientsQuery } from '$lib/zero/clients';
+  import { browser } from '$app/environment';
   
   let testResults = {
     initialization: 'pending',
@@ -11,26 +12,61 @@
   };
   
   let logs = [];
+  let connectionState = null;
   
   function log(message) {
     logs = [...logs, `${new Date().toLocaleTimeString()}: ${message}`];
     console.log(message);
   }
   
+  async function waitForInitialization(maxWaitTime = 10000) {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < maxWaitTime) {
+      const state = getZeroState();
+      
+      if (state.initializationState === 'success') {
+        return true;
+      }
+      
+      if (state.initializationState === 'error') {
+        throw new Error('Zero initialization failed');
+      }
+      
+      // Wait a bit before checking again
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    throw new Error('Zero initialization timed out');
+  }
+  
   onMount(async () => {
+    if (!browser) return;
+    
+    // Start live state monitoring
+    const stateMonitor = setInterval(() => {
+      connectionState = getZeroState();
+    }, 1000);
+    
     log('🧪 Starting Zero E2E Tests...');
     
     try {
       // Test 1: Zero client initialization
       log('🔌 Testing Zero client initialization...');
-      const zero = getZero();
       
-      if (zero) {
+      // Check initial state
+      connectionState = getZeroState();
+      log(`📊 Initial state: ${JSON.stringify(connectionState)}`);
+      
+      // Wait for initialization to complete or start it
+      let zero;
+      try {
+        zero = await getZeroAsync();
         testResults.initialization = 'success';
         log('✅ Zero client initialized successfully');
-      } else {
+      } catch (error) {
         testResults.initialization = 'failed';
-        log('❌ Zero client initialization failed');
+        log(`❌ Zero client initialization failed: ${error.message}`);
         return;
       }
       
@@ -81,14 +117,43 @@
       
       log('🎉 Zero E2E Tests completed!');
       
+      // Final state check
+      const finalState = getZeroState();
+      log(`🔍 Final state: ${JSON.stringify(finalState)}`);
+      
     } catch (error) {
       log(`💥 Test suite failed: ${error.message}`);
+      
+      // Log final state for debugging
+      const errorState = getZeroState();
+      log(`🔍 Error state: ${JSON.stringify(errorState)}`);
     }
+    
+    // Cleanup on unmount
+    return () => {
+      clearInterval(stateMonitor);
+    };
   });
 </script>
 
 <div class="p-8 max-w-4xl mx-auto">
   <h1 class="text-3xl font-bold mb-6">Zero E2E Test Results</h1>
+  
+  <!-- Connection State Monitor -->
+  <div class="bg-blue-50 p-4 rounded-lg mb-6">
+    <h3 class="font-semibold mb-2">🔍 Connection State</h3>
+    {#if connectionState}
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div><strong>Initialized:</strong> {connectionState.isInitialized ? '✅' : '❌'}</div>
+        <div><strong>State:</strong> {connectionState.initializationState}</div>
+        <div><strong>Tab Visible:</strong> {connectionState.isTabVisible ? '✅' : '❌'}</div>
+        <div><strong>Suspended:</strong> {connectionState.isConnectionSuspended ? '❌' : '✅'}</div>
+        <div><strong>Has Promise:</strong> {connectionState.hasInitializationPromise ? '✅' : '❌'}</div>
+      </div>
+    {:else}
+      <div class="text-gray-500">No connection state available</div>
+    {/if}
+  </div>
   
   <div class="grid grid-cols-2 gap-4 mb-8">
     <div class="bg-white p-4 rounded-lg shadow">

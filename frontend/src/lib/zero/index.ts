@@ -1,5 +1,5 @@
 // Zero client and configuration exports
-export { initZero, getZero, closeZero } from './client';
+export { initZero, getZero, getZeroAsync, getZeroState, closeZero, reinitializeZero } from './client';
 export { schema, type ZeroClient } from './generated-schema';
 
 // Zero reactive hooks for Svelte
