@@ -198,7 +198,7 @@ currentJob.title = 'Updated title';
 
 ```javascript
 // Custom rune for Zero queries
-function zeroQuery(queryFn) {
+function fZero(queryFn) {
   const view = queryFn().materialize();
   const data = $state(null);
   const loading = $state(true);
@@ -222,7 +222,7 @@ function zeroQuery(queryFn) {
 }
 
 // Usage in Svelte component
-const jobs = zeroQuery(() => zero.query.jobs.orderBy('created_at', 'desc'));
+const jobs = fZero(() => zero.query.jobs.orderBy('created_at', 'desc'));
 ```
 
 ### Reactive Model Integration
