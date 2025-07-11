@@ -4,7 +4,7 @@ require_relative "rails_schema_introspector"
 require_relative "type_mapper"
 
 module ZeroSchemaGenerator
-  class ZeroSchemaGenerator
+  class Generator
     def initialize(config = {})
       @config = config
       @introspector = RailsSchemaIntrospector.new

@@ -3,13 +3,13 @@
 module ZeroSchemaGenerator
   autoload :RailsSchemaIntrospector, "zero_schema_generator/rails_schema_introspector"
   autoload :TypeMapper, "zero_schema_generator/type_mapper"
-  autoload :ZeroSchemaGenerator, "zero_schema_generator/zero_schema_generator"
+  autoload :Generator, "zero_schema_generator/generator"
   autoload :Config, "zero_schema_generator/config"
 
   class << self
     def generate_schema(config_path: nil)
       config = Config.load_from_file(config_path)
-      generator = ZeroSchemaGenerator.new(config.to_hash["zero_generator"])
+      generator = Generator.new(config.to_hash["zero_generator"])
       generator.generate_schema
     end
 
@@ -25,7 +25,7 @@ module ZeroSchemaGenerator
       end
 
       schema_content = File.read(schema_path)
-      ZeroSchemaGenerator.validate_schema(schema_content)
+      Generator.validate_schema(schema_content)
     end
 
     def create_sample_config(output_path = nil)
