@@ -3,7 +3,10 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onDestroy } from 'svelte';
-  import { useJobQuery } from '$lib/zero/jobs';
+  import { getZeroContext } from '$lib/zero-context.svelte';
+
+  // Get Zero functions from context
+  const { Job } = getZeroContext();
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
@@ -14,7 +17,7 @@
   $: console.log('[JobPage] Job ID from URL params:', jobId);
 
   // Use Zero query for real-time job data with all relationships
-  $: jobQuery = useJobQuery(jobId, !!jobId);
+  $: jobQuery = Job.find(jobId);
 
   // Access Zero query result - Zero returns data directly in .value
   $: job = jobQuery.current || jobQuery.value;

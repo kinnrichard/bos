@@ -7,26 +7,26 @@
 // 📚 Docs: https://zero.rocicorp.dev/docs/mutations
 
 
-import { getZero } from './client';
+import { getZero } from '../zero-client';
 
-// Custom mutations for contact_methods
+// Custom mutations for clients
 // Add your custom business logic here
 
 // Example: Status transition with business logic
-// export async function transitionContactMethodStatus(
+// export async function transitionClientStatus(
 //   id: string, 
-//   newStatus: 'phone' | 'email' | 'address'
+//   newStatus: 'residential' | 'business'
 // ) {
 //   // Add validation logic here
 //   // Check current status, validate transition
 //   
-//   return updateContactMethod(id, { contact_type: newStatus });
+//   return updateClient(id, { client_type: newStatus });
 // }
 
 
 // Example: Custom validation mutation
-// export async function validateAndUpdateContactMethod(id: string, data: any) {
+// export async function validateAndUpdateClient(id: string, data: any) {
 //   // Add custom validation logic
 //   // Then call standard update
-//   return updateContactMethod(id, data);
+//   return updateClient(id, data);
 // }

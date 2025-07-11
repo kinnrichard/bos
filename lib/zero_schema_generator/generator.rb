@@ -160,14 +160,14 @@ module ZeroSchemaGenerator
       tables.each do |table|
         table_def = generate_table_definition(table)
         table_definitions << table_def
-        table_names << table[:name].singularize
+        table_names << table[:name]
       end
 
       relationships.select(&:present?).each do |relationship_data|
         rel_def = generate_relationship_definition(relationship_data, table_names)
         if rel_def
           relationship_definitions << rel_def
-          relationship_names << "#{relationship_data[:table].singularize}Relationships"
+          relationship_names << "#{relationship_data[:table]}Relationships"
         end
       end
 
@@ -177,7 +177,7 @@ module ZeroSchemaGenerator
     def generate_table_definition(table)
       columns = generate_columns(table)
       primary_key = table[:primary_key] || "id"
-      table_name = table[:name].singularize
+      table_name = table[:name]
 
       <<~TYPESCRIPT
         // #{table[:name].humanize} table
@@ -206,7 +206,7 @@ module ZeroSchemaGenerator
     end
 
     def generate_relationship_definition(relationship_data, table_names)
-      table_name = relationship_data[:table].singularize
+      table_name = relationship_data[:table]
       belongs_to_rels = relationship_data[:belongs_to] || []
       has_many_rels = relationship_data[:has_many] || []
 
@@ -222,19 +222,19 @@ module ZeroSchemaGenerator
           # Handle polymorphic associations with multiple target relationships
           polymorphic_rels = generate_polymorphic_relationships(rel, table_names)
           relationships.concat(polymorphic_rels)
-        elsif rel[:target_table] && table_names.include?(rel[:target_table].singularize)
+        elsif rel[:target_table] && table_names.include?(rel[:target_table])
           rel_name = rel[:name].to_s.camelize(:lower)
-          relationships << generate_one_relationship(rel_name, rel[:foreign_key], rel[:target_table].singularize)
+          relationships << generate_one_relationship(rel_name, rel[:foreign_key], rel[:target_table])
         end
       end
 
       # Generate has_many relationships (many)
       has_many_rels.each do |rel|
-        next unless rel[:target_table] && table_names.include?(rel[:target_table].singularize)
+        next unless rel[:target_table] && table_names.include?(rel[:target_table])
         next if rel[:through] # Skip through relationships for now
 
         rel_name = rel[:name].to_s.camelize(:lower)
-        relationships << generate_many_relationship(rel_name, rel[:foreign_key], rel[:target_table].singularize)
+        relationships << generate_many_relationship(rel_name, rel[:foreign_key], rel[:target_table])
       end
 
       # Add self-referential children relationship if we have a parent relationship

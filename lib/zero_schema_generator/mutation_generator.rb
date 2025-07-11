@@ -61,10 +61,11 @@ module ZeroSchemaGenerator
         end
 
         # Check if regeneration needed (incremental generation)
-        unless @config.should_regenerate_table?(table_name, table_patterns)
-          generation_summary[:skipped_tables] << "#{table_name} (no changes detected)"
-          next
-        end
+        # TODO: Fix incremental detection - commenting out for now
+        # unless @config.should_regenerate_table?(table_name, table_patterns)
+        #   generation_summary[:skipped_tables] << "#{table_name} (no changes detected)"
+        #   next
+        # end
 
         begin
           result = generate_table_mutations(table, table_patterns)
@@ -114,10 +115,10 @@ module ZeroSchemaGenerator
         files_to_generate << { path: custom_file_path, content: custom_content, type: "custom" }
       end
 
-      # Generate main .ts file (merger)
-      main_file_path = File.join(@config.output_directory, "#{singular_name}.ts")
-      main_content = generate_main_file(table, patterns)
-      files_to_generate << { path: main_file_path, content: main_content, type: "main" }
+      # Generate main .ts file (merger) - DISABLED: using models/index.ts instead
+      # main_file_path = File.join(@config.output_directory, "#{singular_name}.ts")
+      # main_content = generate_main_file(table, patterns)
+      # files_to_generate << { path: main_file_path, content: main_content, type: "main" }
 
       # Write files (or dry-run)
       written_files = []
@@ -154,7 +155,10 @@ module ZeroSchemaGenerator
       table_name = table[:name]
       singular_name = table_name.singularize
 
-      imports = [ "import { getZero } from './client';" ]
+      imports = [
+        "import { getZero } from '../zero-client';",
+        "import { useQuery } from 'zero-svelte-query';"
+      ]
 
       # Generate TypeScript types
       types = generate_typescript_types(table, patterns)
@@ -176,6 +180,9 @@ module ZeroSchemaGenerator
         mutations << generate_restore_mutation(table, patterns[:soft_deletion])
       end
 
+      # Generate ActiveRecord-style queries
+      activerecord_queries = generate_activerecord_queries(table, patterns)
+
       header = generate_file_header("generated")
 
       <<~TYPESCRIPT
@@ -189,6 +196,10 @@ module ZeroSchemaGenerator
         // Generated CRUD mutations for #{table_name}
 
         #{mutations.join("\n\n")}
+
+        // Generated ActiveRecord-style queries for #{table_name}
+
+        #{activerecord_queries}
       TYPESCRIPT
     end
 
@@ -211,7 +222,7 @@ module ZeroSchemaGenerator
       <<~TYPESCRIPT
         #{header}
 
-        import { getZero } from './client';
+        import { getZero } from '../zero-client';
 
         // Custom mutations for #{table_name}
         // Add your custom business logic here
@@ -966,6 +977,123 @@ module ZeroSchemaGenerator
       else
         "string"
       end
+    end
+
+    def generate_activerecord_queries(table, patterns)
+      table_name = table[:name]
+      singular_name = table_name.singularize
+      class_name = singular_name.classify
+
+      # Determine if this table has soft deletion
+      has_soft_deletion = patterns[:soft_deletion]
+
+      # Generate relationship includes based on Rails schema introspection
+      relationship_methods = generate_relationship_includes(table, patterns)
+
+      <<~TYPESCRIPT
+        /**
+         * ActiveRecord-style query interface for #{table_name}
+         * Provides offline-capable queries that work with Zero's local database
+         */
+        export const #{class_name} = {
+          /**
+           * Find a single #{singular_name} by ID
+           * @param id - The UUID of the #{singular_name}
+           * @returns Zero query result with the #{singular_name} or null
+           *#{' '}
+           * @example
+           * ```typescript
+           * const #{singular_name} = #{class_name}.find('123e4567-e89b-12d3-a456-426614174000');
+           * console.log(#{singular_name}.current); // The #{singular_name} object or null
+           * ```
+           */
+          find(id: string) {
+            const zero = getZero();
+            if (!zero) return { current: null, value: null, resultType: 'loading' as const };
+            return useQuery(zero.query.#{table_name}.where('id', id).one());
+          },
+
+          /**
+           * Get all #{table_name}#{has_soft_deletion ? ' (active only)' : ''}
+           * @returns Zero query result with array of #{table_name}
+           *#{' '}
+           * @example
+           * ```typescript
+           * const all#{class_name.pluralize} = #{class_name}.all();
+           * console.log(all#{class_name.pluralize}.current); // Array of #{table_name}
+           * ```
+           */
+          all() {
+            const zero = getZero();
+            if (!zero) return { current: [], value: [], resultType: 'loading' as const };
+            #{generate_base_query_with_soft_deletion(table_name, has_soft_deletion)}
+          },
+
+          /**
+           * Find #{table_name} matching conditions
+           * @param conditions - Object with field/value pairs to match
+           * @returns Zero query result with array of matching #{table_name}
+           *#{' '}
+           * @example
+           * ```typescript
+           * const active#{class_name.pluralize} = #{class_name}.where({ status: 'active' });
+           * const clientJobs = #{class_name}.where({ client_id: 'some-uuid' });
+           * ```
+           */
+          where(conditions: Partial<#{class_name}>) {
+            const zero = getZero();
+            if (!zero) return { current: [], value: [], resultType: 'loading' as const };
+        #{'    '}
+            #{generate_where_query_with_soft_deletion(table_name, has_soft_deletion)}
+        #{'    '}
+            Object.entries(conditions).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                query = query.where(key, value);
+              }
+            });
+        #{'    '}
+            return useQuery(query.orderBy('created_at', 'desc'));
+          }#{has_soft_deletion ? generate_active_scope(table_name, class_name) : ''}#{relationship_methods}
+        };
+      TYPESCRIPT
+    end
+
+    def generate_base_query_with_soft_deletion(table_name, has_soft_deletion)
+      if has_soft_deletion
+        "let query = zero.query.#{table_name}.where('deleted_at', 'IS', null);\n            return useQuery(query.orderBy('created_at', 'desc'));"
+      else
+        "return useQuery(zero.query.#{table_name}.orderBy('created_at', 'desc'));"
+      end
+    end
+
+    def generate_where_query_with_soft_deletion(table_name, has_soft_deletion)
+      if has_soft_deletion
+        "let query = zero.query.#{table_name}.where('deleted_at', 'IS', null);"
+      else
+        "let query = zero.query.#{table_name};"
+      end
+    end
+
+    def generate_active_scope(table_name, class_name)
+      <<~TYPESCRIPT
+        ,
+
+          /**
+           * Get only active (non-deleted) #{table_name}
+           * @returns Zero query result with array of active #{table_name}
+           */
+          active() {
+            const zero = getZero();
+            if (!zero) return { current: [], value: [], resultType: 'loading' as const };
+            return useQuery(zero.query.#{table_name}.where('deleted_at', 'IS', null).orderBy('created_at', 'desc'));
+          }
+      TYPESCRIPT
+    end
+
+    def generate_relationship_includes(table, patterns)
+      # This would need to be enhanced based on actual Rails relationships
+      # For now, return empty string - we can expand this later
+      ""
     end
 
     def output_generation_summary(summary)

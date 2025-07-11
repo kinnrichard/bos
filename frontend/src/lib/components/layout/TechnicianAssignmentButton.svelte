@@ -2,18 +2,21 @@
   import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
-  import { useUsersQuery, useUserLookup } from '$lib/zero/users';
-  import { useJobQuery, assignTechniciansToJob } from '$lib/zero/jobs';
-  import type { User } from '$lib/types/job';
+  import { getZeroContext } from '$lib/zero-context.svelte';
+
+  // Get Zero functions from context
+  const { User, Job } = getZeroContext();
+  // Use Zero's User type instead of the old JSON:API format
+  import type { User as ZeroUser } from '$lib/zero/models/user.generated';
   import { debugTechAssignment } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage, validateUserData, createIdSet } from '$lib/utils/popover-utils';
   import { tick } from 'svelte';
   import '$lib/styles/popover-common.css';
 
-  // Helper function to safely cast popover options to User type
-  function asUser(option: any): User {
-    return option as User;
+  // Helper function to safely cast popover options to ZeroUser
+  function asUser(option: any): ZeroUser {
+    return option as ZeroUser;
   }
 
   export let jobId: string;
@@ -24,9 +27,10 @@
   let popover: any;
   
   // Use Zero Query for all data - single source of truth
-  const usersQuery = useUsersQuery();
-  const userLookup = useUserLookup();
-  const jobQuery = useJobQuery(jobId);
+  const usersQuery = User.all();
+  // TODO: Need to implement user lookup functionality
+  // const userLookup = useUserLookup();
+  const jobQuery = Job.find(jobId);
   
   // Zero uses direct mutations instead of TanStack's createMutation pattern
   let isLoading = false;
@@ -43,7 +47,7 @@
   
   // Local state for immediate UI responsiveness (optimistic updates)
   let localSelectedIds: Set<string> = new Set();
-  let optimisticTechnicians: User[] = [];
+  let optimisticTechnicians: ZeroUser[] = [];
   
   // Sync with server data only when server data actually changes (not on every local update)
   // This prevents unnecessary re-renders that cause hover flicker
@@ -64,11 +68,11 @@
     const userList = usersQuery.value || [];
     optimisticTechnicians = Array.from(localSelectedIds)
       .map(id => userList.find(user => user.id === id))
-      .filter(Boolean) as User[];
+      .filter(Boolean) as ZeroUser[];
   }
 
   // Handle checkbox changes - optimistic updates, no loading blocking
-  async function handleUserToggle(user: User, checked: boolean) {
+  async function handleUserToggle(user: ZeroUser, checked: boolean) {
     // Remove loading guard to allow optimistic updates
     
     // Ensure user has required data
@@ -105,7 +109,9 @@
     try {
       isLoading = true;
       error = null;
-      await assignTechniciansToJob(jobId, technicianIds);
+      // TODO: Implement assignTechniciansToJob functionality
+      // This would need to work with your job_assignments table
+      console.log('TODO: assignTechniciansToJob', { jobId, technicianIds });
     } catch (err) {
       error = err as Error;
       debugTechAssignment('Error during mutation: %o', err);

@@ -1,7 +1,10 @@
 <script lang="ts">
   import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
-  import { updateJobStatus } from '$lib/zero/jobs';
+  import { getZeroContext } from '$lib/zero-context.svelte';
+
+  // Get Zero functions from context
+  const { updateJob } = getZeroContext();
   import { layout } from '$lib/stores/layout.svelte';
   import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
@@ -38,8 +41,8 @@
       isLoading = true;
       error = null;
       
-      // Use Zero's direct async function
-      await updateJobStatus(layout.currentJob.id, newStatus);
+      // Use Zero's updateJob with status field
+      await updateJob(layout.currentJob.id, { status: newStatus });
       
       // Zero automatically updates the UI in real-time
       // Close popover

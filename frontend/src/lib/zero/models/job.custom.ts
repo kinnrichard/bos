@@ -7,26 +7,26 @@
 // 📚 Docs: https://zero.rocicorp.dev/docs/mutations
 
 
-import { getZero } from './client';
+import { getZero } from '../zero-client';
 
-// Custom mutations for users
+// Custom mutations for jobs
 // Add your custom business logic here
 
 // Example: Status transition with business logic
-// export async function transitionUserStatus(
+// export async function transitionJobStatus(
 //   id: string, 
-//   newStatus: 'admin' | 'technician' | 'customer_specialist' | 'owner'
+//   newStatus: 'open' | 'in_progress' | 'paused' | 'waiting_for_customer' | 'waiting_for_scheduled_appointment' | 'successfully_completed' | 'cancelled'
 // ) {
 //   // Add validation logic here
 //   // Check current status, validate transition
 //   
-//   return updateUser(id, { role: newStatus });
+//   return updateJob(id, { status: newStatus });
 // }
 
 
 // Example: Custom validation mutation
-// export async function validateAndUpdateUser(id: string, data: any) {
+// export async function validateAndUpdateJob(id: string, data: any) {
 //   // Add custom validation logic
 //   // Then call standard update
-//   return updateUser(id, data);
+//   return updateJob(id, data);
 // }

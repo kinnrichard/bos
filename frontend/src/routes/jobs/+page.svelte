@@ -1,7 +1,10 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { browser } from '$app/environment';
-  import { useJobsQuery } from '$lib/zero/jobs';
+  import { getZeroContext } from '$lib/zero-context.svelte';
+
+  // Get Zero functions from context - no imports needed!
+  const { Job } = getZeroContext();
   
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobCard from '$lib/components/jobs/JobCard.svelte';
@@ -14,15 +17,12 @@
   $: status = url.searchParams.get('status') as JobStatus | undefined;
   $: priority = url.searchParams.get('priority') as JobPriority | undefined;
 
-  // Use Zero query for real-time job data
-  $: jobsQuery = useJobsQuery({
-    status: status,
-  });
+  // Use Zero ActiveRecord-style queries for real-time job data
+  $: jobsQuery = Job.all();
 
-  // Access Zero query result - Zero returns data directly in .value
-  $: allJobs = jobsQuery.value || [];
-  $: isLoading = !jobsQuery.value && browser; // Loading if no data and in browser
-  $: error = null; // Zero handles errors internally
+  // Access Zero query result - Zero returns data directly in .current
+  $: allJobs = jobsQuery.current || [];
+  $: isLoading = jobsQuery.resultType === 'loading' && browser;
   
   // Filter jobs by scope if needed (since Zero query doesn't have scope filter)
   $: filteredJobs = allJobs.filter(job => {

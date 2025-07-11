@@ -1,7 +1,10 @@
 <script>
   import { onMount } from 'svelte';
-  import { getZeroAsync, getZeroState, initZero } from '$lib/zero/client';
-  import { useClientsQuery } from '$lib/zero/clients';
+  import { getZeroAsync, getZeroState, initZero } from '$lib/zero';
+  import { getZeroContext } from '$lib/zero-context.svelte';
+
+  // Get Zero functions from context
+  const { Client } = getZeroContext();
   import { browser } from '$app/environment';
   
   let testResults = {
@@ -88,7 +91,7 @@
       // Test 3: Basic queries
       log('🔍 Testing query construction...');
       try {
-        const clientsQuery = useClientsQuery();
+        const clientsQuery = Client.all();
         log(`✅ Clients query: ${clientsQuery ? 'constructed' : 'failed'}`);
         
         testResults.queries = 'success';

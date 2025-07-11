@@ -5,8 +5,8 @@
   ],
   "excludePatterns": {},
   "customNaming": {},
-  "outputDirectory": "/Users/claude/code/bos/frontend/src/lib/zero",
-  "dryRun": true,
+  "outputDirectory": "/Users/claude/code/bos/frontend/src/lib/zero/models",
+  "dryRun": false,
   "forceGeneration": true,
   "incrementalGeneration": true
 }

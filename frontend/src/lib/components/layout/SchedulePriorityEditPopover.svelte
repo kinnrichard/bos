@@ -4,7 +4,10 @@
   import FormSelect from '$lib/components/ui/FormSelect.svelte';
   import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
   import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
-  import { useJobQuery, updateJob } from '$lib/zero/jobs';
+  import { getZeroContext } from '$lib/zero-context.svelte';
+
+  // Get Zero functions from context
+  const { Job, updateJob } = getZeroContext();
   import type { PopulatedJob } from '$lib/types/job';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
@@ -15,7 +18,7 @@
   let popover: any;
   
   // Zero query for real-time job data
-  const jobQuery = useJobQuery(jobId, !!jobId);
+  const jobQuery = Job.find(jobId);
 
   // Local state for Zero mutation management
   let isLoading = false;

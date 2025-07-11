@@ -7,16 +7,16 @@
 // 📚 Docs: https://zero.rocicorp.dev/docs/mutations
 
 
-import { getZero } from './client';
+import { getZero } from '../zero-client';
 
-// Custom mutations for activity_logs
+// Custom mutations for job_targets
 // Add your custom business logic here
 
 
 
 // Example: Custom validation mutation
-// export async function validateAndUpdateActivityLog(id: string, data: any) {
+// export async function validateAndUpdateJobTarget(id: string, data: any) {
 //   // Add custom validation logic
 //   // Then call standard update
-//   return updateActivityLog(id, data);
+//   return updateJobTarget(id, data);
 // }
