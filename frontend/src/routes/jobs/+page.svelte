@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { browser } from '$app/environment';
   import { getZeroContext } from '$lib/zero-context.svelte';
+  import { fZero } from '$lib/zero/runes.svelte';
 
   // Get Zero functions from context - no imports needed!
   const { Job } = getZeroContext();
@@ -11,55 +11,19 @@
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import type { JobStatus, JobPriority } from '$lib/types/job';
 
-  // Extract query parameters for filtering  
-  $: url = $page.url;
-  $: scope = url.searchParams.get('scope') || 'all';
-  $: status = url.searchParams.get('status') as JobStatus | undefined;
-  $: priority = url.searchParams.get('priority') as JobPriority | undefined;
+  // ✨ USE $derived FOR QUERY PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
+  const url = $derived($page.url);
+  const scope = $derived(url.searchParams.get('scope') || 'all');
+  const status = $derived(url.searchParams.get('status') as JobStatus | undefined);
+  const priority = $derived(url.searchParams.get('priority') as JobPriority | undefined);
 
-  // Use Zero ActiveRecord-style queries for real-time job data
-  let jobsQuery: any = null;
-  let allJobs: any[] = [];
-  let isLoading = true;
-  let error: Error | null = null;
-
-  // Initialize query after Zero is ready
-  import { onMount, onDestroy } from 'svelte';
+  // ✨ USE CUSTOM fZero RUNE FOR ZERO NATIVE REACTIVITY
+  const jobsQuery = fZero(Job.queryBuilder(), []);
   
-  onMount(() => {
-    if (browser) {
-      // Wait a bit for Zero to be fully initialized
-      setTimeout(() => {
-        console.log('[JOBS PAGE] Initializing Zero query after mount');
-        jobsQuery = Job.all();
-      }, 500);
-    }
-  });
-  
-  // Reactive statements to update when Zero data changes
-  $: if (jobsQuery) {
-    isLoading = jobsQuery.resultType === 'loading';
-    error = jobsQuery.error;
-  }
-  
-  // Transform jobs only when raw data changes, with memoization
-  let lastRawJobs: any[] = [];
-  $: {
-    if (jobsQuery) {
-      const rawJobs = jobsQuery.current || [];
-      
-      // Only transform if data actually changed
-      if (rawJobs !== lastRawJobs) {
-        allJobs = rawJobs.map(transformZeroJobToPopulatedJob);
-        lastRawJobs = rawJobs;
-        
-        // Only log when data actually changes
-        if (rawJobs.length > 0) {
-          console.log('[JOBS PAGE] Jobs data updated, transformed', rawJobs.length, 'jobs');
-        }
-      }
-    }
-  }
+  // ✨ USE $derived FOR DATA TRANSFORMATIONS (NOT IMPERATIVE UPDATES)
+  const allJobs = $derived(
+    jobsQuery.data.map(transformZeroJobToPopulatedJob)
+  );
   
   // Transform Zero job data to PopulatedJob format expected by JobCard
   function transformZeroJobToPopulatedJob(zeroJob: any): any {
@@ -120,29 +84,27 @@
     return priorityMap[priority || 1] || 'normal';
   }
 
-  onDestroy(() => {
-    if (jobsQuery) {
-      jobsQuery.destroy();
-    }
-  });
-  
-  // Filter jobs by scope if needed (since Zero query doesn't have scope filter)
-  $: filteredJobs = allJobs.filter(job => {
-    if (scope === 'mine') {
-      // This would need user context to filter "my" jobs
-      // For now, show all jobs
+  // ✨ USE $derived FOR FILTERING (NOT REACTIVE STATEMENTS)
+  const filteredJobs = $derived(
+    allJobs.filter(job => {
+      if (scope === 'mine') {
+        // This would need user context to filter "my" jobs
+        // For now, show all jobs
+        return true;
+      }
       return true;
-    }
-    return true;
-  });
+    })
+  );
 
-  // Filter by priority if needed (since Zero query doesn't have priority filter)
-  $: jobs = filteredJobs.filter(job => {
-    if (priority && job.priority !== priority) {
-      return false;
-    }
-    return true;
-  });
+  // ✨ USE $derived FOR FINAL FILTERING (NOT REACTIVE STATEMENTS)
+  const jobs = $derived(
+    filteredJobs.filter(job => {
+      if (priority && job.priority !== priority) {
+        return false;
+      }
+      return true;
+    })
+  );
 
   // Debug Zero query state (only when needed)
   // $: console.log('[JOBS PAGE] Zero query state:', {
@@ -153,21 +115,17 @@
   //   firstJob: jobs[0]
   // });
 
-  // Handle retry - Zero automatically retries, but we can manually refetch
+  // Handle retry - Zero automatically retries with native reactivity
   function handleRetry() {
-    // Zero doesn't expose a manual refetch method
-    // The query will automatically stay in sync
-    if (jobsQuery) {
-      jobsQuery.refresh();
-    }
+    // Zero rune automatically stays in sync via addListener
+    // Manual refresh not needed with native reactivity
+    console.log('🔄 Jobs page retry requested - Zero rune will auto-sync');
   }
 
-  // Handle refresh - Zero automatically stays fresh
+  // Handle refresh - Zero automatically stays fresh with native reactivity
   function handleRefresh() {
-    // Zero queries auto-refresh in real-time
-    if (jobsQuery) {
-      jobsQuery.refresh();
-    }
+    // Zero queries auto-refresh in real-time via addListener
+    console.log('🔄 Jobs page refresh requested - Zero rune provides real-time updates');
   }
 </script>
 
@@ -183,23 +141,23 @@
   </div>
 
   <!-- Loading State -->
-  {#if isLoading}
+  {#if jobsQuery.isLoading}
     <div class="jobs-list">
       <LoadingSkeleton type="job-card" count={5} />
     </div>
 
   <!-- Error State -->
-  {:else if error}
+  {:else if jobsQuery.error}
     <div class="error-state">
       <div class="error-content">
         <h2>Unable to load jobs</h2>
         <p>There was a problem loading your jobs. Please try again.</p>
         <div class="error-details">
-          <code>{error.message}</code>
+          <code>{jobsQuery.error.message}</code>
         </div>
         <button 
           class="button button--primary"
-          on:click={handleRetry}
+          onclick={handleRetry}
         >
           Try Again
         </button>

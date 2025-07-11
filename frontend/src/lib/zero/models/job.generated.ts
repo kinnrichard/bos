@@ -436,6 +436,23 @@ export const Job = {
       query.orderBy('created_at', 'desc'),
       [] as Job[]
     );
+  },
+
+  /**
+   * Get the raw Zero query builder for all jobs
+   * For use with custom reactive patterns like fZero rune
+   * @returns Zero query builder
+   * 
+   * @example
+   * ```typescript
+   * const jobsQuery = fZero(Job.queryBuilder());
+   * ```
+   */
+  queryBuilder() {
+    const zero = getZero();
+    if (!zero) return null;
+    
+    return zero.query.jobs.orderBy('created_at', 'desc');
   }
 };
 

@@ -35,10 +35,9 @@ export function fZero<T>(queryBuilder: any, defaultValue: T[] = [] as T[]) {
     let removeListener: (() => void) | null = null;
     
     try {
-      // Check if Zero is ready
-      const zero = getZero();
-      if (!zero) {
-        console.log('🔍 fZero: Zero not ready, waiting...');
+      // Check if queryBuilder is available
+      if (!queryBuilder) {
+        console.log('🔍 fZero: Query builder not ready, waiting...');
         isLoading = true;
         error = null;
         return;
@@ -123,10 +122,9 @@ export function fZeroOne<T>(queryBuilder: any, defaultValue: T | null = null) {
     let removeListener: (() => void) | null = null;
     
     try {
-      // Check if Zero is ready
-      const zero = getZero();
-      if (!zero) {
-        console.log('🔍 fZeroOne: Zero not ready, waiting...');
+      // Check if queryBuilder is available
+      if (!queryBuilder) {
+        console.log('🔍 fZeroOne: Query builder not ready, waiting...');
         isLoading = true;
         error = null;
         return;

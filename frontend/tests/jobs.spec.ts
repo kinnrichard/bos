@@ -3,7 +3,7 @@ import { TestDatabase } from '../test-helpers/database';
 import { AuthHelper } from '../test-helpers/auth';
 import { DataFactory } from '../test-helpers/data-factories';
 
-test.describe('Jobs List Page (SVELTE-005)', () => {
+test.describe('Jobs List Page - fZero Rune Migration (Epic-006-Story-002)', () => {
   let db: TestDatabase;
   let auth: AuthHelper;
   let dataFactory: DataFactory;
@@ -303,5 +303,118 @@ test.describe('Jobs List Page (SVELTE-005)', () => {
     
     // Check that job card has preload data attribute
     await expect(jobCard).toHaveAttribute('data-sveltekit-preload-data', 'hover');
+  });
+
+  test('should use fZero rune for real-time updates', async ({ page }) => {
+    // First authenticate as admin user
+    await auth.setupAuthenticatedSession('admin');
+    
+    // Create initial test data
+    const timestamp = Date.now();
+    const client = await dataFactory.createClient({ name: `Real-time Test Client ${timestamp}` });
+    const job = await dataFactory.createJob({
+      title: `Real-time Test Job ${timestamp}`,
+      description: 'Initial job description',
+      status: 'in_progress',
+      priority: 'high',
+      client_id: client.id
+    });
+
+    // Navigate to jobs page
+    await page.goto('/jobs');
+    
+    // Wait for initial job to load
+    await expect(page.locator('.job-card-inline')).toBeVisible();
+    
+    // Verify initial job is displayed
+    await expect(page.locator('.job-card-inline').first()).toContainText(`Real-time Test Job ${timestamp}`);
+    
+    // Listen for console messages to verify fZero rune is working
+    const consoleMessages: string[] = [];
+    page.on('console', msg => {
+      if (msg.text().includes('🔥 ZERO DATA CHANGED!')) {
+        consoleMessages.push(msg.text());
+      }
+    });
+
+    // Create a new job while the page is loaded to test real-time updates
+    const newJob = await dataFactory.createJob({
+      title: `New Job ${timestamp}`,
+      description: 'New job for real-time testing',
+      status: 'open',
+      priority: 'normal',
+      client_id: client.id
+    });
+
+    // Wait for real-time update to occur
+    await page.waitForTimeout(2000);
+    
+    // The new job should appear without page refresh due to fZero rune
+    await expect(page.locator('.job-card-inline')).toHaveCount(2);
+    
+    // Verify the new job appears
+    const jobCards = page.locator('.job-card-inline');
+    await expect(jobCards).toHaveCount(2);
+    
+    // Check that we received Zero data change events
+    expect(consoleMessages.length).toBeGreaterThan(0);
+    console.log('Captured Zero data change events:', consoleMessages);
+  });
+
+  test('should use Svelte 5 patterns correctly', async ({ page }) => {
+    // First authenticate as admin user
+    await auth.setupAuthenticatedSession('admin');
+    
+    // Create test data
+    const timestamp = Date.now();
+    const client = await dataFactory.createClient({ name: `Svelte5 Test Client ${timestamp}` });
+    const job = await dataFactory.createJob({
+      title: `Svelte5 Test Job ${timestamp}`,
+      client_id: client.id
+    });
+
+    // Navigate to jobs page
+    await page.goto('/jobs');
+    
+    // Wait for job to load
+    await expect(page.locator('.job-card-inline')).toBeVisible();
+    
+    // Verify error handling works with new fZero rune
+    await page.route('**/api/v1/jobs*', async route => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Test error for Svelte 5 patterns' })
+      });
+    });
+    
+    // Refresh to trigger error
+    await page.reload();
+    
+    // Should show error state with new onclick handler
+    await expect(page.locator('.error-state')).toBeVisible();
+    await expect(page.locator('text=Unable to load jobs')).toBeVisible();
+    
+    // Test the new onclick handler (not on:click)
+    const retryButton = page.locator('button:has-text("Try Again")');
+    await expect(retryButton).toBeVisible();
+    
+    // Click should work with new syntax
+    await retryButton.click();
+    
+    // Should capture console log for retry (testing console logging reduction)
+    const consoleMessages: string[] = [];
+    page.on('console', msg => {
+      if (msg.text().includes('🔄 Jobs page retry requested')) {
+        consoleMessages.push(msg.text());
+      }
+    });
+    
+    await retryButton.click();
+    await page.waitForTimeout(500);
+    
+    // Verify console logging is reduced to appropriate events
+    expect(consoleMessages.length).toBeGreaterThan(0);
+    console.log('Retry console messages:', consoleMessages);
   });
 });

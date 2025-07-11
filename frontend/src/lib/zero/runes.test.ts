@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { fZero, fZeroOne } from './runes';
+import { fZero, fZeroOne } from './runes.svelte';
 
 // Mock the Zero client
 const mockZeroClient = {
