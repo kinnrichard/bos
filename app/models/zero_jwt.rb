@@ -13,13 +13,13 @@ class ZeroJwt
     }
 
     # Use the same secret as zero-config.json
-    secret = ENV["ZERO_AUTH_SECRET"] || "dev-secret-change-in-production"
+    secret = ENV["ZERO_AUTH_SECRET"] || "zerosecretkey_dev_only_change_in_production"
     JWT.encode(payload, secret)
   end
 
   def self.decode(token)
     # Use the same secret as zero-config.json
-    secret = ENV["ZERO_AUTH_SECRET"] || "dev-secret-change-in-production"
+    secret = ENV["ZERO_AUTH_SECRET"] || "zerosecretkey_dev_only_change_in_production"
     payload = JWT.decode(token, secret).first
     new(
       user_id: payload["sub"],

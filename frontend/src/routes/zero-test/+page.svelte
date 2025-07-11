@@ -4,18 +4,20 @@
   import { getZeroContext } from '$lib/zero-context.svelte';
 
   // Get Zero functions from context
-  const { Client } = getZeroContext();
+  const { Client, Job, User, Task } = getZeroContext();
   import { browser } from '$app/environment';
   
   let testResults = {
     initialization: 'pending',
     schema: 'pending',
     queries: 'pending',
-    relationships: 'pending'
+    relationships: 'pending',
+    rowCounts: 'pending'
   };
   
   let logs = [];
   let connectionState = null;
+  let tableRowCounts = {};
   
   function log(message) {
     logs = [...logs, `${new Date().toLocaleTimeString()}: ${message}`];
@@ -118,6 +120,37 @@
         log(`❌ Relationships test failed: ${error.message}`);
       }
       
+      // Test 5: Row Counts
+      log('📊 Testing row counts for each table...');
+      try {
+        const tableQueries = [
+          { name: 'clients', query: Client.all() },
+          { name: 'jobs', query: Job.all() },
+          { name: 'users', query: User.all() },
+          { name: 'tasks', query: Task.all() }
+        ];
+        
+        tableRowCounts = {};
+        
+        for (const { name, query } of tableQueries) {
+          try {
+            const result = query.current || [];
+            const count = Array.isArray(result) ? result.length : 0;
+            tableRowCounts[name] = count;
+            log(`📋 ${name}: ${count} rows`);
+          } catch (error) {
+            tableRowCounts[name] = `Error: ${error.message}`;
+            log(`❌ ${name}: Error getting count - ${error.message}`);
+          }
+        }
+        
+        testResults.rowCounts = 'success';
+        log('✅ Row counts test completed');
+      } catch (error) {
+        testResults.rowCounts = 'failed';
+        log(`❌ Row counts test failed: ${error.message}`);
+      }
+      
       log('🎉 Zero E2E Tests completed!');
       
       // Final state check
@@ -190,7 +223,32 @@
         <span class="capitalize">{testResults.relationships}</span>
       </div>
     </div>
+    
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="font-semibold mb-2">📊 Row Counts</h3>
+      <div class="flex items-center">
+        <div class="w-3 h-3 rounded-full mr-2 {testResults.rowCounts === 'success' ? 'bg-green-500' : testResults.rowCounts === 'failed' ? 'bg-red-500' : 'bg-yellow-500'}"></div>
+        <span class="capitalize">{testResults.rowCounts}</span>
+      </div>
+    </div>
   </div>
+  
+  <!-- Table Row Counts Section -->
+  {#if Object.keys(tableRowCounts).length > 0}
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+      <h3 class="font-semibold mb-4">📊 Table Row Counts</h3>
+      <div class="grid grid-cols-3 gap-4">
+        {#each Object.entries(tableRowCounts) as [tableName, count]}
+          <div class="bg-gray-50 p-3 rounded-lg">
+            <div class="font-medium text-sm text-gray-600 mb-1">{tableName}</div>
+            <div class="text-lg font-semibold {typeof count === 'number' ? (count > 0 ? 'text-green-600' : 'text-yellow-600') : 'text-red-600'}">
+              {typeof count === 'number' ? count.toLocaleString() : count}
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
   
   <div class="bg-gray-100 p-4 rounded-lg">
     <h3 class="font-semibold mb-3">📝 Test Logs</h3>

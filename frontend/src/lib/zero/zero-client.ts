@@ -1,6 +1,7 @@
 import { Zero } from '@rocicorp/zero';
 import { schema, type ZeroClient } from './generated-schema';
 import { browser } from '$app/environment';
+import { Job, Client, User, Task, ActivityLog, ContactMethod, JobTarget, Note, ScheduledDateTime } from './models';
 
 // Singleton state management
 let zero: ZeroClient | null = null;
@@ -231,6 +232,30 @@ async function performInitialization(): Promise<ZeroClient> {
     zero = new Zero(config);
     initializationState = 'success';
     logZero('Zero initialization completed successfully');
+    
+    // Expose to global window for debugging
+    if (typeof window !== 'undefined') {
+      (window as any).zero = zero;
+      (window as any).zeroDebug = {
+        getZero: () => zero,
+        getZeroState,
+        reinitializeZero,
+        closeZero,
+        initZero
+      };
+      // Expose ActiveRecord-style query functions
+      (window as any).Job = Job;
+      (window as any).Client = Client;
+      (window as any).User = User;
+      (window as any).Task = Task;
+      (window as any).ActivityLog = ActivityLog;
+      (window as any).ContactMethod = ContactMethod;
+      (window as any).JobTarget = JobTarget;
+      (window as any).Note = Note;
+      (window as any).ScheduledDateTime = ScheduledDateTime;
+      logZero('Zero client exposed to window.zero and window.zeroDebug');
+      logZero('ActiveRecord-style queries exposed: Job, Client, User, Task, etc.');
+    }
     
     return zero;
   } catch (error) {

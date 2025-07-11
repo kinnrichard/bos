@@ -23,6 +23,7 @@
   // Access Zero query result - Zero returns data directly in .current
   $: allJobs = jobsQuery.current || [];
   $: isLoading = jobsQuery.resultType === 'loading' && browser;
+  $: error = jobsQuery.error;
   
   // Filter jobs by scope if needed (since Zero query doesn't have scope filter)
   $: filteredJobs = allJobs.filter(job => {

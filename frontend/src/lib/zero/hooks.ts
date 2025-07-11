@@ -1,5 +1,5 @@
 import { useQuery } from 'zero-svelte-query';
-import { getZero } from './client';
+import { getZero } from './zero-client';
 import { browser } from '$app/environment';
 
 // Reactive Zero query hooks for Svelte components
