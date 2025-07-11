@@ -9,5 +9,4 @@ export { healthService, HealthService } from './health';
 // Export CSRF token manager
 export { csrfTokenManager } from './csrf';
 
-// Export query hooks
-export * from './hooks/jobs';
+// Export query hooks - removed, now using Zero queries

@@ -110,67 +110,83 @@ export function useJobsByClientQuery(clientId: string, enabled: boolean = true) 
  * Zero query hook for jobs by technician
  */
 export function useJobsByTechnicianQuery(technicianId: string, enabled: boolean = true) {
-  return subscriber(
-    () => enabled && technicianId ? getZero() : null,
-    (z) => z?.query.job_assignments
-      .where('user_id', technicianId)
-      .related('job', (job) => 
-        job.where('deleted_at', 'IS', null)
-           .related('client')
-           .related('tasks', (tasks) => 
-             tasks.where('deleted_at', 'IS', null)
-           )
-      )
-      .related('user')
-  );
+  if (!enabled || !technicianId) {
+    return { current: [], value: [], resultType: 'unknown' as const };
+  }
+  
+  const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
+  
+  return useQuery(zero.query.job_assignments
+    .where('user_id', technicianId)
+    .related('job', (job) => 
+      job.where('deleted_at', 'IS', null)
+         .related('client')
+         .related('tasks', (tasks) => 
+           tasks.where('deleted_at', 'IS', null)
+         )
+    )
+    .related('user'));
 }
 
 /**
  * Zero query hook for jobs by status
  */
 export function useJobsByStatusQuery(status: string, enabled: boolean = true) {
-  return subscriber(
-    () => enabled && status ? getZero() : null,
-    (z) => z?.query.jobs
-      .where('status', status)
-      .where('deleted_at', 'IS', null)
-      .related('client')
-      .related('jobAssignments', (assignments) => 
-        assignments.related('user')
-      )
-      .orderBy('created_at', 'desc')
-  );
+  if (!enabled || !status) {
+    return { current: [], value: [], resultType: 'unknown' as const };
+  }
+  
+  const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
+  
+  return useQuery(zero.query.jobs
+    .where('status', status)
+    .where('deleted_at', 'IS', null)
+    .related('client')
+    .related('jobAssignments', (assignments) => 
+      assignments.related('user')
+    )
+    .orderBy('created_at', 'desc'));
 }
 
 /**
  * Zero query hook for job statistics/counts
  */
 export function useJobStatsQuery() {
-  return subscriber(
-    () => getZero(),
-    (z) => z.query.jobs
-      .where('deleted_at', 'IS', null)
-      .related('tasks', (tasks) => 
-        tasks.where('deleted_at', 'IS', null)
-      )
-  );
+  const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
+  
+  return useQuery(zero.query.jobs
+    .where('deleted_at', 'IS', null)
+    .related('tasks', (tasks) => 
+      tasks.where('deleted_at', 'IS', null)
+    ));
 }
 
 /**
  * Zero query hook for recent jobs
  */
 export function useRecentJobsQuery(limit: number = 10) {
-  return subscriber(
-    () => getZero(),
-    (z) => z.query.jobs
-      .where('deleted_at', 'IS', null)
-      .related('client')
-      .related('jobAssignments', (assignments) => 
-        assignments.related('user')
-      )
-      .orderBy('updated_at', 'desc')
-      .limit(limit)
-  );
+  const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
+  
+  return useQuery(zero.query.jobs
+    .where('deleted_at', 'IS', null)
+    .related('client')
+    .related('jobAssignments', (assignments) => 
+      assignments.related('user')
+    )
+    .orderBy('updated_at', 'desc')
+    .limit(limit));
 }
 
 // Zero mutations for job operations

@@ -158,8 +158,7 @@ export async function updateJobTechnicians(jobId: string, technicianIds: string[
   
   // Get current assignments
   const currentAssignments = await zero.query.job_assignments
-    .where('job_id', jobId)
-    .run();
+    .where('job_id', jobId);
   
   // Remove assignments that are no longer needed
   for (const assignment of currentAssignments) {
