@@ -156,8 +156,7 @@ module ZeroSchemaGenerator
       singular_name = table_name.singularize
 
       imports = [
-        "import { getZero } from '../zero-client';",
-        "import { useQuery } from 'zero-svelte-query';"
+        "import { getZero } from '../zero-client';"
       ]
 
       # Generate TypeScript types
@@ -991,6 +990,68 @@ module ZeroSchemaGenerator
       relationship_methods = generate_relationship_includes(table, patterns)
 
       <<~TYPESCRIPT
+
+        // Zero reactive query wrapper using materialize() for active queries
+        // This creates active queries that populate Zero's cache and stay synchronized
+        function createReactiveQuery<T>(queryBuilder: any, defaultValue: T) {
+          let current = defaultValue;
+          let resultType: 'loading' | 'success' | 'error' = 'loading';
+          let error: Error | null = null;
+          let view: any = null;
+          let retryCount = 0;
+          const maxRetries = 3;
+
+          const execute = async () => {
+            try {
+              resultType = 'loading';
+        #{'      '}
+              // Check if Zero is ready
+              const zero = getZero();
+              if (!zero) {
+                setTimeout(() => execute(), 100);
+                return;
+              }
+        #{'      '}
+              // Create active query using materialize()
+              view = queryBuilder.materialize();
+              const result = await view.data;
+        #{'      '}
+              // If result is null and we haven't retried much, try again
+              if ((result === null || result === undefined) && retryCount < maxRetries) {
+                retryCount++;
+                setTimeout(() => execute(), 500);
+                return;
+              }
+        #{'      '}
+              current = result || defaultValue;
+              resultType = 'success';
+              error = null;
+              retryCount = 0;
+            } catch (err) {
+              error = err instanceof Error ? err : new Error('Unknown error');
+              resultType = 'error';
+        #{'      '}
+              // Retry on error if we haven't exceeded max retries
+              if (retryCount < maxRetries) {
+                retryCount++;
+                setTimeout(() => execute(), 1000);
+              }
+            }
+          };
+
+          // Execute after a small delay to let Zero initialize
+          setTimeout(() => execute(), 100);
+
+          return {
+            get current() { return current; },
+            get value() { return current; },
+            get resultType() { return resultType; },
+            get error() { return error; },
+            refresh: execute,
+            destroy: () => view?.destroy()
+          };
+        }
+
         /**
          * ActiveRecord-style query interface for #{table_name}
          * Provides offline-capable queries that work with Zero's local database
@@ -1009,8 +1070,12 @@ module ZeroSchemaGenerator
            */
           find(id: string) {
             const zero = getZero();
-            if (!zero) return { current: null, value: null, resultType: 'loading' as const };
-            return useQuery(zero.query.#{table_name}.where('id', id).one());
+            if (!zero) return { current: null, value: null, resultType: 'loading' as const, error: null };
+        #{'    '}
+            return createReactiveQuery(
+              zero.query.#{table_name}.where('id', id).one(),
+              null as #{class_name} | null
+            );
           },
 
           /**
@@ -1025,8 +1090,9 @@ module ZeroSchemaGenerator
            */
           all() {
             const zero = getZero();
-            if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-            #{generate_base_query_with_soft_deletion(table_name, has_soft_deletion)}
+            if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
+        #{'    '}
+            #{generate_base_query_with_soft_deletion(table_name, has_soft_deletion, class_name)}
           },
 
           /**
@@ -1042,7 +1108,7 @@ module ZeroSchemaGenerator
            */
           where(conditions: Partial<#{class_name}>) {
             const zero = getZero();
-            if (!zero) return { current: [], value: [], resultType: 'loading' as const };
+            if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
         #{'    '}
             #{generate_where_query_with_soft_deletion(table_name, has_soft_deletion)}
         #{'    '}
@@ -1052,17 +1118,20 @@ module ZeroSchemaGenerator
               }
             });
         #{'    '}
-            return useQuery(query.orderBy('created_at', 'desc'));
+            return createReactiveQuery(
+              query.orderBy('created_at', 'desc'),
+              [] as #{class_name}[]
+            );
           }#{has_soft_deletion ? generate_active_scope(table_name, class_name) : ''}#{relationship_methods}
         };
       TYPESCRIPT
     end
 
-    def generate_base_query_with_soft_deletion(table_name, has_soft_deletion)
+    def generate_base_query_with_soft_deletion(table_name, has_soft_deletion, class_name)
       if has_soft_deletion
-        "let query = zero.query.#{table_name}.where('deleted_at', 'IS', null);\n            return useQuery(query.orderBy('created_at', 'desc'));"
+        "return createReactiveQuery(\n              zero.query.#{table_name}.where('deleted_at', 'IS', null).orderBy('created_at', 'desc'),\n              [] as #{class_name}[]\n            );"
       else
-        "return useQuery(zero.query.#{table_name}.orderBy('created_at', 'desc'));"
+        "return createReactiveQuery(\n              zero.query.#{table_name}.orderBy('created_at', 'desc'),\n              [] as #{class_name}[]\n            );"
       end
     end
 
@@ -1084,8 +1153,12 @@ module ZeroSchemaGenerator
            */
           active() {
             const zero = getZero();
-            if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-            return useQuery(zero.query.#{table_name}.where('deleted_at', 'IS', null).orderBy('created_at', 'desc'));
+            if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
+        #{'    '}
+            return createReactiveQuery(
+              zero.query.#{table_name}.where('deleted_at', 'IS', null).orderBy('created_at', 'desc'),
+              [] as #{class_name}[]
+            );
           }
       TYPESCRIPT
     end
