@@ -84,7 +84,7 @@ export async function createUser(userData: {
   const zero = getZero();
   const id = crypto.randomUUID();
   const uuid = crypto.randomUUID();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.users.insert({
     id,
@@ -111,7 +111,7 @@ export async function updateUser(id: string, data: Partial<{
   resort_tasks_on_status_change: boolean;
 }>) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.users.update({
     id,
@@ -125,7 +125,7 @@ export async function updateUser(id: string, data: Partial<{
  */
 export async function deleteUser(id: string) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.users.update({
     id,
@@ -162,7 +162,7 @@ export async function updateJobTechnicians(jobId: string, technicianIds: string[
     if (!existingUserIds.includes(userId)) {
       const id = crypto.randomUUID();
       const uuid = crypto.randomUUID();
-      const now = new Date().toISOString();
+      const now = Date.now(); // Unix timestamp in milliseconds
       
       await zero.mutate.job_assignments.insert({
         id,

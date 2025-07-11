@@ -116,7 +116,7 @@ export async function createClient(clientData: {
 }) {
   const zero = getZero();
   const id = crypto.randomUUID();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
   
   // Create normalized name for consistent searching/sorting
   const name_normalized = clientData.name.toLowerCase().trim();
@@ -141,7 +141,7 @@ export async function updateClient(id: string, data: Partial<{
   client_type: string;
 }>) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
   
   const updateData: any = {
     id,

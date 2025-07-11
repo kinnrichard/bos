@@ -140,7 +140,7 @@ export async function createTask(taskData: {
   const zero = getZero();
   const id = crypto.randomUUID();
   const uuid = crypto.randomUUID();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
   
   // Get next position if not specified
   let position = taskData.position;
@@ -183,7 +183,7 @@ export async function updateTask(id: string, data: Partial<{
   due_date: string;
 }>) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   // Get current lock version for optimistic locking
   const currentTask = await zero.query.tasks.where('id', id).one();
@@ -207,7 +207,7 @@ export async function updateTask(id: string, data: Partial<{
  */
 export async function deleteTask(id: string) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.tasks.update({
     id,
@@ -221,7 +221,7 @@ export async function deleteTask(id: string) {
  */
 export async function restoreTask(id: string) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.tasks.update({
     id,
@@ -269,7 +269,7 @@ export async function reorderTasks(updates: Array<{
   position: number;
 }>) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   for (const update of updates) {
     const currentTask = await zero.query.tasks.where('id', update.id).one();
@@ -296,7 +296,7 @@ export async function batchMoveTasks(moves: Array<{
   position: number;
 }>) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   for (const move of moves) {
     const currentTask = await zero.query.tasks.where('id', move.id).one();
@@ -344,7 +344,7 @@ export async function duplicateTask(
   // Create new task
   const newTaskId = crypto.randomUUID();
   const newTaskUuid = crypto.randomUUID();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
   
   // Determine position
   const parentId = options.newParentId !== undefined ? options.newParentId : sourceTask.parent_id;

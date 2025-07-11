@@ -2,8 +2,8 @@
   import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
-  import { useUsersQuery, useUserLookup } from '$lib/api/hooks/users';
-  import { useJobQuery, useUpdateJobTechniciansMutation } from '$lib/api/hooks/jobs';
+  import { useUsersQuery, useUserLookup } from '$lib/zero/users';
+  import { useJobQuery, assignTechniciansToJob } from '$lib/zero/jobs';
   import type { User } from '$lib/types/job';
   import { debugTechAssignment } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
@@ -23,21 +23,22 @@
 
   let popover: any;
   
-  // Use TanStack Query for all data - single source of truth
+  // Use Zero Query for all data - single source of truth
   const usersQuery = useUsersQuery();
   const userLookup = useUserLookup();
   const jobQuery = useJobQuery(jobId);
-  const updateTechniciansMutation = useUpdateJobTechniciansMutation();
+  
+  // Zero uses direct mutations instead of TanStack's createMutation pattern
+  let isLoading = false;
+  let error: Error | null = null;
 
-  // Derived state from TanStack Query cache - fallback to initial data
-  $: job = jobQuery.data; // Now returns PopulatedJob directly
-  $: availableUsers = usersQuery.data || [];
-  // Use populated technicians from job.technicians instead of relationships
-  $: assignedTechnicians = job?.technicians || initialTechnicians;
+  // Derived state from Zero Query - fallback to initial data
+  $: job = jobQuery.value; // Zero returns value directly
+  $: availableUsers = usersQuery.value || [];
+  // Use populated technicians from job.assignments instead of relationships
+  $: assignedTechnicians = job?.assignments?.map(a => a.user) || initialTechnicians;
   $: assignedTechniciansForDisplay = assignedTechnicians;
   
-  $: isLoading = updateTechniciansMutation.isPending;
-  $: error = updateTechniciansMutation.error;
   $: errorMessage = getPopoverErrorMessage(error);
   
   // Local state for immediate UI responsiveness (optimistic updates)
@@ -60,7 +61,7 @@
   
   // Derive optimistic display data separately - this only updates when users list or localSelectedIds change
   $: {
-    const userList = usersQuery.data || [];
+    const userList = usersQuery.value || [];
     optimisticTechnicians = Array.from(localSelectedIds)
       .map(id => userList.find(user => user.id === id))
       .filter(Boolean) as User[];
@@ -98,14 +99,19 @@
     const technicianIds = Array.from(newSelectedIds);
     
     debugTechAssignment('User clicked %s %s, updating to: %o', 
-      user.attributes.name, checked ? 'ON' : 'OFF', technicianIds);
+      user.name, checked ? 'ON' : 'OFF', technicianIds);
     
-    // TanStack Query mutation handles API call and cache updates
+    // Zero direct mutation handles API call and real-time updates
     try {
-      updateTechniciansMutation.mutate({ jobId, technicianIds });
-    } catch (error) {
-      debugTechAssignment('Error during mutation: %o', error);
-      console.error('TechnicianAssignmentButton mutation error:', error);
+      isLoading = true;
+      error = null;
+      await assignTechniciansToJob(jobId, technicianIds);
+    } catch (err) {
+      error = err as Error;
+      debugTechAssignment('Error during mutation: %o', err);
+      console.error('TechnicianAssignmentButton mutation error:', err);
+    } finally {
+      isLoading = false;
     }
   }
 
@@ -117,7 +123,7 @@
 
 <HeadlessPopoverButton 
   bind:popover
-  title={hasAssignments ? `Technicians: ${optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Technicians'}
+  title={hasAssignments ? `Technicians: ${optimisticTechnicians.map(t => t?.name).filter(Boolean).join(', ')}` : 'Technicians'}
   error={errorMessage}
   loading={isLoading}
   panelWidth="max-content"
@@ -146,18 +152,16 @@
   <svelte:fragment slot="panel-content" let:error let:loading>
     <h3 class="popover-title">Assigned To</h3>
     
-    {#if usersQuery.isError}
-      <div class="popover-error-message">{POPOVER_ERRORS.LOAD_USERS}</div>
-    {:else if error}
+    {#if error}
       <div class="popover-error-message">{error}</div>
     {/if}
 
-    {#if usersQuery.isLoading}
+    {#if !usersQuery.value}
       <div class="popover-loading-indicator">Loading users...</div>
     {:else}
       <PopoverOptionList
         options={availableUsers.filter(validateUserData)}
-        loading={usersQuery.isLoading}
+        loading={!usersQuery.value}
         maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
         onOptionClick={(user, event) => {
           const isCurrentlySelected = localSelectedIds.has(user.id);
@@ -169,7 +173,7 @@
           <div class="technician-avatar popover-option-left-content">
             <UserAvatar user={asUser(option)} size="xs" />
           </div>
-          <span class="popover-option-main-label">{option.attributes.name}</span>
+          <span class="popover-option-main-label">{option.name}</span>
           
           <!-- Checkmark in same reactive scope for immediate updates -->
           <div class="popover-checkmark-container">

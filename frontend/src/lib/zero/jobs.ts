@@ -185,7 +185,7 @@ export async function createJob(jobData: {
   const zero = getZero();
   const id = crypto.randomUUID();
   const uuid = crypto.randomUUID();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.jobs.insert({
     id,
@@ -219,7 +219,7 @@ export async function updateJob(id: string, data: Partial<{
   client_id: string;
 }>) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   // Get current lock version for optimistic locking
   const currentJob = await zero.query.jobs.where('id', id).one();
@@ -242,7 +242,7 @@ export async function updateJob(id: string, data: Partial<{
  */
 export async function deleteJob(id: string) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.jobs.update({
     id,
@@ -256,7 +256,7 @@ export async function deleteJob(id: string) {
  */
 export async function restoreJob(id: string) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.jobs.update({
     id,
@@ -304,7 +304,7 @@ export async function assignTechniciansToJob(jobId: string, technicianIds: strin
     if (!currentUserIds.includes(userId)) {
       const id = crypto.randomUUID();
       const uuid = crypto.randomUUID();
-      const now = new Date().toISOString();
+      const now = Date.now(); // Unix timestamp in milliseconds
       
       await zero.mutate.job_assignments.insert({
         id,
@@ -363,7 +363,7 @@ export async function duplicateJob(sourceJobId: string, updates?: Partial<{
   // Create new job
   const newJobId = crypto.randomUUID();
   const newJobUuid = crypto.randomUUID();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.jobs.insert({
     id: newJobId,
@@ -414,7 +414,7 @@ export async function bulkUpdateJobs(jobIds: string[], updates: Partial<{
   priority: string;
 }>) {
   const zero = getZero();
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp in milliseconds
 
   for (const jobId of jobIds) {
     await zero.mutate.jobs.update({
