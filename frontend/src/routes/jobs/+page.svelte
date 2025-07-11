@@ -17,8 +17,8 @@
   const status = $derived(url.searchParams.get('status') as JobStatus | undefined);
   const priority = $derived(url.searchParams.get('priority') as JobPriority | undefined);
 
-  // ✨ USE CUSTOM fZero RUNE FOR ZERO NATIVE REACTIVITY
-  const jobsQuery = fZero(Job.queryBuilder(), []);
+  // ✨ USE CUSTOM fZero RUNE FOR ZERO NATIVE REACTIVITY  
+  const jobsQuery = fZero(() => Job.queryBuilder(), []);
   
   // ✨ USE $derived FOR DATA TRANSFORMATIONS (NOT IMPERATIVE UPDATES)
   const allJobs = $derived(

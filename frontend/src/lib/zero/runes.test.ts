@@ -50,7 +50,7 @@ describe('fZero', () => {
       const mockView = createMockView([]);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       expect(query.data).toEqual([]);
       expect(query.isLoading).toBe(true);
@@ -63,7 +63,7 @@ describe('fZero', () => {
       const mockView = createMockView(initialData);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       expect(query.data).toEqual(initialData);
       expect(query.isLoading).toBe(false);
@@ -75,7 +75,7 @@ describe('fZero', () => {
       const mockView = createMockView(null);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       expect(query.data).toEqual([]);
       expect(query.isLoading).toBe(false);
@@ -91,7 +91,7 @@ describe('fZero', () => {
       mockView.addListener.mockReturnValue(mockRemoveListener);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      fZero(queryBuilder, []);
+      fZero(() => queryBuilder, []);
 
       expect(mockView.addListener).toHaveBeenCalledWith(expect.any(Function));
     });
@@ -109,7 +109,7 @@ describe('fZero', () => {
       
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       // Simulate data change
       const newData = [{ id: '1', name: 'New Job' }];
@@ -134,7 +134,7 @@ describe('fZero', () => {
       queryBuilder.materialize.mockReturnValue(mockView);
 
       const defaultValue = [{ id: 'default', name: 'Default' }];
-      const query = fZero(queryBuilder, defaultValue);
+      const query = fZero(() => queryBuilder, defaultValue);
 
       // Simulate null data change
       listenerCallback(null);
@@ -151,7 +151,7 @@ describe('fZero', () => {
       getZero.mockReturnValue(null);
 
       const queryBuilder = createMockQueryBuilder();
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       expect(query.data).toEqual([]);
       expect(query.isLoading).toBe(true);
@@ -164,7 +164,7 @@ describe('fZero', () => {
         throw new Error('View creation failed');
       });
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       expect(query.data).toEqual([]);
       expect(query.isLoading).toBe(false);
@@ -178,7 +178,7 @@ describe('fZero', () => {
         throw 'String error';
       });
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       expect(query.data).toEqual([]);
       expect(query.isLoading).toBe(false);
@@ -195,7 +195,7 @@ describe('fZero', () => {
       mockView.addListener.mockReturnValue(mockRemoveListener);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       // Simulate cleanup (would normally be called by Svelte's $effect cleanup)
       // In real usage, this would be handled by the $effect return function
@@ -210,7 +210,7 @@ describe('fZero', () => {
       mockView.addListener.mockReturnValue(mockRemoveListener);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       // Verify view has destroy method
       expect(mockView.destroy).toBeDefined();
@@ -224,7 +224,7 @@ describe('fZero', () => {
       const mockView = createMockView([]);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       // Test getter property
       expect(typeof query.data).toBe('object');
@@ -236,7 +236,7 @@ describe('fZero', () => {
       const mockView = createMockView([]);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       expect(typeof query.isLoading).toBe('boolean');
     });
@@ -246,7 +246,7 @@ describe('fZero', () => {
       const mockView = createMockView([]);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(queryBuilder, []);
+      const query = fZero(() => queryBuilder, []);
 
       expect(query.error).toBe(null);
     });
@@ -268,7 +268,7 @@ describe('fZeroOne', () => {
       const mockView = createMockView(null);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZeroOne(queryBuilder, null);
+      const query = fZeroOne(() => queryBuilder, null);
 
       expect(query.data).toBe(null);
       expect(query.isLoading).toBe(true);
@@ -281,7 +281,7 @@ describe('fZeroOne', () => {
       const mockView = createMockView(initialData);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZeroOne(queryBuilder, null);
+      const query = fZeroOne(() => queryBuilder, null);
 
       expect(query.data).toEqual(initialData);
       expect(query.isLoading).toBe(false);
@@ -293,7 +293,7 @@ describe('fZeroOne', () => {
       const mockView = createMockView(undefined);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZeroOne(queryBuilder, null);
+      const query = fZeroOne(() => queryBuilder, null);
 
       expect(query.data).toBe(undefined);
       expect(query.isLoading).toBe(false);
@@ -309,7 +309,7 @@ describe('fZeroOne', () => {
       mockView.addListener.mockReturnValue(mockRemoveListener);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      fZeroOne(queryBuilder, null);
+      fZeroOne(() => queryBuilder, null);
 
       expect(mockView.addListener).toHaveBeenCalledWith(expect.any(Function));
     });
@@ -327,7 +327,7 @@ describe('fZeroOne', () => {
       
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZeroOne(queryBuilder, null);
+      const query = fZeroOne(() => queryBuilder, null);
 
       // Simulate data change
       const newData = { id: '1', name: 'New Job' };
@@ -352,7 +352,7 @@ describe('fZeroOne', () => {
       queryBuilder.materialize.mockReturnValue(mockView);
 
       const defaultValue = { id: 'default', name: 'Default' };
-      const query = fZeroOne(queryBuilder, defaultValue);
+      const query = fZeroOne(() => queryBuilder, defaultValue);
 
       // Simulate null data change
       listenerCallback(null);
@@ -369,7 +369,7 @@ describe('fZeroOne', () => {
       getZero.mockReturnValue(null);
 
       const queryBuilder = createMockQueryBuilder();
-      const query = fZeroOne(queryBuilder, null);
+      const query = fZeroOne(() => queryBuilder, null);
 
       expect(query.data).toBe(null);
       expect(query.isLoading).toBe(true);
@@ -382,7 +382,7 @@ describe('fZeroOne', () => {
         throw new Error('View creation failed');
       });
 
-      const query = fZeroOne(queryBuilder, null);
+      const query = fZeroOne(() => queryBuilder, null);
 
       expect(query.data).toBe(null);
       expect(query.isLoading).toBe(false);
@@ -397,7 +397,7 @@ describe('fZeroOne', () => {
       const mockView = createMockView(null);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZeroOne(queryBuilder, null);
+      const query = fZeroOne(() => queryBuilder, null);
 
       expect(query.data).toBe(null);
       expect(typeof query.isLoading).toBe('boolean');
@@ -412,7 +412,7 @@ describe('Performance and Memory Management', () => {
     const mockView = createMockView([]);
     queryBuilder.materialize.mockReturnValue(mockView);
 
-    fZero(queryBuilder, []);
+    fZero(() => queryBuilder, []);
 
     expect(queryBuilder.materialize).toHaveBeenCalledTimes(1);
     expect(mockView.addListener).toHaveBeenCalledTimes(1);
@@ -430,7 +430,7 @@ describe('Performance and Memory Management', () => {
     
     queryBuilder.materialize.mockReturnValue(mockView);
 
-    const query = fZero(queryBuilder, []);
+    const query = fZero(() => queryBuilder, []);
 
     // Simulate rapid data changes
     for (let i = 0; i < 10; i++) {
@@ -450,7 +450,7 @@ describe('Performance and Memory Management', () => {
     mockView.addListener.mockReturnValue(mockRemoveListener);
     queryBuilder.materialize.mockReturnValue(mockView);
 
-    const query = fZero(queryBuilder, []);
+    const query = fZero(() => queryBuilder, []);
 
     // Verify setup
     expect(mockView.addListener).toHaveBeenCalled();
