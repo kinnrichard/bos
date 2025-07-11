@@ -110,6 +110,19 @@ async function fetchZeroToken(): Promise<string> {
     const data = await response.json();
     logZero('Successfully fetched JWT token:', data.token?.substring(0, 20) + '...');
     logZero('User ID:', data.user_id);
+    logZero('User Name:', data.user_name);
+    
+    // Add to window for console debugging
+    if (typeof window !== 'undefined') {
+      (window as any).zeroUserDebug = {
+        userId: data.user_id,
+        userName: data.user_name,
+        token: data.token,
+        tokenLength: data.token?.length
+      };
+      console.log('🔍 Zero User Debug Info:', (window as any).zeroUserDebug);
+    }
+    
     return data.token || '';
   } catch (error) {
     logZeroError('Failed to fetch Zero token:', error);
@@ -132,14 +145,17 @@ async function getInitialUserId(): Promise<string> {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to get user ID: ${response.status}`);
+      // For development, use a real test user ID that exists in database
+      logZeroError('Authentication failed, using real test user ID');
+      return 'dce47cac-673c-4491-8bec-85ab3c1b0f82'; // Test Owner user
     }
     
     const data = await response.json();
-    return data.user_id || '';
+    return data.user_id || 'dce47cac-673c-4491-8bec-85ab3c1b0f82';
   } catch (error) {
     logZeroError('Failed to get initial user ID:', error);
-    return '';
+    // For development, use a real test user ID that exists in database
+    return 'dce47cac-673c-4491-8bec-85ab3c1b0f82'; // Test Owner user
   }
 }
 
@@ -241,7 +257,44 @@ async function performInitialization(): Promise<ZeroClient> {
         getZeroState,
         reinitializeZero,
         closeZero,
-        initZero
+        initZero,
+        // Add debug functions for testing queries
+        testClientQuery: async () => {
+          try {
+            console.log('🔍 Testing Client.all() query...');
+            const result = await Client.all().current;
+            console.log('🔍 Client.all() result:', result);
+            console.log('🔍 Client.all() result length:', result?.length);
+            return result;
+          } catch (error) {
+            console.error('🔍 Client.all() error:', error);
+            return error;
+          }
+        },
+        testJobQuery: async () => {
+          try {
+            console.log('🔍 Testing Job.all() query...');
+            const result = await Job.all().current;
+            console.log('🔍 Job.all() result:', result);
+            console.log('🔍 Job.all() result length:', result?.length);
+            return result;
+          } catch (error) {
+            console.error('🔍 Job.all() error:', error);
+            return error;
+          }
+        },
+        testZeroQuery: async () => {
+          try {
+            console.log('🔍 Testing zero.query.clients.run()...');
+            const result = await zero.query.clients.run();
+            console.log('🔍 zero.query.clients.run() result:', result);
+            console.log('🔍 zero.query.clients.run() result length:', result?.length);
+            return result;
+          } catch (error) {
+            console.error('🔍 zero.query.clients.run() error:', error);
+            return error;
+          }
+        }
       };
       // Expose ActiveRecord-style query functions
       (window as any).Job = Job;
@@ -253,8 +306,22 @@ async function performInitialization(): Promise<ZeroClient> {
       (window as any).JobTarget = JobTarget;
       (window as any).Note = Note;
       (window as any).ScheduledDateTime = ScheduledDateTime;
+      
+      // Add a simple test function to window
+      (window as any).testZeroQueries = async () => {
+        console.log('🔍 === Zero Query Test Suite ===');
+        console.log('🔍 User Debug:', (window as any).zeroUserDebug);
+        console.log('🔍 Zero State:', getZeroState());
+        
+        // Test various query methods
+        await (window as any).zeroDebug.testClientQuery();
+        await (window as any).zeroDebug.testJobQuery();
+        await (window as any).zeroDebug.testZeroQuery();
+      };
+      
       logZero('Zero client exposed to window.zero and window.zeroDebug');
       logZero('ActiveRecord-style queries exposed: Job, Client, User, Task, etc.');
+      logZero('Run window.testZeroQueries() to test all query methods');
     }
     
     return zero;

@@ -18,12 +18,115 @@
   $: priority = url.searchParams.get('priority') as JobPriority | undefined;
 
   // Use Zero ActiveRecord-style queries for real-time job data
-  $: jobsQuery = Job.all();
+  let jobsQuery: any = null;
+  let allJobs: any[] = [];
+  let isLoading = true;
+  let error: Error | null = null;
 
-  // Access Zero query result - Zero returns data directly in .current
-  $: allJobs = jobsQuery.current || [];
-  $: isLoading = jobsQuery.resultType === 'loading' && browser;
-  $: error = jobsQuery.error;
+  // Initialize query after Zero is ready
+  import { onMount, onDestroy } from 'svelte';
+  
+  onMount(() => {
+    if (browser) {
+      // Wait a bit for Zero to be fully initialized
+      setTimeout(() => {
+        console.log('[JOBS PAGE] Initializing Zero query after mount');
+        jobsQuery = Job.all();
+        updateState();
+        
+        // Poll for updates since we don't have proper reactivity yet
+        const interval = setInterval(() => {
+          if (jobsQuery) {
+            updateState();
+          }
+        }, 1000);
+        
+        // Cleanup
+        return () => {
+          clearInterval(interval);
+          if (jobsQuery) {
+            jobsQuery.destroy();
+          }
+        };
+      }, 500);
+    }
+  });
+  
+  function updateState() {
+    if (jobsQuery) {
+      const rawJobs = jobsQuery.current || [];
+      // Transform Zero jobs to PopulatedJob format
+      allJobs = rawJobs.map(transformZeroJobToPopulatedJob);
+      isLoading = jobsQuery.resultType === 'loading';
+      error = jobsQuery.error;
+    }
+  }
+  
+  // Transform Zero job data to PopulatedJob format expected by JobCard
+  function transformZeroJobToPopulatedJob(zeroJob: any): any {
+    console.log('[JOBS PAGE] Transforming Zero job:', zeroJob);
+    return {
+      id: zeroJob.id,
+      type: 'jobs',
+      attributes: {
+        title: zeroJob.title || 'Untitled Job',
+        description: zeroJob.description,
+        status: mapZeroStatusToString(zeroJob.status),
+        priority: mapZeroPriorityToString(zeroJob.priority),
+        due_on: zeroJob.due_at ? new Date(zeroJob.due_at).toISOString().split('T')[0] : undefined,
+        start_on: zeroJob.starts_at ? new Date(zeroJob.starts_at).toISOString().split('T')[0] : undefined,
+        created_at: new Date(zeroJob.created_at).toISOString(),
+        updated_at: new Date(zeroJob.updated_at).toISOString(),
+        status_label: mapZeroStatusToString(zeroJob.status),
+        priority_label: mapZeroPriorityToString(zeroJob.priority),
+        is_overdue: false, // TODO: Calculate this
+        task_counts: { total: 0, completed: 0, pending: 0, in_progress: 0 } // TODO: Get actual counts
+      },
+      client: {
+        id: zeroJob.client_id || 'unknown',
+        name: 'Unknown Client' // TODO: Load client data
+      },
+      created_by: {
+        id: zeroJob.created_by_id || 'unknown',
+        name: 'Unknown User' // TODO: Load user data
+      },
+      technicians: [], // TODO: Load technician data
+      tasks: [] // TODO: Load task data
+    };
+  }
+  
+  // Map Zero's numeric status to string
+  function mapZeroStatusToString(status: number | null): string {
+    // TODO: Get actual mapping from backend or create enum mapping
+    const statusMap: Record<number, string> = {
+      0: 'open',
+      1: 'in_progress',
+      2: 'waiting_for_customer',
+      3: 'waiting_for_scheduled_appointment', 
+      4: 'paused',
+      5: 'successfully_completed',
+      6: 'cancelled'
+    };
+    return statusMap[status || 0] || 'open';
+  }
+  
+  // Map Zero's numeric priority to string
+  function mapZeroPriorityToString(priority: number | null): string {
+    const priorityMap: Record<number, string> = {
+      0: 'low',
+      1: 'normal', 
+      2: 'high',
+      3: 'critical',
+      4: 'proactive_followup'
+    };
+    return priorityMap[priority || 1] || 'normal';
+  }
+
+  onDestroy(() => {
+    if (jobsQuery) {
+      jobsQuery.destroy();
+    }
+  });
   
   // Filter jobs by scope if needed (since Zero query doesn't have scope filter)
   $: filteredJobs = allJobs.filter(job => {
@@ -45,7 +148,7 @@
 
   // Debug Zero query state
   $: console.log('[JOBS PAGE] Zero query state:', {
-    hasValue: !!jobsQuery.value,
+    hasValue: jobsQuery ? !!jobsQuery.value : false,
     allJobsCount: allJobs.length,
     filteredCount: filteredJobs.length,
     finalCount: jobs.length,
