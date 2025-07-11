@@ -1,0 +1,16 @@
+{
+  "activity_logs": {
+    "pattern_hash": "8a8fd204c40ce0d1596009857bb82518d0ae41c10946ed6a69fa5dc1742e0fe6",
+    "generated_at": "2025-07-11T05:39:52Z",
+    "generated_files": [
+      "/Users/claude/code/bos/frontend/src/lib/zero/activity_log.generated.ts",
+      "/Users/claude/code/bos/frontend/src/lib/zero/activity_log.custom.ts",
+      "/Users/claude/code/bos/frontend/src/lib/zero/activity_log.ts"
+    ],
+    "file_hashes": {
+      "/Users/claude/code/bos/frontend/src/lib/zero/activity_log.generated.ts": "9a3235bf166bafd3a05a0306d66a1e514b89d4bc42bb83be52f63fc1ae3c467c",
+      "/Users/claude/code/bos/frontend/src/lib/zero/activity_log.custom.ts": "4caf578a00c6ff5fd23c54ee3fadaaff420fcb75c486f67c90e06aa966a4f49f",
+      "/Users/claude/code/bos/frontend/src/lib/zero/activity_log.ts": "13024c18843f73e6af2ebb92766bbd3ad0d57acd98aaf05a62857471c05ee433"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+Description:
+    Generate Zero mutations from your Rails schema with automatic pattern detection.
+
+    This generator analyzes your Rails models and database schema to create TypeScript
+    mutations that handle common patterns like soft deletion, positioning, enums, and
+    polymorphic associations.
+
+Example:
+    # Generate mutations for all tables
+    rails generate zero:mutations
+
+    # Dry run to see what would be generated
+    rails generate zero:mutations --dry-run
+
+    # Generate mutations for specific table only
+    rails generate zero:mutations --table=users
+
+    # Force generation even if conflicts detected
+    rails generate zero:mutations --force
+
+    # Exclude specific tables
+    rails generate zero:mutations --exclude-tables=versions,schema_migrations
+
+    # Use custom configuration file
+    rails generate zero:mutations --config=config/custom_zero_mutations.json
+
+This will create:
+    frontend/src/lib/zero/[table].generated.ts - Auto-generated CRUD mutations
+    frontend/src/lib/zero/[table].custom.ts    - Template for custom mutations  
+    frontend/src/lib/zero/[table].ts           - Combined exports (import this)
+    frontend/src/lib/zero/.generation-config.json - Configuration (if needed)
+    frontend/src/lib/zero/.generation-manifest.json - Generation tracking
+
+Generated mutations include:
+    - Basic CRUD: create, update, delete, upsert
+    - Soft deletion: delete becomes soft delete, restore method added
+    - Positioning: move_before, move_after, move_to_top, move_to_bottom
+    - Enum validation: Runtime validation using Zero's enum system
+    - Type safety: Full TypeScript typing from your Rails schema
+
+Configuration:
+    Create frontend/src/lib/zero/.generation-config.json to customize:
+    {
+      "excludeTables": ["versions", "schema_migrations"],
+      "excludePatterns": {
+        "users": ["soft_deletion"]
+      },
+      "customNaming": {
+        "softDelete": "archive",
+        "restore": "unarchive"
+      }
+    }

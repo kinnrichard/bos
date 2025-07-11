@@ -5,12 +5,47 @@ module ZeroSchemaGenerator
   autoload :TypeMapper, "zero_schema_generator/type_mapper"
   autoload :Generator, "zero_schema_generator/generator"
   autoload :Config, "zero_schema_generator/config"
+  autoload :MutationConfig, "zero_schema_generator/mutation_config"
+  autoload :MutationGenerator, "zero_schema_generator/mutation_generator"
 
   class << self
     def generate_schema(config_path: nil)
       config = Config.load_from_file(config_path)
       generator = Generator.new(config.to_hash["zero_generator"])
       generator.generate_schema
+    end
+
+    def generate_mutations(config_path: nil, options: {})
+      config = if config_path && File.exist?(config_path)
+        MutationConfig.load_from_file(config_path)
+      else
+        MutationConfig.new
+      end
+
+      # Apply options to config
+      config.dry_run = options[:dry_run] if options.key?(:dry_run)
+      config.force_generation = options[:force] if options.key?(:force)
+
+      generator = MutationGenerator.new(config)
+      generator.generate_mutations(options)
+    end
+
+    def create_mutations_config(output_path = nil)
+      output_path ||= MutationConfig.default_config_path
+
+      config = MutationConfig.new
+      # Add some example customizations
+      config.exclude_patterns = {
+        "versions" => [ "soft_deletion", "positioning" ],
+        "schema_migrations" => [ "soft_deletion" ]
+      }
+      config.custom_naming = {
+        "softDelete" => "archive",
+        "restore" => "unarchive"
+      }
+
+      config.save_to_file(output_path)
+      puts "Sample mutation configuration created at #{output_path}"
     end
 
     def validate_schema(schema_path = nil)

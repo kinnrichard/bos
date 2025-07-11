@@ -31,12 +31,59 @@ module ZeroSchemaGenerator
     end
 
     def extract_schema
+      tables_data = extract_tables
       {
-        tables: extract_tables,
+        tables: tables_data,
         relationships: extract_relationships,
         indexes: extract_indexes,
-        constraints: extract_constraints
+        constraints: extract_constraints,
+        patterns: extract_patterns(tables_data)
       }
+    end
+
+    def generate_pattern_report(patterns)
+      report = {
+        total_patterns: 0,
+        tables_with_patterns: 0,
+        pattern_types: Hash.new(0),
+        details: {}
+      }
+
+      patterns.each do |table_name, table_patterns|
+        next if table_patterns.empty?
+
+        report[:tables_with_patterns] += 1
+        report[:details][table_name] = []
+
+        table_patterns.each do |pattern_type, pattern_data|
+          report[:total_patterns] += 1
+          report[:pattern_types][pattern_type] += 1
+
+          case pattern_type
+          when :soft_deletion
+            report[:details][table_name] << "Soft Deletion: #{pattern_data[:column]} (#{pattern_data[:mutation_behavior]})"
+          when :positioning
+            scoping = pattern_data[:scoping_columns].any? ? " scoped by #{pattern_data[:scoping_columns].join(', ')}" : ""
+            report[:details][table_name] << "Positioning: #{pattern_data[:column]}#{scoping}"
+          when :normalized_fields
+            pattern_data.each do |field|
+              report[:details][table_name] << "Normalized Field: #{field[:source_column]} → #{field[:normalized_column]}"
+            end
+          when :timestamp_pairs
+            pattern_data.each do |pair|
+              report[:details][table_name] << "Timestamp Pair: #{pair[:boolean_column]} + #{pair[:timestamp_column]}"
+            end
+          when :enums
+            enum_count = pattern_data.size
+            report[:details][table_name] << "Rails Enums: #{enum_count} enum#{enum_count > 1 ? 's' : ''} detected"
+          when :polymorphic
+            poly_count = pattern_data.size
+            report[:details][table_name] << "Polymorphic: #{poly_count} association#{poly_count > 1 ? 's' : ''} detected"
+          end
+        end
+      end
+
+      report
     end
 
     private
@@ -274,6 +321,164 @@ module ZeroSchemaGenerator
         Rails.logger.warn "Could not determine table name for reflection #{reflection.name}: #{e.message}"
         nil
       end
+    end
+
+    # Pattern Detection Methods for Story 1.2
+
+    def extract_patterns(tables_data)
+      patterns = {}
+
+      tables_data.each do |table|
+        patterns[table[:name]] = detect_table_patterns(table)
+      end
+
+      patterns
+    end
+
+    def detect_table_patterns(table)
+      patterns = {}
+
+      # Detect all supported patterns
+      patterns[:soft_deletion] = detect_soft_deletion_pattern(table)
+      patterns[:positioning] = detect_positioning_pattern(table)
+      patterns[:normalized_fields] = detect_normalized_field_pattern(table)
+      patterns[:timestamp_pairs] = detect_timestamp_pair_pattern(table)
+      patterns[:enums] = detect_enum_pattern(table)
+      patterns[:polymorphic] = detect_polymorphic_pattern(table)
+
+      # Filter out empty patterns
+      patterns.select { |_, pattern_data|
+        pattern_data && (pattern_data.is_a?(Array) ? pattern_data.any? : pattern_data[:detected])
+      }
+    end
+
+    def detect_soft_deletion_pattern(table)
+      deleted_at_column = table[:columns].find { |col| col[:name] == "deleted_at" }
+
+      return nil unless deleted_at_column
+
+      {
+        detected: true,
+        column: deleted_at_column[:name],
+        type: deleted_at_column[:type],
+        sql_type: deleted_at_column[:sql_type],
+        nullable: deleted_at_column[:null],
+        mutation_behavior: "soft_delete_on_delete_call"
+      }
+    end
+
+    def detect_positioning_pattern(table)
+      position_column = table[:columns].find { |col| col[:name] == "position" }
+
+      return nil unless position_column
+
+      # Check for scoping columns (common patterns)
+      scoping_columns = []
+      table[:columns].each do |col|
+        if col[:name].end_with?("_id") && col[:name] != "id"
+          scoping_columns << col[:name]
+        end
+      end
+
+      {
+        detected: true,
+        column: position_column[:name],
+        type: position_column[:type],
+        scoping_columns: scoping_columns,
+        mutation_behavior: "positioning_methods_generation",
+        methods: %w[move_before move_after move_to_top move_to_bottom]
+      }
+    end
+
+    def detect_normalized_field_pattern(table)
+      normalized_fields = []
+
+      table[:columns].each do |col|
+        if col[:name].end_with?("_normalized")
+          source_field = col[:name].gsub("_normalized", "")
+          source_column = table[:columns].find { |c| c[:name] == source_field }
+
+          if source_column
+            normalized_fields << {
+              normalized_column: col[:name],
+              source_column: source_field,
+              normalized_type: col[:type],
+              source_type: source_column[:type],
+              mutation_behavior: "auto_populate_from_source"
+            }
+          end
+        end
+      end
+
+      normalized_fields.any? ? normalized_fields : nil
+    end
+
+    def detect_timestamp_pair_pattern(table)
+      timestamp_pairs = []
+
+      table[:columns].each do |col|
+        if col[:name].end_with?("_time_set") && col[:type] == :boolean
+          timestamp_field = col[:name].gsub("_time_set", "_at")
+          timestamp_column = table[:columns].find { |c| c[:name] == timestamp_field }
+
+          if timestamp_column && [ :datetime, :timestamp, :timestamptz ].include?(timestamp_column[:type])
+            timestamp_pairs << {
+              boolean_column: col[:name],
+              timestamp_column: timestamp_field,
+              boolean_type: col[:type],
+              timestamp_type: timestamp_column[:type],
+              mutation_behavior: "auto_set_boolean_when_timestamp_provided"
+            }
+          end
+        end
+      end
+
+      timestamp_pairs.any? ? timestamp_pairs : nil
+    end
+
+    def detect_enum_pattern(table)
+      enum_columns = []
+
+      table[:columns].each do |col|
+        if col[:enum] && col[:enum_values].any?
+          enum_columns << {
+            column: col[:name],
+            type: col[:type],
+            sql_type: col[:sql_type],
+            enum_values: col[:enum_values],
+            mutation_behavior: "zero_enum_validation",
+            validation_type: "runtime_and_compile_time"
+          }
+        end
+      end
+
+      enum_columns.any? ? enum_columns : nil
+    end
+
+    def detect_polymorphic_pattern(table)
+      polymorphic_columns = []
+
+      # Group columns by potential polymorphic relationships
+      type_columns = table[:columns].select { |col| col[:name].end_with?("_type") }
+
+      type_columns.each do |type_col|
+        base_name = type_col[:name].gsub("_type", "")
+        id_column = table[:columns].find { |col| col[:name] == "#{base_name}_id" }
+
+        if id_column
+          polymorphic_columns << {
+            base_name: base_name,
+            type_column: type_col[:name],
+            id_column: id_column[:name],
+            type_column_type: type_col[:type],
+            id_column_type: id_column[:type],
+            mutation_behavior: "type_safe_polymorphic_setters",
+            validation: "target_type_and_existence"
+          }
+        end
+      end
+
+      polymorphic_columns.any? ? polymorphic_columns : nil
     end
   end
 end

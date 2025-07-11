@@ -196,4 +196,65 @@ namespace :zero do
     ZeroSchemaGenerator.create_sample_config(config_path)
     puts "📝 Edit #{config_path} to customize schema generation"
   end
+
+  desc "Generate Zero mutations from Rails schema"
+  task generate_mutations: :environment do
+    require_relative "../zero_schema_generator"
+
+    begin
+      puts "🔍 Generating Zero mutations from Rails schema..."
+      result = ZeroSchemaGenerator.generate_mutations
+
+      puts "✅ Zero mutations generated successfully!"
+      puts "📁 Generated mutations for #{result[:generated_tables].size} tables"
+      puts "📄 Files created: #{result[:generated_files].size}"
+      result[:generated_files].each { |file| puts "   - #{File.basename(file)}" }
+
+    rescue => e
+      puts "❌ Error generating Zero mutations: #{e.message}"
+      puts e.backtrace.first(5) if Rails.env.development?
+      exit 1
+    end
+  end
+
+  desc "Generate Zero mutations (dry run)"
+  task mutations_dry_run: :environment do
+    require_relative "../zero_schema_generator"
+
+    begin
+      puts "🔍 Dry run: Zero mutations generation preview..."
+      result = ZeroSchemaGenerator.generate_mutations(options: { dry_run: true })
+
+      puts "✅ Dry run completed!"
+      puts "📋 Would generate mutations for #{result[:generated_tables].size} tables"
+      puts "📄 Would create #{result[:generated_files].size} files"
+      puts "🔄 Run 'rails zero:generate_mutations' to actually generate files"
+
+    rescue => e
+      puts "❌ Error in dry run: #{e.message}"
+      puts e.backtrace.first(5) if Rails.env.development?
+      exit 1
+    end
+  end
+
+  desc "Create sample Zero mutations configuration"
+  task create_mutations_config: :environment do
+    require_relative "../zero_schema_generator"
+
+    config_path = ZeroSchemaGenerator::MutationConfig.default_config_path
+
+    if File.exist?(config_path)
+      puts "⚠️  Mutations configuration file already exists at #{config_path}"
+      print "Overwrite? (y/N): "
+      response = STDIN.gets.chomp.downcase
+
+      unless response == "y" || response == "yes"
+        puts "Configuration creation cancelled"
+        exit 0
+      end
+    end
+
+    ZeroSchemaGenerator.create_mutations_config(config_path)
+    puts "📝 Edit #{config_path} to customize mutation generation"
+  end
 end

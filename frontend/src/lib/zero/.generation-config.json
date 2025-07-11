@@ -1,0 +1,26 @@
+{
+  "excludeTables": [
+    "ar_internal_metadata",
+    "schema_migrations",
+    "contact_methods",
+    "jobs",
+    "clients",
+    "devices",
+    "job_assignments",
+    "job_people",
+    "job_targets",
+    "notes",
+    "people",
+    "scheduled_date_time_users",
+    "scheduled_date_times",
+    "tasks",
+    "task_completions",
+    "users"
+  ],
+  "excludePatterns": {},
+  "customNaming": {},
+  "outputDirectory": "/Users/claude/code/bos/frontend/src/lib/zero",
+  "dryRun": false,
+  "forceGeneration": true,
+  "incrementalGeneration": true
+}
