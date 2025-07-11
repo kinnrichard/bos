@@ -32,39 +32,37 @@
       setTimeout(() => {
         console.log('[JOBS PAGE] Initializing Zero query after mount');
         jobsQuery = Job.all();
-        updateState();
-        
-        // Poll for updates since we don't have proper reactivity yet
-        const interval = setInterval(() => {
-          if (jobsQuery) {
-            updateState();
-          }
-        }, 1000);
-        
-        // Cleanup
-        return () => {
-          clearInterval(interval);
-          if (jobsQuery) {
-            jobsQuery.destroy();
-          }
-        };
       }, 500);
     }
   });
   
-  function updateState() {
+  // Reactive statements to update when Zero data changes
+  $: if (jobsQuery) {
+    isLoading = jobsQuery.resultType === 'loading';
+    error = jobsQuery.error;
+  }
+  
+  // Transform jobs only when raw data changes, with memoization
+  let lastRawJobs: any[] = [];
+  $: {
     if (jobsQuery) {
       const rawJobs = jobsQuery.current || [];
-      // Transform Zero jobs to PopulatedJob format
-      allJobs = rawJobs.map(transformZeroJobToPopulatedJob);
-      isLoading = jobsQuery.resultType === 'loading';
-      error = jobsQuery.error;
+      
+      // Only transform if data actually changed
+      if (rawJobs !== lastRawJobs) {
+        allJobs = rawJobs.map(transformZeroJobToPopulatedJob);
+        lastRawJobs = rawJobs;
+        
+        // Only log when data actually changes
+        if (rawJobs.length > 0) {
+          console.log('[JOBS PAGE] Jobs data updated, transformed', rawJobs.length, 'jobs');
+        }
+      }
     }
   }
   
   // Transform Zero job data to PopulatedJob format expected by JobCard
   function transformZeroJobToPopulatedJob(zeroJob: any): any {
-    console.log('[JOBS PAGE] Transforming Zero job:', zeroJob);
     return {
       id: zeroJob.id,
       type: 'jobs',
@@ -146,25 +144,30 @@
     return true;
   });
 
-  // Debug Zero query state
-  $: console.log('[JOBS PAGE] Zero query state:', {
-    hasValue: jobsQuery ? !!jobsQuery.value : false,
-    allJobsCount: allJobs.length,
-    filteredCount: filteredJobs.length,
-    finalCount: jobs.length,
-    firstJob: jobs[0]
-  });
+  // Debug Zero query state (only when needed)
+  // $: console.log('[JOBS PAGE] Zero query state:', {
+  //   hasValue: jobsQuery ? !!jobsQuery.value : false,
+  //   allJobsCount: allJobs.length,
+  //   filteredCount: filteredJobs.length,
+  //   finalCount: jobs.length,
+  //   firstJob: jobs[0]
+  // });
 
   // Handle retry - Zero automatically retries, but we can manually refetch
   function handleRetry() {
     // Zero doesn't expose a manual refetch method
     // The query will automatically stay in sync
-    console.log('[JOBS PAGE] Zero query auto-syncs, no manual retry needed');
+    if (jobsQuery) {
+      jobsQuery.refresh();
+    }
   }
 
   // Handle refresh - Zero automatically stays fresh
   function handleRefresh() {
-    console.log('[JOBS PAGE] Zero query auto-refreshes in real-time');
+    // Zero queries auto-refresh in real-time
+    if (jobsQuery) {
+      jobsQuery.refresh();
+    }
   }
 </script>
 
