@@ -1,34 +1,25 @@
 import { Zero } from '@rocicorp/zero';
 import { schema, type ZeroClient } from './generated-schema';
 import { browser } from '$app/environment';
-import { csrfTokenManager } from '$lib/api/csrf';
 
 let zero: ZeroClient | null = null;
 
-// Fetch JWT token for Zero authentication
-async function getZeroToken(): Promise<string> {
-  if (!browser) return '';
+// Fetch JWT token and user ID for Zero authentication
+async function getZeroAuth(): Promise<{ token: string; userId: string }> {
+  if (!browser) return { token: '', userId: '' };
+  
+  console.log('[Zero] Fetching JWT token...');
   
   try {
-    // Get CSRF token for the POST request
-    const csrfToken = await csrfTokenManager.getToken();
-    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     };
     
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken;
-    } else {
-      console.warn('[Zero] No CSRF token available - request will likely fail');
-    }
-    
     const response = await fetch('/api/v1/zero/token', {
-      method: 'POST',
+      method: 'GET',
       headers,
-      credentials: 'include', // Include cookies for authentication
-      body: JSON.stringify({})
+      credentials: 'include' // Include cookies for authentication
     });
     
     if (!response.ok) {
@@ -38,33 +29,48 @@ async function getZeroToken(): Promise<string> {
     }
     
     const data = await response.json();
-    return data.token;
+    console.log('[Zero] Successfully fetched JWT token:', data.token?.substring(0, 20) + '...');
+    console.log('[Zero] User ID:', data.user_id);
+    return { token: data.token, userId: data.user_id };
   } catch (error) {
     console.error('Failed to fetch Zero token:', error);
-    return '';
+    return { token: '', userId: '' };
   }
 }
 
-// Zero client configuration
-const zeroConfig = {
-  schema,
-  server: browser ? `${window.location.protocol}//${window.location.hostname}:4848` : 'http://localhost:4848',
-  userID: 'dev-user-123', // Will be overridden by JWT
-  auth: browser ? getZeroToken : undefined,
-  // For development, we'll use memory store first
-  kvStore: 'mem' as const,
-  logLevel: 'info' as const,
-};
+// Create Zero configuration with the token and user ID
+function createZeroConfig(token: string, userId: string) {
+  console.log('[Zero] Creating config with token:', token ? token.substring(0, 20) + '...' : 'MISSING');
+  console.log('[Zero] Creating config with userID:', userId);
+  console.log('[Zero] Token length:', token.length);
+  
+  // Try passing the token directly instead of as a function
+  return {
+    schema,
+    server: browser ? `${window.location.protocol}//${window.location.hostname}:4848` : 'http://localhost:4848',
+    userID: userId, // Must match JWT 'sub' field
+    auth: token, // Try static token instead of function
+    // For development, we'll use memory store first
+    kvStore: 'mem' as const,
+    logLevel: 'info' as const,
+  };
+}
 
 // Initialize Zero client
-export function initZero(): ZeroClient {
+export async function initZero(): Promise<ZeroClient> {
   if (!browser) {
     // Return a mock client for SSR
     return {} as ZeroClient;
   }
 
   if (!zero) {
-    zero = new Zero(zeroConfig);
+    // Pre-fetch the token and user ID before creating Zero client
+    const { token, userId } = await getZeroAuth();
+    if (!token || !userId) {
+      throw new Error('Failed to get authentication credentials for Zero');
+    }
+    const config = createZeroConfig(token, userId);
+    zero = new Zero(config);
   }
 
   return zero;
@@ -78,7 +84,9 @@ export function getZero(): ZeroClient {
   }
   
   if (!zero) {
-    return initZero();
+    // If Zero is not initialized, initialize it async
+    initZero().catch(console.error);
+    return {} as ZeroClient;
   }
   return zero;
 }
