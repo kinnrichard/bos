@@ -73,6 +73,12 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
+
+  # Process manager for multi-service development
+  gem "foreman"
+
+  # Load environment variables from .env files
+  gem "dotenv-rails"
 end
 
 group :test do

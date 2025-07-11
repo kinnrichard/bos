@@ -4,9 +4,9 @@ import { browser } from '$app/environment';
 
 let zero: ZeroClient | null = null;
 
-// Fetch JWT token and user ID for Zero authentication
-async function getZeroAuth(): Promise<{ token: string; userId: string }> {
-  if (!browser) return { token: '', userId: '' };
+// Fetch JWT token dynamically - called by Zero's auth function
+async function fetchZeroToken(): Promise<string> {
+  if (!browser) return '';
   
   console.log('[Zero] Fetching JWT token...');
   
@@ -31,25 +31,89 @@ async function getZeroAuth(): Promise<{ token: string; userId: string }> {
     const data = await response.json();
     console.log('[Zero] Successfully fetched JWT token:', data.token?.substring(0, 20) + '...');
     console.log('[Zero] User ID:', data.user_id);
-    return { token: data.token, userId: data.user_id };
+    return data.token || '';
   } catch (error) {
     console.error('Failed to fetch Zero token:', error);
-    return { token: '', userId: '' };
+    return '';
   }
 }
 
-// Create Zero configuration with the token and user ID
-function createZeroConfig(token: string, userId: string) {
-  console.log('[Zero] Creating config with token:', token ? token.substring(0, 20) + '...' : 'MISSING');
-  console.log('[Zero] Creating config with userID:', userId);
-  console.log('[Zero] Token length:', token.length);
+// Get initial user ID for Zero configuration
+async function getInitialUserId(): Promise<string> {
+  if (!browser) return '';
   
-  // Try passing the token directly instead of as a function
+  try {
+    const response = await fetch('/api/v1/zero/token', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get user ID: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.user_id || '';
+  } catch (error) {
+    console.error('Failed to get initial user ID:', error);
+    return '';
+  }
+}
+
+// Token cache to avoid unnecessary API calls
+let cachedToken: string | null = null;
+let tokenExpiryTime: number | null = null;
+
+// Create Zero configuration with cached token approach
+async function createZeroConfig(userId: string) {
+  console.log('[Zero] Creating config with userID:', userId);
+  
+  // Pre-fetch initial token to ensure we have it ready
+  const initialToken = await fetchZeroToken();
+  console.log('[Zero] Pre-fetched initial token:', initialToken ? initialToken.substring(0, 20) + '...' : 'NONE');
+  
+  // Cache the token for use in auth function
+  cachedToken = initialToken;
+  tokenExpiryTime = Date.now() + (6 * 60 * 60 * 1000); // 6 hours
+  
+  // Simple auth function that returns cached token or fetches new one
+  const authFunction = async () => {
+    console.log('[Zero] Auth function called');
+    
+    // Check if we have a cached token that's still valid
+    if (cachedToken && tokenExpiryTime && Date.now() < tokenExpiryTime) {
+      console.log('[Zero] Using cached token:', cachedToken.substring(0, 20) + '...');
+      return cachedToken;
+    }
+    
+    // Fetch fresh token
+    console.log('[Zero] Fetching fresh token...');
+    const token = await fetchZeroToken();
+    
+    if (!token || token.length < 10) {
+      console.error('[Zero] Invalid token received:', token);
+      throw new Error('Invalid JWT token received');
+    }
+    
+    // Cache the new token
+    cachedToken = token;
+    tokenExpiryTime = Date.now() + (6 * 60 * 60 * 1000); // 6 hours
+    
+    console.log('[Zero] Token length:', token.length);
+    console.log('[Zero] Token is valid JWT format:', token.split('.').length === 3);
+    console.log('[Zero] Returning fresh token:', token.substring(0, 20) + '...');
+    return token;
+  };
+  
   return {
     schema,
     server: browser ? `${window.location.protocol}//${window.location.hostname}:4848` : 'http://localhost:4848',
     userID: userId, // Must match JWT 'sub' field
-    auth: token, // Try static token instead of function
+    auth: authFunction, // Cached async function
     // For development, we'll use memory store first
     kvStore: 'mem' as const,
     logLevel: 'info' as const,
@@ -64,12 +128,12 @@ export async function initZero(): Promise<ZeroClient> {
   }
 
   if (!zero) {
-    // Pre-fetch the token and user ID before creating Zero client
-    const { token, userId } = await getZeroAuth();
-    if (!token || !userId) {
-      throw new Error('Failed to get authentication credentials for Zero');
+    // Get initial user ID for Zero configuration
+    const userId = await getInitialUserId();
+    if (!userId) {
+      throw new Error('Failed to get user ID for Zero');
     }
-    const config = createZeroConfig(token, userId);
+    const config = await createZeroConfig(userId);
     zero = new Zero(config);
   }
 

@@ -8,6 +8,15 @@ if [ -f ".kamal/secrets.development.real" ]; then
   set +a
 fi
 
+# Load environment variables from .env.development if it exists
+if [ -f ".env.development" ]; then
+  echo "Loading environment variables from .env.development..."
+  set -a
+  . .env.development
+  set +a
+  echo "✅ ZERO_AUTH_SECRET loaded: ${ZERO_AUTH_SECRET}"
+fi
+
 if ! gem list foreman -i --silent; then
   echo "Installing foreman..."
   gem install foreman

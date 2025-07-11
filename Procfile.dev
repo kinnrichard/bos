@@ -1,2 +1,4 @@
-web: bin/rails server -p 3000
-css: bin/rails dartsass:watch
+web: bin/rails server -p 3000 -b 0.0.0.0
+# css: bin/rails dartsass:watch # Not needed for API mode - frontend handles CSS
+zero: npx zero-cache --upstream-db postgres://claude@localhost:5432/bos_development --cvr-db postgres://claude@localhost:5432/bos_development_cvr --change-db postgres://claude@localhost:5432/bos_development_cdb --auth-secret $ZERO_AUTH_SECRET --replica-file /tmp/zero-replica.db --port 4848 --change-streamer-port 4849 --log-level info
+frontend: cd frontend && npm run dev
