@@ -7,6 +7,9 @@ import { getZero } from './client';
  */
 export function useClientsQuery() {
   const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.clients
     .orderBy('name_normalized', 'asc'));
 }
@@ -20,6 +23,9 @@ export function useClientQuery(id: string, enabled: boolean = true) {
   }
   
   const zero = getZero();
+  if (!zero) {
+    return { current: null, value: null, resultType: 'loading' as const };
+  }
   return useQuery(zero.query.clients
     .where('id', id)
     .one());
@@ -34,6 +40,9 @@ export function useClientByNameQuery(name: string, enabled: boolean = true) {
   }
   
   const zero = getZero();
+  if (!zero) {
+    return { current: null, value: null, resultType: 'loading' as const };
+  }
   return useQuery(zero.query.clients
     .where('name', name)
     .one());
@@ -48,6 +57,9 @@ export function useClientWithRelationsQuery(id: string, enabled: boolean = true)
   }
   
   const zero = getZero();
+  if (!zero) {
+    return { current: null, value: null, resultType: 'loading' as const };
+  }
   return useQuery(zero.query.clients
     .where('id', id)
     .related('jobs', (jobs) => 
@@ -74,6 +86,9 @@ export function useClientsPaginatedQuery(options: {
   const { page = 1, per_page = 20, search } = options;
   
   const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   let query = zero.query.clients;
   
   // Add search filter if provided
@@ -99,6 +114,9 @@ export function useClientSearchQuery(searchTerm: string, enabled: boolean = true
   }
   
   const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.clients
     .where('name_normalized', 'LIKE', `%${searchTerm.toLowerCase()}%`)
     .orderBy('name_normalized', 'asc')
@@ -115,6 +133,9 @@ export async function createClient(clientData: {
   client_type?: string;
 }) {
   const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   const id = crypto.randomUUID();
   const now = Date.now(); // Unix timestamp in milliseconds
   
@@ -141,6 +162,9 @@ export async function updateClient(id: string, data: Partial<{
   client_type: string;
 }>) {
   const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   const now = Date.now(); // Unix timestamp in milliseconds
   
   const updateData: any = {
@@ -162,6 +186,9 @@ export async function updateClient(id: string, data: Partial<{
  */
 export async function deleteClient(id: string) {
   const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   await zero.mutate.clients.delete({
     id,
   });
@@ -177,6 +204,9 @@ export function useClientStatsQuery(clientId: string, enabled: boolean = true) {
   }
   
   const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.jobs
     .where('client_id', clientId)
     .related('tasks'));

@@ -94,6 +94,9 @@ export async function createUser(userData: {
   password_digest: string;
 }) {
   const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   const id = crypto.randomUUID();
   const uuid = crypto.randomUUID();
   const now = Date.now(); // Unix timestamp in milliseconds
@@ -123,6 +126,9 @@ export async function updateUser(id: string, data: Partial<{
   resort_tasks_on_status_change: boolean;
 }>) {
   const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.users.update({
@@ -137,6 +143,9 @@ export async function updateUser(id: string, data: Partial<{
  */
 export async function deleteUser(id: string) {
   const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   const now = Date.now(); // Unix timestamp in milliseconds
 
   await zero.mutate.users.update({
@@ -152,6 +161,9 @@ export async function deleteUser(id: string) {
  */
 export async function updateJobTechnicians(jobId: string, technicianIds: string[]) {
   const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   
   // First, remove existing assignments for this job
   // Note: This is a simplified approach - in production you'd want proper transaction handling

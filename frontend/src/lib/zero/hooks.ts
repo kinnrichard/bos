@@ -41,6 +41,9 @@ export function useClients() {
   }
   
   const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.clients.orderBy('name', 'asc'));
 }
 
@@ -49,6 +52,9 @@ export function useClients() {
  */
 export function useClient(id: string) {
   const zero = getZero();
+  if (!zero) {
+    return { current: null, value: null, resultType: 'loading' as const };
+  }
   return useQuery(zero.query.clients
     .where('id', id)
     .related('jobs', (jobs) => jobs.orderBy('created_at', 'desc'))
@@ -119,6 +125,9 @@ export function useJob(id: string) {
  */
 export function useTasksByJob(jobId: string) {
   const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.tasks
     .where('job_id', jobId)
     .related('parent')
@@ -131,6 +140,9 @@ export function useTasksByJob(jobId: string) {
  */
 export function useTask(id: string) {
   const zero = getZero();
+  if (!zero) {
+    return { current: null, value: null, resultType: 'loading' as const };
+  }
   return useQuery(zero.query.tasks
     .where('id', id)
     .related('job', (job) => job.related('client'))
@@ -144,6 +156,9 @@ export function useTask(id: string) {
  */
 export function useJobAssignmentsByUser(userId: string) {
   const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.job_assignments
     .where('user_id', userId)
     .related('job', (job) => 
@@ -157,8 +172,11 @@ export function useJobAssignmentsByUser(userId: string) {
  */
 export function useNotesByJob(jobId: string) {
   const zero = getZero();
+  if (!zero) {
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.notes
-    .where('job_id', jobId)
+    .where('notable_id', jobId)
     .related('user')
     .orderBy('created_at', 'desc'));
 }
