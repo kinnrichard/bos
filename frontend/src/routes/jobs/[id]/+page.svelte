@@ -3,65 +3,38 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onDestroy } from 'svelte';
-  import { createSafeQuery } from '$lib/utils/safe-query.svelte';
-  import { jobsService } from '$lib/api/jobs';
-  import { useTaskBatchDetailsQuery } from '$lib/api/hooks/tasks';
+  import { useJobQuery } from '$lib/zero/jobs';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import { layoutActions } from '$lib/stores/layout.svelte';
-  import { derived, writable } from 'svelte/store';
 
   // Get job ID from URL params
   $: jobId = $page.params.id;
   $: console.log('[JobPage] Job ID from URL params:', jobId);
 
-  // Create reactive query using safe query wrapper
-  const queryResult = createSafeQuery(() => ({
-    queryKey: ['job', jobId],
-    enabled: !!jobId, // Only execute when jobId is available
-    queryFn: async () => {
-      console.log('[JobPage] Executing query with key:', ['job', jobId]);
-      const response = await jobsService.getJobWithDetails(jobId);
-      console.log('[JobPage] Query response received:', JSON.parse(JSON.stringify(response)));
-      
-      // Check if this is a wrapped response from the API directly vs populated response
-      if (response && typeof response === 'object' && 'data' in response && !('client' in response)) {
-        console.log('[JobPage] Got wrapped JSON:API response, extracting and using raw data');
-        console.log('[JobPage] Raw job data:', (response as any).data);
-        // Return the raw job data - it's in JSON:API format but better than wrapped
-        return (response as any).data;
-      }
-      
-      return response;
-    },
-    staleTime: 30 * 1000, // 30 seconds
-    retry: (failureCount, error: any) => {
-      // Don't retry 404s or 403s
-      if (error?.status === 404 || error?.status === 403) {
-        return false;
-      }
-      return failureCount < 3;
-    }
-  }));
+  // Use Zero query for real-time job data with all relationships
+  $: jobQuery = useJobQuery(jobId, !!jobId);
 
-  // Access query state directly from the safe query result
-  $: isLoading = $queryResult.isLoading;
-  $: error = $queryResult.error;
-  $: job = $queryResult.data;
+  // Access Zero query result - Zero returns data directly in .value
+  $: job = jobQuery.current || jobQuery.value;
+  $: isLoading = !job && browser && !!jobId; // Loading if no data, in browser, and jobId exists
+  $: error = null; // Zero handles errors internally
 
-  // Background fetch for task batch details - enabled only after job loads successfully
-  $: taskBatchDetailsQuery = useTaskBatchDetailsQuery(jobId, !!job && !isLoading);
+  // TODO: Task batch details - need to implement Zero-based task query
+  // For now, we'll pass undefined until tasks are fully migrated to Zero
+  $: taskBatchDetails = undefined;
   
   // Log job data structure for debugging
   $: if (job) {
-    console.log('[JobPage] Job data loaded:', job?.attributes?.title);
+    console.log('[JobPage] Job data loaded via Zero:', job?.title || job?.attributes?.title);
+    console.log('[JobPage] Zero job structure:', job);
   }
 
   // Update current job in layout store when job data changes
   // Only update with actual data, preserve existing data during cache invalidation
   $: if (job) {
-    console.log('[JobPage] Setting current job in layout store:', JSON.parse(JSON.stringify(job)));
+    console.log('[JobPage] Setting current job in layout store via Zero');
     layoutActions.setCurrentJob(job);
   }
 
@@ -75,9 +48,9 @@
     goto('/jobs');
   }
 
-  // Handle retry
+  // Handle retry - Zero automatically syncs, no manual retry needed
   function handleRetry() {
-    $queryResult.refetch();
+    console.log('[JobPage] Zero query auto-syncs, no manual retry needed');
   }
 </script>
 
@@ -124,7 +97,7 @@
 
   <!-- Job Detail Content -->
   {:else if job}
-    <JobDetailView {job} batchTaskDetails={$taskBatchDetailsQuery?.data} />
+    <JobDetailView {job} batchTaskDetails={taskBatchDetails} />
 
   <!-- Fallback (should not happen with proper loading states) -->
   {:else}

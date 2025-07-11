@@ -9,10 +9,14 @@ import { browser } from '$app/environment';
  */
 export function useUsers() {
   if (!browser) {
-    return { current: [], resultType: 'unknown' as const };
+    return { current: [], value: [], resultType: 'unknown' as const };
   }
   
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.users.orderBy('name', 'asc'));
 }
 
@@ -21,6 +25,10 @@ export function useUsers() {
  */
 export function useUser(id: string) {
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { current: null, value: null, resultType: 'loading' as const };
+  }
   return useQuery(zero.query.users.where('id', id).one());
 }
 
@@ -58,9 +66,13 @@ export function useJobs(filters?: {
   technician_id?: string;
 }) {
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   let query = zero.query.jobs
     .related('client')
-    .related('assignments', (assignments) => 
+    .related('jobAssignments', (assignments) => 
       assignments.related('user')
     )
     .orderBy('created_at', 'desc');
@@ -82,13 +94,17 @@ export function useJobs(filters?: {
  */
 export function useJob(id: string) {
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { current: null, value: null, resultType: 'loading' as const };
+  }
   return useQuery(zero.query.jobs
     .where('id', id)
     .related('client')
     .related('tasks', (tasks) => 
       tasks.orderBy('position', 'asc')
     )
-    .related('assignments', (assignments) => 
+    .related('jobAssignments', (assignments) => 
       assignments.related('user')
     )
     .related('notes', (notes) => 

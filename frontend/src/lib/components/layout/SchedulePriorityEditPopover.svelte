@@ -4,7 +4,7 @@
   import FormSelect from '$lib/components/ui/FormSelect.svelte';
   import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
   import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
-  import { useJobQuery, useUpdateJobMutation } from '$lib/api/hooks/jobs';
+  import { useJobQuery, updateJob } from '$lib/zero/jobs';
   import type { PopulatedJob } from '$lib/types/job';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
@@ -14,13 +14,15 @@
 
   let popover: any;
   
-  const jobQuery = useJobQuery(jobId);
-  const updateJobMutation = useUpdateJobMutation();
+  // Zero query for real-time job data
+  const jobQuery = useJobQuery(jobId, !!jobId);
 
-  // Derived state from TanStack Query cache
-  $: job = jobQuery.data || initialJob;
-  $: isLoading = updateJobMutation.isPending;
-  $: error = updateJobMutation.error;
+  // Local state for Zero mutation management
+  let isLoading = false;
+  let error: any = null;
+
+  // Derived state from Zero query
+  $: job = jobQuery.current || jobQuery.value || initialJob;
   $: errorMessage = getPopoverErrorMessage(error);
 
   // Local form state
@@ -31,13 +33,16 @@
   let localDueTime = '';
 
   // Keep local state in sync with server data
+  // Zero data structure may be different from JSON:API format
   $: {
-    if (job?.attributes && !isLoading) {
-      localPriority = job.attributes.priority || 'normal';
-      localStartDate = job.attributes.start_on || '';
-      localStartTime = job.attributes.start_time || '';
-      localDueDate = job.attributes.due_on || '';
-      localDueTime = job.attributes.due_time || '';
+    if (job && !isLoading) {
+      // Handle both Zero format and JSON:API format during transition
+      const jobData = job.attributes || job;
+      localPriority = jobData.priority || 'normal';
+      localStartDate = jobData.start_on || jobData.start_date || '';
+      localStartTime = jobData.start_time || '';
+      localDueDate = jobData.due_on || jobData.due_date || '';
+      localDueTime = jobData.due_time || '';
     }
   }
 
@@ -50,49 +55,59 @@
     { value: 'proactive_followup', label: 'Proactive Followup' }
   ];
 
-  function handleSave() {
+  async function handleSave() {
     if (isLoading || !job?.id) return;
 
+    // Handle both Zero format and JSON:API format during transition
+    const jobData = job.attributes || job;
     const updates: any = {};
     
     // Only include changed fields
-    if (localPriority !== job.attributes.priority) {
+    if (localPriority !== jobData.priority) {
       updates.priority = localPriority;
     }
-    if (localStartDate !== job.attributes.start_on) {
-      updates.start_on = localStartDate || null;
+    if (localStartDate !== (jobData.start_on || jobData.start_date)) {
+      updates.start_date = localStartDate || null;
     }
-    if (localStartTime !== job.attributes.start_time) {
+    if (localStartTime !== jobData.start_time) {
       updates.start_time = localStartTime || null;
     }
-    if (localDueDate !== job.attributes.due_on) {
-      updates.due_on = localDueDate || null;
+    if (localDueDate !== (jobData.due_on || jobData.due_date)) {
+      updates.due_date = localDueDate || null;
     }
-    if (localDueTime !== job.attributes.due_time) {
+    if (localDueTime !== jobData.due_time) {
       updates.due_time = localDueTime || null;
     }
 
     // Only submit if there are changes
     if (Object.keys(updates).length > 0) {
-      updateJobMutation.mutate({ 
-        id: job.id, 
-        data: updates 
-      }, {
-        onSuccess: () => {
-          // Popover will close automatically when clicking outside
-        }
-      });
+      try {
+        isLoading = true;
+        error = null;
+        
+        await updateJob(job.id, updates);
+        
+        // Zero automatically updates the UI, no need for manual cache updates
+        // Popover will close automatically when clicking outside
+      } catch (err) {
+        error = err;
+        console.error('Failed to update job:', err);
+      } finally {
+        isLoading = false;
+      }
     }
   }
 
   function handleCancel() {
     // Reset local state to server values
-    if (job?.attributes) {
-      localPriority = job.attributes.priority || 'normal';
-      localStartDate = job.attributes.start_on || '';
-      localStartTime = job.attributes.start_time || '';
-      localDueDate = job.attributes.due_on || '';
-      localDueTime = job.attributes.due_time || '';
+    if (job) {
+      // Handle both Zero format and JSON:API format during transition
+      const jobData = job.attributes || job;
+      localPriority = jobData.priority || 'normal';
+      localStartDate = jobData.start_on || jobData.start_date || '';
+      localStartTime = jobData.start_time || '';
+      localDueDate = jobData.due_on || jobData.due_date || '';
+      localDueTime = jobData.due_time || '';
     }
     // Popover will close automatically when clicking outside
   }

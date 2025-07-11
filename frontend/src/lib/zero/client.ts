@@ -141,16 +141,16 @@ export async function initZero(): Promise<ZeroClient> {
 }
 
 // Get the current Zero client instance
-export function getZero(): ZeroClient {
+export function getZero(): ZeroClient | null {
   if (!browser) {
-    // Return a mock client for SSR to prevent errors
-    return {} as ZeroClient;
+    // Return null for SSR - components should handle this
+    return null;
   }
   
   if (!zero) {
-    // If Zero is not initialized, initialize it async
+    // If Zero is not initialized, initialize it async but return null for now
     initZero().catch(console.error);
-    return {} as ZeroClient;
+    return null;
   }
   return zero;
 }

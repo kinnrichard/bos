@@ -156,6 +156,9 @@ module ZeroSchemaGenerator
 
       imports = [ "import { getZero } from './client';" ]
 
+      # Generate TypeScript types
+      types = generate_typescript_types(table, patterns)
+
       mutations = []
 
       # Generate basic CRUD mutations
@@ -179,6 +182,9 @@ module ZeroSchemaGenerator
         #{header}
 
         #{imports.join("\n")}
+
+        // Generated TypeScript types for #{table_name}
+        #{types}
 
         // Generated CRUD mutations for #{table_name}
 
@@ -243,58 +249,143 @@ module ZeroSchemaGenerator
       TYPESCRIPT
     end
 
+    def generate_typescript_types(table, patterns)
+      table_name = table[:name]
+      singular_name = table_name.singularize
+      class_name = singular_name.classify
+
+      # Generate the main table interface
+      interface_fields = []
+      create_fields = []
+      update_fields = []
+
+      table[:columns].each do |column|
+        column_name = column[:name]
+        ts_type = rails_type_to_typescript(column)
+        nullable = column[:null] ? "| null" : ""
+        optional_marker = column[:null] ? "?" : ""
+
+        # Full interface (what exists in database)
+        interface_fields << "  #{column_name}#{optional_marker}: #{ts_type}#{nullable};"
+
+        # Create interface (excludes auto-generated fields)
+        unless %w[id created_at updated_at].include?(column_name)
+          # Handle pattern-specific fields
+          if patterns[:soft_deletion] && column_name == "deleted_at"
+            # Skip deleted_at in create - will be null by default
+          elsif patterns[:positioning] && column_name == "position"
+            create_fields << "  #{column_name}?: #{ts_type}; // Auto-calculated if not provided"
+          else
+            create_marker = column[:null] ? "?" : ""
+            create_fields << "  #{column_name}#{create_marker}: #{ts_type}#{nullable};"
+          end
+        end
+
+        # Update interface (all fields optional except ID, excludes auto-managed fields)
+        unless %w[id created_at updated_at].include?(column_name)
+          update_fields << "  #{column_name}?: #{ts_type}#{nullable};"
+        end
+      end
+
+      <<~TYPESCRIPT
+        // TypeScript interfaces for #{table_name}
+
+        /**
+         * Complete #{class_name} record as stored in database
+         */
+        export interface #{class_name} {
+        #{interface_fields.join("\n")}
+        }
+
+        /**
+         * Data required to create a new #{singular_name}
+         * Excludes auto-generated fields (id, created_at, updated_at)
+         */
+        export interface Create#{class_name}Data {
+        #{create_fields.join("\n")}
+        }
+
+        /**
+         * Data for updating an existing #{singular_name}
+         * All fields optional, excludes auto-managed fields
+         */
+        export interface Update#{class_name}Data {
+        #{update_fields.join("\n")}
+        }
+
+        /**
+         * Standard response from mutation operations
+         */
+        export interface #{class_name}MutationResult {
+          id: string;
+        }
+      TYPESCRIPT
+    end
+
     def generate_create_mutation(table, patterns)
       table_name = table[:name]
       singular_name = table_name.singularize
       class_name = singular_name.classify
 
-      # Build parameter interface based on table columns
-      required_fields = []
-      optional_fields = []
-
+      # Generate validation functions for required fields
+      required_validations = []
       table[:columns].each do |column|
         next if column[:name] == "id" || column[:name] == table[:primary_key]
         next if %w[created_at updated_at].include?(column[:name])
+        next if patterns[:soft_deletion] && column[:name] == "deleted_at"
+        next if column[:null] # Only check non-nullable fields
 
-        # Handle pattern-specific fields
-        if patterns[:soft_deletion] && column[:name] == "deleted_at"
-          next # Skip deleted_at in create
-        end
-
-        if patterns[:positioning] && column[:name] == "position"
-          optional_fields << "#{column[:name]}?: number"
-          next
-        end
-
-        ts_type = rails_type_to_typescript(column)
-        if column[:null]
-          optional_fields << "#{column[:name]}?: #{ts_type}"
+        field_name = column[:name]
+        case column[:type]
+        when :string, :text
+          required_validations << "if (!data.#{field_name}?.trim()) throw new Error('#{field_name.humanize} is required');"
         else
-          required_fields << "#{column[:name]}: #{ts_type}"
+          required_validations << "if (data.#{field_name} === undefined || data.#{field_name} === null) throw new Error('#{field_name.humanize} is required');"
         end
       end
 
-      params = (required_fields + optional_fields).join(";\n  ")
+      validation_code = required_validations.any? ? "  // Validate required fields\n  #{required_validations.join("\n  ")}\n" : ""
 
       <<~TYPESCRIPT
         /**
          * Create a new #{singular_name}
+         *#{' '}
+         * @param data - The #{singular_name} data to create
+         * @returns Promise resolving to the created #{singular_name} ID
+         *#{' '}
+         * @example
+         * ```typescript
+         * import { create#{class_name} } from './#{singular_name}';
+         *#{' '}
+         * const result = await create#{class_name}({
+         *   // Add required fields here based on your schema
+         * });
+         * console.log('Created #{singular_name} with ID:', result.id);
+         * ```
          */
-        export async function create#{class_name}(data: {
-          #{params}
-        }) {
+        export async function create#{class_name}(data: Create#{class_name}Data): Promise<#{class_name}MutationResult> {
           const zero = getZero();
+        #{'  '}
+        #{validation_code}  // Generate unique ID with validation
           const id = crypto.randomUUID();
+          if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+            throw new Error('Failed to generate valid UUID');
+          }
+
           const now = Date.now();
 
-          await zero.mutate.#{table_name}.insert({
-            id,
-            ...data,
-            created_at: now,
-            updated_at: now,
-          });
+          try {
+            await zero.mutate.#{table_name}.insert({
+              id,
+              ...data,
+              created_at: now,
+              updated_at: now,
+            });
 
-          return { id };
+            return { id };
+          } catch (error) {
+            throw new Error(`Failed to create #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
         }
       TYPESCRIPT
     end
@@ -306,22 +397,52 @@ module ZeroSchemaGenerator
 
       <<~TYPESCRIPT
         /**
-         * Update a #{singular_name}
+         * Update an existing #{singular_name}
+         *#{' '}
+         * @param id - The UUID of the #{singular_name} to update
+         * @param data - Partial #{singular_name} data for updates
+         * @returns Promise resolving to the updated #{singular_name} ID
+         *#{' '}
+         * @example
+         * ```typescript
+         * import { update#{class_name} } from './#{singular_name}';
+         *#{' '}
+         * const result = await update#{class_name}('123e4567-e89b-12d3-a456-426614174000', {
+         *   // Add fields to update
+         * });
+         * console.log('Updated #{singular_name}:', result.id);
+         * ```
          */
-        export async function update#{class_name}(id: string, data: Partial<{
-          // Add updateable fields here based on table columns
-          [key: string]: any;
-        }>) {
+        export async function update#{class_name}(id: string, data: Update#{class_name}Data): Promise<#{class_name}MutationResult> {
           const zero = getZero();
+        #{'  '}
+          // Validate ID format
+          if (!id || typeof id !== 'string') {
+            throw new Error('#{class_name} ID is required and must be a string');
+          }
+        #{'  '}
+          if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+            throw new Error('#{class_name} ID must be a valid UUID');
+          }
+
+          // Validate that we have some data to update
+          if (!data || Object.keys(data).length === 0) {
+            throw new Error('Update data is required - at least one field must be provided');
+          }
+
           const now = Date.now();
 
-          await zero.mutate.#{table_name}.update({
-            id,
-            ...data,
-            updated_at: now,
-          });
+          try {
+            await zero.mutate.#{table_name}.update({
+              id,
+              ...data,
+              updated_at: now,
+            });
 
-          return { id };
+            return { id };
+          } catch (error) {
+            throw new Error(`Failed to update #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
         }
       TYPESCRIPT
     end
@@ -332,22 +453,48 @@ module ZeroSchemaGenerator
       class_name = singular_name.classify
 
       if patterns[:soft_deletion]
+        delete_name = @config.get_custom_name("delete")
         # Generate soft delete
         <<~TYPESCRIPT
           /**
-           * #{@config.get_custom_name('softDelete').humanize} a #{singular_name} (soft deletion)
+           * #{delete_name.humanize} a #{singular_name} (soft deletion)
+           *#{' '}
+           * @param id - The UUID of the #{singular_name} to #{delete_name}
+           * @returns Promise resolving to the #{delete_name}d #{singular_name} ID
+           *#{' '}
+           * @example
+           * ```typescript
+           * import { #{delete_name}#{class_name} } from './#{singular_name}';
+           *#{' '}
+           * const result = await #{delete_name}#{class_name}('123e4567-e89b-12d3-a456-426614174000');
+           * console.log('#{delete_name.humanize}d #{singular_name}:', result.id);
+           * ```
            */
-          export async function #{@config.get_custom_name('delete')}#{class_name}(id: string) {
+          export async function #{delete_name}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
             const zero = getZero();
+          #{'  '}
+            // Validate ID format
+            if (!id || typeof id !== 'string') {
+              throw new Error('#{class_name} ID is required and must be a string');
+            }
+          #{'  '}
+            if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+              throw new Error('#{class_name} ID must be a valid UUID');
+            }
+
             const now = Date.now();
 
-            await zero.mutate.#{table_name}.update({
-              id,
-              deleted_at: now,
-              updated_at: now,
-            });
+            try {
+              await zero.mutate.#{table_name}.update({
+                id,
+                deleted_at: now,
+                updated_at: now,
+              });
 
-            return { id };
+              return { id };
+            } catch (error) {
+              throw new Error(`Failed to #{delete_name} #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
           }
         TYPESCRIPT
       else
@@ -355,15 +502,41 @@ module ZeroSchemaGenerator
         <<~TYPESCRIPT
           /**
            * Delete a #{singular_name} (permanent deletion)
+           *#{' '}
+           * @param id - The UUID of the #{singular_name} to delete
+           * @returns Promise resolving to the deleted #{singular_name} ID
+           *#{' '}
+           * @example
+           * ```typescript
+           * import { delete#{class_name} } from './#{singular_name}';
+           *#{' '}
+           * const result = await delete#{class_name}('123e4567-e89b-12d3-a456-426614174000');
+           * console.log('Deleted #{singular_name}:', result.id);
+           * ```
+           *#{' '}
+           * @warning This is a permanent deletion and cannot be undone
            */
-          export async function delete#{class_name}(id: string) {
+          export async function delete#{class_name}(id: string): Promise<#{class_name}MutationResult> {
             const zero = getZero();
+          #{'  '}
+            // Validate ID format
+            if (!id || typeof id !== 'string') {
+              throw new Error('#{class_name} ID is required and must be a string');
+            }
+          #{'  '}
+            if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+              throw new Error('#{class_name} ID must be a valid UUID');
+            }
 
-            await zero.mutate.#{table_name}.delete({
-              id
-            });
+            try {
+              await zero.mutate.#{table_name}.delete({
+                id
+              });
 
-            return { id };
+              return { id };
+            } catch (error) {
+              throw new Error(`Failed to delete #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
           }
         TYPESCRIPT
       end
@@ -376,18 +549,65 @@ module ZeroSchemaGenerator
 
       <<~TYPESCRIPT
         /**
-         * Create or update a #{singular_name}
+         * Create or update a #{singular_name} (upsert operation)
+         *#{' '}
+         * @param data - The #{singular_name} data with optional ID for update, without ID for create
+         * @returns Promise resolving to the #{singular_name} ID (generated if creating, provided if updating)
+         *#{' '}
+         * @example
+         * ```typescript
+         * import { upsert#{class_name} } from './#{singular_name}';
+         *#{' '}
+         * // Create new #{singular_name} (no ID provided)
+         * const newResult = await upsert#{class_name}({
+         *   // Add required fields here
+         * });
+         *#{' '}
+         * // Update existing #{singular_name} (ID provided)
+         * const updateResult = await upsert#{class_name}({
+         *   id: '123e4567-e89b-12d3-a456-426614174000',
+         *   // Add fields to update
+         * });
+         * ```
          */
-        export async function upsert#{class_name}(data: any) {
+        export async function upsert#{class_name}(data: (Create#{class_name}Data & { id?: string }) | (Update#{class_name}Data & { id: string })): Promise<#{class_name}MutationResult> {
           const zero = getZero();
+        #{'  '}
+          // Validate data is provided
+          if (!data || Object.keys(data).length === 0) {
+            throw new Error('Upsert data is required');
+          }
+
+          let id: string;
           const now = Date.now();
 
-          await zero.mutate.#{table_name}.upsert({
-            ...data,
-            updated_at: now,
-          });
+          // If ID is provided, validate it for update operation
+          if (data.id) {
+            if (!data.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+              throw new Error('#{class_name} ID must be a valid UUID');
+            }
+            id = data.id;
+          } else {
+            // Generate new ID for create operation
+            id = crypto.randomUUID();
+            if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+              throw new Error('Failed to generate valid UUID');
+            }
+          }
 
-          return { id: data.id };
+          try {
+            await zero.mutate.#{table_name}.upsert({
+              ...data,
+              id,
+              updated_at: now,
+              // Set created_at only if this is a new record
+              ...(data.id ? {} : { created_at: now }),
+            });
+
+            return { id };
+          } catch (error) {
+            throw new Error(`Failed to upsert #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
         }
       TYPESCRIPT
     end
@@ -402,18 +622,43 @@ module ZeroSchemaGenerator
       <<~TYPESCRIPT
         /**
          * #{restore_name.humanize} a soft-deleted #{singular_name}
+         *#{' '}
+         * @param id - The UUID of the #{singular_name} to #{restore_name}
+         * @returns Promise resolving to the #{restore_name}d #{singular_name} ID
+         *#{' '}
+         * @example
+         * ```typescript
+         * import { #{restore_name}#{class_name} } from './#{singular_name}';
+         *#{' '}
+         * const result = await #{restore_name}#{class_name}('123e4567-e89b-12d3-a456-426614174000');
+         * console.log('#{restore_name.humanize}d #{singular_name}:', result.id);
+         * ```
          */
-        export async function #{restore_name}#{class_name}(id: string) {
+        export async function #{restore_name}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
           const zero = getZero();
+        #{'  '}
+          // Validate ID format
+          if (!id || typeof id !== 'string') {
+            throw new Error('#{class_name} ID is required and must be a string');
+          }
+        #{'  '}
+          if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+            throw new Error('#{class_name} ID must be a valid UUID');
+          }
+
           const now = Date.now();
 
-          await zero.mutate.#{table_name}.update({
-            id,
-            deleted_at: null,
-            updated_at: now,
-          });
+          try {
+            await zero.mutate.#{table_name}.update({
+              id,
+              deleted_at: null,
+              updated_at: now,
+            });
 
-          return { id };
+            return { id };
+          } catch (error) {
+            throw new Error(`Failed to #{restore_name} #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
         }
       TYPESCRIPT
     end
@@ -430,82 +675,197 @@ module ZeroSchemaGenerator
         when "move_before"
           <<~TYPESCRIPT
             /**
-             * Move #{singular_name} before another #{singular_name}
+             * Move #{singular_name} before another #{singular_name} in the position order
+             *#{' '}
+             * @param id - The UUID of the #{singular_name} to move
+             * @param targetId - The UUID of the #{singular_name} to move before
+             * @returns Promise resolving to the moved #{singular_name} ID
+             *#{' '}
+             * @example
+             * ```typescript
+             * import { #{custom_name.camelize(:lower)}#{class_name} } from './#{singular_name}';
+             *#{' '}
+             * const result = await #{custom_name.camelize(:lower)}#{class_name}(
+             *   '123e4567-e89b-12d3-a456-426614174000',
+             *   '987fcdeb-51d3-12b3-c456-987654321000'
+             * );
+             * ```
              */
-            export async function #{custom_name.camelize(:lower)}#{class_name}(id: string, targetId: string) {
+            export async function #{custom_name.camelize(:lower)}#{class_name}(id: string, targetId: string): Promise<#{class_name}MutationResult> {
               const zero = getZero();
+            #{'  '}
+              // Validate IDs
+              if (!id || typeof id !== 'string') {
+                throw new Error('#{class_name} ID is required and must be a string');
+              }
+              if (!targetId || typeof targetId !== 'string') {
+                throw new Error('Target #{class_name} ID is required and must be a string');
+              }
+            #{'  '}
+              if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+                throw new Error('#{class_name} ID must be a valid UUID');
+              }
+              if (!targetId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+                throw new Error('Target #{class_name} ID must be a valid UUID');
+              }
+            #{'  '}
               const now = Date.now();
             #{'  '}
-              // Implementation would calculate new position based on target
-              // This is a placeholder - full implementation needed
-            #{'  '}
-              await zero.mutate.#{table_name}.update({
-                id,
-                // position: calculated_position,
-                updated_at: now,
-              });
+              try {
+                // TODO: Implementation should calculate new position based on target
+                // This is a placeholder - full implementation needed
+                await zero.mutate.#{table_name}.update({
+                  id,
+                  // position: calculated_position,
+                  updated_at: now,
+                });
 
-              return { id };
+                return { id };
+              } catch (error) {
+                throw new Error(`Failed to move #{singular_name} before target: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              }
             }
           TYPESCRIPT
         when "move_after"
           <<~TYPESCRIPT
             /**
-             * Move #{singular_name} after another #{singular_name}
+             * Move #{singular_name} after another #{singular_name} in the position order
+             *#{' '}
+             * @param id - The UUID of the #{singular_name} to move
+             * @param targetId - The UUID of the #{singular_name} to move after
+             * @returns Promise resolving to the moved #{singular_name} ID
+             *#{' '}
+             * @example
+             * ```typescript
+             * import { #{custom_name.camelize(:lower)}#{class_name} } from './#{singular_name}';
+             *#{' '}
+             * const result = await #{custom_name.camelize(:lower)}#{class_name}(
+             *   '123e4567-e89b-12d3-a456-426614174000',
+             *   '987fcdeb-51d3-12b3-c456-987654321000'
+             * );
+             * ```
              */
-            export async function #{custom_name.camelize(:lower)}#{class_name}(id: string, targetId: string) {
+            export async function #{custom_name.camelize(:lower)}#{class_name}(id: string, targetId: string): Promise<#{class_name}MutationResult> {
               const zero = getZero();
+            #{'  '}
+              // Validate IDs
+              if (!id || typeof id !== 'string') {
+                throw new Error('#{class_name} ID is required and must be a string');
+              }
+              if (!targetId || typeof targetId !== 'string') {
+                throw new Error('Target #{class_name} ID is required and must be a string');
+              }
+            #{'  '}
+              if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+                throw new Error('#{class_name} ID must be a valid UUID');
+              }
+              if (!targetId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+                throw new Error('Target #{class_name} ID must be a valid UUID');
+              }
+            #{'  '}
               const now = Date.now();
             #{'  '}
-              // Implementation would calculate new position based on target
-              // This is a placeholder - full implementation needed
-            #{'  '}
-              await zero.mutate.#{table_name}.update({
-                id,
-                // position: calculated_position,
-                updated_at: now,
-              });
+              try {
+                // TODO: Implementation should calculate new position based on target
+                // This is a placeholder - full implementation needed
+                await zero.mutate.#{table_name}.update({
+                  id,
+                  // position: calculated_position,
+                  updated_at: now,
+                });
 
-              return { id };
+                return { id };
+              } catch (error) {
+                throw new Error(`Failed to move #{singular_name} after target: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              }
             }
           TYPESCRIPT
         when "move_to_top"
           <<~TYPESCRIPT
             /**
-             * Move #{singular_name} to first position
+             * Move #{singular_name} to the first position (position 0)
+             *#{' '}
+             * @param id - The UUID of the #{singular_name} to move to top
+             * @returns Promise resolving to the moved #{singular_name} ID
+             *#{' '}
+             * @example
+             * ```typescript
+             * import { #{custom_name.camelize(:lower)}#{class_name} } from './#{singular_name}';
+             *#{' '}
+             * const result = await #{custom_name.camelize(:lower)}#{class_name}('123e4567-e89b-12d3-a456-426614174000');
+             * console.log('Moved #{singular_name} to top:', result.id);
+             * ```
              */
-            export async function #{custom_name.camelize(:lower)}#{class_name}(id: string) {
+            export async function #{custom_name.camelize(:lower)}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
               const zero = getZero();
+            #{'  '}
+              // Validate ID
+              if (!id || typeof id !== 'string') {
+                throw new Error('#{class_name} ID is required and must be a string');
+              }
+            #{'  '}
+              if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+                throw new Error('#{class_name} ID must be a valid UUID');
+              }
+            #{'  '}
               const now = Date.now();
             #{'  '}
-              await zero.mutate.#{table_name}.update({
-                id,
-                position: 0,
-                updated_at: now,
-              });
+              try {
+                await zero.mutate.#{table_name}.update({
+                  id,
+                  position: 0,
+                  updated_at: now,
+                });
 
-              return { id };
+                return { id };
+              } catch (error) {
+                throw new Error(`Failed to move #{singular_name} to top: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              }
             }
           TYPESCRIPT
         when "move_to_bottom"
           <<~TYPESCRIPT
             /**
-             * Move #{singular_name} to last position#{'  '}
+             * Move #{singular_name} to the last position
+             *#{' '}
+             * @param id - The UUID of the #{singular_name} to move to bottom
+             * @returns Promise resolving to the moved #{singular_name} ID
+             *#{' '}
+             * @example
+             * ```typescript
+             * import { #{custom_name.camelize(:lower)}#{class_name} } from './#{singular_name}';
+             *#{' '}
+             * const result = await #{custom_name.camelize(:lower)}#{class_name}('123e4567-e89b-12d3-a456-426614174000');
+             * console.log('Moved #{singular_name} to bottom:', result.id);
+             * ```
              */
-            export async function #{custom_name.camelize(:lower)}#{class_name}(id: string) {
+            export async function #{custom_name.camelize(:lower)}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
               const zero = getZero();
+            #{'  '}
+              // Validate ID
+              if (!id || typeof id !== 'string') {
+                throw new Error('#{class_name} ID is required and must be a string');
+              }
+            #{'  '}
+              if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+                throw new Error('#{class_name} ID must be a valid UUID');
+              }
+            #{'  '}
               const now = Date.now();
             #{'  '}
-              // Implementation would query for max position
-              // This is a placeholder - full implementation needed
-            #{'  '}
-              await zero.mutate.#{table_name}.update({
-                id,
-                // position: max_position + 1,
-                updated_at: now,
-              });
+              try {
+                // TODO: Implementation should query for max position and set position accordingly
+                // This is a placeholder - full implementation needed
+                await zero.mutate.#{table_name}.update({
+                  id,
+                  // position: max_position + 1,
+                  updated_at: now,
+                });
 
-              return { id };
+                return { id };
+              } catch (error) {
+                throw new Error(`Failed to move #{singular_name} to bottom: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              }
             }
           TYPESCRIPT
         end

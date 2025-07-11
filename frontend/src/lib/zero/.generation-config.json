@@ -2,6 +2,7 @@
   "excludeTables": [
     "ar_internal_metadata",
     "schema_migrations",
+    "activity_logs",
     "contact_methods",
     "jobs",
     "clients",
@@ -13,14 +14,13 @@
     "people",
     "scheduled_date_time_users",
     "scheduled_date_times",
-    "tasks",
     "task_completions",
     "users"
   ],
   "excludePatterns": {},
   "customNaming": {},
   "outputDirectory": "/Users/claude/code/bos/frontend/src/lib/zero",
-  "dryRun": false,
+  "dryRun": true,
   "forceGeneration": true,
   "incrementalGeneration": true
 }

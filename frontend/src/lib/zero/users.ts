@@ -8,6 +8,10 @@ import type { User } from '$lib/types/job';
  */
 export function useUsersQuery() {
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.users
     .where('deleted_at', 'IS', null) // Only active users
     .orderBy('name', 'asc'));
@@ -19,6 +23,10 @@ export function useUsersQuery() {
  */
 export function useTechniciansQuery() {
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.users
     .where('deleted_at', 'IS', null)
     .where('role', 'IN', ['technician', 'admin', 'owner']) // Technician roles
@@ -31,10 +39,14 @@ export function useTechniciansQuery() {
  */
 export function useUserQuery(id: string, enabled: boolean = true) {
   if (!enabled || !id) {
-    return { current: null, resultType: 'unknown' as const };
+    return { current: null, value: null, resultType: 'unknown' as const };
   }
   
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { current: null, value: null, resultType: 'loading' as const };
+  }
   return useQuery(zero.query.users
     .where('id', id)
     .where('deleted_at', 'IS', null)

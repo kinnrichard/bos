@@ -1,7 +1,7 @@
 <script lang="ts">
   import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
-  import { useUpdateJobStatusMutation } from '$lib/api/hooks/jobs';
+  import { updateJobStatus } from '$lib/zero/jobs';
   import { layout } from '$lib/stores/layout.svelte';
   import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
@@ -10,8 +10,9 @@
 
   let popover: any;
   
-  // Use the standardized mutation hook
-  const updateStatusMutation = useUpdateJobStatusMutation();
+  // Local state for Zero mutation management
+  let isLoading = false;
+  let error: any = null;
 
   // All available job statuses with their display information
   const availableStatuses = [
@@ -28,27 +29,35 @@
   $: jobStatusEmoji = (layout.currentJob?.attributes?.status) ? getJobStatusEmoji(layout.currentJob.attributes.status) : '📝';
   $: currentStatus = layout.currentJob?.attributes?.status || 'open';
 
-  // Handle status change using standardized mutation
-  function handleStatusChange(statusOption: any) {
+  // Handle status change using Zero direct mutation
+  async function handleStatusChange(statusOption: any) {
     const newStatus = statusOption.value;
-    if (!layout.currentJob || newStatus === currentStatus) return;
+    if (!layout.currentJob || newStatus === currentStatus || isLoading) return;
     
-    // Use the standardized mutation with optimistic updates
-    $updateStatusMutation.mutate({
-      jobId: layout.currentJob.id,
-      status: newStatus
-    });
-    
-    // Close popover
-    popover.close();
+    try {
+      isLoading = true;
+      error = null;
+      
+      // Use Zero's direct async function
+      await updateJobStatus(layout.currentJob.id, newStatus);
+      
+      // Zero automatically updates the UI in real-time
+      // Close popover
+      popover.close();
+    } catch (err) {
+      error = err;
+      console.error('Failed to update job status:', err);
+    } finally {
+      isLoading = false;
+    }
   }
 </script>
 
 <HeadlessPopoverButton 
   bind:popover
   title="Job Status"
-  error={$updateStatusMutation.error ? getPopoverErrorMessage($updateStatusMutation.error) : ''}
-  loading={$updateStatusMutation.isPending}
+  error={error ? getPopoverErrorMessage(error) : ''}
+  loading={isLoading}
   panelWidth="max-content"
   panelPosition="center"
   topOffset={POPOVER_CONSTANTS.DEFAULT_TOP_OFFSET}
@@ -84,7 +93,7 @@
       </svelte:fragment>
     </PopoverOptionList>
 
-    {#if loading}
+    {#if isLoading}
       <div class="popover-loading-indicator">Updating status...</div>
     {/if}
   </svelte:fragment>

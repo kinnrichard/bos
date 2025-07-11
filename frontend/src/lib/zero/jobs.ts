@@ -6,19 +6,21 @@ import { getZero } from './client';
  * Replaces: useJobsQuery()
  */
 export function useJobsQuery(params: {
-  page?: number;
-  per_page?: number;
   status?: string;
   client_id?: string;
   technician_id?: string;
 } = {}) {
-  const { page = 1, per_page = 20, status, client_id, technician_id } = params;
+  const { status, client_id, technician_id } = params;
 
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { value: [], current: [] };
+  }
   let query = zero.query.jobs
         .where('deleted_at', 'IS', null)
         .related('client')
-        .related('assignments', (assignments) => 
+        .related('jobAssignments', (assignments) => 
           assignments.related('user')
         )
         .related('tasks', (tasks) => 
@@ -36,16 +38,12 @@ export function useJobsQuery(params: {
       }
       if (technician_id) {
         // Filter by technician assignment
-        query = query.related('assignments', (assignments) => 
+        query = query.related('jobAssignments', (assignments) => 
           assignments.where('user_id', technician_id).related('user')
         );
       }
 
-  // Apply pagination
-  query = query
-    .limit(per_page)
-    .offset((page - 1) * per_page);
-    
+  // Return all results - no pagination
   return useQuery(query);
 }
 
@@ -55,15 +53,19 @@ export function useJobsQuery(params: {
  */
 export function useJobQuery(id: string, enabled: boolean = true) {
   if (!enabled || !id) {
-    return { current: null, resultType: 'unknown' as const };
+    return { current: null, value: null, resultType: 'unknown' as const };
   }
   
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { current: null, value: null, resultType: 'loading' as const };
+  }
   return useQuery(zero.query.jobs
     .where('id', id)
     .where('deleted_at', 'IS', null)
     .related('client')
-    .related('assignments', (assignments) => 
+    .related('jobAssignments', (assignments) => 
       assignments.related('user')
     )
     .related('tasks', (tasks) => 
@@ -86,15 +88,19 @@ export function useJobQuery(id: string, enabled: boolean = true) {
  */
 export function useJobsByClientQuery(clientId: string, enabled: boolean = true) {
   if (!enabled || !clientId) {
-    return { current: [], resultType: 'unknown' as const };
+    return { current: [], value: [], resultType: 'unknown' as const };
   }
   
   const zero = getZero();
+  if (!zero) {
+    // Return empty state while Zero initializes
+    return { current: [], value: [], resultType: 'loading' as const };
+  }
   return useQuery(zero.query.jobs
     .where('client_id', clientId)
     .where('deleted_at', 'IS', null)
     .related('client')
-    .related('assignments', (assignments) => 
+    .related('jobAssignments', (assignments) => 
       assignments.related('user')
     )
     .orderBy('created_at', 'desc'));
@@ -129,7 +135,7 @@ export function useJobsByStatusQuery(status: string, enabled: boolean = true) {
       .where('status', status)
       .where('deleted_at', 'IS', null)
       .related('client')
-      .related('assignments', (assignments) => 
+      .related('jobAssignments', (assignments) => 
         assignments.related('user')
       )
       .orderBy('created_at', 'desc')
@@ -159,7 +165,7 @@ export function useRecentJobsQuery(limit: number = 10) {
     (z) => z.query.jobs
       .where('deleted_at', 'IS', null)
       .related('client')
-      .related('assignments', (assignments) => 
+      .related('jobAssignments', (assignments) => 
         assignments.related('user')
       )
       .orderBy('updated_at', 'desc')
@@ -183,6 +189,9 @@ export async function createJob(jobData: {
   start_date?: string;
 }) {
   const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   const id = crypto.randomUUID();
   const uuid = crypto.randomUUID();
   const now = Date.now(); // Unix timestamp in milliseconds
@@ -219,6 +228,9 @@ export async function updateJob(id: string, data: Partial<{
   client_id: string;
 }>) {
   const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   const now = Date.now(); // Unix timestamp in milliseconds
 
   // Get current lock version for optimistic locking
@@ -270,6 +282,10 @@ export async function restoreJob(id: string) {
  * This is a common operation that deserves its own function
  */
 export async function updateJobStatus(id: string, status: string) {
+  const zero = getZero();
+  if (!zero) {
+    throw new Error('Zero client not initialized. Please wait for initialization to complete.');
+  }
   return updateJob(id, { status });
 }
 
