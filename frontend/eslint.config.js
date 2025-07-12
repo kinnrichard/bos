@@ -5,6 +5,7 @@ import svelte from 'eslint-plugin-svelte';
 import svelteParser from 'svelte-eslint-parser';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
+import namingConventionRule from './eslint-custom-rules/naming-convention-simple.js';
 
 export default [
 	// JavaScript recommended rules
@@ -40,8 +41,16 @@ export default [
 			ecmaVersion: 2020,
 			sourceType: 'module',
 		},
+		plugins: {
+			'epic-007': {
+				rules: {
+					'naming-convention': namingConventionRule
+				}
+			}
+		},
 		rules: {
 			'no-console': ['warn', { allow: ['warn', 'error'] }],
+			// 'epic-007/naming-convention': 'warn', // TODO: Enable after testing
 		},
 	},
 

@@ -41,6 +41,103 @@ export class ActiveRecordError extends Error {
 }
 
 /**
+ * Rails-compatible RecordNotFoundError
+ * Thrown when find() method cannot locate a record by ID
+ */
+export class RecordNotFoundError extends ActiveRecordError {
+  public readonly recordType: string;
+  public readonly searchCriteria: any;
+
+  constructor(message: string, recordType: string = 'Record', searchCriteria: any = null) {
+    super(message);
+    this.name = 'RecordNotFoundError';
+    this.recordType = recordType;
+    this.searchCriteria = searchCriteria;
+  }
+
+  /**
+   * Create Rails-style error message for ID not found
+   */
+  static forId(id: string | number, modelName: string = 'Record'): RecordNotFoundError {
+    return new RecordNotFoundError(
+      `Couldn't find ${modelName} with 'id'=${id}`,
+      modelName,
+      { id }
+    );
+  }
+
+  /**
+   * Create Rails-style error message for conditions not found
+   */
+  static forConditions(conditions: Record<string, any>, modelName: string = 'Record'): RecordNotFoundError {
+    const conditionsStr = Object.entries(conditions)
+      .map(([key, value]) => `'${key}'=${JSON.stringify(value)}`)
+      .join(' AND ');
+    
+    return new RecordNotFoundError(
+      `Couldn't find ${modelName} with ${conditionsStr}`,
+      modelName,
+      conditions
+    );
+  }
+}
+
+/**
+ * Rails-compatible RecordInvalidError
+ * Thrown when validation fails during save operations
+ */
+export class RecordInvalidError extends ActiveRecordError {
+  public readonly record: any;
+  public readonly validationErrors: Record<string, string[]>;
+
+  constructor(message: string, record: any = null, validationErrors: Record<string, string[]> = {}) {
+    super(message);
+    this.name = 'RecordInvalidError';
+    this.record = record;
+    this.validationErrors = validationErrors;
+  }
+
+  /**
+   * Create Rails-style validation error message
+   */
+  static forValidation(modelName: string, errors: Record<string, string[]>): RecordInvalidError {
+    const errorMessages = Object.entries(errors)
+      .flatMap(([field, messages]) => messages.map(msg => `${field} ${msg}`))
+      .join(', ');
+    
+    return new RecordInvalidError(
+      `Validation failed: ${errorMessages}`,
+      null,
+      errors
+    );
+  }
+}
+
+/**
+ * Rails-compatible RecordNotSavedError
+ * Thrown when a record fails to save without validation errors
+ */
+export class RecordNotSavedError extends ActiveRecordError {
+  public readonly record: any;
+
+  constructor(message: string, record: any = null) {
+    super(message);
+    this.name = 'RecordNotSavedError';
+    this.record = record;
+  }
+
+  /**
+   * Create Rails-style save error message
+   */
+  static forSave(modelName: string, record: any = null): RecordNotSavedError {
+    return new RecordNotSavedError(
+      `Failed to save the record: ${modelName}`,
+      record
+    );
+  }
+}
+
+/**
  * Base class with shared Zero.js integration logic
  * Used by both ReactiveRecord and ActiveRecord factories
  */
@@ -242,6 +339,130 @@ export const TTLValidator = {
     return DEFAULT_TTL;
   }
 };
+
+/**
+ * Rails-compatible query chain interface
+ * Supports method chaining like Rails: Model.scope().where().limit()
+ */
+export interface RailsQueryChain<T> {
+  where(conditions: Partial<T> | Record<string, any>): RailsQueryChain<T>;
+  limit(count: number): RailsQueryChain<T>;
+  offset(count: number): RailsQueryChain<T>;
+  orderBy(field: string, direction?: 'asc' | 'desc'): RailsQueryChain<T>;
+  includes(...relations: string[]): RailsQueryChain<T>;
+  select(...fields: string[]): RailsQueryChain<T>;
+  distinct(): RailsQueryChain<T>;
+  
+  // Terminal methods that execute the query
+  all(): T[];
+  first(): T | null;
+  last(): T | null;
+  find(id: string | number): T;
+  findBy(conditions: Partial<T>): T | null;
+  count(): number;
+  exists(): boolean;
+  pluck(field: string): any[];
+  
+  // Aggregation methods
+  sum(field: string): number;
+  average(field: string): number;
+  minimum(field: string): any;
+  maximum(field: string): any;
+}
+
+/**
+ * Rails scope configuration for dynamic scope generation
+ */
+export interface RailsScopeConfig {
+  name: string;
+  conditions?: Record<string, any>;
+  lambda?: (query: any) => any;
+  chainable: boolean;
+  description?: string;
+}
+
+/**
+ * Rails-compatible model interface
+ * Defines the complete Rails ActiveRecord API contract
+ */
+export interface RailsModelInterface<T> {
+  // Core finder methods (Rails behavior)
+  find(id: string | number): T;                    // Throws RecordNotFoundError if not found
+  findBy(conditions: Partial<T>): T | null;        // Returns null if not found
+  where(conditions: Partial<T>): RailsQueryChain<T>; // Returns query chain for chaining
+  all(): T[];                                       // Returns all records
+  first(): T | null;                               // First record or null
+  last(): T | null;                                // Last record or null
+  
+  // Query building methods
+  limit(count: number): RailsQueryChain<T>;
+  offset(count: number): RailsQueryChain<T>;
+  orderBy(field: string, direction?: 'asc' | 'desc'): RailsQueryChain<T>;
+  
+  // Aggregation methods
+  count(): number;
+  exists(): boolean;
+  sum(field: string): number;
+  average(field: string): number;
+  
+  // Scopes (dynamic based on Rails model configuration)
+  [scopeName: string]: any;
+}
+
+/**
+ * Rails method behavior configuration
+ * Defines how each method should behave to match Rails exactly
+ */
+export const RailsMethodBehaviors = {
+  /**
+   * find(id) - Must throw RecordNotFoundError if not found
+   */
+  find: {
+    throwsOnNotFound: true,
+    errorType: RecordNotFoundError,
+    returnType: 'single' as const
+  },
+  
+  /**
+   * findBy(conditions) - Must return null if not found
+   */
+  findBy: {
+    throwsOnNotFound: false,
+    returnType: 'single_or_null' as const
+  },
+  
+  /**
+   * where(conditions) - Must always return array
+   */
+  where: {
+    throwsOnNotFound: false,
+    returnType: 'array' as const
+  },
+  
+  /**
+   * all() - Must always return array
+   */
+  all: {
+    throwsOnNotFound: false,
+    returnType: 'array' as const
+  },
+  
+  /**
+   * first() - Must return single record or null
+   */
+  first: {
+    throwsOnNotFound: false,
+    returnType: 'single_or_null' as const
+  },
+  
+  /**
+   * last() - Must return single record or null
+   */
+  last: {
+    throwsOnNotFound: false,
+    returnType: 'single_or_null' as const
+  }
+} as const;
 
 /**
  * Connection recovery utilities

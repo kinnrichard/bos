@@ -43,6 +43,15 @@ export {
   cleanupZeroIntegration
 } from './zero-integration';
 
+export {
+  validateReactiveModelUsage,
+  validateActiveModelUsage,
+  createValidatedReactiveModel,
+  createValidatedActiveModel,
+  ImportWarnings,
+  withValidation
+} from './import-validator';
+
 export type { 
   BaseRecordConfig, 
   QueryMeta 
@@ -86,7 +95,7 @@ export function createReactiveModelLegacy<T>(name: string, tableName: string) {
 // createActiveModel is exported from ./active-record module
 
 /**
- * Create both ReactiveRecord and ActiveRecord models
+ * Create both ReactiveRecord and ActiveRecord models with automatic validation
  * @param name - Model name (e.g., 'task')
  * @param tableName - Zero.js table name (e.g., 'tasks')
  * @returns Object with both reactive and active model factories
@@ -104,6 +113,12 @@ export function createReactiveModelLegacy<T>(name: string, tableName: string) {
  */
 export function createDualModel<T>(name: string, tableName: string) {
   const config = FactoryUtils.createSimpleConfig(name, tableName);
+  
+  // Show development warnings about usage patterns
+  if (process.env.NODE_ENV === 'development') {
+    ImportWarnings.showBestPractices('dual-model');
+  }
+  
   return {
     [`Reactive${config.className}`]: ModelFactory.createReactiveModel<T>(config),
     [`Active${config.className}`]: ModelFactory.createActiveModel<T>(config)

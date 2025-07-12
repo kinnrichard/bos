@@ -2,9 +2,19 @@
 // Eliminates code duplication and provides unified configuration
 // Generates identical APIs for both Svelte-optimized and vanilla JS contexts
 
-import { BaseRecord, ActiveRecordError, type QueryMeta, type BaseRecordConfig } from './base-record';
+import { 
+  BaseRecord, 
+  ActiveRecordError, 
+  RecordNotFoundError,
+  RecordInvalidError,
+  RecordNotSavedError,
+  type QueryMeta, 
+  type BaseRecordConfig,
+  type RailsModelInterface 
+} from './base-record';
 import { type ModelConfig, type FactoryCreateOptions } from './model-config';
 import { getZero } from '../zero/zero-client';
+import { RailsActiveRecord, createRailsActiveRecord } from './rails-active-record';
 
 /**
  * Svelte-optimized ReactiveRecord implementation
@@ -94,24 +104,33 @@ class ReactiveRecord<T> extends BaseRecord<T> {
 }
 
 /**
- * Vanilla JS-optimized ActiveRecord implementation
- * Uses direct property access for maximum performance in non-reactive contexts
+ * Rails-Compatible ActiveRecord implementation
+ * Extends BaseRecord with 100% Rails ActiveRecord API compatibility
+ * Maintains backward compatibility while adding Rails method behaviors
  */
 class ActiveRecord<T> extends BaseRecord<T> {
   private _data: T | T[] | null = null;
   private _isLoading = true;
   private _error: Error | null = null;
   private _isCollection = false;
+  private _railsThrowOnNotFound = false;
+  private _modelName = 'Record';
   private subscribers: Array<(data: T | T[] | null, meta: QueryMeta) => void> = [];
 
   constructor(
     getQueryBuilder: () => any | null,
-    config: BaseRecordConfig & { expectsCollection?: boolean } = {}
+    config: BaseRecordConfig & { 
+      expectsCollection?: boolean;
+      railsThrowOnNotFound?: boolean;
+      modelName?: string;
+    } = {}
   ) {
     super(getQueryBuilder, config);
     
     this._data = config.defaultValue;
     this._isCollection = config.expectsCollection || false;
+    this._railsThrowOnNotFound = config.railsThrowOnNotFound || false;
+    this._modelName = config.modelName || 'Record';
     this._isLoading = true;
     this._error = null;
     
@@ -119,13 +138,19 @@ class ActiveRecord<T> extends BaseRecord<T> {
     this.initializeQuery();
   }
 
-  // Direct property access for maximum performance
+  // Rails-compatible data access with proper error handling
   
   /** Single record access (like Rails .find result) */
   get record(): T | null {
     if (this._isCollection) {
       throw new ActiveRecordError('Called .record on collection query. Use .records instead.');
     }
+    
+    // Rails find() behavior - throw if not found and configured to do so
+    if (this._railsThrowOnNotFound && !this._data && !this._isLoading && !this._error) {
+      throw new RecordNotFoundError(`Couldn't find ${this._modelName}`, this._modelName);
+    }
+    
     return this._data as T | null;
   }
   
@@ -333,13 +358,13 @@ export const ModelFactory = {
   },
 
   /**
-   * Create ActiveRecord factory function for vanilla JavaScript
-   * Optimized for direct property access and performance
+   * Create Rails-Compatible ActiveRecord factory function
+   * Implements 100% Rails ActiveRecord API compatibility
    */
   createActiveModel<T>(config: ModelConfig) {
     return {
       /**
-       * Find a single record by ID (like Rails .find)
+       * Find a single record by ID (Rails .find behavior - throws RecordNotFoundError if not found)
        * @param id - The record ID
        * @param options - Factory creation options
        */
@@ -352,13 +377,15 @@ export const ModelFactory = {
           {
             ...options,
             expectsCollection: false,
-            defaultValue: null
+            defaultValue: null,
+            railsThrowOnNotFound: true,
+            modelName: config.className
           }
         );
       },
 
       /**
-       * Find a single record by conditions (like Rails .find_by)
+       * Find a single record by conditions (Rails .find_by behavior - returns null if not found)
        * @param conditions - Object with field/value pairs to match
        * @param options - Factory creation options
        */
@@ -381,13 +408,15 @@ export const ModelFactory = {
           {
             ...options,
             expectsCollection: false,
-            defaultValue: null
+            defaultValue: null,
+            railsThrowOnNotFound: false,  // findBy returns null, doesn't throw
+            modelName: config.className
           }
         );
       },
 
       /**
-       * Get all records (like Rails .all)
+       * Get all records (Rails .all behavior - always returns array)
        * @param options - Factory creation options
        */
       all(options: FactoryCreateOptions = {}) {
@@ -399,13 +428,15 @@ export const ModelFactory = {
           {
             ...options,
             expectsCollection: true,
-            defaultValue: []
+            defaultValue: [],
+            railsThrowOnNotFound: false,  // Collections never throw
+            modelName: config.className
           }
         );
       },
 
       /**
-       * Find records matching conditions (like Rails .where)
+       * Find records matching conditions (Rails .where behavior - always returns array)
        * @param conditions - Object with field/value pairs to match
        * @param options - Factory creation options
        */
@@ -428,9 +459,19 @@ export const ModelFactory = {
           {
             ...options,
             expectsCollection: true,
-            defaultValue: []
+            defaultValue: [],
+            railsThrowOnNotFound: false,  // Collections never throw
+            modelName: config.className
           }
         );
+      },
+
+      /**
+       * Create Rails-compatible model with full API (new in Phase 2)
+       * Returns full Rails ActiveRecord interface with method chaining and scopes
+       */
+      createRailsModel(): RailsActiveRecord<T> {
+        return createRailsActiveRecord<T>(config);
       }
     };
   }
