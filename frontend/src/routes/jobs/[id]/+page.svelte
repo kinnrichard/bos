@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onDestroy } from 'svelte';
   import { getZeroContext } from '$lib/zero-context.svelte';
@@ -12,34 +11,37 @@
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import { layoutActions } from '$lib/stores/layout.svelte';
 
-  // Get job ID from URL params
-  $: jobId = $page.params.id;
-  $: console.log('[JobPage] Job ID from URL params:', jobId);
+  // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
+  const jobId = $derived($page.params.id);
+  
+  // ✨ USE $derived FOR REACTIVE QUERY - UPDATES WHEN jobId CHANGES
+  const jobQuery = $derived(Job.find(jobId));
+  
+  // ✨ USE $derived FOR DYNAMIC TITLE
+  const pageTitle = $derived(job ? `${job.attributes?.title || 'Job'} - bŏs` : 'Job Details - bŏs');
 
-  // Use Zero query for real-time job data with all relationships
-  $: jobQuery = Job.find(jobId);
-
-  // Access Zero query result - Zero returns data directly in .value
-  $: job = jobQuery.current || jobQuery.value;
-  $: isLoading = !job && browser && !!jobId; // Loading if no data, in browser, and jobId exists
-  $: error = null; // Zero handles errors internally
+  // ✨ USE ReactiveQuery GETTERS FOR PROPER SVELTE 5 REACTIVITY
+  const job = $derived(jobQuery.data);
+  const isLoading = $derived(jobQuery.isLoading);
+  const error = $derived(jobQuery.error);
 
   // TODO: Task batch details - need to implement Zero-based task query
   // For now, we'll pass undefined until tasks are fully migrated to Zero
-  $: taskBatchDetails = undefined;
+  const taskBatchDetails = $derived(undefined);
   
-  // Log job data structure for debugging
-  $: if (job) {
-    console.log('[JobPage] Job data loaded via Zero:', job?.title || job?.attributes?.title);
-    console.log('[JobPage] Zero job structure:', job);
-  }
-
-  // Update current job in layout store when job data changes
-  // Only update with actual data, preserve existing data during cache invalidation
-  $: if (job) {
-    console.log('[JobPage] Setting current job in layout store via Zero');
-    layoutActions.setCurrentJob(job);
-  }
+  // ✨ USE $effect FOR SIDE EFFECTS (NOT REACTIVE STATEMENTS)
+  $effect(() => {
+    console.log('[JobPage] Job ID from URL params:', jobId);
+    
+    if (job) {
+      console.log('[JobPage] Job data loaded via ReactiveQuery:', job?.title || job?.attributes?.title);
+      console.log('[JobPage] Zero job structure:', job);
+      
+      // Update current job in layout store when job data changes
+      console.log('[JobPage] Setting current job in layout store via ReactiveQuery');
+      layoutActions.setCurrentJob(job);
+    }
+  });
 
   // Clear current job when component is destroyed (leaving page)
   onDestroy(() => {
@@ -51,14 +53,15 @@
     goto('/jobs');
   }
 
-  // Handle retry - Zero automatically syncs, no manual retry needed
+  // Handle retry - ReactiveQuery automatically syncs, manual refresh available
   function handleRetry() {
-    console.log('[JobPage] Zero query auto-syncs, no manual retry needed');
+    console.log('[JobPage] ReactiveQuery auto-syncs via Zero addListener, manual refresh available');
+    jobQuery.refresh();
   }
 </script>
 
 <svelte:head>
-  <title>{job ? `${job.attributes?.title || 'Job'} - bŏs` : 'Job Details - bŏs'}</title>
+  <title>{pageTitle}</title>
 </svelte:head>
 
 <AppLayout>
@@ -84,13 +87,13 @@
         <div class="error-actions">
           <button 
             class="button button--primary"
-            on:click={handleRetry}
+            onclick={handleRetry}
           >
             Try Again
           </button>
           <button 
             class="button button--secondary"
-            on:click={handleBack}
+            onclick={handleBack}
           >
             Back to Jobs
           </button>
@@ -110,7 +113,7 @@
         <p>The requested job could not be found.</p>
         <button 
           class="button button--primary"
-          on:click={handleBack}
+          onclick={handleBack}
         >
           Back to Jobs
         </button>
