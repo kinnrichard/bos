@@ -4,6 +4,9 @@
 
 import { getZero } from './zero-client';
 
+// Default TTL for queries when none specified
+const DEFAULT_TTL = '1h';
+
 /**
  * Reactive query wrapper for Zero.js that provides ActiveRecord-style API
  * Uses Zero's native addListener for real-time updates without polling
@@ -47,7 +50,7 @@ export class ReactiveQuery<T> {
     // Development warning for missing TTL (now properly handled)
     if (this.ttl === undefined) {
       console.warn(
-        '⚠️  ReactiveQuery created without TTL - using default "1s"',
+        `⚠️  ReactiveQuery created without TTL - using default "${DEFAULT_TTL}"`,
         {
           queryBuilder: this.getQueryBuilder.toString(),
           defaultValue: this.defaultValue,
@@ -127,7 +130,7 @@ export class ReactiveQuery<T> {
         console.log('🔍 ReactiveQuery: Creating materialized view with TTL:', this.ttl, typeof this.ttl);
         
         // Proper TTL handling per Zero.js documentation
-        const ttlValue = this.ttl || '1s'; // Use provided TTL or safe default
+        const ttlValue = this.ttl || DEFAULT_TTL; // Use provided TTL or safe default
         console.log('🔍 ReactiveQuery: Using TTL:', ttlValue);
         
         // Validate TTL before passing to Zero
@@ -245,7 +248,7 @@ export class ReactiveQueryOne<T> {
     // Development warning for missing TTL (now properly handled)
     if (this.ttl === undefined) {
       console.warn(
-        '⚠️  ReactiveQueryOne created without TTL - using default "1s"',
+        `⚠️  ReactiveQueryOne created without TTL - using default "${DEFAULT_TTL}"`,
         {
           queryBuilder: this.getQueryBuilder.toString(),
           defaultValue: this.defaultValue,
@@ -325,7 +328,7 @@ export class ReactiveQueryOne<T> {
         console.log('🔍 ReactiveQueryOne: Creating materialized view with TTL:', this.ttl, typeof this.ttl);
         
         // Proper TTL handling per Zero.js documentation
-        const ttlValue = this.ttl || '1s'; // Use provided TTL or safe default
+        const ttlValue = this.ttl || DEFAULT_TTL; // Use provided TTL or safe default
         console.log('🔍 ReactiveQueryOne: Using TTL:', ttlValue);
         
         // Validate TTL before passing to Zero
