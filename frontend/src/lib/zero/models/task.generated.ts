@@ -11,6 +11,7 @@
 
 
 import { getZero } from '../zero-client';
+import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query';
 
 // Generated TypeScript types for tasks
 // TypeScript interfaces for tasks
@@ -516,66 +517,8 @@ export async function restoreTask(id: string): Promise<TaskMutationResult> {
 
 // Generated ActiveRecord-style queries for tasks
 
-// Zero reactive query wrapper using materialize() for active queries
-// This creates active queries that populate Zero's cache and stay synchronized
-function createReactiveQuery<T>(queryBuilder: any, defaultValue: T) {
-  let current = defaultValue;
-  let resultType: 'loading' | 'success' | 'error' = 'loading';
-  let error: Error | null = null;
-  let view: any = null;
-  let retryCount = 0;
-  const maxRetries = 3;
+// Uses new ReactiveQuery classes with Zero's native addListener for real-time updates
 
-  const execute = async () => {
-    try {
-      resultType = 'loading';
-      
-      // Check if Zero is ready
-      const zero = getZero();
-      if (!zero) {
-        setTimeout(() => execute(), 100);
-        return;
-      }
-      
-      // Create active query using materialize()
-      view = queryBuilder.materialize();
-      const result = await view.data;
-      
-      // If result is null and we haven't retried much, try again
-      if ((result === null || result === undefined) && retryCount < maxRetries) {
-        retryCount++;
-        setTimeout(() => execute(), 500);
-        return;
-      }
-      
-      current = result || defaultValue;
-      resultType = 'success';
-      error = null;
-      retryCount = 0;
-    } catch (err) {
-      error = err instanceof Error ? err : new Error('Unknown error');
-      resultType = 'error';
-      
-      // Retry on error if we haven't exceeded max retries
-      if (retryCount < maxRetries) {
-        retryCount++;
-        setTimeout(() => execute(), 1000);
-      }
-    }
-  };
-
-  // Execute after a small delay to let Zero initialize
-  setTimeout(() => execute(), 100);
-
-  return {
-    get current() { return current; },
-    get value() { return current; },
-    get resultType() { return resultType; },
-    get error() { return error; },
-    refresh: execute,
-    destroy: () => view?.destroy()
-  };
-}
 
 /**
  * ActiveRecord-style query interface for tasks
@@ -594,32 +537,38 @@ export const Task = {
    * ```
    */
   find(id: string) {
-    const zero = getZero();
-    if (!zero) return { current: null, value: null, resultType: 'loading' as const, error: null };
-    
-    return createReactiveQuery(
-      zero.query.tasks.where('id', id).one(),
-      null as Task | null
+    return new ReactiveQueryOne<Task>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.tasks.where('id', id).one() : null;
+      },
+      null
     );
   },
 
   /**
    * Get all tasks (active only)
-   * @returns Zero query result with array of tasks
+   * @returns Reactive query with array of tasks
    * 
    * @example
    * ```typescript
+   * // In Svelte component
    * const allTasks = Task.all();
-   * console.log(allTasks.current); // Array of tasks
+   * // allTasks.data is reactive array
+   * 
+   * // In vanilla JS
+   * const allTasks = Task.all();
+   * console.log(allTasks.current); // Current tasks array
+   * allTasks.subscribe((data) => console.log('Tasks updated:', data.length));
    * ```
    */
   all() {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
-    
-    return createReactiveQuery(
-      zero.query.tasks.where('deleted_at', 'IS', null).orderBy('created_at', 'desc'),
-      [] as Task[]
+    return new ReactiveQuery<Task>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.tasks.orderBy('created_at', 'desc') : null;
+      },
+      []
     );
   },
 
@@ -635,36 +584,23 @@ export const Task = {
    * ```
    */
   where(conditions: Partial<Task>) {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
-    
-    let query = zero.query.tasks.where('deleted_at', 'IS', null);
-    
-    Object.entries(conditions).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.where(key, value);
-      }
-    });
-    
-    return createReactiveQuery(
-      query.orderBy('created_at', 'desc'),
-      [] as Task[]
-    );
-  },
-
-  /**
-   * Get only active (non-deleted) tasks
-   * @returns Zero query result with array of active tasks
-   */
-  active() {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
-    
-    return createReactiveQuery(
-      zero.query.tasks.where('deleted_at', 'IS', null).orderBy('created_at', 'desc'),
-      [] as Task[]
+    return new ReactiveQuery<Task>(
+      () => {
+        const zero = getZero();
+        if (!zero) return null;
+        
+        let query = zero.query.tasks;
+        
+        Object.entries(conditions).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.where(key, value);
+          }
+        });
+        
+        return query.orderBy('created_at', 'desc');
+      },
+      []
     );
   }
-
 };
 

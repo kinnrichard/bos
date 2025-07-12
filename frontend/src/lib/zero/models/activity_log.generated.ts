@@ -11,6 +11,7 @@
 
 
 import { getZero } from '../zero-client';
+import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query';
 import { useQuery } from 'zero-svelte-query';
 
 // Generated TypeScript types for activity_logs

@@ -11,7 +11,7 @@
 
 
 import { getZero } from '../zero-client';
-import { useQuery } from 'zero-svelte-query';
+import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query';
 
 // Generated TypeScript types for contact_methods
 // TypeScript interfaces for contact_methods
@@ -275,9 +275,13 @@ export const ContactMethod = {
    * ```
    */
   find(id: string) {
-    const zero = getZero();
-    if (!zero) return { current: null, value: null, resultType: 'loading' as const };
-    return useQuery(zero.query.contact_methods.where('id', id).one());
+    return new ReactiveQueryOne<ContactMethod>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.contact_methods.where('id', id).one() : null;
+      },
+      null
+    );
   },
 
   /**
@@ -291,9 +295,13 @@ export const ContactMethod = {
    * ```
    */
   all() {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-    return useQuery(zero.query.contact_methods.orderBy('created_at', 'desc'));
+    return new ReactiveQuery<ContactMethod>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.contact_methods.orderBy('created_at', 'desc') : null;
+      },
+      []
+    );
   },
 
   /**
@@ -308,18 +316,23 @@ export const ContactMethod = {
    * ```
    */
   where(conditions: Partial<ContactMethod>) {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-    
-    let query = zero.query.contact_methods;
-    
-    Object.entries(conditions).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.where(key, value);
-      }
-    });
-    
-    return useQuery(query.orderBy('created_at', 'desc'));
+    return new ReactiveQuery<ContactMethod>(
+      () => {
+        const zero = getZero();
+        if (!zero) return null;
+        
+        let query = zero.query.contact_methods;
+        
+        Object.entries(conditions).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.where(key, value);
+          }
+        });
+        
+        return query.orderBy('created_at', 'desc');
+      },
+      []
+    );
   }
 };
 

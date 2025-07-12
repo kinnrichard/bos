@@ -11,6 +11,7 @@
 
 
 import { getZero } from '../zero-client';
+import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query';
 
 // Generated TypeScript types for jobs
 // TypeScript interfaces for jobs
@@ -281,76 +282,7 @@ export async function upsertJob(data: (CreateJobData & { id?: string }) | (Updat
 
 
 // Generated ActiveRecord-style queries for jobs
-
-// Zero reactive query wrapper using materialize() for active queries
-// This creates active queries that populate Zero's cache and stay synchronized
-function createReactiveQuery<T>(queryBuilder: any, defaultValue: T) {
-  let current = defaultValue;
-  let resultType: 'loading' | 'success' | 'error' = 'loading';
-  let error: Error | null = null;
-  let view: any = null;
-  let retryCount = 0;
-  const maxRetries = 3;
-
-  const execute = async () => {
-    try {
-      resultType = 'loading';
-      console.log('🔍 createReactiveQuery: Starting execution', queryBuilder);
-      
-      // Check if Zero is ready
-      const zero = getZero();
-      if (!zero) {
-        console.log('🔍 createReactiveQuery: Zero not ready, waiting...');
-        setTimeout(() => execute(), 100);
-        return;
-      }
-      
-      // Create active query using materialize()
-      view = queryBuilder.materialize();
-      console.log('🔍 createReactiveQuery: Created view', view);
-      
-      const result = await view.data;
-      console.log('🔍 createReactiveQuery: Got result', result?.length || 'null');
-      
-      // If result is null and we haven't retried much, try again
-      if ((result === null || result === undefined) && retryCount < maxRetries) {
-        retryCount++;
-        console.log(`🔍 createReactiveQuery: Got null result, retrying (${retryCount}/${maxRetries})`);
-        setTimeout(() => execute(), 500);
-        return;
-      }
-      
-      current = result || defaultValue;
-      resultType = 'success';
-      error = null;
-      retryCount = 0;
-      console.log('🔍 createReactiveQuery: State updated', { current: current, resultType: resultType });
-    } catch (err) {
-      console.error('🔍 createReactiveQuery: Error', err);
-      error = err instanceof Error ? err : new Error('Unknown error');
-      resultType = 'error';
-      
-      // Retry on error if we haven't exceeded max retries
-      if (retryCount < maxRetries) {
-        retryCount++;
-        console.log(`🔍 createReactiveQuery: Retrying after error (${retryCount}/${maxRetries})`);
-        setTimeout(() => execute(), 1000);
-      }
-    }
-  };
-
-  // Execute after a small delay to let Zero initialize
-  setTimeout(() => execute(), 100);
-
-  return {
-    get current() { return current; },
-    get value() { return current; },
-    get resultType() { return resultType; },
-    get error() { return error; },
-    refresh: execute,
-    destroy: () => view?.destroy()
-  };
-}
+// Uses new ReactiveQuery classes with Zero's native addListener for real-time updates
 
 /**
  * ActiveRecord-style query interface for jobs
@@ -360,99 +292,91 @@ export const Job = {
   /**
    * Find a single job by ID
    * @param id - The UUID of the job
-   * @returns Zero query result with the job or null
+   * @returns Reactive query with the job or null
    * 
    * @example
    * ```typescript
+   * // In Svelte component
    * const job = Job.find('123e4567-e89b-12d3-a456-426614174000');
-   * console.log(job.current); // The job object or null
+   * // job.data is reactive
+   * 
+   * // In vanilla JS
+   * const job = Job.find('123e4567-e89b-12d3-a456-426614174000');
+   * console.log(job.current); // Current job data
+   * job.subscribe((data) => console.log('Job updated:', data));
    * ```
    */
   find(id: string) {
-    const zero = getZero();
-    if (!zero) return { current: null, value: null, resultType: 'loading' as const, error: null };
-    
-    return createReactiveQuery(
-      zero.query.jobs.where('id', id).one(),
-      null as Job | null
+    return new ReactiveQueryOne<Job>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.jobs.where('id', id).one() : null;
+      },
+      null
     );
   },
 
   /**
    * Get all jobs
-   * @returns Zero query result with array of jobs
+   * @returns Reactive query with array of jobs
    * 
    * @example
    * ```typescript
+   * // In Svelte component
    * const allJobs = Job.all();
-   * console.log(allJobs.current); // Array of jobs
+   * // allJobs.data is reactive array
+   * 
+   * // In vanilla JS
+   * const allJobs = Job.all();
+   * console.log(allJobs.current); // Current jobs array
+   * allJobs.subscribe((data) => console.log('Jobs updated:', data.length));
    * ```
    */
   all() {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
-    
-    console.log('🔍 Job.all(): Creating query with zero:', zero);
-    console.log('🔍 Job.all(): zero.query.jobs:', zero.query.jobs);
-    
-    // First try without orderBy to see if that's causing the issue
-    const queryBuilder = zero.query.jobs;
-    console.log('🔍 Job.all(): queryBuilder before orderBy:', queryBuilder);
-    
-    // Add orderBy
-    const orderedQuery = queryBuilder.orderBy('created_at', 'desc');
-    console.log('🔍 Job.all(): queryBuilder after orderBy:', orderedQuery);
-    
-    return createReactiveQuery(
-      orderedQuery,
-      [] as Job[]
+    return new ReactiveQuery<Job>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.jobs.orderBy('created_at', 'desc') : null;
+      },
+      []
     );
   },
 
   /**
    * Find jobs matching conditions
    * @param conditions - Object with field/value pairs to match
-   * @returns Zero query result with array of matching jobs
+   * @returns Reactive query with array of matching jobs
    * 
    * @example
    * ```typescript
-   * const activeJobs = Job.where({ status: 'active' });
+   * // In Svelte component
+   * const activeJobs = Job.where({ status: 1 }); // reactive array
    * const clientJobs = Job.where({ client_id: 'some-uuid' });
+   * 
+   * // In vanilla JS
+   * const activeJobs = Job.where({ status: 1 });
+   * console.log(activeJobs.current); // Current matching jobs
+   * activeJobs.subscribe((data) => console.log('Active jobs:', data.length));
    * ```
    */
   where(conditions: Partial<Job>) {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
-    
-    let query = zero.query.jobs;
-    
-    Object.entries(conditions).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.where(key, value);
-      }
-    });
-    
-    return createReactiveQuery(
-      query.orderBy('created_at', 'desc'),
-      [] as Job[]
+    return new ReactiveQuery<Job>(
+      () => {
+        const zero = getZero();
+        if (!zero) return null;
+        
+        let query = zero.query.jobs;
+        
+        Object.entries(conditions).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.where(key, value);
+          }
+        });
+        
+        return query.orderBy('created_at', 'desc');
+      },
+      []
     );
-  },
-
-  /**
-   * Get the raw Zero query builder for all jobs
-   * For use with custom reactive patterns like fZero rune
-   * @returns Zero query builder
-   * 
-   * @example
-   * ```typescript
-   * const jobsQuery = fZero(Job.queryBuilder());
-   * ```
-   */
-  queryBuilder() {
-    const zero = getZero();
-    if (!zero) return null;
-    
-    return zero.query.jobs.orderBy('created_at', 'desc');
   }
 };
 

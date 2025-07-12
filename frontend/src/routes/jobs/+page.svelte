@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { getZeroContext } from '$lib/zero-context.svelte';
-  import { fZero } from '$lib/zero/runes.svelte';
 
   // Get Zero functions from context - no imports needed!
   const { Job } = getZeroContext();
@@ -17,8 +16,8 @@
   const status = $derived(url.searchParams.get('status') as JobStatus | undefined);
   const priority = $derived(url.searchParams.get('priority') as JobPriority | undefined);
 
-  // ✨ USE CUSTOM fZero RUNE FOR ZERO NATIVE REACTIVITY  
-  const jobsQuery = fZero(() => Job.queryBuilder(), []);
+  // ✨ USE ENHANCED ACTIVERECORD-STYLE REACTIVE API  
+  const jobsQuery = Job.all();
   
   // ✨ USE $derived FOR DATA TRANSFORMATIONS (NOT IMPERATIVE UPDATES)
   const allJobs = $derived(
@@ -115,17 +114,18 @@
   //   firstJob: jobs[0]
   // });
 
-  // Handle retry - Zero automatically retries with native reactivity
+  // Handle retry - ActiveRecord-style queries use Zero's native reactivity
   function handleRetry() {
-    // Zero rune automatically stays in sync via addListener
-    // Manual refresh not needed with native reactivity
-    console.log('🔄 Jobs page retry requested - Zero rune will auto-sync');
+    // ReactiveQuery automatically stays in sync via addListener
+    // Manual refresh available if needed
+    jobsQuery.refresh();
+    console.log('🔄 Jobs page retry requested - ReactiveQuery refreshed');
   }
 
-  // Handle refresh - Zero automatically stays fresh with native reactivity
+  // Handle refresh - ActiveRecord-style queries stay fresh automatically
   function handleRefresh() {
-    // Zero queries auto-refresh in real-time via addListener
-    console.log('🔄 Jobs page refresh requested - Zero rune provides real-time updates');
+    // ReactiveQuery provides real-time updates via Zero's addListener
+    console.log('🔄 Jobs page refresh requested - ReactiveQuery provides real-time updates');
   }
 </script>
 

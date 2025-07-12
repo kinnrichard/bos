@@ -11,6 +11,7 @@
 
 
 import { getZero } from '../zero-client';
+import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query';
 
 // Generated TypeScript types for users
 // TypeScript interfaces for users
@@ -262,66 +263,8 @@ export async function upsertUser(data: (CreateUserData & { id?: string }) | (Upd
 
 // Generated ActiveRecord-style queries for users
 
-// Zero reactive query wrapper using materialize() for active queries
-// This creates active queries that populate Zero's cache and stay synchronized
-function createReactiveQuery<T>(queryBuilder: any, defaultValue: T) {
-  let current = defaultValue;
-  let resultType: 'loading' | 'success' | 'error' = 'loading';
-  let error: Error | null = null;
-  let view: any = null;
-  let retryCount = 0;
-  const maxRetries = 3;
+// Uses new ReactiveQuery classes with Zero's native addListener for real-time updates
 
-  const execute = async () => {
-    try {
-      resultType = 'loading';
-      
-      // Check if Zero is ready
-      const zero = getZero();
-      if (!zero) {
-        setTimeout(() => execute(), 100);
-        return;
-      }
-      
-      // Create active query using materialize()
-      view = queryBuilder.materialize();
-      const result = await view.data;
-      
-      // If result is null and we haven't retried much, try again
-      if ((result === null || result === undefined) && retryCount < maxRetries) {
-        retryCount++;
-        setTimeout(() => execute(), 500);
-        return;
-      }
-      
-      current = result || defaultValue;
-      resultType = 'success';
-      error = null;
-      retryCount = 0;
-    } catch (err) {
-      error = err instanceof Error ? err : new Error('Unknown error');
-      resultType = 'error';
-      
-      // Retry on error if we haven't exceeded max retries
-      if (retryCount < maxRetries) {
-        retryCount++;
-        setTimeout(() => execute(), 1000);
-      }
-    }
-  };
-
-  // Execute after a small delay to let Zero initialize
-  setTimeout(() => execute(), 100);
-
-  return {
-    get current() { return current; },
-    get value() { return current; },
-    get resultType() { return resultType; },
-    get error() { return error; },
-    refresh: execute,
-    destroy: () => view?.destroy()
-  };
-}
 
 /**
  * ActiveRecord-style query interface for users
@@ -340,12 +283,12 @@ export const User = {
    * ```
    */
   find(id: string) {
-    const zero = getZero();
-    if (!zero) return { current: null, value: null, resultType: 'loading' as const, error: null };
-    
-    return createReactiveQuery(
-      zero.query.users.where('id', id).one(),
-      null as User | null
+    return new ReactiveQueryOne<User>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.users.where('id', id).one() : null;
+      },
+      null
     );
   },
 
@@ -360,12 +303,12 @@ export const User = {
    * ```
    */
   all() {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
-    
-    return createReactiveQuery(
-      zero.query.users.orderBy('created_at', 'desc'),
-      [] as User[]
+    return new ReactiveQuery<User>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.users.orderBy('created_at', 'desc') : null;
+      },
+      []
     );
   },
 
@@ -381,20 +324,22 @@ export const User = {
    * ```
    */
   where(conditions: Partial<User>) {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
-    
-    let query = zero.query.users;
-    
-    Object.entries(conditions).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.where(key, value);
-      }
-    });
-    
-    return createReactiveQuery(
-      query.orderBy('created_at', 'desc'),
-      [] as User[]
+    return new ReactiveQuery<User>(
+      () => {
+        const zero = getZero();
+        if (!zero) return null;
+        
+        let query = zero.query.users;
+        
+        Object.entries(conditions).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.where(key, value);
+          }
+        });
+        
+        return query.orderBy('created_at', 'desc');
+      },
+      []
     );
   }
 };

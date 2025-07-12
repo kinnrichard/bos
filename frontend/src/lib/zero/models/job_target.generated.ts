@@ -11,7 +11,7 @@
 
 
 import { getZero } from '../zero-client';
-import { useQuery } from 'zero-svelte-query';
+import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query';
 
 // Generated TypeScript types for job_targets
 // TypeScript interfaces for job_targets
@@ -284,9 +284,13 @@ export const JobTarget = {
    * ```
    */
   find(id: string) {
-    const zero = getZero();
-    if (!zero) return { current: null, value: null, resultType: 'loading' as const };
-    return useQuery(zero.query.job_targets.where('id', id).one());
+    return new ReactiveQueryOne<JobTarget>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.job_targets.where('id', id).one() : null;
+      },
+      null
+    );
   },
 
   /**
@@ -300,9 +304,13 @@ export const JobTarget = {
    * ```
    */
   all() {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-    return useQuery(zero.query.job_targets.orderBy('created_at', 'desc'));
+    return new ReactiveQuery<JobTarget>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.job_targets.orderBy('created_at', 'desc') : null;
+      },
+      []
+    );
   },
 
   /**
@@ -317,18 +325,23 @@ export const JobTarget = {
    * ```
    */
   where(conditions: Partial<JobTarget>) {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-    
-    let query = zero.query.job_targets;
-    
-    Object.entries(conditions).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.where(key, value);
-      }
-    });
-    
-    return useQuery(query.orderBy('created_at', 'desc'));
+    return new ReactiveQuery<JobTarget>(
+      () => {
+        const zero = getZero();
+        if (!zero) return null;
+        
+        let query = zero.query.job_targets;
+        
+        Object.entries(conditions).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.where(key, value);
+          }
+        });
+        
+        return query.orderBy('created_at', 'desc');
+      },
+      []
+    );
   }
 };
 

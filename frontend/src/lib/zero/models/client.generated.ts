@@ -11,6 +11,7 @@
 
 
 import { getZero } from '../zero-client';
+import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query';
 
 // Generated TypeScript types for clients
 // TypeScript interfaces for clients
@@ -253,67 +254,7 @@ export async function upsertClient(data: (CreateClientData & { id?: string }) | 
 
 
 // Generated ActiveRecord-style queries for clients
-
-// Zero reactive query wrapper using materialize() for active queries
-// This creates active queries that populate Zero's cache and stay synchronized
-function createReactiveQuery<T>(queryBuilder: any, defaultValue: T) {
-  let current = defaultValue;
-  let resultType: 'loading' | 'success' | 'error' = 'loading';
-  let error: Error | null = null;
-  let view: any = null;
-  let retryCount = 0;
-  const maxRetries = 3;
-
-  const execute = async () => {
-    try {
-      resultType = 'loading';
-      
-      // Check if Zero is ready
-      const zero = getZero();
-      if (!zero) {
-        setTimeout(() => execute(), 100);
-        return;
-      }
-      
-      // Create active query using materialize()
-      view = queryBuilder.materialize();
-      const result = await view.data;
-      
-      // If result is null and we haven't retried much, try again
-      if ((result === null || result === undefined) && retryCount < maxRetries) {
-        retryCount++;
-        setTimeout(() => execute(), 500);
-        return;
-      }
-      
-      current = result || defaultValue;
-      resultType = 'success';
-      error = null;
-      retryCount = 0;
-    } catch (err) {
-      error = err instanceof Error ? err : new Error('Unknown error');
-      resultType = 'error';
-      
-      // Retry on error if we haven't exceeded max retries
-      if (retryCount < maxRetries) {
-        retryCount++;
-        setTimeout(() => execute(), 1000);
-      }
-    }
-  };
-
-  // Execute after a small delay to let Zero initialize
-  setTimeout(() => execute(), 100);
-
-  return {
-    get current() { return current; },
-    get value() { return current; },
-    get resultType() { return resultType; },
-    get error() { return error; },
-    refresh: execute,
-    destroy: () => view?.destroy()
-  };
-}
+// Uses new ReactiveQuery classes with Zero's native addListener for real-time updates
 
 /**
  * ActiveRecord-style query interface for clients
@@ -323,70 +264,89 @@ export const Client = {
   /**
    * Find a single client by ID
    * @param id - The UUID of the client
-   * @returns Zero query result with the client or null
+   * @returns Reactive query with the client or null
    * 
    * @example
    * ```typescript
+   * // In Svelte component
    * const client = Client.find('123e4567-e89b-12d3-a456-426614174000');
-   * console.log(client.current); // The client object or null
+   * // client.data is reactive
+   * 
+   * // In vanilla JS
+   * const client = Client.find('123e4567-e89b-12d3-a456-426614174000');
+   * console.log(client.current); // Current client data
+   * client.subscribe((data) => console.log('Client updated:', data));
    * ```
    */
   find(id: string) {
-    const zero = getZero();
-    if (!zero) return { current: null, value: null, resultType: 'loading' as const, error: null };
-    
-    return createReactiveQuery(
-      zero.query.clients.where('id', id).one(),
-      null as Client | null
+    return new ReactiveQueryOne<Client>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.clients.where('id', id).one() : null;
+      },
+      null
     );
   },
 
   /**
    * Get all clients
-   * @returns Zero query result with array of clients
+   * @returns Reactive query with array of clients
    * 
    * @example
    * ```typescript
+   * // In Svelte component
    * const allClients = Client.all();
-   * console.log(allClients.current); // Array of clients
+   * // allClients.data is reactive array
+   * 
+   * // In vanilla JS
+   * const allClients = Client.all();
+   * console.log(allClients.current); // Current clients array
+   * allClients.subscribe((data) => console.log('Clients updated:', data.length));
    * ```
    */
   all() {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
-    
-    return createReactiveQuery(
-      zero.query.clients.orderBy('created_at', 'desc'),
-      [] as Client[]
+    return new ReactiveQuery<Client>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.clients.orderBy('created_at', 'desc') : null;
+      },
+      []
     );
   },
 
   /**
    * Find clients matching conditions
    * @param conditions - Object with field/value pairs to match
-   * @returns Zero query result with array of matching clients
+   * @returns Reactive query with array of matching clients
    * 
    * @example
    * ```typescript
-   * const activeClients = Client.where({ status: 'active' });
-   * const clientJobs = Client.where({ client_id: 'some-uuid' });
+   * // In Svelte component
+   * const activeClients = Client.where({ client_type: 'business' });
+   * 
+   * // In vanilla JS
+   * const activeClients = Client.where({ client_type: 'business' });
+   * console.log(activeClients.current); // Current matching clients
+   * activeClients.subscribe((data) => console.log('Clients updated:', data.length));
    * ```
    */
   where(conditions: Partial<Client>) {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
-    
-    let query = zero.query.clients;
-    
-    Object.entries(conditions).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.where(key, value);
-      }
-    });
-    
-    return createReactiveQuery(
-      query.orderBy('created_at', 'desc'),
-      [] as Client[]
+    return new ReactiveQuery<Client>(
+      () => {
+        const zero = getZero();
+        if (!zero) return null;
+        
+        let query = zero.query.clients;
+        
+        Object.entries(conditions).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.where(key, value);
+          }
+        });
+        
+        return query.orderBy('created_at', 'desc');
+      },
+      []
     );
   }
 };
