@@ -44,6 +44,18 @@ export class ReactiveQuery<T> {
     this._state.isLoading = true;
     this._state.error = null;
     
+    // Development warning for missing TTL
+    if (this.ttl === undefined) {
+      console.warn(
+        '⚠️  ReactiveQuery created without TTL - using Zero default (immediate expiry on unmount)',
+        {
+          queryBuilder: this.getQueryBuilder.toString(),
+          defaultValue: this.defaultValue,
+          message: 'Query will expire immediately when component unmounts. Add TTL parameter if you want background persistence.'
+        }
+      );
+    }
+    
     // Set up Zero listener
     this.initializeQuery();
   }
@@ -112,10 +124,20 @@ export class ReactiveQuery<T> {
           return;
         }
         
-        console.log('🔍 ReactiveQuery: Creating materialized view with TTL:', this.ttl);
-        this.view = this.ttl 
-          ? queryBuilder.materialize({ ttl: this.ttl })
-          : queryBuilder.materialize();
+        console.log('🔍 ReactiveQuery: Creating materialized view with TTL:', this.ttl, typeof this.ttl);
+        
+        // Capture TTL value in local variable to prevent changes
+        const ttlValue = this.ttl;
+        console.log('🔍 ReactiveQuery: Local TTL value:', ttlValue, typeof ttlValue);
+        
+        // Pass TTL to Zero if provided
+        if (ttlValue && typeof ttlValue === 'string' && ttlValue.length > 0) {
+          console.log('🔍 ReactiveQuery: Using TTL:', ttlValue);
+          this.view = queryBuilder.materialize({ ttl: ttlValue });
+        } else {
+          console.log('🔍 ReactiveQuery: No TTL provided, using Zero default');
+          this.view = queryBuilder.materialize();
+        }
         
         // Set up Zero's native listener for real-time updates
         this.removeListener = this.view.addListener((newData: T[]) => {
@@ -222,6 +244,18 @@ export class ReactiveQueryOne<T> {
     this._state.isLoading = true;
     this._state.error = null;
     
+    // Development warning for missing TTL
+    if (this.ttl === undefined) {
+      console.warn(
+        '⚠️  ReactiveQueryOne created without TTL - using Zero default (immediate expiry on unmount)',
+        {
+          queryBuilder: this.getQueryBuilder.toString(),
+          defaultValue: this.defaultValue,
+          message: 'Query will expire immediately when component unmounts. Add TTL parameter if you want background persistence.'
+        }
+      );
+    }
+    
     // Set up Zero listener
     this.initializeQuery();
   }
@@ -290,10 +324,20 @@ export class ReactiveQueryOne<T> {
           return;
         }
         
-        console.log('🔍 ReactiveQueryOne: Creating materialized view with TTL:', this.ttl);
-        this.view = this.ttl 
-          ? queryBuilder.materialize({ ttl: this.ttl })
-          : queryBuilder.materialize();
+        console.log('🔍 ReactiveQueryOne: Creating materialized view with TTL:', this.ttl, typeof this.ttl);
+        
+        // Capture TTL value in local variable to prevent changes
+        const ttlValue = this.ttl;
+        console.log('🔍 ReactiveQueryOne: Local TTL value:', ttlValue, typeof ttlValue);
+        
+        // Pass TTL to Zero if provided
+        if (ttlValue && typeof ttlValue === 'string' && ttlValue.length > 0) {
+          console.log('🔍 ReactiveQueryOne: Using TTL:', ttlValue);
+          this.view = queryBuilder.materialize({ ttl: ttlValue });
+        } else {
+          console.log('🔍 ReactiveQueryOne: No TTL provided, using Zero default');
+          this.view = queryBuilder.materialize();
+        }
         
         // Set up Zero's native listener for real-time updates
         this.removeListener = this.view.addListener((newData: T | null) => {

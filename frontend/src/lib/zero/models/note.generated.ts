@@ -12,7 +12,6 @@
 
 import { getZero } from '../zero-client';
 import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query.svelte';
-import { useQuery } from 'zero-svelte-query';
 
 // Generated TypeScript types for notes
 // TypeScript interfaces for notes
@@ -281,9 +280,13 @@ export const Note = {
    * ```
    */
   find(id: string) {
-    const zero = getZero();
-    if (!zero) return { current: null, value: null, resultType: 'loading' as const };
-    return useQuery(zero.query.notes.where('id', id).one());
+    return new ReactiveQueryOne<Note>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.notes.where('id', id).one() : null;
+      },
+      null
+    );
   },
 
   /**
@@ -297,9 +300,13 @@ export const Note = {
    * ```
    */
   all() {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-    return useQuery(zero.query.notes.orderBy('created_at', 'desc'));
+    return new ReactiveQuery<Note>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.notes.orderBy('created_at', 'desc') : null;
+      },
+      []
+    );
   },
 
   /**
@@ -314,18 +321,23 @@ export const Note = {
    * ```
    */
   where(conditions: Partial<Note>) {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-    
-    let query = zero.query.notes;
-    
-    Object.entries(conditions).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.where(key, value);
-      }
-    });
-    
-    return useQuery(query.orderBy('created_at', 'desc'));
+    return new ReactiveQuery<Note>(
+      () => {
+        const zero = getZero();
+        if (!zero) return null;
+        
+        let query = zero.query.notes;
+        
+        Object.entries(conditions).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.where(key, value);
+          }
+        });
+        
+        return query.orderBy('created_at', 'desc');
+      },
+      []
+    );
   }
 };
 

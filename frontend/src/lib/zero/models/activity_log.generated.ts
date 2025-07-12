@@ -12,7 +12,6 @@
 
 import { getZero } from '../zero-client';
 import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query.svelte';
-import { useQuery } from 'zero-svelte-query';
 
 // Generated TypeScript types for activity_logs
 // TypeScript interfaces for activity_logs
@@ -287,9 +286,13 @@ export const ActivityLog = {
    * ```
    */
   find(id: string) {
-    const zero = getZero();
-    if (!zero) return { current: null, value: null, resultType: 'loading' as const };
-    return useQuery(zero.query.activity_logs.where('id', id).one());
+    return new ReactiveQueryOne<ActivityLog>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.activity_logs.where('id', id).one() : null;
+      },
+      null
+    );
   },
 
   /**
@@ -303,9 +306,13 @@ export const ActivityLog = {
    * ```
    */
   all() {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-    return useQuery(zero.query.activity_logs.orderBy('created_at', 'desc'));
+    return new ReactiveQuery<ActivityLog>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.activity_logs.orderBy('created_at', 'desc') : null;
+      },
+      []
+    );
   },
 
   /**
@@ -320,18 +327,23 @@ export const ActivityLog = {
    * ```
    */
   where(conditions: Partial<ActivityLog>) {
-    const zero = getZero();
-    if (!zero) return { current: [], value: [], resultType: 'loading' as const };
-    
-    let query = zero.query.activity_logs;
-    
-    Object.entries(conditions).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.where(key, value);
-      }
-    });
-    
-    return useQuery(query.orderBy('created_at', 'desc'));
+    return new ReactiveQuery<ActivityLog>(
+      () => {
+        const zero = getZero();
+        if (!zero) return null;
+        
+        let query = zero.query.activity_logs;
+        
+        Object.entries(conditions).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.where(key, value);
+          }
+        });
+        
+        return query.orderBy('created_at', 'desc');
+      },
+      []
+    );
   }
 };
 

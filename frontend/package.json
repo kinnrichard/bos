@@ -57,7 +57,6 @@
 		"@melt-ui/svelte": "^0.86.6",
 		"@rocicorp/zero": "^0.21.2025070200",
 		"debug": "^4.4.1",
-		"qs": "^6.14.0",
-		"zero-svelte-query": "^0.9.0"
+		"qs": "^6.14.0"
 	}
 }

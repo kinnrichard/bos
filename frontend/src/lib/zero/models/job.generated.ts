@@ -348,7 +348,8 @@ export const Job = {
           .related('jobAssignments', (assignments: any) => assignments.related('user'))
           .orderBy('created_at', 'desc') : null;
       },
-      []
+      [],
+      '2h' // Re-enabled for debugging - let's see what the difference is
     );
   },
 
