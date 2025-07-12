@@ -14,32 +14,48 @@
   // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
   const jobId = $derived($page.params.id);
   
-  // ✨ USE $derived FOR REACTIVE QUERY - UPDATES WHEN jobId CHANGES
-  const jobQuery = $derived(Job.find(jobId));
+  // ✨ USE PROGRESSIVE LOADING - PRIMARY DATA FIRST, THEN NOTES/HISTORY
+  const { job: jobQuery, notes: notesQuery } = $derived(Job.findProgressive(jobId));
   
   // ✨ USE $derived FOR DYNAMIC TITLE
-  const pageTitle = $derived(job ? `${job.attributes?.title || 'Job'} - bŏs` : 'Job Details - bŏs');
+  const pageTitle = $derived(job ? `${job.title || 'Job'} - bŏs` : 'Job Details - bŏs');
 
   // ✨ USE ReactiveQuery GETTERS FOR PROPER SVELTE 5 REACTIVITY
   const job = $derived(jobQuery.data);
   const isLoading = $derived(jobQuery.isLoading);
   const error = $derived(jobQuery.error);
+  
+  // ✨ PROGRESSIVE LOADING: Notes/history load automatically in background
+  const notes = $derived(notesQuery.data);
+  const notesLoading = $derived(notesQuery.isLoading);
 
-  // TODO: Task batch details - need to implement Zero-based task query
-  // For now, we'll pass undefined until tasks are fully migrated to Zero
-  const taskBatchDetails = $derived(undefined);
+  // ✨ TASK BATCH DETAILS: Extract from Zero job relationships
+  const taskBatchDetails = $derived(job?.tasks ? {
+    total: job.tasks.length,
+    completed: job.tasks.filter((task: any) => task.status === 'completed').length,
+    pending: job.tasks.filter((task: any) => task.status === 'pending').length,
+    in_progress: job.tasks.filter((task: any) => task.status === 'in_progress').length
+  } : undefined);
   
   // ✨ USE $effect FOR SIDE EFFECTS (NOT REACTIVE STATEMENTS)
   $effect(() => {
     console.log('[JobPage] Job ID from URL params:', jobId);
     
     if (job) {
-      console.log('[JobPage] Job data loaded via ReactiveQuery:', job?.title || job?.attributes?.title);
-      console.log('[JobPage] Zero job structure:', job);
+      console.log('[JobPage] Job data loaded via Zero relationships:', job.title);
+      // ✨ USE $state.snapshot() FOR SVELTE 5 - AVOIDS $state PROXY WARNING
+      console.log('[JobPage] Zero job structure:', $state.snapshot(job));
+      console.log('[JobPage] Client:', job.client?.name);
+      console.log('[JobPage] Tasks count:', job.tasks?.length);
+      console.log('[JobPage] Technicians:', job.jobAssignments?.map((ja: any) => ja.user?.name));
       
       // Update current job in layout store when job data changes
-      console.log('[JobPage] Setting current job in layout store via ReactiveQuery');
+      console.log('[JobPage] Setting current job in layout store via Zero relationships');
       layoutActions.setCurrentJob(job);
+    }
+    
+    if (notes && notes.length > 0) {
+      console.log('[JobPage] Notes loaded progressively:', notes.length);
     }
   });
 
@@ -103,7 +119,7 @@
 
   <!-- Job Detail Content -->
   {:else if job}
-    <JobDetailView {job} batchTaskDetails={taskBatchDetails} />
+    <JobDetailView {job} batchTaskDetails={taskBatchDetails} {notes} notesLoading={notesLoading} />
 
   <!-- Fallback (should not happen with proper loading states) -->
   {:else}

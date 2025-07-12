@@ -36,7 +36,8 @@ export class ReactiveQuery<T> {
   
   constructor(
     private getQueryBuilder: () => any | null,
-    private defaultValue: T[] = []
+    private defaultValue: T[] = [],
+    private ttl: string | undefined = undefined
   ) {
     // Initialize with Svelte 5 $state rune for proper reactivity
     this._state.data = defaultValue;
@@ -111,8 +112,10 @@ export class ReactiveQuery<T> {
           return;
         }
         
-        console.log('🔍 ReactiveQuery: Creating materialized view');
-        this.view = queryBuilder.materialize();
+        console.log('🔍 ReactiveQuery: Creating materialized view with TTL:', this.ttl);
+        this.view = this.ttl 
+          ? queryBuilder.materialize({ ttl: this.ttl })
+          : queryBuilder.materialize();
         
         // Set up Zero's native listener for real-time updates
         this.removeListener = this.view.addListener((newData: T[]) => {
@@ -211,7 +214,8 @@ export class ReactiveQueryOne<T> {
   
   constructor(
     private getQueryBuilder: () => any | null,
-    private defaultValue: T | null = null
+    private defaultValue: T | null = null,
+    private ttl: string | undefined = undefined
   ) {
     // Initialize with Svelte 5 $state rune for proper reactivity
     this._state.data = defaultValue;
@@ -286,8 +290,10 @@ export class ReactiveQueryOne<T> {
           return;
         }
         
-        console.log('🔍 ReactiveQueryOne: Creating materialized view');
-        this.view = queryBuilder.materialize();
+        console.log('🔍 ReactiveQueryOne: Creating materialized view with TTL:', this.ttl);
+        this.view = this.ttl 
+          ? queryBuilder.materialize({ ttl: this.ttl })
+          : queryBuilder.materialize();
         
         // Set up Zero's native listener for real-time updates
         this.removeListener = this.view.addListener((newData: T | null) => {

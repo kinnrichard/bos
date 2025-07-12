@@ -1,15 +1,50 @@
 <script lang="ts">
-  import type { PopulatedJob } from '$lib/types/job';
+  import type { Job } from '$lib/zero/models/job.generated';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
 
-  export let job: PopulatedJob;
+  export let job: Job;
   export let showClient: boolean = true;
 
-  $: statusEmoji = getJobStatusEmoji(job.attributes.status);
-  $: priorityEmoji = getJobPriorityEmoji(job.attributes.priority);
+  // Map Zero's numeric status to string for emoji functions
+  function mapZeroStatusToString(status: number | null): string {
+    const statusMap: Record<number, string> = {
+      0: 'open',
+      1: 'in_progress',
+      2: 'waiting_for_customer',
+      3: 'waiting_for_scheduled_appointment', 
+      4: 'paused',
+      5: 'successfully_completed',
+      6: 'cancelled'
+    };
+    return statusMap[status || 0] || 'open';
+  }
+  
+  // Map Zero's numeric priority to string for emoji functions
+  function mapZeroPriorityToString(priority: number | null): string {
+    const priorityMap: Record<number, string> = {
+      0: 'low',
+      1: 'normal', 
+      2: 'high',
+      3: 'critical',
+      4: 'proactive_followup'
+    };
+    return priorityMap[priority || 1] || 'normal';
+  }
 
-  function getJobPath(job: PopulatedJob): string {
-    // For now, we'll use a simple path - this can be updated when we implement routing
+  // Extract technicians from job assignments
+  $: technicians = job.jobAssignments?.map((assignment: any) => ({
+    id: assignment.user?.id,
+    name: assignment.user?.name,
+    initials: assignment.user?.name?.split(' ').map((n: string) => n[0]).join('') || '?',
+    avatar_style: `background-color: var(--accent-blue);` // TODO: Get actual avatar style
+  })) || [];
+
+  $: statusString = mapZeroStatusToString(job.status);
+  $: priorityString = mapZeroPriorityToString(job.priority);
+  $: statusEmoji = getJobStatusEmoji(statusString);
+  $: priorityEmoji = getJobPriorityEmoji(priorityString);
+
+  function getJobPath(job: Job): string {
     return `/jobs/${job.id}`;
   }
 </script>
@@ -29,26 +64,26 @@
         class="client-name-prefix client-link"
         on:click={(e) => {
           e.stopPropagation();
-          window.location.href = `/clients/${job.client.id}`;
+          window.location.href = `/clients/${job.client?.id}`;
         }}
       >
-        {job.client.name}
+        {job.client?.name || 'Unknown Client'}
       </button>
     {/if}
-    <span class="job-name">{job.attributes.title}</span>
+    <span class="job-name">{job.title || 'Untitled Job'}</span>
   </span>
 
   <!-- Right side items -->
   <span class="job-right-section">
     <!-- Priority emoji (if not normal) -->
-    {#if job.attributes.priority !== 'normal' && priorityEmoji}
+    {#if priorityString !== 'normal' && priorityEmoji}
       <span class="job-priority-emoji">{priorityEmoji}</span>
     {/if}
 
     <!-- Technician avatars -->
-    {#if job.technicians?.length > 0}
+    {#if technicians?.length > 0}
       <span class="technician-avatars">
-        {#each job.technicians as technician}
+        {#each technicians as technician}
           <span 
             class="technician-avatar" 
             style={technician.avatar_style || `background-color: var(--accent-blue);`}

@@ -15,79 +15,21 @@
   const scope = $derived(url.searchParams.get('scope') || 'all');
   const status = $derived(url.searchParams.get('status') as JobStatus | undefined);
   const priority = $derived(url.searchParams.get('priority') as JobPriority | undefined);
+  const technicianId = $derived(url.searchParams.get('technician_id') || undefined);
 
-  // ✨ USE ENHANCED ACTIVERECORD-STYLE REACTIVE API  
+  // ✨ USE ENHANCED ACTIVERECORD-STYLE REACTIVE API WITH RELATIONSHIPS
   const jobsQuery = Job.all();
   
-  // ✨ USE $derived FOR DATA TRANSFORMATIONS (NOT IMPERATIVE UPDATES)
-  const allJobs = $derived(
-    jobsQuery.data.map(transformZeroJobToPopulatedJob)
-  );
+  // ✨ USE $derived FOR DIRECT ZERO DATA ACCESS (NO TRANSFORMATION NEEDED)
+  const allJobs = $derived(jobsQuery.data || []);
   
-  // Transform Zero job data to PopulatedJob format expected by JobCard
-  function transformZeroJobToPopulatedJob(zeroJob: any): any {
-    return {
-      id: zeroJob.id,
-      type: 'jobs',
-      attributes: {
-        title: zeroJob.title || 'Untitled Job',
-        description: zeroJob.description,
-        status: mapZeroStatusToString(zeroJob.status),
-        priority: mapZeroPriorityToString(zeroJob.priority),
-        due_on: zeroJob.due_at ? new Date(zeroJob.due_at).toISOString().split('T')[0] : undefined,
-        start_on: zeroJob.starts_at ? new Date(zeroJob.starts_at).toISOString().split('T')[0] : undefined,
-        created_at: new Date(zeroJob.created_at).toISOString(),
-        updated_at: new Date(zeroJob.updated_at).toISOString(),
-        status_label: mapZeroStatusToString(zeroJob.status),
-        priority_label: mapZeroPriorityToString(zeroJob.priority),
-        is_overdue: false, // TODO: Calculate this
-        task_counts: { total: 0, completed: 0, pending: 0, in_progress: 0 } // TODO: Get actual counts
-      },
-      client: {
-        id: zeroJob.client_id || 'unknown',
-        name: 'Unknown Client' // TODO: Load client data
-      },
-      created_by: {
-        id: zeroJob.created_by_id || 'unknown',
-        name: 'Unknown User' // TODO: Load user data
-      },
-      technicians: [], // TODO: Load technician data
-      tasks: [] // TODO: Load task data
-    };
-  }
-  
-  // Map Zero's numeric status to string
-  function mapZeroStatusToString(status: number | null): string {
-    // TODO: Get actual mapping from backend or create enum mapping
-    const statusMap: Record<number, string> = {
-      0: 'open',
-      1: 'in_progress',
-      2: 'waiting_for_customer',
-      3: 'waiting_for_scheduled_appointment', 
-      4: 'paused',
-      5: 'successfully_completed',
-      6: 'cancelled'
-    };
-    return statusMap[status || 0] || 'open';
-  }
-  
-  // Map Zero's numeric priority to string
-  function mapZeroPriorityToString(priority: number | null): string {
-    const priorityMap: Record<number, string> = {
-      0: 'low',
-      1: 'normal', 
-      2: 'high',
-      3: 'critical',
-      4: 'proactive_followup'
-    };
-    return priorityMap[priority || 1] || 'normal';
-  }
+  // ✨ ZERO NATIVE OBJECTS: No transformation needed!
 
-  // ✨ USE $derived FOR FILTERING (NOT REACTIVE STATEMENTS)
+  // ✨ USE $derived FOR FILTERING WITH ZERO NATIVE STRUCTURE
   const filteredJobs = $derived(
     allJobs.filter(job => {
       if (scope === 'mine') {
-        // This would need user context to filter "my" jobs
+        // TODO: Filter by current user via job assignments
         // For now, show all jobs
         return true;
       }
@@ -95,23 +37,35 @@
     })
   );
 
-  // ✨ USE $derived FOR FINAL FILTERING (NOT REACTIVE STATEMENTS)
+  // ✨ USE $derived FOR FINAL FILTERING WITH TECHNICIAN SUPPORT
   const jobs = $derived(
     filteredJobs.filter(job => {
-      if (priority && job.priority !== priority) {
-        return false;
+      // Filter by technician if specified
+      if (technicianId) {
+        const hasMatchingTechnician = job.jobAssignments?.some((assignment: any) => 
+          assignment.user?.id === technicianId
+        );
+        if (!hasMatchingTechnician) {
+          return false;
+        }
       }
+
+      // TODO: Add proper priority filtering using Zero's numeric priority field
+      // Priority filtering would need to map from string to number
       return true;
     })
   );
 
   // Debug Zero query state (only when needed)
-  // $: console.log('[JOBS PAGE] Zero query state:', {
-  //   hasValue: jobsQuery ? !!jobsQuery.value : false,
+  // $: console.log('[JOBS PAGE] Zero native query state:', {
+  //   isLoading: jobsQuery.isLoading,
+  //   hasError: !!jobsQuery.error,
   //   allJobsCount: allJobs.length,
   //   filteredCount: filteredJobs.length,
   //   finalCount: jobs.length,
-  //   firstJob: jobs[0]
+  //   firstJobTitle: jobs[0]?.title,
+  //   firstJobClient: jobs[0]?.client?.name,
+  //   firstJobTechnicians: jobs[0]?.jobAssignments?.map((ja: any) => ja.user?.name)
   // });
 
   // Handle retry - ActiveRecord-style queries use Zero's native reactivity
@@ -138,6 +92,14 @@
   <!-- Page Header -->
   <div class="page-header">
     <h1>Jobs</h1>
+    
+    <!-- Technician Filter -->
+    {#if technicianId}
+      <div class="filter-info">
+        <span class="filter-label">Filtered by technician</span>
+        <a href="/jobs" class="clear-filter">Clear filter</a>
+      </div>
+    {/if}
   </div>
 
   <!-- Loading State -->
@@ -208,6 +170,32 @@
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
+  }
+
+  .filter-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    border-radius: 6px;
+    border: 1px solid var(--border-primary);
+  }
+
+  .filter-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .clear-filter {
+    font-size: 14px;
+    color: var(--accent-blue);
+    text-decoration: none;
+  }
+
+  .clear-filter:hover {
+    text-decoration: underline;
   }
 
   .jobs-list {

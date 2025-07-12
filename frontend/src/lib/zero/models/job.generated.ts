@@ -290,19 +290,19 @@ export async function upsertJob(data: (CreateJobData & { id?: string }) | (Updat
  */
 export const Job = {
   /**
-   * Find a single job by ID
+   * Find a single job by ID with all relationships loaded
    * @param id - The UUID of the job
-   * @returns Reactive query with the job or null
+   * @returns Reactive query with the job and relationships or null
    * 
    * @example
    * ```typescript
    * // In Svelte component
    * const job = Job.find('123e4567-e89b-12d3-a456-426614174000');
-   * // job.data is reactive
+   * // job.data is reactive and includes client, tasks, jobAssignments, etc.
    * 
    * // In vanilla JS
    * const job = Job.find('123e4567-e89b-12d3-a456-426614174000');
-   * console.log(job.current); // Current job data
+   * console.log(job.current); // Current job data with relationships
    * job.subscribe((data) => console.log('Job updated:', data));
    * ```
    */
@@ -310,25 +310,32 @@ export const Job = {
     return new ReactiveQueryOne<Job>(
       () => {
         const zero = getZero();
-        return zero ? zero.query.jobs.where('id', id).one() : null;
+        return zero ? zero.query.jobs
+          .where('id', id)
+          .related('client')
+          .related('tasks', (tasks: any) => tasks.orderBy('position', 'asc'))
+          .related('jobAssignments', (assignments: any) => assignments.related('user'))
+          .related('notes', (notes: any) => notes.related('user').orderBy('created_at', 'desc'))
+          .related('scheduledDateTimes')
+          .one() : null;
       },
       null
     );
   },
 
   /**
-   * Get all jobs
-   * @returns Reactive query with array of jobs
+   * Get all jobs with relationships for jobs list display
+   * @returns Reactive query with array of jobs including client and technicians
    * 
    * @example
    * ```typescript
    * // In Svelte component
    * const allJobs = Job.all();
-   * // allJobs.data is reactive array
+   * // allJobs.data is reactive array with client and technician relationships
    * 
    * // In vanilla JS
    * const allJobs = Job.all();
-   * console.log(allJobs.current); // Current jobs array
+   * console.log(allJobs.current); // Current jobs array with relationships
    * allJobs.subscribe((data) => console.log('Jobs updated:', data.length));
    * ```
    */
@@ -336,26 +343,29 @@ export const Job = {
     return new ReactiveQuery<Job>(
       () => {
         const zero = getZero();
-        return zero ? zero.query.jobs.orderBy('created_at', 'desc') : null;
+        return zero ? zero.query.jobs
+          .related('client')
+          .related('jobAssignments', (assignments: any) => assignments.related('user'))
+          .orderBy('created_at', 'desc') : null;
       },
       []
     );
   },
 
   /**
-   * Find jobs matching conditions
+   * Find jobs matching conditions with relationships loaded
    * @param conditions - Object with field/value pairs to match
-   * @returns Reactive query with array of matching jobs
+   * @returns Reactive query with array of matching jobs including client and technicians
    * 
    * @example
    * ```typescript
    * // In Svelte component
-   * const activeJobs = Job.where({ status: 1 }); // reactive array
+   * const activeJobs = Job.where({ status: 1 }); // reactive array with relationships
    * const clientJobs = Job.where({ client_id: 'some-uuid' });
    * 
    * // In vanilla JS
    * const activeJobs = Job.where({ status: 1 });
-   * console.log(activeJobs.current); // Current matching jobs
+   * console.log(activeJobs.current); // Current matching jobs with relationships
    * activeJobs.subscribe((data) => console.log('Active jobs:', data.length));
    * ```
    */
@@ -373,10 +383,61 @@ export const Job = {
           }
         });
         
-        return query.orderBy('created_at', 'desc');
+        return query
+          .related('client')
+          .related('jobAssignments', (assignments: any) => assignments.related('user'))
+          .orderBy('created_at', 'desc');
       },
       []
     );
+  },
+
+  /**
+   * Find a job with progressive loading - primary data first, then notes/history
+   * @param id - The UUID of the job
+   * @returns Object with primary job query and progressive notes query
+   * 
+   * @example
+   * ```typescript
+   * // In Svelte component
+   * const { job, notes } = Job.findProgressive('123e4567-e89b-12d3-a456-426614174000');
+   * // job.data loads first (job + client + tasks + technicians)
+   * // notes.data loads automatically in background after job data is available
+   * ```
+   */
+  findProgressive(id: string) {
+    // Primary query: Job + client + tasks + technicians (loads first)
+    const job = new ReactiveQueryOne<Job>(
+      () => {
+        const zero = getZero();
+        return zero ? zero.query.jobs
+          .where('id', id)
+          .related('client')
+          .related('tasks', (tasks: any) => tasks.orderBy('position', 'asc'))
+          .related('jobAssignments', (assignments: any) => assignments.related('user'))
+          .related('scheduledDateTimes')
+          .one() : null;
+      },
+      null
+    );
+
+    // Progressive query: Notes/history (loads after primary data)
+    const notes = new ReactiveQuery<any>(
+      () => {
+        const zero = getZero();
+        // Only start loading notes if we have job data
+        if (!zero || !job.data) return null;
+        
+        return zero.query.notes
+          .where('notable_id', id)
+          .where('notable_type', 'Job')
+          .related('user')
+          .orderBy('created_at', 'desc');
+      },
+      []
+    );
+
+    return { job, notes };
   }
 };
 

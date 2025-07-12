@@ -5,25 +5,28 @@
   import TaskList from './TaskList.svelte';
   import StatusIndicator from './StatusIndicator.svelte';
 
-  export let job: PopulatedJob;
-  export let batchTaskDetails: any = null; // Optional batch task details data
+  // ✨ USE $props() FOR SVELTE 5 RUNES MODE
+  let { job, batchTaskDetails = null }: { job: PopulatedJob; batchTaskDetails?: any } = $props();
 
-  $: statusEmoji = getJobStatusEmoji(job?.attributes?.status);
-  $: priorityEmoji = getJobPriorityEmoji(job?.attributes?.priority);
+  // ✨ USE $derived FOR COMPUTED VALUES (NOT REACTIVE STATEMENTS)
+  const statusEmoji = $derived(getJobStatusEmoji(job?.attributes?.status));
+  const priorityEmoji = $derived(getJobPriorityEmoji(job?.attributes?.priority));
   
-  // Debug logging for job data received
-  $: if (job) {
-    console.log('[JobDetailView] Received job data:', JSON.parse(JSON.stringify(job)));
-    console.log('[JobDetailView] Job title:', job?.attributes?.title);
-    console.log('[JobDetailView] Job client:', job?.client?.name || 'Using JSON:API format');
-    console.log('[JobDetailView] Job status:', job?.attributes?.status);
-  }
+  // ✨ USE $effect FOR SIDE EFFECTS AND $state.snapshot() FOR LOGGING
+  $effect(() => {
+    if (job) {
+      console.log('[JobDetailView] Received job data:', $state.snapshot(job));
+      console.log('[JobDetailView] Job title:', job?.attributes?.title);
+      console.log('[JobDetailView] Job client:', job?.client?.name || 'Using JSON:API format');
+      console.log('[JobDetailView] Job status:', job?.attributes?.status);
+    }
+  });
   
-  // Handle both populated and JSON:API formats
-  $: jobTitle = job?.attributes?.title || '';
-  $: jobClient = job?.client?.name || 'Unknown Client'; // Fallback for JSON:API format
-  $: jobStatus = job?.attributes?.status;
-  $: jobId = job?.id || '';
+  // ✨ USE $derived FOR COMPUTED VALUES (NOT REACTIVE STATEMENTS)
+  const jobTitle = $derived(job?.attributes?.title || '');
+  const jobClient = $derived(job?.client?.name || 'Unknown Client'); // Fallback for JSON:API format
+  const jobStatus = $derived(job?.attributes?.status);
+  const jobId = $derived(job?.id || '');
 </script>
 
 <div class="job-detail-view">
