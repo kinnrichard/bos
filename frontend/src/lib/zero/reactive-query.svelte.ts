@@ -44,17 +44,7 @@ export class ReactiveQuery<T> {
     this._state.isLoading = true;
     this._state.error = null;
     
-    // Development warning for missing TTL
-    if (this.ttl === undefined) {
-      console.warn(
-        '⚠️  ReactiveQuery created without TTL - using Zero default (immediate expiry on unmount)',
-        {
-          queryBuilder: this.getQueryBuilder.toString(),
-          defaultValue: this.defaultValue,
-          message: 'Query will expire immediately when component unmounts. Add TTL parameter if you want background persistence.'
-        }
-      );
-    }
+    // TTL warnings removed - Zero.js TTL parsing is broken in current version
     
     // Set up Zero listener
     this.initializeQuery();
@@ -244,17 +234,7 @@ export class ReactiveQueryOne<T> {
     this._state.isLoading = true;
     this._state.error = null;
     
-    // Development warning for missing TTL
-    if (this.ttl === undefined) {
-      console.warn(
-        '⚠️  ReactiveQueryOne created without TTL - using Zero default (immediate expiry on unmount)',
-        {
-          queryBuilder: this.getQueryBuilder.toString(),
-          defaultValue: this.defaultValue,
-          message: 'Query will expire immediately when component unmounts. Add TTL parameter if you want background persistence.'
-        }
-      );
-    }
+    // TTL warnings removed - Zero.js TTL parsing is broken in current version
     
     // Set up Zero listener
     this.initializeQuery();
