@@ -440,13 +440,4 @@ export function createOperationId(operation: string, params?: any): string {
   return `${operation}-${btoa(paramsHash).slice(0, 8)}`;
 }
 
-// Export all error types for use throughout the application
-export {
-  ZeroError,
-  ActiveRecordError,
-  QueryError, 
-  ConnectionError,
-  AuthError,
-  ValidationError,
-  ConfigError
-};
+// Error types are already exported above - no need to re-export

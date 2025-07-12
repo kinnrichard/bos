@@ -256,5 +256,4 @@ export const ZeroConfigHelpers = {
   }
 };
 
-// Export individual configs for backwards compatibility
-export { ZERO_QUERY_CONFIG, ZERO_CLIENT_CONFIG, ZERO_ERROR_CONFIG, ZERO_SERVER_CONFIG };
+// Individual configs are already exported above - no need to re-export
