@@ -11,7 +11,7 @@
 
 
 import { getZero } from '../zero-client';
-import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query';
+import { ReactiveQuery, ReactiveQueryOne } from '../reactive-query.svelte';
 
 // Generated TypeScript types for users
 // TypeScript interfaces for users

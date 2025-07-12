@@ -21,9 +21,12 @@ import { getZero } from './zero-client';
  * ```
  */
 export class ReactiveQuery<T> {
-  private _data: T[];
-  private _isLoading: boolean;
-  private _error: Error | null;
+  // Use Svelte 5's $state rune for proper reactivity tracking
+  private _state = $state({
+    data: [] as T[],
+    isLoading: true,
+    error: null as Error | null
+  });
   
   private view: any = null;
   private removeListener: (() => void) | null = null;
@@ -35,24 +38,23 @@ export class ReactiveQuery<T> {
     private getQueryBuilder: () => any | null,
     private defaultValue: T[] = []
   ) {
-    // Initialize with regular JavaScript variables
-    // Svelte's reactivity will automatically track getter access
-    this._data = defaultValue;
-    this._isLoading = true;
-    this._error = null;
+    // Initialize with Svelte 5 $state rune for proper reactivity
+    this._state.data = defaultValue;
+    this._state.isLoading = true;
+    this._state.error = null;
     
     // Set up Zero listener
     this.initializeQuery();
   }
   
-  // Reactive getters for Svelte components
-  get data(): T[] { return this._data; }
-  get isLoading(): boolean { return this._isLoading; }
-  get error(): Error | null { return this._error; }
+  // Reactive getters for Svelte components - now properly tracked by Svelte
+  get data(): T[] { return this._state.data; }
+  get isLoading(): boolean { return this._state.isLoading; }
+  get error(): Error | null { return this._state.error; }
   
   // Imperative access for vanilla JavaScript
-  get current(): T[] { return this._data; }
-  get loading(): boolean { return this._isLoading; }
+  get current(): T[] { return this._state.data; }
+  get loading(): boolean { return this._state.isLoading; }
   
   /**
    * Subscribe to data changes (for vanilla JS usage)
@@ -63,7 +65,7 @@ export class ReactiveQuery<T> {
     this.subscribers.push(callback);
     
     // Immediately call with current state
-    callback(this._data, { isLoading: this._isLoading, error: this._error });
+    callback(this._state.data, { isLoading: this._state.isLoading, error: this._state.error });
     
     // Return unsubscribe function
     return () => {
@@ -142,9 +144,10 @@ export class ReactiveQuery<T> {
   }
   
   private updateState(data: T[], isLoading: boolean, error: Error | null): void {
-    this._data = data;
-    this._isLoading = isLoading;
-    this._error = error;
+    // Update Svelte 5 $state - this will automatically trigger reactivity
+    this._state.data = data;
+    this._state.isLoading = isLoading;
+    this._state.error = error;
     
     // Notify subscribers for vanilla JS usage
     this.subscribers.forEach(callback => {
@@ -193,9 +196,12 @@ export class ReactiveQuery<T> {
  * ```
  */
 export class ReactiveQueryOne<T> {
-  private _data: T | null;
-  private _isLoading: boolean;
-  private _error: Error | null;
+  // Use Svelte 5's $state rune for proper reactivity tracking
+  private _state = $state({
+    data: null as T | null,
+    isLoading: true,
+    error: null as Error | null
+  });
   
   private view: any = null;
   private removeListener: (() => void) | null = null;
@@ -207,24 +213,23 @@ export class ReactiveQueryOne<T> {
     private getQueryBuilder: () => any | null,
     private defaultValue: T | null = null
   ) {
-    // Initialize with regular JavaScript variables
-    // Svelte's reactivity will automatically track getter access
-    this._data = defaultValue;
-    this._isLoading = true;
-    this._error = null;
+    // Initialize with Svelte 5 $state rune for proper reactivity
+    this._state.data = defaultValue;
+    this._state.isLoading = true;
+    this._state.error = null;
     
     // Set up Zero listener
     this.initializeQuery();
   }
   
-  // Reactive getters for Svelte components
-  get data(): T | null { return this._data; }
-  get isLoading(): boolean { return this._isLoading; }
-  get error(): Error | null { return this._error; }
+  // Reactive getters for Svelte components - now properly tracked by Svelte
+  get data(): T | null { return this._state.data; }
+  get isLoading(): boolean { return this._state.isLoading; }
+  get error(): Error | null { return this._state.error; }
   
   // Imperative access for vanilla JavaScript
-  get current(): T | null { return this._data; }
-  get loading(): boolean { return this._isLoading; }
+  get current(): T | null { return this._state.data; }
+  get loading(): boolean { return this._state.isLoading; }
   
   /**
    * Subscribe to data changes (for vanilla JS usage)
@@ -235,7 +240,7 @@ export class ReactiveQueryOne<T> {
     this.subscribers.push(callback);
     
     // Immediately call with current state
-    callback(this._data, { isLoading: this._isLoading, error: this._error });
+    callback(this._state.data, { isLoading: this._state.isLoading, error: this._state.error });
     
     // Return unsubscribe function
     return () => {
@@ -314,9 +319,10 @@ export class ReactiveQueryOne<T> {
   }
   
   private updateState(data: T | null, isLoading: boolean, error: Error | null): void {
-    this._data = data;
-    this._isLoading = isLoading;
-    this._error = error;
+    // Update Svelte 5 $state - this will automatically trigger reactivity
+    this._state.data = data;
+    this._state.isLoading = isLoading;
+    this._state.error = error;
     
     // Notify subscribers for vanilla JS usage
     this.subscribers.forEach(callback => {
