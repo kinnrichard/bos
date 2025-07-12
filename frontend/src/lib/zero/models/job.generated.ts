@@ -348,8 +348,8 @@ export const Job = {
           .related('jobAssignments', (assignments: any) => assignments.related('user'))
           .orderBy('created_at', 'desc') : null;
       },
-      []
-      // TTL removed - Zero.js TTL parsing is broken in this version
+      [],
+      '2h' // TTL restored with proper validation
     );
   },
 

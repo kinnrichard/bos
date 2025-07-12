@@ -44,7 +44,17 @@ export class ReactiveQuery<T> {
     this._state.isLoading = true;
     this._state.error = null;
     
-    // TTL warnings removed - Zero.js TTL parsing is broken in current version
+    // Development warning for missing TTL (now properly handled)
+    if (this.ttl === undefined) {
+      console.warn(
+        '⚠️  ReactiveQuery created without TTL - using default "1s"',
+        {
+          queryBuilder: this.getQueryBuilder.toString(),
+          defaultValue: this.defaultValue,
+          message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
+        }
+      );
+    }
     
     // Set up Zero listener
     this.initializeQuery();
@@ -116,18 +126,16 @@ export class ReactiveQuery<T> {
         
         console.log('🔍 ReactiveQuery: Creating materialized view with TTL:', this.ttl, typeof this.ttl);
         
-        // Capture TTL value in local variable to prevent changes
-        const ttlValue = this.ttl;
-        console.log('🔍 ReactiveQuery: Local TTL value:', ttlValue, typeof ttlValue);
+        // Proper TTL handling per Zero.js documentation
+        const ttlValue = this.ttl || '1s'; // Use provided TTL or safe default
+        console.log('🔍 ReactiveQuery: Using TTL:', ttlValue);
         
-        // Pass TTL to Zero if provided
-        if (ttlValue && typeof ttlValue === 'string' && ttlValue.length > 0) {
-          console.log('🔍 ReactiveQuery: Using TTL:', ttlValue);
-          this.view = queryBuilder.materialize({ ttl: ttlValue });
-        } else {
-          console.log('🔍 ReactiveQuery: No TTL provided, using Zero default');
-          this.view = queryBuilder.materialize();
+        // Validate TTL before passing to Zero
+        if (typeof ttlValue !== 'string' && typeof ttlValue !== 'number') {
+          throw new Error(`Invalid TTL: ${ttlValue}. Use string like '5m' or number in ms`);
         }
+        
+        this.view = queryBuilder.materialize(ttlValue);
         
         // Set up Zero's native listener for real-time updates
         this.removeListener = this.view.addListener((newData: T[]) => {
@@ -234,7 +242,17 @@ export class ReactiveQueryOne<T> {
     this._state.isLoading = true;
     this._state.error = null;
     
-    // TTL warnings removed - Zero.js TTL parsing is broken in current version
+    // Development warning for missing TTL (now properly handled)
+    if (this.ttl === undefined) {
+      console.warn(
+        '⚠️  ReactiveQueryOne created without TTL - using default "1s"',
+        {
+          queryBuilder: this.getQueryBuilder.toString(),
+          defaultValue: this.defaultValue,
+          message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
+        }
+      );
+    }
     
     // Set up Zero listener
     this.initializeQuery();
@@ -306,18 +324,16 @@ export class ReactiveQueryOne<T> {
         
         console.log('🔍 ReactiveQueryOne: Creating materialized view with TTL:', this.ttl, typeof this.ttl);
         
-        // Capture TTL value in local variable to prevent changes
-        const ttlValue = this.ttl;
-        console.log('🔍 ReactiveQueryOne: Local TTL value:', ttlValue, typeof ttlValue);
+        // Proper TTL handling per Zero.js documentation
+        const ttlValue = this.ttl || '1s'; // Use provided TTL or safe default
+        console.log('🔍 ReactiveQueryOne: Using TTL:', ttlValue);
         
-        // Pass TTL to Zero if provided
-        if (ttlValue && typeof ttlValue === 'string' && ttlValue.length > 0) {
-          console.log('🔍 ReactiveQueryOne: Using TTL:', ttlValue);
-          this.view = queryBuilder.materialize({ ttl: ttlValue });
-        } else {
-          console.log('🔍 ReactiveQueryOne: No TTL provided, using Zero default');
-          this.view = queryBuilder.materialize();
+        // Validate TTL before passing to Zero
+        if (typeof ttlValue !== 'string' && typeof ttlValue !== 'number') {
+          throw new Error(`Invalid TTL: ${ttlValue}. Use string like '5m' or number in ms`);
         }
+        
+        this.view = queryBuilder.materialize(ttlValue);
         
         // Set up Zero's native listener for real-time updates
         this.removeListener = this.view.addListener((newData: T | null) => {
