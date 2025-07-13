@@ -342,8 +342,8 @@ export async function moveBeforeTask(id: string, targetId: string): Promise<Task
     const view = zero.query.tasks.materialize();
     const allRecords = await view.data;
     const targetRecord = Array.isArray(allRecords) ? 
-      allRecords.find(record => record.id === targetId) : 
-      (allRecords && allRecords.id === targetId ? allRecords : null);
+      allRecords.find((record: Task) => record.id === targetId) : 
+      (allRecords && (allRecords as Task).id === targetId ? allRecords as Task : null);
     view.destroy();
     
     if (!targetRecord) {
@@ -411,8 +411,8 @@ export async function moveAfterTask(id: string, targetId: string): Promise<TaskM
     const view = zero.query.tasks.materialize();
     const allRecords = await view.data;
     const targetRecord = Array.isArray(allRecords) ? 
-      allRecords.find(record => record.id === targetId) : 
-      (allRecords && allRecords.id === targetId ? allRecords : null);
+      allRecords.find((record: Task) => record.id === targetId) : 
+      (allRecords && (allRecords as Task).id === targetId ? allRecords as Task : null);
     view.destroy();
     
     if (!targetRecord) {
