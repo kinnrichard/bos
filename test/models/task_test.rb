@@ -2,7 +2,7 @@ require "test_helper"
 
 class TaskTest < ActiveSupport::TestCase
   setup do
-    @job = jobs(:open_job)
+    @job = jobs(:simple_website_job)
     @user = users(:admin)
     sign_in_as @user
   end
@@ -250,7 +250,10 @@ class TaskTest < ActiveSupport::TestCase
   end
 
   test "auto reorder on status change when enabled" do
-    @user.update!(resort_tasks_on_status_change: true)
+    @job.created_by.update!(resort_tasks_on_status_change: true)
+
+    # Clear existing tasks for this job to ensure clean test
+    @job.tasks.destroy_all
 
     task1 = @job.tasks.create!(title: "Task 1", position: 1, status: "new_task")
     task2 = @job.tasks.create!(title: "Task 2", position: 2, status: "new_task")
@@ -265,7 +268,10 @@ class TaskTest < ActiveSupport::TestCase
   end
 
   test "no auto reorder when disabled" do
-    @user.update!(resort_tasks_on_status_change: false)
+    @job.created_by.update!(resort_tasks_on_status_change: false)
+
+    # Clear existing tasks for this job to ensure clean test
+    @job.tasks.destroy_all
 
     task1 = @job.tasks.create!(title: "Task 1", position: 1, status: "new_task")
     task2 = @job.tasks.create!(title: "Task 2", position: 2, status: "new_task")
@@ -287,5 +293,81 @@ class TaskTest < ActiveSupport::TestCase
       task.update!(position: 5)
       assert_not_equal original_reordered_at, task.reordered_at
     end
+  end
+
+  test "discard functionality" do
+    task = @job.tasks.create!(title: "Test Task", status: 0)
+
+    assert task.kept?
+    assert_not task.discarded?
+
+    task.discard
+
+    assert task.discarded?
+    assert_not task.kept?
+    assert_not_nil task.discarded_at
+  end
+
+  test "undiscard functionality" do
+    task = @job.tasks.create!(title: "Test Task", status: 0)
+    task.discard
+
+    assert task.discarded?
+
+    task.undiscard
+
+    assert task.kept?
+    assert_not task.discarded?
+    assert_nil task.discarded_at
+  end
+
+  test "prevents discarding task with active subtasks" do
+    parent = @job.tasks.create!(title: "Parent Task", status: 0)
+    child = @job.tasks.create!(title: "Child Task", parent: parent, status: 0)
+
+    result = parent.discard_with_subtask_check
+
+    assert_not result
+    assert parent.kept?
+    assert_includes parent.errors.full_messages, "Cannot delete task with active subtasks. Please delete or move subtasks first."
+  end
+
+  test "allows discarding task with discarded subtasks" do
+    parent = @job.tasks.create!(title: "Parent Task", status: 0)
+    child = @job.tasks.create!(title: "Child Task", parent: parent, status: 0)
+
+    # Discard the child first
+    child.discard
+
+    # Now parent should be discardable
+    result = parent.discard_with_subtask_check
+
+    assert result
+    assert parent.discarded?
+  end
+
+  test "discard scopes work correctly" do
+    task1 = @job.tasks.create!(title: "Kept Task", status: 0)
+    task2 = @job.tasks.create!(title: "Discarded Task", status: 0)
+
+    task2.discard
+
+    # Default association should only show kept tasks
+    assert_includes @job.tasks, task1
+    assert_not_includes @job.tasks, task2
+
+    # All tasks association should show both
+    assert_includes @job.all_tasks, task1
+    assert_includes @job.all_tasks, task2
+
+    # Explicit scopes
+    assert_includes Task.kept, task1
+    assert_not_includes Task.kept, task2
+
+    assert_not_includes Task.discarded, task1
+    assert_includes Task.discarded, task2
+
+    assert_includes Task.with_discarded, task1
+    assert_includes Task.with_discarded, task2
   end
 end

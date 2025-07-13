@@ -241,7 +241,7 @@ class Api::V1::TasksController < Api::V1::BaseController
   end
 
   def destroy
-    if @task.soft_delete!
+    if @task.discard_with_subtask_check
       render json: {
         status: "success",
         message: "Task deleted successfully"

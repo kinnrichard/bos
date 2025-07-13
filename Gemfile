@@ -20,6 +20,8 @@ gem "jsonapi-serializer"
 # gem "rack-attack" # Temporarily disabled for development
 # For drag-and-drop ordering
 gem "positioning"
+# Soft deletion
+gem "discard", "~> 1.3"
 # Pagination
 gem "kaminari"
 

@@ -1,4 +1,5 @@
 class Task < ApplicationRecord
+  include Discard::Model
   include Loggable
 
   # Disable all touchable behavior for Task to prevent conflicts
@@ -28,15 +29,9 @@ class Task < ApplicationRecord
   # For drag and drop reordering
   positioned on: [ :job_id, :parent_id ]
 
-  # Soft delete scope - only show non-deleted tasks by default
-  scope :not_deleted, -> { where(deleted_at: nil) }
-  default_scope { not_deleted }
-
-  # Scopes
+  # Scopes - discard gem provides kept, discarded, with_discarded
   scope :root_tasks, -> { where(parent_id: nil) }
   scope :subtasks_of, ->(task) { where(parent_id: task.id) }
-  scope :deleted, -> { unscoped.where.not(deleted_at: nil) }
-  scope :with_deleted, -> { unscoped }
 
   # Consistent ordering by status - cancelled tasks go to the bottom
   scope :ordered_by_status, -> {
@@ -123,26 +118,17 @@ class Task < ApplicationRecord
     parent_id.present?
   end
 
-  # Soft delete methods
-  def soft_delete!
-    return false if deleted?
+  # Custom discard method with subtask validation
+  def discard_with_subtask_check
+    return false if discarded?
 
-    # Check if task has non-deleted subtasks
-    if subtasks.not_deleted.exists?
+    # Check if task has non-discarded subtasks
+    if subtasks.kept.exists?
       errors.add(:base, "Cannot delete task with active subtasks. Please delete or move subtasks first.")
       return false
     end
 
-    update!(deleted_at: Time.current)
-    true
-  end
-
-  def deleted?
-    deleted_at.present?
-  end
-
-  def restore!
-    update!(deleted_at: nil) if deleted?
+    discard
   end
 
   # Get the root task (top-level parent)
@@ -197,8 +183,8 @@ class Task < ApplicationRecord
   def reorder_by_status
     return unless resort_enabled?
 
-    # Get all sibling tasks (same parent_id) ordered by status
-    siblings = Task.where(job_id: job_id, parent_id: parent_id)
+    # Get all sibling tasks (same parent_id) ordered by status - only kept tasks
+    siblings = Task.kept.where(job_id: job_id, parent_id: parent_id)
                    .ordered_by_status
 
     # Use positioning gem's approach with optimized checks

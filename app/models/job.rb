@@ -9,7 +9,8 @@ class Job < ApplicationRecord
   has_many :technicians, through: :job_assignments, source: :user
   has_many :job_people, dependent: :destroy
   has_many :people, through: :job_people
-  has_many :tasks, dependent: :destroy
+  has_many :tasks, -> { kept }, dependent: :destroy
+  has_many :all_tasks, -> { with_discarded }, class_name: "Task", dependent: :destroy
   has_many :notes, as: :notable, dependent: :destroy
   has_many :scheduled_date_times, as: :schedulable, dependent: :destroy
 

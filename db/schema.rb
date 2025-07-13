@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_13_053012) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_13_162040) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -395,9 +395,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_13_053012) do
     t.uuid "job_id"
     t.uuid "assigned_to_id"
     t.uuid "parent_id"
-    t.datetime "deleted_at"
+    t.datetime "discarded_at"
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
-    t.index ["deleted_at"], name: "index_tasks_on_deleted_at"
+    t.index ["discarded_at"], name: "index_tasks_on_discarded_at"
     t.index ["id"], name: "index_tasks_on_id", unique: true
     t.index ["job_id", "parent_id", "position"], name: "index_tasks_on_scope_and_position", unique: true
     t.index ["job_id"], name: "index_tasks_on_job_id"
