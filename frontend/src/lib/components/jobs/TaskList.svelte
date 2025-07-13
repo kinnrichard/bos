@@ -1038,10 +1038,21 @@
       // Trigger reactivity
       deletingTaskIds = deletingTaskIds;
 
-      // Delete tasks in parallel while animation is running
-      const deletePromises = tasksToDeleteCopy.map(taskId => 
-        tasksService.deleteTask(jobId, taskId)
-      );
+      // Delete tasks in parallel while animation is running using ActiveRecord-style API
+      const deletePromises = tasksToDeleteCopy.map(async taskId => {
+        // Find the task data and create an ActiveRecord-style instance
+        const taskData = tasks.find(t => t.id === taskId);
+        if (!taskData) {
+          throw new Error(`Task with ID ${taskId} not found`);
+        }
+
+        // Import the TaskInstance factory and create an instance
+        const { createTaskInstance } = await import('$lib/zero/task.generated');
+        const taskInstance = createTaskInstance(taskData as any);
+        
+        // Use ActiveRecord-style delete method (soft deletion)
+        return await taskInstance.delete();
+      });
 
       // Wait for both API calls and animation to complete
       const [, ] = await Promise.all([
@@ -1049,8 +1060,8 @@
         new Promise(resolve => setTimeout(resolve, animationDuration))
       ]);
 
-      // Phase 3: Remove tasks from UI after animation completes
-      tasks = tasks.filter(task => !tasksToDeleteCopy.includes(task.id));
+      // Phase 3: Tasks will be automatically removed from UI by Zero's reactive query
+      // which filters out soft-deleted tasks (deleted_at IS NOT NULL)
 
       // Clear deletion animation state
       tasksToDeleteCopy.forEach(taskId => {
