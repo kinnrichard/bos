@@ -1,4 +1,5 @@
-import { getTaskStatusString, getTaskStatusNumber } from '$lib/utils/enum-mappings';
+
+import { getTaskStatusString, getTaskStatusInteger } from '$lib/utils/enum-conversions';
 
 // Task status filter store - proper Svelte 5 pattern
 export const taskFilter = $state({
@@ -10,10 +11,8 @@ export function shouldShowTask(task: any, statuses: string[]): boolean {
   // If no filters selected, show all tasks
   if (statuses.length === 0) return true;
   
-  // Convert task's numeric status to string for comparison
+  // Convert task status integer to string for comparison
   const taskStatusString = getTaskStatusString(task.status);
-  
-  // Show task if its status string is in the selected filters
   return statuses.includes(taskStatusString);
 }
 

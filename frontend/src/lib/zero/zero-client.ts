@@ -1,7 +1,15 @@
 import { Zero } from '@rocicorp/zero';
 import { schema, type ZeroClient } from './generated-schema';
 import { browser } from '$app/environment';
-import { Job, Client, User, Task, ActivityLog, ContactMethod, JobTarget, Note, ScheduledDateTime } from './models';
+import { Job } from './job.generated';
+import { Client } from './client.generated';
+import { User } from './user.generated';
+import { Task } from './task.generated';
+import { ActivityLog } from './activity_log.generated';
+import { ContactMethod } from './contact_method.generated';
+import { JobTarget } from './job_target.generated';
+import { Note } from './note.generated';
+import { ScheduledDateTime } from './scheduled_date_time.generated';
 
 // Singleton state management
 let zero: ZeroClient | null = null;

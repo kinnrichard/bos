@@ -5,7 +5,12 @@
  * Based on the original Rails emoji configuration but adapted for the API + PWA architecture.
  */
 
-import { getTaskStatusString, getJobStatusString, getJobPriorityString } from '$lib/utils/enum-mappings';
+import { 
+  getJobStatusString, 
+  getJobPriorityString, 
+  getTaskStatusString 
+} from '$lib/utils/enum-conversions';
+
 
 // Job Status Emoji Mappings
 const JOB_STATUS_EMOJIS: Record<string, string> = {
@@ -71,37 +76,32 @@ const UTILITY_EMOJIS = {
 /**
  * Get emoji for a job status
  */
-export function getJobStatusEmoji(status: string | number): string {
-  // Handle both numeric (from Zero.js) and string status values
+export function getJobStatusEmoji(status: string | number | null | undefined): string {
   const statusString = typeof status === 'number' ? getJobStatusString(status) : status;
-  return JOB_STATUS_EMOJIS[statusString] || '📝';
+  return JOB_STATUS_EMOJIS[statusString || ''] || '📝';
 }
 
 /**
  * Get emoji for a job priority
  */
-export function getJobPriorityEmoji(priority: string | number): string {
-  // Handle both numeric (from Zero.js) and string priority values
+export function getJobPriorityEmoji(priority: string | number | null | undefined): string {
   const priorityString = typeof priority === 'number' ? getJobPriorityString(priority) : priority;
-  return JOB_PRIORITY_EMOJIS[priorityString] || '';
+  return JOB_PRIORITY_EMOJIS[priorityString || ''] || '';
 }
 
 /**
  * Get emoji for a task status
  */
-export function getTaskStatusEmoji(status: string | number): string {
-  // Handle both numeric (from Zero.js) and string status values
+export function getTaskStatusEmoji(status: string | number | null | undefined): string {
   const statusString = typeof status === 'number' ? getTaskStatusString(status) : status;
-  return TASK_STATUS_EMOJIS[statusString] || '❓';
+  return TASK_STATUS_EMOJIS[statusString || ''] || '❓';
 }
 
 /**
  * Get label for a task status
  */
-export function getTaskStatusLabel(status: string | number): string {
-  // Handle both numeric (from Zero.js) and string status values
+export function getTaskStatusLabel(status: string | number | null | undefined): string {
   const statusString = typeof status === 'number' ? getTaskStatusString(status) : status;
-  
   switch (statusString) {
     case 'new_task': return 'New Task';
     case 'in_progress': return 'In Progress';
@@ -150,20 +150,22 @@ export function getScheduleTypeEmoji(type: keyof typeof UTILITY_EMOJIS.schedule_
 /**
  * Helper function to get status with emoji and label
  */
-export function getJobStatusWithEmoji(status: string): string {
-  if (!status) return '📝 Unknown';
+export function getJobStatusWithEmoji(status: string | number | null | undefined): string {
+  if (status === null || status === undefined) return '📝 Unknown';
+  const statusString = typeof status === 'number' ? getJobStatusString(status) : status;
   const emoji = getJobStatusEmoji(status);
-  const label = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const label = statusString.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   return `${emoji} ${label}`;
 }
 
 /**
  * Helper function to get priority with emoji and label
  */
-export function getJobPriorityWithEmoji(priority: string): string {
-  if (!priority) return 'Unknown';
+export function getJobPriorityWithEmoji(priority: string | number | null | undefined): string {
+  if (priority === null || priority === undefined) return 'Unknown';
+  const priorityString = typeof priority === 'number' ? getJobPriorityString(priority) : priority;
   const emoji = getJobPriorityEmoji(priority);
-  const label = priority.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const label = priorityString.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   return emoji ? `${emoji} ${label}` : label;
 }
 

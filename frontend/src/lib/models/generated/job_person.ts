@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 00:54:52 UTC
+ * Generated: 2025-07-13 04:12:41 UTC
  * Table: job_people
  * Generator: rails generate zero:factory_models
  * 

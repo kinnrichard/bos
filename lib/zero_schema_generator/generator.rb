@@ -359,33 +359,21 @@ module ZeroSchemaGenerator
       TYPESCRIPT
     end
 
-    def generate_schema_template(table_definitions, table_names, relationship_definitions = [], relationship_names = [])
-      imports = if relationship_definitions.any?
-        <<~TYPESCRIPT.strip
-          import {
-            createSchema,
-            table,
-            string,
-            number,
-            boolean,
-            json,
-            relationships,
-            type Zero
-          } from '@rocicorp/zero';
-        TYPESCRIPT
-      else
-        <<~TYPESCRIPT.strip
-          import {
-            createSchema,
-            table,
-            string,
-            number,
-            boolean,
-            json,
-            type Zero
-          } from '@rocicorp/zero';
-        TYPESCRIPT
-      end
+    def generate_schema_template(table_definitions, table_names, relationship_definitions = [], relationship_names = [], rails_schema = nil)
+      # Detect if we need enumeration import by checking table definitions
+      needs_enumeration = table_definitions.any? { |table_def| table_def.include?("enumeration<") }
+
+      # Base imports
+      base_imports = %w[createSchema table string number boolean json]
+      base_imports << "enumeration" if needs_enumeration
+      base_imports << "relationships" if relationship_definitions.any?
+      base_imports << "type Zero"
+
+      imports = <<~TYPESCRIPT.strip
+        import {
+          #{base_imports.join(",\n  ")}
+        } from '@rocicorp/zero';
+      TYPESCRIPT
 
       relationships_section = if relationship_definitions.any?
         "\n\n#{relationship_definitions.join("\n\n")}"

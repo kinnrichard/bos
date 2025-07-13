@@ -111,7 +111,8 @@ module ZeroSchemaGenerator
           default: column.default,
           comment: column.comment,
           enum: enum_column?(table_name, column.name),
-          enum_values: enum_values_for_column(table_name, column.name)
+          enum_values: enum_values_for_column(table_name, column.name),
+          enum_integer_values: enum_integer_values_for_column(table_name, column.name)
         }
       end
     end
@@ -227,6 +228,13 @@ module ZeroSchemaGenerator
       return [] unless model_class&.defined_enums&.key?(column_name)
 
       model_class.defined_enums[column_name].keys
+    end
+
+    def enum_integer_values_for_column(table_name, column_name)
+      model_class = find_model_for_table(table_name)
+      return [] unless model_class&.defined_enums&.key?(column_name)
+
+      model_class.defined_enums[column_name].values
     end
 
     def find_model_for_table(table_name)

@@ -7,13 +7,9 @@ module ZeroSchemaGenerator
       # UUID handling - Rails UUIDs become Zero strings
       uuid: ->(_column) { "string()" },
 
-      # Rails enum to Zero number (PostgreSQL stores as integers)
+      # Rails enum stored as integer - use number() type in Zero.js
       integer: ->(column) {
-        if column[:enum]
-          "number()"  # Rails enums are stored as integers in PostgreSQL
-        else
-          "number()"
-        end
+        "number()"
       },
 
       # JSONB support
@@ -53,8 +49,8 @@ module ZeroSchemaGenerator
 
       # Common Rails convention columns
       "position" => "number()",
-      "sort_order" => "number()",
-      "priority" => "number()"
+      "sort_order" => "number()"
+      # Note: "priority" removed - should be detected as enum automatically
     }.freeze
 
     def initialize(config = {})
@@ -105,9 +101,14 @@ module ZeroSchemaGenerator
       end
     end
 
-    def generate_zero_type_import
+    def generate_zero_type_import(columns = [])
       # Generate the import statement for Zero types
       used_types = %w[string number boolean json]
+
+      # Rails enums use number() type, no need for enumeration import
+      # if columns.any? { |column| column[:enum] && column[:enum_integer_values]&.any? }
+      #   used_types << 'enumeration'
+      # end
 
       "import { #{used_types.join(', ')} } from '@rocicorp/zero';"
     end
@@ -140,7 +141,8 @@ module ZeroSchemaGenerator
         /^string\(\)(\.optional\(\))?$/,
         /^number\(\)(\.optional\(\))?$/,
         /^boolean\(\)(\.optional\(\))?$/,
-        /^json\(\)(\.optional\(\))?$/
+        /^json\(\)(\.optional\(\))?$/,
+        /^enumeration<.+>\(\)(\.optional\(\))?$/  # Support enumeration types
       ]
 
       valid_patterns.any? { |pattern| type_string.match?(pattern) }

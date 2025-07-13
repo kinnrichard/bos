@@ -156,7 +156,7 @@ module ZeroSchemaGenerator
       singular_name = table_name.singularize
 
       imports = [
-        "import { getZero } from '../zero-client';"
+        "import { getZero } from './zero-client';"
       ]
 
       # Generate TypeScript types
@@ -221,7 +221,7 @@ module ZeroSchemaGenerator
       <<~TYPESCRIPT
         #{header}
 
-        import { getZero } from '../zero-client';
+        import { getZero } from './zero-client';
 
         // Custom mutations for #{table_name}
         // Add your custom business logic here
@@ -964,6 +964,12 @@ module ZeroSchemaGenerator
     end
 
     def rails_type_to_typescript(column)
+      # Check if this is an enum field and generate integer union type
+      if column[:enum] && column[:enum_integer_values]&.any?
+        enum_values = column[:enum_integer_values].join(" | ")
+        return enum_values
+      end
+
       case column[:type]
       when :uuid, :string, :text
         "string"
