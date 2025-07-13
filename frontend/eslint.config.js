@@ -50,7 +50,7 @@ export default [
 		},
 		rules: {
 			'no-console': ['warn', { allow: ['warn', 'error'] }],
-			// 'epic-007/naming-convention': 'warn', // TODO: Enable after testing
+			'epic-007/naming-convention': 'warn', // ✅ ENABLED: EPIC-007 Phase 2 naming convention
 		},
 	},
 

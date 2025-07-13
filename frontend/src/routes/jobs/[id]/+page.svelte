@@ -2,10 +2,9 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onDestroy } from 'svelte';
-  import { getZeroContext } from '$lib/zero-context.svelte';
+  import JobReactive from '$lib/models/generated/job';
 
-  // Get Zero functions from context
-  const { Job } = getZeroContext();
+  // ✨ NEW: Use factory-based ReactiveRecord for automatic Svelte reactivity
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
@@ -14,8 +13,10 @@
   // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
   const jobId = $derived($page.params.id);
   
-  // ✨ USE PROGRESSIVE LOADING - PRIMARY DATA FIRST, THEN NOTES/HISTORY
-  const { job: jobQuery, notes: notesQuery } = $derived(Job.findProgressive(jobId));
+  // ✨ USE FACTORY-BASED REACTIVE MODEL FOR PROGRESSIVE LOADING
+  const jobQuery = $derived(JobReactive.find(jobId));
+  // TODO: Add notes query when NotesReactive model is ready
+  // const notesQuery = $derived(NotesReactive.where({ notable_id: jobId }));
   
   // ✨ USE $derived FOR DYNAMIC TITLE
   const pageTitle = $derived(job ? `${job.title || 'Job'} - bŏs` : 'Job Details - bŏs');
@@ -25,9 +26,10 @@
   const isLoading = $derived(jobQuery.isLoading);
   const error = $derived(jobQuery.error);
   
-  // ✨ PROGRESSIVE LOADING: Notes/history load automatically in background
-  const notes = $derived(notesQuery.data);
-  const notesLoading = $derived(notesQuery.isLoading);
+  // ✨ NOTES: Will be loaded via job associations for now
+  // TODO: Implement separate NotesReactive query when needed
+  const notes = $derived(job?.notes || []);
+  const notesLoading = $derived(false); // Notes load with job for now
 
   // ✨ TASK BATCH DETAILS: Extract from Zero job relationships
   const taskBatchDetails = $derived(job?.tasks ? {

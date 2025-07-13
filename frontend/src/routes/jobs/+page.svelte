@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { getZeroContext } from '$lib/zero-context.svelte';
+  import JobReactive from '$lib/models/generated/job';
 
-  // Get Zero functions from context - no imports needed!
-  const { Job } = getZeroContext();
+  // ✨ NEW: Use factory-based ReactiveRecord for automatic Svelte reactivity
+  // Automatically stays in sync with Zero.js data changes
   
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobCard from '$lib/components/jobs/JobCard.svelte';
@@ -17,8 +17,8 @@
   const priority = $derived(url.searchParams.get('priority') as JobPriority | undefined);
   const technicianId = $derived(url.searchParams.get('technician_id') || undefined);
 
-  // ✨ USE ENHANCED ACTIVERECORD-STYLE REACTIVE API WITH RELATIONSHIPS
-  const jobsQuery = Job.all();
+  // ✨ USE ENHANCED FACTORY-BASED REACTIVE API WITH RELATIONSHIPS
+  const jobsQuery = JobReactive.all();
   
   // ✨ USE $derived FOR DIRECT ZERO DATA ACCESS (NO TRANSFORMATION NEEDED)
   const allJobs = $derived(jobsQuery.data || []);
@@ -68,18 +68,18 @@
   //   firstJobTechnicians: jobs[0]?.jobAssignments?.map((ja: any) => ja.user?.name)
   // });
 
-  // Handle retry - ActiveRecord-style queries use Zero's native reactivity
+  // Handle retry - Factory-based ReactiveRecord uses Zero's native reactivity
   function handleRetry() {
-    // ReactiveQuery automatically stays in sync via addListener
+    // ReactiveRecord automatically stays in sync via Zero.js addListener
     // Manual refresh available if needed
     jobsQuery.refresh();
-    console.log('🔄 Jobs page retry requested - ReactiveQuery refreshed');
+    console.log('🔄 Jobs page retry requested - ReactiveRecord refreshed');
   }
 
-  // Handle refresh - ActiveRecord-style queries stay fresh automatically
+  // Handle refresh - Factory-based ReactiveRecord stays fresh automatically
   function handleRefresh() {
-    // ReactiveQuery provides real-time updates via Zero's addListener
-    console.log('🔄 Jobs page refresh requested - ReactiveQuery provides real-time updates');
+    // ReactiveRecord provides real-time updates via Zero.js addListener
+    console.log('🔄 Jobs page refresh requested - ReactiveRecord provides real-time updates');
   }
 </script>
 

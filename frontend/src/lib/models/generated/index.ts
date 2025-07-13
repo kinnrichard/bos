@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-12 23:21:25 UTC
+ * Generated: 2025-07-12 23:48:31 UTC
  * Generator: rails generate zero:factory_models
  * 
  * To regenerate: bin/rails generate zero:factory_models

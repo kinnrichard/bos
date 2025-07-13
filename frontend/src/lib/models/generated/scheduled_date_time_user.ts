@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-12 23:21:25 UTC
+ * Generated: 2025-07-12 23:48:31 UTC
  * Table: scheduled_date_time_users
  * Generator: rails generate zero:factory_models
  * 
@@ -12,8 +12,8 @@
  * To customize: Modify the Rails model or generator templates
  */
 
-import { ModelFactory, type ModelConfig } from '../record-factory/model-factory';
-import { ModelConfigBuilder } from '../record-factory/model-config';
+import { ModelFactory, type ModelConfig } from '../../record-factory/model-factory';
+import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
