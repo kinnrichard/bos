@@ -16,13 +16,15 @@
   const chevronRight = '/icons/chevron-right.svg';
   const chevronDown = '/icons/chevron-down.svg';
 
-  export let tasks: Array<Task> = [];
-  
-  export let jobId: string = 'test';
-  export let batchTaskDetails: any = null; // Optional batch task details data
+  // ✨ USE $props() FOR SVELTE 5 RUNES MODE
+  let { tasks = [], jobId = 'test', batchTaskDetails = null }: {
+    tasks?: Array<Task>;
+    jobId?: string;
+    batchTaskDetails?: any;
+  } = $props();
 
   // Debug logging for task props
-  $: {
+  $effect(() => {
     // ✨ USE $state.snapshot() TO SAFELY LOG REACTIVE STATE
     const tasksSnapshot = tasks ? $state.snapshot(tasks) : null;
     console.log('[TaskList] Received tasks prop length:', tasks?.length);
@@ -34,7 +36,7 @@
       console.log('[TaskList] First task ID:', tasksSnapshot[0]?.id);
       console.log('[TaskList] First task title:', tasksSnapshot[0]?.title);
     }
-  }
+  });
 
   
   // Track collapsed/expanded state of tasks with subtasks
@@ -61,8 +63,7 @@
   // Development environment detection
   const isDevelopment = import.meta.env.DEV || import.meta.env.NODE_ENV === 'development';
   
-  // Multi-select state
-  let flatTaskIds: string[] = [];
+  // Multi-select state - will be computed from flattenedTasks
   
   // Track optimistic updates for rollback
   let optimisticUpdates = new Map<string, { originalPosition: number; originalParentId?: string }>();
@@ -362,19 +363,20 @@
     return rootTasks;
   }
 
-  $: hierarchicalTasks = organizeTasksHierarchically(tasks, taskFilter.selectedStatuses);
+  // ✨ USE $derived FOR COMPUTED VALUES IN SVELTE 5
+  const hierarchicalTasks = $derived(organizeTasksHierarchically(tasks, taskFilter.selectedStatuses));
 
   // Debug hierarchical tasks
-  $: {
+  $effect(() => {
     console.log('[TaskList] hierarchicalTasks length:', hierarchicalTasks?.length);
     // ✅ Safe: Access ID from first element without proxy issues
     if (hierarchicalTasks && hierarchicalTasks.length > 0) {
       console.log('[TaskList] hierarchicalTasks first ID:', hierarchicalTasks[0]?.id);
     }
-  }
+  });
   
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
-  $: {
+  $effect(() => {
     if (hierarchicalTasks.length > 0 && !hasAutoExpanded) {
       // Recursively expand all tasks with subtasks
       function expandAllTasksWithSubtasks(taskList: any[]) {
@@ -391,20 +393,20 @@
       expandedTasks = expandedTasks;
       hasAutoExpanded = true;
     }
-  }
+  });
   
   // Make rendering reactive to expandedTasks state changes
-  $: flattenedTasks = (() => {
+  const flattenedTasks = $derived.by(() => {
     const _ = expandedTasks; 
     const result = hierarchicalTasks.flatMap(task => renderTaskTree(task, 0));
     console.log('[TaskList] flattenedTasks length:', result?.length);
     // ✅ Safe: Log ID directly without storing proxy reference
     console.log('[TaskList] flattenedTasks first ID:', result?.[0]?.task?.id);
     return result;
-  })();
+  });
   
   // Update flat task IDs for multi-select functionality
-  $: flatTaskIds = flattenedTasks.map(item => item.task.id);
+  const flatTaskIds = $derived(flattenedTasks.map(item => item.task.id));
 
   // Reference to the tasks container element for drag action updates
   let tasksContainer: HTMLElement;
@@ -417,17 +419,19 @@
   }
 
   // Trigger drag action update when flattened tasks change (to handle new grandchildren)
-  $: if (dragActionInstance && flattenedTasks) {
-    // Wait for DOM to update before setting draggable attributes
-    tick().then(() => {
-      dragActionInstance.update({
-        onStart: handleSortStart,
-        onEnd: handleSortEnd,
-        onSort: handleTaskReorder,
-        onMove: handleMoveDetection
+  $effect(() => {
+    if (dragActionInstance && flattenedTasks) {
+      // Wait for DOM to update before setting draggable attributes
+      tick().then(() => {
+        dragActionInstance.update({
+          onStart: handleSortStart,
+          onEnd: handleSortEnd,
+          onSort: handleTaskReorder,
+          onMove: handleMoveDetection
+        });
       });
-    });
-  }
+    }
+  });
 
   function toggleTaskExpansion(taskId: string) {
     if (expandedTasks.has(taskId)) {
