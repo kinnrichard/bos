@@ -8,7 +8,7 @@
 export interface ZeroMutations<T> {
   update: (id: string, data: Partial<T>) => Promise<{ id: string }>;
   delete: (id: string) => Promise<{ id: string }>;
-  restore: (id: string) => Promise<{ id: string }>;
+  restore?: (id: string) => Promise<{ id: string }>;
 }
 
 /**
@@ -113,6 +113,10 @@ export abstract class RecordInstance<T extends { id: string }> {
    * ```
    */
   async restore(): Promise<{ id: string }> {
+    if (!this.mutations.restore) {
+      throw new Error('Restore operation not supported for this model');
+    }
+    
     try {
       const result = await this.mutations.restore(this.data.id);
       

@@ -1042,7 +1042,7 @@ module ZeroSchemaGenerator
         break if update_example_fields.length >= 2
       end
 
-      update_example = update_example_fields.any? ? update_example_fields.join(", ") : "/* fields to update */"
+      update_example = update_example_fields.any? ? update_example_fields.join(", ") : "// fields to update"
 
       # Check for title and name fields
       has_title = table[:columns].any? { |col| col[:name] == "title" }
