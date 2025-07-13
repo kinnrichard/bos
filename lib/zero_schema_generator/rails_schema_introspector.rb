@@ -103,7 +103,7 @@ module ZeroSchemaGenerator
 
     def extract_columns(table_name)
       @connection.columns(table_name).map do |column|
-        {
+        column_data = {
           name: column.name,
           type: column.type,
           sql_type: column.sql_type,
@@ -114,6 +114,13 @@ module ZeroSchemaGenerator
           enum_values: enum_values_for_column(table_name, column.name),
           enum_integer_values: enum_integer_values_for_column(table_name, column.name)
         }
+
+        # Validate enum storage if this is an enum column
+        if column_data[:enum]
+          validate_enum_storage(table_name, column.name)
+        end
+
+        column_data
       end
     end
 
@@ -235,6 +242,40 @@ module ZeroSchemaGenerator
       return [] unless model_class&.defined_enums&.key?(column_name)
 
       model_class.defined_enums[column_name].values
+    end
+
+    def validate_enum_storage(table_name, column_name)
+      model_class = find_model_for_table(table_name)
+      return unless model_class&.defined_enums&.key?(column_name)
+
+      enum_values = model_class.defined_enums[column_name].values
+
+      # Check if any enum values are strings (indicating string storage)
+      if enum_values.any? { |v| v.is_a?(String) }
+        enum_definition = model_class.defined_enums[column_name]
+
+        raise <<~ERROR
+          ❌ ENUM VALIDATION ERROR: #{model_class.name}.#{column_name} uses string storage
+
+          String-based enums are inefficient in PostgreSQL and incompatible with Zero.js schema generation.
+          Please convert to integer-based enum storage for better performance and type safety.
+
+          Current enum definition:
+            enum :#{column_name}, #{enum_definition.inspect}
+          #{'  '}
+          Expected integer-based definition:
+            enum :#{column_name}, {
+              #{enum_definition.keys.map.with_index { |key, i| "#{key}: #{i}" }.join(",\n      ")}
+            }
+          #{'  '}
+          To fix this:
+          1. Create a migration to convert the column from string to integer
+          2. Update the model's enum definition to use integer values
+          3. Regenerate the Zero.js schema
+
+          See: https://guides.rubyonrails.org/active_record_querying.html#enums
+        ERROR
+      end
     end
 
     def find_model_for_table(table_name)

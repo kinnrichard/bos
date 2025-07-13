@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_11_123307) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_13_053012) do
   create_schema "zero"
   create_schema "zero_0"
+  create_schema "zero_0/cdc"
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
@@ -41,10 +42,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_11_123307) do
 
   create_table "clients", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "name"
-    t.string "client_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "name_normalized"
+    t.integer "client_type", null: false
     t.index ["id"], name: "index_clients_on_id", unique: true
     t.index ["name_normalized"], name: "index_clients_on_name_normalized", unique: true
   end

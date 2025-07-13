@@ -15,10 +15,10 @@ class Client < ApplicationRecord
   # Callbacks
   before_validation :normalize_name
 
-  # Enum for client types
+  # Enum for client types (integer storage for PostgreSQL efficiency)
   enum :client_type, {
-    residential: "residential",
-    business: "business"
+    residential: 0,
+    business: 1
   }
 
   # Scopes for searching
