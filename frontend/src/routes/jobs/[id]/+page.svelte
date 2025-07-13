@@ -18,8 +18,8 @@
   // ✨ CREATE REACTIVE MODEL IN SVELTE COMPONENT (where $state runes are available)
   const JobReactive = ModelFactory.createReactiveModel<Job>(jobConfig);
   
-  // ✨ USE RAILS-STYLE INCLUDES WITH FIND (loads client and related data)
-  const jobQuery = $derived(JobReactive.includes('client').find(jobId));
+  // ✨ USE RAILS-STYLE INCLUDES WITH FIND (loads client, tasks, and related data)
+  const jobQuery = $derived(JobReactive.includes('client', 'tasks').find(jobId));
   // TODO: Add notes query when NotesReactive model is ready
   // const notesQuery = $derived(NotesReactive.where({ notable_id: jobId }));
   

@@ -9,6 +9,7 @@
   import { calculateRelativePositionFromTarget, calculatePositionFromTarget as railsCalculatePosition } from '$lib/utils/position-calculator';
   import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
   import type { Task, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
+  import { taskStatusToString } from '$lib/utils/task-status';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
   import Portal from '../ui/Portal.svelte';
 
@@ -20,6 +21,19 @@
   
   export let jobId: string = 'test';
   export let batchTaskDetails: any = null; // Optional batch task details data
+
+  // Debug logging for task props
+  $: {
+    console.log('[TaskList] Received tasks prop:', tasks);
+    console.log('[TaskList] Tasks length:', tasks?.length);
+    console.log('[TaskList] Tasks type:', typeof tasks);
+    console.log('[TaskList] tasks.length === 0 condition result:', tasks.length === 0);
+    console.log('[TaskList] Boolean(tasks):', Boolean(tasks));
+    console.log('[TaskList] Array.isArray(tasks):', Array.isArray(tasks));
+    if (tasks && tasks.length > 0) {
+      console.log('[TaskList] First task:', tasks[0]);
+    }
+  }
 
   
   // Track collapsed/expanded state of tasks with subtasks
@@ -301,7 +315,8 @@
     const rootTasks: any[] = [];
     
     // First pass: create map of all tasks
-    taskList.forEach(task => {
+    taskList.forEach((task, index) => {
+      
       taskMap.set(task.id, {
         ...task,
         subtasks: []
@@ -312,8 +327,10 @@
     taskList.forEach(task => {
       const taskWithSubtasks = taskMap.get(task.id);
       
+      const shouldShow = shouldShowTask(task, filterStatuses);
+      
       // Apply filter - only include tasks that should be shown
-      if (!shouldShowTask(task, filterStatuses)) {
+      if (!shouldShow) {
         return;
       }
       
@@ -345,6 +362,12 @@
   }
 
   $: hierarchicalTasks = organizeTasksHierarchically(tasks, taskFilter.selectedStatuses);
+
+  // Debug hierarchical tasks
+  $: {
+    console.log('[TaskList] hierarchicalTasks:', hierarchicalTasks);
+    console.log('[TaskList] hierarchicalTasks length:', hierarchicalTasks?.length);
+  }
   
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
   $: {
@@ -369,7 +392,10 @@
   // Make rendering reactive to expandedTasks state changes
   $: flattenedTasks = (() => {
     const _ = expandedTasks; 
-    return hierarchicalTasks.flatMap(task => renderTaskTree(task, 0));
+    const result = hierarchicalTasks.flatMap(task => renderTaskTree(task, 0));
+    console.log('[TaskList] flattenedTasks:', result);
+    console.log('[TaskList] flattenedTasks length:', result?.length);
+    return result;
   })();
   
   // Update flat task IDs for multi-select functionality
