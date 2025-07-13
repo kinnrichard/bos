@@ -11,7 +11,6 @@
 
 
 import { getZero } from './zero-client';
-import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
 // Generated TypeScript types for tasks
 // TypeScript interfaces for tasks
@@ -584,7 +583,8 @@ export async function undiscardTask(id: string): Promise<TaskMutationResult> {
 
 /**
  * ActiveRecord-style instance class for Task
- * Provides Rails-compatible instance methods: update(), delete(), restore()
+ * Provides Rails-compatible instance methods: update(), discard(), undiscard()
+ * Uses Rails discard gem API for soft deletion
  * 
  * Generated from Rails model: Task
  * 
@@ -593,27 +593,110 @@ export async function undiscardTask(id: string): Promise<TaskMutationResult> {
  * const task = Task.find('123').current;
  * if (task) {
  *   const instance = new TaskInstance(task);
- *   await instance.update({ title: 'Updated Title', status: new_task });
- *   await instance.delete(); // Soft delete
- *   await instance.restore(); // Restore from soft delete
+ *   await instance.update({ title: 'Updated Title', status: 1 });
+ *   await instance.discard(); // Soft delete using discard gem
+ *   await instance.undiscard(); // Restore from soft delete
  * }
  * ```
  */
-export class TaskInstance extends RecordInstance<Task> {
-  protected mutations: ZeroMutations<Task> = {
-    update: async (id: string, data: Partial<Task>) => {
-      return await updateTask(id, data as UpdateTaskData);
-    },
-    delete: async (id: string) => {
-      return await discardTask(id);
-    },
-            undiscard: async (id: string) => {
-              return await undiscardTask(id);
-            }
-  };
+export class TaskInstance {
+  constructor(protected data: Task) {
+    // Create proxy to make all properties reactive and accessible
+    return new Proxy(this, {
+      get(target, prop, receiver) {
+        // If accessing a method or internal property, return it directly
+        if (typeof prop === 'string' && (prop in target || typeof target[prop as keyof typeof target] === 'function')) {
+          return Reflect.get(target, prop, receiver);
+        }
+        
+        // Otherwise, proxy to the underlying data
+        if (typeof prop === 'string' && prop in target.data) {
+          return (target.data as any)[prop];
+        }
+        
+        return Reflect.get(target, prop, receiver);
+      },
+      
+      set(target, prop, value, receiver) {
+        // If setting a data property, update the underlying data
+        if (typeof prop === 'string' && prop in target.data) {
+          (target.data as any)[prop] = value;
+          return true;
+        }
+        
+        // Otherwise, set on the instance
+        return Reflect.set(target, prop, value, receiver);
+      }
+    });
+  }
 
-  constructor(data: Task) {
-    super(data);
+  /**
+   * Rails-compatible update method
+   * Updates multiple attributes in a single database operation
+   */
+  async update(attributes: Partial<Task>): Promise<{ id: string }> {
+    if (!attributes || Object.keys(attributes).length === 0) {
+      throw new Error('Update attributes are required');
+    }
+
+    try {
+      const result = await updateTask(this.data.id, attributes as UpdateTaskData);
+      
+      // Optimistically update local data
+      Object.assign(this.data, attributes);
+      
+      return result;
+    } catch (error) {
+      throw new Error(`Failed to update task: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Rails-compatible discard method (soft deletion)
+   * Sets discarded_at timestamp without removing the record
+   */
+  async discard(): Promise<boolean> {
+    try {
+      await discardTask(this.data.id);
+      
+      // Optimistically update local data
+      (this.data as any).discarded_at = Date.now();
+      
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to discard task: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Rails-compatible undiscard method
+   * Clears discarded_at timestamp to restore soft-deleted records
+   */
+  async undiscard(): Promise<boolean> {
+    try {
+      await undiscardTask(this.data.id);
+      
+      // Optimistically update local data
+      (this.data as any).discarded_at = null;
+      
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to undiscard task: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get the raw data object
+   */
+  get rawData(): Task {
+    return this.data;
+  }
+
+  /**
+   * Get the record ID
+   */
+  get id(): string {
+    return this.data.id;
   }
 
 /**
