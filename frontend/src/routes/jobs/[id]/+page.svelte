@@ -49,12 +49,14 @@
     console.log('[JobPage] Job ID from URL params:', jobId);
     
     if (job) {
-      console.log('[JobPage] Job data loaded via Zero relationships:', job.title);
+      // ✨ USE $state.snapshot() TO SAFELY LOG REACTIVE STATE
+      const jobSnapshot = $state.snapshot(job);
+      console.log('[JobPage] Job data loaded via Zero relationships:', jobSnapshot.title);
       // ✨ USE $inspect FOR DEBUGGING REACTIVE STATE IN SVELTE 5
       $inspect('[JobPage] Zero job structure:', job);
-      console.log('[JobPage] Client:', job.client?.name);
-      console.log('[JobPage] Tasks count:', job.tasks?.length);
-      console.log('[JobPage] Technicians:', $state.snapshot(job.jobAssignments)?.map((ja: any) => ja.user?.name));
+      console.log('[JobPage] Client:', jobSnapshot.client?.name);
+      console.log('[JobPage] Tasks count:', jobSnapshot.tasks?.length);
+      console.log('[JobPage] Technicians:', jobSnapshot.jobAssignments?.map((ja: any) => ja.user?.name));
       
       // Update current job in layout store when job data changes
       console.log('[JobPage] Setting current job in layout store via Zero relationships');

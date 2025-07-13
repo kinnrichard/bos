@@ -23,14 +23,16 @@
 
   // Debug logging for task props
   $: {
-    console.log('[TaskList] Received tasks prop:', tasks);
-    console.log('[TaskList] Tasks length:', tasks?.length);
+    // ✨ USE $state.snapshot() TO SAFELY LOG REACTIVE STATE
+    const tasksSnapshot = tasks ? $state.snapshot(tasks) : null;
+    console.log('[TaskList] Received tasks prop length:', tasks?.length);
     console.log('[TaskList] Tasks type:', typeof tasks);
     console.log('[TaskList] tasks.length === 0 condition result:', tasks.length === 0);
     console.log('[TaskList] Boolean(tasks):', Boolean(tasks));
     console.log('[TaskList] Array.isArray(tasks):', Array.isArray(tasks));
-    if (tasks && tasks.length > 0) {
-      console.log('[TaskList] First task:', tasks[0]);
+    if (tasksSnapshot && tasksSnapshot.length > 0) {
+      console.log('[TaskList] First task ID:', tasksSnapshot[0]?.id);
+      console.log('[TaskList] First task title:', tasksSnapshot[0]?.title);
     }
   }
 
@@ -364,8 +366,11 @@
 
   // Debug hierarchical tasks
   $: {
-    console.log('[TaskList] hierarchicalTasks:', hierarchicalTasks);
     console.log('[TaskList] hierarchicalTasks length:', hierarchicalTasks?.length);
+    // ✅ Safe: Access ID from first element without proxy issues
+    if (hierarchicalTasks && hierarchicalTasks.length > 0) {
+      console.log('[TaskList] hierarchicalTasks first ID:', hierarchicalTasks[0]?.id);
+    }
   }
   
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
@@ -392,8 +397,9 @@
   $: flattenedTasks = (() => {
     const _ = expandedTasks; 
     const result = hierarchicalTasks.flatMap(task => renderTaskTree(task, 0));
-    console.log('[TaskList] flattenedTasks:', result);
     console.log('[TaskList] flattenedTasks length:', result?.length);
+    // ✅ Safe: Log ID directly without storing proxy reference
+    console.log('[TaskList] flattenedTasks first ID:', result?.[0]?.task?.id);
     return result;
   })();
   

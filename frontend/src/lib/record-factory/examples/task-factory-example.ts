@@ -286,8 +286,8 @@ export const MigrationHelpers = {
     // NEW WAY - Factory pattern, no duplication
     const activeTasks = ReactiveTask.where({ status: 1 });
     
-    // Direct property access
-    console.log(activeTasks.records); // In Svelte: reactive
+    // Safe property access for reactive state - use $state.snapshot() in Svelte components
+    console.log('Active tasks count:', activeTasks.records.length); // Access length is safe
     
     // Or for vanilla JS
     const activeTasksJS = ActiveTask.where({ status: 1 });
