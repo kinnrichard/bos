@@ -35,6 +35,7 @@ export interface ReactiveRecordConfig extends BaseRecordConfig {
   enableScopes?: boolean;
   performanceMode?: 'standard' | 'optimized';
   memoryOptimization?: boolean;
+  instanceFactory?: (data: any) => any;
 }
 
 /**
@@ -76,6 +77,7 @@ class ReactiveRecordPerformance {
  */
 export class ReactiveRecord<T> extends BaseRecord<T> {
   private readonly instanceId: string;
+  private readonly reactiveConfig: ReactiveRecordConfig;
   
   // Svelte 5 $state rune for reactive data tracking
   private _state = createState({
@@ -96,6 +98,7 @@ export class ReactiveRecord<T> extends BaseRecord<T> {
     config: ReactiveRecordConfig = {}
   ) {
     super(getQueryBuilder, config);
+    this.reactiveConfig = config;
     
     this.instanceId = `reactive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     ReactiveRecordPerformance.trackInstance(this.instanceId);
@@ -116,23 +119,33 @@ export class ReactiveRecord<T> extends BaseRecord<T> {
   /** 
    * Single record access (like Rails .find result)
    * Automatically reactive in Svelte templates
+   * Returns instance object if instanceFactory is provided
    */
   get record(): T | null {
     if (this._state.isCollection) {
       throw new ActiveRecordError('Called .record on collection query. Use .records instead.');
     }
-    return this._state.data as T | null;
+    const data = this._state.data as T | null;
+    if (data && this.reactiveConfig.instanceFactory) {
+      return this.reactiveConfig.instanceFactory(data);
+    }
+    return data;
   }
   
   /** 
    * Collection access (like Rails .where result)
    * Automatically reactive in Svelte templates
+   * Returns instance objects if instanceFactory is provided
    */
   get records(): T[] {
     if (!this._state.isCollection) {
       throw new ActiveRecordError('Called .records on single record query. Use .record instead.');
     }
-    return (this._state.data as T[]) || [];
+    const data = (this._state.data as T[]) || [];
+    if (this.reactiveConfig.instanceFactory) {
+      return data.map(item => this.reactiveConfig.instanceFactory!(item));
+    }
+    return data;
   }
   
   /** Universal data access - returns whatever the query type expects */
@@ -242,7 +255,7 @@ export class ReactiveRecord<T> extends BaseRecord<T> {
  * Optimized for Svelte 5 with automatic UI updates
  */
 export class ReactiveModelFactory<T> {
-  constructor(private config: ModelConfig) {}
+  constructor(private config: ModelConfig, private instanceFactory?: (data: T) => any) {}
 
   /**
    * Find a single record by ID (like Rails .find)
@@ -257,7 +270,8 @@ export class ReactiveModelFactory<T> {
       {
         ...options,
         expectsCollection: false,
-        defaultValue: null
+        defaultValue: null,
+        instanceFactory: this.instanceFactory
       }
     );
   }
@@ -284,7 +298,8 @@ export class ReactiveModelFactory<T> {
       {
         ...options,
         expectsCollection: false,
-        defaultValue: null
+        defaultValue: null,
+        instanceFactory: this.instanceFactory
       }
     );
   }
@@ -302,7 +317,8 @@ export class ReactiveModelFactory<T> {
       {
         ...options,
         expectsCollection: true,
-        defaultValue: []
+        defaultValue: [],
+        instanceFactory: this.instanceFactory
       }
     );
   }
@@ -330,7 +346,8 @@ export class ReactiveModelFactory<T> {
       {
         ...options,
         expectsCollection: true,
-        defaultValue: []
+        defaultValue: [],
+        instanceFactory: this.instanceFactory
       }
     );
   }
@@ -362,7 +379,8 @@ export class ReactiveModelFactory<T> {
         {
           ...options,
           expectsCollection: true,
-          defaultValue: []
+          defaultValue: [],
+          instanceFactory: this.instanceFactory
         }
       );
     };
@@ -379,10 +397,11 @@ export class ReactiveModelFactory<T> {
 /**
  * Create a ReactiveRecord model factory with Rails scopes support
  * @param config Complete model configuration including scopes
+ * @param instanceFactory Optional factory function to create instance objects
  * @returns Factory object with find, findBy, all, where methods plus Rails scopes
  */
-export function createReactiveModelWithScopes<T>(config: ModelConfig) {
-  const factory = new ReactiveModelFactory<T>(config);
+export function createReactiveModelWithScopes<T>(config: ModelConfig, instanceFactory?: (data: T) => any) {
+  const factory = new ReactiveModelFactory<T>(config, instanceFactory);
   const result: any = {
     find: factory.find.bind(factory),
     findBy: factory.findBy.bind(factory),
@@ -403,11 +422,13 @@ export function createReactiveModelWithScopes<T>(config: ModelConfig) {
  * @param name Model name
  * @param tableName Zero.js table name
  * @param scopes Optional Rails scopes configuration
+ * @param instanceFactory Optional factory function to create instance objects
  */
 export function createReactiveModel<T>(
   name: string, 
   tableName: string, 
-  scopes: ScopeConfig[] = []
+  scopes: ScopeConfig[] = [],
+  instanceFactory?: (data: T) => any
 ) {
   const config: ModelConfig = {
     name,
@@ -421,10 +442,10 @@ export function createReactiveModel<T>(
   };
   
   if (scopes.length > 0) {
-    return createReactiveModelWithScopes<T>(config);
+    return createReactiveModelWithScopes<T>(config, instanceFactory);
   }
   
-  return new ReactiveModelFactory<T>(config);
+  return new ReactiveModelFactory<T>(config, instanceFactory);
 }
 
 /**

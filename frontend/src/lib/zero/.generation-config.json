@@ -4,6 +4,7 @@
     "schema_migrations",
     "activity_logs",
     "contact_methods",
+    "jobs",
     "clients",
     "devices",
     "job_assignments",
@@ -13,14 +14,13 @@
     "people",
     "scheduled_date_times",
     "scheduled_date_time_users",
-    "tasks",
     "task_completions",
     "users"
   ],
   "excludePatterns": {},
   "customNaming": {},
   "outputDirectory": "/Users/claude/code/bos/frontend/src/lib/zero",
-  "dryRun": true,
-  "forceGeneration": false,
+  "dryRun": false,
+  "forceGeneration": true,
   "incrementalGeneration": true
 }

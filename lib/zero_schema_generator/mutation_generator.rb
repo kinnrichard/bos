@@ -182,12 +182,16 @@ module ZeroSchemaGenerator
       # Generate ActiveRecord-style queries
       activerecord_queries = generate_activerecord_queries(table, patterns)
 
+      # Generate instance class for ActiveRecord-style operations
+      instance_class = generate_instance_class(table, patterns)
+
       header = generate_file_header("generated")
 
       <<~TYPESCRIPT
         #{header}
 
         #{imports.join("\n")}
+        import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
         // Generated TypeScript types for #{table_name}
         #{types}
@@ -195,6 +199,8 @@ module ZeroSchemaGenerator
         // Generated CRUD mutations for #{table_name}
 
         #{mutations.join("\n\n")}
+
+        #{instance_class}
 
         // Generated ActiveRecord-style queries for #{table_name}
 
@@ -621,13 +627,18 @@ module ZeroSchemaGenerator
           }
 
           try {
-            await zero.mutate.#{table_name}.upsert({
+            const upsertData: any = {
               ...data,
               id,
               updated_at: now,
-              // Set created_at only if this is a new record
-              ...(data.id ? {} : { created_at: now }),
-            });
+            };
+        #{'    '}
+            // Set created_at only if this is a new record
+            if (!data.id) {
+              upsertData.created_at = now;
+            }
+        #{'    '}
+            await zero.mutate.#{table_name}.upsert(upsertData);
 
             return { id };
           } catch (error) {
@@ -993,6 +1004,170 @@ module ZeroSchemaGenerator
       content.include?("🔄 ZERO MUTATIONS MERGER")
     end
 
+    def generate_instance_class(table, patterns)
+      table_name = table[:name]
+      singular_name = table_name.singularize
+      class_name = singular_name.classify
+      has_soft_delete = patterns[:soft_deletion]
+      has_position = patterns[:positioning]
+
+      # Generate status enum type if applicable
+      status_enum_type = nil
+      status_enum_values = []
+      if patterns[:enums]
+        status_pattern = patterns[:enums].find { |enum| enum[:column] == "status" }
+        if status_pattern
+          status_enum_values = status_pattern[:enum_values] || []
+          status_enum_type = status_pattern[:enum_integer_values]&.join(" | ") || "string"
+        end
+      end
+
+      # Generate update example fields for documentation
+      update_example_fields = []
+      table[:columns].each do |column|
+        next if %w[id created_at updated_at].include?(column[:name])
+        next if has_soft_delete && column[:name] == "deleted_at"
+
+        case column[:name]
+        when "title"
+          update_example_fields << "title: 'Updated Title'"
+        when "status"
+          if status_enum_values.any?
+            update_example_fields << "status: #{status_enum_values.first}"
+          end
+        when "position"
+          update_example_fields << "position: 10" if has_position
+        end
+
+        break if update_example_fields.length >= 2
+      end
+
+      update_example = update_example_fields.any? ? update_example_fields.join(", ") : "/* fields to update */"
+
+      # Check for title and name fields
+      has_title = table[:columns].any? { |col| col[:name] == "title" }
+      has_name = table[:columns].any? { |col| col[:name] == "name" }
+
+      <<~TYPESCRIPT
+
+        // ActiveRecord-style instance class for individual #{singular_name} records
+
+        /**
+         * ActiveRecord-style instance class for #{class_name}
+         * Provides Rails-compatible instance methods: update(), delete(), restore()
+         *#{' '}
+         * Generated from Rails model: #{class_name}
+         *#{' '}
+         * @example
+         * ```typescript
+         * const #{singular_name} = #{class_name}.find('123').current;
+         * if (#{singular_name}) {
+         *   const instance = new #{class_name}Instance(#{singular_name});
+         *   await instance.update({ #{update_example} });
+         *   await instance.delete(); // #{has_soft_delete ? 'Soft delete' : 'Permanent delete'}
+         *   #{has_soft_delete ? 'await instance.restore(); // Restore from soft delete' : ''}
+         * }
+         * ```
+         */
+        export class #{class_name}Instance extends RecordInstance<#{class_name}> {
+          protected mutations: ZeroMutations<#{class_name}> = {
+            update: async (id: string, data: Partial<#{class_name}>) => {
+              return await update#{class_name}(id, data as Update#{class_name}Data);
+            },
+            delete: async (id: string) => {
+              return await #{has_soft_delete ? 'delete' : 'delete'}#{class_name}(id);
+            }#{has_soft_delete ? ",\n            restore: async (id: string) => {\n              return await restore#{class_name}(id);\n            }" : ''}
+          };
+
+          constructor(data: #{class_name}) {
+            super(data);
+          }
+
+        #{has_soft_delete ? generate_soft_delete_getter : ''}
+        #{has_position ? generate_position_methods(class_name) : ''}
+        #{status_enum_type ? generate_status_method(class_name, status_enum_type) : ''}
+
+          /**
+           * Rails-compatible inspect method for debugging
+           */
+          inspect(): string {
+            return `#<#{class_name}Instance id: ${this.data.id}#{has_title ? ', title: "${(this.data as any).title}"' : ''}#{has_name ? ', name: "${(this.data as any).name}"' : ''}>`;
+          }
+        }
+
+        /**
+         * Factory function to create #{class_name}Instance from data
+         * Used internally by ReactiveRecord and ActiveRecord
+         */
+        export function create#{class_name}Instance(data: #{class_name}): #{class_name}Instance {
+          return new #{class_name}Instance(data);
+        }
+      TYPESCRIPT
+    end
+
+    def generate_soft_delete_getter
+      <<~TYPESCRIPT
+        /**
+         * Check if this record is soft deleted
+         * Rails pattern: checks for deleted_at timestamp
+         */
+        get isDeleted(): boolean {
+          return !!(this.data as any).deleted_at;
+        }
+
+      TYPESCRIPT
+    end
+
+    def generate_position_methods(class_name)
+      <<~TYPESCRIPT
+        /**
+         * Move this record before another record
+         * Rails acts_as_list pattern
+         */
+        async moveBefore(target#{class_name}Id: string): Promise<{ id: string }> {
+          return await moveBefore#{class_name}(this.data.id, target#{class_name}Id);
+        }
+
+        /**
+         * Move this record after another record
+         * Rails acts_as_list pattern
+         */
+        async moveAfter(target#{class_name}Id: string): Promise<{ id: string }> {
+          return await moveAfter#{class_name}(this.data.id, target#{class_name}Id);
+        }
+
+        /**
+         * Move this record to the top of the list
+         * Rails acts_as_list pattern
+         */
+        async moveToTop(): Promise<{ id: string }> {
+          return await moveToTop#{class_name}(this.data.id);
+        }
+
+        /**
+         * Move this record to the bottom of the list
+         * Rails acts_as_list pattern
+         */
+        async moveToBottom(): Promise<{ id: string }> {
+          return await moveToBottom#{class_name}(this.data.id);
+        }
+
+      TYPESCRIPT
+    end
+
+    def generate_status_method(class_name, status_enum_type)
+      <<~TYPESCRIPT
+        /**
+         * Convenience method for updating status
+         * Generated from Rails enum
+         */
+        async updateStatus(status: #{status_enum_type}): Promise<{ id: string }> {
+          return await this.update({ status: status as any });
+        }
+
+      TYPESCRIPT
+    end
+
     def rails_type_to_typescript(column)
       # Check if this is an enum field and generate integer union type
       if column[:enum] && column[:enum_integer_values]&.any?
@@ -1150,7 +1325,7 @@ module ZeroSchemaGenerator
         #{'    '}
             Object.entries(conditions).forEach(([key, value]) => {
               if (value !== undefined && value !== null) {
-                query = query.where(key, value);
+                query = query.where(key as any, value);
               }
             });
         #{'    '}
