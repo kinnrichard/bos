@@ -22,8 +22,8 @@
   // ✨ CREATE REACTIVE MODEL IN SVELTE COMPONENT (where $state runes are available)
   const JobReactive = ModelFactory.createReactiveModel<Job>(jobConfig);
   
-  // ✨ USE ENHANCED FACTORY-BASED REACTIVE API WITH RELATIONSHIPS
-  const jobsQuery = JobReactive.all();
+  // ✨ USE RAILS-STYLE INCLUDES FOR RELATIONSHIPS (loads client data)
+  const jobsQuery = JobReactive.includes('client').all();
   
   // ✨ USE $derived FOR DIRECT ZERO DATA ACCESS (NO TRANSFORMATION NEEDED)
   const allJobs = $derived(jobsQuery.data || []);

@@ -183,8 +183,14 @@ export class RailsQueryBuilder<T> implements RailsQueryChain<T> {
    */
   find(id: string | number): T {
     try {
-      const query = this.zeroQuery.where('id', id).one();
-      const result = query.data;
+      let query = this.zeroQuery.where('id', id);
+      
+      // Apply relationships (Rails includes() → Zero.js related())
+      this.includeRelations.forEach(relation => {
+        query = query.related(relation);
+      });
+      
+      const result = query.one().data;
       
       if (!result) {
         throw RecordNotFoundError.forId(id, this.modelName);
@@ -210,6 +216,11 @@ export class RailsQueryBuilder<T> implements RailsQueryChain<T> {
         if (value !== undefined && value !== null) {
           query = query.where(key, value);
         }
+      });
+      
+      // Apply relationships (Rails includes() → Zero.js related())
+      this.includeRelations.forEach(relation => {
+        query = query.related(relation);
       });
       
       const result = query.one().data;
@@ -333,6 +344,11 @@ export class RailsQueryBuilder<T> implements RailsQueryChain<T> {
     }
 
     let query = this.zeroQuery;
+
+    // Apply relationships (Rails includes() → Zero.js related())
+    this.includeRelations.forEach(relation => {
+      query = query.related(relation);
+    });
 
     // Apply ordering
     this.orderByFields.forEach(({ field, direction }) => {

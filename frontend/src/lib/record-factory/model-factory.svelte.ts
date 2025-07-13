@@ -261,6 +261,15 @@ export const ModelFactory = {
   createReactiveModel<T>(config: ModelConfig) {
     return {
       /**
+       * Rails-style includes for relationships (supports chaining)
+       * @param relations - Relationship names to include
+       */
+      includes(...relations: string[]) {
+        const zero = getZero();
+        const railsModel = new RailsActiveRecord<T>(config, zero ? zero.query[config.zeroConfig.tableName] : null);
+        return railsModel.includes(...relations);
+      },
+      /**
        * Find a single record by ID (like Rails .find)
        * @param id - The record ID
        * @param options - Factory creation options
