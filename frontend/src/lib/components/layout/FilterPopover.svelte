@@ -3,10 +3,17 @@
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import '$lib/styles/popover-common.css';
 
-  export let onFilterChange: (statuses: string[]) => void = () => {};
+  interface Props {
+    onFilterChange?: (statuses: string[]) => void;
+    onDeletedToggle?: (showDeleted: boolean) => void;
+  }
+
+  let { onFilterChange = () => {}, onDeletedToggle = () => {} }: Props = $props();
 
   let basePopover: any;
-  export { basePopover as popover };
+
+  // Reactive state for showing deleted tasks using Svelte 5 $state
+  let showDeleted = $state(false);
 
   // Status options configuration
   const statusOptions = [
@@ -53,10 +60,23 @@
     }
   }
 
-  $: hasActiveFilters = selectedStatuses.length > 0 && selectedStatuses.length < statusOptions.length;
+  // Use $derived for computed values in Svelte 5
+  let hasActiveFilters = $derived(selectedStatuses.length > 0 && selectedStatuses.length < statusOptions.length || showDeleted);
 
-  // Notify parent when filters change
-  $: onFilterChange(selectedStatuses);
+  // Use $effect to notify parent when filters change
+  $effect(() => {
+    onFilterChange(selectedStatuses);
+  });
+  
+  // Use $effect to notify parent when deleted toggle changes  
+  $effect(() => {
+    onDeletedToggle(showDeleted);
+  });
+
+  // Toggle deleted task visibility
+  function toggleDeleted() {
+    showDeleted = !showDeleted;
+  }
 </script>
 
 <BasePopover 
@@ -69,7 +89,7 @@
       class="popover-button"
       use:popover.button
       title="Filter tasks"
-      on:click|stopPropagation
+      onclick={(e) => e.stopPropagation()}
     >
       <img 
         src={hasActiveFilters ? "/icons/filter-active.svg" : "/icons/filter-inactive.svg"} 
@@ -100,6 +120,30 @@
         </div>
       </svelte:fragment>
     </PopoverOptionList>
+    
+    <!-- Deleted tasks toggle -->
+    <div class="filter-separator"></div>
+    <div class="deleted-filter-option">
+      <button 
+        class="deleted-toggle-button"
+        onclick={toggleDeleted}
+        title="Toggle visibility of deleted tasks"
+      >
+        <span class="popover-option-main-label">Deleted</span>
+        
+        <div class="popover-checkmark-container">
+          {#if showDeleted}
+            <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
+          {/if}
+        </div>
+      </button>
+      
+      {#if showDeleted}
+        <div class="deleted-indicator">
+          <span class="deleted-indicator-text">Showing deleted tasks</span>
+        </div>
+      {/if}
+    </div>
   </div>
 </BasePopover>
 
@@ -138,6 +182,47 @@
 
   .filter-content {
     padding: 16px;
+  }
+
+  .filter-separator {
+    border-top: 1px solid var(--border-secondary);
+    margin: 12px 0;
+  }
+
+  .deleted-filter-option {
+    margin-top: 8px;
+  }
+
+  .deleted-toggle-button {
+    width: 100%;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+  }
+
+  .deleted-toggle-button:hover {
+    background-color: var(--bg-secondary);
+  }
+
+  .deleted-indicator {
+    margin-top: 8px;
+    padding: 6px 12px;
+    background-color: var(--accent-orange-bg);
+    border: 1px solid var(--accent-orange);
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .deleted-indicator-text {
+    font-size: 12px;
+    color: var(--accent-orange);
+    font-weight: 500;
   }
 
   /* Accessibility improvements */

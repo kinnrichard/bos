@@ -11,7 +11,7 @@ import type { Job } from '../../types/job';
 const jobScopes: ScopeConfig[] = [
   {
     name: 'active',
-    conditions: { deleted_at: null },
+    conditions: { discarded_at: null },
     description: 'Active jobs not marked as deleted'
   },
   {
@@ -54,7 +54,7 @@ export const ReactiveJob = createReactiveModelWithScopes<Job>({
     { name: 'client_id', type: 'string', nullable: true },
     { name: 'created_at', type: 'datetime' },
     { name: 'updated_at', type: 'datetime' },
-    { name: 'deleted_at', type: 'datetime', nullable: true }
+    { name: 'discarded_at', type: 'datetime', nullable: true }
   ],
   associations: [
     { name: 'client', type: 'belongs_to', className: 'Client' },

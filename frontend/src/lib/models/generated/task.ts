@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 12:13:36 UTC
+ * Generated: 2025-07-13 17:29:21 UTC
  * Table: tasks
  * Generator: rails generate zero:factory_models
  * 
@@ -35,7 +35,7 @@ export interface TaskType {
   job_id?: string;
   assigned_to_id?: string;
   parent_id?: string;
-  deleted_at?: string;
+  discarded_at?: string;
 }
 
 
@@ -65,7 +65,7 @@ taskConfig.attributes = [
     { name: 'job_id', type: 'uuid', nullable: true },
     { name: 'assigned_to_id', type: 'uuid', nullable: true },
     { name: 'parent_id', type: 'uuid', nullable: true },
-    { name: 'deleted_at', type: 'datetime', nullable: true }
+    { name: 'discarded_at', type: 'datetime', nullable: true }
 ];
 
 // Add associations to configuration
@@ -80,8 +80,9 @@ taskConfig.associations = [
 
 // Add scopes to configuration
 taskConfig.scopes = [
-    { name: 'withDeleted', conditions: {}, description: 'Include soft-deleted records' },
-    { name: 'onlyDeleted', conditions: { deleted_at: { not: null } }, description: 'Only soft-deleted records' },
+    { name: 'all', conditions: {}, description: 'All records including discarded (Rails Task.all)' },
+    { name: 'kept', conditions: { discarded_at: null }, description: 'Only kept (non-discarded) records (Rails Task.kept)' },
+    { name: 'discarded', conditions: { discarded_at: { not: null } }, description: 'Only discarded records (Rails Task.discarded)' },
     { name: 'ordered', conditions: {}, description: 'Order by position' },
     { name: 'new_task', conditions: { status: 'new_task' }, description: 'Filter by status = new_task' },
     { name: 'in_progress', conditions: { status: 'in_progress' }, description: 'Filter by status = in_progress' },

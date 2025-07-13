@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 12:13:36 UTC
+ * Generated: 2025-07-13 17:29:21 UTC
  * Table: jobs
  * Generator: rails generate zero:factory_models
  * 
@@ -78,6 +78,7 @@ jobConfig.associations = [
     { name: 'job_people', type: 'has_many', className: 'JobPerson', foreignKey: 'job_id' },
     { name: 'people', type: 'has_many', className: 'Person', foreignKey: 'person_id', through: 'job_people' },
     { name: 'tasks', type: 'has_many', className: 'Task', foreignKey: 'job_id' },
+    { name: 'all_tasks', type: 'has_many', className: 'Task', foreignKey: 'job_id' },
     { name: 'notes', type: 'has_many', className: 'Note', foreignKey: 'notable_id' },
     { name: 'scheduled_date_times', type: 'has_many', className: 'ScheduledDateTime', foreignKey: 'schedulable_id' }
 ];

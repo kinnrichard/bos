@@ -84,7 +84,7 @@ const taskConfig = new ModelConfigBuilder('task', 'tasks')
   })
   .addScope({ 
     name: 'active', 
-    conditions: { deleted_at: null },
+    conditions: { discarded_at: null },
     description: 'Only non-deleted tasks' 
   })
   .addScope({ 
@@ -146,7 +146,7 @@ export const SvelteTaskExamples = {
     // Reactive query - automatically updates UI
     const activeTasks = ReactiveTask.where({ 
       status: 1, // in_progress
-      deleted_at: null 
+      discarded_at: null 
     });
     
     // In Svelte template: {#each activeTasks.records as task}
@@ -182,7 +182,7 @@ export const SvelteTaskExamples = {
   jobTasks(jobId: string) {
     const tasks = ReactiveTask.where({ 
       job_id: jobId,
-      deleted_at: null 
+      discarded_at: null 
     });
     
     return tasks;

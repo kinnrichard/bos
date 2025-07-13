@@ -294,10 +294,20 @@ module Zero
       def build_scopes_array(patterns)
         scopes = []
 
-        # Add soft deletion scope if pattern detected
+        # Add discard gem scopes if pattern detected
         if patterns[:soft_deletion]
-          scopes << "    { name: 'withDeleted', conditions: {}, description: 'Include soft-deleted records' }"
-          scopes << "    { name: 'onlyDeleted', conditions: { deleted_at: { not: null } }, description: 'Only soft-deleted records' }"
+          soft_deletion_column = patterns[:soft_deletion][:column]
+
+          if patterns[:soft_deletion][:gem] == "discard"
+            # Rails discard gem provides: all (no filter), kept (active), discarded (soft deleted)
+            scopes << "    { name: 'all', conditions: {}, description: 'All records including discarded (Rails Task.all)' }"
+            scopes << "    { name: 'kept', conditions: { #{soft_deletion_column}: null }, description: 'Only kept (non-discarded) records (Rails Task.kept)' }"
+            scopes << "    { name: 'discarded', conditions: { #{soft_deletion_column}: { not: null } }, description: 'Only discarded records (Rails Task.discarded)' }"
+          else
+            # Legacy soft deletion pattern
+            scopes << "    { name: 'withDeleted', conditions: {}, description: 'Include soft-deleted records' }"
+            scopes << "    { name: 'onlyDeleted', conditions: { #{soft_deletion_column}: { not: null } }, description: 'Only soft-deleted records' }"
+          end
         end
 
         # Add positioning scopes if pattern detected

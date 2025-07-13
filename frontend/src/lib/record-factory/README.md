@@ -118,7 +118,7 @@ const taskConfig = new ModelConfigBuilder('task', 'tasks')
   .addAttribute({ name: 'title', type: 'string', nullable: true })
   .addAssociation({ name: 'job', type: 'belongs_to', className: 'Job' })
   .addValidation({ field: 'title', type: 'presence' })
-  .addScope({ name: 'active', conditions: { deleted_at: null } })
+  .addScope({ name: 'active', conditions: { discarded_at: null } })
   .setFactoryOptions({ ttl: '5m', debugLogging: false })
   .build();
 

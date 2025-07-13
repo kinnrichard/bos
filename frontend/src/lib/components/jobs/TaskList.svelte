@@ -305,7 +305,7 @@
   
 
   // Organize tasks into hierarchical structure with filtering
-  function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[]) {
+  function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[], showDeleted: boolean) {
     const taskMap = new Map();
     const rootTasks: any[] = [];
     
@@ -322,7 +322,7 @@
     taskList.forEach(task => {
       const taskWithSubtasks = taskMap.get(task.id);
       
-      const shouldShow = shouldShowTask(task, filterStatuses);
+      const shouldShow = shouldShowTask(task, filterStatuses, showDeleted);
       
       // Apply filter - only include tasks that should be shown
       if (!shouldShow) {
@@ -332,7 +332,7 @@
       if (task.parent_id && taskMap.has(task.parent_id)) {
         // Only add to parent if parent is also visible
         const parent = taskMap.get(task.parent_id);
-        if (shouldShowTask(parent, filterStatuses)) {
+        if (shouldShowTask(parent, filterStatuses, showDeleted)) {
           parent.subtasks.push(taskWithSubtasks);
         }
       } else {
@@ -357,7 +357,7 @@
   }
 
   // ✨ USE $derived FOR COMPUTED VALUES IN SVELTE 5
-  const hierarchicalTasks = $derived(organizeTasksHierarchically(tasks, taskFilter.selectedStatuses));
+  const hierarchicalTasks = $derived(organizeTasksHierarchically(tasks, taskFilter.selectedStatuses, taskFilter.showDeleted));
 
   // Debug hierarchical tasks
   $effect(() => {
@@ -1050,8 +1050,12 @@
         const { createTaskInstance } = await import('$lib/zero/task.generated');
         const taskInstance = createTaskInstance(taskData as any);
         
-        // Use ActiveRecord-style delete method (soft deletion)
-        return await taskInstance.delete();
+        // Use ActiveRecord-style discard method (soft deletion)
+        const success = await taskInstance.discard();
+        if (!success) {
+          throw new Error('Discard operation failed');
+        }
+        return { id: taskData.id };
       });
 
       // Wait for both API calls and animation to complete
@@ -1061,7 +1065,7 @@
       ]);
 
       // Phase 3: Tasks will be automatically removed from UI by Zero's reactive query
-      // which filters out soft-deleted tasks (deleted_at IS NOT NULL)
+      // which filters out soft-deleted tasks (discarded_at IS NOT NULL) unless showDeleted is true
 
       // Clear deletion animation state
       tasksToDeleteCopy.forEach(taskId => {
@@ -1070,11 +1074,11 @@
       deletingTaskIds = deletingTaskIds;
 
       // Show success dragFeedback
-      dragFeedback = `Successfully deleted ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
+      dragFeedback = `Successfully discarded ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
       setTimeout(() => dragFeedback = '', 3000);
 
     } catch (error: any) {
-      console.error('Failed to delete tasks:', error);
+      console.error('Failed to discard tasks:', error);
       
       // Clear animation state on error
       tasksToDeleteCopy.forEach(taskId => {
@@ -1082,7 +1086,7 @@
       });
       deletingTaskIds = deletingTaskIds;
       
-      dragFeedback = `Failed to delete tasks: ${error.message || 'Unknown error'}`;
+      dragFeedback = `Failed to discard tasks: ${error.message || 'Unknown error'}`;
       setTimeout(() => dragFeedback = '', 5000);
     } finally {
       isDeletingTasks = false;

@@ -20,7 +20,8 @@ import {
   updateClient,
   createTask,
   updateTask,
-  deleteTask
+  discardTask,
+  undiscardTask
 } from './zero';
 
 const ZERO_CONTEXT_KEY = Symbol('zero');
@@ -47,7 +48,8 @@ export interface ZeroContext {
   updateClient: typeof updateClient;
   createTask: typeof createTask;
   updateTask: typeof updateTask;
-  deleteTask: typeof deleteTask;
+  discardTask: typeof discardTask;
+  undiscardTask: typeof undiscardTask;
   
   // Add other Zero functions as needed
 }
@@ -75,7 +77,8 @@ export function createZeroContext(): ZeroContext {
     updateClient,
     createTask,
     updateTask,
-    deleteTask,
+    discardTask,
+    undiscardTask,
   };
   
   return setContext(ZERO_CONTEXT_KEY, context);

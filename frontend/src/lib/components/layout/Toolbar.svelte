@@ -75,6 +75,11 @@
     taskFilterActions.setStatuses(statuses);
   }
 
+  // Deleted task filter functionality
+  function handleDeletedToggle(showDeleted: boolean) {
+    taskFilterActions.setShowDeleted(showDeleted);
+  }
+
   // Technician assignment functionality removed - TanStack Query handles everything
 </script>
 
@@ -110,7 +115,7 @@
     <!-- Search -->
     <!-- Job detail page controls -->
     {#if currentPage === 'job-detail' && layout.currentJob && layout.currentJob.id}
-      <FilterPopover onFilterChange={handleTaskStatusFilter} bind:popover={filterPopover} />
+      <FilterPopover onFilterChange={handleTaskStatusFilter} onDeletedToggle={handleDeletedToggle} bind:popover={filterPopover} />
     {/if}
 
     <!-- Page-specific actions -->

@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 12:13:36 UTC
+ * Generated: 2025-07-13 17:29:21 UTC
  * Table: task_completions
  * Generator: rails generate zero:factory_models
  * 

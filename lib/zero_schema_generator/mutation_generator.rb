@@ -180,7 +180,11 @@ module ZeroSchemaGenerator
       end
 
       if patterns[:soft_deletion]
-        mutations << generate_restore_mutation(table, patterns[:soft_deletion])
+        if patterns[:soft_deletion][:gem] == "discard"
+          mutations << generate_undiscard_mutation(table, patterns[:soft_deletion])
+        else
+          mutations << generate_restore_mutation(table, patterns[:soft_deletion])
+        end
       end
 
       # Generate ActiveRecord-style queries
@@ -291,8 +295,9 @@ module ZeroSchemaGenerator
         # Create interface (excludes auto-generated fields)
         unless %w[id created_at updated_at].include?(column_name)
           # Handle pattern-specific fields
-          if patterns[:soft_deletion] && column_name == "deleted_at"
-            # Skip deleted_at in create - will be null by default
+          soft_deletion_column = patterns.dig(:soft_deletion, :column)
+          if patterns[:soft_deletion] && column_name == soft_deletion_column
+            # Skip soft deletion column in create - will be null by default
           elsif patterns[:positioning] && column_name == "position"
             create_fields << "  #{column_name}?: #{ts_type}; // Auto-calculated if not provided"
           else
@@ -352,7 +357,8 @@ module ZeroSchemaGenerator
       table[:columns].each do |column|
         next if column[:name] == "id" || column[:name] == table[:primary_key]
         next if %w[created_at updated_at].include?(column[:name])
-        next if patterns[:soft_deletion] && column[:name] == "deleted_at"
+        soft_deletion_column = patterns.dig(:soft_deletion, :column)
+        next if patterns[:soft_deletion] && column[:name] == soft_deletion_column
         next if column[:null] # Only check non-nullable fields
 
         field_name = column[:name]
@@ -479,53 +485,104 @@ module ZeroSchemaGenerator
       class_name = singular_name.classify
 
       if patterns[:soft_deletion]
-        delete_name = @config.get_custom_name("delete")
-        # Generate soft delete
-        <<~TYPESCRIPT
-          /**
-           * #{delete_name.humanize} a #{singular_name} (soft deletion)
-           *#{' '}
-           * @param id - The UUID of the #{singular_name} to #{delete_name}
-           * @returns Promise resolving to the #{delete_name}d #{singular_name} ID
-           *#{' '}
-           * @example
-           * ```typescript
-           * import { #{delete_name}#{class_name} } from './#{singular_name}';
-           *#{' '}
-           * const result = await #{delete_name}#{class_name}('123e4567-e89b-12d3-a456-426614174000');
-           * console.log('#{delete_name.humanize}d #{singular_name}:', result.id);
-           * ```
-           */
-          export async function #{delete_name}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
-            const zero = getZero();
-            if (!zero) {
-              throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
-            }
-          #{'  '}
-            // Validate ID format
-            if (!id || typeof id !== 'string') {
-              throw new Error('#{class_name} ID is required and must be a string');
-            }
-          #{'  '}
-            if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
-              throw new Error('#{class_name} ID must be a valid UUID');
-            }
+        soft_deletion_column = patterns[:soft_deletion][:column]
 
-            const now = Date.now();
+        if patterns[:soft_deletion][:gem] == "discard"
+          # Generate discard method for discard gem
+          <<~TYPESCRIPT
+            /**
+             * Discard a #{singular_name} (soft deletion using discard gem)
+             *#{' '}
+             * @param id - The UUID of the #{singular_name} to discard
+             * @returns Promise resolving to the discarded #{singular_name} ID
+             *#{' '}
+             * @example
+             * ```typescript
+             * import { discard#{class_name} } from './#{singular_name}';
+             *#{' '}
+             * const result = await discard#{class_name}('123e4567-e89b-12d3-a456-426614174000');
+             * console.log('Discarded #{singular_name}:', result.id);
+             * ```
+             */
+            export async function discard#{class_name}(id: string): Promise<#{class_name}MutationResult> {
+              const zero = getZero();
+              if (!zero) {
+                throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+              }
+            #{'  '}
+              // Validate ID format
+              if (!id || typeof id !== 'string') {
+                throw new Error('#{class_name} ID is required and must be a string');
+              }
+            #{'  '}
+              if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+                throw new Error('#{class_name} ID must be a valid UUID');
+              }
 
-            try {
-              await zero.mutate.#{table_name}.update({
-                id,
-                deleted_at: now,
-                updated_at: now,
-              });
+              const now = Date.now();
 
-              return { id };
-            } catch (error) {
-              throw new Error(`Failed to #{delete_name} #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              try {
+                await zero.mutate.#{table_name}.update({
+                  id,
+                  #{soft_deletion_column}: now,
+                  updated_at: now,
+                });
+
+                return { id };
+              } catch (error) {
+                throw new Error(`Failed to discard #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              }
             }
-          }
-        TYPESCRIPT
+          TYPESCRIPT
+        else
+          # Legacy soft delete for deleted_at pattern
+          delete_name = @config.get_custom_name("delete")
+          <<~TYPESCRIPT
+            /**
+             * #{delete_name.humanize} a #{singular_name} (soft deletion)
+             *#{' '}
+             * @param id - The UUID of the #{singular_name} to #{delete_name}
+             * @returns Promise resolving to the #{delete_name}d #{singular_name} ID
+             *#{' '}
+             * @example
+             * ```typescript
+             * import { #{delete_name}#{class_name} } from './#{singular_name}';
+             *#{' '}
+             * const result = await #{delete_name}#{class_name}('123e4567-e89b-12d3-a456-426614174000');
+             * console.log('#{delete_name.humanize}d #{singular_name}:', result.id);
+             * ```
+             */
+            export async function #{delete_name}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
+              const zero = getZero();
+              if (!zero) {
+                throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+              }
+            #{'  '}
+              // Validate ID format
+              if (!id || typeof id !== 'string') {
+                throw new Error('#{class_name} ID is required and must be a string');
+              }
+            #{'  '}
+              if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+                throw new Error('#{class_name} ID must be a valid UUID');
+              }
+
+              const now = Date.now();
+
+              try {
+                await zero.mutate.#{table_name}.update({
+                  id,
+                  #{soft_deletion_column}: now,
+                  updated_at: now,
+                });
+
+                return { id };
+              } catch (error) {
+                throw new Error(`Failed to #{delete_name} #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              }
+            }
+          TYPESCRIPT
+        end
       else
         # Generate hard delete
         <<~TYPESCRIPT
@@ -647,6 +704,59 @@ module ZeroSchemaGenerator
             return { id };
           } catch (error) {
             throw new Error(`Failed to upsert #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+      TYPESCRIPT
+    end
+
+    def generate_undiscard_mutation(table, soft_deletion_pattern)
+      table_name = table[:name]
+      singular_name = table_name.singularize
+      class_name = singular_name.classify
+      soft_deletion_column = soft_deletion_pattern[:column]
+
+      <<~TYPESCRIPT
+        /**
+         * Undiscard a discarded #{singular_name} (restore using discard gem)
+         *#{' '}
+         * @param id - The UUID of the #{singular_name} to undiscard
+         * @returns Promise resolving to the undiscarded #{singular_name} ID
+         *#{' '}
+         * @example
+         * ```typescript
+         * import { undiscard#{class_name} } from './#{singular_name}';
+         *#{' '}
+         * const result = await undiscard#{class_name}('123e4567-e89b-12d3-a456-426614174000');
+         * console.log('Undiscarded #{singular_name}:', result.id);
+         * ```
+         */
+        export async function undiscard#{class_name}(id: string): Promise<#{class_name}MutationResult> {
+          const zero = getZero();
+          if (!zero) {
+            throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+          }
+        #{'  '}
+          // Validate ID format
+          if (!id || typeof id !== 'string') {
+            throw new Error('#{class_name} ID is required and must be a string');
+          }
+        #{'  '}
+          if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+            throw new Error('#{class_name} ID must be a valid UUID');
+          }
+
+          const now = Date.now();
+
+          try {
+            await zero.mutate.#{table_name}.update({
+              id,
+              #{soft_deletion_column}: null,
+              updated_at: now,
+            });
+
+            return { id };
+          } catch (error) {
+            throw new Error(`Failed to undiscard #{singular_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           }
         }
       TYPESCRIPT
@@ -1111,15 +1221,15 @@ module ZeroSchemaGenerator
               return await update#{class_name}(id, data as Update#{class_name}Data);
             },
             delete: async (id: string) => {
-              return await #{has_soft_delete ? 'delete' : 'delete'}#{class_name}(id);
-            }#{has_soft_delete ? ",\n            restore: async (id: string) => {\n              return await restore#{class_name}(id);\n            }" : ''}
+              return await #{get_delete_method_name(patterns)}#{class_name}(id);
+            }#{has_soft_delete ? generate_instance_restore_method(patterns) : ''}
           };
 
           constructor(data: #{class_name}) {
             super(data);
           }
 
-        #{has_soft_delete ? generate_soft_delete_getter : ''}
+        #{has_soft_delete ? generate_discard_or_soft_delete_getter(patterns) : ''}
         #{has_position ? generate_position_methods(class_name) : ''}
         #{status_enum_type ? generate_status_method(class_name, status_enum_type) : ''}
 
@@ -1141,6 +1251,22 @@ module ZeroSchemaGenerator
       TYPESCRIPT
     end
 
+    def get_delete_method_name(patterns)
+      if patterns[:soft_deletion] && patterns[:soft_deletion][:gem] == "discard"
+        "discard"
+      else
+        "delete"
+      end
+    end
+
+    def generate_instance_restore_method(patterns)
+      if patterns[:soft_deletion] && patterns[:soft_deletion][:gem] == "discard"
+        ",\n            undiscard: async (id: string) => {\n              return await undiscardTask(id);\n            }"
+      else
+        ",\n            restore: async (id: string) => {\n              return await restoreTask(id);\n            }"
+      end
+    end
+
     def generate_soft_delete_getter
       <<~TYPESCRIPT
         /**
@@ -1152,6 +1278,35 @@ module ZeroSchemaGenerator
         }
 
       TYPESCRIPT
+    end
+
+    def generate_discard_getter
+      <<~TYPESCRIPT
+        /**
+         * Check if this record is discarded
+         * Rails discard gem pattern: checks for discarded_at timestamp
+         */
+        get isDiscarded(): boolean {
+          return !!(this.data as any).discarded_at;
+        }
+
+        /**
+         * Check if this record is kept (not discarded)
+         * Rails discard gem pattern: opposite of discarded
+         */
+        get isKept(): boolean {
+          return !(this.data as any).discarded_at;
+        }
+
+      TYPESCRIPT
+    end
+
+    def generate_discard_or_soft_delete_getter(patterns)
+      if patterns[:soft_deletion] && patterns[:soft_deletion][:gem] == "discard"
+        generate_discard_getter
+      else
+        generate_soft_delete_getter
+      end
     end
 
     def generate_position_methods(class_name)
@@ -1326,24 +1481,27 @@ module ZeroSchemaGenerator
           },
 
           /**
-           * Get all #{table_name}#{has_soft_deletion ? ' (active only)' : ''}
+           * Get all #{table_name} (includes discarded records like Rails Task.all)
            * @returns Zero query result with array of #{table_name}
            *#{' '}
            * @example
            * ```typescript
            * const all#{class_name.pluralize} = #{class_name}.all();
-           * console.log(all#{class_name.pluralize}.current); // Array of #{table_name}
+           * console.log(all#{class_name.pluralize}.current); // Array of #{table_name} including discarded
            * ```
            */
           all() {
             const zero = getZero();
             if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
         #{'    '}
-            #{generate_base_query_with_soft_deletion(table_name, has_soft_deletion, class_name)}
+            return createReactiveQuery(
+              zero.query.#{table_name}.orderBy('created_at', 'desc'),
+              [] as #{class_name}[]
+            );
           },
 
           /**
-           * Find #{table_name} matching conditions
+           * Find #{table_name} matching conditions (includes discarded)
            * @param conditions - Object with field/value pairs to match
            * @returns Zero query result with array of matching #{table_name}
            *#{' '}
@@ -1357,7 +1515,7 @@ module ZeroSchemaGenerator
             const zero = getZero();
             if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
         #{'    '}
-            #{generate_where_query_with_soft_deletion(table_name, has_soft_deletion)}
+            let query = zero.query.#{table_name};
         #{'    '}
             Object.entries(conditions).forEach(([key, value]) => {
               if (value !== undefined && value !== null) {
@@ -1369,30 +1527,50 @@ module ZeroSchemaGenerator
               query.orderBy('created_at', 'desc'),
               [] as #{class_name}[]
             );
-          }#{has_soft_deletion ? generate_active_scope(table_name, class_name) : ''}#{relationship_methods}
+          }#{has_soft_deletion ? generate_discard_scopes(table_name, class_name, patterns) : ''}#{relationship_methods}
         };
       TYPESCRIPT
     end
 
-    def generate_base_query_with_soft_deletion(table_name, has_soft_deletion, class_name)
-      if has_soft_deletion
-        "return createReactiveQuery(\n              zero.query.#{table_name}.where('deleted_at', 'IS', null).orderBy('created_at', 'desc'),\n              [] as #{class_name}[]\n            );"
-      else
-        "return createReactiveQuery(\n              zero.query.#{table_name}.orderBy('created_at', 'desc'),\n              [] as #{class_name}[]\n            );"
-      end
-    end
+    def generate_discard_scopes(table_name, class_name, patterns)
+      soft_deletion_column = patterns[:soft_deletion][:column]
 
-    def generate_where_query_with_soft_deletion(table_name, has_soft_deletion)
-      if has_soft_deletion
-        "let query = zero.query.#{table_name}.where('deleted_at', 'IS', null);"
-      else
-        "let query = zero.query.#{table_name};"
-      end
-    end
+      if patterns[:soft_deletion][:gem] == "discard"
+        <<~TYPESCRIPT
+          ,
 
-    def generate_active_scope(table_name, class_name)
-      <<~TYPESCRIPT
-        ,
+          /**
+           * Get only kept (non-discarded) #{table_name} - like Rails Task.kept
+           * @returns Zero query result with array of kept #{table_name}
+           */
+          kept() {
+            const zero = getZero();
+            if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
+        #{'    '}
+            return createReactiveQuery(
+              zero.query.#{table_name}.where('#{soft_deletion_column}', 'IS', null).orderBy('created_at', 'desc'),
+              [] as #{class_name}[]
+            );
+          },
+
+          /**
+           * Get only discarded #{table_name} - like Rails Task.discarded
+           * @returns Zero query result with array of discarded #{table_name}
+           */
+          discarded() {
+            const zero = getZero();
+            if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
+        #{'    '}
+            return createReactiveQuery(
+              zero.query.#{table_name}.where('#{soft_deletion_column}', 'IS NOT', null).orderBy('created_at', 'desc'),
+              [] as #{class_name}[]
+            );
+          }
+        TYPESCRIPT
+      else
+        # Legacy pattern - keep active scope for deleted_at
+        <<~TYPESCRIPT
+          ,
 
           /**
            * Get only active (non-deleted) #{table_name}
@@ -1403,11 +1581,12 @@ module ZeroSchemaGenerator
             if (!zero) return { current: [], value: [], resultType: 'loading' as const, error: null };
         #{'    '}
             return createReactiveQuery(
-              zero.query.#{table_name}.where('deleted_at', 'IS', null).orderBy('created_at', 'desc'),
+              zero.query.#{table_name}.where('#{soft_deletion_column}', 'IS', null).orderBy('created_at', 'desc'),
               [] as #{class_name}[]
             );
           }
-      TYPESCRIPT
+        TYPESCRIPT
+      end
     end
 
     def generate_relationship_includes(table, patterns)

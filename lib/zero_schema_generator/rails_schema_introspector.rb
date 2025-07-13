@@ -61,7 +61,8 @@ module ZeroSchemaGenerator
 
           case pattern_type
           when :soft_deletion
-            report[:details][table_name] << "Soft Deletion: #{pattern_data[:column]} (#{pattern_data[:mutation_behavior]})"
+            gem_info = pattern_data[:gem] == "discard" ? "discard gem" : pattern_data[:mutation_behavior]
+            report[:details][table_name] << "Soft Deletion: #{pattern_data[:column]} (#{gem_info})"
           when :positioning
             scoping = pattern_data[:scoping_columns].any? ? " scoped by #{pattern_data[:scoping_columns].join(', ')}" : ""
             report[:details][table_name] << "Positioning: #{pattern_data[:column]}#{scoping}"
@@ -292,6 +293,16 @@ module ZeroSchemaGenerator
       nil
     end
 
+    def check_discard_model_inclusion(model_class)
+      # Check if model includes Discard::Model
+      return false unless defined?(Discard::Model)
+
+      model_class.included_modules.include?(Discard::Model)
+    rescue => e
+      Rails.logger.warn "Could not check Discard::Model inclusion for #{model_class.name}: #{e.message}"
+      false
+    end
+
     def discover_models
       # Avoid eager loading that causes issues, just discover known models
       model_names = %w[User Client Job Task Person Device Note ActivityLog ContactMethod ScheduledDateTime JobAssignment JobPerson]
@@ -402,6 +413,27 @@ module ZeroSchemaGenerator
     end
 
     def detect_soft_deletion_pattern(table)
+      # First check for discarded_at column (discard gem pattern)
+      discarded_at_column = table[:columns].find { |col| col[:name] == "discarded_at" }
+
+      if discarded_at_column
+        # Check if Rails model includes Discard::Model
+        model_class = find_model_for_table(table[:name])
+        uses_discard_gem = model_class && check_discard_model_inclusion(model_class)
+
+        return {
+          detected: true,
+          column: discarded_at_column[:name],
+          type: discarded_at_column[:type],
+          sql_type: discarded_at_column[:sql_type],
+          nullable: discarded_at_column[:null],
+          mutation_behavior: "discard_pattern",
+          gem: "discard",
+          uses_discard_gem: uses_discard_gem
+        }
+      end
+
+      # Fallback to legacy deleted_at pattern
       deleted_at_column = table[:columns].find { |col| col[:name] == "deleted_at" }
 
       return nil unless deleted_at_column
@@ -412,7 +444,8 @@ module ZeroSchemaGenerator
         type: deleted_at_column[:type],
         sql_type: deleted_at_column[:sql_type],
         nullable: deleted_at_column[:null],
-        mutation_behavior: "soft_delete_on_delete_call"
+        mutation_behavior: "soft_delete_on_delete_call",
+        gem: "legacy"
       }
     end
 
