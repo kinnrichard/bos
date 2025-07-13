@@ -771,16 +771,15 @@
     }
 
     try {
-      const result = await tasksService.updateTask(jobId, taskId, { title: newTitle.trim() });
+      // Use Zero.js mutation to update the task - this will automatically sync to database
+      const { updateTask } = await import('$lib/zero/task.generated');
+      await updateTask(taskId, { title: newTitle.trim() });
       
-      if (result.status === 'success') {
-        editingTaskId = null;
-        editingTitle = '';
-        originalTitle = '';
-        
-        // Use existing task update handler to maintain consistency
-        handleTaskUpdated({ detail: result } as CustomEvent);
-      }
+      // UI cleanup - Zero.js reactive updates will handle the data changes
+      editingTaskId = null;
+      editingTitle = '';
+      originalTitle = '';
+      
     } catch (error) {
       console.error('Failed to update task title:', error);
       dragFeedback = 'Failed to update task title - please try again';
