@@ -51,6 +51,7 @@ export default [
 		rules: {
 			'no-console': ['warn', { allow: ['warn', 'error'] }],
 			'epic-007/naming-convention': 'warn', // ✅ ENABLED: EPIC-007 Phase 2 naming convention
+			'no-unused-vars': 'off', // Turn off base rule to avoid conflicts with TypeScript version
 		},
 	},
 

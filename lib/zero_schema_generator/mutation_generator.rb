@@ -375,6 +375,9 @@ module ZeroSchemaGenerator
          */
         export async function create#{class_name}(data: Create#{class_name}Data): Promise<#{class_name}MutationResult> {
           const zero = getZero();
+          if (!zero) {
+            throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+          }
         #{'  '}
         #{validation_code}  // Generate unique ID with validation
           const id = crypto.randomUUID();
@@ -425,6 +428,9 @@ module ZeroSchemaGenerator
          */
         export async function update#{class_name}(id: string, data: Update#{class_name}Data): Promise<#{class_name}MutationResult> {
           const zero = getZero();
+          if (!zero) {
+            throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+          }
         #{'  '}
           // Validate ID format
           if (!id || typeof id !== 'string') {
@@ -482,6 +488,9 @@ module ZeroSchemaGenerator
            */
           export async function #{delete_name}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
             const zero = getZero();
+            if (!zero) {
+              throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+            }
           #{'  '}
             // Validate ID format
             if (!id || typeof id !== 'string') {
@@ -528,6 +537,9 @@ module ZeroSchemaGenerator
            */
           export async function delete#{class_name}(id: string): Promise<#{class_name}MutationResult> {
             const zero = getZero();
+            if (!zero) {
+              throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+            }
           #{'  '}
             // Validate ID format
             if (!id || typeof id !== 'string') {
@@ -582,6 +594,9 @@ module ZeroSchemaGenerator
          */
         export async function upsert#{class_name}(data: (Create#{class_name}Data & { id?: string }) | (Update#{class_name}Data & { id: string })): Promise<#{class_name}MutationResult> {
           const zero = getZero();
+          if (!zero) {
+            throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+          }
         #{'  '}
           // Validate data is provided
           if (!data || Object.keys(data).length === 0) {
@@ -646,6 +661,9 @@ module ZeroSchemaGenerator
          */
         export async function #{restore_name}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
           const zero = getZero();
+          if (!zero) {
+            throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+          }
         #{'  '}
           // Validate ID format
           if (!id || typeof id !== 'string') {
@@ -703,6 +721,9 @@ module ZeroSchemaGenerator
              */
             export async function #{custom_name.camelize(:lower)}#{class_name}(id: string, targetId: string): Promise<#{class_name}MutationResult> {
               const zero = getZero();
+              if (!zero) {
+                throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+              }
             #{'  '}
               // Validate IDs
               if (!id || typeof id !== 'string') {
@@ -757,6 +778,9 @@ module ZeroSchemaGenerator
              */
             export async function #{custom_name.camelize(:lower)}#{class_name}(id: string, targetId: string): Promise<#{class_name}MutationResult> {
               const zero = getZero();
+              if (!zero) {
+                throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+              }
             #{'  '}
               // Validate IDs
               if (!id || typeof id !== 'string') {
@@ -808,6 +832,9 @@ module ZeroSchemaGenerator
              */
             export async function #{custom_name.camelize(:lower)}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
               const zero = getZero();
+              if (!zero) {
+                throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+              }
             #{'  '}
               // Validate ID
               if (!id || typeof id !== 'string') {
@@ -851,6 +878,9 @@ module ZeroSchemaGenerator
              */
             export async function #{custom_name.camelize(:lower)}#{class_name}(id: string): Promise<#{class_name}MutationResult> {
               const zero = getZero();
+              if (!zero) {
+                throw new Error('Zero client not initialized. Please ensure Zero is properly set up.');
+              }
             #{'  '}
               // Validate ID
               if (!id || typeof id !== 'string') {
