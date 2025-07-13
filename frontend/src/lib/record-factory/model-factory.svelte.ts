@@ -265,9 +265,73 @@ export const ModelFactory = {
        * @param relations - Relationship names to include
        */
       includes(...relations: string[]) {
-        const zero = getZero();
-        const railsModel = new RailsActiveRecord<T>(config, zero ? zero.query[config.zeroConfig.tableName] : null);
-        return railsModel.includes(...relations);
+        console.log(`🔍 [Factory] includes() called with relations:`, relations);
+        
+        return {
+          /**
+           * Get all records with included relationships (like Rails .includes().all)
+           * @param options - Factory creation options
+           */
+          all(options: FactoryCreateOptions = {}) {
+            console.log(`🔍 [Factory] includes().all() called`);
+            return new ReactiveRecord<T>(
+              () => {
+                const zero = getZero();
+                console.log(`🔍 [Factory] getZero() result:`, zero ? 'available' : 'null');
+                if (!zero) return null;
+                
+                let query = zero.query[config.zeroConfig.tableName];
+                console.log(`🔍 [Factory] Base query for table ${config.zeroConfig.tableName}:`, query);
+                
+                // Apply relationships using Zero.js .related() method
+                relations.forEach(relation => {
+                  console.log(`🔍 [Factory] Applying relation: ${relation}`);
+                  query = query.related(relation);
+                });
+                
+                // Apply default ordering
+                const finalQuery = query.orderBy('created_at', 'desc');
+                console.log(`🔍 [Factory] Final query with relations:`, finalQuery);
+                
+                return finalQuery;
+              },
+              {
+                ...options,
+                expectsCollection: true,
+                defaultValue: []
+              }
+            );
+          },
+
+          /**
+           * Find single record with included relationships (like Rails .includes().find)
+           * @param id - The record ID
+           * @param options - Factory creation options
+           */
+          find(id: string, options: FactoryCreateOptions = {}) {
+            console.log(`🔍 [Factory] includes().find(${id}) called`);
+            return new ReactiveRecord<T>(
+              () => {
+                const zero = getZero();
+                if (!zero) return null;
+                
+                let query = zero.query[config.zeroConfig.tableName].where('id', id);
+                
+                // Apply relationships using Zero.js .related() method
+                relations.forEach(relation => {
+                  query = query.related(relation);
+                });
+                
+                return query.one();
+              },
+              {
+                ...options,
+                expectsCollection: false,
+                defaultValue: null
+              }
+            );
+          }
+        };
       },
       /**
        * Find a single record by ID (like Rails .find)

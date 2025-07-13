@@ -124,16 +124,29 @@ export class RailsQueryBuilder<T> implements RailsQueryChain<T> {
    */
   all(): T[] {
     try {
+      console.log(`🔍 [${this.modelName}] RailsQueryBuilder.all() called`);
+      console.log(`🔍 [${this.modelName}] zeroQuery:`, this.zeroQuery);
+      console.log(`🔍 [${this.modelName}] includeRelations:`, this.includeRelations);
+      
       // Handle null query case
       if (!this.zeroQuery) {
+        console.log(`🔍 [${this.modelName}] No zeroQuery - returning empty array`);
         return [];
       }
       
       const query = this.buildFinalQuery();
+      console.log(`🔍 [${this.modelName}] Final query built:`, query);
+      
       const result = query.data;
+      console.log(`🔍 [${this.modelName}] Query result:`, result);
+      console.log(`🔍 [${this.modelName}] Result type:`, Array.isArray(result) ? 'array' : typeof result);
+      console.log(`🔍 [${this.modelName}] Result length:`, Array.isArray(result) ? result.length : 'not array');
       
       // Rails .all() always returns an array, even if empty
-      return Array.isArray(result) ? result : (result ? [result] : []);
+      const finalResult = Array.isArray(result) ? result : (result ? [result] : []);
+      console.log(`🔍 [${this.modelName}] Final result length:`, finalResult.length);
+      
+      return finalResult;
     } catch (error) {
       console.error(`Rails ActiveRecord query error in ${this.modelName}.all():`, error);
       return [];
@@ -333,7 +346,11 @@ export class RailsQueryBuilder<T> implements RailsQueryChain<T> {
   }
 
   private buildFinalQuery(): any {
+    console.log(`🔍 [${this.modelName}] buildFinalQuery called`);
+    console.log(`🔍 [${this.modelName}] Initial zeroQuery:`, this.zeroQuery);
+    
     if (!this.zeroQuery) {
+      console.log(`🔍 [${this.modelName}] No zeroQuery - returning mock query`);
       // Return a mock query object for null cases
       return {
         data: [],
@@ -344,26 +361,36 @@ export class RailsQueryBuilder<T> implements RailsQueryChain<T> {
     }
 
     let query = this.zeroQuery;
+    console.log(`🔍 [${this.modelName}] Starting with query:`, query);
 
     // Apply relationships (Rails includes() → Zero.js related())
+    console.log(`🔍 [${this.modelName}] Applying ${this.includeRelations.length} relations:`, this.includeRelations);
     this.includeRelations.forEach(relation => {
+      console.log(`🔍 [${this.modelName}] Applying relation: ${relation}`);
+      const previousQuery = query;
       query = query.related(relation);
+      console.log(`🔍 [${this.modelName}] Query after ${relation}:`, query);
     });
 
     // Apply ordering
+    console.log(`🔍 [${this.modelName}] Applying ${this.orderByFields.length} order clauses`);
     this.orderByFields.forEach(({ field, direction }) => {
+      console.log(`🔍 [${this.modelName}] Applying order: ${field} ${direction}`);
       query = query.orderBy(field, direction);
     });
 
     // Apply limit and offset if specified
     if (this.limitValue !== undefined) {
+      console.log(`🔍 [${this.modelName}] Applying limit: ${this.limitValue}`);
       query = query.limit(this.limitValue);
     }
     
     if (this.offsetValue !== undefined) {
+      console.log(`🔍 [${this.modelName}] Applying offset: ${this.offsetValue}`);
       query = query.offset(this.offsetValue);
     }
 
+    console.log(`🔍 [${this.modelName}] Final built query:`, query);
     return query;
   }
 }
