@@ -293,6 +293,9 @@ async function performInitialization(): Promise<ZeroClient> {
         },
         testZeroQuery: async () => {
           try {
+            if (!zero?.query?.clients) {
+              throw new Error('Zero client or clients query not available');
+            }
             console.log('🔍 Testing zero.query.clients.run()...');
             const result = await zero.query.clients.run();
             console.log('🔍 zero.query.clients.run() result:', result);

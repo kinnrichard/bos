@@ -280,7 +280,11 @@ export const ModelFactory = {
                 console.log(`🔍 [Factory] getZero() result:`, zero ? 'available' : 'null');
                 if (!zero) return null;
                 
-                let query = zero.query[config.zeroConfig.tableName];
+                const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+                if (!queryTable) {
+                  throw new Error(`Table '${config.zeroConfig.tableName}' not found in Zero schema`);
+                }
+                let query = queryTable;
                 console.log(`🔍 [Factory] Base query for table ${config.zeroConfig.tableName}:`, query);
                 
                 // Apply relationships using Zero.js .related() method
@@ -315,7 +319,11 @@ export const ModelFactory = {
                 const zero = getZero();
                 if (!zero) return null;
                 
-                let query = zero.query[config.zeroConfig.tableName].where('id', id);
+                const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+                if (!queryTable) {
+                  throw new Error(`Table '${config.zeroConfig.tableName}' not found in Zero schema`);
+                }
+                let query = queryTable.where('id', id);
                 
                 // Apply relationships using Zero.js .related() method
                 relations.forEach(relation => {
@@ -342,7 +350,9 @@ export const ModelFactory = {
         return new ReactiveRecord<T>(
           () => {
             const zero = getZero();
-            return zero ? zero.query[config.zeroConfig.tableName].where('id', id).one() : null;
+            if (!zero) return null;
+            const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+            return queryTable ? queryTable.where('id', id).one() : null;
           },
           {
             ...options,
@@ -363,7 +373,11 @@ export const ModelFactory = {
             const zero = getZero();
             if (!zero) return null;
             
-            let query = zero.query[config.zeroConfig.tableName];
+            const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+            if (!queryTable) {
+              throw new Error(`Table '${config.zeroConfig.tableName}' not found in Zero schema`);
+            }
+            let query = queryTable;
             
             Object.entries(conditions).forEach(([key, value]) => {
               if (value !== undefined && value !== null) {
@@ -389,7 +403,9 @@ export const ModelFactory = {
         return new ReactiveRecord<T>(
           () => {
             const zero = getZero();
-            return zero ? zero.query[config.zeroConfig.tableName].orderBy('created_at', 'desc') : null;
+            if (!zero) return null;
+            const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+            return queryTable ? queryTable.orderBy('created_at', 'desc') : null;
           },
           {
             ...options,
@@ -410,7 +426,11 @@ export const ModelFactory = {
             const zero = getZero();
             if (!zero) return null;
             
-            let query = zero.query[config.zeroConfig.tableName];
+            const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+            if (!queryTable) {
+              throw new Error(`Table '${config.zeroConfig.tableName}' not found in Zero schema`);
+            }
+            let query = queryTable;
             
             Object.entries(conditions).forEach(([key, value]) => {
               if (value !== undefined && value !== null) {
@@ -445,7 +465,9 @@ export const ModelFactory = {
         return new FactoryActiveRecord<T>(
           () => {
             const zero = getZero();
-            return zero ? zero.query[config.zeroConfig.tableName].where('id', id).one() : null;
+            if (!zero) return null;
+            const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+            return queryTable ? queryTable.where('id', id).one() : null;
           },
           {
             ...options,
@@ -468,7 +490,11 @@ export const ModelFactory = {
             const zero = getZero();
             if (!zero) return null;
             
-            let query = zero.query[config.zeroConfig.tableName];
+            const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+            if (!queryTable) {
+              throw new Error(`Table '${config.zeroConfig.tableName}' not found in Zero schema`);
+            }
+            let query = queryTable;
             
             Object.entries(conditions).forEach(([key, value]) => {
               if (value !== undefined && value !== null) {
@@ -496,7 +522,9 @@ export const ModelFactory = {
         return new FactoryActiveRecord<T>(
           () => {
             const zero = getZero();
-            return zero ? zero.query[config.zeroConfig.tableName].orderBy('created_at', 'desc') : null;
+            if (!zero) return null;
+            const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+            return queryTable ? queryTable.orderBy('created_at', 'desc') : null;
           },
           {
             ...options,
@@ -519,7 +547,11 @@ export const ModelFactory = {
             const zero = getZero();
             if (!zero) return null;
             
-            let query = zero.query[config.zeroConfig.tableName];
+            const queryTable = (zero.query as any)[config.zeroConfig.tableName];
+            if (!queryTable) {
+              throw new Error(`Table '${config.zeroConfig.tableName}' not found in Zero schema`);
+            }
+            let query = queryTable;
             
             Object.entries(conditions).forEach(([key, value]) => {
               if (value !== undefined && value !== null) {

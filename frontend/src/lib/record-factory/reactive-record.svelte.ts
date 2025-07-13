@@ -265,7 +265,9 @@ export class ReactiveModelFactory<T> {
     return new ReactiveRecord<T>(
       () => {
         const zero = getZero();
-        return zero ? zero.query[this.config.zeroConfig.tableName].where('id', id).one() : null;
+        if (!zero) return null;
+        const queryTable = (zero.query as any)[this.config.zeroConfig.tableName];
+        return queryTable ? queryTable.where('id', id).one() : null;
       },
       {
         ...options,
@@ -285,7 +287,11 @@ export class ReactiveModelFactory<T> {
         const zero = getZero();
         if (!zero) return null;
         
-        let query = zero.query[this.config.zeroConfig.tableName];
+        const queryTable = (zero.query as any)[this.config.zeroConfig.tableName];
+        if (!queryTable) {
+          throw new Error(`Table '${this.config.zeroConfig.tableName}' not found in Zero schema`);
+        }
+        let query = queryTable;
         
         Object.entries(conditions).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
@@ -312,7 +318,9 @@ export class ReactiveModelFactory<T> {
     return new ReactiveRecord<T>(
       () => {
         const zero = getZero();
-        return zero ? zero.query[this.config.zeroConfig.tableName].orderBy('created_at', 'desc') : null;
+        if (!zero) return null;
+        const queryTable = (zero.query as any)[this.config.zeroConfig.tableName];
+        return queryTable ? queryTable.orderBy('created_at', 'desc') : null;
       },
       {
         ...options,
@@ -333,7 +341,11 @@ export class ReactiveModelFactory<T> {
         const zero = getZero();
         if (!zero) return null;
         
-        let query = zero.query[this.config.zeroConfig.tableName];
+        const queryTable = (zero.query as any)[this.config.zeroConfig.tableName];
+        if (!queryTable) {
+          throw new Error(`Table '${this.config.zeroConfig.tableName}' not found in Zero schema`);
+        }
+        let query = queryTable;
         
         Object.entries(conditions).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
@@ -363,7 +375,11 @@ export class ReactiveModelFactory<T> {
           const zero = getZero();
           if (!zero) return null;
           
-          let query = zero.query[this.config.zeroConfig.tableName];
+          const queryTable = (zero.query as any)[this.config.zeroConfig.tableName];
+        if (!queryTable) {
+          throw new Error(`Table '${this.config.zeroConfig.tableName}' not found in Zero schema`);
+        }
+        let query = queryTable;
           
           // Apply scope conditions
           if (scope.conditions) {

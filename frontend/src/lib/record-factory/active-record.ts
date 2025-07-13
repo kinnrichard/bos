@@ -413,7 +413,7 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
       this.scopes.set(scope.name, {
         name: scope.name,
         conditions: scope.conditions,
-        lambda: scope.lambda ? new Function('query', scope.lambda) : undefined,
+        lambda: typeof scope.lambda === 'function' ? scope.lambda : undefined,
         chainable: scope.chainable ?? true,
         description: scope.description
       });
@@ -433,7 +433,11 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
     }
 
     try {
-      const query = zero.query[this.tableName].where('id', id).one();
+      const queryTable = (zero.query as any)[this.tableName];
+      if (!queryTable) {
+        throw new Error(`Table '${this.tableName}' not found in Zero schema`);
+      }
+      const query = queryTable.where('id', id).one();
       const result = query.data;
       
       if (!result) {
@@ -459,7 +463,11 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
     }
 
     try {
-      let query = zero.query[this.tableName];
+      const queryTable = (zero.query as any)[this.tableName];
+      if (!queryTable) {
+        throw new Error(`Table '${this.tableName}' not found in Zero schema`);
+      }
+      let query = queryTable;
       
       Object.entries(conditions).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -486,7 +494,11 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
     }
 
     try {
-      let query = zero.query[this.tableName];
+      const queryTable = (zero.query as any)[this.tableName];
+      if (!queryTable) {
+        throw new Error(`Table '${this.tableName}' not found in Zero schema`);
+      }
+      let query = queryTable;
       
       Object.entries(conditions).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -511,7 +523,11 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
     }
 
     try {
-      const query = zero.query[this.tableName].orderBy('created_at', 'desc');
+      const queryTable = (zero.query as any)[this.tableName];
+      if (!queryTable) {
+        throw new Error(`Table '${this.tableName}' not found in Zero schema`);
+      }
+      const query = queryTable.orderBy('created_at', 'desc');
       const result = query.data;
       
       // Rails .all() always returns an array
@@ -547,7 +563,10 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
       throw new Error('Zero client not available');
     }
 
-    const baseQuery = zero.query[this.tableName];
+    const baseQuery = (zero.query as any)[this.tableName];
+    if (!baseQuery) {
+      throw new Error(`Table '${this.tableName}' not found in Zero schema`);
+    }
     return new ActiveRecordQueryBuilder<T>(baseQuery, this.modelName, this.tableName).limit(count);
   }
 
@@ -560,7 +579,10 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
       throw new Error('Zero client not available');
     }
 
-    const baseQuery = zero.query[this.tableName];
+    const baseQuery = (zero.query as any)[this.tableName];
+    if (!baseQuery) {
+      throw new Error(`Table '${this.tableName}' not found in Zero schema`);
+    }
     return new ActiveRecordQueryBuilder<T>(baseQuery, this.modelName, this.tableName).offset(count);
   }
 
@@ -573,7 +595,10 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
       throw new Error('Zero client not available');
     }
 
-    const baseQuery = zero.query[this.tableName];
+    const baseQuery = (zero.query as any)[this.tableName];
+    if (!baseQuery) {
+      throw new Error(`Table '${this.tableName}' not found in Zero schema`);
+    }
     return new ActiveRecordQueryBuilder<T>(baseQuery, this.modelName, this.tableName).orderBy(field, direction);
   }
 
@@ -622,7 +647,11 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
           return new ActiveRecordQueryBuilder<T>(null, this.modelName, this.tableName);
         }
 
-        let query = zero.query[this.tableName];
+        const queryTable = (zero.query as any)[this.tableName];
+      if (!queryTable) {
+        throw new Error(`Table '${this.tableName}' not found in Zero schema`);
+      }
+      let query = queryTable;
 
         // Apply scope conditions
         if (scopeConfig.conditions) {
@@ -642,7 +671,7 @@ export class ActiveRecord<T> implements ActiveRecordInterface<T> {
         // Copy any dynamic scope methods to the query builder for chaining
         this.scopes.forEach((otherScopeConfig, otherScopeName) => {
           (queryBuilder as any)[otherScopeName] = (...scopeArgs: any[]) => {
-            let chainedQuery = queryBuilder.zeroQuery || query;
+            let chainedQuery = (queryBuilder as any).zeroQuery || query;
             
             // Apply other scope conditions
             if (otherScopeConfig.conditions) {

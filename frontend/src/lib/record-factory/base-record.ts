@@ -159,7 +159,7 @@ export abstract class BaseRecord<T> {
       defaultValue: config.defaultValue || null,
       retryDelay: config.retryDelay || 100,
       maxRetries: config.maxRetries || 50,
-      debugLogging: config.debugLogging ?? true
+      debugLogging: config.debugLogging ?? (import.meta.env?.MODE !== 'production')
     };
   }
 
@@ -372,11 +372,18 @@ export interface ActiveRecordRelation<T> {
 
 /**
  * ActiveRecord scope configuration for dynamic scope generation
+ * 
+ * SECURITY NOTE: lambda must be a pre-defined function, not a string.
+ * String-based lambdas have been removed for security reasons.
+ * 
+ * Migration from string scopes:
+ * OLD: { lambda: "query => query.where('active', true)" }
+ * NEW: { lambda: (query: any) => query.where('active', true) }
  */
 export interface ActiveRecordScope {
   name: string;
   conditions?: Record<string, any>;
-  lambda?: (query: any) => any;
+  lambda?: (query: any) => any;  // Function only - no string evaluation for security
   chainable: boolean;
   description?: string;
 }
