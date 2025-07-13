@@ -2,11 +2,12 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onDestroy } from 'svelte';
-  // Import reactive factory and job configuration for creating reactive model
-  import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
-  import { jobConfig, type Job } from '$lib/models/generated/job';
+  // Epic-008: Import ReactiveQuery for Jobs
+  import { ReactiveQueryOne } from '$lib/zero/reactive-query.svelte';
+  import { getZero } from '$lib/zero/zero-client';
+  import type { Job } from '$lib/zero/job.generated';
 
-  // ✨ NEW: Use factory-based ReactiveRecord for automatic Svelte reactivity
+  // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
@@ -15,11 +16,15 @@
   // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
   const jobId = $derived($page.params.id);
   
-  // ✨ CREATE REACTIVE MODEL IN SVELTE COMPONENT (where $state runes are available)
-  const JobReactive = ModelFactory.createReactiveModel<Job>(jobConfig);
-  
-  // ✨ USE RAILS-STYLE INCLUDES WITH FIND (loads client, tasks, and related data)
-  const jobQuery = $derived(JobReactive.includes('client', 'tasks').find(jobId));
+  // ✨ CREATE REACTIVE QUERY IN SVELTE COMPONENT (where $state runes are available)
+  const jobQuery = $derived(jobId ? new ReactiveQueryOne<Job>(
+    () => {
+      const zero = getZero();
+      return zero?.query.jobs.where('id', jobId).one();
+    },
+    null,
+    '5m' // 5 minute TTL
+  ) : null);
   // TODO: Add notes query when NotesReactive model is ready
   // const notesQuery = $derived(NotesReactive.where({ notable_id: jobId }));
   
@@ -27,9 +32,9 @@
   const pageTitle = $derived(job ? `${job.title || 'Job'} - bŏs` : 'Job Details - bŏs');
 
   // ✨ USE ReactiveQuery GETTERS FOR PROPER SVELTE 5 REACTIVITY
-  const job = $derived(jobQuery.data);
-  const isLoading = $derived(jobQuery.isLoading);
-  const error = $derived(jobQuery.error);
+  const job = $derived(jobQuery?.data);
+  const isLoading = $derived(jobQuery?.isLoading ?? true);
+  const error = $derived(jobQuery?.error);
   
   // ✨ NOTES: Will be loaded via job associations for now
   // TODO: Implement separate NotesReactive query when needed

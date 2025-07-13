@@ -11,7 +11,6 @@
 
 
 import { getZero } from './zero-client';
-import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
 // Generated TypeScript types for users
 // TypeScript interfaces for users
@@ -298,15 +297,6 @@ export async function upsertUser(data: (CreateUserData & { id?: string }) | (Upd
  * }
  * ```
  */
-export class UserInstance extends RecordInstance<User> {
-  protected mutations: ZeroMutations<User> = {
-    update: async (id: string, data: Partial<User>) => {
-      return await updateUser(id, data as UpdateUserData);
-    },
-    delete: async (id: string) => {
-      return await deleteUser(id);
-    }
-  };
 
   constructor(data: User) {
     super(data);

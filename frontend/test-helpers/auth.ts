@@ -4,7 +4,7 @@
  * Provides utilities for testing authentication flows with real Rails API
  */
 
-import { Page, BrowserContext } from '@playwright/test';
+import type { Page, BrowserContext } from '@playwright/test';
 import { testDb } from './database';
 
 export interface TestUser {

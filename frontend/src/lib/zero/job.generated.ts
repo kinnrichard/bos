@@ -11,7 +11,6 @@
 
 
 import { getZero } from './zero-client';
-import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
 // Generated TypeScript types for jobs
 // TypeScript interfaces for jobs
@@ -318,31 +317,71 @@ export async function upsertJob(data: (CreateJobData & { id?: string }) | (Updat
  * }
  * ```
  */
-export class JobInstance extends RecordInstance<Job> {
-  protected mutations: ZeroMutations<Job> = {
-    update: async (id: string, data: Partial<Job>) => {
-      return await updateJob(id, data as UpdateJobData);
-    },
-    delete: async (id: string) => {
-      return await deleteJob(id);
-    }
-  };
-
-  constructor(data: Job) {
-    super(data);
+export class JobInstance {
+  constructor(protected data: Job) {
+    // Create proxy to make all properties reactive and accessible
+    return new Proxy(this, {
+      get(target, prop, receiver) {
+        // If accessing a method or internal property, return it directly
+        if (typeof prop === 'string' && (prop in target || typeof target[prop as keyof typeof target] === 'function')) {
+          return Reflect.get(target, prop, receiver);
+        }
+        
+        // Otherwise, proxy to the underlying data
+        if (typeof prop === 'string' && prop in target.data) {
+          return (target.data as any)[prop];
+        }
+        
+        return Reflect.get(target, prop, receiver);
+      },
+      
+      set(target, prop, value, receiver) {
+        // If setting a data property, update the underlying data
+        if (typeof prop === 'string' && prop in target.data) {
+          (target.data as any)[prop] = value;
+          return true;
+        }
+        
+        // Otherwise, set on the instance
+        return Reflect.set(target, prop, value, receiver);
+      }
+    });
   }
 
+  /**
+   * Rails-compatible update method
+   * Updates multiple attributes in a single database operation
+   */
+  async update(attributes: Partial<Job>): Promise<{ id: string }> {
+    if (!attributes || Object.keys(attributes).length === 0) {
+      throw new Error('Update attributes are required');
+    }
 
+    try {
+      const result = await updateJob(this.data.id, attributes as UpdateJobData);
+      
+      // Optimistically update local data
+      Object.assign(this.data, attributes);
+      
+      return result;
+    } catch (error) {
+      throw new Error(`Failed to update job: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 
-/**
- * Convenience method for updating status
- * Generated from Rails enum
- */
-async updateStatus(status: string): Promise<{ id: string }> {
-  return await this.update({ status: status as any });
-}
+  /**
+   * Get the raw data object
+   */
+  get rawData(): Job {
+    return this.data;
+  }
 
-
+  /**
+   * Get the record ID
+   */
+  get id(): string {
+    return this.data.id;
+  }
 
   /**
    * Rails-compatible inspect method for debugging
@@ -350,6 +389,14 @@ async updateStatus(status: string): Promise<{ id: string }> {
   inspect(): string {
     return `#<JobInstance id: ${this.data.id}, title: "${(this.data as any).title}">`;
   }
+}
+
+/**
+ * Factory function to create JobInstance from data
+ * Used internally by ReactiveRecord and ActiveRecord
+ */
+export function createJobInstance(data: Job): JobInstance {
+  return new JobInstance(data);
 }
 
 /**

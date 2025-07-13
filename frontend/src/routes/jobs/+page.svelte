@@ -1,10 +1,11 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  // Import reactive factory and job configuration for creating reactive model
-  import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
-  import { jobConfig, type JobType } from '$lib/models/generated/job';
+  // Epic-008: Import ReactiveQuery for Jobs
+  import { ReactiveQuery } from '$lib/zero/reactive-query.svelte';
+  import { getZero } from '$lib/zero/zero-client';
+  import type { Job } from '$lib/zero/job.generated';
 
-  // ✨ NEW: Use factory-based ReactiveRecord for automatic Svelte reactivity
+  // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
   // Automatically stays in sync with Zero.js data changes
   
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
@@ -19,11 +20,15 @@
   const priority = $derived(url.searchParams.get('priority') as JobPriority | undefined);
   const technicianId = $derived(url.searchParams.get('technician_id') || undefined);
 
-  // ✨ CREATE REACTIVE MODEL IN SVELTE COMPONENT (where $state runes are available)
-  const JobReactive = ModelFactory.createReactiveModel<JobType>(jobConfig);
-  
-  // ✨ USE RAILS-STYLE INCLUDES FOR RELATIONSHIPS (loads client data)
-  const jobsQuery = JobReactive.includes('client').all();
+  // ✨ CREATE REACTIVE QUERY IN SVELTE COMPONENT (where $state runes are available)
+  const jobsQuery = new ReactiveQuery<Job>(
+    () => {
+      const zero = getZero();
+      return zero?.query.jobs.orderBy('created_at', 'desc');
+    },
+    [],
+    '5m' // 5 minute TTL
+  );
   
   // ✨ USE $derived FOR DIRECT ZERO DATA ACCESS (NO TRANSFORMATION NEEDED)
   const allJobs = $derived(jobsQuery.data || []);

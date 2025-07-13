@@ -11,7 +11,6 @@
 
 
 import { getZero } from './zero-client';
-import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
 // Generated TypeScript types for job_targets
 // TypeScript interfaces for job_targets
@@ -302,15 +301,6 @@ export async function upsertJobTarget(data: (CreateJobTargetData & { id?: string
  * }
  * ```
  */
-export class JobTargetInstance extends RecordInstance<JobTarget> {
-  protected mutations: ZeroMutations<JobTarget> = {
-    update: async (id: string, data: Partial<JobTarget>) => {
-      return await updateJobTarget(id, data as UpdateJobTargetData);
-    },
-    delete: async (id: string) => {
-      return await deleteJobTarget(id);
-    }
-  };
 
   constructor(data: JobTarget) {
     super(data);

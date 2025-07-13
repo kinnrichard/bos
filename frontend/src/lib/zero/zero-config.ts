@@ -21,7 +21,6 @@ export const ZERO_QUERY_CONFIG = {
   // Debug and logging
   DEBUG_LOGGING: true,           // Enable detailed query logging
   PERFORMANCE_LOGGING: false,    // Log query performance metrics
-  ERROR_REPORTING: true,         // Report errors to console
   
   // Query optimization
   BATCH_UPDATES: true,           // Batch state updates for performance
@@ -87,6 +86,7 @@ export const ZERO_ERROR_CONFIG = {
   JITTER_ENABLED: true,          // Add randomness to prevent thundering herd
   
   // Error reporting
+  ERROR_REPORTING: true,         // Report errors to console
   LOG_STACK_TRACES: true,        // Include stack traces in error logs
   INCLUDE_QUERY_CONTEXT: true,   // Include query details in error context
   ENABLE_ERROR_BOUNDARIES: true, // React/Svelte error boundary integration

@@ -4,7 +4,7 @@
  * Provides mechanisms for isolating tests and managing database state
  */
 
-import { Page, test as baseTest } from '@playwright/test';
+import { type Page, test as baseTest } from '@playwright/test';
 import { testDb, DatabaseLifecycle, DatabaseTransaction } from './database';
 import { AuthHelper } from './auth';
 import { DataFactory, TestScenarios } from './data-factories';

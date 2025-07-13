@@ -11,7 +11,6 @@
 
 
 import { getZero } from './zero-client';
-import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
 // Generated TypeScript types for contact_methods
 // TypeScript interfaces for contact_methods
@@ -293,15 +292,6 @@ export async function upsertContactMethod(data: (CreateContactMethodData & { id?
  * }
  * ```
  */
-export class ContactMethodInstance extends RecordInstance<ContactMethod> {
-  protected mutations: ZeroMutations<ContactMethod> = {
-    update: async (id: string, data: Partial<ContactMethod>) => {
-      return await updateContactMethod(id, data as UpdateContactMethodData);
-    },
-    delete: async (id: string) => {
-      return await deleteContactMethod(id);
-    }
-  };
 
   constructor(data: ContactMethod) {
     super(data);

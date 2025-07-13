@@ -4,7 +4,7 @@
  * Utilities for creating and managing test data via Rails API
  */
 
-import { Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { testDb } from './database';
 
 export interface JobData {

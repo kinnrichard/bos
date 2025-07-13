@@ -11,7 +11,6 @@
 
 
 import { getZero } from './zero-client';
-import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
 // Generated TypeScript types for scheduled_date_times
 // TypeScript interfaces for scheduled_date_times
@@ -303,15 +302,6 @@ export async function upsertScheduledDateTime(data: (CreateScheduledDateTimeData
  * }
  * ```
  */
-export class ScheduledDateTimeInstance extends RecordInstance<ScheduledDateTime> {
-  protected mutations: ZeroMutations<ScheduledDateTime> = {
-    update: async (id: string, data: Partial<ScheduledDateTime>) => {
-      return await updateScheduledDateTime(id, data as UpdateScheduledDateTimeData);
-    },
-    delete: async (id: string) => {
-      return await deleteScheduledDateTime(id);
-    }
-  };
 
   constructor(data: ScheduledDateTime) {
     super(data);

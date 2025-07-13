@@ -11,7 +11,6 @@
 
 
 import { getZero } from './zero-client';
-import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
 // Generated TypeScript types for activity_logs
 // TypeScript interfaces for activity_logs
@@ -304,18 +303,49 @@ export async function upsertActivityLog(data: (CreateActivityLogData & { id?: st
  * }
  * ```
  */
-export class ActivityLogInstance extends RecordInstance<ActivityLog> {
-  protected mutations: ZeroMutations<ActivityLog> = {
-    update: async (id: string, data: Partial<ActivityLog>) => {
-      return await updateActivityLog(id, data as UpdateActivityLogData);
-    },
-    delete: async (id: string) => {
-      return await deleteActivityLog(id);
-    }
-  };
+export class ActivityLogInstance {
+  constructor(protected data: ActivityLog) {
+    // Create proxy to make all properties reactive and accessible
+    return new Proxy(this, {
+      get(target, prop, receiver) {
+        // If accessing a method or internal property, return it directly
+        if (typeof prop === 'string' && (prop in target || typeof target[prop as keyof typeof target] === 'function')) {
+          return Reflect.get(target, prop, receiver);
+        }
+        
+        // Otherwise, proxy to the underlying data
+        if (typeof prop === 'string' && prop in target.data) {
+          return (target.data as any)[prop];
+        }
+        
+        return Reflect.get(target, prop, receiver);
+      },
+      
+      set(target, prop, value, receiver) {
+        // If setting a data property, update the underlying data
+        if (typeof prop === 'string' && prop in target.data) {
+          (target.data as any)[prop] = value;
+          return true;
+        }
+        
+        // Otherwise, set on the instance
+        return Reflect.set(target, prop, value, receiver);
+      }
+    });
+  }
 
-  constructor(data: ActivityLog) {
-    super(data);
+  /**
+   * Get the raw data object
+   */
+  get rawData(): ActivityLog {
+    return this.data;
+  }
+
+  /**
+   * Get the record ID
+   */
+  get id(): string {
+    return this.data.id;
   }
 
 

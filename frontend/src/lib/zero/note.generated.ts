@@ -11,7 +11,6 @@
 
 
 import { getZero } from './zero-client';
-import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
 // Generated TypeScript types for notes
 // TypeScript interfaces for notes
@@ -298,15 +297,6 @@ export async function upsertNote(data: (CreateNoteData & { id?: string }) | (Upd
  * }
  * ```
  */
-export class NoteInstance extends RecordInstance<Note> {
-  protected mutations: ZeroMutations<Note> = {
-    update: async (id: string, data: Partial<Note>) => {
-      return await updateNote(id, data as UpdateNoteData);
-    },
-    delete: async (id: string) => {
-      return await deleteNote(id);
-    }
-  };
 
   constructor(data: Note) {
     super(data);

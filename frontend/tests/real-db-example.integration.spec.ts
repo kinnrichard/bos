@@ -69,9 +69,9 @@ testWithRealDB.describe('Job Management with Real Database', () => {
     cleanup 
   }) => {
     // Create job with real database
-    const { job, cleanup: jobCleanup } = await factory.createJobWithTasks({
+    const { job, tasks, cleanup: jobCleanup } = await factory.createJobWithTasks({
       title: 'Task Creation Test Job',
-      status: 'active'
+      status: 'open'
     }, 0); // Start with no tasks
 
     cleanup.push(jobCleanup);
