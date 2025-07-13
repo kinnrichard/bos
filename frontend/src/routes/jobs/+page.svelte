@@ -1,6 +1,8 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import JobReactive from '$lib/models/generated/job';
+  // Import reactive factory and job configuration for creating reactive model
+  import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
+  import { jobConfig, type Job } from '$lib/models/generated/job';
 
   // ✨ NEW: Use factory-based ReactiveRecord for automatic Svelte reactivity
   // Automatically stays in sync with Zero.js data changes
@@ -17,6 +19,9 @@
   const priority = $derived(url.searchParams.get('priority') as JobPriority | undefined);
   const technicianId = $derived(url.searchParams.get('technician_id') || undefined);
 
+  // ✨ CREATE REACTIVE MODEL IN SVELTE COMPONENT (where $state runes are available)
+  const JobReactive = ModelFactory.createReactiveModel<Job>(jobConfig);
+  
   // ✨ USE ENHANCED FACTORY-BASED REACTIVE API WITH RELATIONSHIPS
   const jobsQuery = JobReactive.all();
   

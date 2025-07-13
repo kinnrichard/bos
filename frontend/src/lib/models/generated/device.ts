@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-12 23:48:31 UTC
+ * Generated: 2025-07-13 00:54:52 UTC
  * Table: devices
  * Generator: rails generate zero:factory_models
  * 
@@ -74,13 +74,24 @@ deviceConfig.scopes = [
 
 /**
  * Factory instances for Device
- * Provides both ReactiveRecord (Svelte) and ActiveRecord (vanilla JS) implementations
+ * 
+ * Generated .ts files provide only ActiveRecord (non-reactive) models.
+ * For reactive models in Svelte components, import the reactive factory:
+ * 
+ * ```typescript
+ * // In Svelte components (.svelte files):
+ * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
+ * import { deviceConfig } from '$lib/models/generated/device';
+ * const DeviceReactive = ModelFactory.createReactiveModel<Device>(deviceConfig);
+ * ```
  */
-export const DeviceReactive = ModelFactory.createReactiveModel<Device>(deviceConfig);
 export const DeviceActive = ModelFactory.createActiveModel<Device>(deviceConfig);
 
-// Default export for convenience
-export default DeviceReactive;
+// Default export for convenience (ActiveRecord)
+export default DeviceActive;
+
+// Export configuration for use in Svelte components
+export { deviceConfig };
 
 // Re-export the interface
 export type { Device };

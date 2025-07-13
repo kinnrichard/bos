@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-12 23:48:31 UTC
+ * Generated: 2025-07-13 00:54:52 UTC
  * Table: contact_methods
  * Generator: rails generate zero:factory_models
  * 
@@ -68,13 +68,24 @@ contact_methodConfig.scopes = [
 
 /**
  * Factory instances for ContactMethod
- * Provides both ReactiveRecord (Svelte) and ActiveRecord (vanilla JS) implementations
+ * 
+ * Generated .ts files provide only ActiveRecord (non-reactive) models.
+ * For reactive models in Svelte components, import the reactive factory:
+ * 
+ * ```typescript
+ * // In Svelte components (.svelte files):
+ * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
+ * import { contact_methodConfig } from '$lib/models/generated/contact_method';
+ * const ContactMethodReactive = ModelFactory.createReactiveModel<ContactMethod>(contact_methodConfig);
+ * ```
  */
-export const ContactMethodReactive = ModelFactory.createReactiveModel<ContactMethod>(contact_methodConfig);
 export const ContactMethodActive = ModelFactory.createActiveModel<ContactMethod>(contact_methodConfig);
 
-// Default export for convenience
-export default ContactMethodReactive;
+// Default export for convenience (ActiveRecord)
+export default ContactMethodActive;
+
+// Export configuration for use in Svelte components
+export { contact_methodConfig };
 
 // Re-export the interface
 export type { ContactMethod };

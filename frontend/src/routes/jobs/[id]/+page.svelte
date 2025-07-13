@@ -2,7 +2,9 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onDestroy } from 'svelte';
-  import JobReactive from '$lib/models/generated/job';
+  // Import reactive factory and job configuration for creating reactive model
+  import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
+  import { jobConfig, type Job } from '$lib/models/generated/job';
 
   // ✨ NEW: Use factory-based ReactiveRecord for automatic Svelte reactivity
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
@@ -12,6 +14,9 @@
 
   // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
   const jobId = $derived($page.params.id);
+  
+  // ✨ CREATE REACTIVE MODEL IN SVELTE COMPONENT (where $state runes are available)
+  const JobReactive = ModelFactory.createReactiveModel<Job>(jobConfig);
   
   // ✨ USE FACTORY-BASED REACTIVE MODEL FOR PROGRESSIVE LOADING
   const jobQuery = $derived(JobReactive.find(jobId));

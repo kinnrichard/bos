@@ -224,8 +224,8 @@ export function createValidatedReactiveModel<T>(
   // Validate usage
   const validation = validateReactiveModelUsage(`${name}ReactiveModel`, options);
   
-  // Dynamic import to avoid circular dependencies
-  return import('./model-factory.js').then(({ ModelFactory }) => {
+  // Import reactive version from svelte file for actual reactive model creation
+  return import('./model-factory.svelte.js').then(({ ModelFactory }) => {
     const model = ModelFactory.createReactiveModel<T>({
       name,
       tableName,
@@ -257,7 +257,7 @@ export function createValidatedActiveModel<T>(
   // Validate usage
   const validation = validateActiveModelUsage(`${name}ActiveModel`, options);
   
-  // Dynamic import to avoid circular dependencies
+  // Import non-reactive version for ActiveModel creation
   return import('./model-factory.js').then(({ ModelFactory }) => {
     const model = ModelFactory.createActiveModel<T>({
       name,

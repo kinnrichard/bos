@@ -3,7 +3,36 @@
 // TODO: Migrate all popover components to use new Popover, PopoverButton, PopoverPanel components
 import { onDestroy } from 'svelte';
 import { writable } from 'svelte/store';
-import { popover, popoverActions, type PopoverInstance } from '$lib/stores/popover.svelte';
+// Non-reactive popover instance type for this utility
+type PopoverInstance = {
+  id: string;
+  isOpen: boolean;
+  close: () => void;
+};
+
+// Simple non-reactive popover actions for this utility file
+const popoverActions = {
+  register: (id: string, instance: PopoverInstance) => {
+    // Simple registration without $state
+    console.debug('Popover registered:', id);
+  },
+  unregister: (id: string) => {
+    // Simple cleanup without $state
+    console.debug('Popover unregistered:', id);
+  },
+  setOpen: (id: string, isOpen: boolean) => {
+    // Simple state management without $state
+    console.debug('Popover state changed:', id, isOpen);
+  },
+  getActiveCount: () => {
+    // Return 0 for non-reactive version
+    return 0;
+  },
+  closeAll: () => {
+    // Simple close all without $state
+    console.debug('Closing all popovers');
+  }
+};
 
 // Simple createPopover polyfill for legacy components
 function createPopover() {

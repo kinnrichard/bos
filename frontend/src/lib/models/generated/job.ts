@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-12 23:48:31 UTC
+ * Generated: 2025-07-13 00:54:52 UTC
  * Table: jobs
  * Generator: rails generate zero:factory_models
  * 
@@ -100,13 +100,24 @@ jobConfig.scopes = [
 
 /**
  * Factory instances for Job
- * Provides both ReactiveRecord (Svelte) and ActiveRecord (vanilla JS) implementations
+ * 
+ * Generated .ts files provide only ActiveRecord (non-reactive) models.
+ * For reactive models in Svelte components, import the reactive factory:
+ * 
+ * ```typescript
+ * // In Svelte components (.svelte files):
+ * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
+ * import { jobConfig } from '$lib/models/generated/job';
+ * const JobReactive = ModelFactory.createReactiveModel<Job>(jobConfig);
+ * ```
  */
-export const JobReactive = ModelFactory.createReactiveModel<Job>(jobConfig);
 export const JobActive = ModelFactory.createActiveModel<Job>(jobConfig);
 
-// Default export for convenience
-export default JobReactive;
+// Default export for convenience (ActiveRecord)
+export default JobActive;
+
+// Export configuration for use in Svelte components
+export { jobConfig };
 
 // Re-export the interface
 export type { Job };

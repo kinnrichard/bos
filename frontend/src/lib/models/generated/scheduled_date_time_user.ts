@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-12 23:48:31 UTC
+ * Generated: 2025-07-13 00:54:52 UTC
  * Table: scheduled_date_time_users
  * Generator: rails generate zero:factory_models
  * 
@@ -62,13 +62,24 @@ scheduled_date_time_userConfig.scopes = [
 
 /**
  * Factory instances for ScheduledDateTimeUser
- * Provides both ReactiveRecord (Svelte) and ActiveRecord (vanilla JS) implementations
+ * 
+ * Generated .ts files provide only ActiveRecord (non-reactive) models.
+ * For reactive models in Svelte components, import the reactive factory:
+ * 
+ * ```typescript
+ * // In Svelte components (.svelte files):
+ * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
+ * import { scheduled_date_time_userConfig } from '$lib/models/generated/scheduled_date_time_user';
+ * const ScheduledDateTimeUserReactive = ModelFactory.createReactiveModel<ScheduledDateTimeUser>(scheduled_date_time_userConfig);
+ * ```
  */
-export const ScheduledDateTimeUserReactive = ModelFactory.createReactiveModel<ScheduledDateTimeUser>(scheduled_date_time_userConfig);
 export const ScheduledDateTimeUserActive = ModelFactory.createActiveModel<ScheduledDateTimeUser>(scheduled_date_time_userConfig);
 
-// Default export for convenience
-export default ScheduledDateTimeUserReactive;
+// Default export for convenience (ActiveRecord)
+export default ScheduledDateTimeUserActive;
+
+// Export configuration for use in Svelte components
+export { scheduled_date_time_userConfig };
 
 // Re-export the interface
 export type { ScheduledDateTimeUser };

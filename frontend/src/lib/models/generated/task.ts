@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-12 23:48:31 UTC
+ * Generated: 2025-07-13 00:54:52 UTC
  * Table: tasks
  * Generator: rails generate zero:factory_models
  * 
@@ -92,13 +92,24 @@ taskConfig.scopes = [
 
 /**
  * Factory instances for Task
- * Provides both ReactiveRecord (Svelte) and ActiveRecord (vanilla JS) implementations
+ * 
+ * Generated .ts files provide only ActiveRecord (non-reactive) models.
+ * For reactive models in Svelte components, import the reactive factory:
+ * 
+ * ```typescript
+ * // In Svelte components (.svelte files):
+ * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
+ * import { taskConfig } from '$lib/models/generated/task';
+ * const TaskReactive = ModelFactory.createReactiveModel<Task>(taskConfig);
+ * ```
  */
-export const TaskReactive = ModelFactory.createReactiveModel<Task>(taskConfig);
 export const TaskActive = ModelFactory.createActiveModel<Task>(taskConfig);
 
-// Default export for convenience
-export default TaskReactive;
+// Default export for convenience (ActiveRecord)
+export default TaskActive;
+
+// Export configuration for use in Svelte components
+export { taskConfig };
 
 // Re-export the interface
 export type { Task };

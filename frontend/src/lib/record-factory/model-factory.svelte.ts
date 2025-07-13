@@ -1,5 +1,6 @@
-// ModelFactory: Non-reactive version for generated models and utilities
-// This version does NOT use $state runes and is safe for non-Svelte contexts
+// ModelFactory: Factory pattern for creating ReactiveRecord and ActiveRecord models
+// Eliminates code duplication and provides unified configuration
+// Generates identical APIs for both Svelte-optimized and vanilla JS contexts
 
 import { 
   BaseRecord, 
@@ -16,12 +17,96 @@ import { getZero } from '../zero/zero-client';
 import { RailsActiveRecord, createRailsActiveRecord } from './rails-active-record';
 
 /**
- * Rails-Compatible ActiveRecord implementation (Non-reactive version)
- * This class does NOT use $state runes and is safe for use in:
- * - Generated model files (.ts)
- * - Test files
- * - Server-side code
- * - Non-Svelte utilities
+ * Svelte-optimized ReactiveRecord implementation
+ * Uses Svelte 5 $state runes for automatic reactivity in components
+ */
+class ReactiveRecord<T> extends BaseRecord<T> {
+  // Use Svelte 5's $state rune for proper reactivity tracking
+  private _state = $state({
+    data: null as T | T[] | null,
+    isLoading: true,
+    error: null as Error | null,
+    isCollection: false
+  });
+
+  constructor(
+    getQueryBuilder: () => any | null,
+    config: BaseRecordConfig & { expectsCollection?: boolean } = {}
+  ) {
+    super(getQueryBuilder, config);
+    
+    this._state.data = config.defaultValue;
+    this._state.isCollection = config.expectsCollection || false;
+    this._state.isLoading = true;
+    this._state.error = null;
+    
+    // Initialize Zero.js query
+    this.initializeQuery();
+  }
+
+  // Reactive getters for Svelte components - automatically tracked by Svelte
+  
+  /** Single record access (like Rails .find result) */
+  get record(): T | null {
+    if (this._state.isCollection) {
+      throw new ActiveRecordError('Called .record on collection query. Use .records instead.');
+    }
+    return this._state.data as T | null;
+  }
+  
+  /** Collection access (like Rails .where result) */
+  get records(): T[] {
+    if (!this._state.isCollection) {
+      throw new ActiveRecordError('Called .records on single record query. Use .record instead.');
+    }
+    return (this._state.data as T[]) || [];
+  }
+  
+  /** Universal data access - returns whatever the query type expects */
+  get data(): T | T[] | null {
+    return this._state.data;
+  }
+  
+  /** Loading state */
+  get isLoading(): boolean {
+    return this._state.isLoading;
+  }
+  
+  /** Error state */
+  get error(): Error | null {
+    return this._state.error;
+  }
+  
+  /** Check if record/collection is present (like Rails .present?) */
+  get present(): boolean {
+    if (this._state.isCollection) {
+      return Array.isArray(this._state.data) && this._state.data.length > 0;
+    }
+    return this._state.data !== null && this._state.data !== undefined;
+  }
+  
+  /** Check if record/collection is blank (like Rails .blank?) */
+  get blank(): boolean {
+    return !this.present;
+  }
+
+  // BaseRecord implementation
+  protected handleDataUpdate(data: T | T[]): void {
+    this._state.data = data;
+    this._state.isLoading = false;
+    this._state.error = null;
+  }
+
+  protected handleErrorUpdate(error: Error): void {
+    this._state.error = error;
+    this._state.isLoading = false;
+  }
+}
+
+/**
+ * Rails-Compatible ActiveRecord implementation
+ * Extends BaseRecord with 100% Rails ActiveRecord API compatibility
+ * Maintains backward compatibility while adding Rails method behaviors
  */
 class ActiveRecord<T> extends BaseRecord<T> {
   private _data: T | T[] | null = null;
@@ -166,14 +251,115 @@ class ActiveRecord<T> extends BaseRecord<T> {
 }
 
 /**
- * Factory functions for creating non-reactive ActiveRecord instances
- * Safe for use in generated model files and non-Svelte contexts
+ * Factory functions for creating optimized record instances
  */
 export const ModelFactory = {
   /**
+   * Create ReactiveRecord factory function for Svelte components
+   * Optimized for reactive UI updates with Svelte 5 $state
+   */
+  createReactiveModel<T>(config: ModelConfig) {
+    return {
+      /**
+       * Find a single record by ID (like Rails .find)
+       * @param id - The record ID
+       * @param options - Factory creation options
+       */
+      find(id: string, options: FactoryCreateOptions = {}) {
+        return new ReactiveRecord<T>(
+          () => {
+            const zero = getZero();
+            return zero ? zero.query[config.zeroConfig.tableName].where('id', id).one() : null;
+          },
+          {
+            ...options,
+            expectsCollection: false,
+            defaultValue: null
+          }
+        );
+      },
+
+      /**
+       * Find a single record by conditions (like Rails .find_by)
+       * @param conditions - Object with field/value pairs to match
+       * @param options - Factory creation options
+       */
+      findBy(conditions: Partial<T>, options: FactoryCreateOptions = {}) {
+        return new ReactiveRecord<T>(
+          () => {
+            const zero = getZero();
+            if (!zero) return null;
+            
+            let query = zero.query[config.zeroConfig.tableName];
+            
+            Object.entries(conditions).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                query = query.where(key, value);
+              }
+            });
+            
+            return query.one();
+          },
+          {
+            ...options,
+            expectsCollection: false,
+            defaultValue: null
+          }
+        );
+      },
+
+      /**
+       * Get all records (like Rails .all)
+       * @param options - Factory creation options
+       */
+      all(options: FactoryCreateOptions = {}) {
+        return new ReactiveRecord<T>(
+          () => {
+            const zero = getZero();
+            return zero ? zero.query[config.zeroConfig.tableName].orderBy('created_at', 'desc') : null;
+          },
+          {
+            ...options,
+            expectsCollection: true,
+            defaultValue: []
+          }
+        );
+      },
+
+      /**
+       * Find records matching conditions (like Rails .where)
+       * @param conditions - Object with field/value pairs to match
+       * @param options - Factory creation options
+       */
+      where(conditions: Partial<T>, options: FactoryCreateOptions = {}) {
+        return new ReactiveRecord<T>(
+          () => {
+            const zero = getZero();
+            if (!zero) return null;
+            
+            let query = zero.query[config.zeroConfig.tableName];
+            
+            Object.entries(conditions).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                query = query.where(key, value);
+              }
+            });
+            
+            return query.orderBy('created_at', 'desc');
+          },
+          {
+            ...options,
+            expectsCollection: true,
+            defaultValue: []
+          }
+        );
+      }
+    };
+  },
+
+  /**
    * Create Rails-Compatible ActiveRecord factory function
-   * This is the NON-REACTIVE version - does not use $state runes
-   * Safe for use in .ts files, tests, and server-side code
+   * Implements 100% Rails ActiveRecord API compatibility
    */
   createActiveModel<T>(config: ModelConfig) {
     return {
@@ -288,18 +474,6 @@ export const ModelFactory = {
         return createRailsActiveRecord<T>(config);
       }
     };
-  },
-
-  /**
-   * Create ReactiveRecord factory - redirects to the reactive version
-   * This maintains API compatibility but imports from the reactive file
-   */
-  createReactiveModel<T>(config: ModelConfig) {
-    // Dynamic import to avoid circular dependencies and $state issues
-    // This will only be called from Svelte components where $state is available
-    return import('./model-factory.svelte.js').then(module => {
-      return module.ModelFactory.createReactiveModel<T>(config);
-    });
   }
 };
 
@@ -357,6 +531,3 @@ export const FactoryUtils = {
     return { valid: errors.length === 0, errors };
   }
 };
-
-// Re-export types for convenience
-export type { ModelConfig, FactoryCreateOptions, BaseRecordConfig, QueryMeta, RailsModelInterface };
