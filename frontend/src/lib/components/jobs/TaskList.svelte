@@ -771,9 +771,18 @@
     }
 
     try {
-      // Use Zero.js mutation to update the task - this will automatically sync to database
-      const { updateTask } = await import('$lib/zero/task.generated');
-      await updateTask(taskId, { title: newTitle.trim() });
+      // Find the task data and create an ActiveRecord-style instance
+      const taskData = tasks.find(t => t.id === taskId);
+      if (!taskData) {
+        throw new Error('Task not found');
+      }
+
+      // Import the TaskInstance factory and create an instance
+      const { createTaskInstance } = await import('$lib/zero/task.generated');
+      const taskInstance = createTaskInstance(taskData as any);
+      
+      // Use ActiveRecord-style update method
+      await taskInstance.update({ title: newTitle.trim() });
       
       // UI cleanup - Zero.js reactive updates will handle the data changes
       editingTaskId = null;
