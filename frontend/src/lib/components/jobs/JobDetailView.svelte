@@ -12,19 +12,17 @@
   const statusEmoji = $derived(getJobStatusEmoji(job?.status));
   const priorityEmoji = $derived(getJobPriorityEmoji(job?.priority));
   
-  // ✨ USE $effect FOR SIDE EFFECTS AND $state.snapshot() FOR LOGGING
+  // ✨ USE $inspect FOR DEBUGGING REACTIVE STATE IN SVELTE 5
   $effect(() => {
     if (job) {
-      console.log('[JobDetailView] Received job data:', $state.snapshot(job));
+      $inspect('[JobDetailView] Received job data:', job);
       console.log('[JobDetailView] Job title:', job?.title);
       console.log('[JobDetailView] Job client:', job?.client?.name || 'Using Zero.js flat structure');
       console.log('[JobDetailView] Job status:', job?.status);
-      console.log('[JobDetailView] Job tasks:', job?.tasks);
       console.log('[JobDetailView] Job tasks type:', typeof job?.tasks);
       console.log('[JobDetailView] Job tasks length:', job?.tasks?.length);
-      console.log('[JobDetailView] Job tasks snapshot:', $state.snapshot(job?.tasks || []));
       if (job?.tasks && job.tasks.length > 0) {
-        console.log('[JobDetailView] First task:', $state.snapshot(job.tasks[0]));
+        $inspect('[JobDetailView] First task:', job.tasks[0]);
         console.log('[JobDetailView] Task ID:', job.tasks[0]?.id);
         console.log('[JobDetailView] Task title:', job.tasks[0]?.title);
       }

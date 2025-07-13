@@ -50,11 +50,11 @@
     
     if (job) {
       console.log('[JobPage] Job data loaded via Zero relationships:', job.title);
-      // ✨ USE $state.snapshot() FOR SVELTE 5 - AVOIDS $state PROXY WARNING
-      console.log('[JobPage] Zero job structure:', $state.snapshot(job));
+      // ✨ USE $inspect FOR DEBUGGING REACTIVE STATE IN SVELTE 5
+      $inspect('[JobPage] Zero job structure:', job);
       console.log('[JobPage] Client:', job.client?.name);
       console.log('[JobPage] Tasks count:', job.tasks?.length);
-      console.log('[JobPage] Technicians:', job.jobAssignments?.map((ja: any) => ja.user?.name));
+      console.log('[JobPage] Technicians:', $state.snapshot(job.jobAssignments)?.map((ja: any) => ja.user?.name));
       
       // Update current job in layout store when job data changes
       console.log('[JobPage] Setting current job in layout store via Zero relationships');
