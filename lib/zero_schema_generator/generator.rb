@@ -231,10 +231,22 @@ module ZeroSchemaGenerator
       # Generate has_many relationships (many)
       has_many_rels.each do |rel|
         next unless rel[:target_table] && table_names.include?(rel[:target_table])
-        next if rel[:through] # Skip through relationships for now
 
         rel_name = rel[:name].to_s.camelize(:lower)
-        relationships << generate_many_relationship(rel_name, rel[:foreign_key], rel[:target_table])
+
+        if rel[:through]
+          # Generate chained relationship for has_many :through
+          through_comment = generate_through_relationship(rel_name, rel, table_names)
+          relationships << through_comment if through_comment
+        else
+          # Validate that the foreign key field exists in target table before generating relationship
+          if validate_foreign_key_exists(rel[:foreign_key], rel[:target_table])
+            relationships << generate_many_relationship(rel_name, rel[:foreign_key], rel[:target_table])
+          else
+            # Add comment about skipped relationship
+            relationships << "// SKIPPED: #{rel_name} - foreign key '#{rel[:foreign_key]}' does not exist in #{rel[:target_table]} table"
+          end
+        end
       end
 
       # Add self-referential children relationship if we have a parent relationship
@@ -270,6 +282,36 @@ module ZeroSchemaGenerator
           destField: ['#{foreign_key}'],
         })
       TYPESCRIPT
+    end
+
+    def generate_through_relationship(rel_name, rel, table_names)
+      through_table = rel[:through]
+      target_table = rel[:target_table]
+
+      # Convert through association name to table name
+      through_table_name = through_table.to_s.pluralize
+
+      # Verify through table exists in our schema
+      return nil unless table_names.include?(through_table_name)
+
+      # For Rails has_many :through, we add a comment explaining the Zero.js chained access pattern
+      # Instead of generating a separate relationship, we document how to use the existing join table relationship
+      comment = "// Rails has_many :#{rel_name}, through: :#{through_table} -> Use #{through_table.to_s.camelize(:lower)}.related('#{target_table.singularize}') in Zero.js"
+
+      # Return just the comment - the actual join table relationship is already generated
+      # This prevents duplicate relationships while documenting the Rails pattern
+      comment
+    end
+
+    def validate_foreign_key_exists(foreign_key, target_table)
+      # Get the Rails schema to check if foreign key field exists in target table
+      rails_schema = @introspector.extract_schema
+
+      target_table_data = rails_schema[:tables].find { |table| table[:name] == target_table }
+      return false unless target_table_data
+
+      # Check if the foreign key column exists in the target table
+      target_table_data[:columns].any? { |column| column[:name] == foreign_key }
     end
 
     def generate_polymorphic_relationships(rel, table_names)
