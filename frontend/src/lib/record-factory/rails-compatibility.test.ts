@@ -1,14 +1,14 @@
-// Rails ActiveRecord API Compatibility Test Suite - Epic-007 Phase 2 Story 6
-// Comprehensive tests to validate 100% Rails ActiveRecord compatibility
+// ActiveRecord API Compatibility Test Suite - Epic-007 Phase 2 Story 6
+// Comprehensive tests to validate 100% ActiveRecord compatibility
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { 
   RecordNotFoundError, 
   RecordInvalidError, 
   RecordNotSavedError,
-  RailsMethodBehaviors 
+  ActiveRecordMethodBehaviors 
 } from './base-record';
-import { RailsActiveRecord, RailsCompatibility } from './rails-active-record';
+import { ActiveRecord, ActiveRecordCompatibility } from './active-record';
 import { ModelFactory } from './model-factory';
 import { ModelConfigBuilder } from './model-config';
 
@@ -97,30 +97,30 @@ describe('Rails Error Classes', () => {
 
 describe('Rails Method Behaviors', () => {
   it('should define correct behavior for find method', () => {
-    const findBehavior = RailsMethodBehaviors.find;
+    const findBehavior = ActiveRecordMethodBehaviors.find;
     expect(findBehavior.throwsOnNotFound).toBe(true);
     expect(findBehavior.errorType).toBe(RecordNotFoundError);
     expect(findBehavior.returnType).toBe('single');
   });
 
   it('should define correct behavior for findBy method', () => {
-    const findByBehavior = RailsMethodBehaviors.findBy;
+    const findByBehavior = ActiveRecordMethodBehaviors.findBy;
     expect(findByBehavior.throwsOnNotFound).toBe(false);
     expect(findByBehavior.returnType).toBe('single_or_null');
   });
 
   it('should define correct behavior for where method', () => {
-    const whereBehavior = RailsMethodBehaviors.where;
+    const whereBehavior = ActiveRecordMethodBehaviors.where;
     expect(whereBehavior.throwsOnNotFound).toBe(false);
     expect(whereBehavior.returnType).toBe('array');
   });
 });
 
-describe('RailsActiveRecord', () => {
-  let User: RailsActiveRecord<typeof testUser>;
+describe('ActiveRecord', () => {
+  let User: ActiveRecord<typeof testUser>;
 
   beforeEach(() => {
-    User = new RailsActiveRecord<typeof testUser>(userConfig);
+    User = new ActiveRecord<typeof testUser>(userConfig);
     vi.clearAllMocks();
   });
 
@@ -285,10 +285,10 @@ describe('RailsActiveRecord', () => {
 });
 
 describe('Query Chaining', () => {
-  let User: RailsActiveRecord<typeof testUser>;
+  let User: ActiveRecord<typeof testUser>;
 
   beforeEach(() => {
-    User = new RailsActiveRecord<typeof testUser>(userConfig);
+    User = new ActiveRecord<typeof testUser>(userConfig);
     vi.clearAllMocks();
   });
 
@@ -315,10 +315,10 @@ describe('Query Chaining', () => {
 });
 
 describe('Dynamic Scopes', () => {
-  let User: RailsActiveRecord<typeof testUser>;
+  let User: ActiveRecord<typeof testUser>;
 
   beforeEach(() => {
-    User = new RailsActiveRecord<typeof testUser>(userConfig);
+    User = new ActiveRecord<typeof testUser>(userConfig);
     vi.clearAllMocks();
   });
 
@@ -478,23 +478,23 @@ describe('ModelFactory Rails Compatibility', () => {
     });
   });
 
-  describe('createRailsModel() method', () => {
+  describe('createActiveModel() method', () => {
     it('should create full Rails ActiveRecord instance', () => {
-      const railsModel = userModel.createRailsModel();
-      expect(railsModel).toBeInstanceOf(RailsActiveRecord);
-      expect(typeof railsModel.find).toBe('function');
-      expect(typeof railsModel.findBy).toBe('function');
-      expect(typeof railsModel.where).toBe('function');
-      expect(typeof railsModel.all).toBe('function');
+      const activeModel = userModel.createActiveModel();
+      expect(activeModel).toBeInstanceOf(ActiveRecord);
+      expect(typeof activeModel.find).toBe('function');
+      expect(typeof activeModel.findBy).toBe('function');
+      expect(typeof activeModel.where).toBe('function');
+      expect(typeof activeModel.all).toBe('function');
     });
   });
 });
 
 describe('Rails Compatibility Utilities', () => {
-  let User: RailsActiveRecord<typeof testUser>;
+  let User: ActiveRecord<typeof testUser>;
 
   beforeEach(() => {
-    User = new RailsActiveRecord<typeof testUser>(userConfig);
+    User = new ActiveRecord<typeof testUser>(userConfig);
     mockZeroClient.query.users.data = testUsers;
   });
 
@@ -503,17 +503,17 @@ describe('Rails Compatibility Utilities', () => {
     const singleResult = User.first();
     const nullResult = null;
 
-    expect(RailsCompatibility.validateMethodBehavior('all', arrayResult, 'array')).toBe(true);
-    expect(RailsCompatibility.validateMethodBehavior('first', singleResult, 'single_or_null')).toBe(true);
-    expect(RailsCompatibility.validateMethodBehavior('findBy', nullResult, 'single_or_null')).toBe(true);
+    expect(ActiveRecordCompatibility.validateMethodBehavior('all', arrayResult, 'array')).toBe(true);
+    expect(ActiveRecordCompatibility.validateMethodBehavior('first', singleResult, 'single_or_null')).toBe(true);
+    expect(ActiveRecordCompatibility.validateMethodBehavior('findBy', nullResult, 'single_or_null')).toBe(true);
     
     // Test invalid behaviors
-    expect(RailsCompatibility.validateMethodBehavior('all', singleResult, 'array')).toBe(false);
-    expect(RailsCompatibility.validateMethodBehavior('find', arrayResult, 'single')).toBe(false);
+    expect(ActiveRecordCompatibility.validateMethodBehavior('all', singleResult, 'array')).toBe(false);
+    expect(ActiveRecordCompatibility.validateMethodBehavior('find', arrayResult, 'single')).toBe(false);
   });
 
   it('should test method compatibility comprehensively', async () => {
-    const compatibilityResult = await RailsCompatibility.testMethodCompatibility(User);
+    const compatibilityResult = await ActiveRecordCompatibility.testMethodCompatibility(User);
     
     expect(compatibilityResult.compatible).toBe(true);
     expect(compatibilityResult.results.all).toBe(true);
@@ -535,7 +535,7 @@ describe('Backward Compatibility', () => {
     expect(typeof userModel.where).toBe('function');
     
     // New Phase 2 method should be available
-    expect(typeof userModel.createRailsModel).toBe('function');
+    expect(typeof userModel.createActiveModel).toBe('function');
   });
 
   it('should preserve existing error handling', () => {

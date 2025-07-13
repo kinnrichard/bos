@@ -9,21 +9,22 @@ import {
   RecordNotSavedError,
   type QueryMeta, 
   type BaseRecordConfig,
-  type RailsModelInterface 
+  type ActiveRecordInterface 
 } from './base-record';
 import { type ModelConfig, type FactoryCreateOptions } from './model-config';
 import { getZero } from '../zero/zero-client';
-import { RailsActiveRecord, createRailsActiveRecord } from './rails-active-record';
+import { ActiveRecord, createActiveRecord } from './active-record';
 
 /**
- * Rails-Compatible ActiveRecord implementation (Non-reactive version)
+ * Non-reactive ActiveRecord implementation (Non-reactive version)
  * This class does NOT use $state runes and is safe for use in:
  * - Generated model files (.ts)
  * - Test files
  * - Server-side code
  * - Non-Svelte utilities
+ * Note: The main ActiveRecord class is imported from './active-record'
  */
-class ActiveRecord<T> extends BaseRecord<T> {
+class NonReactiveActiveRecord<T> extends BaseRecord<T> {
   private _data: T | T[] | null = null;
   private _isLoading = true;
   private _error: Error | null = null;
@@ -183,7 +184,7 @@ export const ModelFactory = {
        * @param options - Factory creation options
        */
       find(id: string, options: FactoryCreateOptions = {}) {
-        return new ActiveRecord<T>(
+        return new NonReactiveActiveRecord<T>(
           () => {
             const zero = getZero();
             return zero ? zero.query[config.zeroConfig.tableName].where('id', id).one() : null;
@@ -204,7 +205,7 @@ export const ModelFactory = {
        * @param options - Factory creation options
        */
       findBy(conditions: Partial<T>, options: FactoryCreateOptions = {}) {
-        return new ActiveRecord<T>(
+        return new NonReactiveActiveRecord<T>(
           () => {
             const zero = getZero();
             if (!zero) return null;
@@ -234,7 +235,7 @@ export const ModelFactory = {
        * @param options - Factory creation options
        */
       all(options: FactoryCreateOptions = {}) {
-        return new ActiveRecord<T>(
+        return new NonReactiveActiveRecord<T>(
           () => {
             const zero = getZero();
             return zero ? zero.query[config.zeroConfig.tableName].orderBy('created_at', 'desc') : null;
@@ -255,7 +256,7 @@ export const ModelFactory = {
        * @param options - Factory creation options
        */
       where(conditions: Partial<T>, options: FactoryCreateOptions = {}) {
-        return new ActiveRecord<T>(
+        return new NonReactiveActiveRecord<T>(
           () => {
             const zero = getZero();
             if (!zero) return null;
@@ -281,11 +282,11 @@ export const ModelFactory = {
       },
 
       /**
-       * Create Rails-compatible model with full API (new in Phase 2)
-       * Returns full Rails ActiveRecord interface with method chaining and scopes
+       * Create ActiveRecord-compatible model with full API (new in Phase 2)
+       * Returns full ActiveRecord interface with method chaining and scopes
        */
-      createRailsModel(): RailsActiveRecord<T> {
-        return createRailsActiveRecord<T>(config);
+      createActiveModel(): ActiveRecord<T> {
+        return createActiveRecord<T>(config);
       }
     };
   },
@@ -359,4 +360,4 @@ export const FactoryUtils = {
 };
 
 // Re-export types for convenience
-export type { ModelConfig, FactoryCreateOptions, BaseRecordConfig, QueryMeta, RailsModelInterface };
+export type { ModelConfig, FactoryCreateOptions, BaseRecordConfig, QueryMeta, ActiveRecordInterface };

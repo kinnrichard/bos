@@ -341,17 +341,17 @@ export const TTLValidator = {
 };
 
 /**
- * Rails-compatible query chain interface
- * Supports method chaining like Rails: Model.scope().where().limit()
+ * ActiveRecord-compatible query chain interface
+ * Supports method chaining like ActiveRecord: Model.scope().where().limit()
  */
-export interface RailsQueryChain<T> {
-  where(conditions: Partial<T> | Record<string, any>): RailsQueryChain<T>;
-  limit(count: number): RailsQueryChain<T>;
-  offset(count: number): RailsQueryChain<T>;
-  orderBy(field: string, direction?: 'asc' | 'desc'): RailsQueryChain<T>;
-  includes(...relations: string[]): RailsQueryChain<T>;
-  select(...fields: string[]): RailsQueryChain<T>;
-  distinct(): RailsQueryChain<T>;
+export interface ActiveRecordRelation<T> {
+  where(conditions: Partial<T> | Record<string, any>): ActiveRecordRelation<T>;
+  limit(count: number): ActiveRecordRelation<T>;
+  offset(count: number): ActiveRecordRelation<T>;
+  orderBy(field: string, direction?: 'asc' | 'desc'): ActiveRecordRelation<T>;
+  includes(...relations: string[]): ActiveRecordRelation<T>;
+  select(...fields: string[]): ActiveRecordRelation<T>;
+  distinct(): ActiveRecordRelation<T>;
   
   // Terminal methods that execute the query
   all(): T[];
@@ -371,9 +371,9 @@ export interface RailsQueryChain<T> {
 }
 
 /**
- * Rails scope configuration for dynamic scope generation
+ * ActiveRecord scope configuration for dynamic scope generation
  */
-export interface RailsScopeConfig {
+export interface ActiveRecordScope {
   name: string;
   conditions?: Record<string, any>;
   lambda?: (query: any) => any;
@@ -382,22 +382,22 @@ export interface RailsScopeConfig {
 }
 
 /**
- * Rails-compatible model interface
- * Defines the complete Rails ActiveRecord API contract
+ * ActiveRecord-compatible model interface
+ * Defines the complete ActiveRecord API contract
  */
-export interface RailsModelInterface<T> {
-  // Core finder methods (Rails behavior)
+export interface ActiveRecordInterface<T> {
+  // Core finder methods (ActiveRecord behavior)
   find(id: string | number): T;                    // Throws RecordNotFoundError if not found
   findBy(conditions: Partial<T>): T | null;        // Returns null if not found
-  where(conditions: Partial<T>): RailsQueryChain<T>; // Returns query chain for chaining
+  where(conditions: Partial<T>): ActiveRecordRelation<T>; // Returns query chain for chaining
   all(): T[];                                       // Returns all records
   first(): T | null;                               // First record or null
   last(): T | null;                                // Last record or null
   
   // Query building methods
-  limit(count: number): RailsQueryChain<T>;
-  offset(count: number): RailsQueryChain<T>;
-  orderBy(field: string, direction?: 'asc' | 'desc'): RailsQueryChain<T>;
+  limit(count: number): ActiveRecordRelation<T>;
+  offset(count: number): ActiveRecordRelation<T>;
+  orderBy(field: string, direction?: 'asc' | 'desc'): ActiveRecordRelation<T>;
   
   // Aggregation methods
   count(): number;
@@ -410,10 +410,10 @@ export interface RailsModelInterface<T> {
 }
 
 /**
- * Rails method behavior configuration
- * Defines how each method should behave to match Rails exactly
+ * ActiveRecord method behavior configuration
+ * Defines how each method should behave to match ActiveRecord exactly
  */
-export const RailsMethodBehaviors = {
+export const ActiveRecordMethodBehaviors = {
   /**
    * find(id) - Must throw RecordNotFoundError if not found
    */

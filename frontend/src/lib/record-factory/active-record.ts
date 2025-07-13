@@ -1,460 +1,739 @@
-// High-Performance ActiveRecord Implementation - Epic-007 Story 5
-// Vanilla JS-optimized with direct property access for maximum performance
-// Property access within 2x of direct object access speed
+// ActiveRecord-Compatible Implementation - Epic-007 Phase 2 Story 6
+// 100% ActiveRecord API compatibility with exact method behaviors
+// Implements ActiveRecord method chaining, scopes, and error handling
 
 import { getZero } from '../zero/zero-client';
-import { ZERO_CONFIG } from '../zero/zero-config';
-import { zeroErrorHandler, type ErrorContext } from '../zero/zero-errors';
+import { 
+  RecordNotFoundError, 
+  RecordInvalidError, 
+  RecordNotSavedError,
+  type ActiveRecordRelation,
+  type ActiveRecordInterface,
+  type ActiveRecordScope,
+  ActiveRecordMethodBehaviors
+} from './base-record';
+import { type ModelConfig } from './model-config';
 
 /**
- * High-performance ActiveRecord instance configuration
+ * ActiveRecord-compatible query builder with method chaining
+ * Supports: Model.scope().where().limit().all()
  */
-export interface ActiveRecordConfig {
-  ttl?: string | number;
-  debugLogging?: boolean;
-  maxRetries?: number;
-  retryDelay?: number;
-  enableSubscriptions?: boolean;
-}
-
-/**
- * Subscription callback for manual reactivity
- */
-export type SubscriptionCallback<T> = (data: T | T[] | null, meta: {
-  isLoading: boolean;
-  error: Error | null;
-  count: number;
-}) => void;
-
-/**
- * High-Performance ActiveRecord Instance
- * Optimized for vanilla JS with direct property access (no getters)
- * Manual subscription available when reactivity needed
- */
-export class ActiveRecordInstance<T> {
-  // Direct property access for maximum performance (no getters)
-  public data: T | T[] | null = null;
-  public isLoading: boolean = true;
-  public error: Error | null = null;
-  public isCollection: boolean = false;
-  
-  // Memory-optimized private properties
-  private view: any = null;
-  private removeListener: (() => void) | null = null;
-  private subscribers: SubscriptionCallback<T>[] = [];
-  private retryCount = 0;
-  private isDestroyed = false;
-  private config: Required<ActiveRecordConfig>;
-  private operationId: string;
+export class ActiveRecordQueryBuilder<T> implements ActiveRecordRelation<T> {
+  private zeroQuery: any;
+  private modelName: string;
+  private tableName: string;
+  protected limitValue?: number;
+  protected offsetValue?: number;
+  protected orderByFields: Array<{ field: string; direction: 'asc' | 'desc' }> = [];
+  protected selectFields?: string[];
+  protected isDistinct = false;
+  protected includeRelations: string[] = [];
 
   constructor(
-    private getQueryBuilder: () => any | null,
-    config: ActiveRecordConfig & { expectsCollection?: boolean } = {}
+    zeroQuery: any,
+    modelName: string,
+    tableName: string
   ) {
-    // Optimized configuration setup - minimal object creation
-    this.config = {
-      ttl: config.ttl || ZERO_CONFIG.query.DEFAULT_TTL,
-      debugLogging: config.debugLogging ?? ZERO_CONFIG.query.DEBUG_LOGGING,
-      maxRetries: config.maxRetries || ZERO_CONFIG.query.MAX_RETRIES,
-      retryDelay: config.retryDelay || ZERO_CONFIG.query.RETRY_DELAY,
-      enableSubscriptions: config.enableSubscriptions ?? true
-    };
-    
-    this.isCollection = config.expectsCollection || false;
-    this.operationId = `activerecord-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    
-    // Initialize immediately for performance
-    this.initializeQuery();
+    this.zeroQuery = zeroQuery;
+    this.modelName = modelName;
+    this.tableName = tableName;
   }
 
   /**
-   * Manual subscription for reactivity when needed
-   * Returns unsubscribe function
+   * Add WHERE conditions (ActiveRecord-compatible)
    */
-  subscribe(callback: SubscriptionCallback<T>): () => void {
-    if (!this.config.enableSubscriptions) {
-      throw new Error('Subscriptions disabled for this ActiveRecord instance');
-    }
+  where(conditions: Partial<T> | Record<string, any>): ActiveRecordRelation<T> {
+    let query = this.zeroQuery;
     
-    this.subscribers.push(callback);
-    
-    // Immediately call with current state
-    callback(this.data, {
-      isLoading: this.isLoading,
-      error: this.error,
-      count: this.getCount()
+    Object.entries(conditions).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        query = query.where(key, value);
+      }
     });
     
-    return () => {
-      const index = this.subscribers.indexOf(callback);
-      if (index > -1) {
-        this.subscribers.splice(index, 1);
-      }
-    };
-  }
-
-  /**
-   * Rails-compatible presence check (.present?)
-   */
-  get present(): boolean {
-    if (this.isCollection) {
-      return Array.isArray(this.data) && this.data.length > 0;
-    }
-    return this.data !== null && this.data !== undefined;
-  }
-
-  /**
-   * Rails-compatible blank check (.blank?)
-   */
-  get blank(): boolean {
-    return !this.present;
-  }
-
-  /**
-   * Get record count (performance optimized)
-   */
-  getCount(): number {
-    if (!this.data) return 0;
-    return Array.isArray(this.data) ? this.data.length : 1;
-  }
-
-  /**
-   * Rails-compatible reload method
-   */
-  reload(): void {
-    if (this.isDestroyed) return;
+    const newBuilder = new ActiveRecordQueryBuilder<T>(query, this.modelName, this.tableName);
+    // Copy current state to new builder
+    newBuilder.limitValue = this.limitValue;
+    newBuilder.offsetValue = this.offsetValue;
+    newBuilder.orderByFields = [...this.orderByFields];
+    newBuilder.selectFields = this.selectFields ? [...this.selectFields] : undefined;
+    newBuilder.isDistinct = this.isDistinct;
+    newBuilder.includeRelations = [...this.includeRelations];
     
-    this.cleanup();
-    this.retryCount = 0;
-    this.isLoading = true;
-    this.error = null;
-    this.notifySubscribers();
-    this.initializeQuery();
+    return newBuilder;
   }
 
   /**
-   * Destroy and cleanup all resources
+   * Add LIMIT clause (ActiveRecord-compatible)
    */
-  destroy(): void {
-    this.isDestroyed = true;
-    this.cleanup();
-    this.subscribers = [];
+  limit(count: number): ActiveRecordRelation<T> {
+    const newBuilder = this.clone();
+    newBuilder.limitValue = count;
+    return newBuilder;
   }
 
-  // Private implementation methods
+  /**
+   * Add OFFSET clause (ActiveRecord-compatible)
+   */
+  offset(count: number): ActiveRecordRelation<T> {
+    const newBuilder = this.clone();
+    newBuilder.offsetValue = count;
+    return newBuilder;
+  }
 
-  private async initializeQuery(): Promise<void> {
-    if (this.isDestroyed) return;
-    
+  /**
+   * Add ORDER BY clause (ActiveRecord-compatible)
+   */
+  orderBy(field: string, direction: 'asc' | 'desc' = 'asc'): ActiveRecordRelation<T> {
+    const newBuilder = this.clone();
+    newBuilder.orderByFields.push({ field, direction });
+    return newBuilder;
+  }
+
+  /**
+   * Include related models (ActiveRecord-compatible)
+   */
+  includes(...relations: string[]): ActiveRecordRelation<T> {
+    const newBuilder = this.clone();
+    newBuilder.includeRelations.push(...relations);
+    return newBuilder;
+  }
+
+  /**
+   * Select specific fields (ActiveRecord-compatible)
+   */
+  select(...fields: string[]): ActiveRecordRelation<T> {
+    const newBuilder = this.clone();
+    newBuilder.selectFields = fields;
+    return newBuilder;
+  }
+
+  /**
+   * Add DISTINCT clause (ActiveRecord-compatible)
+   */
+  distinct(): ActiveRecordRelation<T> {
+    const newBuilder = this.clone();
+    newBuilder.isDistinct = true;
+    return newBuilder;
+  }
+
+  // Terminal methods that execute the query
+
+  /**
+   * Execute query and return all results (Rails .all behavior)
+   */
+  all(): T[] {
     try {
-      const queryBuilder = this.getQueryBuilder();
+      console.log(`🔍 [${this.modelName}] RailsQueryBuilder.all() called`);
+      console.log(`🔍 [${this.modelName}] zeroQuery:`, this.zeroQuery);
+      console.log(`🔍 [${this.modelName}] includeRelations:`, this.includeRelations);
       
-      if (!queryBuilder) {
-        await this.retryQuery();
-        return;
+      // Handle null query case
+      if (!this.zeroQuery) {
+        console.log(`🔍 [${this.modelName}] No zeroQuery - returning empty array`);
+        return [];
       }
       
-      await this.createZeroView(queryBuilder);
+      const query = this.buildFinalQuery();
+      console.log(`🔍 [${this.modelName}] Final query built:`, query);
       
-    } catch (err) {
-      await this.handleError(err);
+      const result = query.data;
+      console.log(`🔍 [${this.modelName}] Query result:`, result);
+      console.log(`🔍 [${this.modelName}] Result type:`, Array.isArray(result) ? 'array' : typeof result);
+      console.log(`🔍 [${this.modelName}] Result length:`, Array.isArray(result) ? result.length : 'not array');
+      
+      // Rails .all() always returns an array, even if empty
+      const finalResult = Array.isArray(result) ? result : (result ? [result] : []);
+      console.log(`🔍 [${this.modelName}] Final result length:`, finalResult.length);
+      
+      return finalResult;
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.all():`, error);
+      return [];
     }
   }
 
-  private async createZeroView(queryBuilder: any): Promise<void> {
-    const ttlValue = this.config.ttl;
-    
-    if (this.config.debugLogging) {
-      console.log(`🚀 ActiveRecord: Creating view with TTL: ${ttlValue}`);
+  /**
+   * Execute query and return first result (Rails .first behavior)
+   */
+  first(): T | null {
+    try {
+      const query = this.buildFinalQuery();
+      const result = query.data;
+      
+      if (Array.isArray(result)) {
+        return result.length > 0 ? result[0] : null;
+      }
+      
+      return result || null;
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.first():`, error);
+      return null;
     }
-    
-    // Zero.js materialized view creation
-    this.view = queryBuilder.materialize(ttlValue);
-    
-    // Set up Zero's native listener for updates
-    if (this.config.enableSubscriptions) {
-      this.removeListener = this.view.addListener((newData: T | T[]) => {
-        if (this.isDestroyed) return;
-        this.handleDataUpdate(newData);
+  }
+
+  /**
+   * Execute query and return last result (Rails .last behavior)
+   */
+  last(): T | null {
+    try {
+      const query = this.buildFinalQuery();
+      const result = query.data;
+      
+      if (Array.isArray(result)) {
+        return result.length > 0 ? result[result.length - 1] : null;
+      }
+      
+      return result || null;
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.last():`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Find record by ID (Rails .find behavior - throws if not found)
+   */
+  find(id: string | number): T {
+    try {
+      let query = this.zeroQuery.where('id', id);
+      
+      // Apply relationships (Rails includes() → Zero.js related())
+      this.includeRelations.forEach(relation => {
+        query = query.related(relation);
       });
-    }
-    
-    // Get initial data synchronously for performance
-    const initialData = this.view.data;
-    if (initialData !== undefined) {
-      this.handleDataUpdate(initialData);
-    }
-  }
-
-  private handleDataUpdate(data: T | T[]): void {
-    // Direct property assignment for maximum performance
-    this.data = data;
-    this.isLoading = false;
-    this.error = null;
-    
-    if (this.config.debugLogging) {
-      console.log(`🚀 ActiveRecord: Data updated, count: ${this.getCount()}`);
-    }
-    
-    this.notifySubscribers();
-  }
-
-  private async handleError(err: any): Promise<void> {
-    if (this.isDestroyed) return;
-    
-    const context: ErrorContext = {
-      operationId: this.operationId,
-      operation: 'activerecord_query',
-      ttl: this.config.ttl,
-      queryType: this.isCollection ? 'collection' : 'single'
-    };
-    
-    const result = await zeroErrorHandler.handleError(err, context);
-    
-    this.error = result.error;
-    this.isLoading = false;
-    
-    if (result.shouldRetry) {
-      setTimeout(() => this.initializeQuery(), result.retryDelay);
-    } else {
-      this.notifySubscribers();
-    }
-  }
-
-  private async retryQuery(): Promise<void> {
-    if (this.retryCount >= this.config.maxRetries) {
-      await this.handleError(new Error('Max retries exceeded waiting for Zero client'));
-      return;
-    }
-    
-    this.retryCount++;
-    setTimeout(() => this.initializeQuery(), this.config.retryDelay);
-  }
-
-  private notifySubscribers(): void {
-    if (!this.config.enableSubscriptions || this.subscribers.length === 0) return;
-    
-    const meta = {
-      isLoading: this.isLoading,
-      error: this.error,
-      count: this.getCount()
-    };
-    
-    // Performance-optimized notification
-    for (let i = 0; i < this.subscribers.length; i++) {
-      try {
-        this.subscribers[i](this.data, meta);
-      } catch (err) {
-        console.error('ActiveRecord subscriber error:', err);
+      
+      const result = query.one().data;
+      
+      if (!result) {
+        throw RecordNotFoundError.forId(id, this.modelName);
       }
+      
+      return result;
+    } catch (error) {
+      if (error instanceof RecordNotFoundError) {
+        throw error;
+      }
+      throw RecordNotFoundError.forId(id, this.modelName);
     }
   }
 
-  private cleanup(): void {
-    if (this.removeListener) {
-      this.removeListener();
-      this.removeListener = null;
+  /**
+   * Find record by conditions (Rails .find_by behavior - returns null if not found)
+   */
+  findBy(conditions: Partial<T>): T | null {
+    try {
+      let query = this.zeroQuery;
+      
+      Object.entries(conditions).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query = query.where(key, value);
+        }
+      });
+      
+      // Apply relationships (Rails includes() → Zero.js related())
+      this.includeRelations.forEach(relation => {
+        query = query.related(relation);
+      });
+      
+      const result = query.one().data;
+      return result || null;
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.findBy():`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Count records (Rails .count behavior)
+   */
+  count(): number {
+    try {
+      const result = this.all();
+      return result.length;
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.count():`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * Check if any records exist (Rails .exists? behavior)
+   */
+  exists(): boolean {
+    return this.count() > 0;
+  }
+
+  /**
+   * Pluck specific field values (Rails .pluck behavior)
+   */
+  pluck(field: string): any[] {
+    try {
+      const results = this.all();
+      return results.map((record: any) => record[field]).filter(val => val !== undefined);
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.pluck():`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Sum field values (Rails .sum behavior)
+   */
+  sum(field: string): number {
+    try {
+      const values = this.pluck(field);
+      return values.reduce((sum, val) => sum + (Number(val) || 0), 0);
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.sum():`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * Average field values (Rails .average behavior)
+   */
+  average(field: string): number {
+    try {
+      const values = this.pluck(field);
+      if (values.length === 0) return 0;
+      
+      const sum = values.reduce((total, val) => total + (Number(val) || 0), 0);
+      return sum / values.length;
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.average():`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * Minimum field value (Rails .minimum behavior)
+   */
+  minimum(field: string): any {
+    try {
+      const values = this.pluck(field);
+      return values.length > 0 ? Math.min(...values.map(v => Number(v) || 0)) : null;
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.minimum():`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Maximum field value (Rails .maximum behavior)
+   */
+  maximum(field: string): any {
+    try {
+      const values = this.pluck(field);
+      return values.length > 0 ? Math.max(...values.map(v => Number(v) || 0)) : null;
+    } catch (error) {
+      console.error(`Rails ActiveRecord query error in ${this.modelName}.maximum():`, error);
+      return null;
+    }
+  }
+
+  // Private helper methods
+
+  private clone(): ActiveRecordQueryBuilder<T> {
+    const newBuilder = new ActiveRecordQueryBuilder<T>(this.zeroQuery, this.modelName, this.tableName);
+    newBuilder.limitValue = this.limitValue;
+    newBuilder.offsetValue = this.offsetValue;
+    newBuilder.orderByFields = [...this.orderByFields];
+    newBuilder.selectFields = this.selectFields ? [...this.selectFields] : undefined;
+    newBuilder.isDistinct = this.isDistinct;
+    newBuilder.includeRelations = [...this.includeRelations];
+    return newBuilder;
+  }
+
+  private buildFinalQuery(): any {
+    console.log(`🔍 [${this.modelName}] buildFinalQuery called`);
+    console.log(`🔍 [${this.modelName}] Initial zeroQuery:`, this.zeroQuery);
+    
+    if (!this.zeroQuery) {
+      console.log(`🔍 [${this.modelName}] No zeroQuery - returning mock query`);
+      // Return a mock query object for null cases
+      return {
+        data: [],
+        orderBy: () => this,
+        limit: () => this,
+        offset: () => this
+      };
+    }
+
+    let query = this.zeroQuery;
+    console.log(`🔍 [${this.modelName}] Starting with query:`, query);
+
+    // Apply relationships (Rails includes() → Zero.js related())
+    console.log(`🔍 [${this.modelName}] Applying ${this.includeRelations.length} relations:`, this.includeRelations);
+    this.includeRelations.forEach(relation => {
+      console.log(`🔍 [${this.modelName}] Applying relation: ${relation}`);
+      const previousQuery = query;
+      query = query.related(relation);
+      console.log(`🔍 [${this.modelName}] Query after ${relation}:`, query);
+    });
+
+    // Apply ordering
+    console.log(`🔍 [${this.modelName}] Applying ${this.orderByFields.length} order clauses`);
+    this.orderByFields.forEach(({ field, direction }) => {
+      console.log(`🔍 [${this.modelName}] Applying order: ${field} ${direction}`);
+      query = query.orderBy(field, direction);
+    });
+
+    // Apply limit and offset if specified
+    if (this.limitValue !== undefined) {
+      console.log(`🔍 [${this.modelName}] Applying limit: ${this.limitValue}`);
+      query = query.limit(this.limitValue);
     }
     
-    if (this.view) {
-      this.view.destroy();
-      this.view = null;
+    if (this.offsetValue !== undefined) {
+      console.log(`🔍 [${this.modelName}] Applying offset: ${this.offsetValue}`);
+      query = query.offset(this.offsetValue);
     }
-    
-    zeroErrorHandler.resetRetries(this.operationId);
+
+    console.log(`🔍 [${this.modelName}] Final built query:`, query);
+    return query;
   }
 }
 
 /**
- * High-Performance ActiveRecord Factory
- * Creates optimized ActiveRecord instances with direct property access
+ * ActiveRecord-Compatible Model
+ * Implements 100% ActiveRecord API compatibility
  */
-export class ActiveRecord<T> {
-  constructor(
-    private tableName: string,
-    private config: ActiveRecordConfig = {}
-  ) {}
+export class ActiveRecord<T> implements ActiveRecordInterface<T> {
+  private modelName: string;
+  private tableName: string;
+  private scopes: Map<string, ActiveRecordScope> = new Map();
 
-  /**
-   * Find record by ID (like Rails .find)
-   * Returns instance with direct property access
-   */
-  find(id: string, options: ActiveRecordConfig = {}): ActiveRecordInstance<T> {
-    return new ActiveRecordInstance<T>(
-      () => {
-        const zero = getZero();
-        return zero ? zero.query[this.tableName].where('id', id).one() : null;
-      },
-      {
-        ...this.config,
-        ...options,
-        expectsCollection: false
-      }
-    );
+  constructor(config: ModelConfig) {
+    this.modelName = config.className;
+    this.tableName = config.zeroConfig.tableName;
+    
+    // Initialize scopes from configuration
+    config.scopes.forEach(scope => {
+      this.scopes.set(scope.name, {
+        name: scope.name,
+        conditions: scope.conditions,
+        lambda: scope.lambda ? new Function('query', scope.lambda) : undefined,
+        chainable: scope.chainable ?? true,
+        description: scope.description
+      });
+    });
+    
+    // Dynamically add scope methods
+    this.createScopeMethods();
   }
 
   /**
-   * Find record by conditions (like Rails .find_by)
+   * Find record by ID (Rails .find behavior - throws RecordNotFoundError if not found)
    */
-  findBy(conditions: Partial<T>, options: ActiveRecordConfig = {}): ActiveRecordInstance<T> {
-    return new ActiveRecordInstance<T>(
-      () => {
+  find(id: string | number): T {
+    const zero = getZero();
+    if (!zero) {
+      throw new Error('Zero client not available');
+    }
+
+    try {
+      const query = zero.query[this.tableName].where('id', id).one();
+      const result = query.data;
+      
+      if (!result) {
+        throw RecordNotFoundError.forId(id, this.modelName);
+      }
+      
+      return result;
+    } catch (error) {
+      if (error instanceof RecordNotFoundError) {
+        throw error;
+      }
+      throw RecordNotFoundError.forId(id, this.modelName);
+    }
+  }
+
+  /**
+   * Find record by conditions (Rails .find_by behavior - returns null if not found)
+   */
+  findBy(conditions: Partial<T>): T | null {
+    const zero = getZero();
+    if (!zero) {
+      return null;
+    }
+
+    try {
+      let query = zero.query[this.tableName];
+      
+      Object.entries(conditions).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query = query.where(key, value);
+        }
+      });
+      
+      const result = query.one().data;
+      return result || null;
+    } catch (error) {
+      console.error(`Rails ActiveRecord error in ${this.modelName}.findBy():`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Find records matching conditions (ActiveRecord .where behavior - returns query builder for chaining)
+   */
+  where(conditions: Partial<T>): ActiveRecordRelation<T> {
+    const zero = getZero();
+    if (!zero) {
+      // Return a mock query builder that returns empty results
+      return new ActiveRecordQueryBuilder<T>(null, this.modelName, this.tableName);
+    }
+
+    try {
+      let query = zero.query[this.tableName];
+      
+      Object.entries(conditions).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query = query.where(key, value);
+        }
+      });
+      
+      return new ActiveRecordQueryBuilder<T>(query, this.modelName, this.tableName);
+    } catch (error) {
+      console.error(`ActiveRecord error in ${this.modelName}.where():`, error);
+      return new ActiveRecordQueryBuilder<T>(null, this.modelName, this.tableName);
+    }
+  }
+
+  /**
+   * Get all records (Rails .all behavior - always returns array)
+   */
+  all(): T[] {
+    const zero = getZero();
+    if (!zero) {
+      return [];
+    }
+
+    try {
+      const query = zero.query[this.tableName].orderBy('created_at', 'desc');
+      const result = query.data;
+      
+      // Rails .all() always returns an array
+      return Array.isArray(result) ? result : (result ? [result] : []);
+    } catch (error) {
+      console.error(`Rails ActiveRecord error in ${this.modelName}.all():`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get first record (Rails .first behavior - returns single record or null)
+   */
+  first(): T | null {
+    const records = this.all();
+    return records.length > 0 ? records[0] : null;
+  }
+
+  /**
+   * Get last record (Rails .last behavior - returns single record or null)
+   */
+  last(): T | null {
+    const records = this.all();
+    return records.length > 0 ? records[records.length - 1] : null;
+  }
+
+  /**
+   * Start a query chain with limit (ActiveRecord .limit behavior)
+   */
+  limit(count: number): ActiveRecordRelation<T> {
+    const zero = getZero();
+    if (!zero) {
+      throw new Error('Zero client not available');
+    }
+
+    const baseQuery = zero.query[this.tableName];
+    return new ActiveRecordQueryBuilder<T>(baseQuery, this.modelName, this.tableName).limit(count);
+  }
+
+  /**
+   * Start a query chain with offset (ActiveRecord .offset behavior)
+   */
+  offset(count: number): ActiveRecordRelation<T> {
+    const zero = getZero();
+    if (!zero) {
+      throw new Error('Zero client not available');
+    }
+
+    const baseQuery = zero.query[this.tableName];
+    return new ActiveRecordQueryBuilder<T>(baseQuery, this.modelName, this.tableName).offset(count);
+  }
+
+  /**
+   * Start a query chain with ordering (ActiveRecord .order behavior)
+   */
+  orderBy(field: string, direction: 'asc' | 'desc' = 'asc'): ActiveRecordRelation<T> {
+    const zero = getZero();
+    if (!zero) {
+      throw new Error('Zero client not available');
+    }
+
+    const baseQuery = zero.query[this.tableName];
+    return new ActiveRecordQueryBuilder<T>(baseQuery, this.modelName, this.tableName).orderBy(field, direction);
+  }
+
+  /**
+   * Count all records (Rails .count behavior)
+   */
+  count(): number {
+    return this.all().length;
+  }
+
+  /**
+   * Check if any records exist (Rails .exists? behavior)
+   */
+  exists(): boolean {
+    return this.count() > 0;
+  }
+
+  /**
+   * Sum field values (Rails .sum behavior)
+   */
+  sum(field: string): number {
+    const records = this.all();
+    return records.reduce((sum, record: any) => sum + (Number(record[field]) || 0), 0);
+  }
+
+  /**
+   * Average field values (Rails .average behavior)
+   */
+  average(field: string): number {
+    const records = this.all();
+    if (records.length === 0) return 0;
+    
+    const sum = this.sum(field);
+    return sum / records.length;
+  }
+
+  /**
+   * Create dynamic scope methods from Rails model configuration
+   */
+  private createScopeMethods(): void {
+    this.scopes.forEach((scopeConfig, scopeName) => {
+      (this as any)[scopeName] = (...args: any[]) => {
         const zero = getZero();
-        if (!zero) return null;
-        
+        if (!zero) {
+          // Return empty query builder when Zero not available
+          return new ActiveRecordQueryBuilder<T>(null, this.modelName, this.tableName);
+        }
+
         let query = zero.query[this.tableName];
-        
-        Object.entries(conditions).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
+
+        // Apply scope conditions
+        if (scopeConfig.conditions) {
+          Object.entries(scopeConfig.conditions).forEach(([key, value]) => {
             query = query.where(key, value);
-          }
+          });
+        }
+
+        // Apply scope lambda if defined
+        if (scopeConfig.lambda) {
+          query = scopeConfig.lambda(query);
+        }
+
+        // Always return query builder for chaining (ActiveRecord-style)
+        const queryBuilder = new ActiveRecordQueryBuilder<T>(query, this.modelName, this.tableName);
+        
+        // Copy any dynamic scope methods to the query builder for chaining
+        this.scopes.forEach((otherScopeConfig, otherScopeName) => {
+          (queryBuilder as any)[otherScopeName] = (...scopeArgs: any[]) => {
+            let chainedQuery = queryBuilder.zeroQuery || query;
+            
+            // Apply other scope conditions
+            if (otherScopeConfig.conditions) {
+              Object.entries(otherScopeConfig.conditions).forEach(([key, value]) => {
+                chainedQuery = chainedQuery.where(key, value);
+              });
+            }
+            
+            // Apply other scope lambda if defined
+            if (otherScopeConfig.lambda) {
+              chainedQuery = otherScopeConfig.lambda(chainedQuery);
+            }
+            
+            return new ActiveRecordQueryBuilder<T>(chainedQuery, this.modelName, this.tableName);
+          };
         });
         
-        return query.one();
-      },
-      {
-        ...this.config,
-        ...options,
-        expectsCollection: false
-      }
-    );
-  }
-
-  /**
-   * Get all records (like Rails .all)
-   * Optimized for large collections (1000+ records)
-   */
-  all(options: ActiveRecordConfig = {}): ActiveRecordInstance<T> {
-    return new ActiveRecordInstance<T>(
-      () => {
-        const zero = getZero();
-        return zero ? zero.query[this.tableName].orderBy('created_at', 'desc') : null;
-      },
-      {
-        ...this.config,
-        ...options,
-        expectsCollection: true
-      }
-    );
-  }
-
-  /**
-   * Find records matching conditions (like Rails .where)
-   * Memory optimized for large collections
-   */
-  where(conditions: Partial<T>, options: ActiveRecordConfig = {}): ActiveRecordInstance<T> {
-    return new ActiveRecordInstance<T>(
-      () => {
-        const zero = getZero();
-        if (!zero) return null;
-        
-        let query = zero.query[this.tableName];
-        
-        Object.entries(conditions).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            query = query.where(key, value);
-          }
-        });
-        
-        return query.orderBy('created_at', 'desc');
-      },
-      {
-        ...this.config,
-        ...options,
-        expectsCollection: true
-      }
-    );
-  }
-
-  /**
-   * Create performance-optimized instance without subscriptions
-   * Use for read-only operations where maximum performance is needed
-   */
-  static readonly<T>(tableName: string, config: ActiveRecordConfig = {}): ActiveRecord<T> {
-    return new ActiveRecord<T>(tableName, {
-      ...config,
-      enableSubscriptions: false,
-      debugLogging: false
-    });
-  }
-
-  /**
-   * Create batch-optimized instance for handling large datasets
-   */
-  static batch<T>(tableName: string, config: ActiveRecordConfig = {}): ActiveRecord<T> {
-    return new ActiveRecord<T>(tableName, {
-      ...config,
-      ttl: '10m', // Longer TTL for batch operations
-      maxRetries: 20, // Fewer retries for batch
-      enableSubscriptions: false // No subscriptions for batch
+        return queryBuilder;
+      };
     });
   }
 }
 
 /**
- * Convenience factory function (Epic-007 Story 5 requirement)
- * Usage: const ActiveJob = createActiveModel<Job>('jobs');
+ * Factory function to create ActiveRecord-compatible models
  */
-export function createActiveModel<T>(tableName: string, config: ActiveRecordConfig = {}): ActiveRecord<T> {
-  return new ActiveRecord<T>(tableName, config);
+export function createActiveRecord<T>(config: ModelConfig): ActiveRecord<T> {
+  return new ActiveRecord<T>(config);
 }
 
 /**
- * Performance utilities for large collections
+ * ActiveRecord compatibility utilities
  */
-export const ActiveRecordPerformance = {
+export const ActiveRecordCompatibility = {
   /**
-   * Create memory-optimized instance for 1000+ records
+   * Validate ActiveRecord method behavior compliance
    */
-  createLargeCollection<T>(tableName: string): ActiveRecord<T> {
-    return new ActiveRecord<T>(tableName, {
-      ttl: '5m', // Shorter TTL to prevent memory buildup
-      enableSubscriptions: false, // Disable subscriptions for performance
-      debugLogging: false, // No debug logging for performance
-      maxRetries: 10 // Fewer retries for large datasets
-    });
+  validateMethodBehavior<T>(
+    method: keyof ActiveRecordInterface<T>,
+    result: any,
+    expectedType: 'single' | 'array' | 'single_or_null'
+  ): boolean {
+    const behavior = ActiveRecordMethodBehaviors[method as keyof typeof ActiveRecordMethodBehaviors];
+    
+    switch (expectedType) {
+      case 'single':
+        return result !== null && result !== undefined && !Array.isArray(result);
+      case 'array':
+        return Array.isArray(result);
+      case 'single_or_null':
+        return result === null || (!Array.isArray(result) && result !== undefined);
+      default:
+        return false;
+    }
   },
 
   /**
-   * Create high-frequency polling instance
+   * Test ActiveRecord method compatibility
    */
-  createRealTime<T>(tableName: string): ActiveRecord<T> {
-    return new ActiveRecord<T>(tableName, {
-      ttl: '30s', // Very short TTL for real-time updates
-      enableSubscriptions: true, // Enable subscriptions for real-time
-      retryDelay: 50, // Fast retries for real-time
-      maxRetries: 100 // More retries for real-time reliability
-    });
-  },
+  async testMethodCompatibility<T>(model: ActiveRecord<T>): Promise<{
+    compatible: boolean;
+    results: Record<string, boolean>;
+  }> {
+    const results: Record<string, boolean> = {};
 
-  /**
-   * Memory usage analyzer for performance monitoring
-   */
-  analyzeMemoryUsage(instances: ActiveRecordInstance<any>[]): {
-    totalInstances: number;
-    avgSubscribers: number;
-    totalMemoryEstimate: string;
-  } {
-    const totalInstances = instances.length;
-    const totalSubscribers = instances.reduce((sum, instance) => {
-      return sum + (instance as any).subscribers?.length || 0;
-    }, 0);
-    
-    // Rough memory estimate: 200 bytes per instance + 50 bytes per subscriber
-    const estimatedBytes = (totalInstances * 200) + (totalSubscribers * 50);
-    const totalMemoryEstimate = estimatedBytes < 1024 
-      ? `${estimatedBytes} bytes`
-      : estimatedBytes < 1024 * 1024
-      ? `${(estimatedBytes / 1024).toFixed(1)} KB`
-      : `${(estimatedBytes / (1024 * 1024)).toFixed(1)} MB`;
-    
-    return {
-      totalInstances,
-      avgSubscribers: totalSubscribers / totalInstances || 0,
-      totalMemoryEstimate
-    };
+    try {
+      // Test all() - should return array
+      const allResult = model.all();
+      results.all = Array.isArray(allResult);
+
+      // Test first() - should return single or null
+      const firstResult = model.first();
+      results.first = firstResult === null || (!Array.isArray(firstResult));
+
+      // Test last() - should return single or null
+      const lastResult = model.last();
+      results.last = lastResult === null || (!Array.isArray(lastResult));
+
+      // Test count() - should return number
+      const countResult = model.count();
+      results.count = typeof countResult === 'number';
+
+      // Test exists() - should return boolean
+      const existsResult = model.exists();
+      results.exists = typeof existsResult === 'boolean';
+
+    } catch (error) {
+      console.error('ActiveRecord compatibility test error:', error);
+    }
+
+    const compatible = Object.values(results).every(Boolean);
+    return { compatible, results };
   }
 };
-
-// Export all types for external use
-export type { ActiveRecordConfig, SubscriptionCallback };
