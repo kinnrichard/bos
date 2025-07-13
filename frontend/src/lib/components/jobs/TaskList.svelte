@@ -45,20 +45,13 @@
   
   // Drag & drop state
   let isDragging = false;
-  let feedback = '';
+  let dragFeedback = $state('');
   
   // Popover instances for task info
   let taskPopovers: Record<string, any> = {};
   
   // Development alerts state
-  let developmentAlerts: Array<{
-    id: string;
-    type: string;
-    message: string;
-    details?: any;
-    timestamp: number;
-    actions?: Array<{label: string, action: () => void}>;
-  }> = [];
+  let developmentAlerts = $state([]);
   
   // Development environment detection
   const isDevelopment = import.meta.env.DEV || import.meta.env.NODE_ENV === 'development';
@@ -131,11 +124,11 @@
                      activeElement?.tagName === 'TEXTAREA' || 
                      (activeElement as HTMLElement)?.isContentEditable ||
                      editingTaskId !== null ||
-                     showInlineNewTaskInput;
+                     isShowingInlineNewTaskInput;
 
     // ESC key handling
     if (event.key === 'Escape') {
-      if (showInlineNewTaskInput) {
+      if (isShowingInlineNewTaskInput) {
         // Cancel inline new task
         event.preventDefault();
         cancelInlineNewTask();
@@ -193,14 +186,14 @@
         } else {
           // Not last task: create inline new task as sibling
           insertNewTaskAfter = selectedTaskId;
-          showInlineNewTaskInput = true;
+          isShowingInlineNewTaskInput = true;
           inlineNewTaskTitle = '';
           taskSelectionActions.clearSelection(); // Clear selection when creating new task
           
           // Focus inline input after DOM update
           tick().then(() => {
-            if (inlineNewTaskInput) {
-              inlineNewTaskInput.focus();
+            if (inlineNewTaskInputElement) {
+              inlineNewTaskInputElement.focus();
             }
           });
         }
@@ -225,7 +218,7 @@
     document.addEventListener('keydown', handleKeydown);
   });
 
-  // Clean up any lingering visual feedback when component is destroyed
+  // Clean up any lingering visual dragFeedback when component is destroyed
   onDestroy(() => {
     clearAllVisualFeedback();
     // Remove event listeners
@@ -284,30 +277,30 @@
   }
   
   // New task creation state
-  let showNewTaskInput = false;
-  let newTaskTitle = '';
-  let newTaskInput: HTMLInputElement;
-  let isCreatingTask = false;
+  let isShowingNewTaskInput = $state(false);
+  let newTaskTitle = $state('');
+  let newTaskInputElement = $state<HTMLInputElement>();
+  let isCreatingTask = $state(false);
   
   // Task title editing state
-  let editingTaskId: string | null = null;
-  let editingTitle = '';
+  let editingTaskId = $state<string | null>(null);
+  let editingTitle = $state('');
   let originalTitle = '';
-  let titleInput: HTMLInputElement;
+  let titleInputElement = $state<HTMLInputElement>();
   
   // Inline new task state (for Return key with selection)
-  let insertNewTaskAfter: string | null = null;
-  let showInlineNewTaskInput = false;
-  let inlineNewTaskTitle = '';
-  let inlineNewTaskInput: HTMLInputElement;
+  let insertNewTaskAfter = $state<string | null>(null);
+  let isShowingInlineNewTaskInput = $state(false);
+  let inlineNewTaskTitle = $state('');
+  let inlineNewTaskInputElement = $state<HTMLInputElement>();
 
   // Task deletion state
-  let showDeleteConfirmationModal = false;
-  let tasksToDelete: string[] = [];
-  let isDeletingTasks = false;
-  let deleteButton: HTMLButtonElement;
-  let modalContainer: HTMLElement;
-  let deletingTaskIds = new Set<string>();
+  let isShowingDeleteConfirmation = $state(false);
+  let tasksToDelete = $state<string[]>([]);
+  let isDeletingTasks = $state(false);
+  let deleteButtonElement = $state<HTMLButtonElement>();
+  let modalContainerElement = $state<HTMLElement>();
+  let deletingTaskIds = $state(new Set<string>());
   const animationDuration = 300; // ms for height collapse animation
   
 
@@ -496,7 +489,7 @@
   // Update time tracking display every second for in-progress tasks
   
   let timeTrackingInterval: any;
-  let currentTime = Date.now();
+  let currentTime = $state(Date.now());
 
   onMount(() => {
     timeTrackingInterval = setInterval(() => {
@@ -558,10 +551,10 @@
 
   // New task creation handlers
   function showNewTaskForm(event?: MouseEvent) {
-    showNewTaskInput = true;
+    isShowingNewTaskInput = true;
     setTimeout(() => {
-      if (newTaskInput) {
-        newTaskInput.focus();
+      if (newTaskInputElement) {
+        newTaskInputElement.focus();
         
         // Position cursor based on click location if provided
         if (event) {
@@ -572,12 +565,12 @@
   }
 
   function positionCursorAtClick(event: MouseEvent) {
-    if (!newTaskInput) return;
+    if (!newTaskInputElement) return;
     
     // Wait for next frame to ensure input is fully rendered
     requestAnimationFrame(() => {
       const clickX = event.clientX;
-      const inputRect = newTaskInput.getBoundingClientRect();
+      const inputRect = newTaskInputElement.getBoundingClientRect();
       const relativeX = clickX - inputRect.left;
       
       // Create a temporary span to measure text width
@@ -585,32 +578,32 @@
       tempSpan.style.visibility = 'hidden';
       tempSpan.style.position = 'absolute';
       tempSpan.style.whiteSpace = 'pre';
-      tempSpan.style.font = window.getComputedStyle(newTaskInput).font;
-      tempSpan.textContent = newTaskInput.placeholder;
+      tempSpan.style.font = window.getComputedStyle(newTaskInputElement).font;
+      tempSpan.textContent = newTaskInputElement.placeholder;
       
       document.body.appendChild(tempSpan);
       
-      const charWidth = tempSpan.offsetWidth / newTaskInput.placeholder.length;
+      const charWidth = tempSpan.offsetWidth / newTaskInputElement.placeholder.length;
       const cursorPosition = Math.max(0, Math.min(
         Math.round(relativeX / charWidth),
-        newTaskInput.placeholder.length
+        newTaskInputElement.placeholder.length
       ));
       
       document.body.removeChild(tempSpan);
       
       // Set cursor position
-      newTaskInput.setSelectionRange(cursorPosition, cursorPosition);
+      newTaskInputElement.setSelectionRange(cursorPosition, cursorPosition);
     });
   }
 
   function hideNewTaskForm() {
-    showNewTaskInput = false;
+    isShowingNewTaskInput = false;
     newTaskTitle = '';
   }
 
   function handleNewTaskRowClick(event: MouseEvent) {
     // Only activate if not already in input mode
-    if (!showNewTaskInput) {
+    if (!isShowingNewTaskInput) {
       event.stopPropagation();
       showNewTaskForm(event);
     }
@@ -640,12 +633,12 @@
       // Clear the form
       hideNewTaskForm();
       
-      feedback = 'Task created successfully!';
-      setTimeout(() => feedback = '', 2000);
+      dragFeedback = 'Task created successfully!';
+      setTimeout(() => dragFeedback = '', 2000);
     } catch (error: any) {
       console.error('Failed to create task:', error);
-      feedback = 'Failed to create task - please try again';
-      setTimeout(() => feedback = '', 3000);
+      dragFeedback = 'Failed to create task - please try again';
+      setTimeout(() => dragFeedback = '', 3000);
     } finally {
       isCreatingTask = false;
     }
@@ -702,11 +695,11 @@
       console.error('Failed to update status:', error);
       
       if (error.code === 'INVALID_CSRF_TOKEN') {
-        feedback = 'Session expired - please try again';
+        dragFeedback = 'Session expired - please try again';
       } else {
-        feedback = 'Failed to update task status - please try again';
+        dragFeedback = 'Failed to update task status - please try again';
       }
-      setTimeout(() => feedback = '', 3000);
+      setTimeout(() => dragFeedback = '', 3000);
     }
   }
 
@@ -726,8 +719,8 @@
     
     // Focus the input after DOM update
     tick().then(() => {
-      if (titleInput) {
-        titleInput.focus();
+      if (titleInputElement) {
+        titleInputElement.focus();
         
         // Calculate cursor position based on click location
         try {
@@ -762,10 +755,10 @@
           document.body.removeChild(tempSpan);
           
           // Set cursor position
-          titleInput.setSelectionRange(bestPosition, bestPosition);
+          titleInputElement.setSelectionRange(bestPosition, bestPosition);
         } catch (e) {
           // Fallback if cursor positioning fails
-          titleInput.setSelectionRange(editingTitle.length, editingTitle.length);
+          titleInputElement.setSelectionRange(editingTitle.length, editingTitle.length);
         }
       }
     });
@@ -790,8 +783,8 @@
       }
     } catch (error) {
       console.error('Failed to update task title:', error);
-      feedback = 'Failed to update task title - please try again';
-      setTimeout(() => feedback = '', 3000);
+      dragFeedback = 'Failed to update task title - please try again';
+      setTimeout(() => dragFeedback = '', 3000);
       
       // Revert to original title
       editingTitle = originalTitle;
@@ -889,13 +882,13 @@
           taskSelectionActions.selectTask(result.task.id);
         }
         
-        feedback = 'Task created successfully';
-        setTimeout(() => feedback = '', 2000);
+        dragFeedback = 'Task created successfully';
+        setTimeout(() => dragFeedback = '', 2000);
       }
     } catch (error) {
       console.error('Failed to create inline task:', error);
-      feedback = 'Failed to create task - please try again';
-      setTimeout(() => feedback = '', 3000);
+      dragFeedback = 'Failed to create task - please try again';
+      setTimeout(() => dragFeedback = '', 3000);
     } finally {
       isCreatingTask = false;
     }
@@ -903,7 +896,7 @@
 
   function cancelInlineNewTask() {
     insertNewTaskAfter = null;
-    showInlineNewTaskInput = false;
+    isShowingInlineNewTaskInput = false;
     inlineNewTaskTitle = '';
   }
 
@@ -927,29 +920,29 @@
   // Task deletion functions
   async function showDeleteConfirmation() {
     tasksToDelete = Array.from(taskSelection.selectedTaskIds);
-    showDeleteConfirmationModal = true;
+    isShowingDeleteConfirmation = true;
     
     // Ensure modal gets focus immediately for keyboard event capture
     await tick();
     // Use setTimeout to ensure DOM is fully rendered
     setTimeout(() => {
-      if (modalContainer) {
+      if (modalContainerElement) {
         // Try to focus the modal container first
-        modalContainer.focus();
+        modalContainerElement.focus();
         // Prevent focus from escaping the modal
-        modalContainer.addEventListener('focusout', handleModalFocusOut);
+        modalContainerElement.addEventListener('focusout', handleModalFocusOut);
         
         // If modal container didn't get focus, try focusing the delete button
         setTimeout(() => {
-          if (showDeleteConfirmationModal) {
+          if (isShowingDeleteConfirmation) {
             const activeElement = document.activeElement;
-            if (!modalContainer.contains(activeElement)) {
+            if (!modalContainerElement.contains(activeElement)) {
               // Try delete button as fallback since buttons are more reliably focusable
-              if (deleteButton) {
-                deleteButton.focus();
+              if (deleteButtonElement) {
+                deleteButtonElement.focus();
               } else {
                 // Final fallback to modal container
-                modalContainer.focus();
+                modalContainerElement.focus();
               }
             }
           }
@@ -960,9 +953,9 @@
 
   function handleModalFocusOut(event: FocusEvent) {
     // If focus is leaving the modal but modal is still open, return focus to modal
-    if (showDeleteConfirmationModal && modalContainer && !modalContainer.contains(event.relatedTarget as Node)) {
+    if (isShowingDeleteConfirmation && modalContainerElement && !modalContainerElement.contains(event.relatedTarget as Node)) {
       setTimeout(() => {
-        if (showDeleteConfirmationModal && modalContainer) {
+        if (isShowingDeleteConfirmation && modalContainerElement) {
           modalContainer.focus();
         }
       }, 0);
@@ -970,12 +963,12 @@
   }
 
   function cancelDeleteConfirmation() {
-    showDeleteConfirmationModal = false;
+    isShowingDeleteConfirmation = false;
     tasksToDelete = [];
     
     // Clean up focus event listener
-    if (modalContainer) {
-      modalContainer.removeEventListener('focusout', handleModalFocusOut);
+    if (modalContainerElement) {
+      modalContainerElement.removeEventListener('focusout', handleModalFocusOut);
     }
     
     // Return focus to task list container
@@ -999,7 +992,7 @@
     } else if (event.key === 'Tab') {
       // Keep focus within modal by cycling between buttons
       event.preventDefault();
-      const buttons = modalContainer?.querySelectorAll('button:not(:disabled)');
+      const buttons = modalContainerElement?.querySelectorAll('button:not(:disabled)');
       if (buttons && buttons.length > 0) {
         const focusedButton = document.activeElement;
         const currentIndex = Array.from(buttons).indexOf(focusedButton as HTMLButtonElement);
@@ -1019,7 +1012,7 @@
 
     try {
       // Phase 1: Close modal and return focus first
-      showDeleteConfirmationModal = false;
+      isShowingDeleteConfirmation = false;
       
       // Return focus to task list container
       if (taskListContainer) {
@@ -1057,9 +1050,9 @@
       });
       deletingTaskIds = deletingTaskIds;
 
-      // Show success feedback
-      feedback = `Successfully deleted ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
-      setTimeout(() => feedback = '', 3000);
+      // Show success dragFeedback
+      dragFeedback = `Successfully deleted ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
+      setTimeout(() => dragFeedback = '', 3000);
 
     } catch (error: any) {
       console.error('Failed to delete tasks:', error);
@@ -1070,8 +1063,8 @@
       });
       deletingTaskIds = deletingTaskIds;
       
-      feedback = `Failed to delete tasks: ${error.message || 'Unknown error'}`;
-      setTimeout(() => feedback = '', 5000);
+      dragFeedback = `Failed to delete tasks: ${error.message || 'Unknown error'}`;
+      setTimeout(() => dragFeedback = '', 5000);
     } finally {
       isDeletingTasks = false;
       tasksToDelete = []; // Clear the original array
@@ -1110,7 +1103,7 @@
   function handleSortEnd(event: DragSortEvent) {
     isDragging = false;
     
-    // Clear all visual feedback
+    // Clear all visual dragFeedback
     clearAllVisualFeedback();
     
     // Remove multi-drag badge if it exists
@@ -1131,7 +1124,7 @@
       return true;
     }
 
-    // Let native-drag-action handle visual feedback, but validate nesting
+    // Let native-drag-action handle visual dragFeedback, but validate nesting
     if (dropZone.mode === 'nest' && dropZone.targetTaskId) {
       const draggedElement = event.dragged;
       const draggedTaskId = draggedElement?.getAttribute('data-task-id');
@@ -1229,8 +1222,8 @@
     
     if (!validation.valid) {
       console.log(`❌ Nesting blocked: ${validation.reason}`);
-      feedback = validation.reason || 'Invalid nesting operation';
-      setTimeout(() => feedback = '', 3000);
+      dragFeedback = validation.reason || 'Invalid nesting operation';
+      setTimeout(() => dragFeedback = '', 3000);
       return;
     }
     
@@ -1295,7 +1288,7 @@
     } catch (error: any) {
       console.error('Failed to nest task:', error);
       
-      // Clear any lingering visual feedback including badges
+      // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();
       
       // Rollback optimistic update
@@ -1310,8 +1303,8 @@
       }
       
       optimisticUpdates.clear();
-      feedback = 'Failed to nest task - please try again';
-      setTimeout(() => feedback = '', 3000);
+      dragFeedback = 'Failed to nest task - please try again';
+      setTimeout(() => dragFeedback = '', 3000);
     }
   }
 
@@ -1552,7 +1545,7 @@
     } catch (error: any) {
       console.error('Failed to reorder tasks:', error);
       
-      // Clear any lingering visual feedback including badges
+      // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();
       
       // Rollback optimistic updates
@@ -1896,14 +1889,14 @@
           role="button"
           tabindex="0"
           aria-label="Task: {renderItem.task.title}. {taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
-          on:click={(e) => editingTaskId === renderItem.task.id ? null : handleTaskClick(e, renderItem.task.id)}
-          on:keydown={(e) => handleTaskKeydown(e, renderItem.task.id)}
+          onclick={(e) => editingTaskId === renderItem.task.id ? null : handleTaskClick(e, renderItem.task.id)}
+          onkeydown={(e) => handleTaskKeydown(e, renderItem.task.id)}
         >
           <!-- Disclosure Triangle (if has subtasks) -->
           {#if renderItem.hasSubtasks}
             <button 
               class="disclosure-button"
-              on:click|stopPropagation={() => toggleTaskExpansion(renderItem.task.id)}
+              onclick={(e) => { e.stopPropagation(); toggleTaskExpansion(renderItem.task.id); }}
               aria-expanded={renderItem.isExpanded}
               aria-label={renderItem.isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
             >
@@ -1921,7 +1914,8 @@
           <div class="task-status">
             <button 
               class="status-emoji"
-              on:click|stopPropagation={() => {
+              onclick={(e) => { 
+                e.stopPropagation();
                 const statusCycle = ['new_task', 'in_progress', 'successfully_completed'];
                 const currentIndex = statusCycle.indexOf(renderItem.task.status);
                 const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
@@ -1939,14 +1933,14 @@
               <input 
                 class="task-title task-title-input"
                 bind:value={editingTitle}
-                bind:this={titleInput}
-                on:keydown={(e) => handleEditKeydown(e, renderItem.task.id)}
-                on:blur={() => handleEditBlur(renderItem.task.id)}
+                bind:this={titleInputElement}
+                onkeydown={(e) => handleEditKeydown(e, renderItem.task.id)}
+                onblur={() => handleEditBlur(renderItem.task.id)}
               />
             {:else}
               <h5 
                 class="task-title"
-                on:click={(e) => handleTitleClick(e, renderItem.task.id, renderItem.task.title)}
+                onclick={(e) => handleTitleClick(e, renderItem.task.id, renderItem.task.title)}
               >
                 {renderItem.task.title}
               </h5>
@@ -1994,13 +1988,13 @@
               {batchTaskDetails}
               isSelected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
               bind:popover={taskPopovers[renderItem.task.id]}
-              on:task-updated={handleTaskUpdated}
+              ontask-updated={handleTaskUpdated}
             />
           </div>
         </div>
         
         <!-- Inline New Task Row (appears after this task if selected) -->
-        {#if insertNewTaskAfter === renderItem.task.id && showInlineNewTaskInput}
+        {#if insertNewTaskAfter === renderItem.task.id && isShowingInlineNewTaskInput}
           <div 
             class="task-item task-item-add-new"
             style="--depth: {renderItem.depth || 0}"
@@ -2020,10 +2014,10 @@
               <input 
                 class="task-title task-title-input"
                 bind:value={inlineNewTaskTitle}
-                bind:this={inlineNewTaskInput}
+                bind:this={inlineNewTaskInputElement}
                 placeholder="New Task"
-                on:keydown={(e) => handleInlineNewTaskKeydown(e, renderItem.task.parent_id)}
-                on:blur={() => handleInlineNewTaskBlur(renderItem.task.parent_id)}
+                onkeydown={(e) => handleInlineNewTaskKeydown(e, renderItem.task.parent_id)}
+                onblur={() => handleInlineNewTaskBlur(renderItem.task.parent_id)}
                 disabled={isCreatingTask}
               />
               {#if isCreatingTask}
@@ -2047,7 +2041,7 @@
       <div 
         class="task-item task-item-add-new"
         style="--depth: 0"
-        on:click={handleNewTaskRowClick}
+        onclick={handleNewTaskRowClick}
       >
         <!-- Disclosure Spacer -->
         <div class="disclosure-spacer"></div>
@@ -2061,14 +2055,14 @@
         
         <!-- Task Content -->
         <div class="task-content">
-          {#if showNewTaskInput}
+          {#if isShowingNewTaskInput}
             <input 
               class="task-title task-title-input"
               bind:value={newTaskTitle}
-              bind:this={newTaskInput}
+              bind:this={newTaskInputElement}
               placeholder="New Task"
-              on:keydown={handleNewTaskKeydown}
-              on:blur={handleNewTaskBlur}
+              onkeydown={handleNewTaskKeydown}
+              onblur={handleNewTaskBlur}
               disabled={isCreatingTask}
             />
             {#if isCreatingTask}
@@ -2079,7 +2073,7 @@
           {:else}
             <h5 
               class="task-title add-task-placeholder"
-              on:click={showNewTaskForm}
+              onclick={showNewTaskForm}
             >
               New Task
             </h5>
@@ -2094,11 +2088,11 @@
       </div>
   </div>
 
-  <!-- Error feedback only -->
-  {#if feedback && feedback.includes('Failed')}
+  <!-- Error dragFeedback only -->
+  {#if dragFeedback && dragFeedback.includes('Failed')}
     <div class="task-list-footer">
-      <div class="feedback-message error">
-        {feedback}
+      <div class="dragFeedback-message error">
+        {dragFeedback}
       </div>
     </div>
   {/if}
@@ -2112,7 +2106,7 @@
         <div class="alert-header">
           <div class="alert-icon">🚨</div>
           <div class="alert-message">{alert.message}</div>
-          <button class="alert-dismiss" on:click={() => dismissDevelopmentAlert(alert.id)}>×</button>
+          <button class="alert-dismiss" onclick={() => dismissDevelopmentAlert(alert.id)}>×</button>
         </div>
         
         {#if alert.details?.patternAnalysis}
@@ -2124,7 +2118,7 @@
         {#if alert.actions}
           <div class="alert-actions">
             {#each alert.actions as action}
-              <button class="alert-action-button" on:click={action.action}>
+              <button class="alert-action-button" onclick={action.action}>
                 {action.label}
               </button>
             {/each}
@@ -2136,10 +2130,10 @@
 {/if}
 
 <!-- Delete Confirmation Modal -->
-{#if showDeleteConfirmationModal}
+{#if isShowingDeleteConfirmation}
   <Portal>
-    <div class="modal-backdrop" on:click={cancelDeleteConfirmation}>
-      <div class="modal-container" bind:this={modalContainer} on:click|stopPropagation on:keydown|stopPropagation={handleModalKeydown} tabindex="-1" autofocus>
+    <div class="modal-backdrop" onclick={cancelDeleteConfirmation}>
+      <div class="modal-container" bind:this={modalContainerElement} onclick={(e) => e.stopPropagation()} onkeydown={(e) => { e.stopPropagation(); handleModalKeydown(e); }} tabindex="-1" autofocus>
         <div class="warning-icon">
           <svg class="w-12 h-12" viewBox="0 0 24.5703 30.0293" xmlns="http://www.w3.org/2000/svg">
             <g>
@@ -2154,10 +2148,10 @@
         </h2>
                 
         <div class="modal-buttons">
-          <button class="button button--secondary" on:click={cancelDeleteConfirmation} disabled={isDeletingTasks}>
+          <button class="button button--secondary" onclick={cancelDeleteConfirmation} disabled={isDeletingTasks}>
             Cancel
           </button>
-          <button class="button button--danger" bind:this={deleteButton} on:click={confirmDeleteTasks} disabled={isDeletingTasks}>
+          <button class="button button--danger" bind:this={deleteButtonElement} onclick={confirmDeleteTasks} disabled={isDeletingTasks}>
             {#if isDeletingTasks}
               <span class="spinner">⏳</span>
               Deleting...
@@ -2459,7 +2453,7 @@
     align-items: center;
   }
 
-  .feedback-message {
+  .dragFeedback-message {
     background-color: rgba(50, 215, 75, 0.2);
     color: var(--accent-green, #32D74B);
     padding: 8px 12px;
@@ -2469,7 +2463,7 @@
     animation: slideIn 0.3s ease-out;
   }
 
-  .feedback-message.error {
+  .dragFeedback-message.error {
     background-color: rgba(255, 69, 58, 0.2);
     color: var(--accent-red, #FF453A);
     border-color: rgba(255, 69, 58, 0.3);
@@ -2486,7 +2480,7 @@
     }
   }
 
-  /* Visual feedback for drag & drop nesting */
+  /* Visual dragFeedback for drag & drop nesting */
   :global(.drag-drop-indicator) {
     position: absolute;
     height: 3px;

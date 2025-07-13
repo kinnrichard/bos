@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   // Import reactive factory and job configuration for creating reactive model
   import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
-  import { jobConfig, type Job } from '$lib/models/generated/job';
+  import { jobConfig, type JobType } from '$lib/models/generated/job';
 
   // ✨ NEW: Use factory-based ReactiveRecord for automatic Svelte reactivity
   // Automatically stays in sync with Zero.js data changes
@@ -20,7 +20,7 @@
   const technicianId = $derived(url.searchParams.get('technician_id') || undefined);
 
   // ✨ CREATE REACTIVE MODEL IN SVELTE COMPONENT (where $state runes are available)
-  const JobReactive = ModelFactory.createReactiveModel<Job>(jobConfig);
+  const JobReactive = ModelFactory.createReactiveModel<JobType>(jobConfig);
   
   // ✨ USE RAILS-STYLE INCLUDES FOR RELATIONSHIPS (loads client data)
   const jobsQuery = JobReactive.includes('client').all();
@@ -32,7 +32,7 @@
 
   // ✨ USE $derived FOR FILTERING WITH ZERO NATIVE STRUCTURE
   const filteredJobs = $derived(
-    allJobs.filter(job => {
+    allJobs.filter((job: JobType) => {
       if (scope === 'mine') {
         // TODO: Filter by current user via job assignments
         // For now, show all jobs
@@ -44,7 +44,7 @@
 
   // ✨ USE $derived FOR FINAL FILTERING WITH TECHNICIAN SUPPORT
   const jobs = $derived(
-    filteredJobs.filter(job => {
+    filteredJobs.filter((job: JobType) => {
       // Filter by technician if specified
       if (technicianId) {
         const hasMatchingTechnician = job.jobAssignments?.some((assignment: any) => 
