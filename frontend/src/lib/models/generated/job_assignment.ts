@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: job_assignments
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for JobAssignment model
+ * TypeScript interface for JobAssignmentType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface JobAssignment {
+export interface JobAssignmentType {
   created_at: string;
   updated_at: string;
   id: string;
@@ -62,7 +63,10 @@ job_assignmentConfig.scopes = [
 
 
 /**
- * Factory instances for JobAssignment
+ * Factory instances for JobAssignment (Rails-idiomatic naming)
+ * 
+ * JobAssignment = ActiveRecord-style class (primary interface)
+ * JobAssignmentType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -71,16 +75,16 @@ job_assignmentConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { job_assignmentConfig } from '$lib/models/generated/job_assignment';
- * const JobAssignmentReactive = ModelFactory.createReactiveModel<JobAssignment>(job_assignmentConfig);
+ * const JobAssignmentReactive = ModelFactory.createReactiveModel<JobAssignmentType>(job_assignmentConfig);
  * ```
  */
-export const JobAssignmentActive = ModelFactory.createActiveModel<JobAssignment>(job_assignmentConfig);
+export const JobAssignment = ModelFactory.createActiveModel<JobAssignmentType>(job_assignmentConfig);
 
-// Default export for convenience (ActiveRecord)
-export default JobAssignmentActive;
+// Default export for convenience (ActiveRecord class)
+export default JobAssignment;
 
 // Export configuration for use in Svelte components
 export { job_assignmentConfig };
 
-// Re-export the interface
-export type { JobAssignment };
+// Re-export the interface type
+export type { JobAssignmentType };

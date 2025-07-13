@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: scheduled_date_times
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for ScheduledDateTime model
+ * TypeScript interface for ScheduledDateTimeType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface ScheduledDateTime {
+export interface ScheduledDateTimeType {
   schedulable_type: string;
   scheduled_type: string;
   notes?: string;
@@ -72,7 +73,10 @@ scheduled_date_timeConfig.scopes = [
 
 
 /**
- * Factory instances for ScheduledDateTime
+ * Factory instances for ScheduledDateTime (Rails-idiomatic naming)
+ * 
+ * ScheduledDateTime = ActiveRecord-style class (primary interface)
+ * ScheduledDateTimeType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -81,16 +85,16 @@ scheduled_date_timeConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { scheduled_date_timeConfig } from '$lib/models/generated/scheduled_date_time';
- * const ScheduledDateTimeReactive = ModelFactory.createReactiveModel<ScheduledDateTime>(scheduled_date_timeConfig);
+ * const ScheduledDateTimeReactive = ModelFactory.createReactiveModel<ScheduledDateTimeType>(scheduled_date_timeConfig);
  * ```
  */
-export const ScheduledDateTimeActive = ModelFactory.createActiveModel<ScheduledDateTime>(scheduled_date_timeConfig);
+export const ScheduledDateTime = ModelFactory.createActiveModel<ScheduledDateTimeType>(scheduled_date_timeConfig);
 
-// Default export for convenience (ActiveRecord)
-export default ScheduledDateTimeActive;
+// Default export for convenience (ActiveRecord class)
+export default ScheduledDateTime;
 
 // Export configuration for use in Svelte components
 export { scheduled_date_timeConfig };
 
-// Re-export the interface
-export type { ScheduledDateTime };
+// Re-export the interface type
+export type { ScheduledDateTimeType };

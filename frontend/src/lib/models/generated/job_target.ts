@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: job_targets
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for JobTarget model
+ * TypeScript interface for JobTargetType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface JobTarget {
+export interface JobTargetType {
   target_type: string;
   status?: string;
   instance_number: number;
@@ -69,7 +70,10 @@ job_targetConfig.scopes = [
 
 
 /**
- * Factory instances for JobTarget
+ * Factory instances for JobTarget (Rails-idiomatic naming)
+ * 
+ * JobTarget = ActiveRecord-style class (primary interface)
+ * JobTargetType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -78,16 +82,16 @@ job_targetConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { job_targetConfig } from '$lib/models/generated/job_target';
- * const JobTargetReactive = ModelFactory.createReactiveModel<JobTarget>(job_targetConfig);
+ * const JobTargetReactive = ModelFactory.createReactiveModel<JobTargetType>(job_targetConfig);
  * ```
  */
-export const JobTargetActive = ModelFactory.createActiveModel<JobTarget>(job_targetConfig);
+export const JobTarget = ModelFactory.createActiveModel<JobTargetType>(job_targetConfig);
 
-// Default export for convenience (ActiveRecord)
-export default JobTargetActive;
+// Default export for convenience (ActiveRecord class)
+export default JobTarget;
 
 // Export configuration for use in Svelte components
 export { job_targetConfig };
 
-// Re-export the interface
-export type { JobTarget };
+// Re-export the interface type
+export type { JobTargetType };

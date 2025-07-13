@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: clients
  * Generator: rails generate zero:factory_models
  * 
@@ -17,16 +17,17 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for Client model
+ * TypeScript interface for ClientType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface Client {
+export interface ClientType {
   name?: string;
-  client_type?: 'residential' | 'business';
   created_at: string;
   updated_at: string;
   name_normalized?: string;
   id: string;
+  client_type: 'residential' | 'business';
 }
 
 
@@ -44,11 +45,11 @@ const clientConfig: ModelConfig = new ModelConfigBuilder('client', 'clients')
 // Add attributes to configuration
 clientConfig.attributes = [
     { name: 'name', type: 'string', nullable: true },
-    { name: 'client_type', type: 'string', nullable: true, enum: ["residential", "business"] },
     { name: 'created_at', type: 'datetime', nullable: false },
     { name: 'updated_at', type: 'datetime', nullable: false },
     { name: 'name_normalized', type: 'string', nullable: true },
-    { name: 'id', type: 'uuid', nullable: false }
+    { name: 'id', type: 'uuid', nullable: false },
+    { name: 'client_type', type: 'integer', nullable: false, enum: ["residential", "business"] }
 ];
 
 // Add associations to configuration
@@ -67,7 +68,10 @@ clientConfig.scopes = [
 
 
 /**
- * Factory instances for Client
+ * Factory instances for Client (Rails-idiomatic naming)
+ * 
+ * Client = ActiveRecord-style class (primary interface)
+ * ClientType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -76,16 +80,16 @@ clientConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { clientConfig } from '$lib/models/generated/client';
- * const ClientReactive = ModelFactory.createReactiveModel<Client>(clientConfig);
+ * const ClientReactive = ModelFactory.createReactiveModel<ClientType>(clientConfig);
  * ```
  */
-export const ClientActive = ModelFactory.createActiveModel<Client>(clientConfig);
+export const Client = ModelFactory.createActiveModel<ClientType>(clientConfig);
 
-// Default export for convenience (ActiveRecord)
-export default ClientActive;
+// Default export for convenience (ActiveRecord class)
+export default Client;
 
 // Export configuration for use in Svelte components
 export { clientConfig };
 
-// Re-export the interface
-export type { Client };
+// Re-export the interface type
+export type { ClientType };

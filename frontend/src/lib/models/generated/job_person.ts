@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: job_people
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for JobPerson model
+ * TypeScript interface for JobPersonType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface JobPerson {
+export interface JobPersonType {
   created_at: string;
   updated_at: string;
   id: string;
@@ -62,7 +63,10 @@ job_personConfig.scopes = [
 
 
 /**
- * Factory instances for JobPerson
+ * Factory instances for JobPerson (Rails-idiomatic naming)
+ * 
+ * JobPerson = ActiveRecord-style class (primary interface)
+ * JobPersonType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -71,16 +75,16 @@ job_personConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { job_personConfig } from '$lib/models/generated/job_person';
- * const JobPersonReactive = ModelFactory.createReactiveModel<JobPerson>(job_personConfig);
+ * const JobPersonReactive = ModelFactory.createReactiveModel<JobPersonType>(job_personConfig);
  * ```
  */
-export const JobPersonActive = ModelFactory.createActiveModel<JobPerson>(job_personConfig);
+export const JobPerson = ModelFactory.createActiveModel<JobPersonType>(job_personConfig);
 
-// Default export for convenience (ActiveRecord)
-export default JobPersonActive;
+// Default export for convenience (ActiveRecord class)
+export default JobPerson;
 
 // Export configuration for use in Svelte components
 export { job_personConfig };
 
-// Re-export the interface
-export type { JobPerson };
+// Re-export the interface type
+export type { JobPersonType };

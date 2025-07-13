@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: tasks
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for Task model
+ * TypeScript interface for TaskType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface Task {
+export interface TaskType {
   title?: string;
   status?: 'new_task' | 'in_progress' | 'paused' | 'successfully_completed' | 'cancelled';
   position?: number;
@@ -91,7 +92,10 @@ taskConfig.scopes = [
 
 
 /**
- * Factory instances for Task
+ * Factory instances for Task (Rails-idiomatic naming)
+ * 
+ * Task = ActiveRecord-style class (primary interface)
+ * TaskType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -100,16 +104,16 @@ taskConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { taskConfig } from '$lib/models/generated/task';
- * const TaskReactive = ModelFactory.createReactiveModel<Task>(taskConfig);
+ * const TaskReactive = ModelFactory.createReactiveModel<TaskType>(taskConfig);
  * ```
  */
-export const TaskActive = ModelFactory.createActiveModel<Task>(taskConfig);
+export const Task = ModelFactory.createActiveModel<TaskType>(taskConfig);
 
-// Default export for convenience (ActiveRecord)
-export default TaskActive;
+// Default export for convenience (ActiveRecord class)
+export default Task;
 
 // Export configuration for use in Svelte components
 export { taskConfig };
 
-// Re-export the interface
-export type { Task };
+// Re-export the interface type
+export type { TaskType };

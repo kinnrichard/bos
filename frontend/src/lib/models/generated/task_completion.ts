@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: task_completions
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for TaskCompletion model
+ * TypeScript interface for TaskCompletionType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface TaskCompletion {
+export interface TaskCompletionType {
   status: string;
   completed_at?: string;
   notes?: string;
@@ -69,7 +70,10 @@ task_completionConfig.scopes = [
 
 
 /**
- * Factory instances for TaskCompletion
+ * Factory instances for TaskCompletion (Rails-idiomatic naming)
+ * 
+ * TaskCompletion = ActiveRecord-style class (primary interface)
+ * TaskCompletionType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -78,16 +82,16 @@ task_completionConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { task_completionConfig } from '$lib/models/generated/task_completion';
- * const TaskCompletionReactive = ModelFactory.createReactiveModel<TaskCompletion>(task_completionConfig);
+ * const TaskCompletionReactive = ModelFactory.createReactiveModel<TaskCompletionType>(task_completionConfig);
  * ```
  */
-export const TaskCompletionActive = ModelFactory.createActiveModel<TaskCompletion>(task_completionConfig);
+export const TaskCompletion = ModelFactory.createActiveModel<TaskCompletionType>(task_completionConfig);
 
-// Default export for convenience (ActiveRecord)
-export default TaskCompletionActive;
+// Default export for convenience (ActiveRecord class)
+export default TaskCompletion;
 
 // Export configuration for use in Svelte components
 export { task_completionConfig };
 
-// Re-export the interface
-export type { TaskCompletion };
+// Re-export the interface type
+export type { TaskCompletionType };

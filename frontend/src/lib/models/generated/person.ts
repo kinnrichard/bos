@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: people
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for Person model
+ * TypeScript interface for PersonType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface Person {
+export interface PersonType {
   name?: string;
   notes?: string;
   created_at: string;
@@ -66,7 +67,10 @@ personConfig.scopes = [
 
 
 /**
- * Factory instances for Person
+ * Factory instances for Person (Rails-idiomatic naming)
+ * 
+ * Person = ActiveRecord-style class (primary interface)
+ * PersonType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -75,16 +79,16 @@ personConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { personConfig } from '$lib/models/generated/person';
- * const PersonReactive = ModelFactory.createReactiveModel<Person>(personConfig);
+ * const PersonReactive = ModelFactory.createReactiveModel<PersonType>(personConfig);
  * ```
  */
-export const PersonActive = ModelFactory.createActiveModel<Person>(personConfig);
+export const Person = ModelFactory.createActiveModel<PersonType>(personConfig);
 
-// Default export for convenience (ActiveRecord)
-export default PersonActive;
+// Default export for convenience (ActiveRecord class)
+export default Person;
 
 // Export configuration for use in Svelte components
 export { personConfig };
 
-// Re-export the interface
-export type { Person };
+// Re-export the interface type
+export type { PersonType };

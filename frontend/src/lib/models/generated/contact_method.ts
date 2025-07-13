@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: contact_methods
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for ContactMethod model
+ * TypeScript interface for ContactMethodType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface ContactMethod {
+export interface ContactMethodType {
   value?: string;
   formatted_value?: string;
   contact_type?: 'phone' | 'email' | 'address';
@@ -67,7 +68,10 @@ contact_methodConfig.scopes = [
 
 
 /**
- * Factory instances for ContactMethod
+ * Factory instances for ContactMethod (Rails-idiomatic naming)
+ * 
+ * ContactMethod = ActiveRecord-style class (primary interface)
+ * ContactMethodType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -76,16 +80,16 @@ contact_methodConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { contact_methodConfig } from '$lib/models/generated/contact_method';
- * const ContactMethodReactive = ModelFactory.createReactiveModel<ContactMethod>(contact_methodConfig);
+ * const ContactMethodReactive = ModelFactory.createReactiveModel<ContactMethodType>(contact_methodConfig);
  * ```
  */
-export const ContactMethodActive = ModelFactory.createActiveModel<ContactMethod>(contact_methodConfig);
+export const ContactMethod = ModelFactory.createActiveModel<ContactMethodType>(contact_methodConfig);
 
-// Default export for convenience (ActiveRecord)
-export default ContactMethodActive;
+// Default export for convenience (ActiveRecord class)
+export default ContactMethod;
 
 // Export configuration for use in Svelte components
 export { contact_methodConfig };
 
-// Re-export the interface
-export type { ContactMethod };
+// Re-export the interface type
+export type { ContactMethodType };

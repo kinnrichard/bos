@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: notes
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for Note model
+ * TypeScript interface for NoteType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface Note {
+export interface NoteType {
   notable_type: string;
   content?: string;
   created_at: string;
@@ -68,7 +69,10 @@ noteConfig.scopes = [
 
 
 /**
- * Factory instances for Note
+ * Factory instances for Note (Rails-idiomatic naming)
+ * 
+ * Note = ActiveRecord-style class (primary interface)
+ * NoteType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -77,16 +81,16 @@ noteConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { noteConfig } from '$lib/models/generated/note';
- * const NoteReactive = ModelFactory.createReactiveModel<Note>(noteConfig);
+ * const NoteReactive = ModelFactory.createReactiveModel<NoteType>(noteConfig);
  * ```
  */
-export const NoteActive = ModelFactory.createActiveModel<Note>(noteConfig);
+export const Note = ModelFactory.createActiveModel<NoteType>(noteConfig);
 
-// Default export for convenience (ActiveRecord)
-export default NoteActive;
+// Default export for convenience (ActiveRecord class)
+export default Note;
 
 // Export configuration for use in Svelte components
 export { noteConfig };
 
-// Re-export the interface
-export type { Note };
+// Re-export the interface type
+export type { NoteType };

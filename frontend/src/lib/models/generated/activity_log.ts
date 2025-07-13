@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: activity_logs
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for ActivityLog model
+ * TypeScript interface for ActivityLogType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface ActivityLog {
+export interface ActivityLogType {
   action?: string;
   loggable_type: string;
   metadata?: any;
@@ -74,7 +75,10 @@ activity_logConfig.scopes = [
 
 
 /**
- * Factory instances for ActivityLog
+ * Factory instances for ActivityLog (Rails-idiomatic naming)
+ * 
+ * ActivityLog = ActiveRecord-style class (primary interface)
+ * ActivityLogType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -83,16 +87,16 @@ activity_logConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { activity_logConfig } from '$lib/models/generated/activity_log';
- * const ActivityLogReactive = ModelFactory.createReactiveModel<ActivityLog>(activity_logConfig);
+ * const ActivityLogReactive = ModelFactory.createReactiveModel<ActivityLogType>(activity_logConfig);
  * ```
  */
-export const ActivityLogActive = ModelFactory.createActiveModel<ActivityLog>(activity_logConfig);
+export const ActivityLog = ModelFactory.createActiveModel<ActivityLogType>(activity_logConfig);
 
-// Default export for convenience (ActiveRecord)
-export default ActivityLogActive;
+// Default export for convenience (ActiveRecord class)
+export default ActivityLog;
 
 // Export configuration for use in Svelte components
 export { activity_logConfig };
 
-// Re-export the interface
-export type { ActivityLog };
+// Re-export the interface type
+export type { ActivityLogType };

@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: scheduled_date_time_users
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for ScheduledDateTimeUser model
+ * TypeScript interface for ScheduledDateTimeUserType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface ScheduledDateTimeUser {
+export interface ScheduledDateTimeUserType {
   created_at: string;
   updated_at: string;
   id: string;
@@ -61,7 +62,10 @@ scheduled_date_time_userConfig.scopes = [
 
 
 /**
- * Factory instances for ScheduledDateTimeUser
+ * Factory instances for ScheduledDateTimeUser (Rails-idiomatic naming)
+ * 
+ * ScheduledDateTimeUser = ActiveRecord-style class (primary interface)
+ * ScheduledDateTimeUserType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -70,16 +74,16 @@ scheduled_date_time_userConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { scheduled_date_time_userConfig } from '$lib/models/generated/scheduled_date_time_user';
- * const ScheduledDateTimeUserReactive = ModelFactory.createReactiveModel<ScheduledDateTimeUser>(scheduled_date_time_userConfig);
+ * const ScheduledDateTimeUserReactive = ModelFactory.createReactiveModel<ScheduledDateTimeUserType>(scheduled_date_time_userConfig);
  * ```
  */
-export const ScheduledDateTimeUserActive = ModelFactory.createActiveModel<ScheduledDateTimeUser>(scheduled_date_time_userConfig);
+export const ScheduledDateTimeUser = ModelFactory.createActiveModel<ScheduledDateTimeUserType>(scheduled_date_time_userConfig);
 
-// Default export for convenience (ActiveRecord)
-export default ScheduledDateTimeUserActive;
+// Default export for convenience (ActiveRecord class)
+export default ScheduledDateTimeUser;
 
 // Export configuration for use in Svelte components
 export { scheduled_date_time_userConfig };
 
-// Re-export the interface
-export type { ScheduledDateTimeUser };
+// Re-export the interface type
+export type { ScheduledDateTimeUserType };

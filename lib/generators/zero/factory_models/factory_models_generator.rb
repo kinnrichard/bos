@@ -198,7 +198,7 @@ module Zero
       end
 
       def build_typescript_interface(table, patterns)
-        interface_name = table[:name].singularize.camelize
+        interface_name = "#{table[:name].singularize.camelize}Type"
 
         # Build interface properties from columns
         properties = table[:columns].map do |column|
@@ -211,7 +211,8 @@ module Zero
 
         <<~TYPESCRIPT
           /**
-           * TypeScript interface for #{interface_name} model
+           * TypeScript interface for #{interface_name}#{' '}
+           * Describes the data structure/shape for database records
            * Auto-generated from Rails schema
            */
           export interface #{interface_name} {
@@ -317,9 +318,14 @@ module Zero
       end
 
       def build_factory_exports(class_name, model_name)
+        type_name = "#{class_name}Type"
+
         <<~TYPESCRIPT
           /**
-           * Factory instances for #{class_name}
+           * Factory instances for #{class_name} (Rails-idiomatic naming)
+           *#{' '}
+           * #{class_name} = ActiveRecord-style class (primary interface)
+           * #{type_name} = TypeScript interface (data structure)
            *#{' '}
            * Generated .ts files provide only ActiveRecord (non-reactive) models.
            * For reactive models in Svelte components, import the reactive factory:
@@ -328,19 +334,19 @@ module Zero
            * // In Svelte components (.svelte files):
            * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
            * import { #{model_name}Config } from '$lib/models/generated/#{model_name}';
-           * const #{class_name}Reactive = ModelFactory.createReactiveModel<#{class_name}>(#{model_name}Config);
+           * const #{class_name}Reactive = ModelFactory.createReactiveModel<#{type_name}>(#{model_name}Config);
            * ```
            */
-          export const #{class_name}Active = ModelFactory.createActiveModel<#{class_name}>(#{model_name}Config);
+          export const #{class_name} = ModelFactory.createActiveModel<#{type_name}>(#{model_name}Config);
 
-          // Default export for convenience (ActiveRecord)
-          export default #{class_name}Active;
+          // Default export for convenience (ActiveRecord class)
+          export default #{class_name};
 
           // Export configuration for use in Svelte components
           export { #{model_name}Config };
 
-          // Re-export the interface
-          export type { #{class_name} };
+          // Re-export the interface type
+          export type { #{type_name} };
         TYPESCRIPT
       end
 
@@ -389,13 +395,11 @@ module Zero
 
         exports = generated_models.map do |model|
           class_name = model[:class_name]
+          type_name = "#{class_name}Type"
           file_name = model[:model_name]
 
-          [
-            "export { #{class_name}Active, #{model[:model_name]}Config, type #{class_name} } from './#{file_name}';",
-            "export { default as #{class_name} } from './#{file_name}';"
-          ]
-        end.flatten.join("\n")
+          "export { #{class_name}, #{model[:model_name]}Config, type #{type_name} } from './#{file_name}';"
+        end.join("\n")
 
         index_content = <<~TYPESCRIPT
           /*
@@ -408,6 +412,10 @@ module Zero
            * Generator: rails generate zero:factory_models
            *#{' '}
            * To regenerate: bin/rails generate zero:factory_models
+           *#{' '}
+           * Rails-idiomatic naming:
+           * - ActivityLog = ActiveRecord-style class (primary interface)
+           * - ActivityLogType = TypeScript interface (data structure)
            */
 
           // Auto-generated exports for all factory models
@@ -415,7 +423,7 @@ module Zero
 
           // Convenience object for dynamic access (ActiveRecord models)
           export const Models = {
-          #{generated_models.map { |m| "  #{m[:class_name]}: #{m[:class_name]}Active" }.join(",\n")}
+          #{generated_models.map { |m| "  #{m[:class_name]}: #{m[:class_name]}" }.join(",\n")}
           };
         TYPESCRIPT
 

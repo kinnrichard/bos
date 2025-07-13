@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: devices
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for Device model
+ * TypeScript interface for DeviceType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface Device {
+export interface DeviceType {
   name?: string;
   model?: string;
   serial_number?: string;
@@ -73,7 +74,10 @@ deviceConfig.scopes = [
 
 
 /**
- * Factory instances for Device
+ * Factory instances for Device (Rails-idiomatic naming)
+ * 
+ * Device = ActiveRecord-style class (primary interface)
+ * DeviceType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -82,16 +86,16 @@ deviceConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { deviceConfig } from '$lib/models/generated/device';
- * const DeviceReactive = ModelFactory.createReactiveModel<Device>(deviceConfig);
+ * const DeviceReactive = ModelFactory.createReactiveModel<DeviceType>(deviceConfig);
  * ```
  */
-export const DeviceActive = ModelFactory.createActiveModel<Device>(deviceConfig);
+export const Device = ModelFactory.createActiveModel<DeviceType>(deviceConfig);
 
-// Default export for convenience (ActiveRecord)
-export default DeviceActive;
+// Default export for convenience (ActiveRecord class)
+export default Device;
 
 // Export configuration for use in Svelte components
 export { deviceConfig };
 
-// Re-export the interface
-export type { Device };
+// Re-export the interface type
+export type { DeviceType };

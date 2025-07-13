@@ -4,7 +4,7 @@
  * This file was automatically generated from Rails schema introspection.
  * Any manual changes will be lost when the generator runs again.
  * 
- * Generated: 2025-07-13 04:12:41 UTC
+ * Generated: 2025-07-13 12:13:36 UTC
  * Table: users
  * Generator: rails generate zero:factory_models
  * 
@@ -17,10 +17,11 @@ import { ModelConfigBuilder } from '../../record-factory/model-config';
 
 
 /**
- * TypeScript interface for User model
+ * TypeScript interface for UserType 
+ * Describes the data structure/shape for database records
  * Auto-generated from Rails schema
  */
-export interface User {
+export interface UserType {
   name?: string;
   email?: string;
   role?: 'admin' | 'technician' | 'customer_specialist' | 'owner';
@@ -80,7 +81,10 @@ userConfig.scopes = [
 
 
 /**
- * Factory instances for User
+ * Factory instances for User (Rails-idiomatic naming)
+ * 
+ * User = ActiveRecord-style class (primary interface)
+ * UserType = TypeScript interface (data structure)
  * 
  * Generated .ts files provide only ActiveRecord (non-reactive) models.
  * For reactive models in Svelte components, import the reactive factory:
@@ -89,16 +93,16 @@ userConfig.scopes = [
  * // In Svelte components (.svelte files):
  * import { ModelFactory } from '$lib/record-factory/model-factory.svelte';
  * import { userConfig } from '$lib/models/generated/user';
- * const UserReactive = ModelFactory.createReactiveModel<User>(userConfig);
+ * const UserReactive = ModelFactory.createReactiveModel<UserType>(userConfig);
  * ```
  */
-export const UserActive = ModelFactory.createActiveModel<User>(userConfig);
+export const User = ModelFactory.createActiveModel<UserType>(userConfig);
 
-// Default export for convenience (ActiveRecord)
-export default UserActive;
+// Default export for convenience (ActiveRecord class)
+export default User;
 
 // Export configuration for use in Svelte components
 export { userConfig };
 
-// Re-export the interface
-export type { User };
+// Re-export the interface type
+export type { UserType };
