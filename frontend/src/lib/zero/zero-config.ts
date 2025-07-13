@@ -7,10 +7,10 @@
  */
 export const ZERO_QUERY_CONFIG = {
   // TTL (Time To Live) settings
-  DEFAULT_TTL: '1h' as const,
-  FIND_TTL: '2h' as const,      // Single record queries cache longer
-  COLLECTION_TTL: '1h' as const, // Collection queries
-  RELATIONSHIP_TTL: '30m' as const, // Queries with .related() calls
+  DEFAULT_TTL: '1h',
+  FIND_TTL: '2h',      // Single record queries cache longer
+  COLLECTION_TTL: '1h', // Collection queries
+  RELATIONSHIP_TTL: '30m', // Queries with .related() calls
   
   // Retry and performance settings
   RETRY_DELAY: 100,              // ms between retries
@@ -30,7 +30,7 @@ export const ZERO_QUERY_CONFIG = {
   // Memory management
   AUTO_CLEANUP_DELAY: 30000,     // ms before auto-cleanup of unused queries
   MAX_CACHED_QUERIES: 1000,      // Prevent memory leaks
-} as const;
+};
 
 /**
  * Zero.js Client Configuration
@@ -38,8 +38,8 @@ export const ZERO_QUERY_CONFIG = {
  */
 export const ZERO_CLIENT_CONFIG = {
   // Connection settings
-  KV_STORE: 'mem' as const,      // Use memory store for development
-  LOG_LEVEL: 'info' as const,    // Zero internal logging level
+  KV_STORE: 'mem',      // Use memory store for development
+  LOG_LEVEL: 'info',    // Zero internal logging level
   
   // Authentication and security
   TOKEN_CACHE_DURATION: 6 * 60 * 60 * 1000, // 6 hours in ms
@@ -59,7 +59,7 @@ export const ZERO_CLIENT_CONFIG = {
   EXPOSE_DEBUG_API: true,        // Expose window.zero for debugging
   ENABLE_QUERY_INSPECTOR: true,  // Add query debugging tools
   MOCK_MODE: false,              // Use mock data instead of real Zero
-} as const;
+};
 
 /**
  * Zero.js Error Configuration
@@ -72,14 +72,14 @@ export const ZERO_ERROR_CONFIG = {
     'TimeoutError', 
     'ConnectionError',
     'TemporaryError'
-  ] as const,
+  ],
   
   FATAL_ERRORS: [
     'AuthenticationError',
     'PermissionError',
     'SchemaError',
     'ValidationError'
-  ] as const,
+  ],
   
   // Retry strategies
   EXPONENTIAL_BACKOFF: true,     // Use exponential backoff for retries
@@ -90,7 +90,7 @@ export const ZERO_ERROR_CONFIG = {
   LOG_STACK_TRACES: true,        // Include stack traces in error logs
   INCLUDE_QUERY_CONTEXT: true,   // Include query details in error context
   ENABLE_ERROR_BOUNDARIES: true, // React/Svelte error boundary integration
-} as const;
+};
 
 /**
  * Environment-specific configuration overrides
@@ -177,7 +177,7 @@ export const ZERO_SERVER_CONFIG = {
   CONNECT_TIMEOUT: 10000,        // ms
   REQUEST_TIMEOUT: 30000,        // ms
   KEEPALIVE_INTERVAL: 60000,     // ms
-} as const;
+};
 
 /**
  * Configuration validation
