@@ -131,7 +131,11 @@ module ZeroSchemaGenerator
           if file_info[:type] == "generated" && File.exist?(file_info[:path])
             existing_content = File.read(file_info[:path])
             unless file_generated_by_us?(existing_content)
-              raise "Generated file #{file_info[:path]} appears to have manual modifications. Use --force to overwrite."
+              unless @config.force_generation
+                puts "⚠️  WARNING: #{File.basename(file_info[:path])} appears to have manual modifications."
+                puts "   Use --force to overwrite, or review changes before proceeding."
+                next # Skip this file but continue with others
+              end
             end
           end
 
@@ -754,11 +758,24 @@ module ZeroSchemaGenerator
               const now = Date.now();
             #{'  '}
               try {
-                // TODO: Implementation should calculate new position based on target
-                // This is a placeholder - full implementation needed
+                // Get all records in the same scope to calculate position
+                const view = zero.query.#{table_name}.materialize();
+                const allRecords = await view.data;
+                const targetRecord = Array.isArray(allRecords) ?#{' '}
+                  allRecords.find(record => record.id === targetId) :#{' '}
+                  (allRecords && allRecords.id === targetId ? allRecords : null);
+                view.destroy();
+            #{'    '}
+                if (!targetRecord) {
+                  throw new Error('Target #{singular_name} not found');
+                }
+            #{'    '}
+                // Calculate position to insert before target (target.position)
+                const newPosition = targetRecord.position || 1;
+            #{'    '}
                 await zero.mutate.#{table_name}.update({
                   id,
-                  // position: calculated_position,
+                  position: newPosition,
                   updated_at: now,
                 });
 
@@ -811,11 +828,24 @@ module ZeroSchemaGenerator
               const now = Date.now();
             #{'  '}
               try {
-                // TODO: Implementation should calculate new position based on target
-                // This is a placeholder - full implementation needed
+                // Get all records in the same scope to calculate position
+                const view = zero.query.#{table_name}.materialize();
+                const allRecords = await view.data;
+                const targetRecord = Array.isArray(allRecords) ?#{' '}
+                  allRecords.find(record => record.id === targetId) :#{' '}
+                  (allRecords && allRecords.id === targetId ? allRecords : null);
+                view.destroy();
+            #{'    '}
+                if (!targetRecord) {
+                  throw new Error('Target #{singular_name} not found');
+                }
+            #{'    '}
+                // Calculate position to insert after target (target.position + 1)
+                const newPosition = (targetRecord.position || 0) + 1;
+            #{'    '}
                 await zero.mutate.#{table_name}.update({
                   id,
-                  // position: calculated_position,
+                  position: newPosition,
                   updated_at: now,
                 });
 
@@ -859,9 +889,10 @@ module ZeroSchemaGenerator
               const now = Date.now();
             #{'  '}
               try {
+                // Move to position 1 (first position)
                 await zero.mutate.#{table_name}.update({
                   id,
-                  position: 0,
+                  position: 1,
                   updated_at: now,
                 });
 
@@ -905,11 +936,16 @@ module ZeroSchemaGenerator
               const now = Date.now();
             #{'  '}
               try {
-                // TODO: Implementation should query for max position and set position accordingly
-                // This is a placeholder - full implementation needed
+                // Get all records to find the maximum position
+                const view = zero.query.#{table_name}.materialize();
+                const allRecords = await view.data;
+                const recordsArray = Array.isArray(allRecords) ? allRecords : (allRecords ? [allRecords] : []);
+                const maxPosition = Math.max(...recordsArray.map(r => r.position || 0), 0);
+                view.destroy();
+            #{'    '}
                 await zero.mutate.#{table_name}.update({
                   id,
-                  // position: max_position + 1,
+                  position: maxPosition + 1,
                   updated_at: now,
                 });
 
