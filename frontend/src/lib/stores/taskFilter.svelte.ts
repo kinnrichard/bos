@@ -1,4 +1,4 @@
-import { taskStatusToString } from '$lib/utils/task-status';
+import { getTaskStatusString, getTaskStatusNumber } from '$lib/utils/enum-mappings';
 
 // Task status filter store - proper Svelte 5 pattern
 export const taskFilter = $state({
@@ -10,18 +10,11 @@ export function shouldShowTask(task: any, statuses: string[]): boolean {
   // If no filters selected, show all tasks
   if (statuses.length === 0) return true;
   
-  // Handle both numeric and string status values
-  let taskStatus: string;
-  if (typeof task.status === 'number') {
-    // Convert numeric status from Zero.js to string
-    taskStatus = taskStatusToString(task.status);
-  } else {
-    // Already a string
-    taskStatus = task.status;
-  }
+  // Convert task's numeric status to string for comparison
+  const taskStatusString = getTaskStatusString(task.status);
   
-  // Show task if its status is in the selected filters
-  return statuses.includes(taskStatus);
+  // Show task if its status string is in the selected filters
+  return statuses.includes(taskStatusString);
 }
 
 // Filter function - returns a function that checks if a task should be visible

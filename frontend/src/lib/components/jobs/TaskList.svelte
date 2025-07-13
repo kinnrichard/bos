@@ -9,7 +9,6 @@
   import { calculateRelativePositionFromTarget, calculatePositionFromTarget as railsCalculatePosition } from '$lib/utils/position-calculator';
   import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
   import type { Task, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
-  import { taskStatusToString } from '$lib/utils/task-status';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
   import Portal from '../ui/Portal.svelte';
 

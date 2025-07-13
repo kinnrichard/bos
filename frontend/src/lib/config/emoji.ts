@@ -5,6 +5,8 @@
  * Based on the original Rails emoji configuration but adapted for the API + PWA architecture.
  */
 
+import { getTaskStatusString, getJobStatusString, getJobPriorityString } from '$lib/utils/enum-mappings';
+
 // Job Status Emoji Mappings
 const JOB_STATUS_EMOJIS: Record<string, string> = {
   'open': '⚫',
@@ -69,35 +71,44 @@ const UTILITY_EMOJIS = {
 /**
  * Get emoji for a job status
  */
-export function getJobStatusEmoji(status: string): string {
-  return JOB_STATUS_EMOJIS[status] || '📝';
+export function getJobStatusEmoji(status: string | number): string {
+  // Handle both numeric (from Zero.js) and string status values
+  const statusString = typeof status === 'number' ? getJobStatusString(status) : status;
+  return JOB_STATUS_EMOJIS[statusString] || '📝';
 }
 
 /**
  * Get emoji for a job priority
  */
-export function getJobPriorityEmoji(priority: string): string {
-  return JOB_PRIORITY_EMOJIS[priority] || '';
+export function getJobPriorityEmoji(priority: string | number): string {
+  // Handle both numeric (from Zero.js) and string priority values
+  const priorityString = typeof priority === 'number' ? getJobPriorityString(priority) : priority;
+  return JOB_PRIORITY_EMOJIS[priorityString] || '';
 }
 
 /**
  * Get emoji for a task status
  */
-export function getTaskStatusEmoji(status: string): string {
-  return TASK_STATUS_EMOJIS[status] || '❓';
+export function getTaskStatusEmoji(status: string | number): string {
+  // Handle both numeric (from Zero.js) and string status values
+  const statusString = typeof status === 'number' ? getTaskStatusString(status) : status;
+  return TASK_STATUS_EMOJIS[statusString] || '❓';
 }
 
 /**
  * Get label for a task status
  */
-export function getTaskStatusLabel(status: string): string {
-  switch (status) {
+export function getTaskStatusLabel(status: string | number): string {
+  // Handle both numeric (from Zero.js) and string status values
+  const statusString = typeof status === 'number' ? getTaskStatusString(status) : status;
+  
+  switch (statusString) {
     case 'new_task': return 'New Task';
     case 'in_progress': return 'In Progress';
     case 'paused': return 'Paused';
     case 'successfully_completed': return 'Completed Successfully';
     case 'cancelled': return 'Cancelled';
-    default: return status?.replace('_', ' ') || 'Unknown';
+    default: return statusString?.replace('_', ' ') || 'Unknown';
   }
 }
 
