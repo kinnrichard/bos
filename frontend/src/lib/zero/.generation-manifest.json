@@ -1,92 +1,92 @@
 {
   "activity_logs": {
     "pattern_hash": "8a8fd204c40ce0d1596009857bb82518d0ae41c10946ed6a69fa5dc1742e0fe6",
-    "generated_at": "2025-07-13T17:29:23Z",
+    "generated_at": "2025-07-13T17:37:21Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/activity_log.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/activity_log.generated.ts": "a8417bf6daf2e79ab82e3d41923feb3efc614f9f2e458f473e6e9b18020dea7f"
+      "/Users/claude/code/bos/frontend/src/lib/zero/activity_log.generated.ts": "bb9f607990fd6718e12231a32bfabfd1afbba937e4d5d5832ccc05e2cda97658"
     }
   },
   "contact_methods": {
     "pattern_hash": "8b446bd9c8f3309a71d05f56fe3fe640b10b418989b66fd39e23abc9df2aca41",
-    "generated_at": "2025-07-13T17:29:23Z",
+    "generated_at": "2025-07-13T17:37:21Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/contact_method.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/contact_method.generated.ts": "fcd0adcba2036d8d1a9e5be5a0e066f81d150e21577f186d1914461417214070"
+      "/Users/claude/code/bos/frontend/src/lib/zero/contact_method.generated.ts": "61001d2d8b3ef60ca0d40df0bcdfe8c5864a06dda1d247e1b7b1fce586ccea76"
     }
   },
   "jobs": {
     "pattern_hash": "3072ab16d9ab8d920040a3ac80ec0efee858d9f4c0332be72aa4a1f4f6c5cb3b",
-    "generated_at": "2025-07-13T17:29:23Z",
+    "generated_at": "2025-07-13T17:37:21Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/job.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/job.generated.ts": "415760f62ff1efd5ce4c582e90fa8b8eaa080db00ba26a4ab430dc70e16d5b07"
+      "/Users/claude/code/bos/frontend/src/lib/zero/job.generated.ts": "896f287140477664a1f6a8dcaa7be3e8ba323c7b7d03f6ed1c5d55053b92bb42"
     }
   },
   "clients": {
     "pattern_hash": "69e16e7908482e20fa58ed4a05740836fe6d15ef6d96951d8a06c1bb9708435c",
-    "generated_at": "2025-07-13T17:29:23Z",
+    "generated_at": "2025-07-13T17:37:21Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/client.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/client.generated.ts": "9a285261855aadf37b199eb3bc83cecb9e58d82a94c80430d56d72000f0693cd"
+      "/Users/claude/code/bos/frontend/src/lib/zero/client.generated.ts": "fa7b8e21db5fb47156c6a10ad877ff271928d8ab38dc2e2ce31ec989846506ab"
     }
   },
   "job_targets": {
     "pattern_hash": "f589d468f05378eba1dc4e2173b8d7fd706f52ce513e3fea9722d3f85cdd6e6e",
-    "generated_at": "2025-07-13T17:29:23Z",
+    "generated_at": "2025-07-13T17:37:21Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/job_target.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/job_target.generated.ts": "f05464a4952e984b6ef74d015256fc16b3f08fe7de45e77f51ec10530c63c9ee"
+      "/Users/claude/code/bos/frontend/src/lib/zero/job_target.generated.ts": "9fc6e417e298568feb09ce8f1600b09b8af01b66c60e1d4fa8f4c2c23ba0ffff"
     }
   },
   "notes": {
     "pattern_hash": "2d09c76cfc7ec16ba712dc652b68b02fa6a4bbd6cdd61ffddfe16f3d10cf03fd",
-    "generated_at": "2025-07-13T17:29:23Z",
+    "generated_at": "2025-07-13T17:37:21Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/note.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/note.generated.ts": "dd83b75c9182eeba57e31adbb8e01fce18fbd5287a393f59fe8cf55a8aa0131f"
+      "/Users/claude/code/bos/frontend/src/lib/zero/note.generated.ts": "04967965abbd70590e8b868218e877dc665d71c183f1544eaec17643165802dd"
     }
   },
   "scheduled_date_times": {
     "pattern_hash": "a576ba843ede0e2fdd80c96196f0b58ec10ab8b876aef8d81dbd399c990e5516",
-    "generated_at": "2025-07-13T17:29:23Z",
+    "generated_at": "2025-07-13T17:37:21Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/scheduled_date_time.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/scheduled_date_time.generated.ts": "198c2726c34568733f7ae410e24da34429095adf971ac7fdfe4b6a031affb963"
+      "/Users/claude/code/bos/frontend/src/lib/zero/scheduled_date_time.generated.ts": "aeae25bb3a3b977a2538d85fda79c923c6ab6f5f6d9ff401cabdfcbe3e7f1d99"
     }
   },
   "tasks": {
     "pattern_hash": "fb933c7ae24090de0ffd45c35673e7e17bcbd92e16ad7d8264a4d3f368ffe4ae",
-    "generated_at": "2025-07-13T17:29:23Z",
+    "generated_at": "2025-07-13T17:37:21Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/task.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/task.generated.ts": "84d213fa509590904479a423b7a3e4c15ac9d159e7a058727cc5f469075c23ca"
+      "/Users/claude/code/bos/frontend/src/lib/zero/task.generated.ts": "b9e8fe422ef7be5f88edc1e5f1bd24c29c54640a94067daad724a38c60e3c486"
     }
   },
   "users": {
     "pattern_hash": "68faaa5af0f795650e76540ce547ffd8379046d628e01326d221c19daac93988",
-    "generated_at": "2025-07-13T17:29:23Z",
+    "generated_at": "2025-07-13T17:37:21Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/user.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/user.generated.ts": "9ab4ec9e7dd6ae0494120e3bea05c025e64ff0950539596902eea01aa1253d97"
+      "/Users/claude/code/bos/frontend/src/lib/zero/user.generated.ts": "e59f8b61519187b06507543c546dbd375a174740bcc0198fc5c90ea79fe876c7"
     }
   }
 }

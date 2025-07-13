@@ -10,7 +10,7 @@
 
   let { onFilterChange = () => {}, onDeletedToggle = () => {} }: Props = $props();
 
-  let basePopover: any;
+  let basePopover: any = $state();
 
   // Reactive state for showing deleted tasks using Svelte 5 $state
   let showDeleted = $state(false);
@@ -25,7 +25,7 @@
   ];
 
   // Start with all statuses selected (default behavior)
-  let selectedStatuses: string[] = statusOptions.map(option => option.value);
+  let selectedStatuses: string[] = $state(statusOptions.map(option => option.value));
 
   // Handle status toggle with "prevent all unchecked" logic
   function handleStatusToggle(option: { value: string; label: string }, event?: MouseEvent) {
