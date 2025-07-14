@@ -8,6 +8,14 @@ import type { Task, PositionUpdate, RelativePositionUpdate } from './position-ca
 export interface ActsAsListResult {
   updatedTasks: Task[];
   operations: ActsAsListOperation[];
+  positionUpdates: PositionUpdateBatch[];
+}
+
+export interface PositionUpdateBatch {
+  taskId: string;
+  position: number;
+  parent_id?: string | null;
+  reason: string;
 }
 
 export interface ActsAsListOperation {
@@ -34,6 +42,7 @@ export class ClientActsAsList {
   ): ActsAsListResult {
     const taskMap = new Map(tasks.map(t => [t.id, {...t}]));
     const operations: ActsAsListOperation[] = [];
+    const allPositionUpdates: PositionUpdateBatch[] = [];
     
     // Process each update sequentially to match Rails behavior
     positionUpdates.forEach(update => {
@@ -57,15 +66,19 @@ export class ClientActsAsList {
       originalScopeTasks.forEach(task => {
         if ((task.position ?? 0) > (originalPosition ?? 0)) {
           const oldPosition = task.position ?? 0;
-          task.position = (task.position ?? 0) - 1;
+          const newPosition = (task.position ?? 0) - 1;
+          task.position = newPosition;
+          
+          const reason = `Shifted down to fill gap at position ${originalPosition}`;
+          allPositionUpdates.push({ taskId: task.id, position: newPosition, reason });
           
           operations.push({
             type: 'gap-elimination',
             scope: originalScope,
             taskId: task.id,
             oldPosition,
-            newPosition: task.position ?? 0,
-            reason: `Shifted down to fill gap at position ${originalPosition}`
+            newPosition,
+            reason
           });
         }
       });
@@ -82,15 +95,19 @@ export class ClientActsAsList {
         targetScopeTasks.forEach(task => {
           if ((task.position ?? 0) >= targetPosition) {
             const oldPosition = task.position ?? 0;
-            task.position = (task.position ?? 0) + 1;
+            const newPosition = (task.position ?? 0) + 1;
+            task.position = newPosition;
+            
+            const reason = `Cross-parent: shifted up by insertion at position ${targetPosition}`;
+            allPositionUpdates.push({ taskId: task.id, position: newPosition, reason });
             
             operations.push({
               type: 'insertion',
               scope: targetScope,
               taskId: task.id,
               oldPosition,
-              newPosition: task.position ?? 0,
-              reason: `Cross-parent: shifted up by insertion at position ${targetPosition}`
+              newPosition,
+              reason
             });
           }
         });
@@ -100,15 +117,19 @@ export class ClientActsAsList {
         targetScopeTasks.forEach(task => {
           if ((task.position ?? 0) >= targetPosition) {
             const oldPosition = task.position ?? 0;
-            task.position = (task.position ?? 0) + 1;
+            const newPosition = (task.position ?? 0) + 1;
+            task.position = newPosition;
+            
+            const reason = `Same-parent: shifted up by insertion at position ${targetPosition}`;
+            allPositionUpdates.push({ taskId: task.id, position: newPosition, reason });
             
             operations.push({
               type: 'insertion',
               scope: targetScope,
               taskId: task.id,
               oldPosition,
-              newPosition: task.position ?? 0,
-              reason: `Same-parent: shifted up by insertion at position ${targetPosition}`
+              newPosition,
+              reason
             });
           }
         });
@@ -119,19 +140,28 @@ export class ClientActsAsList {
       movingTask.position = targetPosition;
       movingTask.parent_id = targetParent ?? undefined;
       
+      const reason = `Moved to target position ${targetPosition} (${isCrossParentMove ? 'cross-parent' : 'same-parent'})`;
+      allPositionUpdates.push({ 
+        taskId: movingTask.id, 
+        position: targetPosition, 
+        parent_id: isCrossParentMove ? targetParent : undefined,
+        reason 
+      });
+      
       operations.push({
         type: 'insertion',
         scope: targetScope,
         taskId: movingTask.id,
         oldPosition,
         newPosition: targetPosition,
-        reason: `Moved to target position ${targetPosition} (${isCrossParentMove ? 'cross-parent' : 'same-parent'})`
+        reason
       });
     });
     
     return {
       updatedTasks: Array.from(taskMap.values()),
-      operations
+      operations,
+      positionUpdates: allPositionUpdates
     };
   }
   
@@ -201,7 +231,7 @@ export class ClientActsAsList {
    * Normalize positions within each scope to eliminate gaps (match positioning gem behavior)
    * The positioning gem automatically renumbers positions to be 1, 2, 3, ... with no gaps
    */
-  static normalizePositions(tasks: Task[]): Task[] {
+  static normalizePositions(tasks: Task[]): { normalizedTasks: Task[]; positionUpdates: PositionUpdateBatch[] } {
     const normalizedTasks = [...tasks];
     
     // Group tasks by scope (parent_id)
@@ -215,14 +245,74 @@ export class ClientActsAsList {
     });
     
     // Normalize positions within each scope
+    const positionUpdates: PositionUpdateBatch[] = [];
     scopes.forEach((scopeTasks, scope) => {
       const sortedTasks = scopeTasks.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
       sortedTasks.forEach((task, index) => {
-        task.position = index + 1; // Start from 1, no gaps
+        const newPosition = index + 1; // Start from 1, no gaps
+        if (task.position !== newPosition) {
+          task.position = newPosition;
+          positionUpdates.push({ 
+            taskId: task.id, 
+            position: newPosition,
+            reason: `Normalized position in scope ${scope || 'root'}`
+          });
+        }
       });
     });
     
-    return normalizedTasks;
+    return { normalizedTasks, positionUpdates };
+  }
+
+  /**
+   * Execute position updates using ActiveRecord pattern (fixes AC5)
+   * Batch updates efficiently to avoid multiple database calls
+   */
+  static async executePositionUpdates(positionUpdates: PositionUpdateBatch[]): Promise<void> {
+    if (positionUpdates.length === 0) {
+      return;
+    }
+
+    try {
+      // Import Task model using dynamic import to avoid circular dependencies
+      const { Task } = await import('$lib/models/task');
+      
+      // Execute all updates in parallel for better performance
+      const updatePromises = positionUpdates.map(update => {
+        const updateData: any = { position: update.position };
+        
+        // Include parent_id if it's specified in the update
+        if (update.parent_id !== undefined) {
+          updateData.parent_id = update.parent_id;
+        }
+        
+        return Task.update(update.taskId, updateData);
+      });
+      
+      await Promise.all(updatePromises);
+      
+      console.log(`Successfully updated ${positionUpdates.length} task positions via ActiveRecord pattern`);
+    } catch (error) {
+      console.error('Failed to execute position updates:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Apply position updates and execute them using ActiveRecord pattern
+   * This is the main method that should be called to handle task reordering
+   */
+  static async applyAndExecutePositionUpdates(
+    tasks: Task[], 
+    positionUpdates: PositionUpdate[]
+  ): Promise<ActsAsListResult> {
+    // Apply position updates (optimistic UI changes)
+    const result = this.applyPositionUpdates(tasks, positionUpdates);
+    
+    // Execute database updates using ActiveRecord pattern
+    await this.executePositionUpdates(result.positionUpdates);
+    
+    return result;
   }
 
   /**
@@ -235,7 +325,7 @@ export class ClientActsAsList {
     relativeUpdates: RelativePositionUpdate[]
   ): PositionUpdate[] {
     // Step 1: Normalize positions to eliminate gaps (matching positioning gem behavior)
-    const normalizedTasks = this.normalizePositions(tasks);
+    const { normalizedTasks } = this.normalizePositions(tasks);
     
     // Log normalization effect for debugging
     const originalPositions = tasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position, parent: t.parent_id || 'null' }));
@@ -365,6 +455,7 @@ export class ClientActsAsList {
   ): ActsAsListResult {
     let currentTasks = [...tasks]; // Work with a copy
     let allOperations: ActsAsListOperation[] = [];
+    let allPositionUpdates: PositionUpdateBatch[] = [];
     
     // Process each relative update sequentially
     relativeUpdates.forEach(relativeUpdate => {
@@ -378,14 +469,16 @@ export class ClientActsAsList {
         // Update our working task state for the next iteration
         currentTasks = result.updatedTasks;
         
-        // Accumulate operations
+        // Accumulate operations and position updates
         allOperations = [...allOperations, ...result.operations];
+        allPositionUpdates = [...allPositionUpdates, ...result.positionUpdates];
       }
     });
     
     return {
       updatedTasks: currentTasks,
-      operations: allOperations
+      operations: allOperations,
+      positionUpdates: allPositionUpdates
     };
   }
 }

@@ -673,24 +673,14 @@
     }
   }
 
-  // Task status change handler with optimistic updates
+  // Task status change handler using ActiveRecord pattern
   async function handleStatusChange(taskId: string, newStatus: string) {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    const originalStatus = task.status;
-    
-    // Optimistic update
-    task.status = newStatus;
-    tasks = [...tasks];
-    
     try {
-      await tasksService.updateTaskStatus(jobId, taskId, newStatus);
+      // Use ActiveRecord pattern - Zero.js handles optimistic updates and server sync
+      const { Task } = await import('$lib/models/task');
+      await Task.update(taskId, { status: newStatus });
     } catch (error: any) {
-      // Rollback on error
-      task.status = originalStatus;
-      tasks = [...tasks];
-      console.error('Failed to update status:', error);
+      console.error('Failed to update task status:', error);
       
       if (error.code === 'INVALID_CSRF_TOKEN') {
         dragFeedback = 'Session expired - please try again';
@@ -1283,20 +1273,23 @@
       // Calculate relative position for nesting
       const relativePosition = calculateRelativePosition(null, targetTaskId, [draggedTaskId]);
       
-      // Call API to nest the task using relative positioning
-      if (relativePosition.before_task_id) {
-        await tasksService.nestTaskRelative(jobId, draggedTaskId, targetTaskId, {
-          before_task_id: relativePosition.before_task_id
-        });
-      } else if (relativePosition.after_task_id) {
-        await tasksService.nestTaskRelative(jobId, draggedTaskId, targetTaskId, {
-          after_task_id: relativePosition.after_task_id
-        });
-      } else {
-        await tasksService.nestTaskRelative(jobId, draggedTaskId, targetTaskId, {
-          position: relativePosition.position as 'first' | 'last'
-        });
-      }
+      // Convert relative position to position updates and execute via ActiveRecord pattern (AC5)
+      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, [relativePosition]);
+      
+      // Execute nesting using ActiveRecord pattern
+      const result = await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
+      
+      // Update tasks array with the final state from ActiveRecord updates
+      tasks = result.updatedTasks;
+      
+      console.log('✅ Task nesting executed via ActiveRecord pattern', {
+        draggedTaskId: draggedTaskId.substring(0, 8),
+        targetTaskId: targetTaskId.substring(0, 8), 
+        relativePosition,
+        updatedTasks: result.updatedTasks.length,
+        operations: result.operations.length,
+        positionUpdates: result.positionUpdates.length
+      });
       
       // Clear optimistic updates on success
       optimisticUpdates.clear();
@@ -1508,16 +1501,24 @@
         newTaskPositions: tasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id }))
       });
       
-      // Send batch reorder to server using relative positioning
-      const serverResponse = await tasksService.batchReorderTasksRelative(jobId, { 
-        relative_positions: relativeUpdates 
+      // Convert relative updates to position updates
+      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+      
+      // Execute position updates using ActiveRecord pattern (AC5)
+      const result = await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
+      
+      console.log('✅ Position updates executed via ActiveRecord pattern', {
+        updatedTasks: result.updatedTasks.length,
+        operations: result.operations.length,
+        positionUpdates: result.positionUpdates.length
       });
       
-      console.log('✅ Server update successful', serverResponse);
+      // Update tasks array with the final state from ActiveRecord updates
+      tasks = result.updatedTasks;
       
-      // 🔍 Log final task positions from server response
-      if (serverResponse.tasks) {
-        const finalPositions = serverResponse.tasks
+      // 🔍 Log final task positions from ActiveRecord update
+      if (result.updatedTasks) {
+        const finalPositions = result.updatedTasks
           .filter(t => (t.parent_id || null) === newParentId)
           .sort((a, b) => (a.position || 0) - (b.position || 0))
           .map(t => ({
@@ -1526,10 +1527,10 @@
             position: t.position
           }));
         
-        console.log('📋 Final task order from server:', finalPositions);
+        console.log('📋 Final task order from ActiveRecord updates:', finalPositions);
         
         // Highlight the moved task
-        const movedTaskFinal = serverResponse.tasks.find(t => t.id === draggedTaskId);
+        const movedTaskFinal = result.updatedTasks.find(t => t.id === draggedTaskId);
         if (movedTaskFinal) {
           console.log('🎯 Moved task final position:', {
             id: movedTaskFinal.id.substring(0, 8),
@@ -1552,8 +1553,8 @@
       
       console.log('🖥️ Client visual state after operation:', clientVisualState);
       
-      // 🔍 Compare client prediction vs server reality
-      await compareClientVsServer(clientPredictedPositions, taskStateBeforeOperation, relativeUpdates, event);
+      // 🔍 Compare client prediction vs ActiveRecord reality
+      await compareClientVsActiveRecord(clientPredictedPositions, result.updatedTasks, taskStateBeforeOperation, relativeUpdates, event);
       
       // Clear optimistic updates on success
       optimisticUpdates.clear();
@@ -1581,25 +1582,22 @@
     }
   }
   
-  // Compare client predictions with server results
-  async function compareClientVsServer(
+  // Compare client predictions with ActiveRecord results
+  async function compareClientVsActiveRecord(
     clientPredictions: Map<string, number>, 
+    activeRecordTasks: Task[],
     taskStateBeforeOperation: any[], 
     relativeUpdates: RelativePositionUpdate[],
     dragEvent: DragSortEvent
   ) {
     try {
-      // Fetch fresh task data from server to see actual results
-      const response = await fetch(`/api/v1/jobs/${jobId}/tasks/batch_details`);
-      const serverData = await response.json();
-      
-      // Extract actual server positions
+      // Extract actual ActiveRecord positions
       const serverPositions = new Map<string, number>();
-      serverData.data.forEach((task: any) => {
-        serverPositions.set(task.id, task.attributes.position);
+      activeRecordTasks.forEach((task: any) => {
+        serverPositions.set(task.id, task.position);
       });
       
-      // Find differences between client predictions and server reality
+      // Find differences between client predictions and ActiveRecord reality
       const differences: Array<{taskId: string, clientPrediction: number, serverActual: number, difference: number}> = [];
       
       clientPredictions.forEach((clientPos, taskId) => {
@@ -1618,7 +1616,7 @@
         const maxDifference = Math.max(...differences.map(d => Math.abs(d.difference)));
         const patternAnalysis = analyzePositionPattern(differences);
         
-        console.group('🚨 CLIENT/SERVER POSITION MISMATCH DETECTED');
+        console.group('🚨 CLIENT/ACTIVERECORD POSITION MISMATCH DETECTED');
         console.log('📊 Differences found:', differences);
         console.log('🎯 Drag operation context:', {
           draggedTaskId: dragEvent.item.dataset.taskId,
@@ -1634,7 +1632,7 @@
         })));
         console.log('🔄 Relative updates sent:', relativeUpdates);
         console.log('🔮 Client predictions:', Object.fromEntries(clientPredictions));
-        console.log('📡 Server actual results:', Object.fromEntries(serverPositions));
+        console.log('📡 ActiveRecord actual results:', Object.fromEntries(serverPositions));
         console.log('⚠️ Analysis:', {
           totalDifferences: differences.length,
           maxDifference,

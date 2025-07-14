@@ -85,8 +85,11 @@
         taskDetails.notes.push(response.note);
       }
       
-      // Update task notes count
-      task.notes_count = (task.notes_count || 0) + 1;
+      // Update task via ActiveRecord pattern
+      const { Task } = await import('$lib/models/task');
+      await Task.update(task.id, { 
+        notes_count: (task.notes_count || 0) + 1 
+      });
       
       noteText = '';
       

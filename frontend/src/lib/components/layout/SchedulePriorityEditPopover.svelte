@@ -44,24 +44,27 @@
     { value: 'proactive_followup', label: 'Proactive Followup' }
   ];
 
-  function handleSave() {
+  async function handleSave() {
     if (!job) return;
 
-    // Simple reactive updates - update job object directly
-    if (localPriority !== job.priority) {
-      job.priority = localPriority;
-    }
-    if (localStartDate !== job.start_date) {
-      job.start_date = localStartDate || null;
-    }
-    if (localStartTime !== job.start_time) {
-      job.start_time = localStartTime || null;
-    }
-    if (localDueDate !== job.due_date) {
-      job.due_date = localDueDate || null;
-    }
-    if (localDueTime !== job.due_time) {
-      job.due_time = localDueTime || null;
+    // Collect all changes into single update object
+    const updates: any = {};
+    
+    if (localPriority !== job.priority) updates.priority = localPriority;
+    if (localStartDate !== job.start_date) updates.start_date = localStartDate || null;
+    if (localStartTime !== job.start_time) updates.start_time = localStartTime || null;
+    if (localDueDate !== job.due_date) updates.due_date = localDueDate || null;
+    if (localDueTime !== job.due_time) updates.due_time = localDueTime || null;
+    
+    if (Object.keys(updates).length > 0) {
+      try {
+        // Use ActiveRecord pattern - Zero.js handles optimistic updates and server sync
+        const { Job } = await import('$lib/models/job');
+        await Job.update(job.id, updates);
+      } catch (error) {
+        console.error('Failed to update job:', error);
+        // TODO: Show error toast to user
+      }
     }
     
     // Popover will close automatically when clicking outside
