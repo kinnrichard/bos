@@ -77,6 +77,9 @@ export interface ReactiveQuery<T> {
  * Allows Rails-like chaining: Model.where(...).order(...).limit(...)
  */
 export interface ScopedQuery<T> {
+  /** Include related records - Rails-style includes() for eager loading */
+  includes(...relationships: string[]): ScopedQuery<T>;
+  
   /** Filter records by conditions - returns new scoped query */
   where(conditions: Partial<T>): ScopedQuery<T>;
   
@@ -120,6 +123,9 @@ export interface ScopedQuery<T> {
  * Reactive scoped query builder - same as ScopedQuery but returns ReactiveQuery
  */
 export interface ReactiveScopedQuery<T> {
+  /** Include related records - Rails-style includes() for eager loading */
+  includes(...relationships: string[]): ReactiveScopedQuery<T>;
+  
   /** Filter records by conditions - returns new reactive scoped query */
   where(conditions: Partial<T>): ReactiveScopedQuery<T>;
   

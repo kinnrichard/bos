@@ -12,6 +12,7 @@
 
 import { getZero } from '../../zero/zero-client';
 import { ReactiveQuery } from '../../zero/reactive-query.svelte';
+import { BaseScopedQuery } from './scoped-query-base';
 import type { 
   BaseRecord, 
   QueryOptions, 
@@ -147,66 +148,17 @@ export class ReactiveQueryMany<T> implements IReactiveQuery<T[]> {
 }
 
 /**
- * Reactive scoped query implementation for method chaining
+ * Reactive scoped query implementation for method chaining with includes() support
+ * Extends BaseScopedQuery to inherit Rails-style includes() functionality
  */
-class ReactiveRecordScopedQuery<T extends BaseRecord> implements ReactiveScopedQuery<T> {
-  private conditions: Partial<T>[] = [];
-  private orderByClause?: { field: keyof T; direction: 'asc' | 'desc' };
-  private limitClause?: number;
-  private offsetClause?: number;
-  private includeDiscarded = false;
-  private onlyDiscarded = false;
-  
-  constructor(private config: ReactiveRecordConfig) {}
-  
-  where(conditions: Partial<T>): ReactiveScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.conditions.push(conditions);
-    return newQuery;
-  }
-  
-  orderBy(field: keyof T, direction: 'asc' | 'desc' = 'asc'): ReactiveScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.orderByClause = { field, direction };
-    return newQuery;
-  }
-  
-  limit(count: number): ReactiveScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.limitClause = count;
-    return newQuery;
-  }
-  
-  offset(count: number): ReactiveScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.offsetClause = count;
-    return newQuery;
-  }
-  
-  withDiscarded(): ReactiveScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.includeDiscarded = true;
-    newQuery.onlyDiscarded = false;
-    return newQuery;
-  }
-  
-  discarded(): ReactiveScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.onlyDiscarded = true;
-    newQuery.includeDiscarded = false;
-    return newQuery;
-  }
-  
-  kept(): ReactiveScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.includeDiscarded = false;
-    newQuery.onlyDiscarded = false;
-    return newQuery;
+class ReactiveRecordScopedQuery<T extends BaseRecord> extends BaseScopedQuery<T> implements ReactiveScopedQuery<T> {
+  constructor(private config: ReactiveRecordConfig) {
+    super(config.tableName);
   }
   
   all(options: QueryOptions = {}): IReactiveQuery<T[]> {
     return new ReactiveQueryMany<T>(
-      () => this.buildQuery(true),
+      () => this.buildZeroQuery(),
       [],
       options.ttl?.toString() || this.config.defaultTtl
     );
@@ -214,9 +166,9 @@ class ReactiveRecordScopedQuery<T extends BaseRecord> implements ReactiveScopedQ
   
   first(options: QueryOptions = {}): IReactiveQuery<T | null> {
     const query = this.clone();
-    query.limitClause = 1;
+    query.limitCount = 1;
     return new ReactiveQueryOne<T>(
-      () => query.buildQuery(false),
+      () => query.buildZeroQuery(),
       null,
       options.ttl?.toString() || this.config.defaultTtl
     );
@@ -225,14 +177,15 @@ class ReactiveRecordScopedQuery<T extends BaseRecord> implements ReactiveScopedQ
   last(options: QueryOptions = {}): IReactiveQuery<T | null> {
     const query = this.clone();
     // Reverse order and take first
-    if (query.orderByClause) {
-      query.orderByClause.direction = query.orderByClause.direction === 'asc' ? 'desc' : 'asc';
+    if (query.orderByField) {
+      query.orderByDirection = query.orderByDirection === 'asc' ? 'desc' : 'asc';
     } else {
-      query.orderByClause = { field: 'created_at' as keyof T, direction: 'asc' };
+      query.orderByField = 'created_at' as keyof T;
+      query.orderByDirection = 'asc';
     }
-    query.limitClause = 1;
+    query.limitCount = 1;
     return new ReactiveQueryOne<T>(
-      () => query.buildQuery(false),
+      () => query.buildZeroQuery(),
       null,
       options.ttl?.toString() || this.config.defaultTtl
     );
@@ -241,7 +194,7 @@ class ReactiveRecordScopedQuery<T extends BaseRecord> implements ReactiveScopedQ
   count(options: QueryOptions = {}): IReactiveQuery<number> {
     return new ReactiveQueryOne<number>(
       () => {
-        const query = this.buildQuery(true);
+        const query = this.buildZeroQuery();
         return query ? {
           ...query,
           many: async () => {
@@ -258,7 +211,7 @@ class ReactiveRecordScopedQuery<T extends BaseRecord> implements ReactiveScopedQ
   exists(options: QueryOptions = {}): IReactiveQuery<boolean> {
     return new ReactiveQueryOne<boolean>(
       () => {
-        const query = this.buildQuery(true);
+        const query = this.buildZeroQuery();
         return query ? {
           ...query,
           many: async () => {
@@ -272,63 +225,17 @@ class ReactiveRecordScopedQuery<T extends BaseRecord> implements ReactiveScopedQ
     );
   }
   
-  private clone(): ReactiveRecordScopedQuery<T> {
+  protected clone(): this {
     const newQuery = new ReactiveRecordScopedQuery<T>(this.config);
     newQuery.conditions = [...this.conditions];
-    newQuery.orderByClause = this.orderByClause;
-    newQuery.limitClause = this.limitClause;
-    newQuery.offsetClause = this.offsetClause;
+    newQuery.relationships = [...this.relationships];
+    newQuery.orderByField = this.orderByField;
+    newQuery.orderByDirection = this.orderByDirection;
+    newQuery.limitCount = this.limitCount;
+    newQuery.offsetCount = this.offsetCount;
     newQuery.includeDiscarded = this.includeDiscarded;
     newQuery.onlyDiscarded = this.onlyDiscarded;
-    return newQuery;
-  }
-  
-  private buildQuery(isCollection: boolean): any | null {
-    const zero = getZero();
-    if (!zero) {
-      return null;
-    }
-    
-    const queryTable = (zero.query as any)[this.config.tableName];
-    if (!queryTable) {
-      return null;
-    }
-    
-    let query = queryTable;
-    
-    // Apply discard gem filtering
-    if (this.onlyDiscarded) {
-      query = query.where('discarded_at', '!=', null);
-    } else if (!this.includeDiscarded) {
-      query = query.where('discarded_at', null);
-    }
-    
-    // Apply conditions
-    for (const condition of this.conditions) {
-      for (const [key, value] of Object.entries(condition)) {
-        if (value !== undefined && value !== null) {
-          query = query.where(key, value);
-        }
-      }
-    }
-    
-    // Apply ordering
-    if (this.orderByClause) {
-      query = query.orderBy(this.orderByClause.field as string, this.orderByClause.direction);
-    } else if (isCollection) {
-      // Default order for collections
-      query = query.orderBy('created_at', 'desc');
-    }
-    
-    // Apply limit and offset
-    if (this.limitClause) {
-      query = query.limit(this.limitClause);
-    }
-    if (this.offsetClause) {
-      query = query.offset(this.offsetClause);
-    }
-    
-    return query;
+    return newQuery as this;
   }
 }
 
@@ -418,6 +325,37 @@ export class ReactiveRecord<T extends BaseRecord> {
    */
   withDiscarded(): ReactiveScopedQuery<T> {
     return new ReactiveRecordScopedQuery<T>(this.config).withDiscarded();
+  }
+  
+  /**
+   * Rails-familiar includes() method for eager loading relationships
+   * Returns ReactiveScopedQuery for method chaining
+   * 
+   * @param relationships - List of relationship names to include
+   * @returns ReactiveScopedQuery with relationships configured
+   * 
+   * @example
+   * ```typescript
+   * // Single relationship
+   * const jobQuery = ReactiveJob.includes('client').find(id);
+   * 
+   * // Multiple relationships
+   * const jobsQuery = ReactiveJob.includes('client', 'tasks', 'jobAssignments').where({ status: 'active' });
+   * 
+   * // Method chaining with reactive updates
+   * const jobsQuery = ReactiveJob.includes('client')
+   *   .where({ status: 'active' })
+   *   .orderBy('created_at', 'desc')
+   *   .limit(10)
+   *   .all();
+   * 
+   * // In Svelte component
+   * $: jobs = jobsQuery.data;
+   * $: isLoading = jobsQuery.isLoading;
+   * ```
+   */
+  includes(...relationships: string[]): ReactiveScopedQuery<T> {
+    return new ReactiveRecordScopedQuery<T>(this.config).includes(...relationships);
   }
 }
 

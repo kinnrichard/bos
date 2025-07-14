@@ -11,6 +11,7 @@
  */
 
 import { getZero } from '../../zero/zero-client';
+import { BaseScopedQuery } from './scoped-query-base';
 import type { 
   BaseRecord, 
   QueryOptions, 
@@ -61,61 +62,12 @@ export class RecordInvalidError extends Error {
 }
 
 /**
- * Scoped query implementation for method chaining
+ * Scoped query implementation for method chaining with includes() support
+ * Extends BaseScopedQuery to inherit Rails-style includes() functionality
  */
-class ActiveRecordScopedQuery<T extends BaseRecord> implements ScopedQuery<T> {
-  private conditions: Partial<T>[] = [];
-  private orderByClause?: { field: keyof T; direction: 'asc' | 'desc' };
-  private limitClause?: number;
-  private offsetClause?: number;
-  private includeDiscarded = false;
-  private onlyDiscarded = false;
-  
-  constructor(private config: ActiveRecordConfig) {}
-  
-  where(conditions: Partial<T>): ScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.conditions.push(conditions);
-    return newQuery;
-  }
-  
-  orderBy(field: keyof T, direction: 'asc' | 'desc' = 'asc'): ScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.orderByClause = { field, direction };
-    return newQuery;
-  }
-  
-  limit(count: number): ScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.limitClause = count;
-    return newQuery;
-  }
-  
-  offset(count: number): ScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.offsetClause = count;
-    return newQuery;
-  }
-  
-  withDiscarded(): ScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.includeDiscarded = true;
-    newQuery.onlyDiscarded = false;
-    return newQuery;
-  }
-  
-  discarded(): ScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.onlyDiscarded = true;
-    newQuery.includeDiscarded = false;
-    return newQuery;
-  }
-  
-  kept(): ScopedQuery<T> {
-    const newQuery = this.clone();
-    newQuery.includeDiscarded = false;
-    newQuery.onlyDiscarded = false;
-    return newQuery;
+class ActiveRecordScopedQuery<T extends BaseRecord> extends BaseScopedQuery<T> implements ScopedQuery<T> {
+  constructor(private config: ActiveRecordConfig) {
+    super(config.tableName);
   }
   
   async all(options: QueryOptions = {}): Promise<T[]> {
@@ -124,7 +76,7 @@ class ActiveRecordScopedQuery<T extends BaseRecord> implements ScopedQuery<T> {
   
   async first(options: QueryOptions = {}): Promise<T | null> {
     const query = this.clone();
-    query.limitClause = 1;
+    query.limitCount = 1;
     const results = await query.executeQuery(true, options) as T[];
     return results.length > 0 ? results[0] : null;
   }
@@ -132,12 +84,13 @@ class ActiveRecordScopedQuery<T extends BaseRecord> implements ScopedQuery<T> {
   async last(options: QueryOptions = {}): Promise<T | null> {
     const query = this.clone();
     // Reverse order and take first
-    if (query.orderByClause) {
-      query.orderByClause.direction = query.orderByClause.direction === 'asc' ? 'desc' : 'asc';
+    if (query.orderByField) {
+      query.orderByDirection = query.orderByDirection === 'asc' ? 'desc' : 'asc';
     } else {
-      query.orderByClause = { field: 'created_at' as keyof T, direction: 'asc' };
+      query.orderByField = 'created_at' as keyof T;
+      query.orderByDirection = 'asc';
     }
-    query.limitClause = 1;
+    query.limitCount = 1;
     const results = await query.executeQuery(true, options) as T[];
     return results.length > 0 ? results[0] : null;
   }
@@ -152,63 +105,23 @@ class ActiveRecordScopedQuery<T extends BaseRecord> implements ScopedQuery<T> {
     return count > 0;
   }
   
-  private clone(): ActiveRecordScopedQuery<T> {
+  protected clone(): this {
     const newQuery = new ActiveRecordScopedQuery<T>(this.config);
     newQuery.conditions = [...this.conditions];
-    newQuery.orderByClause = this.orderByClause;
-    newQuery.limitClause = this.limitClause;
-    newQuery.offsetClause = this.offsetClause;
+    newQuery.relationships = [...this.relationships];
+    newQuery.orderByField = this.orderByField;
+    newQuery.orderByDirection = this.orderByDirection;
+    newQuery.limitCount = this.limitCount;
+    newQuery.offsetCount = this.offsetCount;
     newQuery.includeDiscarded = this.includeDiscarded;
     newQuery.onlyDiscarded = this.onlyDiscarded;
-    return newQuery;
+    return newQuery as this;
   }
   
   private async executeQuery(isCollection: boolean, options: QueryOptions = {}): Promise<T | T[] | null> {
-    const zero = getZero();
-    if (!zero) {
-      throw new Error('Zero client not initialized');
-    }
-    
-    const queryTable = (zero.query as any)[this.config.tableName];
-    if (!queryTable) {
-      throw new Error(`Table '${this.config.tableName}' not found in Zero schema`);
-    }
-    
-    let query = queryTable;
-    
-    // Apply discard gem filtering
-    if (this.onlyDiscarded) {
-      query = query.where('discarded_at', '!=', null);
-    } else if (!this.includeDiscarded) {
-      query = query.where('discarded_at', null);
-    }
-    
-    // Apply conditions
-    for (const condition of this.conditions) {
-      for (const [key, value] of Object.entries(condition)) {
-        if (value !== undefined && value !== null) {
-          query = query.where(key, value);
-        }
-      }
-    }
-    
-    // Apply ordering
-    if (this.orderByClause) {
-      query = query.orderBy(this.orderByClause.field as string, this.orderByClause.direction);
-    } else if (isCollection) {
-      // Default order for collections
-      query = query.orderBy('created_at', 'desc');
-    }
-    
-    // Apply limit and offset
-    if (this.limitClause) {
-      query = query.limit(this.limitClause);
-    }
-    if (this.offsetClause) {
-      query = query.offset(this.offsetClause);
-    }
-    
     try {
+      const query = this.buildZeroQuery();
+      
       if (isCollection) {
         const results = await query.many();
         return results || [];
@@ -315,6 +228,32 @@ export class ActiveRecord<T extends BaseRecord> {
    */
   withDiscarded(): ScopedQuery<T> {
     return new ActiveRecordScopedQuery<T>(this.config).withDiscarded();
+  }
+  
+  /**
+   * Rails-familiar includes() method for eager loading relationships
+   * Returns ScopedQuery for method chaining
+   * 
+   * @param relationships - List of relationship names to include
+   * @returns ScopedQuery with relationships configured
+   * 
+   * @example
+   * ```typescript
+   * // Single relationship
+   * const job = await Job.includes('client').find(id);
+   * 
+   * // Multiple relationships
+   * const jobs = await Job.includes('client', 'tasks', 'jobAssignments').where({ status: 'active' });
+   * 
+   * // Method chaining
+   * const jobs = await Job.includes('client')
+   *   .where({ status: 'active' })
+   *   .orderBy('created_at', 'desc')
+   *   .limit(10);
+   * ```
+   */
+  includes(...relationships: string[]): ScopedQuery<T> {
+    return new ActiveRecordScopedQuery<T>(this.config).includes(...relationships);
   }
   
   /**
