@@ -11,7 +11,6 @@
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
-  import { layout, layoutActions } from '$lib/stores/layout.svelte';
 
   // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
   const jobId = $derived($page.params.id);
@@ -127,11 +126,7 @@
       // ✨ USE $inspect FOR DEBUGGING REACTIVE STATE IN SVELTE 5
       $inspect('[JobPage] Zero job structure:', job);
       
-      // Only set current job on initial load, not on reactive updates
-      console.log('[JobPage] Setting current job in layout store');
-      if (!layout.currentJob || layout.currentJob.id !== job.id) {
-        layoutActions.setCurrentJob(job);
-      }
+      // Note: Job is now passed directly to AppLayout - no need for layout store
     } else if (!isLoading && !error) {
       console.warn('[JobPage] Job is null but not loading and no error - possible query issue');
     }
@@ -145,10 +140,7 @@
     }
   });
 
-  // Clear current job when component is destroyed (leaving page)
-  onDestroy(() => {
-    layoutActions.setCurrentJob(null);
-  });
+  // Note: No need to clear layout store since we're not using it anymore
 
   // Handle back navigation
   function handleBack() {
@@ -175,7 +167,7 @@
   <title>{pageTitle}</title>
 </svelte:head>
 
-<AppLayout>
+<AppLayout currentJob={job}>
 <div class="job-detail-container">
 
   <!-- Loading State -->

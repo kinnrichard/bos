@@ -2,11 +2,17 @@
   import { layout, layoutActions } from '$lib/stores/layout.svelte';
   import Sidebar from './Sidebar.svelte';
   import Toolbar from './Toolbar.svelte';
+  import type { PopulatedJob } from '$lib/types/job';
 
   // Props for layout customization
   let {
     showSidebar = true,
-    showToolbar = true
+    showToolbar = true,
+    currentJob = null
+  }: {
+    showSidebar?: boolean;
+    showToolbar?: boolean;
+    currentJob?: PopulatedJob | null;
   } = $props();
 </script>
 
@@ -34,7 +40,7 @@
     <!-- Toolbar -->
     {#if showToolbar}
       <div class="toolbar-container">
-        <Toolbar />
+        <Toolbar {currentJob} />
       </div>
     {/if}
 

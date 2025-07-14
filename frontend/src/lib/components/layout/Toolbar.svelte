@@ -7,6 +7,10 @@
   import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
   import SchedulePriorityEditPopover from './SchedulePriorityEditPopover.svelte';
   import CircularButton from '$lib/components/ui/CircularButton.svelte';
+  import type { PopulatedJob } from '$lib/types/job';
+
+  // Props - accept job directly instead of using layout.currentJob
+  let { currentJob }: { currentJob?: PopulatedJob | null } = $props();
 
   // Search functionality
   let searchQuery = '';
@@ -100,13 +104,13 @@
     {/if}
 
     <!-- Job status button (only show on job detail page) -->
-    {#if currentPage === 'job-detail' && layout.currentJob && layout.currentJob.id}
-      <JobStatusButton bind:job={layout.currentJob} />
+    {#if currentPage === 'job-detail' && currentJob && currentJob.id}
+      <JobStatusButton bind:job={currentJob} />
       <TechnicianAssignmentButton 
-        jobId={layout.currentJob.id}
-        initialTechnicians={layout.currentJob.technicians || []}
+        jobId={currentJob.id}
+        initialTechnicians={currentJob.technicians || []}
       />
-      <SchedulePriorityEditPopover jobId={layout.currentJob.id} bind:initialJob={layout.currentJob} />  
+      <SchedulePriorityEditPopover jobId={currentJob.id} bind:initialJob={currentJob} />  
     {/if}
   </div>
 

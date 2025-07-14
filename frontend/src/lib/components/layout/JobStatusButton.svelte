@@ -23,11 +23,6 @@
     { id: 'cancelled', value: 'cancelled', label: 'Cancelled', emoji: '❌' }
   ];
 
-  // Get current status as string (no conversion needed since API returns strings)
-  const currentStatus = $derived(
-    job?.status || 'open'
-  );
-  
   // Get job status emoji with comprehensive null checks
   const jobStatusEmoji = $derived(
     job ? getJobStatusEmoji(currentStatus) : '📝'
@@ -55,26 +50,17 @@
     }
   });
 
-  // Track when status changes are attempted
-  let lastAttemptedStatus = $state(null);
-  $effect(() => {
-    if (lastAttemptedStatus && lastAttemptedStatus !== job?.status) {
-      console.log('[JobStatusButton] STATUS REVERT DETECTED:', {
-        attemptedStatus: lastAttemptedStatus,
-        currentStatus: job?.status,
-        timestamp: Date.now()
-      });
-    }
-  });
+  // Simple direct binding to job status (let Zero.js handle optimistic updates)
+  const currentStatus = $derived(job?.status || 'open');
 
-  // Handle status change using ActiveRecord pattern
+  // Handle status change using ActiveRecord pattern (Zero.js handles optimistic updates)
   async function handleStatusChange(statusOption: any) {
     const newStatus = statusOption.value;
     console.log('[JobStatusButton] handleStatusChange called:', {
       newStatus,
       currentStatus,
       jobId: job?.id,
-      jobBeforeChange: job?.status,
+      jobStatus: job?.status,
       timestamp: Date.now()
     });
     
@@ -83,21 +69,8 @@
       return;
     }
     
-    // Track the attempted change
-    lastAttemptedStatus = newStatus;
-    
-    // Keep optimistic UI update for immediate feedback
-    // const previousStatus = job.status;
-    // job.status = newStatus;
-    
-    console.log('[JobStatusButton] BEFORE ActiveRecord mutation:', {
-      jobStatus: job.status,
-      newStatus: newStatus,
-      timestamp: Date.now()
-    });
-    
     try {
-      // Persist to database using ActiveRecord pattern (generates WebSocket traffic)
+      // Persist to database using ActiveRecord pattern (Zero.js handles optimistic updates)
       console.log('[JobStatusButton] Calling Job.update...');
       await Job.update(job.id, { status: newStatus });
       
@@ -107,14 +80,7 @@
         timestamp: Date.now()
       });
     } catch (error) {
-      // Revert optimistic update on failure
-      job.status = previousStatus;
       console.error('[JobStatusButton] Failed to update job status:', error);
-      console.log('[JobStatusButton] REVERTED optimistic update:', {
-        revertedTo: job.status,
-        failedStatus: newStatus,
-        timestamp: Date.now()
-      });
       // TODO: Show error toast to user
     }
     
