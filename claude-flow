@@ -23,5 +23,5 @@ elif command -v claude-flow &> /dev/null; then
 # 3. Fallback to npx
 else
   cd "${PROJECT_DIR}"
-  exec npx claude-flow@latest "$@"
+  exec npx claude-flow@1.0.72 "$@"
 fi
