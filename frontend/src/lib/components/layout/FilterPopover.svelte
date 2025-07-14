@@ -137,12 +137,6 @@
           {/if}
         </div>
       </button>
-      
-      {#if showDeleted}
-        <div class="deleted-indicator">
-          <span class="deleted-indicator-text">Showing deleted tasks</span>
-        </div>
-      {/if}
     </div>
   </div>
 </BasePopover>
