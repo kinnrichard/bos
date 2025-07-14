@@ -11,7 +11,6 @@
 
 
 import { getZero } from './zero-client';
-import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
 
 // Generated TypeScript types for tasks
 // TypeScript interfaces for tasks
@@ -599,8 +598,8 @@ export async function undiscardTask(id: string): Promise<TaskMutationResult> {
  * }
  * ```
  */
-export class TaskInstance extends RecordInstance<Task> {
-  protected mutations: ZeroMutations<Task> = {
+export class TaskInstance {
+  protected mutations = {
     update: async (id: string, data: Partial<Task>) => {
       return await updateTask(id, data as UpdateTaskData);
     },
@@ -612,8 +611,8 @@ export class TaskInstance extends RecordInstance<Task> {
             }
   };
 
-  constructor(data: Task) {
-    super(data);
+  constructor(public data: Task) {
+    // Epic-008: Simple constructor without inheritance
   }
 
 /**
@@ -671,7 +670,7 @@ async moveToBottom(): Promise<{ id: string }> {
  * Generated from Rails enum
  */
 async updateStatus(status: string): Promise<{ id: string }> {
-  return await this.update({ status: status as any });
+  return await updateTask(this.data.id, { status: status as any });
 }
 
 
