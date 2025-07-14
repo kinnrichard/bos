@@ -22,8 +22,8 @@ if ! gem list foreman -i --silent; then
   gem install foreman
 fi
 
-# Regenerate Zero mutations before starting servers
-echo "🔄 Checking Zero mutations..."
-rails generate zero:mutations --table tasks
+# Regenerate Epic-008 models before starting servers
+echo "🔄 Generating ReactiveRecord models..."
+rails generate zero:active_models
 
 exec foreman start -f Procfile.dev "$@"
