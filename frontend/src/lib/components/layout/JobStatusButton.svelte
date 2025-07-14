@@ -7,7 +7,6 @@
   const { updateJob } = getZeroContext();
   import { layout } from '$lib/stores/layout.svelte';
   import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
-  import { getJobStatusString } from '$lib/utils/enum-conversions';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
   import '$lib/styles/popover-common.css';
@@ -29,16 +28,14 @@
     { id: 'cancelled', value: 'cancelled', label: 'Cancelled', emoji: '❌' }
   ];
 
-  // Get job status emoji with comprehensive null checks and proper conversion
-  const jobStatusEmoji = $derived(
-    layout.currentJob?.attributes?.status !== undefined && layout.currentJob?.attributes?.status !== null
-      ? getJobStatusEmoji(getJobStatusString(layout.currentJob.attributes.status))
-      : '📝'
-  );
+  // Get current status as string (no conversion needed since API returns strings)
   const currentStatus = $derived(
-    layout.currentJob?.attributes?.status !== undefined && layout.currentJob?.attributes?.status !== null
-      ? getJobStatusString(layout.currentJob.attributes.status)
-      : 'open'
+    layout.currentJob?.attributes?.status || 'open'
+  );
+  
+  // Get job status emoji with comprehensive null checks
+  const jobStatusEmoji = $derived(
+    getJobStatusEmoji(currentStatus)
   );
 
   // Handle status change using Zero direct mutation
