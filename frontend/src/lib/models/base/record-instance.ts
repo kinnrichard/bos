@@ -64,4 +64,4 @@ export abstract class RecordInstance<T extends { id: string }> {
   }
 }
 
-export type { ZeroMutations };
+// ZeroMutations type is already exported at line 7 above

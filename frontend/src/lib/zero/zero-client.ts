@@ -1,6 +1,18 @@
 import { Zero } from '@rocicorp/zero';
 import { schema, type ZeroClient } from './generated-schema';
-import { browser } from '$app/environment';
+
+// Conditional import to handle test environments without SvelteKit
+function getBrowserState(): boolean {
+  try {
+    // In SvelteKit environments, this will work
+    return typeof window !== 'undefined' && typeof document !== 'undefined';
+  } catch {
+    // Fallback for any environment
+    return false;
+  }
+}
+
+const browser = getBrowserState();
 import { Job } from './job.generated';
 import { Client } from './client.generated';
 import { User } from './user.generated';
