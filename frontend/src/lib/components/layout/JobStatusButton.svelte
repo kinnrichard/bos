@@ -2,20 +2,23 @@
   import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import { getZeroContext } from '$lib/zero-context.svelte';
+  import type { PopulatedJob } from '$lib/types/job';
+
+  // Props
+  let { job }: { job: PopulatedJob } = $props();
 
   // Get Zero functions from context
   const { updateJob } = getZeroContext();
-  import { layout } from '$lib/stores/layout.svelte';
   import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
   import '$lib/styles/popover-common.css';
 
-  let popover: any;
+  let popover = $state();
   
   // Local state for Zero mutation management
-  let isLoading = false;
-  let error: any = null;
+  let isLoading = $state(false);
+  let error = $state(null);
 
   // All available job statuses with their display information
   const availableStatuses = [
@@ -30,29 +33,48 @@
 
   // Get current status as string (no conversion needed since API returns strings)
   const currentStatus = $derived(
-    layout.currentJob?.attributes?.status || 'open'
+    job?.status || 'open'
   );
   
   // Get job status emoji with comprehensive null checks
   const jobStatusEmoji = $derived(
-    getJobStatusEmoji(currentStatus)
+    job ? getJobStatusEmoji(currentStatus) : '📝'
   );
+  
+  // Debug logging for JobStatusButton
+  $effect(() => {
+    console.log('[JobStatusButton] Debug Info:');
+    console.log('  job prop:', job);
+    console.log('  job?.status:', job?.status);
+    console.log('  currentStatus:', currentStatus);
+    console.log('  jobStatusEmoji:', jobStatusEmoji);
+    console.log('  getJobStatusEmoji(currentStatus):', getJobStatusEmoji(currentStatus));
+    
+    // Test all status mappings
+    console.log('[JobStatusButton] Emoji mapping tests:');
+    console.log('  getJobStatusEmoji("open"):', getJobStatusEmoji("open"));
+    console.log('  getJobStatusEmoji("paused"):', getJobStatusEmoji("paused"));
+    console.log('  getJobStatusEmoji("successfully_completed"):', getJobStatusEmoji("successfully_completed"));
+    console.log('  getJobStatusEmoji("in_progress"):', getJobStatusEmoji("in_progress"));
+  });
 
   // Handle status change using Zero direct mutation
   async function handleStatusChange(statusOption: any) {
     const newStatus = statusOption.value;
-    if (!layout.currentJob || newStatus === currentStatus || isLoading) return;
+    if (!job || !job.id || newStatus === currentStatus || isLoading) return;
     
     try {
       isLoading = true;
       error = null;
       
       // Use Zero's updateJob with status field
-      await updateJob(layout.currentJob.id, { status: newStatus });
+      await updateJob(job.id, { status: newStatus });
       
       // Zero automatically updates the UI in real-time
       // Close popover
-      popover.close();
+      if (popover && popover.close) {
+        popover.close();
+      }
     } catch (err) {
       error = err;
       console.error('Failed to update job status:', err);

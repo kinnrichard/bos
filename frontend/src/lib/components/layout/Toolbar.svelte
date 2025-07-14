@@ -101,7 +101,7 @@
 
     <!-- Job status button (only show on job detail page) -->
     {#if currentPage === 'job-detail' && layout.currentJob && layout.currentJob.id}
-      <JobStatusButton />
+      <JobStatusButton job={layout.currentJob} />
       <TechnicianAssignmentButton 
         jobId={layout.currentJob.id}
         initialTechnicians={layout.currentJob.technicians || []}

@@ -16,9 +16,29 @@
   // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
   const jobId = $derived($page.params.id);
   
+  // Debug job ID extraction
+  $effect(() => {
+    console.log('[JobPage] URL params:', $page.params);
+    console.log('[JobPage] Extracted jobId:', jobId);
+    console.log('[JobPage] Page route:', $page.route?.id);
+  });
+  
   // ✨ CREATE REACTIVE QUERY IN SVELTE COMPONENT (where $state runes are available)
   const jobQuery = $derived(jobId ? new ReactiveQueryOne<Job>(
-    () => queryJobs().includes('client', 'tasks', 'jobAssignments').where('id', jobId).one(),
+    () => {
+      console.log('[JobPage] Executing query for job:', jobId);
+      
+      // Test simple query first
+      console.log('[JobPage] Testing simple query without includes...');
+      const simpleResult = queryJobs().where('id', jobId).one();
+      console.log('[JobPage] Simple query result:', simpleResult);
+      
+      // Test with includes
+      console.log('[JobPage] Testing query with includes...');
+      const result = queryJobs().includes('client', 'tasks', 'jobAssignments').where('id', jobId).one();
+      console.log('[JobPage] Full query result:', result);
+      return result;
+    },
     null,
     '5m' // 5 minute TTL
   ) : null);
@@ -52,6 +72,11 @@
     
     if (jobQuery) {
       console.log('[JobPage] JobQuery state - loading:', isLoading, 'error:', !!error, 'data available:', !!job);
+      console.log('[JobPage] Raw jobQuery.data:', jobQuery.data);
+      console.log('[JobPage] Raw jobQuery.isLoading:', jobQuery.isLoading);
+      console.log('[JobPage] Raw jobQuery.error:', jobQuery.error);
+    } else {
+      console.log('[JobPage] No jobQuery - jobId present:', !!jobId);
     }
     
     if (job) {
