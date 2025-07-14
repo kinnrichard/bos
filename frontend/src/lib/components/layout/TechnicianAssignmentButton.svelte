@@ -7,7 +7,7 @@
   // Get Zero functions from context
   const { User, Job } = getZeroContext();
   // Use Zero's User type instead of the old JSON:API format
-  import type { User as ZeroUser } from '$lib/zero/models/user.generated';
+  import type { User as ZeroUser } from '$lib/zero/user.generated';
   import { debugTechAssignment } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage, validateUserData, createIdSet } from '$lib/utils/popover-utils';
