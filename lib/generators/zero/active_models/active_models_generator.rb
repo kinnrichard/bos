@@ -234,7 +234,7 @@ module Zero
            * Generated: #{Time.current.strftime("%Y-%m-%d %H:%M:%S UTC")}
            */
 
-          import { createActiveRecord } from '../base/active-record';
+          import { createActiveRecord } from './base/active-record';
           import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';
 
           /**
@@ -306,7 +306,7 @@ module Zero
            * Generated: #{Time.current.strftime("%Y-%m-%d %H:%M:%S UTC")}
            */
 
-          import { createReactiveRecord } from '../base/reactive-record';
+          import { createReactiveRecord } from './base/reactive-record';
           import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';
 
           /**

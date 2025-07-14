@@ -3,20 +3,23 @@
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { getZeroContext } from '$lib/zero-context.svelte';
+  
+  // Use proper ReactiveQuery class for modern Svelte 5 reactivity
+  import { ReactiveQuery } from '$lib/zero/reactive-query.svelte';
+  import type { UserData } from '$lib/models/types/user-data';
+  import { getZero } from '$lib/zero/zero-client';
 
-  // Get Zero functions from context
-  const { User, Job } = getZeroContext();
-  // Use Zero's User type instead of the old JSON:API format
-  import type { User as ZeroUser } from '$lib/zero/user.generated';
+  // Get Zero functions from context for Job
+  const { Job } = getZeroContext();
   import { debugTechAssignment } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage, validateUserData, createIdSet } from '$lib/utils/popover-utils';
   import { tick } from 'svelte';
   import '$lib/styles/popover-common.css';
 
-  // Helper function to safely cast popover options to ZeroUser
-  function asUser(option: any): ZeroUser {
-    return option as ZeroUser;
+  // Helper function to safely cast popover options to UserData
+  function asUser(option: any): UserData {
+    return option as UserData;
   }
 
   let {
@@ -30,8 +33,16 @@
 
   let popover: any;
   
-  // Use Zero Query for all data - single source of truth
-  const usersQuery = User.all();
+  // Use proper ReactiveQuery class for users data
+  const usersQuery = new ReactiveQuery<UserData>(
+    () => {
+      const zero = getZero();
+      if (!zero) return null;
+      return zero.query.users.orderBy('created_at', 'desc');
+    },
+    [], // default value
+    '5m' // TTL
+  );
   // TODO: Need to implement user lookup functionality
   // const userLookup = useUserLookup();
   const jobQuery = Job.find(jobId);
@@ -41,8 +52,10 @@
   let error: Error | null = null;
 
   // Derived state from Zero Query - fallback to initial data
-  const job = $derived(jobQuery.value); // Zero returns value directly
-  const availableUsers = $derived(usersQuery.value || []);
+  const job = $derived(jobQuery.current); // Zero returns current directly  
+  const availableUsers = $derived(usersQuery.data || []);
+  
+  
   // Use populated technicians from job.assignments instead of relationships
   const assignedTechnicians = $derived(job?.assignments?.map(a => a.user) || initialTechnicians);
   const assignedTechniciansForDisplay = $derived(assignedTechnicians);
@@ -51,7 +64,7 @@
   
   // Local state for immediate UI responsiveness (optimistic updates)
   let localSelectedIds: Set<string> = new Set();
-  let optimisticTechnicians: ZeroUser[] = [];
+  let optimisticTechnicians: UserData[] = [];
   
   // Sync with server data only when server data actually changes (not on every local update)
   // This prevents unnecessary re-renders that cause hover flicker
@@ -69,14 +82,14 @@
   
   // Derive optimistic display data separately - this only updates when users list or localSelectedIds change
   $effect(() => {
-    const userList = usersQuery.value || [];
+    const userList = usersQuery.data || [];
     optimisticTechnicians = Array.from(localSelectedIds)
       .map(id => userList.find(user => user.id === id))
-      .filter(Boolean) as ZeroUser[];
+      .filter(Boolean) as UserData[];
   });
 
   // Handle checkbox changes - optimistic updates, no loading blocking
-  async function handleUserToggle(user: ZeroUser, checked: boolean) {
+  async function handleUserToggle(user: UserData, checked: boolean) {
     // Remove loading guard to allow optimistic updates
     
     // Ensure user has required data
@@ -115,7 +128,7 @@
       error = null;
       // TODO: Implement assignTechniciansToJob functionality
       // This would need to work with your job_assignments table
-      console.log('TODO: assignTechniciansToJob', { jobId, technicianIds });
+      // TODO: assignTechniciansToJob({ jobId, technicianIds });
     } catch (err) {
       error = err as Error;
       debugTechAssignment('Error during mutation: %o', err);
@@ -166,12 +179,12 @@
       <div class="popover-error-message">{error}</div>
     {/if}
 
-    {#if !usersQuery.value}
+    {#if usersQuery.isLoading}
       <div class="popover-loading-indicator">Loading users...</div>
     {:else}
       <PopoverOptionList
-        options={availableUsers.filter(validateUserData)}
-        loading={!usersQuery.value}
+        options={availableUsers}
+        loading={usersQuery.isLoading}
         maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
         onOptionClick={(user, event) => {
           const isCurrentlySelected = localSelectedIds.has(user.id);
