@@ -1,24 +1,15 @@
 <script lang="ts">
   import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
-  import { getZeroContext } from '$lib/zero-context.svelte';
   import type { PopulatedJob } from '$lib/types/job';
 
   // Props
   let { job }: { job: PopulatedJob } = $props();
-
-  // Get Zero functions from context
-  const { updateJob } = getZeroContext();
-  import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
+  import { getJobStatusEmoji } from '$lib/config/emoji';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
-  import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
   import '$lib/styles/popover-common.css';
 
   let popover = $state();
-  
-  // Local state for Zero mutation management
-  let isLoading = $state(false);
-  let error = $state(null);
 
   // All available job statuses with their display information
   const availableStatuses = [
@@ -58,28 +49,17 @@
     console.log('  getJobStatusEmoji("in_progress"):', getJobStatusEmoji("in_progress"));
   });
 
-  // Handle status change using Zero direct mutation
-  async function handleStatusChange(statusOption: any) {
+  // Handle status change using simple reactive state update
+  function handleStatusChange(statusOption: any) {
     const newStatus = statusOption.value;
-    if (!job || !job.id || newStatus === currentStatus || isLoading) return;
+    if (!job || newStatus === currentStatus) return;
     
-    try {
-      isLoading = true;
-      error = null;
-      
-      // Use Zero's updateJob with status field
-      await updateJob(job.id, { status: newStatus });
-      
-      // Zero automatically updates the UI in real-time
-      // Close popover
-      if (popover && popover.close) {
-        popover.close();
-      }
-    } catch (err) {
-      error = err;
-      console.error('Failed to update job status:', err);
-    } finally {
-      isLoading = false;
+    // Simple reactive update - Svelte 5 handles the reactivity
+    job.status = newStatus;
+    
+    // Close popover
+    if (popover && popover.close) {
+      popover.close();
     }
   }
 </script>
@@ -87,8 +67,6 @@
 <HeadlessPopoverButton 
   bind:popover
   title={`Job Status: ${jobStatusEmoji}`}
-  error={error ? getPopoverErrorMessage(error) : ''}
-  loading={isLoading}
   panelWidth="max-content"
   panelPosition="center"
   topOffset={POPOVER_CONSTANTS.DEFAULT_TOP_OFFSET}
@@ -98,16 +76,11 @@
     <span class="job-status-emoji">{jobStatusEmoji}</span>
   </svelte:fragment>
 
-  <svelte:fragment slot="panel-content" let:error let:loading>
+  <svelte:fragment slot="panel-content">
     <h3 class="popover-title">Job Status</h3>
-    
-    {#if error}
-      <div class="popover-error-message">{error}</div>
-    {/if}
 
     <PopoverOptionList
       options={availableStatuses}
-      loading={loading}
       onOptionClick={handleStatusChange}
       isSelected={(option) => option.value === currentStatus}
     >
@@ -123,10 +96,6 @@
         </div>
       </svelte:fragment>
     </PopoverOptionList>
-
-    {#if isLoading}
-      <div class="popover-loading-indicator">Updating status...</div>
-    {/if}
   </svelte:fragment>
 </HeadlessPopoverButton>
 

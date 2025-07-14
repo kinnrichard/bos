@@ -2,15 +2,7 @@
   import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
   import FormInput from '$lib/components/ui/FormInput.svelte';
   import FormSelect from '$lib/components/ui/FormSelect.svelte';
-  import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
-  import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
-  import { getZeroContext } from '$lib/zero-context.svelte';
-
-  // Get Zero functions from context
-  const { Job, updateJob } = getZeroContext();
   import type { PopulatedJob } from '$lib/types/job';
-  import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
-  import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
 
   let {
     jobId,
@@ -21,17 +13,9 @@
   } = $props();
 
   let popover: any;
-  
-  // Zero query for real-time job data
-  const jobQuery = Job.find(jobId);
 
-  // Local state for Zero mutation management
-  let isLoading = false;
-  let error: any = null;
-
-  // Derived state from Zero query
-  const job = $derived(jobQuery.current || jobQuery.value || initialJob);
-  const errorMessage = $derived(getPopoverErrorMessage(error));
+  // Use the initial job directly (reactive through layout store)
+  const job = $derived(initialJob);
 
   // Local form state
   let localPriority = '';
@@ -40,17 +24,14 @@
   let localDueDate = '';
   let localDueTime = '';
 
-  // Keep local state in sync with server data
-  // Zero data structure may be different from JSON:API format
+  // Keep local state in sync with job data
   $effect(() => {
-    if (job && !isLoading) {
-      // Handle both Zero format and JSON:API format during transition
-      const jobData = job.attributes || job;
-      localPriority = jobData.priority || 'normal';
-      localStartDate = jobData.start_on || jobData.start_date || '';
-      localStartTime = jobData.start_time || '';
-      localDueDate = jobData.due_on || jobData.due_date || '';
-      localDueTime = jobData.due_time || '';
+    if (job) {
+      localPriority = job.priority || 'normal';
+      localStartDate = job.start_date || '';
+      localStartTime = job.start_time || '';
+      localDueDate = job.due_date || '';
+      localDueTime = job.due_time || '';
     }
   });
 
@@ -63,59 +44,37 @@
     { value: 'proactive_followup', label: 'Proactive Followup' }
   ];
 
-  async function handleSave() {
-    if (isLoading || !job?.id) return;
+  function handleSave() {
+    if (!job) return;
 
-    // Handle both Zero format and JSON:API format during transition
-    const jobData = job.attributes || job;
-    const updates: any = {};
+    // Simple reactive updates - update job object directly
+    if (localPriority !== job.priority) {
+      job.priority = localPriority;
+    }
+    if (localStartDate !== job.start_date) {
+      job.start_date = localStartDate || null;
+    }
+    if (localStartTime !== job.start_time) {
+      job.start_time = localStartTime || null;
+    }
+    if (localDueDate !== job.due_date) {
+      job.due_date = localDueDate || null;
+    }
+    if (localDueTime !== job.due_time) {
+      job.due_time = localDueTime || null;
+    }
     
-    // Only include changed fields
-    if (localPriority !== jobData.priority) {
-      updates.priority = localPriority;
-    }
-    if (localStartDate !== (jobData.start_on || jobData.start_date)) {
-      updates.start_date = localStartDate || null;
-    }
-    if (localStartTime !== jobData.start_time) {
-      updates.start_time = localStartTime || null;
-    }
-    if (localDueDate !== (jobData.due_on || jobData.due_date)) {
-      updates.due_date = localDueDate || null;
-    }
-    if (localDueTime !== jobData.due_time) {
-      updates.due_time = localDueTime || null;
-    }
-
-    // Only submit if there are changes
-    if (Object.keys(updates).length > 0) {
-      try {
-        isLoading = true;
-        error = null;
-        
-        await updateJob(job.id, updates);
-        
-        // Zero automatically updates the UI, no need for manual cache updates
-        // Popover will close automatically when clicking outside
-      } catch (err) {
-        error = err;
-        console.error('Failed to update job:', err);
-      } finally {
-        isLoading = false;
-      }
-    }
+    // Popover will close automatically when clicking outside
   }
 
   function handleCancel() {
-    // Reset local state to server values
+    // Reset local state to job values
     if (job) {
-      // Handle both Zero format and JSON:API format during transition
-      const jobData = job.attributes || job;
-      localPriority = jobData.priority || 'normal';
-      localStartDate = jobData.start_on || jobData.start_date || '';
-      localStartTime = jobData.start_time || '';
-      localDueDate = jobData.due_on || jobData.due_date || '';
-      localDueTime = jobData.due_time || '';
+      localPriority = job.priority || 'normal';
+      localStartDate = job.start_date || '';
+      localStartTime = job.start_time || '';
+      localDueDate = job.due_date || '';
+      localDueTime = job.due_time || '';
     }
     // Popover will close automatically when clicking outside
   }
@@ -124,8 +83,6 @@
 <BasePopoverButton
   bind:popover
   title="Schedule and Priority"
-  error={errorMessage}
-  loading={isLoading}
   panelWidth="280px"
   panelPosition="right"
   contentPadding="20px"
@@ -134,18 +91,10 @@
     <img src="/icons/calendar-add.svg" alt="Schedule" class="calendar-icon" />
   </svelte:fragment>
 
-  <svelte:fragment slot="panel-content" let:error let:loading>
+  <svelte:fragment slot="panel-content">
     <h3 class="schedule-title">Schedule & Priority</h3>
-    
-    {#if errorMessage}
-      <ErrorMessage 
-        message={errorMessage}
-        variant="popover"
-        size="small"
-      />
-    {/if}
 
-    <form class="schedule-form" onsubmit={(e) => { e.preventDefault(); handleSave(e); }}>
+    <form class="schedule-form" onsubmit={(e) => { e.preventDefault(); handleSave(); }}>
       <!-- Priority Section -->
       <div class="form-section">
         <label class="form-label" for="priority-select-{jobId}">Priority</label>
@@ -153,7 +102,6 @@
           id="priority-select-{jobId}"
           bind:value={localPriority}
           options={priorityOptions}
-          disabled={isLoading}
           size="small"
         />
       </div>
@@ -168,7 +116,6 @@
             id="start-date-{jobId}"
             type="date"
             bind:value={localStartDate}
-            disabled={isLoading}
             size="small"
           />
         </div>
@@ -179,7 +126,6 @@
             id="start-time-{jobId}"
             type="time"
             bind:value={localStartTime}
-            disabled={isLoading}
             size="small"
           />
         </div>
@@ -190,7 +136,6 @@
             id="due-date-{jobId}"
             type="date"
             bind:value={localDueDate}
-            disabled={isLoading}
             size="small"
           />
         </div>
@@ -201,7 +146,6 @@
             id="due-time-{jobId}"
             type="time"
             bind:value={localDueTime}
-            disabled={isLoading}
             size="small"
           />
         </div>
@@ -212,7 +156,6 @@
         <button 
           type="button" 
           class="cancel-button"
-          disabled={isLoading}
           onclick={handleCancel}
         >
           Cancel
@@ -220,13 +163,8 @@
         <button 
           type="submit" 
           class="save-button"
-          disabled={isLoading}
         >
-          {#if isLoading}
-            <LoadingIndicator type="text" message="Saving..." size="small" inline />
-          {:else}
-            Save
-          {/if}
+          Save
         </button>
       </div>
     </form>
