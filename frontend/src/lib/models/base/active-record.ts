@@ -256,13 +256,10 @@ export class ActiveRecord<T extends BaseRecord> {
     
     let query = queryTable.where('id', id);
     
-    // Apply discard gem filtering unless withDiscarded is specified
-    if (!options.withDiscarded) {
-      query = query.where('discarded_at', null);
-    }
+    // Skip discarded_at filtering in find() - should find any record by ID
     
     try {
-      const result = await query.one();
+      const result = await query.one().run();
       if (!result) {
         throw RecordNotFoundError.forId(id, this.config.className);
       }

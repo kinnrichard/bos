@@ -140,6 +140,14 @@ export class ReactiveQuery<T> {
         
         this.view = queryBuilder.materialize(ttlValue);
         
+        // Check if materialize() returned a valid view
+        if (!this.view) {
+          console.log('🔍 ReactiveQuery: materialize() returned null, Zero client not ready. Retrying...');
+          this.updateState(this.defaultValue, true, null);
+          this.retryTimeoutId = setTimeout(tryInitialize, 200) as any;
+          return;
+        }
+        
         // Set up Zero's native listener for real-time updates
         this.removeListener = this.view.addListener((newData: T[]) => {
           if (this.isDestroyed) return;
@@ -337,6 +345,14 @@ export class ReactiveQueryOne<T> {
         }
         
         this.view = queryBuilder.materialize(ttlValue);
+        
+        // Check if materialize() returned a valid view
+        if (!this.view) {
+          console.log('🔍 ReactiveQueryOne: materialize() returned null, Zero client not ready. Retrying...');
+          this.updateState(this.defaultValue, true, null);
+          this.retryTimeoutId = setTimeout(tryInitialize, 200) as any;
+          return;
+        }
         
         // Set up Zero's native listener for real-time updates
         this.removeListener = this.view.addListener((newData: T | null) => {
