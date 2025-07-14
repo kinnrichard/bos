@@ -777,12 +777,11 @@
         throw new Error('Task not found');
       }
 
-      // Import the TaskInstance factory and create an instance
-      const { createTaskInstance } = await import('$lib/zero/task.generated');
-      const taskInstance = createTaskInstance(taskData as any);
+      // Use Epic-008 ActiveRecord pattern
+      const { Task } = await import('$lib/models/task');
       
       // Use ActiveRecord-style update method
-      await taskInstance.update({ title: newTitle.trim() });
+      await Task.update(taskData.id, { title: newTitle.trim() });
       
       // UI cleanup - Zero.js reactive updates will handle the data changes
       editingTaskId = null;
@@ -1046,15 +1045,11 @@
           throw new Error(`Task with ID ${taskId} not found`);
         }
 
-        // Import the TaskInstance factory and create an instance
-        const { createTaskInstance } = await import('$lib/zero/task.generated');
-        const taskInstance = createTaskInstance(taskData as any);
+        // Use Epic-008 ActiveRecord pattern
+        const { Task } = await import('$lib/models/task');
         
         // Use ActiveRecord-style discard method (soft deletion)
-        const success = await taskInstance.discard();
-        if (!success) {
-          throw new Error('Discard operation failed');
-        }
+        await Task.discard(taskData.id);
         return { id: taskData.id };
       });
 

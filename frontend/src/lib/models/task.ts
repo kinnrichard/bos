@@ -1,35 +1,62 @@
 /**
- * Task - ActiveRecord model (Epic-008 migration)
+ * Task - ActiveRecord model (non-reactive)
  * 
- * Rails-like model for tasks using Zero.js for offline sync.
- * This is now a re-export from the generated zero model.
+ * Promise-based Rails-compatible model for tasks table.
+ * Use this for server-side code, Node.js scripts, or non-reactive contexts.
  * 
  * For reactive Svelte components, use ReactiveTask instead:
  * ```typescript
  * import { ReactiveTask as Task } from './reactive-task';
  * ```
  * 
- * Epic-008: Simplified to use direct Zero.js generated models
+ * Generated: 2025-07-14 02:53:05 UTC
  */
 
-// Re-export everything from the zero-generated model
-export {
-  Task,
-  type Task as TaskData,
-  type CreateTaskData,
-  type UpdateTaskData,
-  TaskInstance,
-  createTaskInstance,
-  createTask,
-  updateTask,
-  discardTask,
-  undiscardTask,
-  upsertTask,
-  moveBeforeTask,
-  moveAfterTask,
-  moveToTopTask,
-  moveToBottomTask
-} from '../zero/task.generated';
+import { createActiveRecord } from './base/active-record';
+import type { TaskData, CreateTaskData, UpdateTaskData } from './types/task-data';
+
+/**
+ * ActiveRecord configuration for Task
+ */
+const TaskConfig = {
+  tableName: 'tasks',
+  className: 'Task',
+  primaryKey: 'id'
+};
+
+/**
+ * Task ActiveRecord instance
+ * 
+ * @example
+ * ```typescript
+ * // Find by ID (throws if not found)
+ * const task = await Task.find('123');
+ * 
+ * // Find by conditions (returns null if not found)
+ * const task = await Task.findBy({ title: 'Test' });
+ * 
+ * // Create new record
+ * const newTask = await Task.create({ title: 'New Task' });
+ * 
+ * // Update existing record
+ * const updatedTask = await Task.update('123', { title: 'Updated' });
+ * 
+ * // Soft delete (discard gem)
+ * await Task.discard('123');
+ * 
+ * // Restore discarded
+ * await Task.undiscard('123');
+ * 
+ * // Query with scopes
+ * const allTasks = await Task.all().all();
+ * const activeTasks = await Task.kept().all();
+ * const discardedTasks = await Task.discarded().all();
+ * ```
+ */
+export const Task = createActiveRecord<TaskData>(TaskConfig);
+
+// Export types for convenience
+export type { TaskData, CreateTaskData, UpdateTaskData };
 
 // Default export
-export { Task as default } from '../zero/task.generated';
+export default Task;

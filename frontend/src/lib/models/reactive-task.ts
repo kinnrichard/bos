@@ -1,7 +1,7 @@
 /**
- * ReactiveTask - Epic-008 Reactive Queries for Tasks
+ * ReactiveTask - ReactiveRecord model (Svelte 5 reactive)
  * 
- * Reactive Rails-compatible model using ReactiveQuery for Svelte 5.
+ * Reactive Rails-compatible model for tasks table.
  * Automatically updates Svelte components when data changes.
  * 
  * For non-reactive contexts, use Task instead:
@@ -9,25 +9,23 @@
  * import { Task } from './task';
  * ```
  * 
- * Epic-008: Simplified to use ReactiveQuery with Zero.js
+ * Generated: 2025-07-14 02:53:05 UTC
  */
 
-import { ReactiveQuery, ReactiveQueryOne } from '../zero/reactive-query.svelte';
-import { getZero } from '../zero/zero-client';
-import {
-  Task,
-  type Task as TaskData,
-  type CreateTaskData,
-  type UpdateTaskData,
-  createTask,
-  updateTask,
-  discardTask,
-  undiscardTask,
-  TaskInstance
-} from '../zero/task.generated';
+import { createReactiveRecord } from './base/reactive-record';
+import type { TaskData, CreateTaskData, UpdateTaskData } from './types/task-data';
 
 /**
- * ReactiveTask - Reactive model for tasks using Zero.js
+ * ReactiveRecord configuration for Task
+ */
+const ReactiveTaskConfig = {
+  tableName: 'tasks',
+  className: 'ReactiveTask',
+  primaryKey: 'id'
+};
+
+/**
+ * ReactiveTask ReactiveRecord instance
  * 
  * @example
  * ```svelte
@@ -38,7 +36,7 @@ import {
  *   // Reactive query - automatically updates when data changes
  *   const taskQuery = ReactiveTask.find('123');
  *   
- *   // Access reactive data with Svelte 5 runes
+ *   // Access reactive data
  *   $: task = taskQuery.data;
  *   $: isLoading = taskQuery.isLoading;
  *   $: error = taskQuery.error;
@@ -52,101 +50,21 @@ import {
  *   <p>{task.title}</p>
  * {/if}
  * ```
+ * 
+ * @example
+ * ```typescript
+ * // Mutation operations (still async)
+ * const newTask = await ReactiveTask.create({ title: 'New Task' });
+ * await ReactiveTask.update('123', { title: 'Updated' });
+ * await ReactiveTask.discard('123');
+ * 
+ * // Reactive queries
+ * const allTasksQuery = ReactiveTask.all().all();
+ * const activeTasksQuery = ReactiveTask.kept().all();
+ * const discardedTasks = await Task.discarded().all();
+ * ```
  */
-export const ReactiveTask = {
-  /**
-   * Find a single task by ID - reactive
-   * @param id - The UUID of the task
-   * @returns ReactiveQueryOne with the task data
-   */
-  find(id: string) {
-    return new ReactiveQueryOne<TaskData>(
-      () => {
-        const zero = getZero();
-        return zero?.query.tasks.where('id', id).one();
-      },
-      null,
-      '5m' // 5 minute TTL
-    );
-  },
-
-  /**
-   * Get all tasks (includes discarded) - reactive
-   * @returns ReactiveQuery with array of tasks
-   */
-  all() {
-    return new ReactiveQuery<TaskData>(
-      () => {
-        const zero = getZero();
-        return zero?.query.tasks.orderBy('created_at', 'desc');
-      },
-      [],
-      '5m'
-    );
-  },
-
-  /**
-   * Find tasks matching conditions - reactive
-   * @param conditions - Object with field/value pairs to match
-   * @returns ReactiveQuery with array of matching tasks
-   */
-  where(conditions: Partial<TaskData>) {
-    return new ReactiveQuery<TaskData>(
-      () => {
-        const zero = getZero();
-        if (!zero) return null;
-        
-        let query = zero.query.tasks;
-        
-        Object.entries(conditions).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            query = query.where(key as any, value);
-          }
-        });
-        
-        return query.orderBy('created_at', 'desc');
-      },
-      [],
-      '5m'
-    );
-  },
-
-  /**
-   * Get only kept (non-discarded) tasks - reactive
-   * @returns ReactiveQuery with array of kept tasks
-   */
-  kept() {
-    return new ReactiveQuery<TaskData>(
-      () => {
-        const zero = getZero();
-        return zero?.query.tasks.where('discarded_at', 'IS', null).orderBy('created_at', 'desc');
-      },
-      [],
-      '5m'
-    );
-  },
-
-  /**
-   * Get only discarded tasks - reactive
-   * @returns ReactiveQuery with array of discarded tasks
-   */
-  discarded() {
-    return new ReactiveQuery<TaskData>(
-      () => {
-        const zero = getZero();
-        return zero?.query.tasks.where('discarded_at', 'IS NOT', null).orderBy('created_at', 'desc');
-      },
-      [],
-      '5m'
-    );
-  },
-
-  // Mutation methods (same as Task but for convenience)
-  create: createTask,
-  update: updateTask,
-  discard: discardTask,
-  undiscard: undiscardTask
-};
+export const ReactiveTask = createReactiveRecord<TaskData>(ReactiveTaskConfig);
 
 /**
  * Import alias for easy switching between reactive/non-reactive
