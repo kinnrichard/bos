@@ -1,12 +1,20 @@
 <script lang="ts">
-  export let options: Array<{
-    id: string;
-    [key: string]: any;
-  }>;
-  export let loading: boolean = false;
-  export let maxHeight: string = 'min(400px, 50vh)';
-  export let onOptionClick: (option: any, event?: MouseEvent) => void;
-  export let isSelected: (option: any) => boolean = () => false;
+  let {
+    options,
+    loading = false,
+    maxHeight = 'min(400px, 50vh)',
+    onOptionClick,
+    isSelected = () => false
+  }: {
+    options: Array<{
+      id: string;
+      [key: string]: any;
+    }>;
+    loading?: boolean;
+    maxHeight?: string;
+    onOptionClick: (option: any, event?: MouseEvent) => void;
+    isSelected?: (option: any) => boolean;
+  } = $props();
 
   function handleOptionClick(option: any, event: MouseEvent) {
     if (loading) return;

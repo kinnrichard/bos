@@ -1,6 +1,8 @@
 <script lang="ts">
-  export let count: number = 5;
-  export let type: 'job-card' | 'job-detail' | 'generic' = 'generic';
+  let {
+    count = 5,
+    type = 'generic' as 'job-card' | 'job-detail' | 'generic'
+  } = $props();
 </script>
 
 {#if type === 'job-card'}

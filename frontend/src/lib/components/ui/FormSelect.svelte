@@ -1,27 +1,26 @@
 <script lang="ts">
-  export let value: string | number = '';
-  export let disabled: boolean = false;
-  export let required: boolean = false;
-  export let id: string = '';
-  export let name: string = '';
-  export let title: string = '';
-  export let ariaLabel: string = '';
-  export let ariaDescribedby: string = '';
-  
-  // Options - can be simple strings or objects
-  export let options: Array<string | { value: string | number; label: string; disabled?: boolean }> = [];
-  export let placeholder: string = '';
-  export let showPlaceholder: boolean = true;
-
-  // Styling props
-  export let size: 'small' | 'normal' | 'large' = 'normal';
-  export let variant: 'default' | 'error' | 'success' = 'default';
-  export let fullWidth: boolean = false;
-  export let customClass: string = '';
-
-  // Error state
-  export let error: string = '';
-  export let showError: boolean = true;
+  let {
+    value = '' as string | number,
+    disabled = false,
+    required = false,
+    id = '',
+    name = '',
+    title = '',
+    ariaLabel = '',
+    ariaDescribedby = '',
+    // Options - can be simple strings or objects
+    options = [] as Array<string | { value: string | number; label: string; disabled?: boolean }>,
+    placeholder = '',
+    showPlaceholder = true,
+    // Styling props
+    size = 'normal' as 'small' | 'normal' | 'large',
+    variant = 'default' as 'default' | 'error' | 'success',
+    fullWidth = false,
+    customClass = '',
+    // Error state
+    error = '',
+    showError = true
+  } = $props();
 
   // Focus management
   let selectElement: HTMLSelectElement;

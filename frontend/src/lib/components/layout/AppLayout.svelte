@@ -4,8 +4,10 @@
   import Toolbar from './Toolbar.svelte';
 
   // Props for layout customization
-  export let showSidebar = true;
-  export let showToolbar = true;
+  let {
+    showSidebar = true,
+    showToolbar = true
+  } = $props();
 </script>
 
 <div class="app-container">

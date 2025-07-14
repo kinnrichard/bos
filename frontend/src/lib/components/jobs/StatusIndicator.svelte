@@ -1,9 +1,15 @@
 <script lang="ts">
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
 
-  export let status: string;
-  export let priority: string;
-  export let isOverdue: boolean = false;
+  let {
+    status,
+    priority,
+    isOverdue = false
+  }: {
+    status: string;
+    priority: string;
+    isOverdue?: boolean;
+  } = $props();
 
   function getStatusInfo(status: string) {
     const statusMap: Record<string, { label: string; color: string }> = {

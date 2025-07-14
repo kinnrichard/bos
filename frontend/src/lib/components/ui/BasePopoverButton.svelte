@@ -2,19 +2,21 @@
   import { createManagedPopover } from '$lib/utils/popover-manager';
   import { fade } from 'svelte/transition';
 
-  export let title: string;
-  export let error: string = '';
-  export let loading: boolean = false;
-  export let panelWidth: string = '240px'; // Default width, can be overridden
-  export let panelPosition: 'center' | 'right' = 'center'; // Panel positioning
-  export let topOffset: string = '12px'; // Distance from button
-  export let contentPadding: string = '16px'; // Panel content padding
-  export let buttonClass: string = ''; // Additional button classes
+  let {
+    title,
+    error = '',
+    loading = false,
+    panelWidth = '240px', // Default width, can be overridden
+    panelPosition = 'center' as 'center' | 'right', // Panel positioning
+    topOffset = '12px', // Distance from button
+    contentPadding = '16px', // Panel content padding
+    buttonClass = '', // Additional button classes
+    popover = $bindable()
+  } = $props();
 
-  const popover = createManagedPopover();
-
-  // Export the popover instance for parent components to control
-  export { popover };
+  if (!popover) {
+    popover = createManagedPopover();
+  }
 </script>
 
 <div class="base-popover">

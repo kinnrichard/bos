@@ -19,10 +19,14 @@
     return option as ZeroUser;
   }
 
-  export let jobId: string;
-  
-  // Optional props to provide initial data while job query loads
-  export let initialTechnicians: Array<{id: string}> = [];
+  let {
+    jobId,
+    // Optional props to provide initial data while job query loads
+    initialTechnicians = [] as Array<{id: string}>
+  }: {
+    jobId: string;
+    initialTechnicians?: Array<{id: string}>;
+  } = $props();
 
   let popover: any;
   

@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from 'svelte';
 
-  // The target element where content should be rendered
-  export let target: HTMLElement | string = 'body';
-  
-  // Whether the portal is currently active
-  export let enabled: boolean = true;
+  // Portal props
+  let {
+    target = 'body' as HTMLElement | string,
+    enabled = true
+  } = $props();
 
   let portalContainer: HTMLElement;
   let targetElement: HTMLElement;

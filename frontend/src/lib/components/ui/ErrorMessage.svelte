@@ -1,17 +1,17 @@
 <script lang="ts">
-  export let message: string = '';
-  export let variant: 'inline' | 'block' | 'popover' | 'form' = 'inline';
-  export let size: 'small' | 'normal' | 'large' = 'normal';
-  export let dismissible: boolean = false;
-  export let icon: boolean = true;
-  export let customClass: string = '';
-  export let id: string = '';
-
-  // Show/hide state
-  export let visible: boolean = true;
-  
-  // Event handlers
-  export let onDismiss: (() => void) | undefined = undefined;
+  let {
+    message = '',
+    variant = 'inline' as 'inline' | 'block' | 'popover' | 'form',
+    size = 'normal' as 'small' | 'normal' | 'large',
+    dismissible = false,
+    icon = true,
+    customClass = '',
+    id = '',
+    // Show/hide state
+    visible = true,
+    // Event handlers
+    onDismiss = undefined as (() => void) | undefined
+  } = $props();
 
   function handleDismiss() {
     visible = false;

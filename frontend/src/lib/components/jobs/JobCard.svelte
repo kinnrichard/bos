@@ -2,8 +2,13 @@
   import type { Job } from '$lib/zero/job.generated';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
 
-  export let job: Job;
-  export let showClient: boolean = true;
+  let {
+    job,
+    showClient = true
+  }: {
+    job: Job;
+    showClient?: boolean;
+  } = $props();
 
   // Map Zero's numeric status to string for emoji functions
   function mapZeroStatusToString(status: number | null): string {

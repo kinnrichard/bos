@@ -1,10 +1,14 @@
 <script lang="ts">
-  export let client: {
-    id: string;
-    name: string;
-    created_at: string;
-    updated_at: string;
-  };
+  let {
+    client
+  }: {
+    client: {
+      id: string;
+      name: string;
+      created_at: string;
+      updated_at: string;
+    };
+  } = $props();
 
   function formatDateTime(dateString: string): string {
     return new Date(dateString).toLocaleDateString('en-US', {

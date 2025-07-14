@@ -1,14 +1,15 @@
 <script lang="ts">
-  export let type: 'text' | 'spinner' | 'dots' | 'skeleton' = 'text';
-  export let size: 'small' | 'normal' | 'large' = 'normal';
-  export let message: string = 'Loading...';
-  export let color: 'primary' | 'secondary' | 'tertiary' = 'tertiary';
-  export let center: boolean = false;
-  export let inline: boolean = false;
-  export let customClass: string = '';
-
-  // Show/hide state
-  export let visible: boolean = true;
+  let {
+    type = 'text' as 'text' | 'spinner' | 'dots' | 'skeleton',
+    size = 'normal' as 'small' | 'normal' | 'large',
+    message = 'Loading...',
+    color = 'tertiary' as 'primary' | 'secondary' | 'tertiary',
+    center = false,
+    inline = false,
+    customClass = '',
+    // Show/hide state
+    visible = true
+  } = $props();
 
   // Size configurations
   const sizeConfig = {

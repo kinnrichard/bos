@@ -6,10 +6,12 @@
   import { getTaskStatusEmoji, getTaskStatusLabel } from '$lib/config/emoji';
   import BasePopover from '../ui/BasePopover.svelte';
   
-  export let task: Task;
-  export let jobId: string;
-  export let batchTaskDetails: any = null; // Optional batch details data
-  export let isSelected: boolean = false; // Whether this task is selected
+  let {
+    task,
+    jobId,
+    batchTaskDetails = null, // Optional batch details data
+    isSelected = false // Whether this task is selected
+  } = $props();
   
   const dispatch = createEventDispatcher();
   
@@ -29,17 +31,18 @@
   
   // Forward popover instance from BasePopover
   let basePopover: any;
-  export { basePopover as popover };
 
   // Update timer every second for in-progress tasks
-  $: if (basePopover && basePopover.expanded && task?.status === 'in_progress') {
-    timer = setInterval(() => {
-      currentTime = Date.now();
-    }, 1000);
-  } else if (timer) {
-    clearInterval(timer);
-    timer = null;
-  }
+  $effect(() => {
+    if (basePopover && basePopover.expanded && task?.status === 'in_progress') {
+      timer = setInterval(() => {
+        currentTime = Date.now();
+      }, 1000);
+    } else if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  });
   
   // Clean up timer when component is destroyed
   onDestroy(() => {
@@ -47,20 +50,26 @@
   });
   
   // Load task details when popover becomes expanded
-  $: if (basePopover && basePopover.expanded && task && !taskDetails) {
-    loadTaskDetails();
-  }
+  $effect(() => {
+    if (basePopover && basePopover.expanded && task && !taskDetails) {
+      loadTaskDetails();
+    }
+  });
 
   // Check for batch details data when it becomes available
-  $: if (batchTaskDetails && batchTaskDetails.data && task && !taskDetails) {
-    checkBatchDetails();
-  }
+  $effect(() => {
+    if (batchTaskDetails && batchTaskDetails.data && task && !taskDetails) {
+      checkBatchDetails();
+    }
+  });
   
   // Reset state when task changes
-  $: if (task) {
-    taskDetails = null;
-    error = '';
-  }
+  $effect(() => {
+    if (task) {
+      taskDetails = null;
+      error = '';
+    }
+  });
   
   function checkBatchDetails() {
     if (!batchTaskDetails?.data || !task) return;

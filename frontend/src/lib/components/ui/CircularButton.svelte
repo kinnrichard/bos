@@ -1,15 +1,21 @@
 <script lang="ts">
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
 
-  export let size: 'small' | 'normal' | 'large' = 'normal';
-  export let variant: 'default' | 'avatar' | 'primary' = 'default';
-  export let disabled: boolean = false;
-  export let title: string = '';
-  export let onclick: (() => void) | undefined = undefined;
-  export let type: 'button' | 'submit' | 'reset' = 'button';
-  export let ariaLabel: string = '';
-  export let ariaPressed: boolean | undefined = undefined;
-  export let ariaExpanded: boolean | undefined = undefined;
+  let {
+    size = 'normal' as 'small' | 'normal' | 'large',
+    variant = 'default' as 'default' | 'avatar' | 'primary',
+    disabled = false,
+    title = '',
+    onclick = undefined as (() => void) | undefined,
+    type = 'button' as 'button' | 'submit' | 'reset',
+    ariaLabel = '',
+    ariaPressed = undefined as boolean | undefined,
+    ariaExpanded = undefined as boolean | undefined,
+    dynamicWidth = false,
+    minWidth = undefined as number | undefined,
+    borderRadius = undefined as number | string | undefined,
+    customClass = ''
+  } = $props();
 
   // Size configurations
   const sizeConfig = {
@@ -19,12 +25,6 @@
   };
 
   const config = $derived(sizeConfig[size]);
-  
-  // Dynamic sizing for special cases (like technician assignment)
-  export let dynamicWidth: boolean = false;
-  export let minWidth: number | undefined = undefined;
-  export let borderRadius: number | string | undefined = undefined;
-  export let customClass: string = '';
 
   function handleClick(event: MouseEvent) {
     if (!disabled && onclick) {

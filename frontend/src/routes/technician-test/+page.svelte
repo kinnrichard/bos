@@ -45,9 +45,9 @@
   let isLoading = false;
 
   // Simulated optimistic technicians derived from local state
-  $: optimisticTechnicians = Array.from(localSelectedIds)
+  const optimisticTechnicians = $derived(Array.from(localSelectedIds)
     .map(id => mockUsers.find(user => user.id === id))
-    .filter((user): user is User => Boolean(user));
+    .filter((user): user is User => Boolean(user)));
 
   // Handle technician toggle - immediate local update (idiomatic Svelte)
   function handleUserToggle(user: User, isCurrentlySelected: boolean) {
@@ -70,9 +70,9 @@
   }
 
   // Display logic
-  $: displayTechnicians = optimisticTechnicians.slice(0, 2);
-  $: extraCount = Math.max(0, optimisticTechnicians.length - 2);
-  $: hasAssignments = optimisticTechnicians.length > 0;
+  const displayTechnicians = $derived(optimisticTechnicians.slice(0, 2));
+  const extraCount = $derived(Math.max(0, optimisticTechnicians.length - 2));
+  const hasAssignments = $derived(optimisticTechnicians.length > 0);
 
   let popover: any;
 </script>

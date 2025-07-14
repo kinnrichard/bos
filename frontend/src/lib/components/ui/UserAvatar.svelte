@@ -1,14 +1,21 @@
 <script lang="ts">
-  export let user: {
-    id: string;
-    attributes: {
-      name: string;
-      initials: string;
-      avatar_style: string;
+  let {
+    user,
+    size = 'normal' as 'xs' | 'small' | 'normal'
+  }: {
+    user: {
+      id: string;
+      attributes: {
+        name: string;
+        initials: string;
+        avatar_style: string;
+      };
     };
-  };
-  export let size: 'xs' | 'small' | 'normal' = 'normal';
-  export let title: string = user?.attributes?.name || '';
+    size?: 'xs' | 'small' | 'normal';
+  } = $props();
+
+  // Derived values
+  const title = $derived(user?.attributes?.name || '');
 
   // Avatar style mapping - these match the user avatar styles in the system
   const avatarStyles = {

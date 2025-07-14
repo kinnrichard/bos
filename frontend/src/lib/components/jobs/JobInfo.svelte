@@ -2,7 +2,11 @@
   import type { PopulatedJob } from '$lib/types/job';
   import SchedulePriorityEditPopover from '$lib/components/layout/SchedulePriorityEditPopover.svelte';
 
-  export let job: PopulatedJob | null | undefined;
+  let {
+    job
+  }: {
+    job: PopulatedJob | null | undefined;
+  } = $props();
 
   function formatDate(dateString?: string): string {
     if (!dateString) return 'Not set';

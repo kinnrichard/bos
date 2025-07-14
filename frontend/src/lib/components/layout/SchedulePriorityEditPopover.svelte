@@ -12,8 +12,13 @@
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
 
-  export let jobId: string;
-  export let initialJob: PopulatedJob | null = null;
+  let {
+    jobId,
+    initialJob = null
+  }: {
+    jobId: string;
+    initialJob?: PopulatedJob | null;
+  } = $props();
 
   let popover: any;
   

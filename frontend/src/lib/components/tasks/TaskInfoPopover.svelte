@@ -4,10 +4,12 @@
   import { formatDateTime } from '$lib/utils/date';
   import { getTaskStatusEmoji, getTaskStatusLabel } from '$lib/config/emoji';
   
-  export let task: Task;
-  export let jobId: string;
-  export let isVisible = false;
-  export let position = { top: 0, left: 0 };
+  let {
+    task,
+    jobId,
+    isVisible = false,
+    position = { top: 0, left: 0 }
+  } = $props();
   
   const dispatch = createEventDispatcher();
   
@@ -26,14 +28,16 @@
   }
   
   // Update timer every second for in-progress tasks
-  $: if (isVisible && task?.status === 'in_progress') {
-    timer = setInterval(() => {
-      currentTime = Date.now();
-    }, 1000);
-  } else if (timer) {
-    clearInterval(timer);
-    timer = null;
-  }
+  $effect(() => {
+    if (isVisible && task?.status === 'in_progress') {
+      timer = setInterval(() => {
+        currentTime = Date.now();
+      }, 1000);
+    } else if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  });
   
   // Clean up timer when component is destroyed
   import { onDestroy } from 'svelte';
@@ -42,9 +46,11 @@
   });
   
   // Load task details when popover becomes visible
-  $: if (isVisible && task && !taskDetails) {
-    loadTaskDetails();
-  }
+  $effect(() => {
+    if (isVisible && task && !taskDetails) {
+      loadTaskDetails();
+    }
+  });
   
   async function loadTaskDetails() {
     loading = true;
@@ -257,10 +263,12 @@
   }
   
   // Reset state when task changes
-  $: if (task) {
-    taskDetails = null;
-    error = '';
-  }
+  $effect(() => {
+    if (task) {
+      taskDetails = null;
+      error = '';
+    }
+  });
 </script>
 
 <svelte:window on:keydown={handleKeydown} />

@@ -3,9 +3,9 @@
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import ClientInfo from '$lib/components/jobs/ClientInfo.svelte';
 
-  export let data: PageData;
+  let { data }: { data: PageData } = $props();
   
-  $: client = data.client;
+  const client = $derived(data.client);
 </script>
 
 <svelte:head>

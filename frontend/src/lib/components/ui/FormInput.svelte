@@ -1,31 +1,31 @@
 <script lang="ts">
-  export let type: 'text' | 'email' | 'password' | 'url' | 'tel' | 'search' | 'number' | 'date' | 'time' | 'datetime-local' = 'text';
-  export let value: string | number = '';
-  export let placeholder: string = '';
-  export let disabled: boolean = false;
-  export let readonly: boolean = false;
-  export let required: boolean = false;
-  export let id: string = '';
-  export let name: string = '';
-  export let autocomplete: string = '';
-  export let min: string | number | undefined = undefined;
-  export let max: string | number | undefined = undefined;
-  export let step: string | number | undefined = undefined;
-  export let maxlength: number | undefined = undefined;
-  export let pattern: string = '';
-  export let title: string = '';
-  export let ariaLabel: string = '';
-  export let ariaDescribedby: string = '';
-  
-  // Styling props
-  export let size: 'small' | 'normal' | 'large' = 'normal';
-  export let variant: 'default' | 'error' | 'success' = 'default';
-  export let fullWidth: boolean = false;
-  export let customClass: string = '';
-
-  // Error state
-  export let error: string = '';
-  export let showError: boolean = true;
+  let {
+    type = 'text' as 'text' | 'email' | 'password' | 'url' | 'tel' | 'search' | 'number' | 'date' | 'time' | 'datetime-local',
+    value = '' as string | number,
+    placeholder = '',
+    disabled = false,
+    readonly = false,
+    required = false,
+    id = '',
+    name = '',
+    autocomplete = '',
+    min = undefined as string | number | undefined,
+    max = undefined as string | number | undefined,
+    step = undefined as string | number | undefined,
+    maxlength = undefined as number | undefined,
+    pattern = '',
+    title = '',
+    ariaLabel = '',
+    ariaDescribedby = '',
+    // Styling props
+    size = 'normal' as 'small' | 'normal' | 'large',
+    variant = 'default' as 'default' | 'error' | 'success',
+    fullWidth = false,
+    customClass = '',
+    // Error state
+    error = '',
+    showError = true
+  } = $props();
 
   // Focus management
   let inputElement: HTMLInputElement;
