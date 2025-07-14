@@ -9,7 +9,7 @@
  * import { Job } from './job';
  * ```
  * 
- * Generated: 2025-07-14 15:11:58 UTC
+ * Generated: 2025-07-14 15:18:58 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
