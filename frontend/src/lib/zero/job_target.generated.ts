@@ -301,14 +301,26 @@ export async function upsertJobTarget(data: (CreateJobTargetData & { id?: string
  * }
  * ```
  */
+export class JobTargetInstance {
+  public data: JobTarget;
 
   constructor(data: JobTarget) {
-    super(data);
+    this.data = data;
   }
 
+  /**
+   * Update this job_target instance
+   */
+  async update(data: Partial<UpdateJobTargetData>): Promise<{ id: string }> {
+    return await updateJobTarget(this.data.id, data);
+  }
 
-
-
+  /**
+   * Hard delete this job_target
+   */
+  async destroy(): Promise<{ id: string }> {
+    return await deleteJobTarget(this.data.id);
+  }
 
   /**
    * Rails-compatible inspect method for debugging

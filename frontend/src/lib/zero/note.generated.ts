@@ -297,14 +297,26 @@ export async function upsertNote(data: (CreateNoteData & { id?: string }) | (Upd
  * }
  * ```
  */
+export class NoteInstance {
+  public data: Note;
 
   constructor(data: Note) {
-    super(data);
+    this.data = data;
   }
 
+  /**
+   * Update this note instance
+   */
+  async update(data: Partial<UpdateNoteData>): Promise<{ id: string }> {
+    return await updateNote(this.data.id, data);
+  }
 
-
-
+  /**
+   * Hard delete this note
+   */
+  async destroy(): Promise<{ id: string }> {
+    return await deleteNote(this.data.id);
+  }
 
   /**
    * Rails-compatible inspect method for debugging

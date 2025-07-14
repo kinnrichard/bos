@@ -441,3 +441,6 @@ export async function reinitializeZero(): Promise<ZeroClient> {
   closeZero();
   return await initZero();
 }
+
+// Export the ZeroClient type for external use
+export type { ZeroClient };

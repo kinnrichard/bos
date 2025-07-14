@@ -292,14 +292,26 @@ export async function upsertContactMethod(data: (CreateContactMethodData & { id?
  * }
  * ```
  */
+export class ContactMethodInstance {
+  public data: ContactMethod;
 
   constructor(data: ContactMethod) {
-    super(data);
+    this.data = data;
   }
 
+  /**
+   * Update this contact method instance
+   */
+  async update(data: Partial<UpdateContactMethodData>): Promise<{ id: string }> {
+    return await updateContactMethod(this.data.id, data);
+  }
 
-
-
+  /**
+   * Hard delete this contact method
+   */
+  async destroy(): Promise<{ id: string }> {
+    return await deleteContactMethod(this.data.id);
+  }
 
   /**
    * Rails-compatible inspect method for debugging

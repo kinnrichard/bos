@@ -342,8 +342,8 @@ export async function moveBeforeTask(id: string, targetId: string): Promise<Task
     const view = zero.query.tasks.materialize();
     const allRecords = await view.data;
     const targetRecord = Array.isArray(allRecords) ? 
-      allRecords.find(record => record.id === targetId) : 
-      (allRecords && allRecords.id === targetId ? allRecords : null);
+      allRecords.find((record: any) => record.id === targetId) : 
+      (allRecords && (allRecords as any).id === targetId ? allRecords : null);
     view.destroy();
     
     if (!targetRecord) {
@@ -411,8 +411,8 @@ export async function moveAfterTask(id: string, targetId: string): Promise<TaskM
     const view = zero.query.tasks.materialize();
     const allRecords = await view.data;
     const targetRecord = Array.isArray(allRecords) ? 
-      allRecords.find(record => record.id === targetId) : 
-      (allRecords && allRecords.id === targetId ? allRecords : null);
+      allRecords.find((record: any) => record.id === targetId) : 
+      (allRecords && (allRecords as any).id === targetId ? allRecords : null);
     view.destroy();
     
     if (!targetRecord) {
@@ -626,12 +626,6 @@ export class TaskInstance {
     return await undiscardTask(this.data.id);
   }
 
-  /**
-   * Hard delete this task
-   */
-  async destroy(): Promise<{ id: string }> {
-    return await destroyTask(this.data.id);
-  }
 
 /**
  * Check if this record is discarded

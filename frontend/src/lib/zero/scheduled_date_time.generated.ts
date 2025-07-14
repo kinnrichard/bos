@@ -302,14 +302,26 @@ export async function upsertScheduledDateTime(data: (CreateScheduledDateTimeData
  * }
  * ```
  */
+export class ScheduledDateTimeInstance {
+  public data: ScheduledDateTime;
 
   constructor(data: ScheduledDateTime) {
-    super(data);
+    this.data = data;
   }
 
+  /**
+   * Update this scheduled_date_time instance
+   */
+  async update(data: Partial<UpdateScheduledDateTimeData>): Promise<{ id: string }> {
+    return await updateScheduledDateTime(this.data.id, data);
+  }
 
-
-
+  /**
+   * Hard delete this scheduled_date_time
+   */
+  async destroy(): Promise<{ id: string }> {
+    return await deleteScheduledDateTime(this.data.id);
+  }
 
   /**
    * Rails-compatible inspect method for debugging

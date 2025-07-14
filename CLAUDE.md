@@ -4,7 +4,8 @@
 - `npm run build`: Build the project
 - `npm run test`: Run the full test suite
 - `npm run lint`: Run ESLint and format checks
-- `npm run typecheck`: Run TypeScript type checking
+- `npm run check`: Run TypeScript type checking (svelte-check)
+- `npm run sync`: Generate SvelteKit types (run before type checking)
 - `./claude-flow --help`: Show all available commands
 
 ## Claude-Flow Complete Command Reference

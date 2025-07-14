@@ -309,7 +309,7 @@ export class ClientInstance {
    * Hard delete this client
    */
   async destroy(): Promise<{ id: string }> {
-    return await destroyClient(this.data.id);
+    return await deleteClient(this.data.id);
   }
 
   /**

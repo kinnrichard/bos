@@ -315,7 +315,7 @@ export class UserInstance {
    * Hard delete this user
    */
   async destroy(): Promise<{ id: string }> {
-    return await destroyUser(this.data.id);
+    return await deleteUser(this.data.id);
   }
 
   /**
