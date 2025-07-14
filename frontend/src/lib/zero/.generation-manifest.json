@@ -71,12 +71,12 @@
   },
   "tasks": {
     "pattern_hash": "fb933c7ae24090de0ffd45c35673e7e17bcbd92e16ad7d8264a4d3f368ffe4ae",
-    "generated_at": "2025-07-14T02:59:43Z",
+    "generated_at": "2025-07-14T03:14:15Z",
     "generated_files": [
       "/Users/claude/code/bos/frontend/src/lib/zero/task.generated.ts"
     ],
     "file_hashes": {
-      "/Users/claude/code/bos/frontend/src/lib/zero/task.generated.ts": "3055c1da9c891d91d09e8917e6289657ab74ab557f170ad5ac2f8091c4baaeca"
+      "/Users/claude/code/bos/frontend/src/lib/zero/task.generated.ts": "1681eb96c0d1de387d8031651a651f6ab5e21b4d6a84bfdebddf88b4978a08a6"
     }
   },
   "users": {

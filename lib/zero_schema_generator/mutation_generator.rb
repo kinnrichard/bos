@@ -199,7 +199,7 @@ module ZeroSchemaGenerator
         #{header}
 
         #{imports.join("\n")}
-        import { RecordInstance, type ZeroMutations } from '../record-factory/record-instance';
+        import { RecordInstance, type ZeroMutations } from '../models/base/record-instance';
 
         // Generated TypeScript types for #{table_name}
         #{types}
