@@ -8,6 +8,7 @@
   import { ReactiveQuery } from '$lib/zero/reactive-query.svelte';
   import type { UserData } from '$lib/models/types/user-data';
   import { getZero } from '$lib/zero/zero-client';
+  import { JobAssignment } from '$lib/models/job-assignment';
 
   // Get Zero functions from context for Job
   const { Job } = getZeroContext();
@@ -31,7 +32,7 @@
     initialTechnicians?: Array<{id: string}>;
   } = $props();
 
-  let popover: any;
+  let popover = $state();
   
   // Use proper ReactiveQuery class for users data
   const usersQuery = new ReactiveQuery<UserData>(
@@ -48,8 +49,8 @@
   const jobQuery = Job.find(jobId);
   
   // Zero uses direct mutations instead of TanStack's createMutation pattern
-  let isLoading = false;
-  let error: Error | null = null;
+  let isLoading = $state(false);
+  let error = $state<Error | null>(null);
 
   // Derived state from Zero Query - fallback to initial data
   const job = $derived(jobQuery.current); // Zero returns current directly  
@@ -62,33 +63,9 @@
   
   const errorMessage = $derived(getPopoverErrorMessage(error));
   
-  // Local state for immediate UI responsiveness (optimistic updates)
-  let localSelectedIds: Set<string> = new Set();
-  let optimisticTechnicians: UserData[] = [];
-  
-  // Sync with server data only when server data actually changes (not on every local update)
-  // This prevents unnecessary re-renders that cause hover flicker
-  let lastServerDataHash = '';
-  $effect(() => {
-    const currentServerIds = assignedTechnicians?.map(t => t?.id).filter(Boolean) || [];
-    const currentHash = currentServerIds.sort().join(',');
-    
-    // Only update localSelectedIds if server data actually changed
-    if (currentHash !== lastServerDataHash) {
-      lastServerDataHash = currentHash;
-      localSelectedIds = new Set(currentServerIds);
-    }
-  });
-  
-  // Derive optimistic display data separately - this only updates when users list or localSelectedIds change
-  $effect(() => {
-    const userList = usersQuery.data || [];
-    optimisticTechnicians = Array.from(localSelectedIds)
-      .map(id => userList.find(user => user.id === id))
-      .filter(Boolean) as UserData[];
-  });
+  // Reactive state derived directly from job assignments - no local state needed
 
-  // Handle checkbox changes - optimistic updates, no loading blocking
+  // Handle checkbox changes - reactive mutations with automatic UI updates
   async function handleUserToggle(user: UserData, checked: boolean) {
     // Remove loading guard to allow optimistic updates
     
@@ -104,31 +81,28 @@
       return;
     }
     
-    // Update local state immediately for UI responsiveness
-    const newSelectedIds = new Set(localSelectedIds);
-    if (checked) {
-      newSelectedIds.add(user.id);
-    } else {
-      newSelectedIds.delete(user.id);
-    }
-    localSelectedIds = newSelectedIds;
+    debugTechAssignment('User clicked %s %s', user.name, checked ? 'ON' : 'OFF');
     
-    // Wait for next tick to batch reactive updates before triggering mutation
-    // This prevents multiple render cycles that could interrupt hover states
-    await tick();
-    
-    const technicianIds = Array.from(newSelectedIds);
-    
-    debugTechAssignment('User clicked %s %s, updating to: %o', 
-      user.name, checked ? 'ON' : 'OFF', technicianIds);
-    
-    // Zero direct mutation handles API call and real-time updates
+    // Reactive mutations - UI updates automatically when data changes
     try {
       isLoading = true;
       error = null;
-      // TODO: Implement assignTechniciansToJob functionality
-      // This would need to work with your job_assignments table
-      // TODO: assignTechniciansToJob({ jobId, technicianIds });
+      
+      if (checked) {
+        // Create new job assignment
+        await JobAssignment.create({
+          job_id: jobId,
+          user_id: user.id
+        });
+        debugTechAssignment('Created assignment for %s on job %s', user.name, jobId);
+      } else {
+        // Find and delete existing job assignment
+        const existingAssignment = job?.assignments?.find(a => a.user_id === user.id);
+        if (existingAssignment?.id) {
+          await JobAssignment.destroy(existingAssignment.id);
+          debugTechAssignment('Deleted assignment for %s on job %s', user.name, jobId);
+        }
+      }
     } catch (err) {
       error = err as Error;
       debugTechAssignment('Error during mutation: %o', err);
@@ -138,15 +112,15 @@
     }
   }
 
-  // Display logic for button content - use optimistic data
-  const displayTechnicians = $derived(optimisticTechnicians.slice(0, 2));
-  const extraCount = $derived(Math.max(0, optimisticTechnicians.length - 2));
-  const hasAssignments = $derived(optimisticTechnicians.length > 0);
+  // Display logic for button content - use actual assignment data
+  const displayTechnicians = $derived(assignedTechniciansForDisplay.slice(0, 2));
+  const extraCount = $derived(Math.max(0, assignedTechniciansForDisplay.length - 2));
+  const hasAssignments = $derived(assignedTechniciansForDisplay.length > 0);
 </script>
 
 <HeadlessPopoverButton 
   bind:popover
-  title={hasAssignments ? `Technicians: ${optimisticTechnicians.map(t => t?.name).filter(Boolean).join(', ')}` : 'Technicians'}
+  title={hasAssignments ? `Technicians: ${assignedTechniciansForDisplay.map(t => t?.name).filter(Boolean).join(', ')}` : 'Technicians'}
   error={errorMessage}
   loading={isLoading}
   panelWidth="max-content"
@@ -187,10 +161,10 @@
         loading={usersQuery.isLoading}
         maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
         onOptionClick={(user, event) => {
-          const isCurrentlySelected = localSelectedIds.has(user.id);
+          const isCurrentlySelected = job?.assignments?.some(a => a.user_id === user.id) || false;
           handleUserToggle(user, !isCurrentlySelected);
         }}
-        isSelected={(option) => localSelectedIds.has(option.id)}
+        isSelected={(option) => job?.assignments?.some(a => a.user_id === option.id) || false}
       >
         <svelte:fragment slot="option-content" let:option>
           <div class="technician-avatar popover-option-left-content">
@@ -198,9 +172,9 @@
           </div>
           <span class="popover-option-main-label">{option.name}</span>
           
-          <!-- Checkmark in same reactive scope for immediate updates -->
+          <!-- Checkmark bound to actual assignment data -->
           <div class="popover-checkmark-container">
-            {#if localSelectedIds.has(option.id)}
+            {#if job?.assignments?.some(a => a.user_id === option.id)}
               <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
             {/if}
           </div>
