@@ -95,6 +95,10 @@ class ActiveRecordScopedQuery<T extends BaseRecord> extends BaseScopedQuery<T> i
     return results.length > 0 ? results[0] : null;
   }
   
+  async find(id: string, options: QueryOptions = {}): Promise<T | null> {
+    return this.where({ id } as Partial<T>).first(options);
+  }
+  
   async count(options: QueryOptions = {}): Promise<number> {
     const results = await this.executeQuery(true, options) as T[];
     return results.length;

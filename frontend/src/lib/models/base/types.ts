@@ -112,6 +112,9 @@ export interface ScopedQuery<T> {
   /** Execute query and return last matching record */
   last(options?: QueryOptions): Promise<T | null>;
   
+  /** Find record by ID - convenience method equivalent to where({ id }).first() */
+  find(id: string, options?: QueryOptions): Promise<T | null>;
+  
   /** Execute query and return count of matching records */
   count(options?: QueryOptions): Promise<number>;
   
@@ -157,6 +160,9 @@ export interface ReactiveScopedQuery<T> {
   
   /** Execute query and return reactive query for last matching record */
   last(options?: QueryOptions): ReactiveQuery<T | null>;
+  
+  /** Find record by ID - convenience method equivalent to where({ id }).first() */
+  find(id: string, options?: QueryOptions): ReactiveQuery<T | null>;
   
   /** Execute query and return reactive query for count of matching records */
   count(options?: QueryOptions): ReactiveQuery<number>;

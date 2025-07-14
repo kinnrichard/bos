@@ -191,6 +191,10 @@ class ReactiveRecordScopedQuery<T extends BaseRecord> extends BaseScopedQuery<T>
     );
   }
   
+  find(id: string, options: QueryOptions = {}): IReactiveQuery<T | null> {
+    return this.where({ id } as Partial<T>).first(options);
+  }
+  
   count(options: QueryOptions = {}): IReactiveQuery<number> {
     return new ReactiveQueryOne<number>(
       () => {

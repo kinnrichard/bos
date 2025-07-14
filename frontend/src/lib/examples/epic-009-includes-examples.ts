@@ -20,8 +20,8 @@ export class ActiveRecordIncludesExamples {
    * Basic includes() usage - single relationship
    */
   static async singleRelationship() {
-    // Rails-style: Job.includes(:client).find(id)
-    const job = await Job.includes('client').find('job-123');
+    // Rails-style: Job.includes(:client).where(id: id).first
+    const job = await Job.includes('client').where({ id: 'job-123' }).first();
     
     // TypeScript knows job.client is loaded
     console.log('Client name:', job?.client?.name);

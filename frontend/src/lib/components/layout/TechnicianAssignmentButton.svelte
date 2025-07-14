@@ -6,7 +6,7 @@
   
   // Use proper ReactiveQuery class for modern Svelte 5 reactivity
   import { ReactiveQuery, ReactiveQueryOne } from '$lib/zero/reactive-query.svelte';
-  import { queryJobs } from '$lib/zero/model-queries';
+  import { ReactiveJob } from '$lib/models/reactive-job';
   import type { UserData } from '$lib/models/types/user-data';
   import type { JobData } from '$lib/models/types/job-data';
   import { getZero } from '$lib/zero/zero-client';
@@ -45,20 +45,14 @@
   );
   // TODO: Need to implement user lookup functionality
   // const userLookup = useUserLookup();
-  const jobQuery = new ReactiveQueryOne<any>(
-    () => {
-      return queryJobs().includes('jobAssignments').where('id', jobId).one();
-    },
-    null,
-    '5m' // 5 minute TTL
-  );
+  const jobQuery = $derived(jobId ? ReactiveJob.includes('jobAssignments').find(jobId) : null);
   
   // Zero uses direct mutations instead of TanStack's createMutation pattern
   let isLoading = $state(false);
   let error = $state<Error | null>(null);
 
-  // Derived state from Zero Query - fallback to initial data
-  const job = $derived(jobQuery.data); // ReactiveQueryOne returns data directly
+  // Derived state from ReactiveJob query - fallback to initial data
+  const job = $derived(jobQuery?.data); // ReactiveJob query returns data directly
   const availableUsers = $derived(usersQuery.data || []);
   
   

@@ -2,9 +2,8 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onDestroy } from 'svelte';
-  // Epic-008: Import ReactiveQuery for Jobs
-  import { ReactiveQueryOne } from '$lib/zero/reactive-query.svelte';
-  import { queryJobs } from '$lib/zero/model-queries';
+  // Epic-009: Import ReactiveJob for Rails-style includes()
+  import { ReactiveJob } from '$lib/models/reactive-job';
   import type { JobData } from '$lib/models/types/job-data';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
@@ -22,25 +21,8 @@
     console.log('[JobPage] Page route:', $page.route?.id);
   });
   
-  // ✨ CREATE REACTIVE QUERY IN SVELTE COMPONENT (where $state runes are available)
-  const jobQuery = $derived(jobId ? new ReactiveQueryOne<Job>(
-    () => {
-      console.log('[JobPage] Executing query for job:', jobId);
-      
-      // Test simple query first
-      console.log('[JobPage] Testing simple query without includes...');
-      const simpleResult = queryJobs().where('id', jobId).one();
-      console.log('[JobPage] Simple query result:', simpleResult);
-      
-      // Test with includes
-      console.log('[JobPage] Testing query with includes...');
-      const result = queryJobs().includes('client', 'tasks', 'jobAssignments').where('id', jobId).one();
-      console.log('[JobPage] Full query result:', result);
-      return result;
-    },
-    null,
-    '5m' // 5 minute TTL
-  ) : null);
+  // ✨ Epic-009: Use ReactiveJob with Rails-style includes()
+  const jobQuery = $derived(jobId ? ReactiveJob.includes('client', 'tasks', 'jobAssignments').find(jobId) : null);
   // TODO: Add notes query when NotesReactive model is ready
   // const notesQuery = $derived(NotesReactive.where({ notable_id: jobId }));
   
