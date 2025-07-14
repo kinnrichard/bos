@@ -20,8 +20,8 @@
     gray: 'var(--text-secondary)'
   };
 
-  $: backgroundColor = avatarStyles[user?.attributes?.avatar_style as keyof typeof avatarStyles] || avatarStyles.blue;
-  $: sizeClass = size === 'xs' ? 'avatar-xs' : size === 'small' ? 'avatar-small' : 'avatar-normal';
+  const backgroundColor = $derived(avatarStyles[user?.attributes?.avatar_style as keyof typeof avatarStyles] || avatarStyles.blue);
+  const sizeClass = $derived(size === 'xs' ? 'avatar-xs' : size === 'small' ? 'avatar-small' : 'avatar-normal');
 </script>
 
 <div 

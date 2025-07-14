@@ -32,17 +32,17 @@
   }
 
   // Extract technicians from job assignments
-  $: technicians = job.jobAssignments?.map((assignment: any) => ({
+  const technicians = $derived(job.jobAssignments?.map((assignment: any) => ({
     id: assignment.user?.id,
     name: assignment.user?.name,
     initials: assignment.user?.name?.split(' ').map((n: string) => n[0]).join('') || '?',
     avatar_style: `background-color: var(--accent-blue);` // TODO: Get actual avatar style
-  })) || [];
+  })) || []);
 
-  $: statusString = mapZeroStatusToString(job.status);
-  $: priorityString = mapZeroPriorityToString(job.priority);
-  $: statusEmoji = getJobStatusEmoji(statusString);
-  $: priorityEmoji = getJobPriorityEmoji(priorityString);
+  const statusString = $derived(mapZeroStatusToString(job.status));
+  const priorityString = $derived(mapZeroPriorityToString(job.priority));
+  const statusEmoji = $derived(getJobStatusEmoji(statusString));
+  const priorityEmoji = $derived(getJobPriorityEmoji(priorityString));
 
   function getJobPath(job: Job): string {
     return `/jobs/${job.id}`;

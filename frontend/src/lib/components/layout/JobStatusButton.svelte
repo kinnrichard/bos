@@ -29,8 +29,8 @@
   ];
 
   // Get job status emoji with comprehensive null checks
-  $: jobStatusEmoji = (layout.currentJob?.attributes?.status) ? getJobStatusEmoji(layout.currentJob.attributes.status) : '📝';
-  $: currentStatus = layout.currentJob?.attributes?.status || 'open';
+  const jobStatusEmoji = $derived((layout.currentJob?.attributes?.status) ? getJobStatusEmoji(layout.currentJob.attributes.status) : '📝');
+  const currentStatus = $derived(layout.currentJob?.attributes?.status || 'open');
 
   // Handle status change using Zero direct mutation
   async function handleStatusChange(statusOption: any) {

@@ -48,9 +48,9 @@
     large: { padding: '10px 14px', fontSize: '14px' }
   };
 
-  $: config = sizeConfig[size];
-  $: hasError = error && showError;
-  $: finalVariant = hasError ? 'error' : variant;
+  const config = $derived(sizeConfig[size]);
+  const hasError = $derived(error && showError);
+  const finalVariant = $derived(hasError ? 'error' : variant);
 </script>
 
 <div class="form-input-wrapper" class:full-width={fullWidth}>

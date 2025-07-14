@@ -47,8 +47,6 @@
   let isDragging = false;
   let dragFeedback = $state('');
   
-  // Popover instances for task info
-  let taskPopovers: Record<string, any> = {};
   
   // Development alerts state
   let developmentAlerts = $state([]);
@@ -2005,7 +2003,6 @@
               {jobId}
               {batchTaskDetails}
               isSelected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
-              bind:popover={taskPopovers[renderItem.task.id]}
               ontask-updated={handleTaskUpdated}
             />
           </div>

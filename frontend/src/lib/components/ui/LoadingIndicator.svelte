@@ -17,7 +17,7 @@
     large: { fontSize: '14px', spinnerSize: '24px', dotSize: '8px' }
   };
 
-  $: config = sizeConfig[size];
+  const config = $derived(sizeConfig[size]);
 </script>
 
 {#if visible}

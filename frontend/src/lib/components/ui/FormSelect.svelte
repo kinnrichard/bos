@@ -40,17 +40,17 @@
     large: { padding: '10px 34px 10px 14px', fontSize: '14px' }
   };
 
-  $: config = sizeConfig[size];
-  $: hasError = error && showError;
-  $: finalVariant = hasError ? 'error' : variant;
+  const config = $derived(sizeConfig[size]);
+  const hasError = $derived(error && showError);
+  const finalVariant = $derived(hasError ? 'error' : variant);
 
   // Process options to ensure consistent format
-  $: processedOptions = options.map(option => {
+  const processedOptions = $derived(options.map(option => {
     if (typeof option === 'string') {
       return { value: option, label: option, disabled: false };
     }
     return { ...option, disabled: option.disabled || false };
-  });
+  }));
 </script>
 
 <div class="form-select-wrapper" class:full-width={fullWidth}>

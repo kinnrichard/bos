@@ -27,8 +27,8 @@
     large: { fontSize: '13px', padding: '8px 16px', iconSize: '16px' }
   };
 
-  $: config = sizeConfig[size];
-  $: showMessage = message && visible;
+  const config = $derived(sizeConfig[size]);
+  const showMessage = $derived(message && visible);
 </script>
 
 {#if showMessage}

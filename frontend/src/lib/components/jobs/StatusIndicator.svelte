@@ -73,10 +73,10 @@
     };
   }
 
-  $: statusInfo = status ? getStatusInfo(status) : { label: 'Unknown', color: 'var(--text-secondary)' };
-  $: priorityInfo = priority ? getPriorityInfo(priority) : { label: 'Unknown', color: 'var(--text-secondary)' };
-  $: statusEmoji = status ? getJobStatusEmoji(status) : '📝';
-  $: priorityEmoji = priority ? getJobPriorityEmoji(priority) : '';
+  const statusInfo = $derived(status ? getStatusInfo(status) : { label: 'Unknown', color: 'var(--text-secondary)' });
+  const priorityInfo = $derived(priority ? getPriorityInfo(priority) : { label: 'Unknown', color: 'var(--text-secondary)' });
+  const statusEmoji = $derived(status ? getJobStatusEmoji(status) : '📝');
+  const priorityEmoji = $derived(priority ? getJobPriorityEmoji(priority) : '');
 </script>
 
 <div class="status-indicator">

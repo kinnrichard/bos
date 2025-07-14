@@ -10,7 +10,7 @@
   let error: string | null = null;
 
   // Get return_to parameter for redirect after login
-  $: returnTo = $page.url.searchParams.get('return_to') || '/jobs';
+  const returnTo = $derived($page.url.searchParams.get('return_to') || '/jobs');
 
   async function handleSubmit() {
     // Prevent double-submit

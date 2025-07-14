@@ -44,8 +44,8 @@
   }
 
   // Page-specific actions based on current page
-  $: currentPage = getCurrentPage();
-  $: pageActions = getPageActions(currentPage);
+  const currentPage = $derived(getCurrentPage());
+  const pageActions = $derived(getPageActions(currentPage));
 
   function getPageActions(page: string) {
     switch (page) {

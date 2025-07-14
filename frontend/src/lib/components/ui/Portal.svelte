@@ -55,11 +55,13 @@
   }
 
   // React to enabled changes
-  $: if (enabled && contentElement) {
-    tick().then(() => mountPortal());
-  } else if (!enabled) {
-    unmountPortal();
-  }
+  $effect(() => {
+    if (enabled && contentElement) {
+      tick().then(() => mountPortal());
+    } else if (!enabled) {
+      unmountPortal();
+    }
+  });
 </script>
 
 {#if enabled}

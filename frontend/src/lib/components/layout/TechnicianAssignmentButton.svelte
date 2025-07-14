@@ -37,13 +37,13 @@
   let error: Error | null = null;
 
   // Derived state from Zero Query - fallback to initial data
-  $: job = jobQuery.value; // Zero returns value directly
-  $: availableUsers = usersQuery.value || [];
+  const job = $derived(jobQuery.value); // Zero returns value directly
+  const availableUsers = $derived(usersQuery.value || []);
   // Use populated technicians from job.assignments instead of relationships
-  $: assignedTechnicians = job?.assignments?.map(a => a.user) || initialTechnicians;
-  $: assignedTechniciansForDisplay = assignedTechnicians;
+  const assignedTechnicians = $derived(job?.assignments?.map(a => a.user) || initialTechnicians);
+  const assignedTechniciansForDisplay = $derived(assignedTechnicians);
   
-  $: errorMessage = getPopoverErrorMessage(error);
+  const errorMessage = $derived(getPopoverErrorMessage(error));
   
   // Local state for immediate UI responsiveness (optimistic updates)
   let localSelectedIds: Set<string> = new Set();
@@ -52,7 +52,7 @@
   // Sync with server data only when server data actually changes (not on every local update)
   // This prevents unnecessary re-renders that cause hover flicker
   let lastServerDataHash = '';
-  $: {
+  $effect(() => {
     const currentServerIds = assignedTechnicians?.map(t => t?.id).filter(Boolean) || [];
     const currentHash = currentServerIds.sort().join(',');
     
@@ -61,15 +61,15 @@
       lastServerDataHash = currentHash;
       localSelectedIds = new Set(currentServerIds);
     }
-  }
+  });
   
   // Derive optimistic display data separately - this only updates when users list or localSelectedIds change
-  $: {
+  $effect(() => {
     const userList = usersQuery.value || [];
     optimisticTechnicians = Array.from(localSelectedIds)
       .map(id => userList.find(user => user.id === id))
       .filter(Boolean) as ZeroUser[];
-  }
+  });
 
   // Handle checkbox changes - optimistic updates, no loading blocking
   async function handleUserToggle(user: ZeroUser, checked: boolean) {
@@ -122,9 +122,9 @@
   }
 
   // Display logic for button content - use optimistic data
-  $: displayTechnicians = optimisticTechnicians.slice(0, 2);
-  $: extraCount = Math.max(0, optimisticTechnicians.length - 2);
-  $: hasAssignments = optimisticTechnicians.length > 0;
+  const displayTechnicians = $derived(optimisticTechnicians.slice(0, 2));
+  const extraCount = $derived(Math.max(0, optimisticTechnicians.length - 2));
+  const hasAssignments = $derived(optimisticTechnicians.length > 0);
 </script>
 
 <HeadlessPopoverButton 

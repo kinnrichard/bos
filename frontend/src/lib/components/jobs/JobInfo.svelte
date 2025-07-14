@@ -32,8 +32,8 @@
   }
 
   // Computed labels from raw API data
-  $: statusLabel = formatStatusLabel(job?.attributes?.status);
-  $: priorityLabel = formatPriorityLabel(job?.attributes?.priority);
+  const statusLabel = $derived(formatStatusLabel(job?.attributes?.status));
+  const priorityLabel = $derived(formatPriorityLabel(job?.attributes?.priority));
 
 </script>
 

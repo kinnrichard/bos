@@ -32,7 +32,7 @@
   export { basePopover as popover };
 
   // Update timer every second for in-progress tasks
-  $: if (basePopover && $basePopover.expanded && task?.status === 'in_progress') {
+  $: if (basePopover && basePopover.expanded && task?.status === 'in_progress') {
     timer = setInterval(() => {
       currentTime = Date.now();
     }, 1000);
@@ -47,7 +47,7 @@
   });
   
   // Load task details when popover becomes expanded
-  $: if (basePopover && $basePopover.expanded && task && !taskDetails) {
+  $: if (basePopover && basePopover.expanded && task && !taskDetails) {
     loadTaskDetails();
   }
 

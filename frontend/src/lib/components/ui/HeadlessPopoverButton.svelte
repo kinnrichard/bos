@@ -2,25 +2,23 @@
   import BasePopover from './BasePopover.svelte';
 
   // Props matching original BasePopoverButton API
-  export let title: string;
-  export let error: string = '';
-  export let loading: boolean = false;
-  export let panelWidth: string = '240px';
-  export let panelPosition: 'center' | 'right' = 'center';
-  export let topOffset: string = '12px'; // Not used in new system but kept for compatibility
-  export let contentPadding: string = '16px';
-  export let buttonClass: string = '';
+  let {
+    title,
+    error = '',
+    loading = false,
+    panelWidth = '240px',
+    panelPosition = 'center' as 'center' | 'right',
+    topOffset = '12px', // Not used in new system but kept for compatibility
+    contentPadding = '16px',
+    buttonClass = '',
+    popover = $bindable()
+  } = $props();
 
   // Convert panelPosition to preferred placement
-  $: preferredPlacement = panelPosition === 'center' ? 'bottom' : 'bottom' as 'top' | 'bottom' | 'left' | 'right';
-
-  // Forward popover instance from BasePopover
-  let basePopover: any;
-  export { basePopover as popover };
+  const preferredPlacement = $derived(panelPosition === 'center' ? 'bottom' : 'bottom' as 'top' | 'bottom' | 'left' | 'right');
 </script>
 
 <BasePopover 
-  bind:popover={basePopover}
   {preferredPlacement}
   {panelWidth}
 >

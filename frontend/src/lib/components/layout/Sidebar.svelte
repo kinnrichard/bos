@@ -4,7 +4,7 @@
   import { mainNavItems, footerNavItems, brandConfig, getActiveNavItem } from '$lib/config/navigation';
 
   // Reactive active item tracking
-  $: activeItem = getActiveNavItem($page.url.pathname);
+  const activeItem = $derived(getActiveNavItem($page.url.pathname));
 
 </script>
 

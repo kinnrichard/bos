@@ -5,10 +5,11 @@
   import { calculatePopoverPosition, type PopoverPosition } from '$lib/utils/popover-positioning';
 
   // Core popover props
-  export let preferredPlacement: 'top' | 'bottom' | 'left' | 'right' = 'bottom';
-  export const trigger: HTMLElement | undefined = undefined; // External reference only
-  export let panelWidth: string = '240px';
-  export let enabled: boolean = true;
+  let {
+    preferredPlacement = 'bottom' as 'top' | 'bottom' | 'left' | 'right',
+    panelWidth = '240px',
+    enabled = true
+  } = $props();
 
   // Create the Melt UI popover
   const {
@@ -26,13 +27,6 @@
     portal: null // Use portal for proper event handling
   });
 
-  // Export a popover-like API for compatibility with existing code
-  export let popover: any = {
-    subscribe: () => () => {},
-    close: () => {},
-    expanded: false
-  };
-
   let buttonElement: HTMLElement;
   let panelElement: HTMLElement;
   
@@ -40,30 +34,17 @@
   let arrowPosition: { top: number; left: number } = { top: 0, left: 0 };
   let arrowPositioned = false;
 
-  // Update the exported popover object to provide compatibility
-  $: {
-    popover = {
-      subscribe: (callback: (state: { expanded: boolean }) => void) => {
-        return open.subscribe((isOpen) => {
-          callback({ expanded: isOpen });
-        });
-      },
-      close: () => {
-        open.set(false);
-      },
-      expanded: $open
-    };
-  }
-
   // Disable custom arrow positioning for now
   // $: if ($open && buttonElement && panelElement) {
   //   calculateArrowPosition();
   // }
 
   // Reset arrow position when popover closes
-  $: if (!$open) {
-    arrowPositioned = false;
-  }
+  $effect(() => {
+    if (!$open) {
+      arrowPositioned = false;
+    }
+  });
 
   async function calculateArrowPosition() {
     // Wait for next tick to ensure panel is positioned
@@ -196,7 +177,6 @@
     <!-- Use slot trigger with Melt trigger action -->
     <div class="base-popover-trigger" bind:this={buttonElement}>
       <slot name="trigger" popover={{
-        subscribe: popover.subscribe,
         close: closePopover,
         expanded: $open,
         button: meltTrigger
@@ -219,11 +199,7 @@
       "
     >
       <div class="popover-content-wrapper">
-        <slot close={closePopover} popover={{
-          subscribe: popover.subscribe,
-          close: closePopover,
-          expanded: $open
-        }} />
+        <slot close={closePopover} />
       </div>
     </div>
   {/if}

@@ -25,8 +25,8 @@
   let error: any = null;
 
   // Derived state from Zero query
-  $: job = jobQuery.current || jobQuery.value || initialJob;
-  $: errorMessage = getPopoverErrorMessage(error);
+  const job = $derived(jobQuery.current || jobQuery.value || initialJob);
+  const errorMessage = $derived(getPopoverErrorMessage(error));
 
   // Local form state
   let localPriority = '';
@@ -37,7 +37,7 @@
 
   // Keep local state in sync with server data
   // Zero data structure may be different from JSON:API format
-  $: {
+  $effect(() => {
     if (job && !isLoading) {
       // Handle both Zero format and JSON:API format during transition
       const jobData = job.attributes || job;
@@ -47,7 +47,7 @@
       localDueDate = jobData.due_on || jobData.due_date || '';
       localDueTime = jobData.due_time || '';
     }
-  }
+  });
 
   // Priority options
   const priorityOptions = [

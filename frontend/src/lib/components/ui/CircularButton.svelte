@@ -18,7 +18,7 @@
     large: { width: 44, height: 44, iconSize: 24 }
   };
 
-  $: config = sizeConfig[size];
+  const config = $derived(sizeConfig[size]);
   
   // Dynamic sizing for special cases (like technician assignment)
   export let dynamicWidth: boolean = false;
