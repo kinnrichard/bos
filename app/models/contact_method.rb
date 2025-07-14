@@ -2,9 +2,9 @@ class ContactMethod < ApplicationRecord
   belongs_to :person
 
   enum :contact_type, {
-    phone: 0,
-    email: 1,
-    address: 2
+    phone: "phone",
+    email: "email",
+    address: "address"
   }
 
   before_validation :detect_and_format_type

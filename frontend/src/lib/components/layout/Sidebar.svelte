@@ -25,7 +25,7 @@
   <!-- Close button (CSS-controlled visibility) -->
   <button 
     class="close-btn"
-    on:click={layoutActions.hideSidebar}
+    onclick={layoutActions.hideSidebar}
     aria-label="Close sidebar"
   >
     <!-- Close icon -->

@@ -28,7 +28,7 @@
       class="popover-button {buttonClass}"
       use:popover.button
       {title}
-      on:click|stopPropagation
+      onclick={(e) => e.stopPropagation()}
     >
       <slot name="button-content" />
     </button>

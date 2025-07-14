@@ -79,7 +79,7 @@
     {/if}
 
     <!-- Login form -->
-    <form class="auth-form" on:submit|preventDefault={handleSubmit}>
+    <form class="auth-form" onsubmit={(e) => { e.preventDefault(); handleSubmit(e); }}>
       <div class="form-group">
         <label for="email" class="form-label">Email</label>
         <input
@@ -90,7 +90,7 @@
           placeholder="your@email.com"
           required
           disabled={loading}
-          on:keydown={handleKeydown}
+          onkeydown={handleKeydown}
         />
       </div>
 
@@ -104,7 +104,7 @@
           placeholder="••••••••"
           required
           disabled={loading}
-          on:keydown={handleKeydown}
+          onkeydown={handleKeydown}
         />
       </div>
 

@@ -24,7 +24,15 @@
     customClass = '',
     // Error state
     error = '',
-    showError = true
+    showError = true,
+    // Event callback props (Svelte 5 pattern)
+    oninput = undefined as ((event: Event) => void) | undefined,
+    onchange = undefined as ((event: Event) => void) | undefined,
+    onfocus = undefined as ((event: FocusEvent) => void) | undefined,
+    onblur = undefined as ((event: FocusEvent) => void) | undefined,
+    onkeydown = undefined as ((event: KeyboardEvent) => void) | undefined,
+    onkeyup = undefined as ((event: KeyboardEvent) => void) | undefined,
+    onkeypress = undefined as ((event: KeyboardEvent) => void) | undefined
   } = $props();
 
   // Focus management
@@ -75,13 +83,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {:else if type === 'email'}
     <input
@@ -104,13 +112,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {:else if type === 'password'}
     <input
@@ -132,13 +140,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {:else if type === 'url'}
     <input
@@ -161,13 +169,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {:else if type === 'tel'}
     <input
@@ -190,13 +198,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {:else if type === 'search'}
     <input
@@ -219,13 +227,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {:else if type === 'number'}
     <input
@@ -249,13 +257,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {:else if type === 'date'}
     <input
@@ -276,13 +284,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {:else if type === 'time'}
     <input
@@ -304,13 +312,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {:else if type === 'datetime-local'}
     <input
@@ -332,13 +340,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:input
-      on:change
-      on:focus
-      on:blur
-      on:keydown
-      on:keyup
-      on:keypress
+      oninput={oninput}
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
+      onkeydown={onkeydown}
+      onkeyup={onkeyup}
+      onkeypress={onkeypress}
     />
   {/if}
   

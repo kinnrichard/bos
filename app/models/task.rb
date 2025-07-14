@@ -14,11 +14,11 @@ class Task < ApplicationRecord
   has_many :subtasks, class_name: "Task", foreign_key: :parent_id, dependent: :destroy
 
   enum :status, {
-    new_task: 0,
-    in_progress: 1,
-    paused: 2,
-    successfully_completed: 3,
-    cancelled: 4
+    new_task: "new_task",
+    in_progress: "in_progress",
+    paused: "paused",
+    successfully_completed: "successfully_completed",
+    cancelled: "cancelled"
   }
 
   validates :title, presence: true

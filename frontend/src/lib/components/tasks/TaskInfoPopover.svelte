@@ -271,11 +271,11 @@
   });
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 {#if isVisible}
   <!-- Backdrop -->
-  <div class="popover-backdrop" on:click={close} on:keydown={handleKeydown} role="presentation"></div>
+  <div class="popover-backdrop" onclick={close} onkeydown={handleKeydown} role="presentation"></div>
   
   <!-- Task Info Popover - matching Rails monolith exactly -->
   <div 
@@ -325,7 +325,7 @@
           <div class="error-state">
             <span>❌</span>
             <span>{error}</span>
-            <button on:click={loadTaskDetails}>Retry</button>
+            <button onclick={loadTaskDetails}>Retry</button>
           </div>
         </div>
       {:else if taskDetails}
@@ -420,7 +420,7 @@
           <textarea
             class="note-input"
             bind:value={noteText}
-            on:keydown={handleNoteKeydown}
+            onkeydown={handleNoteKeydown}
             placeholder="Add a note..."
             rows="2"
             disabled={addingNote}
@@ -428,7 +428,7 @@
           <div class="note-actions">
             <button
               class="button button--primary"
-              on:click={addNote}
+              onclick={addNote}
               disabled={!noteText.trim() || addingNote}
             >
               {addingNote ? 'Adding...' : 'Add Note'}

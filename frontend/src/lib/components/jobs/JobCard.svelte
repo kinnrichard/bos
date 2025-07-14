@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Job } from '$lib/zero/job.generated';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
+  import { getJobStatusString, getJobPriorityString } from '$lib/utils/enum-conversions';
 
   let {
     job,
@@ -10,31 +11,7 @@
     showClient?: boolean;
   } = $props();
 
-  // Map Zero's numeric status to string for emoji functions
-  function mapZeroStatusToString(status: number | null): string {
-    const statusMap: Record<number, string> = {
-      0: 'open',
-      1: 'in_progress',
-      2: 'waiting_for_customer',
-      3: 'waiting_for_scheduled_appointment', 
-      4: 'paused',
-      5: 'successfully_completed',
-      6: 'cancelled'
-    };
-    return statusMap[status || 0] || 'open';
-  }
-  
-  // Map Zero's numeric priority to string for emoji functions
-  function mapZeroPriorityToString(priority: number | null): string {
-    const priorityMap: Record<number, string> = {
-      0: 'low',
-      1: 'normal', 
-      2: 'high',
-      3: 'critical',
-      4: 'proactive_followup'
-    };
-    return priorityMap[priority || 1] || 'normal';
-  }
+  // Use centralized enum conversion functions
 
   // Extract technicians from job assignments
   const technicians = $derived(job.jobAssignments?.map((assignment: any) => ({
@@ -44,8 +21,8 @@
     avatar_style: `background-color: var(--accent-blue);` // TODO: Get actual avatar style
   })) || []);
 
-  const statusString = $derived(mapZeroStatusToString(job.status));
-  const priorityString = $derived(mapZeroPriorityToString(job.priority));
+  const statusString = $derived(getJobStatusString(job.status));
+  const priorityString = $derived(getJobPriorityString(job.priority));
   const statusEmoji = $derived(getJobStatusEmoji(statusString));
   const priorityEmoji = $derived(getJobPriorityEmoji(priorityString));
 
@@ -67,7 +44,7 @@
     {#if showClient}
       <button 
         class="client-name-prefix client-link"
-        on:click={(e) => {
+        onclick={(e) => {
           e.stopPropagation();
           window.location.href = `/clients/${job.client?.id}`;
         }}

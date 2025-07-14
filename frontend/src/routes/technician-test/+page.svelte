@@ -152,9 +152,9 @@
     <p><strong>Loading:</strong> {isLoading}</p>
     
     <div class="test-buttons">
-      <button on:click={() => localSelectedIds = new Set()}>Clear All</button>
-      <button on:click={() => localSelectedIds = new Set(['1', '2'])}>Select First Two</button>
-      <button on:click={() => localSelectedIds = new Set(['1', '2', '3'])}>Select All</button>
+      <button onclick={() => localSelectedIds = new Set()}>Clear All</button>
+      <button onclick={() => localSelectedIds = new Set(['1', '2'])}>Select First Two</button>
+      <button onclick={() => localSelectedIds = new Set(['1', '2', '3'])}>Select All</button>
     </div>
   </div>
 </div>

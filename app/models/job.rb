@@ -15,21 +15,21 @@ class Job < ApplicationRecord
   has_many :scheduled_date_times, as: :schedulable, dependent: :destroy
 
   enum :status, {
-    open: 0,
-    in_progress: 1,
-    paused: 2,
-    waiting_for_customer: 3,
-    waiting_for_scheduled_appointment: 4,
-    successfully_completed: 5,
-    cancelled: 6
+    open: "open",
+    in_progress: "in_progress",
+    paused: "paused",
+    waiting_for_customer: "waiting_for_customer",
+    waiting_for_scheduled_appointment: "waiting_for_scheduled_appointment",
+    successfully_completed: "successfully_completed",
+    cancelled: "cancelled"
   }
 
   enum :priority, {
-    critical: 0,
-    high: 1,
-    normal: 2,
-    low: 3,
-    proactive_followup: 4
+    critical: "critical",
+    high: "high",
+    normal: "normal",
+    low: "low",
+    proactive_followup: "proactive_followup"
   }
 
   validates :title, presence: true

@@ -251,30 +251,30 @@ module ZeroSchemaGenerator
 
       enum_values = model_class.defined_enums[column_name].values
 
-      # Check if any enum values are strings (indicating string storage)
-      if enum_values.any? { |v| v.is_a?(String) }
+      # Check if any enum values are integers (indicating integer storage)
+      if enum_values.any? { |v| v.is_a?(Integer) }
         enum_definition = model_class.defined_enums[column_name]
 
         raise <<~ERROR
-          ❌ ENUM VALIDATION ERROR: #{model_class.name}.#{column_name} uses string storage
+          ❌ ENUM VALIDATION ERROR: #{model_class.name}.#{column_name} uses integer storage
 
-          String-based enums are inefficient in PostgreSQL and incompatible with Zero.js schema generation.
-          Please convert to integer-based enum storage for better performance and type safety.
+          Integer-based enums are incompatible with this project's string enum convention and Zero.js schema generation.
+          Please convert to string-based enum storage for better readability and type safety.
 
           Current enum definition:
             enum :#{column_name}, #{enum_definition.inspect}
           #{'  '}
-          Expected integer-based definition:
+          Expected string-based definition:
             enum :#{column_name}, {
-              #{enum_definition.keys.map.with_index { |key, i| "#{key}: #{i}" }.join(",\n      ")}
+              #{enum_definition.keys.map { |key| "#{key}: \"#{key}\"" }.join(",\n      ")}
             }
           #{'  '}
           To fix this:
-          1. Create a migration to convert the column from string to integer
-          2. Update the model's enum definition to use integer values
+          1. Create a migration to convert the column from integer to string
+          2. Update the model's enum definition to use string values
           3. Regenerate the Zero.js schema
 
-          See: https://guides.rubyonrails.org/active_record_querying.html#enums
+          This project uses string enums for better developer experience and debugging.
         ERROR
       end
     end

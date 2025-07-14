@@ -321,7 +321,7 @@
         class="task-action-button"
         title="Task details"
         use:popover.button
-        on:click|stopPropagation
+        onclick={(e) => e.stopPropagation()}
       >
         <img src="/icons/{isSelected ? 'info' : 'info-blue'}.svg" alt="Info" class="action-icon" />
       </button>
@@ -356,7 +356,7 @@
           <div class="error-state">
             <span>❌</span>
             <span>{error}</span>
-            <button on:click={loadTaskDetails}>Retry</button>
+            <button onclick={loadTaskDetails}>Retry</button>
           </div>
         </div>
       {:else if taskDetails}
@@ -451,7 +451,7 @@
           <textarea
             class="note-input"
             bind:value={noteText}
-            on:keydown={handleNoteKeydown}
+            onkeydown={handleNoteKeydown}
             placeholder="Add a note..."
             rows="2"
             disabled={addingNote}
@@ -459,7 +459,7 @@
           <div class="note-actions">
             <button
               class="button button--primary"
-              on:click={addNote}
+              onclick={addNote}
               disabled={!noteText.trim() || addingNote}
             >
               {addingNote ? 'Adding...' : 'Add Note'}

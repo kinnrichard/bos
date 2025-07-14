@@ -49,7 +49,7 @@
   <div class="csrf-debug-panel" class:expanded={isExpanded}>
     <button 
       class="debug-toggle"
-      on:click={() => isExpanded = !isExpanded}
+      onclick={() => isExpanded = !isExpanded}
       style="background-color: {getStatusColor(debugInfo)}"
     >
       🔒 CSRF
@@ -111,13 +111,13 @@
         </div>
         
         <div class="debug-actions">
-          <button on:click={forceRefresh} class="action-btn refresh">
+          <button onclick={forceRefresh} class="action-btn refresh">
             Force Refresh
           </button>
-          <button on:click={clearToken} class="action-btn clear">
+          <button onclick={clearToken} class="action-btn clear">
             Clear Token
           </button>
-          <button on:click={updateDebugInfo} class="action-btn update">
+          <button onclick={updateDebugInfo} class="action-btn update">
             Update Info
           </button>
         </div>

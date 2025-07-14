@@ -37,7 +37,7 @@
       class="option-item"
       class:selected={isSelected(option)}
       disabled={loading}
-      on:click={(event) => handleOptionClick(option, event)}
+      onclick={(event) => handleOptionClick(option, event)}
     >
       <slot name="option-content" {option} />
     </button>

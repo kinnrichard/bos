@@ -22,8 +22,8 @@
   {#if layout.isMobile && layout.sidebarVisible && showSidebar}
     <div 
       class="mobile-backdrop"
-      on:click={layoutActions.hideSidebar}
-      on:keydown={(e) => e.key === 'Escape' && layoutActions.hideSidebar()}
+      onclick={layoutActions.hideSidebar}
+      onkeydown={(e) => e.key === 'Escape' && layoutActions.hideSidebar()}
       role="button"
       tabindex="-1"
     ></div>

@@ -19,7 +19,11 @@
     customClass = '',
     // Error state
     error = '',
-    showError = true
+    showError = true,
+    // Event callback props (Svelte 5 pattern)
+    onchange = undefined as ((event: Event) => void) | undefined,
+    onfocus = undefined as ((event: FocusEvent) => void) | undefined,
+    onblur = undefined as ((event: FocusEvent) => void) | undefined
   } = $props();
 
   // Focus management
@@ -68,9 +72,9 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      on:change
-      on:focus
-      on:blur
+      onchange={onchange}
+      onfocus={onfocus}
+      onblur={onblur}
     >
       {#if showPlaceholder && placeholder}
         <option value="" disabled selected={!value}>

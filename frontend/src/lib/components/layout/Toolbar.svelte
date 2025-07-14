@@ -92,7 +92,7 @@
       <CircularButton
         variant="default"
         size="normal"
-        on:click={layoutActions.toggleSidebar}
+        onclick={layoutActions.toggleSidebar}
         title="Show sidebar"
       >
         <img src="/icons/sidebar.svg" alt="Menu" />
@@ -125,7 +125,7 @@
           <CircularButton
             variant="default"
             size="normal"
-            on:click={action.action}
+            onclick={action.action}
             title={action.label}
           >
             {#if action.iconType === 'svg'}
@@ -145,15 +145,15 @@
 	      type="text"
 	      placeholder="Search"
 	      bind:value={searchQuery}
-	      on:focus={() => searchFocused = true}
-	      on:blur={() => searchFocused = false}
-	      on:keydown={handleSearchKeydown}
+	      onfocus={() => searchFocused = true}
+	      onblur={() => searchFocused = false}
+	      onkeydown={handleSearchKeydown}
 	      class="search-input"
 	    />
 	    {#if searchQuery}
 	      <button 
 	        class="search-clear"
-	        on:click={() => searchQuery = ''}
+	        onclick={() => searchQuery = ''}
 	        aria-label="Clear search"
 	      >
 	        <img src="/icons/close.svg" alt="Clear" />

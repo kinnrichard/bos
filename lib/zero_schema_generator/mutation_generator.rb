@@ -1164,7 +1164,7 @@ module ZeroSchemaGenerator
         status_pattern = patterns[:enums].find { |enum| enum[:column] == "status" }
         if status_pattern
           status_enum_values = status_pattern[:enum_values] || []
-          status_enum_type = status_pattern[:enum_integer_values]&.join(" | ") || "string"
+          status_enum_type = status_pattern[:enum_values]&.map { |value| "'#{value}'" }&.join(" | ") || "string"
         end
       end
 
@@ -1360,9 +1360,9 @@ module ZeroSchemaGenerator
     end
 
     def rails_type_to_typescript(column)
-      # Check if this is an enum field and generate integer union type
-      if column[:enum] && column[:enum_integer_values]&.any?
-        enum_values = column[:enum_integer_values].join(" | ")
+      # Check if this is an enum field and generate string literal union type
+      if column[:enum] && column[:enum_values]&.any?
+        enum_values = column[:enum_values].map { |value| "'#{value}'" }.join(" | ")
         return enum_values
       end
 

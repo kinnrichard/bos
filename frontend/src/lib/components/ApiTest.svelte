@@ -50,7 +50,7 @@
   
   <div class="test-section">
     <h3>Health Check</h3>
-    <button on:click={testHealthEndpoint} disabled={loading}>
+    <button onclick={testHealthEndpoint} disabled={loading}>
       {loading ? 'Testing...' : 'Test Health Endpoint'}
     </button>
     

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_13_162040) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_14_052452) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -45,7 +45,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_13_162040) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "name_normalized"
-    t.integer "client_type", null: false
+    t.string "client_type", null: false
     t.index ["id"], name: "index_clients_on_id", unique: true
     t.index ["name_normalized"], name: "index_clients_on_name_normalized", unique: true
   end
@@ -53,10 +53,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_13_162040) do
   create_table "contact_methods", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "value"
     t.string "formatted_value"
-    t.integer "contact_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "person_id"
+    t.string "contact_type", null: false
     t.index ["id"], name: "index_contact_methods_on_id", unique: true
     t.index ["person_id"], name: "index_contact_methods_on_person_id"
   end
@@ -114,8 +114,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_13_162040) do
 
   create_table "jobs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "title"
-    t.integer "status"
-    t.integer "priority"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "description"
@@ -126,11 +124,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_13_162040) do
     t.boolean "due_time_set", default: false, null: false
     t.datetime "starts_at", precision: nil
     t.boolean "start_time_set", default: false, null: false
+    t.string "status", null: false
+    t.string "priority", null: false
     t.index ["client_id"], name: "index_jobs_on_client_id"
     t.index ["created_by_id"], name: "index_jobs_on_created_by_id"
     t.index ["id"], name: "index_jobs_on_id", unique: true
     t.index ["lock_version"], name: "index_jobs_on_lock_version"
-    t.index ["status", "created_at"], name: "index_jobs_on_status_and_created_at"
   end
 
   create_table "notes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -384,7 +383,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_13_162040) do
 
   create_table "tasks", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "title"
-    t.integer "status"
     t.integer "position"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -396,6 +394,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_13_162040) do
     t.uuid "assigned_to_id"
     t.uuid "parent_id"
     t.datetime "discarded_at"
+    t.string "status", null: false
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
     t.index ["discarded_at"], name: "index_tasks_on_discarded_at"
     t.index ["id"], name: "index_tasks_on_id", unique: true
@@ -424,14 +423,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_13_162040) do
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "name"
     t.string "email"
-    t.integer "role"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "password_digest"
     t.boolean "resort_tasks_on_status_change", default: true, null: false
+    t.string "role", null: false
     t.index ["email"], name: "index_users_on_email"
     t.index ["id"], name: "index_users_on_id", unique: true
-    t.index ["role"], name: "index_users_on_role"
   end
 
   create_table "versions", force: :cascade do |t|

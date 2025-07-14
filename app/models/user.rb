@@ -16,10 +16,10 @@ class User < ApplicationRecord
   has_many :revoked_tokens, dependent: :destroy
 
   enum :role, {
-    admin: 0,
-    technician: 1,
-    customer_specialist: 2,
-    owner: 3
+    admin: "admin",
+    technician: "technician",
+    customer_specialist: "customer_specialist",
+    owner: "owner"
   }
 
   validates :name, presence: true

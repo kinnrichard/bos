@@ -145,7 +145,7 @@
       />
     {/if}
 
-    <form class="schedule-form" on:submit|preventDefault={handleSave}>
+    <form class="schedule-form" onsubmit={(e) => { e.preventDefault(); handleSave(e); }}>
       <!-- Priority Section -->
       <div class="form-section">
         <label class="form-label" for="priority-select-{jobId}">Priority</label>
@@ -213,7 +213,7 @@
           type="button" 
           class="cancel-button"
           disabled={isLoading}
-          on:click={handleCancel}
+          onclick={handleCancel}
         >
           Cancel
         </button>

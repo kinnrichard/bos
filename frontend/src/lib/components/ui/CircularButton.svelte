@@ -47,7 +47,7 @@
   style:height={`${config.height}px`}
   style:min-width={minWidth ? `${minWidth}px` : dynamicWidth ? `${config.width}px` : undefined}
   style:border-radius={borderRadius ? (typeof borderRadius === 'string' ? borderRadius : `${borderRadius}px`) : '50%'}
-  on:click={handleClick}
+  onclick={handleClick}
 >
   <slot {config} />
 </button>
