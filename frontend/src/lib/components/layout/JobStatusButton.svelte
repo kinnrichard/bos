@@ -8,6 +8,7 @@
   import { getJobStatusEmoji } from '$lib/config/emoji';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import '$lib/styles/popover-common.css';
+  import { Job } from '$lib/models/job';
 
   let popover = $state();
 
@@ -32,30 +33,90 @@
     job ? getJobStatusEmoji(currentStatus) : '📝'
   );
   
-  // Debug logging for JobStatusButton
+  // Debug logging for JobStatusButton - track job prop changes
   $effect(() => {
-    console.log('[JobStatusButton] Debug Info:');
-    console.log('  job prop:', job);
-    console.log('  job?.status:', job?.status);
-    console.log('  currentStatus:', currentStatus);
-    console.log('  jobStatusEmoji:', jobStatusEmoji);
-    console.log('  getJobStatusEmoji(currentStatus):', getJobStatusEmoji(currentStatus));
+    console.log('[JobStatusButton] Job prop changed:', {
+      id: job?.id,
+      status: job?.status,
+      title: job?.title,
+      timestamp: Date.now(),
+      currentStatus: currentStatus,
+      jobStatusEmoji: jobStatusEmoji
+    });
     
-    // Test all status mappings
-    console.log('[JobStatusButton] Emoji mapping tests:');
-    console.log('  getJobStatusEmoji("open"):', getJobStatusEmoji("open"));
-    console.log('  getJobStatusEmoji("paused"):', getJobStatusEmoji("paused"));
-    console.log('  getJobStatusEmoji("successfully_completed"):', getJobStatusEmoji("successfully_completed"));
-    console.log('  getJobStatusEmoji("in_progress"):', getJobStatusEmoji("in_progress"));
+    // Track if this is the same job object or a new one
+    if (job) {
+      console.log('[JobStatusButton] Job object details:', {
+        isProxy: job.constructor.name === 'Proxy',
+        objectId: job.id,
+        statusValue: job.status,
+        rawJobObject: job
+      });
+    }
   });
 
-  // Handle status change using simple reactive state update
-  function handleStatusChange(statusOption: any) {
+  // Track when status changes are attempted
+  let lastAttemptedStatus = $state(null);
+  $effect(() => {
+    if (lastAttemptedStatus && lastAttemptedStatus !== job?.status) {
+      console.log('[JobStatusButton] STATUS REVERT DETECTED:', {
+        attemptedStatus: lastAttemptedStatus,
+        currentStatus: job?.status,
+        timestamp: Date.now()
+      });
+    }
+  });
+
+  // Handle status change using ActiveRecord pattern
+  async function handleStatusChange(statusOption: any) {
     const newStatus = statusOption.value;
-    if (!job || newStatus === currentStatus) return;
+    console.log('[JobStatusButton] handleStatusChange called:', {
+      newStatus,
+      currentStatus,
+      jobId: job?.id,
+      jobBeforeChange: job?.status,
+      timestamp: Date.now()
+    });
     
-    // Simple reactive update - Svelte 5 handles the reactivity
-    job.status = newStatus;
+    if (!job || newStatus === currentStatus) {
+      console.log('[JobStatusButton] Status change skipped - no job or same status');
+      return;
+    }
+    
+    // Track the attempted change
+    lastAttemptedStatus = newStatus;
+    
+    // Keep optimistic UI update for immediate feedback
+    // const previousStatus = job.status;
+    // job.status = newStatus;
+    
+    console.log('[JobStatusButton] BEFORE ActiveRecord mutation:', {
+      jobStatus: job.status,
+      newStatus: newStatus,
+      timestamp: Date.now()
+    });
+    
+    try {
+      // Persist to database using ActiveRecord pattern (generates WebSocket traffic)
+      console.log('[JobStatusButton] Calling Job.update...');
+      await Job.update(job.id, { status: newStatus });
+      
+      console.log('[JobStatusButton] AFTER ActiveRecord mutation - SUCCESS:', {
+        jobStatus: job.status,
+        persistedStatus: newStatus,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      // Revert optimistic update on failure
+      job.status = previousStatus;
+      console.error('[JobStatusButton] Failed to update job status:', error);
+      console.log('[JobStatusButton] REVERTED optimistic update:', {
+        revertedTo: job.status,
+        failedStatus: newStatus,
+        timestamp: Date.now()
+      });
+      // TODO: Show error toast to user
+    }
     
     // Close popover
     if (popover && popover.close) {

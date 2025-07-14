@@ -11,7 +11,7 @@
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
-  import { layoutActions } from '$lib/stores/layout.svelte';
+  import { layout, layoutActions } from '$lib/stores/layout.svelte';
 
   // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
   const jobId = $derived($page.params.id);
@@ -52,6 +52,19 @@
   const job = $derived(jobQuery?.data);
   const isLoading = $derived(jobQuery?.isLoading ?? true);
   const error = $derived(jobQuery?.error);
+
+  // Track Zero.js query refresh cycles specifically  
+  $effect(() => {
+    if (jobQuery && job) {
+      console.log('[JobPage] Zero.js query data update detected:', {
+        jobId: job.id,
+        status: job.status,
+        queryIsLoading: isLoading,
+        timestamp: Date.now(),
+        queryRefreshCycle: true
+      });
+    }
+  });
   
   // ✨ NOTES: Will be loaded via job associations for now
   // TODO: Implement separate NotesReactive query when needed
@@ -66,7 +79,7 @@
     in_progress: job.tasks.filter((task: any) => task.status === 'in_progress').length
   } : undefined);
   
-  // ✨ USE $effect FOR SIDE EFFECTS (NOT REACTIVE STATEMENTS)
+  // ✨ USE $effect FOR SIDE EFFECTS (NOT REACTIVE STATEMENTS)  
   $effect(() => {
     console.log('[JobPage] Effect triggered - jobId:', jobId, 'jobQuery available:', !!jobQuery);
     
@@ -75,6 +88,16 @@
       console.log('[JobPage] Raw jobQuery.data:', jobQuery.data);
       console.log('[JobPage] Raw jobQuery.isLoading:', jobQuery.isLoading);
       console.log('[JobPage] Raw jobQuery.error:', jobQuery.error);
+      
+      // NEW: Track query data changes specifically
+      if (job) {
+        console.log('[JobPage] Query returned job with status:', {
+          jobId: job.id,
+          status: job.status,
+          timestamp: Date.now(),
+          isNewJobObject: true // This will help us see if objects are being replaced
+        });
+      }
     } else {
       console.log('[JobPage] No jobQuery - jobId present:', !!jobId);
     }
@@ -104,9 +127,11 @@
       // ✨ USE $inspect FOR DEBUGGING REACTIVE STATE IN SVELTE 5
       $inspect('[JobPage] Zero job structure:', job);
       
-      // Update current job in layout store when job data changes
+      // Only set current job on initial load, not on reactive updates
       console.log('[JobPage] Setting current job in layout store');
-      layoutActions.setCurrentJob(job);
+      if (!layout.currentJob || layout.currentJob.id !== job.id) {
+        layoutActions.setCurrentJob(job);
+      }
     } else if (!isLoading && !error) {
       console.warn('[JobPage] Job is null but not loading and no error - possible query issue');
     }

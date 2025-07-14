@@ -101,12 +101,12 @@
 
     <!-- Job status button (only show on job detail page) -->
     {#if currentPage === 'job-detail' && layout.currentJob && layout.currentJob.id}
-      <JobStatusButton job={layout.currentJob} />
+      <JobStatusButton bind:job={layout.currentJob} />
       <TechnicianAssignmentButton 
         jobId={layout.currentJob.id}
         initialTechnicians={layout.currentJob.technicians || []}
       />
-      <SchedulePriorityEditPopover jobId={layout.currentJob.id} initialJob={layout.currentJob} />  
+      <SchedulePriorityEditPopover jobId={layout.currentJob.id} bind:initialJob={layout.currentJob} />  
     {/if}
   </div>
 

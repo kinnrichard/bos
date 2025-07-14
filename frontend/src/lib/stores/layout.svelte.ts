@@ -69,6 +69,14 @@ export const layoutActions = {
   },
   
   setCurrentJob: (job: PopulatedJob | null) => {
+    console.log('[LayoutStore] setCurrentJob called:', {
+      newJobId: job?.id,
+      newJobStatus: job?.status,
+      currentJobId: layout.currentJob?.id,
+      currentJobStatus: layout.currentJob?.status,
+      timestamp: Date.now(),
+      stackTrace: new Error().stack?.split('\n').slice(1, 4) // Show call stack
+    });
     layout.currentJob = job;
   }
 };
