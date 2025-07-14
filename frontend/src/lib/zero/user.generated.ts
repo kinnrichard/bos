@@ -297,14 +297,26 @@ export async function upsertUser(data: (CreateUserData & { id?: string }) | (Upd
  * }
  * ```
  */
+export class UserInstance {
+  public data: User;
 
   constructor(data: User) {
-    super(data);
+    this.data = data;
   }
 
+  /**
+   * Update this user instance
+   */
+  async update(data: Partial<UpdateUserData>): Promise<{ id: string }> {
+    return await updateUser(this.data.id, data);
+  }
 
-
-
+  /**
+   * Hard delete this user
+   */
+  async destroy(): Promise<{ id: string }> {
+    return await destroyUser(this.data.id);
+  }
 
   /**
    * Rails-compatible inspect method for debugging

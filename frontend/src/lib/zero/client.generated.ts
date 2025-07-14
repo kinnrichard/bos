@@ -291,14 +291,26 @@ export async function upsertClient(data: (CreateClientData & { id?: string }) | 
  * }
  * ```
  */
+export class ClientInstance {
+  public data: Client;
 
   constructor(data: Client) {
-    super(data);
+    this.data = data;
   }
 
+  /**
+   * Update this client instance
+   */
+  async update(data: Partial<UpdateClientData>): Promise<{ id: string }> {
+    return await updateClient(this.data.id, data);
+  }
 
-
-
+  /**
+   * Hard delete this client
+   */
+  async destroy(): Promise<{ id: string }> {
+    return await destroyClient(this.data.id);
+  }
 
   /**
    * Rails-compatible inspect method for debugging

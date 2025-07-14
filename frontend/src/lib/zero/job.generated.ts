@@ -399,14 +399,6 @@ export function createJobInstance(data: Job): JobInstance {
   return new JobInstance(data);
 }
 
-/**
- * Factory function to create JobInstance from data
- * Used internally by ReactiveRecord and ActiveRecord
- */
-export function createJobInstance(data: Job): JobInstance {
-  return new JobInstance(data);
-}
-
 
 // Generated ActiveRecord-style queries for jobs
 
