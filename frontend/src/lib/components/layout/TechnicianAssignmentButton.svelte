@@ -5,13 +5,12 @@
   import { getZeroContext } from '$lib/zero-context.svelte';
   
   // Use proper ReactiveQuery class for modern Svelte 5 reactivity
-  import { ReactiveQuery } from '$lib/zero/reactive-query.svelte';
+  import { ReactiveQuery, ReactiveQueryOne } from '$lib/zero/reactive-query.svelte';
+  import { queryJobs } from '$lib/zero/model-queries';
   import type { UserData } from '$lib/models/types/user-data';
+  import type { JobData } from '$lib/models/types/job-data';
   import { getZero } from '$lib/zero/zero-client';
   import { JobAssignment } from '$lib/models/job-assignment';
-
-  // Get Zero functions from context for Job
-  const { Job } = getZeroContext();
   import { debugTechAssignment } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage, createIdSet } from '$lib/utils/popover-utils';
@@ -46,19 +45,25 @@
   );
   // TODO: Need to implement user lookup functionality
   // const userLookup = useUserLookup();
-  const jobQuery = Job.find(jobId);
+  const jobQuery = new ReactiveQueryOne<any>(
+    () => {
+      return queryJobs().includes('jobAssignments').where('id', jobId).one();
+    },
+    null,
+    '5m' // 5 minute TTL
+  );
   
   // Zero uses direct mutations instead of TanStack's createMutation pattern
   let isLoading = $state(false);
   let error = $state<Error | null>(null);
 
   // Derived state from Zero Query - fallback to initial data
-  const job = $derived(jobQuery.current); // Zero returns current directly  
+  const job = $derived(jobQuery.data); // ReactiveQueryOne returns data directly
   const availableUsers = $derived(usersQuery.data || []);
   
   
-  // Use populated technicians from job.assignments instead of relationships
-  const assignedTechnicians = $derived(job?.assignments?.map(a => a.user) || initialTechnicians);
+  // Use populated technicians from job.jobAssignments relationship
+  const assignedTechnicians = $derived(job?.jobAssignments?.map(a => a.user) || initialTechnicians);
   const assignedTechniciansForDisplay = $derived(assignedTechnicians);
   
   const errorMessage = $derived(getPopoverErrorMessage(error));
@@ -97,7 +102,7 @@
         debugTechAssignment('Created assignment for %s on job %s', user.name, jobId);
       } else {
         // Find and delete existing job assignment
-        const existingAssignment = job?.assignments?.find(a => a.user_id === user.id);
+        const existingAssignment = job?.jobAssignments?.find(a => a.user_id === user.id);
         if (existingAssignment?.id) {
           await JobAssignment.destroy(existingAssignment.id);
           debugTechAssignment('Deleted assignment for %s on job %s', user.name, jobId);
@@ -161,10 +166,10 @@
         loading={usersQuery.isLoading}
         maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
         onOptionClick={(user, event) => {
-          const isCurrentlySelected = job?.assignments?.some(a => a.user_id === user.id) || false;
+          const isCurrentlySelected = job?.jobAssignments?.some(a => a.user_id === user.id) || false;
           handleUserToggle(user, !isCurrentlySelected);
         }}
-        isSelected={(option) => job?.assignments?.some(a => a.user_id === option.id) || false}
+        isSelected={(option) => job?.jobAssignments?.some(a => a.user_id === option.id) || false}
       >
         <svelte:fragment slot="option-content" let:option>
           <div class="technician-avatar popover-option-left-content">
@@ -174,7 +179,7 @@
           
           <!-- Checkmark bound to actual assignment data -->
           <div class="popover-checkmark-container">
-            {#if job?.assignments?.some(a => a.user_id === option.id)}
+            {#if job?.jobAssignments?.some(a => a.user_id === option.id)}
               <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
             {/if}
           </div>
