@@ -4,6 +4,7 @@
   import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
   import { taskSelection, getSelectedTaskIds, taskSelectionActions, type TaskSelectionState } from '$lib/stores/taskSelection.svelte';
   import { tasksService } from '$lib/api/tasks';
+  import { Task as TaskModel } from '$lib/models/task';
   import { nativeDrag, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
   import { calculateRelativePositionFromTarget, calculatePositionFromTarget as railsCalculatePosition } from '$lib/utils/position-calculator';
@@ -614,18 +615,21 @@
     const title = newTaskTitle.trim();
     
     try {
-      const response = await tasksService.createTask(jobId, {
+      const newTask = await TaskModel.create({
         title,
+        job_id: jobId,
         status: 'new_task',
-        position: tasks.length + 1
+        position: tasks.length + 1,
+        lock_version: 0,
+        applies_to_all_targets: false
       });
       
       // Add the new task to our local tasks array
-      tasks = [...tasks, response.task];
+      tasks = [...tasks, newTask];
       
       // Select the newly created task only if requested (Return key, not blur)
       if (shouldSelectAfterCreate) {
-        taskSelectionActions.selectTask(response.task.id);
+        taskSelectionActions.selectTask(newTask.id);
       }
       
       // Clear the form
@@ -817,69 +821,81 @@
     try {
       isCreatingTask = true;
       
-      // Build task data with relative positioning
-      const taskData: {
-        title: string;
-        parent_id?: string;
-        after_task_id?: string;
-      } = { 
-        title: inlineNewTaskTitle.trim(),
-        parent_id: parentId || undefined
-      };
-
-      // Use relative positioning if inserting after a specific task
+      // Calculate position based on after_task_id for ActiveRecord pattern
+      let position = 1;
       if (insertNewTaskAfter) {
-        taskData.after_task_id = insertNewTaskAfter;
+        // Find the task we want to insert after
+        const afterTask = tasks.find(t => t.id === insertNewTaskAfter);
+        if (afterTask) {
+          // Get tasks in the same scope
+          const scopeTasks = tasks.filter(t => (t.parent_id || null) === (parentId || null))
+                                   .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+          
+          // Find position after the target task
+          const afterIndex = scopeTasks.findIndex(t => t.id === insertNewTaskAfter);
+          if (afterIndex !== -1) {
+            position = (afterTask.position ?? 0) + 1;
+          }
+        }
+      } else {
+        // No specific position: append at end of scope
+        const scopeTasks = tasks.filter(t => (t.parent_id || null) === (parentId || null));
+        position = scopeTasks.length + 1;
       }
-      // If no specific position, server will append at end automatically
-
-      const result = await tasksService.createTask(jobId, taskData);
       
-      if (result.status === 'success') {
-        // Insert new task at correct position based on visual hierarchy
-        if (insertNewTaskAfter) {
-          // Find position in the visual hierarchy (what user sees)
-          const visualIndex = flatTaskIds.indexOf(insertNewTaskAfter);
-          if (visualIndex !== -1 && visualIndex < flatTaskIds.length - 1) {
-            // Get the task that should come after our new task in the visual order
-            const nextTaskId = flatTaskIds[visualIndex + 1];
-            const nextTaskIndex = tasks.findIndex(t => t.id === nextTaskId);
-            
-            if (nextTaskIndex !== -1) {
-              // Insert before the next task in the flat array
-              tasks = [
-                ...tasks.slice(0, nextTaskIndex),
-                result.task,
-                ...tasks.slice(nextTaskIndex)
-              ];
-            } else {
-              // Fallback: append at end
-              tasks = [...tasks, result.task];
-            }
+      const newTask = await TaskModel.create({
+        title: inlineNewTaskTitle.trim(),
+        job_id: jobId,
+        status: 'new_task',
+        position: position,
+        parent_id: parentId || undefined,
+        lock_version: 0,
+        applies_to_all_targets: false
+      });
+      
+      // Insert new task at correct position based on visual hierarchy
+      if (insertNewTaskAfter) {
+        // Find position in the visual hierarchy (what user sees)
+        const visualIndex = flatTaskIds.indexOf(insertNewTaskAfter);
+        if (visualIndex !== -1 && visualIndex < flatTaskIds.length - 1) {
+          // Get the task that should come after our new task in the visual order
+          const nextTaskId = flatTaskIds[visualIndex + 1];
+          const nextTaskIndex = tasks.findIndex(t => t.id === nextTaskId);
+          
+          if (nextTaskIndex !== -1) {
+            // Insert before the next task in the flat array
+            tasks = [
+              ...tasks.slice(0, nextTaskIndex),
+              newTask,
+              ...tasks.slice(nextTaskIndex)
+            ];
           } else {
-            // Selected task is last in visual order, or not found - append at end
-            tasks = [...tasks, result.task];
+            // Fallback: append at end
+            tasks = [...tasks, newTask];
           }
         } else {
-          // No specific position: append at end
-          tasks = [...tasks, result.task];
+          // Selected task is last in visual order, or not found - append at end
+          tasks = [...tasks, newTask];
         }
-        
-        // Clear inline state
-        cancelInlineNewTask();
-        
-        // Update insertNewTaskAfter to point to the newly created task
-        // This ensures subsequent new tasks will be positioned after this one
-        insertNewTaskAfter = result.task.id;
-        
-        // Select the newly created task only if requested (Return key, not blur)
-        if (shouldSelectAfterCreate) {
-          taskSelectionActions.selectTask(result.task.id);
-        }
-        
-        dragFeedback = 'Task created successfully';
-        setTimeout(() => dragFeedback = '', 2000);
+      } else {
+        // No specific position: append at end
+        tasks = [...tasks, newTask];
       }
+      
+      // Clear inline state
+      cancelInlineNewTask();
+      
+      // Update insertNewTaskAfter to point to the newly created task
+      // This ensures subsequent new tasks will be positioned after this one
+      insertNewTaskAfter = newTask.id;
+      
+      // Select the newly created task only if requested (Return key, not blur)
+      if (shouldSelectAfterCreate) {
+        taskSelectionActions.selectTask(newTask.id);
+      }
+      
+      dragFeedback = 'Task created successfully';
+      setTimeout(() => dragFeedback = '', 2000);
     } catch (error) {
       console.error('Failed to create inline task:', error);
       dragFeedback = 'Failed to create task - please try again';
