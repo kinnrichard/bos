@@ -18,7 +18,7 @@
   
   // ✨ CREATE REACTIVE QUERY IN SVELTE COMPONENT (where $state runes are available)
   const jobQuery = $derived(jobId ? new ReactiveQueryOne<Job>(
-    () => queryJobs().includes('client').where('id', jobId).one(),
+    () => queryJobs().includes('client', 'tasks', 'jobAssignments').where('id', jobId).one(),
     null,
     '5m' // 5 minute TTL
   ) : null);
@@ -48,21 +48,46 @@
   
   // ✨ USE $effect FOR SIDE EFFECTS (NOT REACTIVE STATEMENTS)
   $effect(() => {
-    console.log('[JobPage] Job ID from URL params:', jobId);
+    console.log('[JobPage] Effect triggered - jobId:', jobId, 'jobQuery available:', !!jobQuery);
+    
+    if (jobQuery) {
+      console.log('[JobPage] JobQuery state - loading:', isLoading, 'error:', !!error, 'data available:', !!job);
+    }
     
     if (job) {
       // ✨ USE $state.snapshot() TO SAFELY LOG REACTIVE STATE
       const jobSnapshot = $state.snapshot(job);
-      console.log('[JobPage] Job data loaded via Zero relationships:', jobSnapshot.title);
+      console.log('[JobPage] Job data loaded with relationships:', {
+        title: jobSnapshot.title,
+        hasClient: !!jobSnapshot.client,
+        clientName: jobSnapshot.client?.name,
+        hasTasks: !!jobSnapshot.tasks,
+        tasksCount: jobSnapshot.tasks?.length || 0,
+        hasJobAssignments: !!jobSnapshot.jobAssignments,
+        techniciansCount: jobSnapshot.jobAssignments?.length || 0,
+        technicians: jobSnapshot.jobAssignments?.map((ja: any) => ja.user?.name).filter(Boolean) || []
+      });
+      
+      // Detailed debugging for missing relationships
+      if (!jobSnapshot.tasks) {
+        console.warn('[JobPage] ⚠️ Tasks relationship not loaded - check .includes() configuration');
+      }
+      if (!jobSnapshot.jobAssignments) {
+        console.warn('[JobPage] ⚠️ JobAssignments relationship not loaded - check .includes() configuration');
+      }
+      
       // ✨ USE $inspect FOR DEBUGGING REACTIVE STATE IN SVELTE 5
       $inspect('[JobPage] Zero job structure:', job);
-      console.log('[JobPage] Client:', jobSnapshot.client?.name);
-      console.log('[JobPage] Tasks count:', jobSnapshot.tasks?.length);
-      console.log('[JobPage] Technicians:', jobSnapshot.jobAssignments?.map((ja: any) => ja.user?.name));
       
       // Update current job in layout store when job data changes
-      console.log('[JobPage] Setting current job in layout store via Zero relationships');
+      console.log('[JobPage] Setting current job in layout store');
       layoutActions.setCurrentJob(job);
+    } else if (!isLoading && !error) {
+      console.warn('[JobPage] Job is null but not loading and no error - possible query issue');
+    }
+    
+    if (error) {
+      console.error('[JobPage] Job loading error:', error.message);
     }
     
     if (notes && notes.length > 0) {
@@ -82,8 +107,17 @@
 
   // Handle retry - ReactiveQuery automatically syncs, manual refresh available
   function handleRetry() {
-    console.log('[JobPage] ReactiveQuery auto-syncs via Zero addListener, manual refresh available');
-    jobQuery.refresh();
+    console.log('[JobPage] Retry requested for jobQuery');
+    if (jobQuery) {
+      try {
+        jobQuery.refresh();
+        console.log('[JobPage] JobQuery refresh triggered successfully');
+      } catch (error) {
+        console.error('[JobPage] Error during jobQuery refresh:', error);
+      }
+    } else {
+      console.warn('[JobPage] JobQuery not available for refresh - jobId may be missing');
+    }
   }
 </script>
 

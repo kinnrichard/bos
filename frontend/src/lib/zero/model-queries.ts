@@ -6,7 +6,7 @@
  * 
  * Usage:
  *   queryJobs().includes('client').orderBy('created_at', 'desc')
- *   queryJobs().includes('client', 'jobAssignments').where('id', jobId).one()
+ *   queryJobs().includes('client', 'tasks', 'jobAssignments').where('id', jobId).one()
  */
 
 import { getZero } from './zero-client';
@@ -14,10 +14,35 @@ import { getZero } from './zero-client';
 /**
  * Creates a chainable query object with includes() support
  * Returns an object that forwards all Zero.js methods after applying relationships
+ * 
+ * Key insight: Always return chainable objects, even when baseQuery is null.
+ * This prevents "null is not an object" errors during Zero.js initialization.
  */
 function createQueryChain(tableName: string, baseQuery: any) {
-  // Store the relationships to apply later
+  // Store the relationships and other operations to apply later
   let storedRelationships: string[] = [];
+  let storedOperations: Array<{method: string, args: any[]}> = [];
+  
+  /**
+   * Apply all stored operations to a query
+   */
+  function executeStoredOperations(query: any) {
+    if (!query) return null;
+    
+    // First apply relationships
+    storedRelationships.forEach(rel => {
+      query = query?.related(rel);
+    });
+    
+    // Then apply other operations in order
+    storedOperations.forEach(op => {
+      if (query && typeof query[op.method] === 'function') {
+        query = query[op.method](...op.args);
+      }
+    });
+    
+    return query;
+  }
   
   const chainProxy = {
     /**
@@ -29,54 +54,72 @@ function createQueryChain(tableName: string, baseQuery: any) {
       return chainProxy;
     },
     
-    // Forward all other methods to the baseQuery after applying relationships
+    /**
+     * Add orderBy operation to the chain
+     * Always returns chainable object for continued chaining
+     */
     orderBy(...args: any[]) {
-      if (!baseQuery) return null;
-      let query = baseQuery;
-      
-      // Apply stored relationships
-      storedRelationships.forEach(rel => {
-        query = query?.related(rel);
-      });
-      
-      return query?.orderBy(...args);
+      storedOperations.push({method: 'orderBy', args});
+      return chainProxy;
     },
     
+    /**
+     * Add where operation to the chain
+     * Always returns chainable object for continued chaining
+     */
     where(...args: any[]) {
-      if (!baseQuery) return null;
-      let query = baseQuery;
-      
-      // Apply stored relationships
-      storedRelationships.forEach(rel => {
-        query = query?.related(rel);
-      });
-      
-      return query?.where(...args);
+      storedOperations.push({method: 'where', args});
+      return chainProxy;
     },
     
-    // Add other methods as needed
+    /**
+     * Add limit operation to the chain
+     */
+    limit(...args: any[]) {
+      storedOperations.push({method: 'limit', args});
+      return chainProxy;
+    },
+    
+    /**
+     * Terminal operation: Execute chain and return single result
+     */
     one() {
-      if (!baseQuery) return null;
-      let query = baseQuery;
+      if (!baseQuery) {
+        console.log('🔍 queryJobs().one(): baseQuery not ready, returning null');
+        return null;
+      }
       
-      // Apply stored relationships
-      storedRelationships.forEach(rel => {
-        query = query?.related(rel);
-      });
-      
-      return query?.one();
+      const finalQuery = executeStoredOperations(baseQuery);
+      console.log('🔍 queryJobs().one(): executing with relationships:', storedRelationships);
+      return finalQuery?.one();
     },
     
+    /**
+     * Terminal operation: Execute chain and return collection query
+     */
     all() {
-      if (!baseQuery) return null;
-      let query = baseQuery;
+      if (!baseQuery) {
+        console.log('🔍 queryJobs().all(): baseQuery not ready, returning null');
+        return null;
+      }
       
-      // Apply stored relationships
-      storedRelationships.forEach(rel => {
-        query = query?.related(rel);
-      });
+      const finalQuery = executeStoredOperations(baseQuery);
+      console.log('🔍 queryJobs().all(): executing with relationships:', storedRelationships);
+      return finalQuery;
+    },
+    
+    /**
+     * For ReactiveQuery compatibility - return the final query
+     */
+    materialize(...args: any[]) {
+      if (!baseQuery) {
+        console.log('🔍 queryJobs().materialize(): baseQuery not ready, returning null');
+        return null;
+      }
       
-      return query;
+      const finalQuery = executeStoredOperations(baseQuery);
+      console.log('🔍 queryJobs().materialize(): executing with relationships:', storedRelationships);
+      return finalQuery?.materialize(...args);
     }
   };
   
