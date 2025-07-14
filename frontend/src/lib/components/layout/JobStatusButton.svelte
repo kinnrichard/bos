@@ -30,18 +30,16 @@
   ];
 
   // Get job status emoji with comprehensive null checks and proper conversion
-  const jobStatusEmoji = $derived(() => {
-    const numericStatus = layout.currentJob?.attributes?.status;
-    if (numericStatus !== undefined && numericStatus !== null) {
-      const statusString = getJobStatusString(numericStatus);
-      return getJobStatusEmoji(statusString);
-    }
-    return '📝';
-  });
-  const currentStatus = $derived(() => {
-    const numericStatus = layout.currentJob?.attributes?.status;
-    return numericStatus !== undefined && numericStatus !== null ? getJobStatusString(numericStatus) : 'open';
-  });
+  const jobStatusEmoji = $derived(
+    layout.currentJob?.attributes?.status !== undefined && layout.currentJob?.attributes?.status !== null
+      ? getJobStatusEmoji(getJobStatusString(layout.currentJob.attributes.status))
+      : '📝'
+  );
+  const currentStatus = $derived(
+    layout.currentJob?.attributes?.status !== undefined && layout.currentJob?.attributes?.status !== null
+      ? getJobStatusString(layout.currentJob.attributes.status)
+      : 'open'
+  );
 
   // Handle status change using Zero direct mutation
   async function handleStatusChange(statusOption: any) {
@@ -69,7 +67,7 @@
 
 <HeadlessPopoverButton 
   bind:popover
-  title="Job Status"
+  title={`Job Status: ${jobStatusEmoji}`}
   error={error ? getPopoverErrorMessage(error) : ''}
   loading={isLoading}
   panelWidth="max-content"
