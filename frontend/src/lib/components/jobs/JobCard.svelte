@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { JobData } from '$lib/models/types/job-data';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
-  import { getJobStatusString, getJobPriorityString } from '$lib/utils/enum-conversions';
 
   let {
     job,
@@ -21,10 +20,8 @@
     avatar_style: `background-color: var(--accent-blue);` // TODO: Get actual avatar style
   })) || []);
 
-  const statusString = $derived(getJobStatusString(job.status));
-  const priorityString = $derived(getJobPriorityString(job.priority));
-  const statusEmoji = $derived(getJobStatusEmoji(statusString));
-  const priorityEmoji = $derived(getJobPriorityEmoji(priorityString));
+  const statusEmoji = $derived(getJobStatusEmoji(job.status));
+  const priorityEmoji = $derived(getJobPriorityEmoji(job.priority));
 
   function getJobPath(job: Job): string {
     return `/jobs/${job.id}`;
@@ -58,7 +55,7 @@
   <!-- Right side items -->
   <span class="job-right-section">
     <!-- Priority emoji (if not normal) -->
-    {#if priorityString !== 'normal' && priorityEmoji}
+    {#if job.priority !== 'normal' && priorityEmoji}
       <span class="job-priority-emoji">{priorityEmoji}</span>
     {/if}
 
