@@ -13,7 +13,7 @@
   const { Job } = getZeroContext();
   import { debugTechAssignment } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
-  import { getPopoverErrorMessage, validateUserData, createIdSet } from '$lib/utils/popover-utils';
+  import { getPopoverErrorMessage, createIdSet } from '$lib/utils/popover-utils';
   import { tick } from 'svelte';
   import '$lib/styles/popover-common.css';
 
@@ -92,9 +92,9 @@
   async function handleUserToggle(user: UserData, checked: boolean) {
     // Remove loading guard to allow optimistic updates
     
-    // Ensure user has required data
-    if (!validateUserData(user)) {
-      debugTechAssignment('Invalid user data, ignoring click: %o', user);
+    // Epic-008: Zero.js provides reliable data, validation unnecessary
+    if (!user?.id) {
+      debugTechAssignment('Missing user ID, ignoring click: %o', user);
       return;
     }
     

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Job } from '$lib/zero/job.generated';
+  import type { JobData } from '$lib/models/types/job-data';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
   import { getJobStatusString, getJobPriorityString } from '$lib/utils/enum-conversions';
 
@@ -7,7 +7,7 @@
     job,
     showClient = true
   }: {
-    job: Job;
+    job: JobData;
     showClient?: boolean;
   } = $props();
 

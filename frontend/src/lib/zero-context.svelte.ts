@@ -6,23 +6,14 @@ import type { ZeroClient } from './zero';
 import { 
   getZero, 
   initZero, 
-  getZeroState,
-  Job,
-  User,
-  Client,
-  Task,
-  createJob,
-  updateJob,
-  deleteJob,
-  createUser,
-  updateUser,
-  createClient,
-  updateClient,
-  createTask,
-  updateTask,
-  discardTask,
-  undiscardTask
+  getZeroState
 } from './zero';
+
+// Epic-008: Import models from Epic-008 architecture
+import { User } from '$lib/models/user';
+import { Task } from '$lib/models/task';
+import { Job } from '$lib/models/job';
+import { Client } from '$lib/models/client';
 
 const ZERO_CONTEXT_KEY = Symbol('zero');
 
@@ -32,26 +23,14 @@ export interface ZeroContext {
   initZero: typeof initZero;
   getZeroState: typeof getZeroState;
   
-  // ActiveRecord-style queries
-  Job: typeof Job;
+  // Epic-008 ActiveRecord-style queries (available models)
   User: typeof User;
-  Client: typeof Client;
   Task: typeof Task;
+  Job: typeof Job;
+  Client: typeof Client;
   
-  // CRUD mutations
-  createJob: typeof createJob;
-  updateJob: typeof updateJob;
-  deleteJob: typeof deleteJob;
-  createUser: typeof createUser;
-  updateUser: typeof updateUser;
-  createClient: typeof createClient;
-  updateClient: typeof updateClient;
-  createTask: typeof createTask;
-  updateTask: typeof updateTask;
-  discardTask: typeof discardTask;
-  undiscardTask: typeof undiscardTask;
-  
-  // Add other Zero functions as needed
+  // Note: CRUD mutations are now handled by Epic-008 models directly
+  // Use: User.create(), User.update(), Task.create(), etc.
 }
 
 export function createZeroContext(): ZeroContext {
@@ -61,24 +40,11 @@ export function createZeroContext(): ZeroContext {
     initZero,
     getZeroState,
     
-    // ActiveRecord-style queries
-    Job,
+    // Epic-008 ActiveRecord-style queries
     User,
-    Client,
     Task,
-    
-    // CRUD mutations
-    createJob,
-    updateJob,
-    deleteJob,
-    createUser,
-    updateUser,
-    createClient,
-    updateClient,
-    createTask,
-    updateTask,
-    discardTask,
-    undiscardTask,
+    Job,
+    Client,
   };
   
   return setContext(ZERO_CONTEXT_KEY, context);

@@ -1,0 +1,61 @@
+/**
+ * ScheduledDateTime - ActiveRecord model (non-reactive)
+ * 
+ * Promise-based Rails-compatible model for scheduled_date_times table.
+ * Use this for server-side code, Node.js scripts, or non-reactive contexts.
+ * 
+ * For reactive Svelte components, use ReactiveScheduledDateTime instead:
+ * ```typescript
+ * import { ReactiveScheduledDateTime as ScheduledDateTime } from './reactive-scheduled-date-time';
+ * ```
+ * 
+ * Generated: 2025-07-14 15:11:58 UTC
+ */
+
+import { createActiveRecord } from './base/active-record';
+import type { ScheduledDateTimeData, CreateScheduledDateTimeData, UpdateScheduledDateTimeData } from './types/scheduled-date-time-data';
+
+/**
+ * ActiveRecord configuration for ScheduledDateTime
+ */
+const ScheduledDateTimeConfig = {
+  tableName: 'scheduled_date_times',
+  className: 'ScheduledDateTime',
+  primaryKey: 'id'
+};
+
+/**
+ * ScheduledDateTime ActiveRecord instance
+ * 
+ * @example
+ * ```typescript
+ * // Find by ID (throws if not found)
+ * const scheduled_date_time = await ScheduledDateTime.find('123');
+ * 
+ * // Find by conditions (returns null if not found)
+ * const scheduled_date_time = await ScheduledDateTime.findBy({ title: 'Test' });
+ * 
+ * // Create new record
+ * const newScheduledDateTime = await ScheduledDateTime.create({ title: 'New Task' });
+ * 
+ * // Update existing record
+ * const updatedScheduledDateTime = await ScheduledDateTime.update('123', { title: 'Updated' });
+ * 
+ * // Soft delete (discard gem)
+ * await ScheduledDateTime.discard('123');
+ * 
+ * // Restore discarded
+ * await ScheduledDateTime.undiscard('123');
+ * 
+ * // Query with scopes
+ * const allScheduledDateTimes = await ScheduledDateTime.all().all();
+ * const activeScheduledDateTimes = await ScheduledDateTime.kept().all();
+ * ```
+ */
+export const ScheduledDateTime = createActiveRecord<ScheduledDateTimeData>(ScheduledDateTimeConfig);
+
+// Export types for convenience
+export type { ScheduledDateTimeData, CreateScheduledDateTimeData, UpdateScheduledDateTimeData };
+
+// Default export
+export default ScheduledDateTime;

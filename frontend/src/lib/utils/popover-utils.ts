@@ -29,8 +29,9 @@ export function safeGet<T>(obj: any, path: string, defaultValue: T): T {
 }
 
 // Common validation for user data in technician contexts
+// Note: Epic-008 uses flat structure (user.name) not nested (user.attributes.name)
 export function validateUserData(user: any): boolean {
-  return !!(user?.id && user?.attributes?.name);
+  return !!(user?.id && user?.name);
 }
 
 // Common validation for job data in popover contexts

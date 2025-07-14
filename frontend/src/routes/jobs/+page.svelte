@@ -3,7 +3,7 @@
   // Epic-008: Import ReactiveQuery for Jobs
   import { ReactiveQuery } from '$lib/zero/reactive-query.svelte';
   import { queryJobs } from '$lib/zero/model-queries';
-  import type { Job } from '$lib/zero/job.generated';
+  import type { JobData } from '$lib/models/types/job-data';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
   // Automatically stays in sync with Zero.js data changes
@@ -34,7 +34,7 @@
 
   // ✨ USE $derived FOR FILTERING WITH ZERO NATIVE STRUCTURE
   const filteredJobs = $derived(
-    allJobs.filter((job: JobType) => {
+    allJobs.filter((job: JobData) => {
       if (scope === 'mine') {
         // TODO: Filter by current user via job assignments
         // For now, show all jobs
@@ -46,7 +46,7 @@
 
   // ✨ USE $derived FOR FINAL FILTERING WITH TECHNICIAN SUPPORT
   const jobs = $derived(
-    filteredJobs.filter((job: JobType) => {
+    filteredJobs.filter((job: JobData) => {
       // Filter by technician if specified
       if (technicianId) {
         const hasMatchingTechnician = job.jobAssignments?.some((assignment: any) => 

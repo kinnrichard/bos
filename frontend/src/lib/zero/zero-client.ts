@@ -13,15 +13,11 @@ function getBrowserState(): boolean {
 }
 
 const browser = getBrowserState();
-import { Job } from './job.generated';
-import { Client } from './client.generated';
-import { User } from './user.generated';
-import { Task } from './task.generated';
-import { ActivityLog } from './activity_log.generated';
-import { ContactMethod } from './contact_method.generated';
-import { JobTarget } from './job_target.generated';
-import { Note } from './note.generated';
-import { ScheduledDateTime } from './scheduled_date_time.generated';
+// Epic-008: Legacy .generated imports replaced with Epic-008 models
+// These imports are no longer needed as Epic-008 models handle their own Zero integration
+// Individual components should import Epic-008 models directly:
+// import { User } from '$lib/models/user';
+// import { Task } from '$lib/models/task';
 
 // Singleton state management
 let zero: ZeroClient | null = null;
@@ -278,30 +274,12 @@ async function performInitialization(): Promise<ZeroClient> {
         reinitializeZero,
         closeZero,
         initZero,
-        // Add debug functions for testing queries
-        testClientQuery: async () => {
-          try {
-            console.log('🔍 Testing Client.all() query...');
-            const result = await Client.all().current;
-            console.log('🔍 Client.all() result:', result);
-            console.log('🔍 Client.all() result length:', result?.length);
-            return result;
-          } catch (error) {
-            console.error('🔍 Client.all() error:', error);
-            return error;
-          }
-        },
-        testJobQuery: async () => {
-          try {
-            console.log('🔍 Testing Job.all() query...');
-            const result = await Job.all().current;
-            console.log('🔍 Job.all() result:', result);
-            console.log('🔍 Job.all() result length:', result?.length);
-            return result;
-          } catch (error) {
-            console.error('🔍 Job.all() error:', error);
-            return error;
-          }
+        // Epic-008: Legacy debug functions removed
+        // Use Epic-008 models directly for testing:
+        // import { User } from '$lib/models/user';
+        // const users = new ReactiveQuery(() => zero.query.users, []);
+        testLegacyRemoved: () => {
+          console.log('🔍 Legacy model debug functions removed - use Epic-008 models instead');
         },
         testZeroQuery: async () => {
           try {
@@ -319,16 +297,10 @@ async function performInitialization(): Promise<ZeroClient> {
           }
         }
       };
-      // Expose ActiveRecord-style query functions
-      (window as any).Job = Job;
-      (window as any).Client = Client;
-      (window as any).User = User;
-      (window as any).Task = Task;
-      (window as any).ActivityLog = ActivityLog;
-      (window as any).ContactMethod = ContactMethod;
-      (window as any).JobTarget = JobTarget;
-      (window as any).Note = Note;
-      (window as any).ScheduledDateTime = ScheduledDateTime;
+      // Epic-008: Legacy model exports removed
+      // Use Epic-008 models directly from components:
+      // import { User } from '$lib/models/user';
+      // import { Task } from '$lib/models/task';
       
       // Add a simple test function to window
       (window as any).testZeroQueries = async () => {
@@ -336,14 +308,12 @@ async function performInitialization(): Promise<ZeroClient> {
         console.log('🔍 User Debug:', (window as any).zeroUserDebug);
         console.log('🔍 Zero State:', getZeroState());
         
-        // Test various query methods
-        await (window as any).zeroDebug.testClientQuery();
-        await (window as any).zeroDebug.testJobQuery();
+        // Test Zero client directly
         await (window as any).zeroDebug.testZeroQuery();
       };
       
       logZero('Zero client exposed to window.zero and window.zeroDebug');
-      logZero('ActiveRecord-style queries exposed: Job, Client, User, Task, etc.');
+      logZero('Epic-008 models available: import from $lib/models/');
       logZero('Run window.testZeroQueries() to test all query methods');
     }
     

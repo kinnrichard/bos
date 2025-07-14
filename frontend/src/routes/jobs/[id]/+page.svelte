@@ -5,7 +5,7 @@
   // Epic-008: Import ReactiveQuery for Jobs
   import { ReactiveQueryOne } from '$lib/zero/reactive-query.svelte';
   import { queryJobs } from '$lib/zero/model-queries';
-  import type { Job } from '$lib/zero/job.generated';
+  import type { JobData } from '$lib/models/types/job-data';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
