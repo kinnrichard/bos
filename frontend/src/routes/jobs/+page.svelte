@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   // Epic-008: Import ReactiveQuery for Jobs
   import { ReactiveQuery } from '$lib/zero/reactive-query.svelte';
-  import { getZero } from '$lib/zero/zero-client';
+  import { queryJobs } from '$lib/zero/model-queries';
   import type { Job } from '$lib/zero/job.generated';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
@@ -22,10 +22,7 @@
 
   // ✨ CREATE REACTIVE QUERY IN SVELTE COMPONENT (where $state runes are available)
   const jobsQuery = new ReactiveQuery<Job>(
-    () => {
-      const zero = getZero();
-      return zero?.query.jobs.orderBy('created_at', 'desc');
-    },
+    () => queryJobs().includes('client').orderBy('created_at', 'desc'),
     [],
     '5m' // 5 minute TTL
   );

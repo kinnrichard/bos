@@ -4,7 +4,7 @@
   import { onDestroy } from 'svelte';
   // Epic-008: Import ReactiveQuery for Jobs
   import { ReactiveQueryOne } from '$lib/zero/reactive-query.svelte';
-  import { getZero } from '$lib/zero/zero-client';
+  import { queryJobs } from '$lib/zero/model-queries';
   import type { Job } from '$lib/zero/job.generated';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
@@ -18,10 +18,7 @@
   
   // ✨ CREATE REACTIVE QUERY IN SVELTE COMPONENT (where $state runes are available)
   const jobQuery = $derived(jobId ? new ReactiveQueryOne<Job>(
-    () => {
-      const zero = getZero();
-      return zero?.query.jobs.where('id', jobId).one();
-    },
+    () => queryJobs().includes('client').where('id', jobId).one(),
     null,
     '5m' // 5 minute TTL
   ) : null);

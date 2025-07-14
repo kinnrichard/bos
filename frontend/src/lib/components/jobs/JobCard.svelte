@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Job } from '$lib/zero/models/job.generated';
+  import type { Job } from '$lib/zero/job.generated';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
 
   export let job: Job;
