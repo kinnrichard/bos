@@ -104,7 +104,7 @@
     {/if}
 
     <!-- Job status button (only show on job detail page) -->
-    {#if currentPage === 'job-detail' && currentJob && currentJob.id}
+    {#if currentPage === 'job-detail' && currentJob?.id}
       <JobStatusButton bind:job={currentJob} />
       <TechnicianAssignmentButton 
         jobId={currentJob.id}
@@ -118,7 +118,7 @@
   <div class="toolbar-right">
     <!-- Search -->
     <!-- Job detail page controls -->
-    {#if currentPage === 'job-detail' && layout.currentJob && layout.currentJob.id}
+    {#if currentPage === 'job-detail' && currentJob?.id}
       <FilterPopover onFilterChange={handleTaskStatusFilter} onDeletedToggle={handleDeletedToggle} bind:popover={filterPopover} />
     {/if}
 
