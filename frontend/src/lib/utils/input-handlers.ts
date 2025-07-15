@@ -29,6 +29,7 @@ export function createInputHandler(config: InputHandlerConfig): InputHandlers {
       }
       
       if (key === 'Enter' && config.onEnter) {
+        event.stopPropagation(); // Prevent keyboard handler from seeing this event
         await config.onEnter();
       } else if (key === 'Escape' && config.onEscape) {
         config.onEscape();
