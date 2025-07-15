@@ -9,11 +9,12 @@
  * import { JobPerson } from './job-person';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
 import type { JobPersonData, CreateJobPersonData, UpdateJobPersonData } from './types/job-person-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for JobPerson
@@ -64,6 +65,13 @@ const ReactiveJobPersonConfig = {
  * ```
  */
 export const ReactiveJobPerson = createReactiveRecord<JobPersonData>(ReactiveJobPersonConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+registerModelRelationships('job_people', {
+  job: { type: 'belongsTo', model: 'Job' },
+  person: { type: 'belongsTo', model: 'Person' }
+});
+
 
 /**
  * Import alias for easy switching between reactive/non-reactive

@@ -9,11 +9,12 @@
  * import { ReactiveActivityLog as ActivityLog } from './reactive-activity-log';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { ActivityLogData, CreateActivityLogData, UpdateActivityLogData } from './types/activity-log-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for ActivityLog
@@ -53,6 +54,14 @@ const ActivityLogConfig = {
  * ```
  */
 export const ActivityLog = createActiveRecord<ActivityLogData>(ActivityLogConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+registerModelRelationships('activity_logs', {
+  user: { type: 'belongsTo', model: 'User' },
+  client: { type: 'belongsTo', model: 'Client' },
+  job: { type: 'belongsTo', model: 'Job' }
+});
+
 
 // Export types for convenience
 export type { ActivityLogData, CreateActivityLogData, UpdateActivityLogData };

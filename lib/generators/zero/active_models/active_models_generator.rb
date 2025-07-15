@@ -239,6 +239,7 @@ module Zero
 
           import { createActiveRecord } from './base/active-record';
           import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';
+          import { registerModelRelationships } from './base/scoped-query-base';
 
           /**
            * ActiveRecord configuration for #{class_name}
@@ -279,6 +280,9 @@ module Zero
            */
           export const #{class_name} = createActiveRecord<#{class_name}Data>(#{class_name}Config);
 
+          // Epic-009: Register model relationships for includes() functionality
+          #{generate_relationship_registration(table_name, relationships)}
+
           // Export types for convenience
           export type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data };
 
@@ -311,6 +315,7 @@ module Zero
 
           import { createReactiveRecord } from './base/reactive-record';
           import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';
+          import { registerModelRelationships } from './base/scoped-query-base';
 
           /**
            * ReactiveRecord configuration for #{class_name}
@@ -362,6 +367,9 @@ module Zero
            */
           export const Reactive#{class_name} = createReactiveRecord<#{class_name}Data>(Reactive#{class_name}Config);
 
+          // Epic-009: Register model relationships for includes() functionality
+          #{generate_relationship_registration(table_name, relationships)}
+
           /**
            * Import alias for easy switching between reactive/non-reactive
            *#{' '}
@@ -393,6 +401,52 @@ module Zero
           "\n * const discarded#{class_name}s = await #{class_name}.discarded().all();"
         else
           ""
+        end
+      end
+
+      def generate_relationship_registration(table_name, relationships)
+        # Build relationship metadata for Epic-009
+        relationship_metadata = []
+
+        # belongs_to relationships
+        if relationships[:belongs_to] && relationships[:belongs_to].any?
+          relationships[:belongs_to].each do |rel|
+            next unless rel[:target_table] && rel[:name]
+            model_name = rel[:target_table].singularize.camelize
+            relationship_name = rel[:name].to_s.camelize(:lower)
+            relationship_metadata << "  #{relationship_name}: { type: 'belongsTo', model: '#{model_name}' }"
+          end
+        end
+
+        # has_many relationships
+        if relationships[:has_many] && relationships[:has_many].any?
+          relationships[:has_many].each do |rel|
+            next unless rel[:target_table] && rel[:name]
+            model_name = rel[:target_table].singularize.camelize
+            relationship_name = rel[:name].to_s.camelize(:lower)
+            relationship_metadata << "  #{relationship_name}: { type: 'hasMany', model: '#{model_name}' }"
+          end
+        end
+
+        # has_one relationships
+        if relationships[:has_one] && relationships[:has_one].any?
+          relationships[:has_one].each do |rel|
+            next unless rel[:target_table] && rel[:name]
+            model_name = rel[:target_table].singularize.camelize
+            relationship_name = rel[:name].to_s.camelize(:lower)
+            relationship_metadata << "  #{relationship_name}: { type: 'hasOne', model: '#{model_name}' }"
+          end
+        end
+
+        if relationship_metadata.any?
+          metadata_string = relationship_metadata.join(",\n")
+          <<~TYPESCRIPT
+            registerModelRelationships('#{table_name}', {
+            #{metadata_string}
+            });
+          TYPESCRIPT
+        else
+          "// No relationships defined for this model"
         end
       end
 

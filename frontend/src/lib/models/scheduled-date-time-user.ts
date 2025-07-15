@@ -9,11 +9,12 @@
  * import { ReactiveScheduledDateTimeUser as ScheduledDateTimeUser } from './reactive-scheduled-date-time-user';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { ScheduledDateTimeUserData, CreateScheduledDateTimeUserData, UpdateScheduledDateTimeUserData } from './types/scheduled-date-time-user-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for ScheduledDateTimeUser
@@ -53,6 +54,9 @@ const ScheduledDateTimeUserConfig = {
  * ```
  */
 export const ScheduledDateTimeUser = createActiveRecord<ScheduledDateTimeUserData>(ScheduledDateTimeUserConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+// No relationships defined for this model
 
 // Export types for convenience
 export type { ScheduledDateTimeUserData, CreateScheduledDateTimeUserData, UpdateScheduledDateTimeUserData };

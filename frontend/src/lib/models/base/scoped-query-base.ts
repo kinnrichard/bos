@@ -241,10 +241,11 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
    * - TTL-based cleanup
    * - Automatic garbage collection
    */
-  protected buildZeroQuery(): any {
+  protected buildZeroQuery(): any | null {
     const zero = getZero();
     if (!zero) {
-      throw ConnectionError.zeroNotAvailable();
+      // Return null instead of throwing - ReactiveQuery will retry automatically
+      return null;
     }
 
     const queryTable = (zero.query as any)[this.tableName];

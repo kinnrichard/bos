@@ -9,11 +9,12 @@
  * import { Person } from './person';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
 import type { PersonData, CreatePersonData, UpdatePersonData } from './types/person-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for Person
@@ -64,6 +65,15 @@ const ReactivePersonConfig = {
  * ```
  */
 export const ReactivePerson = createReactiveRecord<PersonData>(ReactivePersonConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+registerModelRelationships('people', {
+  client: { type: 'belongsTo', model: 'Client' },
+  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
+  contactMethods: { type: 'hasMany', model: 'ContactMethod' },
+  devices: { type: 'hasMany', model: 'Device' }
+});
+
 
 /**
  * Import alias for easy switching between reactive/non-reactive

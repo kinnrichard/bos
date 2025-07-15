@@ -9,11 +9,12 @@
  * import { ReactiveNote as Note } from './reactive-note';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { NoteData, CreateNoteData, UpdateNoteData } from './types/note-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for Note
@@ -53,6 +54,12 @@ const NoteConfig = {
  * ```
  */
 export const Note = createActiveRecord<NoteData>(NoteConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+registerModelRelationships('notes', {
+  user: { type: 'belongsTo', model: 'User' }
+});
+
 
 // Export types for convenience
 export type { NoteData, CreateNoteData, UpdateNoteData };

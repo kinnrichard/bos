@@ -9,11 +9,12 @@
  * import { ReactiveTask as Task } from './reactive-task';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { TaskData, CreateTaskData, UpdateTaskData } from './types/task-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for Task
@@ -54,6 +55,17 @@ const TaskConfig = {
  * ```
  */
 export const Task = createActiveRecord<TaskData>(TaskConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+registerModelRelationships('tasks', {
+  job: { type: 'belongsTo', model: 'Job' },
+  assignedTo: { type: 'belongsTo', model: 'User' },
+  parent: { type: 'belongsTo', model: 'Task' },
+  notes: { type: 'hasMany', model: 'Note' },
+  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
+  subtasks: { type: 'hasMany', model: 'Task' }
+});
+
 
 // Export types for convenience
 export type { TaskData, CreateTaskData, UpdateTaskData };

@@ -9,11 +9,12 @@
  * import { ReactiveContactMethod as ContactMethod } from './reactive-contact-method';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { ContactMethodData, CreateContactMethodData, UpdateContactMethodData } from './types/contact-method-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for ContactMethod
@@ -53,6 +54,12 @@ const ContactMethodConfig = {
  * ```
  */
 export const ContactMethod = createActiveRecord<ContactMethodData>(ContactMethodConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+registerModelRelationships('contact_methods', {
+  person: { type: 'belongsTo', model: 'Person' }
+});
+
 
 // Export types for convenience
 export type { ContactMethodData, CreateContactMethodData, UpdateContactMethodData };

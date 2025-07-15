@@ -9,11 +9,12 @@
  * import { ReactiveScheduledDateTime as ScheduledDateTime } from './reactive-scheduled-date-time';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { ScheduledDateTimeData, CreateScheduledDateTimeData, UpdateScheduledDateTimeData } from './types/scheduled-date-time-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for ScheduledDateTime
@@ -53,6 +54,14 @@ const ScheduledDateTimeConfig = {
  * ```
  */
 export const ScheduledDateTime = createActiveRecord<ScheduledDateTimeData>(ScheduledDateTimeConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+registerModelRelationships('scheduled_date_times', {
+  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
+  scheduledDateTimeUsers: { type: 'hasMany', model: 'ScheduledDateTimeUser' },
+  users: { type: 'hasMany', model: 'User' }
+});
+
 
 // Export types for convenience
 export type { ScheduledDateTimeData, CreateScheduledDateTimeData, UpdateScheduledDateTimeData };

@@ -9,11 +9,12 @@
  * import { ReactiveJob as Job } from './reactive-job';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { JobData, CreateJobData, UpdateJobData } from './types/job-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for Job
@@ -53,6 +54,22 @@ const JobConfig = {
  * ```
  */
 export const Job = createActiveRecord<JobData>(JobConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+registerModelRelationships('jobs', {
+  client: { type: 'belongsTo', model: 'Client' },
+  createdBy: { type: 'belongsTo', model: 'User' },
+  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
+  jobAssignments: { type: 'hasMany', model: 'JobAssignment' },
+  technicians: { type: 'hasMany', model: 'User' },
+  jobPeople: { type: 'hasMany', model: 'JobPerson' },
+  people: { type: 'hasMany', model: 'Person' },
+  tasks: { type: 'hasMany', model: 'Task' },
+  allTasks: { type: 'hasMany', model: 'Task' },
+  notes: { type: 'hasMany', model: 'Note' },
+  scheduledDateTimes: { type: 'hasMany', model: 'ScheduledDateTime' }
+});
+
 
 // Export types for convenience
 export type { JobData, CreateJobData, UpdateJobData };

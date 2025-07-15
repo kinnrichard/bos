@@ -9,11 +9,12 @@
  * import { TaskCompletion } from './task-completion';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
 import type { TaskCompletionData, CreateTaskCompletionData, UpdateTaskCompletionData } from './types/task-completion-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for TaskCompletion
@@ -64,6 +65,9 @@ const ReactiveTaskCompletionConfig = {
  * ```
  */
 export const ReactiveTaskCompletion = createReactiveRecord<TaskCompletionData>(ReactiveTaskCompletionConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+// No relationships defined for this model
 
 /**
  * Import alias for easy switching between reactive/non-reactive

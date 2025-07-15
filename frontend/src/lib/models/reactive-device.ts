@@ -9,11 +9,12 @@
  * import { Device } from './device';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
 import type { DeviceData, CreateDeviceData, UpdateDeviceData } from './types/device-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for Device
@@ -64,6 +65,14 @@ const ReactiveDeviceConfig = {
  * ```
  */
 export const ReactiveDevice = createReactiveRecord<DeviceData>(ReactiveDeviceConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+registerModelRelationships('devices', {
+  client: { type: 'belongsTo', model: 'Client' },
+  person: { type: 'belongsTo', model: 'Person' },
+  activityLogs: { type: 'hasMany', model: 'ActivityLog' }
+});
+
 
 /**
  * Import alias for easy switching between reactive/non-reactive

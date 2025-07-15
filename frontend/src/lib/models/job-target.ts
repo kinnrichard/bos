@@ -9,11 +9,12 @@
  * import { ReactiveJobTarget as JobTarget } from './reactive-job-target';
  * ```
  * 
- * Generated: 2025-07-14 23:41:09 UTC
+ * Generated: 2025-07-15 00:07:19 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { JobTargetData, CreateJobTargetData, UpdateJobTargetData } from './types/job-target-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for JobTarget
@@ -53,6 +54,9 @@ const JobTargetConfig = {
  * ```
  */
 export const JobTarget = createActiveRecord<JobTargetData>(JobTargetConfig);
+
+// Epic-009: Register model relationships for includes() functionality
+// No relationships defined for this model
 
 // Export types for convenience
 export type { JobTargetData, CreateJobTargetData, UpdateJobTargetData };
