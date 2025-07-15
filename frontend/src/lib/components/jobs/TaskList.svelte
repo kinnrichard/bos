@@ -16,6 +16,7 @@
   // Import new DRY utilities
   import { createTaskInputManager } from '$lib/utils/task-input-manager';
   import { KeyboardHandler } from '$lib/utils/keyboard-handler';
+  import { taskCreationManager } from '$lib/stores/taskCreation.svelte';
 
   // ✨ SVELTE 5 RUNES
   let { tasks = [], jobId = 'test', batchTaskDetails = null }: {
@@ -146,20 +147,19 @@
     }
   }
   
-  // New task creation state
-  let isShowingNewTaskInput = $state(false);
-  let newTaskTitle = $state('');
-  let newTaskInputElement = $state<HTMLInputElement>();
-  let isCreatingTask = $state(false);
+  // Initialize task creation states safely before using in derived contexts
+  taskCreationManager.ensureState('bottom');
+  taskCreationManager.ensureState('inline');
+  
+  // Unified task creation state - now safe to use in $derived()
+  const bottomTaskState = $derived(taskCreationManager.getState('bottom'));
+  const inlineTaskState = $derived(taskCreationManager.getState('inline'));
   
   // Task title editing state
   let editingTaskId = $state<string | null>(null);
   
   // Inline new task state (for Return key with selection)
   let insertNewTaskAfter = $state<string | null>(null);
-  let isShowingInlineNewTaskInput = $state(false);
-  let inlineNewTaskTitle = $state('');
-  let inlineNewTaskInputElement = $state<HTMLInputElement>();
 
   // Task deletion state
   let isShowingDeleteConfirmation = $state(false);
@@ -179,30 +179,30 @@
   let deletingTaskIds = $state(new Set<string>());
   const animationDuration = 300; // ms for height collapse animation
   
-  // ✨ DRY Input Managers - replaces ~300 lines of repetitive handlers
+  // ✨ DRY Input Managers with unified state
   const newTaskManager = createTaskInputManager(
     {
-      title: { get: () => newTaskTitle, set: (v) => newTaskTitle = v },
-      inputElement: { get: () => newTaskInputElement },
-      isCreating: { get: () => isCreatingTask, set: (v) => isCreatingTask = v },
-      isShowing: { get: () => isShowingNewTaskInput, set: (v) => isShowingNewTaskInput = v }
+      title: { get: () => bottomTaskState.title, set: (v) => taskCreationManager.setTitle('bottom', v) },
+      inputElement: { get: () => bottomTaskState.inputElement },
+      isCreating: { get: () => false, set: (v) => {} }, // No loading state needed
+      isShowing: { get: () => bottomTaskState.isShowing, set: (v) => v ? taskCreationManager.show('bottom') : taskCreationManager.hide('bottom') }
     },
     {
-      create: createNewTask,
-      cancel: hideNewTaskForm
+      create: (shouldSelect) => createTask('bottom', shouldSelect),
+      cancel: () => taskCreationManager.hide('bottom')
     }
   );
   
   const inlineTaskManager = createTaskInputManager(
     {
-      title: { get: () => inlineNewTaskTitle, set: (v) => inlineNewTaskTitle = v },
-      inputElement: { get: () => inlineNewTaskInputElement },
-      isCreating: { get: () => isCreatingTask, set: (v) => isCreatingTask = v },
-      isShowing: { get: () => isShowingInlineNewTaskInput, set: (v) => isShowingInlineNewTaskInput = v }
+      title: { get: () => inlineTaskState.title, set: (v) => taskCreationManager.setTitle('inline', v) },
+      inputElement: { get: () => inlineTaskState.inputElement },
+      isCreating: { get: () => false, set: (v) => {} }, // No loading state needed
+      isShowing: { get: () => inlineTaskState.isShowing, set: (v) => v ? taskCreationManager.show('inline') : taskCreationManager.hide('inline') }
     },
     {
-      create: (shouldSelect) => createInlineTask(insertNewTaskAfter, shouldSelect),
-      cancel: cancelInlineNewTask
+      create: (shouldSelect) => createTask('inline', shouldSelect),
+      cancel: () => taskCreationManager.hide('inline')
     }
   );
 
@@ -292,7 +292,7 @@
   const keyboardHandler = KeyboardHandler({
     items: () => flatTaskIds,
     selection: () => taskSelection.selectedTaskIds,
-    isEditing: () => editingTaskId !== null || isShowingInlineNewTaskInput,
+    isEditing: () => editingTaskId !== null || inlineTaskState.isShowing,
     
     actions: {
       navigate: handleArrowNavigation,
@@ -300,21 +300,20 @@
       clearSelection: () => taskSelectionActions.clearSelection(),
       createInline: (afterId) => {
         insertNewTaskAfter = afterId;
-        isShowingInlineNewTaskInput = true;
-        inlineNewTaskTitle = '';
+        taskCreationManager.show('inline');
         taskSelectionActions.clearSelection();
         
         // Focus inline input after DOM update
         tick().then(() => {
-          if (inlineNewTaskInputElement) {
-            inlineNewTaskInputElement.focus();
+          if (inlineTaskState.inputElement) {
+            inlineTaskState.inputElement.focus();
           }
         });
       },
       createBottom: () => newTaskManager.show(),
       deleteSelected: () => showDeleteConfirmation(),
       cancelEditing: () => {
-        if (isShowingInlineNewTaskInput) {
+        if (inlineTaskState.isShowing) {
           cancelInlineNewTask();
         } else if (taskSelection.selectedTaskIds.size > 0) {
           taskSelectionActions.clearSelection();
@@ -475,38 +474,70 @@
     }
   }
 
-  // New task creation form
-  function hideNewTaskForm() {
-    isShowingNewTaskInput = false;
-    newTaskTitle = '';
-  }
-
-  function handleNewTaskRowClick(event: MouseEvent) {
-    // Only activate if not already in input mode
-    if (!isShowingNewTaskInput) {
-      event.stopPropagation();
-      newTaskManager.show();
-    }
-  }
-
-  async function createNewTask(shouldSelectAfterCreate: boolean = false) {
-    if (!newTaskTitle.trim() || isCreatingTask) return;
+  // Unified task creation function
+  async function createTask(type: 'bottom' | 'inline', shouldSelectAfterCreate: boolean = false) {
+    const state = taskCreationManager.getState(type);
+    if (!state.title.trim()) return;
     
-    isCreatingTask = true;
-    const title = newTaskTitle.trim();
+    const title = state.title.trim();
+    let position = tasks.length + 1;
+    let parentId: string | undefined;
+    
+    // Calculate position and parent for inline tasks
+    if (type === 'inline' && insertNewTaskAfter) {
+      const afterTask = tasks.find(t => t.id === insertNewTaskAfter);
+      if (afterTask) {
+        parentId = afterTask.parent_id || undefined;
+        
+        // Get tasks in the same scope (sibling tasks with same parent)
+        const scopeTasks = tasks.filter(t => (t.parent_id || null) === (parentId || null))
+                                 .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        
+        // Find position after the target task
+        const afterIndex = scopeTasks.findIndex(t => t.id === insertNewTaskAfter);
+        if (afterIndex !== -1) {
+          position = (afterTask.position ?? 0) + 1;
+        }
+      }
+    }
     
     try {
       const newTask = await TaskModel.create({
         title,
         job_id: jobId,
         status: 'new_task',
-        position: tasks.length + 1,
+        position,
+        parent_id: parentId,
         lock_version: 0,
         applies_to_all_targets: false
       });
       
       // Add the new task to our local tasks array
-      tasks = [...tasks, newTask];
+      if (type === 'inline' && insertNewTaskAfter) {
+        // Insert new task at correct position based on visual hierarchy
+        const visualIndex = flatTaskIds.indexOf(insertNewTaskAfter);
+        if (visualIndex !== -1 && visualIndex < flatTaskIds.length - 1) {
+          const nextTaskId = flatTaskIds[visualIndex + 1];
+          const nextTaskIndex = tasks.findIndex(t => t.id === nextTaskId);
+          
+          if (nextTaskIndex !== -1) {
+            tasks = [
+              ...tasks.slice(0, nextTaskIndex),
+              newTask,
+              ...tasks.slice(nextTaskIndex)
+            ];
+          } else {
+            tasks = [...tasks, newTask];
+          }
+        } else {
+          tasks = [...tasks, newTask];
+        }
+        
+        // Update insertNewTaskAfter to point to the newly created task
+        insertNewTaskAfter = newTask.id;
+      } else {
+        tasks = [...tasks, newTask];
+      }
       
       // Select the newly created task only if requested (Return key, not blur)
       if (shouldSelectAfterCreate) {
@@ -514,7 +545,10 @@
       }
       
       // Clear the form
-      hideNewTaskForm();
+      taskCreationManager.hide(type);
+      if (type === 'inline') {
+        insertNewTaskAfter = null;
+      }
       
       dragFeedback = 'Task created successfully!';
       setTimeout(() => dragFeedback = '', 2000);
@@ -522,8 +556,14 @@
       console.error('Failed to create task:', error);
       dragFeedback = 'Failed to create task - please try again';
       setTimeout(() => dragFeedback = '', 3000);
-    } finally {
-      isCreatingTask = false;
+    }
+  }
+
+  function handleNewTaskRowClick(event: MouseEvent) {
+    // Only activate if not already in input mode
+    if (!bottomTaskState.isShowing) {
+      event.stopPropagation();
+      newTaskManager.show();
     }
   }
 
@@ -600,113 +640,9 @@
   }
 
 
-  // Inline new task functions
-  async function createInlineTask(afterTaskId: string | null, shouldSelectAfterCreate: boolean = false) {
-    if (inlineNewTaskTitle.trim() === '') {
-      cancelInlineNewTask();
-      return;
-    }
-
-    try {
-      isCreatingTask = true;
-      
-      // Find the task we're inserting after and get its parent_id to make new task a sibling
-      let correctParentId: string | null = null;
-      if (afterTaskId) {
-        const afterTask = tasks.find(t => t.id === afterTaskId);
-        if (afterTask) {
-          correctParentId = afterTask.parent_id || null;
-        }
-      }
-      
-      // Calculate position based on after_task_id for ActiveRecord pattern
-      let position = 1;
-      if (insertNewTaskAfter) {
-        // Find the task we want to insert after
-        const afterTask = tasks.find(t => t.id === insertNewTaskAfter);
-        if (afterTask) {
-          // Get tasks in the same scope (sibling tasks with same parent)
-          const scopeTasks = tasks.filter(t => (t.parent_id || null) === (correctParentId || null))
-                                   .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-          
-          // Find position after the target task
-          const afterIndex = scopeTasks.findIndex(t => t.id === insertNewTaskAfter);
-          if (afterIndex !== -1) {
-            position = (afterTask.position ?? 0) + 1;
-          }
-        }
-      } else {
-        // No specific position: append at end of scope
-        const scopeTasks = tasks.filter(t => (t.parent_id || null) === (correctParentId || null));
-        position = scopeTasks.length + 1;
-      }
-      
-      const newTask = await TaskModel.create({
-        title: inlineNewTaskTitle.trim(),
-        job_id: jobId,
-        status: 'new_task',
-        position: position,
-        parent_id: correctParentId || undefined,
-        lock_version: 0,
-        applies_to_all_targets: false
-      });
-      
-      // Insert new task at correct position based on visual hierarchy
-      if (insertNewTaskAfter) {
-        // Find position in the visual hierarchy (what user sees)
-        const visualIndex = flatTaskIds.indexOf(insertNewTaskAfter);
-        if (visualIndex !== -1 && visualIndex < flatTaskIds.length - 1) {
-          // Get the task that should come after our new task in the visual order
-          const nextTaskId = flatTaskIds[visualIndex + 1];
-          const nextTaskIndex = tasks.findIndex(t => t.id === nextTaskId);
-          
-          if (nextTaskIndex !== -1) {
-            // Insert before the next task in the flat array
-            tasks = [
-              ...tasks.slice(0, nextTaskIndex),
-              newTask,
-              ...tasks.slice(nextTaskIndex)
-            ];
-          } else {
-            // Fallback: append at end
-            tasks = [...tasks, newTask];
-          }
-        } else {
-          // Selected task is last in visual order, or not found - append at end
-          tasks = [...tasks, newTask];
-        }
-      } else {
-        // No specific position: append at end
-        tasks = [...tasks, newTask];
-      }
-      
-      // Clear inline state
-      cancelInlineNewTask();
-      
-      // Update insertNewTaskAfter to point to the newly created task
-      // This ensures subsequent new tasks will be positioned after this one
-      insertNewTaskAfter = newTask.id;
-      
-      // Select the newly created task only if requested (Return key, not blur)
-      if (shouldSelectAfterCreate) {
-        taskSelectionActions.selectTask(newTask.id);
-      }
-      
-      dragFeedback = 'Task created successfully';
-      setTimeout(() => dragFeedback = '', 2000);
-    } catch (error) {
-      console.error('Failed to create inline task:', error);
-      dragFeedback = 'Failed to create task - please try again';
-      setTimeout(() => dragFeedback = '', 3000);
-    } finally {
-      isCreatingTask = false;
-    }
-  }
-
   function cancelInlineNewTask() {
     insertNewTaskAfter = null;
-    isShowingInlineNewTaskInput = false;
-    inlineNewTaskTitle = '';
+    taskCreationManager.hide('inline');
   }
 
   // Task deletion functions
@@ -1097,9 +1033,6 @@
       setTimeout(() => dragFeedback = '', 3000);
     }
   }
-  
-  // Removed comparison functions - ReactiveRecord handles all synchronization
-  
 
   // Recursive function to render task tree
   function renderTaskTree(task: any, depth: number): Array<{
@@ -1271,14 +1204,14 @@
         />
         
         <!-- Inline New Task Row (appears after this task if selected) -->
-        {#if insertNewTaskAfter === renderItem.task.id && isShowingInlineNewTaskInput}
+        {#if insertNewTaskAfter === renderItem.task.id && inlineTaskState.isShowing}
           <NewTaskRow 
             mode="inline-after-task"
             depth={renderItem.depth}
             manager={inlineTaskManager}
-            isShowing={isShowingInlineNewTaskInput}
-            title={inlineNewTaskTitle}
-            on:titlechange={(e) => inlineNewTaskTitle = e.detail.value}
+            taskState={inlineTaskState}
+            onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
+            on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
           />
         {/if}
       {/each}
@@ -1289,9 +1222,9 @@
       mode="bottom-row"
       depth={0}
       manager={newTaskManager}
-      isShowing={isShowingNewTaskInput}
-      title={newTaskTitle}
-      on:titlechange={(e) => newTaskTitle = e.detail.value}
+      taskState={bottomTaskState}
+      onStateChange={(changes) => taskCreationManager.updateState('bottom', changes)}
+      on:titlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
     />
   </div>
 

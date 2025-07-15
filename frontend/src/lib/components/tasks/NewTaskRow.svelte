@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import type { TaskInputManager } from '$lib/utils/task-input-manager';
+  import type { TaskCreationState } from '$lib/stores/taskCreation.svelte';
   import '../../styles/task-components.css';
 
   // Props
@@ -8,18 +9,22 @@
     mode = 'bottom-row',
     depth = 0,
     manager,
-    isShowing = false,
-    title = ''
+    taskState,
+    onStateChange
   }: {
     mode?: 'bottom-row' | 'inline-after-task';
     depth?: number;
     manager: TaskInputManager;
-    isShowing?: boolean;
-    title?: string;
+    taskState?: TaskCreationState;
+    onStateChange?: (changes: Partial<TaskCreationState>) => void;
   } = $props();
 
   const dispatch = createEventDispatcher();
 
+  // Derive state from unified state object
+  const isShowing = $derived(taskState?.isShowing ?? false);
+  const title = $derived(taskState?.title ?? '');
+  
   // Local state
   let inputElement = $state<HTMLInputElement>();
 
@@ -33,10 +38,11 @@
     manager.show(event);
   }
 
-  // Focus input when showing
+  // Focus input when showing and update state with input element
   $effect(() => {
     if (isShowing && inputElement) {
       inputElement.focus();
+      onStateChange?.({ inputElement });
     }
   });
 </script>
@@ -70,7 +76,11 @@
         placeholder="New Task"
         onkeydown={manager.handlers.keydown}
         onblur={manager.handlers.blur}
-        oninput={(e) => dispatch('titlechange', { value: e.target.value })}
+        oninput={(e) => {
+          const newTitle = e.target.value;
+          onStateChange?.({ title: newTitle });
+          dispatch('titlechange', { value: newTitle });
+        }}
       />
     {:else if mode === 'bottom-row'}
       <h5 
