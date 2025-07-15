@@ -185,7 +185,7 @@
   const newTaskManager = createTaskInputManager(
     {
       title: { get: () => bottomTaskState.title, set: (v) => taskCreationManager.setTitle('bottom', v) },
-      inputElement: { get: () => bottomTaskState.inputElement },
+      inputElement: { get: () => undefined }, // DOM handled locally in component
       isCreating: { get: () => false, set: (v) => {} }, // No loading state needed
       isShowing: { get: () => bottomTaskState.isShowing, set: (v) => v ? taskCreationManager.show('bottom') : taskCreationManager.hide('bottom') }
     },
@@ -198,7 +198,7 @@
   const inlineTaskManager = createTaskInputManager(
     {
       title: { get: () => inlineTaskState.title, set: (v) => taskCreationManager.setTitle('inline', v) },
-      inputElement: { get: () => inlineTaskState.inputElement },
+      inputElement: { get: () => undefined }, // DOM handled locally in component
       isCreating: { get: () => false, set: (v) => {} }, // No loading state needed
       isShowing: { get: () => inlineTaskState.isShowing, set: (v) => v ? taskCreationManager.show('inline') : taskCreationManager.hide('inline') }
     },
@@ -243,12 +243,8 @@
         taskCreationManager.show('inline');
         taskSelectionActions.clearSelection();
         
-        // Focus inline input after DOM update
-        tick().then(() => {
-          if (inlineTaskState.inputElement) {
-            inlineTaskState.inputElement.focus();
-          }
-        });
+        // Focus is now handled automatically by the NewTaskRow component
+        // No need to manage DOM references here
       },
       createBottom: () => newTaskManager.show(),
       deleteSelected: () => showDeleteConfirmation(),

@@ -3,7 +3,6 @@ import { SvelteMap } from 'svelte/reactivity';
 export interface TaskCreationState {
   isShowing: boolean;
   title: string;
-  inputElement?: HTMLInputElement;
   context?: {
     afterTaskId?: string;
     depth?: number;
@@ -19,7 +18,6 @@ class TaskCreationManager {
       this.states.set(key, {
         isShowing: false,
         title: '',
-        inputElement: undefined,
         context: undefined
       });
     }
@@ -65,9 +63,6 @@ class TaskCreationManager {
     this.updateState(key, { title });
   }
   
-  setInputElement(key: string, inputElement: HTMLInputElement) {
-    this.updateState(key, { inputElement });
-  }
   
   clear(key: string) {
     this.states.delete(key);

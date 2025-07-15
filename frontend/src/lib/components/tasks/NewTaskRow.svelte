@@ -38,11 +38,11 @@
     manager.show(event);
   }
 
-  // Focus input when showing and update state with input element
+  // Focus input when showing - pure DOM manipulation, no state updates
   $effect(() => {
     if (isShowing && inputElement) {
       inputElement.focus();
-      onStateChange?.({ inputElement });
+      // No state updates needed - DOM stays local to component
     }
   });
 </script>
