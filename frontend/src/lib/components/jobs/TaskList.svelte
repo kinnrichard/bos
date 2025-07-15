@@ -735,7 +735,7 @@
   // ✨ Replaced with titleEditHandlers - eliminates ~15 lines
 
   // Inline new task functions
-  async function createInlineTask(parentId: string | null, shouldSelectAfterCreate: boolean = false) {
+  async function createInlineTask(afterTaskId: string | null, shouldSelectAfterCreate: boolean = false) {
     if (inlineNewTaskTitle.trim() === '') {
       cancelInlineNewTask();
       return;
@@ -744,14 +744,23 @@
     try {
       isCreatingTask = true;
       
+      // Find the task we're inserting after and get its parent_id to make new task a sibling
+      let correctParentId: string | null = null;
+      if (afterTaskId) {
+        const afterTask = tasks.find(t => t.id === afterTaskId);
+        if (afterTask) {
+          correctParentId = afterTask.parent_id || null;
+        }
+      }
+      
       // Calculate position based on after_task_id for ActiveRecord pattern
       let position = 1;
       if (insertNewTaskAfter) {
         // Find the task we want to insert after
         const afterTask = tasks.find(t => t.id === insertNewTaskAfter);
         if (afterTask) {
-          // Get tasks in the same scope
-          const scopeTasks = tasks.filter(t => (t.parent_id || null) === (parentId || null))
+          // Get tasks in the same scope (sibling tasks with same parent)
+          const scopeTasks = tasks.filter(t => (t.parent_id || null) === (correctParentId || null))
                                    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
           
           // Find position after the target task
@@ -762,7 +771,7 @@
         }
       } else {
         // No specific position: append at end of scope
-        const scopeTasks = tasks.filter(t => (t.parent_id || null) === (parentId || null));
+        const scopeTasks = tasks.filter(t => (t.parent_id || null) === (correctParentId || null));
         position = scopeTasks.length + 1;
       }
       
@@ -771,7 +780,7 @@
         job_id: jobId,
         status: 'new_task',
         position: position,
-        parent_id: parentId || undefined,
+        parent_id: correctParentId || undefined,
         lock_version: 0,
         applies_to_all_targets: false
       });
