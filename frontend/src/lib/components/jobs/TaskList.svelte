@@ -20,7 +20,7 @@
   import { createTaskInputManager } from '$lib/utils/task-input-manager';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
 
-  // ✨ USE $props() FOR SVELTE 5 RUNES MODE
+  // ✨ SVELTE 5 RUNES
   let { tasks = [], jobId = 'test', batchTaskDetails = null }: {
     tasks?: Array<Task>;
     jobId?: string;
@@ -219,19 +219,9 @@
         parent_id: update.parent_id !== undefined ? (update.parent_id || null) : undefined
       }));
       
-      console.log('🔄 Using Rails-compatible ClientActsAsList:', {
-        tasksCount: railsTasks.length,
-        updatesCount: railsUpdates.length,
-        updates: railsUpdates
-      });
-      
       // Use the validated Rails-compatible logic
       const result = RailsClientActsAsList.applyPositionUpdates(railsTasks, railsUpdates);
       
-      console.log('🔄 Rails-compatible result:', {
-        updatedTasksCount: result.updatedTasks.length,
-        operationsCount: result.operations.length
-      });
       
       // Convert back to Svelte task format
       return result.updatedTasks.map(railsTask => {
@@ -259,7 +249,6 @@
   
   // Task title editing state
   let editingTaskId = $state<string | null>(null);
-  let originalTitle = '';
   
   // Inline new task state (for Return key with selection)
   let insertNewTaskAfter = $state<string | null>(null);
@@ -356,17 +345,7 @@
     return rootTasks;
   }
 
-  // ✨ USE $derived FOR COMPUTED VALUES IN SVELTE 5
   const hierarchicalTasks = $derived(organizeTasksHierarchically(tasks, taskFilter.selectedStatuses, taskFilter.showDeleted));
-
-  // Debug hierarchical tasks
-  $effect(() => {
-    console.log('[TaskList] hierarchicalTasks length:', hierarchicalTasks?.length);
-    // ✅ Safe: Access ID from first element without proxy issues
-    if (hierarchicalTasks && hierarchicalTasks.length > 0) {
-      console.log('[TaskList] hierarchicalTasks first ID:', hierarchicalTasks[0]?.id);
-    }
-  });
   
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
   $effect(() => {
@@ -390,9 +369,6 @@
   // Make rendering reactive to expandedTasks state changes
   const flattenedTasks = $derived.by(() => {
     const result = hierarchicalTasks.flatMap(task => renderTaskTree(task, 0));
-    console.log('[TaskList] flattenedTasks length:', result?.length);
-    // ✅ Safe: Log ID directly without storing proxy reference
-    console.log('[TaskList] flattenedTasks first ID:', result?.[0]?.task?.id);
     return result;
   });
   
@@ -423,6 +399,7 @@
       });
     }
   });
+
 
   function toggleTaskExpansion(taskId: string) {
     if (expandedTasks.has(taskId)) {
@@ -520,7 +497,7 @@
         handleStatusChange(taskId, data.newStatus);
         break;
       case 'titleClick':
-        handleTitleClick(data.event, taskId, data.originalTitle);
+        handleTitleClick(data.event, taskId);
         break;
       case 'toggleExpansion':
         toggleTaskExpansion(taskId);
@@ -551,7 +528,7 @@
     }
   }
 
-  // New task creation - using DRY utilities
+  // New task creation form
   function hideNewTaskForm() {
     isShowingNewTaskInput = false;
     newTaskTitle = '';
@@ -603,9 +580,6 @@
     }
   }
 
-  // ✨ Replaced with newTaskManager.handlers - eliminates ~40 lines
-
-
   function handleTaskUpdated(event: CustomEvent) {
     const updatedTask = event.detail.task;
     
@@ -636,20 +610,17 @@
   }
 
   // Task title editing functions - using DRY cursor positioning
-  function handleTitleClick(event: MouseEvent, taskId: string, currentTitle: string) {
+  function handleTitleClick(event: MouseEvent, taskId: string) {
     event.stopPropagation(); // Prevent task selection
     taskSelectionActions.clearSelection(); // Clear any existing selection when editing
     
     // Enter edit mode
     editingTaskId = taskId;
-    // Title editing now handled by contenteditable element
-    originalTitle = currentTitle;
-    
     // Title editing now handled by contenteditable in TaskRow
   }
 
   async function saveTitle(taskId: string, newTitle: string) {
-    if (newTitle.trim() === '' || newTitle === originalTitle) {
+    if (newTitle.trim() === '') {
       cancelEdit();
       return;
     }
@@ -661,31 +632,24 @@
         throw new Error('Task not found');
       }
 
-      // Use Epic-008 ActiveRecord pattern
       const { Task } = await import('$lib/models/task');
       
-      // Use ActiveRecord-style update method
       await Task.update(taskData.id, { title: newTitle.trim() });
       
       // UI cleanup - Zero.js reactive updates will handle the data changes
       editingTaskId = null;
-      // Title editing now handled by contenteditable element
-      originalTitle = '';
       
     } catch (error) {
       console.error('Failed to update task title:', error);
       dragFeedback = 'Failed to update task title - please try again';
       setTimeout(() => dragFeedback = '', 3000);
       
-      // Revert to original title
-      // Title editing now handled by contenteditable element
+      // Reverts to original title
     }
   }
 
   function cancelEdit() {
     editingTaskId = null;
-    // Title editing now handled by contenteditable element
-    originalTitle = '';
   }
 
 
@@ -797,8 +761,6 @@
     isShowingInlineNewTaskInput = false;
     inlineNewTaskTitle = '';
   }
-
-  // ✨ Replaced with inlineTaskManager.handlers - eliminates ~20 lines
 
   // Task deletion functions
   async function showDeleteConfirmation() {
@@ -921,10 +883,7 @@
           throw new Error(`Task with ID ${taskId} not found`);
         }
 
-        // Use Epic-008 ActiveRecord pattern
         const { Task } = await import('$lib/models/task');
-        
-        // Use ActiveRecord-style discard method (soft deletion)
         await Task.discard(taskData.id);
         return { id: taskData.id };
       });
@@ -934,9 +893,6 @@
         Promise.all(deletePromises),
         new Promise(resolve => setTimeout(resolve, animationDuration))
       ]);
-
-      // Phase 3: Tasks will be automatically removed from UI by Zero's reactive query
-      // which filters out soft-deleted tasks (discarded_at IS NOT NULL) unless showDeleted is true
 
       // Clear deletion animation state
       tasksToDeleteCopy.forEach(taskId => {
@@ -1005,9 +961,6 @@
     if (badge) {
       badge.remove();
     }
-    
-    // Reordering is handled by onSort event - no need for duplicate call here
-
   }
 
   // Handle move detection during drag operations
@@ -1054,7 +1007,6 @@
     if (isDescendantOf(targetTaskId, draggedTaskId)) {
       return {valid: false, reason: 'Cannot create circular reference - target is a descendant of the dragged task'};
     }
-
 
     return {valid: true};
   }
@@ -1108,20 +1060,15 @@
 
   // Handle nesting a task under another task
   async function handleTaskNesting(draggedTaskId: string, targetTaskId: string) {
-    console.log(`🪆 Attempting to nest ${draggedTaskId.substring(0,8)} under ${targetTaskId.substring(0,8)}`);
     
     // Validate nesting operation
     const validation = isValidNesting(draggedTaskId, targetTaskId);
-    console.log(`🔍 Nesting validation result:`, validation);
     
     if (!validation.valid) {
-      console.log(`❌ Nesting blocked: ${validation.reason}`);
       dragFeedback = validation.reason || 'Invalid nesting operation';
       setTimeout(() => dragFeedback = '', 3000);
       return;
     }
-    
-    console.log(`✅ Nesting validation passed, proceeding with operation`);
 
     const draggedTask = tasks.find(t => t.id === draggedTaskId);
     const targetTask = tasks.find(t => t.id === targetTaskId);
@@ -1130,8 +1077,6 @@
       console.error('Could not find dragged or target task');
       return;
     }
-
-    // ReactiveRecord handles state management - no manual rollback needed
 
     try {
       // Auto-expand the target task to make the newly nested child visible
@@ -1144,8 +1089,6 @@
       
       // Convert relative position to position updates and execute via ReactiveRecord
       const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, [relativePosition]);
-      
-      // Execute nesting using ReactiveRecord - it handles UI updates automatically
       await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
       
       console.log('✅ Task nesting executed via ReactiveRecord pattern', {
@@ -1161,7 +1104,6 @@
       // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();
       
-      // ReactiveRecord will revert UI automatically on server error
       dragFeedback = 'Failed to nest task - please try again';
       setTimeout(() => dragFeedback = '', 3000);
     }
@@ -1184,7 +1126,6 @@
 
     // Check if this is a nesting operation
     if (event.dropZone && event.dropZone.mode === 'nest' && event.dropZone.targetTaskId) {
-      console.log('🪆 Nesting operation detected');
       
       // For single-task nesting, delegate to existing function
       const isMultiSelectNest = taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
@@ -1192,9 +1133,6 @@
         await handleTaskNesting(draggedTaskId, event.dropZone.targetTaskId);
         return;
       }
-      
-      // Handle multi-task nesting here (will be processed by the multi-select logic below)
-      console.log('🪆 Multi-task nesting detected, processing with multi-select logic');
     }
 
     // Determine if this is a multi-select drag
@@ -1214,8 +1152,6 @@
     } else {
       newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
     }
-    
-    // ReactiveRecord handles state management - no manual tracking needed
     
     // Auto-expand target task for nesting operations
     if (event.dropZone?.mode === 'nest' && newParentId && !expandedTasks.has(newParentId)) {
@@ -1241,23 +1177,7 @@
           const visualOrderB = visualOrderMap.get(b) || 0;
           return visualOrderA - visualOrderB;
         });
-        
-        console.log('🔗 Sequential multi-task positioning:', {
-          sortedTaskIds: sortedTaskIds.map(id => {
-            const task = tasks.find(t => t.id === id);
-            return {
-              id: id.substring(0, 8),
-              position: task?.position,
-              visualOrder: visualOrderMap.get(id),
-              title: task?.title?.substring(0, 15) + '...',
-              parent: task?.parent_id?.substring(0, 8) || 'null'
-            };
-          }),
-          targetParent: newParentId?.substring(0, 8) || 'null',
-          dropMode: event.dropZone?.mode,
-          note: 'Sorted by visual hierarchy order, not position within parent'
-        });
-        
+                
         sortedTaskIds.forEach((taskId, index) => {
           const currentTask = tasks.find(t => t.id === taskId);
           if (!currentTask) return;
@@ -1308,19 +1228,6 @@
         relativeUpdates.push(singleTaskUpdate);
       }
       
-      console.log('📡 Sending relative position updates to server:', {
-        jobId,
-        relativeUpdates,
-        draggedTaskId,
-        dropZone: event.dropZone
-      });
-      
-      // ReactiveRecord handles all position calculations
-      
-      // ReactiveRecord will handle UI updates automatically
-      
-      // ReactiveRecord automatically handles position updates
-      
       // Convert relative updates to position updates
       const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
       
@@ -1330,9 +1237,7 @@
       console.log('✅ Position updates executed via ReactiveRecord pattern', {
         positionUpdates: positionUpdates.length
       });
-      
-      // ReactiveRecord will update UI automatically - no manual state tracking needed
-      
+            
     } catch (error: any) {
       console.error('Failed to reorder tasks:', error);
       

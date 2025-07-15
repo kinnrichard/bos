@@ -80,16 +80,23 @@
   text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
 }
 
-/* First in selection range */
-.task-item.selected:not(.selected + .task-item.selected) {
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
+/* Modern Safari solution: Reverse logic for perfect rounded corners */
+
+/* Start with full rounding on all selected tasks */
+.task-item.selected {
+  border-radius: 6px !important;
 }
 
-/* Last in selection range */  
-.task-item.selected:not(.task-item.selected + .selected) {
-  border-bottom-left-radius: 6px;
-  border-bottom-right-radius: 6px;
+/* Remove top rounding from tasks that have a selected task immediately before */
+.task-item.selected + .task-item.selected {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+/* Remove bottom rounding from tasks that have a selected task immediately after */
+.task-item.selected:has(+ .task-item.selected) {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
 }
 
 /* Completion states */
