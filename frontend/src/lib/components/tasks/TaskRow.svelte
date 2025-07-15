@@ -100,6 +100,8 @@
   function handleTitleFocus() {
     if (titleElement) {
       originalTitle = titleElement.textContent || '';
+      // Enable spellcheck when focused
+      titleElement.setAttribute('spellcheck', 'true');
     }
   }
 
@@ -134,6 +136,11 @@
   }
 
   function handleTitleBlur() {
+    if (titleElement) {
+      // Disable spellcheck when blurred to hide suggestions
+      titleElement.setAttribute('spellcheck', 'false');
+    }
+    
     // Only process blur if not transitioning and this task is being edited
     if (!focusActions.isTransitioning() && focusActions.isTaskBeingEdited(task.id)) {
       const newTitle = titleElement?.textContent || '';
@@ -209,6 +216,7 @@
     <h5 
       class="task-title"
       contenteditable="true"
+      spellcheck="false"
       onclick={handleTitleClick}
       onkeydown={handleTitleKeydown}
       onblur={handleTitleBlur}

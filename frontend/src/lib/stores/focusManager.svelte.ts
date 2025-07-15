@@ -43,7 +43,8 @@ export const focusActions = {
    */
   clearFocus: () => {
     if (focusManager.currentEditingElement) {
-      // Clear selection to remove cursor/insertion point before blurring
+      // Clear selection to remove the insertion point before blurring.
+      // This is needed because of an apparent WebKit and Chrome bug.
       const selection = window.getSelection();
       if (selection) {
         selection.removeAllRanges();
