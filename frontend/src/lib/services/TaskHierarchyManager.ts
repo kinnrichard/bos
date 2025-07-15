@@ -1,6 +1,5 @@
 import { SvelteSet } from 'svelte/reactivity';
-import { shouldShowTask } from '$lib/stores/taskFilter.svelte';
-import type { TaskFilterManager } from './TaskFilterManager';
+import { shouldShowTask, shouldShowTaskLegacy } from '$lib/stores/taskFilter.svelte';
 
 // Generic task interface that works with both generated types and position calculator types
 export interface BaseTask {
@@ -116,16 +115,16 @@ export class TaskHierarchyManager {
    * @param filterManager - TaskFilterManager instance to handle filtering
    * @returns Hierarchical task structure
    */
-  organizeTasksHierarchicallyWithManager(
+  organizeTasksHierarchicallyWithFilter(
     taskList: BaseTask[], 
-    filterManager: TaskFilterManager
+    shouldShowTaskFn: (task: BaseTask) => boolean
   ): HierarchicalTask[] {
-    // Use the filter manager to determine which tasks to include
+    // Use the filter function to determine which tasks to include
     const tasksToInclude = new Set<string>();
     
     // Find all tasks that pass the filter
     taskList.forEach(task => {
-      if (filterManager.shouldShowTask(task)) {
+      if (shouldShowTaskFn(task)) {
         this.includeTaskAndAncestorsFromList(task.id, taskList, tasksToInclude);
       }
     });
@@ -194,7 +193,7 @@ export class TaskHierarchyManager {
     
     // Find direct matches first
     const directMatches = taskList.filter(task => 
-      shouldShowTask(task, filterStatuses, showDeleted)
+      shouldShowTaskLegacy(task, filterStatuses, showDeleted)
     );
     
     // For each direct match, include the task and all its ancestors

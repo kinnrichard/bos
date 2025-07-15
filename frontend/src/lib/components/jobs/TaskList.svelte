@@ -207,11 +207,10 @@
     }
   );
 
-  // Use TaskHierarchyManager for task organization
-  const hierarchicalTasks = $derived(hierarchyManager.organizeTasksHierarchically(
+  // Use pure reactive filtering with TaskHierarchyManager
+  const hierarchicalTasks = $derived(hierarchyManager.organizeTasksHierarchicallyWithFilter(
     tasks as BaseTask[], 
-    taskFilter.selectedStatuses, 
-    taskFilter.showDeleted
+    shouldShowTask
   ));
 
   

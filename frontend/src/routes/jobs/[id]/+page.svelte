@@ -5,6 +5,7 @@
   // Epic-009: Import ReactiveJob for Rails-style includes()
   import { ReactiveJob } from '$lib/models/reactive-job';
   import type { JobData } from '$lib/models/types/job-data';
+  import { taskFilterActions } from '$lib/stores/taskFilter.svelte';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
@@ -53,8 +54,15 @@
 
   // Handle back navigation
   function handleBack() {
+    // Reset filters when navigating away from job detail
+    taskFilterActions.clearSearch();
     goto('/jobs');
   }
+
+  // Reset filters when component unmounts (user navigates away)
+  onDestroy(() => {
+    taskFilterActions.clearSearch();
+  });
 
   // Handle retry - ReactiveQuery automatically syncs, manual refresh available
   function handleRetry() {

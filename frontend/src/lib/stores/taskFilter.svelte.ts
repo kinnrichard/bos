@@ -3,11 +3,50 @@
 // Task status filter store - proper Svelte 5 pattern
 export const taskFilter = $state({
   selectedStatuses: ['new_task', 'in_progress', 'paused', 'successfully_completed', 'cancelled'] as string[],
-  showDeleted: false
+  showDeleted: false,
+  searchQuery: '' as string,
+  searchFields: ['title', 'description'] as ('title' | 'description')[]
 });
 
-// Helper function to check if a task should be visible based on filters
-export function shouldShowTask(task: any, statuses: string[], showDeleted: boolean = false): boolean {
+// Comprehensive filtering logic using reactive store
+export function shouldShowTask(task: any): boolean {
+  // Deletion filter
+  const isDiscarded = !!(task.discarded_at);
+  
+  // If showDeleted is false, exclude discarded tasks
+  if (!taskFilter.showDeleted && isDiscarded) return false;
+  
+  // If showDeleted is true, only show discarded tasks
+  if (taskFilter.showDeleted && !isDiscarded) return false;
+  
+  // Status filter
+  if (taskFilter.selectedStatuses.length > 0) {
+    if (!taskFilter.selectedStatuses.includes(task.status)) return false;
+  }
+  
+  // Search filter
+  if (taskFilter.searchQuery.trim().length > 0) {
+    const query = taskFilter.searchQuery.toLowerCase();
+    let matchesSearch = false;
+    
+    for (const field of taskFilter.searchFields) {
+      const fieldValue = task[field];
+      if (fieldValue && typeof fieldValue === 'string') {
+        if (fieldValue.toLowerCase().includes(query)) {
+          matchesSearch = true;
+          break;
+        }
+      }
+    }
+    
+    if (!matchesSearch) return false;
+  }
+  
+  return true;
+}
+
+// Legacy compatibility function (to be removed after migration)
+export function shouldShowTaskLegacy(task: any, statuses: string[], showDeleted: boolean = false): boolean {
   // Check if task is discarded (soft deleted) - use discarded_at field
   const isDiscarded = !!(task.discarded_at);
   
@@ -26,7 +65,30 @@ export function shouldShowTask(task: any, statuses: string[], showDeleted: boole
 
 // Filter function - returns a function that checks if a task should be visible
 export function getTaskFilterFunction() {
-  return (task: any) => shouldShowTask(task, taskFilter.selectedStatuses, taskFilter.showDeleted);
+  return (task: any) => shouldShowTask(task);
+}
+
+// Helper functions for accessing reactive filter state
+export function getFilterSummary(): string[] {
+  const summary: string[] = [];
+  
+  // Status filter summary
+  if (taskFilter.selectedStatuses.length > 0) {
+    const statusCount = taskFilter.selectedStatuses.length;
+    summary.push(`Status: ${statusCount} selected`);
+  }
+  
+  // Search filter summary
+  if (taskFilter.searchQuery.trim().length > 0) {
+    summary.push(`Search: "${taskFilter.searchQuery}"`);
+  }
+  
+  // Deleted filter summary
+  if (taskFilter.showDeleted) {
+    summary.push('Including deleted');
+  }
+  
+  return summary;
 }
 
 // Actions for managing task filters
@@ -57,5 +119,15 @@ export const taskFilterActions = {
   // Toggle deleted visibility
   toggleDeleted: () => {
     taskFilter.showDeleted = !taskFilter.showDeleted;
+  },
+
+  // Set search query
+  setSearchQuery: (query: string) => {
+    taskFilter.searchQuery = query;
+  },
+
+  // Clear search query
+  clearSearch: () => {
+    taskFilter.searchQuery = '';
   }
 };

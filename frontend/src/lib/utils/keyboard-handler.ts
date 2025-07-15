@@ -160,6 +160,30 @@ export function KeyboardHandler(config: KeyboardConfig) {
   }
 
   /**
+   * Check if the user is typing in an input field
+   */
+  function shouldSkipKeyboardShortcut(event: KeyboardEvent): boolean {
+    const target = event.target as HTMLElement;
+    
+    // Check tag name
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    
+    // Check contenteditable
+    if (target.contentEditable === 'true') {
+      return true;
+    }
+    
+    // Check role for accessibility
+    if (target.getAttribute('role') === 'textbox') {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
    * Handle item-level keyboard events (Enter/Space for activation)
    */
   function handleItemKeydown(event: KeyboardEvent, itemId: string) {
@@ -175,6 +199,11 @@ export function KeyboardHandler(config: KeyboardConfig) {
   function handleKeydown(event: KeyboardEvent) {
     const editing = isEditing();
     const selectedIds = selection();
+    
+    // Skip keyboard shortcuts if user is typing in an input field
+    if (shouldSkipKeyboardShortcut(event)) {
+      return;
+    }
     
     // Escape key handling
     if (event.key === 'Escape') {

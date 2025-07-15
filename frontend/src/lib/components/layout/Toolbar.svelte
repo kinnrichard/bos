@@ -1,7 +1,7 @@
 <script lang="ts">
   import { layout, layoutActions } from '$lib/stores/layout.svelte';
   import { page } from '$app/stores';
-  import { taskFilterActions } from '$lib/stores/taskFilter.svelte';
+  import { taskFilter, taskFilterActions } from '$lib/stores/taskFilter.svelte';
   import FilterPopover from './FilterPopover.svelte';
   import JobStatusButton from './JobStatusButton.svelte';
   import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
@@ -12,16 +12,21 @@
   // Props - accept job directly instead of using layout.currentJob
   let { currentJob }: { currentJob?: PopulatedJob | null } = $props();
 
-  // Search functionality
-  let searchQuery = $state('');
+  // Search functionality - sync with taskFilter store
+  const searchQuery = $derived(taskFilter.searchQuery);
   let searchFocused = $state(false);
   let filterPopover = $state<any>(null);
 
   function handleSearch() {
     if (searchQuery.trim()) {
       console.log('Search:', searchQuery);
-      // TODO: Implement search functionality
+      // Search functionality is now handled by TaskFilterManager via taskFilter store
     }
+  }
+
+  function handleSearchInput(event: Event) {
+    const target = event.target as HTMLInputElement;
+    taskFilterActions.setSearchQuery(target.value);
   }
 
   function handleSearchKeydown(event: KeyboardEvent) {
@@ -29,9 +34,13 @@
       handleSearch();
     }
     if (event.key === 'Escape') {
-      searchQuery = '';
+      taskFilterActions.clearSearch();
       (event.target as HTMLInputElement).blur();
     }
+  }
+
+  function handleSearchClear() {
+    taskFilterActions.clearSearch();
   }
 
   // Get current page from route
@@ -148,7 +157,8 @@
 	    <input
 	      type="text"
 	      placeholder="Search"
-	      bind:value={searchQuery}
+	      value={searchQuery}
+	      oninput={handleSearchInput}
 	      onfocus={() => searchFocused = true}
 	      onblur={() => searchFocused = false}
 	      onkeydown={handleSearchKeydown}
@@ -157,7 +167,7 @@
 	    {#if searchQuery}
 	      <button 
 	        class="search-clear"
-	        onclick={() => searchQuery = ''}
+	        onclick={handleSearchClear}
 	        aria-label="Clear search"
 	      >
 	        <img src="/icons/close.svg" alt="Clear" />
