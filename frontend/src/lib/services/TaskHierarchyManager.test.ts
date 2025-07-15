@@ -232,7 +232,7 @@ describe('TaskHierarchyManager', () => {
     expect(hierarchicalTasks[1].subtasks).toHaveLength(0);
   });
 
-  test('should filter tasks by status', () => {
+  test('should filter tasks by status with hierarchical context', () => {
     const tasks = createMockTasks();
     const hierarchicalTasks = hierarchyManager.organizeTasksHierarchically(
       tasks,
@@ -240,10 +240,13 @@ describe('TaskHierarchyManager', () => {
       false
     );
 
-    // The current implementation filters hierarchically, meaning if a parent
-    // doesn't match the filter, its children are not shown either.
-    // This is the expected behavior mentioned in the TODO comment.
-    expect(hierarchicalTasks).toHaveLength(0); // No root tasks match 'in_progress'
+    // New hierarchical filtering behavior: if a child matches, include parent
+    // task2 (in_progress) should cause task1 (its parent) to be included
+    expect(hierarchicalTasks).toHaveLength(1); // task1 is included as parent of matching task2
+    expect(hierarchicalTasks[0].id).toBe('task1');
+    expect(hierarchicalTasks[0].subtasks).toHaveLength(1); // Only task2 (in_progress) is included
+    expect(hierarchicalTasks[0].subtasks[0].id).toBe('task2');
+    expect(hierarchicalTasks[0].subtasks[0].subtasks).toHaveLength(0); // task5 (paused) is not included
     
     // Test with a status that includes root tasks
     const rootTasksIncluded = hierarchyManager.organizeTasksHierarchically(
@@ -252,7 +255,7 @@ describe('TaskHierarchyManager', () => {
       false
     );
     
-    expect(rootTasksIncluded).toHaveLength(1); // task1 is included, so task2 can be shown
+    expect(rootTasksIncluded).toHaveLength(1); // task1 is included
     expect(rootTasksIncluded[0].id).toBe('task1');
     expect(rootTasksIncluded[0].subtasks).toHaveLength(2); // task2 and task4
   });
@@ -279,6 +282,37 @@ describe('TaskHierarchyManager', () => {
 
     const allTaskIds = hierarchicalTasks.map(t => t.id);
     expect(allTaskIds).not.toContain('task6');
+  });
+
+  test('should show nested hierarchical filtering', () => {
+    const tasks = createMockTasks();
+    const hierarchicalTasks = hierarchyManager.organizeTasksHierarchically(
+      tasks,
+      ['paused'], // Only grandchild task5 has this status
+      false
+    );
+
+    // Should include task1 (root) -> task2 (child) -> task5 (grandchild with paused status)
+    expect(hierarchicalTasks).toHaveLength(1);
+    expect(hierarchicalTasks[0].id).toBe('task1'); // Root ancestor
+    expect(hierarchicalTasks[0].subtasks).toHaveLength(1);
+    expect(hierarchicalTasks[0].subtasks[0].id).toBe('task2'); // Parent of matching task
+    expect(hierarchicalTasks[0].subtasks[0].subtasks).toHaveLength(1);
+    expect(hierarchicalTasks[0].subtasks[0].subtasks[0].id).toBe('task5'); // Matching grandchild
+  });
+
+  test('should show multiple branches when filtering', () => {
+    const tasks = createMockTasks();
+    const hierarchicalTasks = hierarchyManager.organizeTasksHierarchically(
+      tasks,
+      ['successfully_completed'], // Only task3 has this status
+      false
+    );
+
+    // Should include only task3 (root task with matching status)
+    expect(hierarchicalTasks).toHaveLength(1);
+    expect(hierarchicalTasks[0].id).toBe('task3');
+    expect(hierarchicalTasks[0].subtasks).toHaveLength(0);
   });
 
   test('should sort tasks by position', () => {

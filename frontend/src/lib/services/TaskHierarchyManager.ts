@@ -121,50 +121,129 @@ export class TaskHierarchyManager {
     filterStatuses: string[], 
     showDeleted: boolean
   ): HierarchicalTask[] {
+    // Pass 1: Build task relationships
     const taskMap = new Map<string, HierarchicalTask>();
-    const rootTasks: HierarchicalTask[] = [];
-
-    // First pass: create map of all tasks
+    const childrenMap = new Map<string, Set<string>>(); // parent_id -> Set of child ids
+    
     taskList.forEach((task) => {
       taskMap.set(task.id, {
         ...task,
         subtasks: []
       });
+      
+      // Build reverse lookup for children
+      if (task.parent_id) {
+        if (!childrenMap.has(task.parent_id)) {
+          childrenMap.set(task.parent_id, new Set());
+        }
+        childrenMap.get(task.parent_id)!.add(task.id);
+      }
     });
 
-    // Second pass: organize into hierarchy and apply filtering
-    // TODO: Filtering needs to catch child objects as well. If filter is set to only show in progress, 
-    // it should show parents of in-progress tasks as well.
+    // Pass 2: Identify all tasks to include (with hierarchical context)
+    const tasksToInclude = this.findTasksToInclude(
+      taskList, 
+      taskMap, 
+      childrenMap, 
+      filterStatuses, 
+      showDeleted
+    );
+
+    // Pass 3: Build hierarchical structure from included tasks
+    return this.buildHierarchyFromIncluded(taskList, taskMap, tasksToInclude);
+  }
+
+  /**
+   * Find all tasks that should be included in the hierarchy based on filtering rules
+   * Implements hierarchical filtering: if a child matches, include all ancestors
+   */
+  private findTasksToInclude(
+    taskList: BaseTask[],
+    taskMap: Map<string, HierarchicalTask>,
+    childrenMap: Map<string, Set<string>>,
+    filterStatuses: string[],
+    showDeleted: boolean
+  ): Set<string> {
+    const tasksToInclude = new Set<string>();
+    
+    // Find direct matches first
+    const directMatches = taskList.filter(task => 
+      shouldShowTask(task, filterStatuses, showDeleted)
+    );
+    
+    // For each direct match, include the task and all its ancestors
+    directMatches.forEach(task => {
+      this.includeTaskAndAncestors(task.id, taskMap, tasksToInclude);
+    });
+    
+    return tasksToInclude;
+  }
+  
+  /**
+   * Include a task and all its ancestors in the hierarchy
+   */
+  private includeTaskAndAncestors(
+    taskId: string, 
+    taskMap: Map<string, HierarchicalTask>, 
+    tasksToInclude: Set<string>
+  ): void {
+    const task = taskMap.get(taskId);
+    if (!task) return;
+    
+    // Include this task
+    tasksToInclude.add(taskId);
+    
+    // Recursively include parent if it exists
+    if (task.parent_id) {
+      this.includeTaskAndAncestors(task.parent_id, taskMap, tasksToInclude);
+    }
+  }
+  
+  /**
+   * Build the final hierarchical structure from the set of included tasks
+   */
+  private buildHierarchyFromIncluded(
+    taskList: BaseTask[],
+    taskMap: Map<string, HierarchicalTask>,
+    tasksToInclude: Set<string>
+  ): HierarchicalTask[] {
+    const rootTasks: HierarchicalTask[] = [];
+    
+    // Reset subtasks for all included tasks
+    tasksToInclude.forEach(taskId => {
+      const task = taskMap.get(taskId);
+      if (task) {
+        task.subtasks = [];
+      }
+    });
+    
+    // Build hierarchy from included tasks only
     taskList.forEach(task => {
-      const taskWithSubtasks = taskMap.get(task.id)!;
-      
-      const shouldShow = shouldShowTask(task, filterStatuses, showDeleted);
-      
-      // Apply filter - only include tasks that should be shown
-      if (!shouldShow) {
-        return;
+      if (!tasksToInclude.has(task.id)) {
+        return; // Skip tasks not in our include set
       }
       
-      if (task.parent_id && taskMap.has(task.parent_id)) {
-        // Only add to parent if parent is also visible
+      const taskWithSubtasks = taskMap.get(task.id)!;
+      
+      if (task.parent_id && tasksToInclude.has(task.parent_id)) {
+        // Add to parent if parent is also included
         const parent = taskMap.get(task.parent_id)!;
-        if (shouldShowTask(parent, filterStatuses, showDeleted)) {
-          parent.subtasks.push(taskWithSubtasks);
-        }
+        parent.subtasks.push(taskWithSubtasks);
       } else {
+        // This is a root task (no parent or parent not included)
         rootTasks.push(taskWithSubtasks);
       }
     });
-
+    
     // Sort root tasks by position
     rootTasks.sort((a, b) => (a.position || 0) - (b.position || 0));
-
+    
     // Sort subtasks by position for each parent
     this.sortSubtasks(rootTasks);
-
+    
     return rootTasks;
   }
-
+  
   /**
    * Recursively sort subtasks by position
    */
