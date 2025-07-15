@@ -62,8 +62,7 @@
   
   // Multi-select state - will be computed from flattenedTasks
   
-  // Track optimistic updates for rollback
-  let optimisticUpdates = new Map<string, { originalPosition: number; originalParentId?: string }>();
+  // Removed optimistic updates - ReactiveRecord handles UI synchronization
   
   // Outside click and keyboard handling for task deselection
   let taskListContainer: HTMLElement;
@@ -1160,27 +1159,9 @@
       return;
     }
 
-    // Store original state for rollback
-    optimisticUpdates.set(draggedTaskId, {
-      originalPosition: draggedTask.position || 0,
-      originalParentId: draggedTask.parent_id
-    });
+    // ReactiveRecord handles state management - no manual rollback needed
 
     try {
-      // Calculate position at the end of target's existing children
-      const existingChildren = tasks.filter(t => 
-        t.parent_id === targetTaskId && 
-        t.id !== draggedTaskId // Exclude the task being moved
-      );
-      
-      const newPosition = existingChildren.length > 0 
-        ? Math.max(...existingChildren.map(t => t.position || 0)) + 1
-        : 1;
-
-      // Optimistic update: make task a child of target at the end
-      const updatedTask = { ...draggedTask, parent_id: targetTaskId, position: newPosition };
-      tasks = tasks.map(t => t.id === draggedTaskId ? updatedTask : t);
-
       // Auto-expand the target task to make the newly nested child visible
       if (!expandedTasks.has(targetTaskId)) {
         expandedTasks.add(targetTaskId);
@@ -1189,26 +1170,18 @@
       // Calculate relative position for nesting
       const relativePosition = calculateRelativePosition(null, targetTaskId, [draggedTaskId]);
       
-      // Convert relative position to position updates and execute via ActiveRecord pattern (AC5)
+      // Convert relative position to position updates and execute via ReactiveRecord
       const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, [relativePosition]);
       
-      // Execute nesting using ActiveRecord pattern
-      const result = await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
+      // Execute nesting using ReactiveRecord - it handles UI updates automatically
+      await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
       
-      // Update tasks array with the final state from ActiveRecord updates
-      tasks = result.updatedTasks;
-      
-      console.log('✅ Task nesting executed via ActiveRecord pattern', {
+      console.log('✅ Task nesting executed via ReactiveRecord pattern', {
         draggedTaskId: draggedTaskId.substring(0, 8),
         targetTaskId: targetTaskId.substring(0, 8), 
         relativePosition,
-        updatedTasks: result.updatedTasks.length,
-        operations: result.operations.length,
-        positionUpdates: result.positionUpdates.length
+        positionUpdates: positionUpdates.length
       });
-      
-      // Clear optimistic updates on success
-      optimisticUpdates.clear();
       
     } catch (error: any) {
       console.error('Failed to nest task:', error);
@@ -1216,18 +1189,7 @@
       // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();
       
-      // Rollback optimistic update
-      const original = optimisticUpdates.get(draggedTaskId);
-      if (original) {
-        const rolledBackTask = {
-          ...draggedTask,
-          position: original.originalPosition,
-          parent_id: original.originalParentId
-        };
-        tasks = tasks.map(t => t.id === draggedTaskId ? rolledBackTask : t);
-      }
-      
-      optimisticUpdates.clear();
+      // ReactiveRecord will revert UI automatically on server error
       dragFeedback = 'Failed to nest task - please try again';
       setTimeout(() => dragFeedback = '', 3000);
     }
@@ -1281,24 +1243,7 @@
       newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
     }
     
-    // Store original state for potential rollback
-    const taskStateBeforeOperation = tasks.map(t => ({...t})); // Deep snapshot
-    
-    // Store optimistic update info for rollback
-    if (isMultiSelectDrag) {
-      const selectedTaskIds = Array.from(taskSelection.selectedTaskIds);
-      selectedTaskIds.forEach(taskId => {
-        optimisticUpdates.set(taskId, {
-          originalPosition: tasks.find(t => t.id === taskId)?.position || 0,
-          originalParentId: tasks.find(t => t.id === taskId)?.parent_id
-        });
-      });
-    } else {
-      optimisticUpdates.set(draggedTaskId, {
-        originalPosition: tasks.find(t => t.id === draggedTaskId)?.position || 0,
-        originalParentId: tasks.find(t => t.id === draggedTaskId)?.parent_id
-      });
-    }
+    // ReactiveRecord handles state management - no manual tracking needed
     
     // Auto-expand target task for nesting operations
     if (event.dropZone?.mode === 'nest' && newParentId && !expandedTasks.has(newParentId)) {
@@ -1398,81 +1343,23 @@
         dropZone: event.dropZone
       });
       
-      // 🔮 Client-side position prediction BEFORE server call using sequential processing
-      const predictionResult = RailsClientActsAsList.applyRelativePositioning(tasks, relativeUpdates);
-      const clientPredictedPositions = new Map(predictionResult.updatedTasks.map(t => [t.id, t.position ?? 0]));
+      // ReactiveRecord handles all position calculations
       
-      console.log('🔮 Client position prediction based on relative updates:', {
-        relativeUpdates,
-        sequentialOperations: predictionResult.operations,
-        predictedFinalPositions: Object.fromEntries(clientPredictedPositions),
-        tasksBeforeOperation: taskStateBeforeOperation.map(t => ({ id: t.id, position: t.position, parent_id: t.parent_id }))
-      });
+      // ReactiveRecord will handle UI updates automatically
       
-      // Apply client-side position calculation for optimistic updates
-      tasks = RailsClientActsAsList.applyRelativePositioning(tasks, relativeUpdates).updatedTasks;
-      
-      console.log('🎯 Client state updated from relative positioning:', {
-        newTaskPositions: tasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id }))
-      });
+      // ReactiveRecord automatically handles position updates
       
       // Convert relative updates to position updates
       const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
       
-      // Execute position updates using ActiveRecord pattern (AC5)
-      const result = await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
+      // Execute position updates using ReactiveRecord - it handles UI updates automatically
+      await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
       
-      console.log('✅ Position updates executed via ActiveRecord pattern', {
-        updatedTasks: result.updatedTasks.length,
-        operations: result.operations.length,
-        positionUpdates: result.positionUpdates.length
+      console.log('✅ Position updates executed via ReactiveRecord pattern', {
+        positionUpdates: positionUpdates.length
       });
       
-      // Update tasks array with the final state from ActiveRecord updates
-      tasks = result.updatedTasks;
-      
-      // 🔍 Log final task positions from ActiveRecord update
-      if (result.updatedTasks) {
-        const finalPositions = result.updatedTasks
-          .filter(t => (t.parent_id || null) === newParentId)
-          .sort((a, b) => (a.position || 0) - (b.position || 0))
-          .map(t => ({
-            id: t.id.substring(0, 8),
-            title: t.title?.substring(0, 15) + ((t.title?.length ?? 0) > 15 ? '...' : ''),
-            position: t.position
-          }));
-        
-        console.log('📋 Final task order from ActiveRecord updates:', finalPositions);
-        
-        // Highlight the moved task
-        const movedTaskFinal = result.updatedTasks.find(t => t.id === draggedTaskId);
-        if (movedTaskFinal) {
-          console.log('🎯 Moved task final position:', {
-            id: movedTaskFinal.id.substring(0, 8),
-            title: movedTaskFinal.title,
-            finalPosition: movedTaskFinal.position,
-            requestedRelativeUpdate: relativeUpdates[0]
-          });
-        }
-      }
-      
-      // 🔍 Log client visual state after server response
-      const clientVisualState = tasks
-        .filter(t => (t.parent_id || null) === newParentId)
-        .sort((a, b) => (a.position || 0) - (b.position || 0))
-        .map(t => ({
-          id: t.id.substring(0, 8),
-          title: t.title?.substring(0, 15) + ((t.title?.length ?? 0) > 15 ? '...' : ''),
-          position: t.position
-        }));
-      
-      console.log('🖥️ Client visual state after operation:', clientVisualState);
-      
-      // 🔍 Compare client prediction vs ActiveRecord reality
-      await compareClientVsActiveRecord(clientPredictedPositions, result.updatedTasks, taskStateBeforeOperation, relativeUpdates, event);
-      
-      // Clear optimistic updates on success
-      optimisticUpdates.clear();
+      // ReactiveRecord will update UI automatically - no manual state tracking needed
       
     } catch (error: any) {
       console.error('Failed to reorder tasks:', error);
@@ -1480,123 +1367,13 @@
       // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();
       
-      // Rollback optimistic updates
-      tasks = tasks.map(task => {
-        const original = optimisticUpdates.get(task.id);
-        if (original) {
-          return {
-            ...task,
-            position: original.originalPosition,
-            parent_id: original.originalParentId
-          };
-        }
-        return task;
-      });
-      
-      optimisticUpdates.clear();
+      // ReactiveRecord will revert UI automatically on server error
+      dragFeedback = 'Failed to reorder tasks - please try again';
+      setTimeout(() => dragFeedback = '', 3000);
     }
   }
   
-  // Compare client predictions with ActiveRecord results
-  async function compareClientVsActiveRecord(
-    clientPredictions: Map<string, number>, 
-    activeRecordTasks: Task[],
-    taskStateBeforeOperation: any[], 
-    relativeUpdates: RelativePositionUpdate[],
-    dragEvent: DragSortEvent
-  ) {
-    try {
-      // Extract actual ActiveRecord positions
-      const serverPositions = new Map<string, number>();
-      activeRecordTasks.forEach((task: any) => {
-        serverPositions.set(task.id, task.position);
-      });
-      
-      // Find differences between client predictions and ActiveRecord reality
-      const differences: Array<{taskId: string, clientPrediction: number, serverActual: number, difference: number}> = [];
-      
-      clientPredictions.forEach((clientPos, taskId) => {
-        const serverPos = serverPositions.get(taskId);
-        if (serverPos !== undefined && clientPos !== serverPos) {
-          differences.push({
-            taskId,
-            clientPrediction: clientPos,
-            serverActual: serverPos,
-            difference: serverPos - clientPos
-          });
-        }
-      });
-      
-      if (differences.length > 0) {
-        const maxDifference = Math.max(...differences.map(d => Math.abs(d.difference)));
-        const patternAnalysis = analyzePositionPattern(differences);
-        
-        console.group('🚨 CLIENT/ACTIVERECORD POSITION MISMATCH DETECTED');
-        console.log('📊 Differences found:', differences);
-        console.log('🎯 Drag operation context:', {
-          draggedTaskId: dragEvent.item.dataset.taskId,
-          dropZone: dragEvent.dropZone,
-          oldIndex: dragEvent.oldIndex,
-          newIndex: dragEvent.newIndex
-        });
-        console.log('📋 Task state before operation:', taskStateBeforeOperation.map(t => ({ 
-          id: t.id, 
-          position: t.position, 
-          parent_id: t.parent_id,
-          title: t.title?.substring(0, 20) + '...' 
-        })));
-        console.log('🔄 Relative updates sent:', relativeUpdates);
-        console.log('🔮 Client predictions:', Object.fromEntries(clientPredictions));
-        console.log('📡 ActiveRecord actual results:', Object.fromEntries(serverPositions));
-        console.log('⚠️ Analysis:', {
-          totalDifferences: differences.length,
-          maxDifference,
-          avgDifference: differences.reduce((sum, d) => sum + Math.abs(d.difference), 0) / differences.length,
-          patternAnalysis
-        });
-        console.groupEnd();
-        
-        // Show development user alert
-        showDevelopmentAlert({
-          type: 'position-mismatch',
-          message: `Position sync issue detected: ${differences.length} task${differences.length > 1 ? 's' : ''} affected (max difference: ${maxDifference})`,
-          details: {
-            differences,
-            patternAnalysis,
-            operationContext: {
-              draggedTaskId: dragEvent.item.dataset.taskId,
-              dropZone: dragEvent.dropZone
-            }
-          },
-          actions: [
-            { label: 'View Console', action: viewConsoleDetails },
-            { label: 'Refresh Tasks', action: refreshTasks }
-          ]
-        });
-      } else {
-        console.log('✅ Client prediction matches server - no position discrepancies!');
-      }
-      
-    } catch (error) {
-      console.error('❌ Failed to compare client vs server positions:', error);
-    }
-  }
-  
-  // Analyze patterns in position differences to help debug
-  function analyzePositionPattern(differences: Array<{taskId: string, clientPrediction: number, serverActual: number, difference: number}>): string {
-    const diffs = differences.map(d => d.difference);
-    const uniqueDiffs = [...new Set(diffs)];
-    
-    if (uniqueDiffs.length === 1) {
-      return `All tasks off by same amount: ${uniqueDiffs[0]}`;
-    } else if (diffs.every(d => d > 0)) {
-      return 'All server positions higher than client predictions';
-    } else if (diffs.every(d => d < 0)) {
-      return 'All server positions lower than client predictions';
-    } else {
-      return 'Mixed pattern - some higher, some lower';
-    }
-  }
+  // Removed comparison functions - ReactiveRecord handles all synchronization
   
   // Development alert system
   function showDevelopmentAlert(alert: {
