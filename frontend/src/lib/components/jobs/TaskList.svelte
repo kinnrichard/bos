@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
   import { getTaskStatusEmoji } from '$lib/config/emoji';
   import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
   import { taskSelection, getSelectedTaskIds, taskSelectionActions, type TaskSelectionState } from '$lib/stores/taskSelection.svelte';
@@ -41,7 +42,7 @@
 
   
   // Track collapsed/expanded state of tasks with subtasks
-  let expandedTasks = new Set<string>();
+  let expandedTasks = new SvelteSet<string>();
   let hasAutoExpanded = false;
   
   // Drag & drop state
@@ -382,14 +383,12 @@
       }
       
       expandAllTasksWithSubtasks(hierarchicalTasks);
-      expandedTasks = expandedTasks;
       hasAutoExpanded = true;
     }
   });
   
   // Make rendering reactive to expandedTasks state changes
   const flattenedTasks = $derived.by(() => {
-    const _ = expandedTasks; 
     const result = hierarchicalTasks.flatMap(task => renderTaskTree(task, 0));
     console.log('[TaskList] flattenedTasks length:', result?.length);
     // ✅ Safe: Log ID directly without storing proxy reference
@@ -431,7 +430,6 @@
     } else {
       expandedTasks.add(taskId);
     }
-    expandedTasks = expandedTasks;
   }
 
   function isTaskExpanded(taskId: string): boolean {
@@ -1283,7 +1281,6 @@
       // Auto-expand the target task to make the newly nested child visible
       if (!expandedTasks.has(targetTaskId)) {
         expandedTasks.add(targetTaskId);
-        expandedTasks = expandedTasks; // Trigger Svelte reactivity
       }
 
       // Calculate relative position for nesting
@@ -1403,7 +1400,6 @@
     // Auto-expand target task for nesting operations
     if (event.dropZone?.mode === 'nest' && newParentId && !expandedTasks.has(newParentId)) {
       expandedTasks.add(newParentId);
-      expandedTasks = expandedTasks; // Trigger Svelte reactivity
     }
     
     try {
