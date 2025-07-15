@@ -20,32 +20,12 @@
   import { createTaskInputManager } from '$lib/utils/task-input-manager';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
 
-  // Use static SVG URLs for better compatibility
-  const chevronRight = '/icons/chevron-right.svg';
-  const chevronDown = '/icons/chevron-down.svg';
-
   // ✨ USE $props() FOR SVELTE 5 RUNES MODE
   let { tasks = [], jobId = 'test', batchTaskDetails = null }: {
     tasks?: Array<Task>;
     jobId?: string;
     batchTaskDetails?: any;
   } = $props();
-
-  // Debug logging for task props
-  $effect(() => {
-    // ✨ USE $state.snapshot() TO SAFELY LOG REACTIVE STATE
-    const tasksSnapshot = tasks ? $state.snapshot(tasks) : null;
-    console.log('[TaskList] Received tasks prop length:', tasks?.length);
-    console.log('[TaskList] Tasks type:', typeof tasks);
-    console.log('[TaskList] tasks.length === 0 condition result:', tasks.length === 0);
-    console.log('[TaskList] Boolean(tasks):', Boolean(tasks));
-    console.log('[TaskList] Array.isArray(tasks):', Array.isArray(tasks));
-    if (tasksSnapshot && tasksSnapshot.length > 0) {
-      console.log('[TaskList] First task ID:', tasksSnapshot[0]?.id);
-      console.log('[TaskList] First task title:', tasksSnapshot[0]?.title);
-    }
-  });
-
   
   // Track collapsed/expanded state of tasks with subtasks
   let expandedTasks = new SvelteSet<string>();
@@ -124,12 +104,7 @@
 
   function handleKeydown(event: KeyboardEvent) {
     // Don't handle keys if actively editing
-    const activeElement = document.activeElement;
-    const isEditing = activeElement?.tagName === 'INPUT' || 
-                     activeElement?.tagName === 'TEXTAREA' || 
-                     (activeElement as HTMLElement)?.isContentEditable ||
-                     editingTaskId !== null ||
-                     isShowingInlineNewTaskInput;
+    const isEditing = editingTaskId !== null || isShowingInlineNewTaskInput;
 
     // ESC key handling
     if (event.key === 'Escape') {
