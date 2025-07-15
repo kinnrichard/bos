@@ -15,6 +15,7 @@
   
   // Import new DRY utilities
   import { createTaskInputManager } from '$lib/utils/task-input-manager';
+  import { KeyboardHandler } from '$lib/utils/keyboard-handler';
 
   // ✨ SVELTE 5 RUNES
   let { tasks = [], jobId = 'test', batchTaskDetails = null }: {
@@ -62,7 +63,15 @@
     }
   }
 
-  // Arrow key navigation for single task selection
+  // Scroll selected task into view
+  function scrollTaskIntoView(taskId: string) {
+    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+    if (taskElement) {
+      taskElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // Arrow key navigation for single task selection (used by keyboard handler)
   function handleArrowNavigation(direction: 'up' | 'down') {
     if (taskSelection.selectedTaskIds.size !== 1) return;
     
@@ -85,107 +94,10 @@
     scrollTaskIntoView(nextTaskId);
   }
 
-  // Scroll selected task into view
-  function scrollTaskIntoView(taskId: string) {
-    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-    if (taskElement) {
-      taskElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    // Don't handle keys if actively editing
-    const isEditing = editingTaskId !== null || isShowingInlineNewTaskInput;
-    // ESC key handling
-    if (event.key === 'Escape') {
-      if (isShowingInlineNewTaskInput) {
-        // Cancel inline new task
-        event.preventDefault();
-        cancelInlineNewTask();
-      } else if (taskSelection.selectedTaskIds.size > 0 && !isEditing) {
-        // Clear selection if not editing
-        event.preventDefault();
-        taskSelectionActions.clearSelection();
-        
-        // Remove focus ring by blurring the currently focused element
-        if (document.activeElement && document.activeElement !== document.body) {
-          (document.activeElement as HTMLElement).blur();
-        }
-      }
-    }
-
-    // Arrow key navigation
-    if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !isEditing) {
-      const selectedCount = taskSelection.selectedTaskIds.size;
-      
-      if (selectedCount === 0) {
-        // No selection: down arrow selects first, up arrow selects last
-        event.preventDefault(); // Prevent page scroll
-        if (flatTaskIds.length > 0) {
-          const taskId = event.key === 'ArrowDown' ? flatTaskIds[0] : flatTaskIds[flatTaskIds.length - 1];
-          taskSelectionActions.selectTask(taskId);
-          scrollTaskIntoView(taskId);
-        }
-      } else if (selectedCount === 1) {
-        // Single selection: navigate through tasks
-        event.preventDefault(); // Prevent page scroll
-        handleArrowNavigation(event.key === 'ArrowUp' ? 'up' : 'down');
-      }
-      // Multiple selections: do nothing (don't handle arrow keys)
-    }
-
-    // Return key for new task creation
-    if (event.key === 'Enter' && !isEditing) {
-      const selectedCount = taskSelection.selectedTaskIds.size;
-      
-      if (selectedCount === 0) {
-        // No selection: activate bottom "New Task" row
-        event.preventDefault();
-        newTaskManager.show();
-      } else if (selectedCount === 1) {
-        // Single selection: check if it's the last task
-        event.preventDefault();
-        const selectedTaskId = Array.from(taskSelection.selectedTaskIds)[0];
-        const selectedTaskIndex = flatTaskIds.indexOf(selectedTaskId);
-        const isLastTask = selectedTaskIndex === flatTaskIds.length - 1;
-        
-        if (isLastTask) {
-          // Last task selected: activate bottom "New Task" row (cleaner UX)
-          taskSelectionActions.clearSelection();
-          newTaskManager.show();
-        } else {
-          // Not last task: create inline new task as sibling
-          insertNewTaskAfter = selectedTaskId;
-          isShowingInlineNewTaskInput = true;
-          inlineNewTaskTitle = '';
-          taskSelectionActions.clearSelection(); // Clear selection when creating new task
-          
-          // Focus inline input after DOM update
-          tick().then(() => {
-            if (inlineNewTaskInputElement) {
-              inlineNewTaskInputElement.focus();
-            }
-          });
-        }
-      }
-      // Multiple selections: do nothing
-    }
-
-    // Delete key for task deletion
-    if ((event.key === 'Delete' || event.key === 'Backspace') && !isEditing) {
-      const selectedCount = taskSelection.selectedTaskIds.size;
-      
-      if (selectedCount > 0) {
-        event.preventDefault();
-        showDeleteConfirmation();
-      }
-    }
-  }
-
   onMount(() => {
     // Add event listeners for outside click and keyboard
     document.addEventListener('click', handleOutsideClick);
-    document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('keydown', keyboardHandler.handleKeydown);
   });
 
   // Clean up any lingering visual dragFeedback when component is destroyed
@@ -193,7 +105,9 @@
     clearAllVisualFeedback();
     // Remove event listeners
     document.removeEventListener('click', handleOutsideClick);
-    document.removeEventListener('keydown', handleKeydown);
+    document.removeEventListener('keydown', keyboardHandler.handleKeydown);
+    // Cleanup keyboard handler
+    keyboardHandler.cleanup();
   });
   
   // Rails-compatible client-side acts_as_list implementation
@@ -377,6 +291,47 @@
   
   // Update flat task IDs for multi-select functionality
   const flatTaskIds = $derived(flattenedTasks.map(item => item.task.id));
+
+  // Keyboard navigation handler
+  const keyboardHandler = KeyboardHandler({
+    items: () => flatTaskIds,
+    selection: () => taskSelection.selectedTaskIds,
+    isEditing: () => editingTaskId !== null || isShowingInlineNewTaskInput,
+    
+    actions: {
+      navigate: handleArrowNavigation,
+      select: (id) => taskSelectionActions.selectTask(id),
+      clearSelection: () => taskSelectionActions.clearSelection(),
+      createInline: (afterId) => {
+        insertNewTaskAfter = afterId;
+        isShowingInlineNewTaskInput = true;
+        inlineNewTaskTitle = '';
+        taskSelectionActions.clearSelection();
+        
+        // Focus inline input after DOM update
+        tick().then(() => {
+          if (inlineNewTaskInputElement) {
+            inlineNewTaskInputElement.focus();
+          }
+        });
+      },
+      createBottom: () => newTaskManager.show(),
+      deleteSelected: () => showDeleteConfirmation(),
+      cancelEditing: () => {
+        if (isShowingInlineNewTaskInput) {
+          cancelInlineNewTask();
+        } else if (taskSelection.selectedTaskIds.size > 0) {
+          taskSelectionActions.clearSelection();
+        }
+      },
+      scrollToItem: scrollTaskIntoView
+    },
+    
+    behavior: {
+      wrapNavigation: true,
+      preventDefault: ['ArrowUp', 'ArrowDown']
+    }
+  });
 
   // Reference to the tasks container element for drag action updates
   let tasksContainer: HTMLElement;
