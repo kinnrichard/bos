@@ -111,6 +111,8 @@
   });
   
   // Rails-compatible client-side acts_as_list implementation
+  // TODO: This needs to be re-engineered completely for our offline-first experience.
+  //       Zero.js custom mutator required with new server-side logic. Decimal positioning
   class ClientActsAsList {
     // Apply position updates using validated Rails-compatible logic
     static applyPositionUpdates(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): any[] {
@@ -130,7 +132,6 @@
       
       // Use the validated Rails-compatible logic
       const result = RailsClientActsAsList.applyPositionUpdates(railsTasks, railsUpdates);
-      
       
       // Convert back to Svelte task format
       return result.updatedTasks.map(railsTask => {
@@ -175,7 +176,7 @@
     if (tasksToDelete.length === 1) {
       const taskToDelete = tasks.find(t => t.id === tasksToDelete[0]);
       const taskName = taskToDelete ? `"${taskToDelete.title}"` : '"this task"';
-      return `Are you sure you want to delete ${taskName}?`;
+      return `Are you sure you want to delete the task ${taskName}?`;
     } else {
       return `Are you sure you want to delete ${tasksToDelete.length} tasks?`;
     }
@@ -209,7 +210,6 @@
       cancel: cancelInlineNewTask
     }
   );
-  
 
   // Organize tasks into hierarchical structure with filtering
   function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[], showDeleted: boolean) {
@@ -225,6 +225,7 @@
     });
     
     // Second pass: organize into hierarchy and apply filtering
+    // TODO: Filtering needs to catch child objects as well. If filter is set to only show in progress, it should show parents of in-progress tasks as well.
     taskList.forEach(task => {
       const taskWithSubtasks = taskMap.get(task.id);
       
@@ -358,7 +359,6 @@
     }
   });
 
-
   function toggleTaskExpansion(taskId: string) {
     if (expandedTasks.has(taskId)) {
       expandedTasks.delete(taskId);
@@ -393,8 +393,8 @@
   }
 
   // Time tracking utilities
-
   // Update time tracking display every second for in-progress tasks
+  // TODO: This is broken and may need to be re-imagined. It shoud only show on the task-info popover.
   
   let timeTrackingInterval: any;
   let currentTime = $state(Date.now());
