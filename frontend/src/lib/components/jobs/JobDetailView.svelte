@@ -8,6 +8,10 @@
   // ✨ USE $props() FOR SVELTE 5 RUNES MODE
   let { job, batchTaskDetails = null }: { job: PopulatedJob; batchTaskDetails?: any } = $props();
 
+  // Job title editing state
+  let jobTitleElement = $state<HTMLHeadingElement>();
+  let originalJobTitle = $state('');
+
   // ✨ USE $derived FOR COMPUTED VALUES (NOT REACTIVE STATEMENTS)
   const statusEmoji = $derived(getJobStatusEmoji(job?.status));
   const priorityEmoji = $derived(getJobPriorityEmoji(job?.priority));
@@ -34,10 +38,75 @@
   const jobClient = $derived(job?.client?.name || 'Unknown Client'); // Zero.js flat structure
   const jobStatus = $derived(job?.status);
   const jobId = $derived(job?.id || '');
+
+  // Job title editing functions
+  function handleJobTitleFocus() {
+    if (jobTitleElement) {
+      originalJobTitle = jobTitleElement.textContent || '';
+    }
+  }
+
+  async function saveJobTitle() {
+    if (!jobTitleElement) return;
+    
+    const newTitle = (jobTitleElement.textContent || '').trim();
+    
+    if (newTitle === '' || newTitle === originalJobTitle) {
+      // Revert to original if empty or unchanged
+      jobTitleElement.textContent = originalJobTitle;
+      jobTitleElement.blur();
+      return;
+    }
+
+    try {
+      // Use the Job ActiveRecord model to update
+      const { Job } = await import('$lib/models/job');
+      await Job.update(jobId, { title: newTitle });
+      
+      // Update original title for future comparisons
+      originalJobTitle = newTitle;
+      jobTitleElement.blur();
+    } catch (error) {
+      console.error('Failed to update job title:', error);
+      // Revert to original title on error
+      jobTitleElement.textContent = originalJobTitle;
+      jobTitleElement.blur();
+    }
+  }
+
+  function cancelJobTitleEdit() {
+    if (jobTitleElement) {
+      jobTitleElement.textContent = originalJobTitle;
+      jobTitleElement.blur();
+    }
+  }
+
+  function handleJobTitleKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      saveJobTitle();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelJobTitleEdit();
+    }
+  }
+
+  function handleJobTitleBlur() {
+    saveJobTitle();
+  }
 </script>
 
 <div class="job-detail-view">
-  <h1 class="job-title">{jobTitle}</h1>
+  <h1 
+    class="job-title" 
+    contenteditable="true"
+    onkeydown={handleJobTitleKeydown}
+    onblur={handleJobTitleBlur}
+    onfocus={handleJobTitleFocus}
+    bind:this={jobTitleElement}
+  >
+    {jobTitle}
+  </h1>
   
   <!-- Tasks Section -->
   <div class="tasks-section">
@@ -57,7 +126,9 @@
   h1 {
     margin: 0;
     padding: 0;
-  }  
+  }
+
+  
   
   .job-detail-view {
     display: flex;
