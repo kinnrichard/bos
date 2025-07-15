@@ -290,7 +290,6 @@
   
   // Task title editing state
   let editingTaskId = $state<string | null>(null);
-  let editingTitle = $state('');
   let originalTitle = '';
   let titleInputElement = $state<HTMLInputElement>();
   
@@ -337,7 +336,7 @@
   );
   
   const titleEditHandlers = createTitleEditManager(
-    () => saveTitle(editingTaskId!, editingTitle),
+    () => saveTitle(editingTaskId!, ''), // Title will be read from contenteditable element
     cancelEdit
   );
 
@@ -564,7 +563,7 @@
         break;
       case 'startEdit':
         editingTaskId = taskId;
-        editingTitle = data.originalTitle;
+        // Title editing now handled by contenteditable element
         // Focus will be handled by TaskRow component
         tick().then(() => {
           const titleInput = document.querySelector(`[data-task-id="${taskId}"] .task-title-input`) as HTMLInputElement;
@@ -679,7 +678,7 @@
     
     // Enter edit mode
     editingTaskId = taskId;
-    editingTitle = currentTitle;
+    // Title editing now handled by contenteditable element
     originalTitle = currentTitle;
     
     // Focus the input after DOM update
@@ -713,7 +712,7 @@
       
       // UI cleanup - Zero.js reactive updates will handle the data changes
       editingTaskId = null;
-      editingTitle = '';
+      // Title editing now handled by contenteditable element
       originalTitle = '';
       
     } catch (error) {
@@ -722,13 +721,13 @@
       setTimeout(() => dragFeedback = '', 3000);
       
       // Revert to original title
-      editingTitle = originalTitle;
+      // Title editing now handled by contenteditable element
     }
   }
 
   function cancelEdit() {
     editingTaskId = null;
-    editingTitle = '';
+    // Title editing now handled by contenteditable element
     originalTitle = '';
   }
 
@@ -1602,7 +1601,6 @@
           isSelected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
           isEditing={editingTaskId === renderItem.task.id}
           isDeleting={deletingTaskIds.has(renderItem.task.id)}
-          editingTitle={editingTitle}
           jobId={jobId}
           batchTaskDetails={batchTaskDetails}
           currentTime={currentTime}

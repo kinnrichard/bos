@@ -17,7 +17,6 @@
     isSelected = false, 
     isEditing = false, 
     isDeleting = false,
-    editingTitle = '',
     jobId = '',
     batchTaskDetails = null,
     currentTime = Date.now()
@@ -29,7 +28,6 @@
     isSelected?: boolean;
     isEditing?: boolean;
     isDeleting?: boolean;
-    editingTitle?: string;
     jobId?: string;
     batchTaskDetails?: any;
     currentTime?: number;
@@ -38,7 +36,8 @@
   const dispatch = createEventDispatcher();
 
   // Local state for title editing
-  let titleInputElement = $state<HTMLInputElement>();
+  let titleElement = $state<HTMLHeadingElement>();
+  let originalTitle = $state('');
 
   function handleTaskClick(event: MouseEvent) {
     if (isEditing) return;
@@ -89,16 +88,33 @@
     });
   }
 
+  function handleTitleFocus() {
+    if (titleElement) {
+      originalTitle = titleElement.textContent || '';
+    }
+  }
+
   function handleTitleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       event.preventDefault();
+      event.stopPropagation(); // Prevent event from bubbling to TaskList
+      const newTitle = titleElement?.textContent || '';
       dispatch('taskaction', {
         type: 'saveEdit',
         taskId: task.id,
-        data: { newTitle: editingTitle }
+        data: { newTitle }
       });
+      // Exit edit mode immediately
+      if (titleElement) {
+        titleElement.blur();
+      }
     } else if (event.key === 'Escape') {
       event.preventDefault();
+      event.stopPropagation(); // Prevent event from bubbling to TaskList
+      if (titleElement) {
+        titleElement.textContent = originalTitle;
+        titleElement.blur();
+      }
       dispatch('taskaction', {
         type: 'cancelEdit',
         taskId: task.id
@@ -107,10 +123,11 @@
   }
 
   function handleTitleBlur() {
+    const newTitle = titleElement?.textContent || '';
     dispatch('taskaction', {
       type: 'saveEdit',
       taskId: task.id,
-      data: { newTitle: editingTitle }
+      data: { newTitle }
     });
   }
 
@@ -122,10 +139,10 @@
     });
   }
 
-  // Focus title input when editing starts
+  // Focus title element when editing starts
   $effect(() => {
-    if (isEditing && titleInputElement) {
-      titleInputElement.focus();
+    if (isEditing && titleElement) {
+      titleElement.focus();
     }
   });
 </script>
@@ -179,22 +196,17 @@
   
   <!-- Task Content -->
   <div class="task-content">
-    {#if isEditing}
-      <input 
-        class="task-title task-title-input"
-        bind:value={editingTitle}
-        bind:this={titleInputElement}
-        onkeydown={handleTitleKeydown}
-        onblur={handleTitleBlur}
-      />
-    {:else}
-      <h5 
-        class="task-title"
-        onclick={handleTitleClick}
-      >
-        {task.title}
-      </h5>
-    {/if}
+    <h5 
+      class="task-title"
+      contenteditable="true"
+      onclick={handleTitleClick}
+      onkeydown={handleTitleKeydown}
+      onblur={handleTitleBlur}
+      onfocus={handleTitleFocus}
+      bind:this={titleElement}
+    >
+      {task.title}
+    </h5>
     
     <!-- Time Tracking Display -->
     {#if task.status === 'in_progress' || (task.accumulated_seconds && task.accumulated_seconds > 0)}
