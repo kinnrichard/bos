@@ -117,6 +117,13 @@ class RelationshipRegistry {
 }
 
 /**
+ * Relationship configuration for Zero.js callback syntax support
+ */
+type RelationshipConfig<T extends Record<string, any> = Record<string, any>> = 
+  | string 
+  | [string, (query: BaseScopedQuery<T>) => BaseScopedQuery<T>];
+
+/**
  * BaseScopedQuery<T> - Abstract base class for scoped queries
  * 
  * Provides shared functionality for both ActiveRecord and ReactiveRecord scoped queries.
@@ -126,7 +133,7 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
   protected config: BaseModelConfig;
   protected tableName: string;
   protected conditions: Partial<T>[] = [];
-  protected relationships: string[] = [];
+  protected relationships: RelationshipConfig<T>[] = [];
   protected orderByField?: keyof T;
   protected orderByDirection?: 'asc' | 'desc';
   protected limitCount?: number;
@@ -142,7 +149,12 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
   /**
    * Rails-familiar includes() method for eager loading relationships
    * 
-   * @param relationships - List of relationship names to include
+   * Supports both string relationships and Zero.js callback syntax:
+   * - String syntax: Job.includes('client', 'tasks')
+   * - Callback syntax: Job.includes('jobAssignments', assignments => assignments.includes('user'))
+   * - Dotted notation: Job.includes('jobAssignments.user') [Phase 2]
+   * 
+   * @param relationships - Relationship names and optional callbacks
    * @returns New scoped query instance with relationships
    * 
    * @example
@@ -153,19 +165,97 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
    * // Multiple relationships  
    * Job.includes('client', 'tasks', 'jobAssignments')
    * 
-   * // Method chaining
-   * Job.includes('client', 'tasks').where({ status: 'active' }).orderBy('created_at', 'desc')
+   * // Zero.js callback syntax with refinement
+   * Job.includes('jobAssignments', assignments => assignments.includes('user'))
+   * Job.includes('jobAssignments', assignments => 
+   *   assignments.includes('user').where({ active: true }).orderBy('name', 'asc')
+   * )
+   * 
+   * // Mixed syntax
+   * Job.includes('client').includes('jobAssignments', assignments => assignments.includes('user'))
    * ```
    */
-  includes(...relationships: string[]): this {
-    // Validate relationships at runtime
-    this.validateRelationships(relationships);
-    
-    // Check for circular dependencies
-    this.detectCircularDependencies([...this.relationships, ...relationships]);
-    
+  includes(
+    relationship: string,
+    refinementCallback?: (query: BaseScopedQuery<T>) => BaseScopedQuery<T>
+  ): this;
+  includes(...relationships: string[]): this;
+  includes(
+    relationshipOrCallback: string | string[],
+    ...rest: any[]
+  ): this {
     const newQuery = this.clone();
-    newQuery.relationships = [...this.relationships, ...relationships];
+    
+    // Handle array case (multiple string relationships)
+    if (Array.isArray(relationshipOrCallback)) {
+      const relationships = relationshipOrCallback;
+      
+      // Handle individual relationships that might be dotted notation
+      const processedRelationships: RelationshipConfig<T>[] = [];
+      for (const rel of relationships) {
+        if (rel.includes('.')) {
+          processedRelationships.push(this.parseNestedRelationship(rel));
+        } else {
+          processedRelationships.push(rel);
+        }
+      }
+      
+      // Extract relationship names for validation
+      const relationshipNames = relationships.map(rel => rel.split('.')[0]);
+      this.validateRelationships(relationshipNames);
+      this.detectCircularDependencies([...this.getRelationshipNames(), ...relationshipNames]);
+      
+      newQuery.relationships = [...this.relationships, ...processedRelationships];
+      return newQuery;
+    }
+    
+    // Single string relationship
+    const relationshipName = relationshipOrCallback;
+    const refinementCallback = rest[0] as ((query: BaseScopedQuery<T>) => BaseScopedQuery<T>) | undefined;
+    
+    // Handle multiple string arguments: includes('client', 'tasks', 'jobAssignments')
+    if (rest.length > 0 && typeof refinementCallback === 'string') {
+      const relationships = [relationshipName, ...rest] as string[];
+      
+      // Handle individual relationships that might be dotted notation
+      const processedRelationships: RelationshipConfig<T>[] = [];
+      for (const rel of relationships) {
+        if (rel.includes('.')) {
+          processedRelationships.push(this.parseNestedRelationship(rel));
+        } else {
+          processedRelationships.push(rel);
+        }
+      }
+      
+      // Extract relationship names for validation
+      const relationshipNames = relationships.map(rel => rel.split('.')[0]);
+      this.validateRelationships(relationshipNames);
+      this.detectCircularDependencies([...this.getRelationshipNames(), ...relationshipNames]);
+      
+      newQuery.relationships = [...this.relationships, ...processedRelationships];
+      return newQuery;
+    }
+    
+    // Check if this is dotted notation (Phase 2)
+    if (relationshipName.includes('.')) {
+      const parsed = this.parseNestedRelationship(relationshipName);
+      newQuery.relationships = [...this.relationships, parsed];
+      return newQuery;
+    }
+    
+    // Validate single relationship
+    this.validateRelationships([relationshipName]);
+    this.detectCircularDependencies([...this.getRelationshipNames(), relationshipName]);
+    
+    if (refinementCallback && typeof refinementCallback === 'function') {
+      // Zero.js callback syntax
+      const relationshipConfig: RelationshipConfig<T> = [relationshipName, refinementCallback];
+      newQuery.relationships = [...this.relationships, relationshipConfig];
+    } else {
+      // Simple string relationship
+      newQuery.relationships = [...this.relationships, relationshipName];
+    }
+    
     return newQuery;
   }
 
@@ -251,12 +341,19 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
       return null;
     }
 
-    const queryTable = (zero.query as any)[this.tableName];
-    if (!queryTable) {
-      throw ConnectionError.tableNotFound(this.tableName);
+    // Start with base query (either wrapped subquery or table query)
+    let query: any;
+    if ((this as any).baseZeroQuery) {
+      // Use the wrapped Zero.js subquery as starting point
+      query = (this as any).baseZeroQuery;
+    } else {
+      // Start with the table query
+      const queryTable = (zero.query as any)[this.tableName];
+      if (!queryTable) {
+        throw ConnectionError.tableNotFound(this.tableName);
+      }
+      query = queryTable;
     }
-
-    let query = queryTable;
 
     // Apply discard gem filtering only if model supports it
     if (this.config.supportsDiscard) {
@@ -276,10 +373,22 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
       }
     }
 
-    // Apply relationships using Zero.js .related() 
+    // Apply relationships using Zero.js .related() with callback support
     // Zero.js handles the join logic and memory management
-    for (const relationship of this.relationships) {
-      query = query.related(relationship);
+    for (const relationshipConfig of this.relationships) {
+      if (typeof relationshipConfig === 'string') {
+        // Simple string relationship
+        query = query.related(relationshipConfig);
+      } else {
+        // Callback relationship: [relationshipName, refinementCallback]
+        const [relationshipName, refinementCallback] = relationshipConfig;
+        query = query.related(relationshipName, (subQuery: any) => {
+          // Convert Zero.js subquery back to ScopedQuery for refinement
+          const scopedSubQuery = this.wrapZeroQueryInScopedQuery(subQuery);
+          const refinedQuery = refinementCallback(scopedSubQuery);
+          return refinedQuery.buildZeroQuery();
+        });
+      }
     }
 
     // Apply ordering
@@ -296,6 +405,59 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
     }
 
     return query;
+  }
+
+  /**
+   * Get relationship names from mixed relationship configs for validation
+   */
+  private getRelationshipNames(): string[] {
+    return this.relationships.map(rel => 
+      typeof rel === 'string' ? rel : rel[0]
+    );
+  }
+
+  /**
+   * Convert Zero.js subquery back to ScopedQuery for callback refinement
+   */
+  private wrapZeroQueryInScopedQuery(zeroQuery: any): BaseScopedQuery<T> {
+    const scopedQuery = this.clone();
+    // Clear existing relationships and conditions since we're starting from the subquery
+    scopedQuery.relationships = [];
+    scopedQuery.conditions = [];
+    // Store the Zero.js query to use as base
+    (scopedQuery as any).baseZeroQuery = zeroQuery;
+    return scopedQuery;
+  }
+
+  /**
+   * Parse dotted notation relationship strings (Phase 2)
+   * Converts 'jobAssignments.user' to callback chain
+   */
+  private parseNestedRelationship(path: string): RelationshipConfig<T> {
+    const parts = path.split('.');
+    if (parts.length === 1) {
+      return parts[0];
+    }
+    
+    // Build nested callback chain recursively
+    const relationshipName = parts[0];
+    const remainingPath = parts.slice(1).join('.');
+    
+    return [relationshipName, (query: BaseScopedQuery<T>) => {
+      if (remainingPath.includes('.')) {
+        // Multiple levels remaining - recurse
+        const nestedConfig = this.parseNestedRelationship(remainingPath);
+        if (typeof nestedConfig === 'string') {
+          return query.includes(nestedConfig);
+        } else {
+          const [nestedRel, nestedCallback] = nestedConfig;
+          return query.includes(nestedRel, nestedCallback);
+        }
+      } else {
+        // Single level remaining
+        return query.includes(remainingPath);
+      }
+    }];
   }
 
   /**
