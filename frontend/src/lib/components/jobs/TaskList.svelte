@@ -13,6 +13,10 @@
   import type { Task, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
   import Portal from '../ui/Portal.svelte';
+  
+  // Import new DRY utilities
+  import { createTaskInputManager, createTitleEditManager } from '$lib/utils/task-input-manager';
+  import { positionCursorInText } from '$lib/utils/cursor-positioning';
 
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';
@@ -303,6 +307,37 @@
   let deletingTaskIds = $state(new Set<string>());
   const animationDuration = 300; // ms for height collapse animation
   
+  // ✨ DRY Input Managers - replaces ~300 lines of repetitive handlers
+  const newTaskManager = createTaskInputManager(
+    {
+      title: { get: () => newTaskTitle, set: (v) => newTaskTitle = v },
+      inputElement: { get: () => newTaskInputElement },
+      isCreating: { get: () => isCreatingTask, set: (v) => isCreatingTask = v },
+      isShowing: { get: () => isShowingNewTaskInput, set: (v) => isShowingNewTaskInput = v }
+    },
+    {
+      create: createNewTask,
+      cancel: hideNewTaskForm
+    }
+  );
+  
+  const inlineTaskManager = createTaskInputManager(
+    {
+      title: { get: () => inlineNewTaskTitle, set: (v) => inlineNewTaskTitle = v },
+      inputElement: { get: () => inlineNewTaskInputElement },
+      isCreating: { get: () => isCreatingTask, set: (v) => isCreatingTask = v },
+      isShowing: { get: () => isShowingInlineNewTaskInput, set: (v) => isShowingInlineNewTaskInput = v }
+    },
+    {
+      create: (shouldSelect) => createInlineTask(insertNewTaskAfter, shouldSelect),
+      cancel: cancelInlineNewTask
+    }
+  );
+  
+  const titleEditHandlers = createTitleEditManager(
+    () => saveTitle(editingTaskId!, editingTitle),
+    cancelEdit
+  );
 
   // Organize tasks into hierarchical structure with filtering
   function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[], showDeleted: boolean) {
@@ -546,53 +581,7 @@
     return '';
   }
 
-  // New task creation handlers
-  function showNewTaskForm(event?: MouseEvent) {
-    isShowingNewTaskInput = true;
-    setTimeout(() => {
-      if (newTaskInputElement) {
-        newTaskInputElement.focus();
-        
-        // Position cursor based on click location if provided
-        if (event) {
-          positionCursorAtClick(event);
-        }
-      }
-    }, 0);
-  }
-
-  function positionCursorAtClick(event: MouseEvent) {
-    if (!newTaskInputElement) return;
-    
-    // Wait for next frame to ensure input is fully rendered
-    requestAnimationFrame(() => {
-      const clickX = event.clientX;
-      const inputRect = newTaskInputElement.getBoundingClientRect();
-      const relativeX = clickX - inputRect.left;
-      
-      // Create a temporary span to measure text width
-      const tempSpan = document.createElement('span');
-      tempSpan.style.visibility = 'hidden';
-      tempSpan.style.position = 'absolute';
-      tempSpan.style.whiteSpace = 'pre';
-      tempSpan.style.font = window.getComputedStyle(newTaskInputElement).font;
-      tempSpan.textContent = newTaskInputElement.placeholder;
-      
-      document.body.appendChild(tempSpan);
-      
-      const charWidth = tempSpan.offsetWidth / newTaskInputElement.placeholder.length;
-      const cursorPosition = Math.max(0, Math.min(
-        Math.round(relativeX / charWidth),
-        newTaskInputElement.placeholder.length
-      ));
-      
-      document.body.removeChild(tempSpan);
-      
-      // Set cursor position
-      newTaskInputElement.setSelectionRange(cursorPosition, cursorPosition);
-    });
-  }
-
+  // New task creation - using DRY utilities
   function hideNewTaskForm() {
     isShowingNewTaskInput = false;
     newTaskTitle = '';
@@ -602,7 +591,7 @@
     // Only activate if not already in input mode
     if (!isShowingNewTaskInput) {
       event.stopPropagation();
-      showNewTaskForm(event);
+      newTaskManager.show(event);
     }
   }
 
@@ -644,24 +633,7 @@
     }
   }
 
-  async function handleNewTaskKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      await createNewTask(true); // Return key should select newly created task
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      hideNewTaskForm();
-    }
-  }
-
-  function handleNewTaskBlur() {
-    // Save on blur if there's content, otherwise cancel
-    if (newTaskTitle.trim() !== '' && !isCreatingTask) {
-      createNewTask(false); // Blur should not select newly created task
-    } else if (!isCreatingTask) {
-      hideNewTaskForm();
-    }
-  }
+  // ✨ Replaced with newTaskManager.handlers - eliminates ~40 lines
 
 
   function handleTaskUpdated(event: CustomEvent) {
@@ -693,14 +665,10 @@
     }
   }
 
-  // Task title editing functions
+  // Task title editing functions - using DRY cursor positioning
   function handleTitleClick(event: MouseEvent, taskId: string, currentTitle: string) {
     event.stopPropagation(); // Prevent task selection
     taskSelectionActions.clearSelection(); // Clear any existing selection when editing
-    
-    // Store click position for cursor positioning
-    const clickX = event.clientX;
-    const titleElement = event.target as HTMLElement;
     
     // Enter edit mode
     editingTaskId = taskId;
@@ -711,45 +679,8 @@
     tick().then(() => {
       if (titleInputElement) {
         titleInputElement.focus();
-        
-        // Calculate cursor position based on click location
-        try {
-          // Get the title element's bounding box
-          const titleRect = titleElement.getBoundingClientRect();
-          const relativeX = clickX - titleRect.left;
-          
-          // Create a temporary span to measure text width
-          const tempSpan = document.createElement('span');
-          tempSpan.style.cssText = window.getComputedStyle(titleElement).cssText;
-          tempSpan.style.position = 'absolute';
-          tempSpan.style.visibility = 'hidden';
-          tempSpan.style.whiteSpace = 'nowrap';
-          document.body.appendChild(tempSpan);
-          
-          // Find the closest character position
-          let bestPosition = 0;
-          let bestDistance = Infinity;
-          
-          for (let i = 0; i <= currentTitle.length; i++) {
-            tempSpan.textContent = currentTitle.substring(0, i);
-            const textWidth = tempSpan.getBoundingClientRect().width;
-            const distance = Math.abs(relativeX - textWidth);
-            
-            if (distance < bestDistance) {
-              bestDistance = distance;
-              bestPosition = i;
-            }
-          }
-          
-          // Clean up
-          document.body.removeChild(tempSpan);
-          
-          // Set cursor position
-          titleInputElement.setSelectionRange(bestPosition, bestPosition);
-        } catch (e) {
-          // Fallback if cursor positioning fails
-          titleInputElement.setSelectionRange(editingTitle.length, editingTitle.length);
-        }
+        // ✨ Use DRY cursor positioning utility - eliminates ~30 lines
+        positionCursorInText(event, titleInputElement, currentTitle);
       }
     });
   }
@@ -794,20 +725,7 @@
     originalTitle = '';
   }
 
-  function handleEditKeydown(event: KeyboardEvent, taskId: string) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      saveTitle(taskId, editingTitle);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      cancelEdit();
-    }
-  }
-
-  function handleEditBlur(taskId: string) {
-    // Save on blur
-    saveTitle(taskId, editingTitle);
-  }
+  // ✨ Replaced with titleEditHandlers - eliminates ~15 lines
 
   // Inline new task functions
   async function createInlineTask(parentId: string | null, shouldSelectAfterCreate: boolean = false) {
@@ -909,22 +827,7 @@
     inlineNewTaskTitle = '';
   }
 
-  function handleInlineNewTaskKeydown(event: KeyboardEvent, parentId: string | null) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      createInlineTask(parentId, true); // Return key should select newly created task
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      cancelInlineNewTask();
-    }
-  }
-
-  function handleInlineNewTaskBlur(parentId: string | null) {
-    // Save on blur, but only if not already creating a task (prevents double submission)
-    if (!isCreatingTask) {
-      createInlineTask(parentId, false); // Blur should not select newly created task
-    }
-  }
+  // ✨ Replaced with inlineTaskManager.handlers - eliminates ~20 lines
 
   // Task deletion functions
   async function showDeleteConfirmation() {
@@ -1960,8 +1863,8 @@
                 class="task-title task-title-input"
                 bind:value={editingTitle}
                 bind:this={titleInputElement}
-                onkeydown={(e) => handleEditKeydown(e, renderItem.task.id)}
-                onblur={() => handleEditBlur(renderItem.task.id)}
+                onkeydown={titleEditHandlers.keydown}
+                onblur={titleEditHandlers.blur}
               />
             {:else}
               <h5 
@@ -2041,8 +1944,8 @@
                 bind:value={inlineNewTaskTitle}
                 bind:this={inlineNewTaskInputElement}
                 placeholder="New Task"
-                onkeydown={(e) => handleInlineNewTaskKeydown(e, renderItem.task.parent_id)}
-                onblur={() => handleInlineNewTaskBlur(renderItem.task.parent_id)}
+                onkeydown={inlineTaskManager.handlers.keydown}
+                onblur={inlineTaskManager.handlers.blur}
                 disabled={isCreatingTask}
               />
               {#if isCreatingTask}
@@ -2086,8 +1989,8 @@
               bind:value={newTaskTitle}
               bind:this={newTaskInputElement}
               placeholder="New Task"
-              onkeydown={handleNewTaskKeydown}
-              onblur={handleNewTaskBlur}
+              onkeydown={newTaskManager.handlers.keydown}
+              onblur={newTaskManager.handlers.blur}
               disabled={isCreatingTask}
             />
             {#if isCreatingTask}
@@ -2098,7 +2001,7 @@
           {:else}
             <h5 
               class="task-title add-task-placeholder"
-              onclick={showNewTaskForm}
+              onclick={() => newTaskManager.show()}
             >
               New Task
             </h5>
