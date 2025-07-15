@@ -2,6 +2,8 @@
   import { onDestroy, onMount, tick } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
+  import { TaskHierarchyManager } from '$lib/services/TaskHierarchyManager';
+  import type { HierarchicalTask, RenderedTaskItem, BaseTask } from '$lib/services/TaskHierarchyManager';
   import { taskSelection, taskSelectionActions } from '$lib/stores/taskSelection.svelte';
   import { Task as TaskModel } from '$lib/models/task';
   import { nativeDrag, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
@@ -25,9 +27,8 @@
     batchTaskDetails?: any;
   } = $props();
   
-  // Track collapsed/expanded state of tasks with subtasks
-  let expandedTasks = new SvelteSet<string>();
-  let hasAutoExpanded = false;
+  // Task hierarchy management
+  const hierarchyManager = new TaskHierarchyManager();
   
   // Drag & drop state
   let isDragging = false;
@@ -206,87 +207,26 @@
     }
   );
 
-  // Organize tasks into hierarchical structure with filtering
-  function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[], showDeleted: boolean) {
-    const taskMap = new Map();
-    const rootTasks: any[] = [];
-    
-    // First pass: create map of all tasks
-    taskList.forEach((task) => {
-      taskMap.set(task.id, {
-        ...task,
-        subtasks: []
-      });
-    });
-    
-    // Second pass: organize into hierarchy and apply filtering
-    // TODO: Filtering needs to catch child objects as well. If filter is set to only show in progress, it should show parents of in-progress tasks as well.
-    taskList.forEach(task => {
-      const taskWithSubtasks = taskMap.get(task.id);
-      
-      const shouldShow = shouldShowTask(task, filterStatuses, showDeleted);
-      
-      // Apply filter - only include tasks that should be shown
-      if (!shouldShow) {
-        return;
-      }
-      
-      if (task.parent_id && taskMap.has(task.parent_id)) {
-        // Only add to parent if parent is also visible
-        const parent = taskMap.get(task.parent_id);
-        if (shouldShowTask(parent, filterStatuses, showDeleted)) {
-          parent.subtasks.push(taskWithSubtasks);
-        }
-      } else {
-        rootTasks.push(taskWithSubtasks);
-      }
-    });
-    
-    // Sort root tasks by position
-    rootTasks.sort((a, b) => (a.position || 0) - (b.position || 0));
-    
-    // Sort subtasks by position for each parent
-    function sortSubtasks(task: any) {
-      if (task.subtasks && task.subtasks.length > 0) {
-        task.subtasks.sort((a: any, b: any) => (a.position || 0) - (b.position || 0));
-        task.subtasks.forEach(sortSubtasks);
-      }
-    }
-    
-    rootTasks.forEach(sortSubtasks);
-    
-    return rootTasks;
-  }
+  // Use TaskHierarchyManager for task organization
+  const hierarchicalTasks = $derived(hierarchyManager.organizeTasksHierarchically(
+    tasks as BaseTask[], 
+    taskFilter.selectedStatuses, 
+    taskFilter.showDeleted
+  ));
 
-  const hierarchicalTasks = $derived(organizeTasksHierarchically(tasks, taskFilter.selectedStatuses, taskFilter.showDeleted));
   
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
   $effect(() => {
-    if (hierarchicalTasks.length > 0 && !hasAutoExpanded) {
-      // Recursively expand all tasks with subtasks
-      function expandAllTasksWithSubtasks(taskList: any[]) {
-        taskList.forEach(task => {
-          if (task.subtasks && task.subtasks.length > 0) {
-            expandedTasks.add(task.id);
-            // Recursively expand subtasks that also have children
-            expandAllTasksWithSubtasks(task.subtasks);
-          }
-        });
-      }
-      
-      expandAllTasksWithSubtasks(hierarchicalTasks);
-      hasAutoExpanded = true;
-    }
+    hierarchyManager.autoExpandAll(hierarchicalTasks);
   });
   
-  // Make rendering reactive to expandedTasks state changes
+  // Make rendering reactive to expansion state changes
   const flattenedTasks = $derived.by(() => {
-    const result = hierarchicalTasks.flatMap(task => renderTaskTree(task, 0));
-    return result;
+    return hierarchyManager.flattenTasks(hierarchicalTasks);
   });
   
   // Update flat task IDs for multi-select functionality
-  const flatTaskIds = $derived(flattenedTasks.map(item => item.task.id));
+  const flatTaskIds = $derived(hierarchyManager.getFlatTaskIds(flattenedTasks));
 
   // Keyboard navigation handler
   const keyboardHandler = KeyboardHandler({
@@ -364,15 +304,11 @@
   });
 
   function toggleTaskExpansion(taskId: string) {
-    if (expandedTasks.has(taskId)) {
-      expandedTasks.delete(taskId);
-    } else {
-      expandedTasks.add(taskId);
-    }
+    hierarchyManager.toggleExpansion(taskId);
   }
 
   function isTaskExpanded(taskId: string): boolean {
-    return expandedTasks.has(taskId);
+    return hierarchyManager.isTaskExpanded(taskId);
   }
 
   function getStatusLabel(status: string): string {
@@ -882,9 +818,7 @@
 
     try {
       // Auto-expand the target task to make the newly nested child visible
-      if (!expandedTasks.has(targetTaskId)) {
-        expandedTasks.add(targetTaskId);
-      }
+      hierarchyManager.expandTask(targetTaskId);
 
       // Calculate relative position for nesting
       const relativePosition = calculateRelativePosition(null, targetTaskId, [draggedTaskId]);
@@ -942,8 +876,8 @@
     }
     
     // Auto-expand target task for nesting operations
-    if (event.dropZone?.mode === 'nest' && newParentId && !expandedTasks.has(newParentId)) {
-      expandedTasks.add(newParentId);
+    if (event.dropZone?.mode === 'nest' && newParentId) {
+      hierarchyManager.expandTask(newParentId);
     }
     
     try {
@@ -1034,32 +968,7 @@
     }
   }
 
-  // Recursive function to render task tree
-  function renderTaskTree(task: any, depth: number): Array<{
-    task: any;
-    depth: number;
-    hasSubtasks: boolean;
-    isExpanded: boolean;
-  }> {
-    const result = [];
-    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-    const isExpanded = isTaskExpanded(task.id);
-    
-    result.push({
-      task,
-      depth,
-      hasSubtasks,
-      isExpanded
-    });
-    
-    if (hasSubtasks && isExpanded) {
-      for (const subtask of task.subtasks) {
-        result.push(...renderTaskTree(subtask, depth + 1));
-      }
-    }
-    
-    return result;
-  }
+  // Task tree rendering is now handled by TaskHierarchyManager
 
   // Calculate parent task based on drop position in flattened list
   function calculateParentFromPosition(dropIndex: number, dropMode: 'reorder' | 'nest'): string | undefined {
@@ -1092,23 +1001,23 @@
     // If there's a target item and previous item at the same depth,
     // we're inserting at that same depth with the same parent
     if (targetItem && previousItem.depth === targetItem.depth) {
-      return targetItem.task.parent_id || null;
+      return targetItem.task.parent_id || undefined;
     }
     
     // If target item is deeper than previous, we're inserting at previous item's depth
     // which means previous item's parent becomes our parent
     if (targetItem && previousItem.depth < targetItem.depth) {
-      return previousItem.task.parent_id || null;
+      return previousItem.task.parent_id || undefined;
     }
     
     // If no target item, we're appending after the last item
     // Insert at the same level as the previous item
     if (!targetItem) {
-      return previousItem.task.parent_id || null;
+      return previousItem.task.parent_id || undefined;
     }
     
     // If target is at same/shallower depth than previous, we're inserting at the same level as the previous item
-    return previousItem.task.parent_id || null;
+    return previousItem.task.parent_id || undefined;
   }
   
   // Handle edge case ambiguity between parent and first child

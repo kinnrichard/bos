@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import { tasksService, type Task } from '$lib/api/tasks';
+  import { getContext } from 'svelte';
   import { formatDateTime } from '$lib/utils/date';
   import { getTaskStatusEmoji, getTaskStatusLabel } from '$lib/config/emoji';
+  import BasePopover from '../ui/BasePopover.svelte';
   
   let {
     task,
     jobId,
-    isVisible = false,
-    position = { top: 0, left: 0 }
+    batchTaskDetails = null, // Optional batch details data
+    isSelected = false // Whether this task is selected
   } = $props();
   
   const dispatch = createEventDispatcher();
@@ -27,9 +29,12 @@
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   }
   
+  // Forward popover instance from BasePopover
+  let basePopover: any;
+
   // Update timer every second for in-progress tasks
   $effect(() => {
-    if (isVisible && task?.status === 'in_progress') {
+    if (basePopover && basePopover.expanded && task?.status === 'in_progress') {
       timer = setInterval(() => {
         currentTime = Date.now();
       }, 1000);
@@ -40,19 +45,70 @@
   });
   
   // Clean up timer when component is destroyed
-  import { onDestroy } from 'svelte';
   onDestroy(() => {
     if (timer) clearInterval(timer);
   });
   
-  // Load task details when popover becomes visible
+  // Load task details when popover becomes expanded
   $effect(() => {
-    if (isVisible && task && !taskDetails) {
+    if (basePopover && basePopover.expanded && task && !taskDetails) {
       loadTaskDetails();
     }
   });
+
+  // Check for batch details data when it becomes available
+  $effect(() => {
+    if (batchTaskDetails && batchTaskDetails.data && task && !taskDetails) {
+      checkBatchDetails();
+    }
+  });
   
+  // Reset state when task changes
+  $effect(() => {
+    if (task) {
+      taskDetails = null;
+      error = '';
+    }
+  });
+  
+  function checkBatchDetails() {
+    if (!batchTaskDetails?.data || !task) return;
+    
+    // Find this task's details in the batch data
+    const taskDetailData = batchTaskDetails.data.find((t: any) => t.id === task.id);
+    if (taskDetailData) {
+      // Transform the JSON:API format to match the expected format
+      taskDetails = {
+        id: taskDetailData.id,
+        title: taskDetailData.attributes.title,
+        status: taskDetailData.attributes.status,
+        position: taskDetailData.attributes.position,
+        parent_id: taskDetailData.attributes.parent_id,
+        created_at: taskDetailData.attributes.created_at,
+        updated_at: taskDetailData.attributes.updated_at,
+        completed_at: taskDetailData.attributes.completed_at,
+        notes: taskDetailData.attributes.notes || [],
+        activity_logs: taskDetailData.attributes.activity_logs || [],
+        // Don't include available_technicians - they're already cached via useUsersQuery
+      };
+      
+      // Auto-scroll to bottom after content loads
+      setTimeout(() => {
+        if (timelineContainer) {
+          timelineContainer.scrollTop = timelineContainer.scrollHeight;
+        }
+      }, 0);
+    }
+  }
+
   async function loadTaskDetails() {
+    // First check if we have batch details available
+    if (batchTaskDetails?.data) {
+      checkBatchDetails();
+      if (taskDetails) return; // Exit early if batch details provided the data
+    }
+    
+    // Fall back to individual API call if batch details not available
     loading = true;
     error = '';
     
@@ -108,16 +164,6 @@
       console.error('Failed to add note:', err);
     } finally {
       addingNote = false;
-    }
-  }
-  
-  function close() {
-    dispatch('close');
-  }
-  
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      close();
     }
   }
   
@@ -242,8 +288,8 @@
   // Group timeline items by user and date
   function groupTimelineItems(items: any[]): any[] {
     const grouped: any[] = [];
-    let currentUser: any = null;
-    let currentDate: any = null;
+    let currentUser: string | null = null;
+    let currentDate: string | null = null;
     
     items.forEach(item => {
       const itemDate = new Date(item.timestamp).toDateString();
@@ -264,40 +310,25 @@
     
     return grouped;
   }
-  
-  // Reset state when task changes
-  $effect(() => {
-    if (task) {
-      taskDetails = null;
-      error = '';
-    }
-  });
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-{#if isVisible}
-  <!-- Backdrop -->
-  <div class="popover-backdrop" onclick={close} onkeydown={handleKeydown} role="presentation"></div>
-  
-  <!-- Task Info Popover - matching Rails monolith exactly -->
-  <div 
-    class="task-info-popover"
-    style="top: {position.top}px; left: {position.left}px;"
+<div class="task-info-popover-container">
+  <!-- Task Info Button (Trigger) -->
+  <BasePopover 
+    bind:popover={basePopover}
+    preferredPlacement="left"
+    panelWidth="380px"
   >
-    <!-- Arrow pointer -->
-    <div class="popover-arrow">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="8" viewBox="0 0 16 8" style="display: block; overflow: visible;">
-        <path
-          d="M7 1 L1 8 L15 8 Z"
-          fill="var(--bg-secondary)"
-          stroke="var(--border-primary)"
-          stroke-width="1"
-          stroke-linejoin="miter"
-          vector-effect="non-scaling-stroke"
-        />
-      </svg>
-    </div>
+    <svelte:fragment slot="trigger" let:popover>
+      <button 
+        class="task-action-button"
+        title="Task details"
+        use:popover.button
+        onclick={(e) => e.stopPropagation()}
+      >
+        <img src="/icons/{isSelected ? 'info' : 'info-blue'}.svg" alt="Info" class="action-icon" />
+      </button>
+    </svelte:fragment>
 
     <!-- Popover content with scrolling -->
     <div class="popover-content-scrollable">
@@ -440,8 +471,8 @@
         </div>
       {/if}
     </div>
-  </div>
-{/if}
+  </BasePopover>
+</div>
 
 <style>
   /* Note color variable to match Rails */
@@ -449,49 +480,23 @@
     --note-color: #FBB827;
   }
 
-  .popover-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 999;
-  }
-  
-  .task-info-popover {
-    position: fixed;
-    z-index: 1000;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    box-shadow: var(--shadow-lg);
-    width: 380px;
-    max-width: calc(100vw - 20px);
-    max-height: calc(100vh - 100px);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+  .task-info-popover-container {
+    position: relative;
+    display: inline-block;
   }
 
-
-  /* Arrow styles */
-  .popover-arrow {
-    position: absolute;
-    pointer-events: none;
-    z-index: 1;
-    width: 12px;
-    height: 12px;
-    top: -8px;
-    left: 20px;
+  /* Button styling handled by parent TaskList component */
+  .task-action-button {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
+    margin-top: 2.75px !important;
   }
-  
-  .popover-arrow svg {
-    filter: drop-shadow(0 0 1px var(--border-primary));
-    display: block;
-    overflow: visible;
-    width: 100%;
-    height: 100%;
+
+  /* Action icon (SVG) styling */
+  .action-icon {
+    width: 18px;
+    height: 18px;
   }
 
   /* Popover content wrapper with scrolling */
@@ -501,6 +506,7 @@
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    max-height: 500px;
   }
 
   /* Header */
@@ -763,4 +769,6 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
+
+  /* Responsive behavior is handled automatically by the positioning utilities */
 </style>

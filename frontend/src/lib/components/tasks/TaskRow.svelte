@@ -2,7 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { getTaskStatusEmoji } from '$lib/config/emoji';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
-  import TaskInfoPopoverHeadless from './TaskInfoPopoverHeadless.svelte';
+  import TaskInfoPopover from './TaskInfoPopover.svelte';
   import '../../styles/task-components.css';
   
   // Use static SVG URLs for better compatibility
@@ -251,7 +251,7 @@
 
   <!-- Task Actions -->
   <div class="task-actions">
-    <TaskInfoPopoverHeadless 
+    <TaskInfoPopover 
       {task}
       {jobId}
       {batchTaskDetails}
