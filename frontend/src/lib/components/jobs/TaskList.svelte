@@ -12,11 +12,14 @@
   import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
   import type { Task, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
   import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
+  import TaskRow from '../tasks/TaskRow.svelte';
+  import NewTaskRow from '../tasks/NewTaskRow.svelte';
   import Portal from '../ui/Portal.svelte';
   
   // Import new DRY utilities
   import { createTaskInputManager, createTitleEditManager } from '$lib/utils/task-input-manager';
   import { positionCursorInText } from '$lib/utils/cursor-positioning';
+  import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
 
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';
@@ -492,30 +495,6 @@
   }
 
   // Time tracking utilities
-  function formatTimeDuration(seconds: number): string {
-    if (!seconds || seconds === 0) return '';
-    
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (hours >= 1) {
-      return `${hours.toFixed(1)}h`;
-    } else {
-      return `${Math.floor(minutes)}m`;
-    }
-  }
-
-  function calculateCurrentDuration(task: any): number {
-    if (task.status !== 'in_progress' || !task.in_progress_since) {
-      return task.accumulated_seconds || 0;
-    }
-    
-    const startTime = new Date(task.in_progress_since).getTime();
-    const currentTime = Date.now();
-    const currentSessionSeconds = Math.floor((currentTime - startTime) / 1000);
-    
-    return (task.accumulated_seconds || 0) + currentSessionSeconds;
-  }
 
   // Update time tracking display every second for in-progress tasks
   
@@ -563,21 +542,50 @@
     }
   }
 
-  // Determine selection position classes for consecutive selections
-  function getSelectionPositionClass(taskId: string, index: number, taskSelectionState: any): string {
-    if (!taskSelectionState.selectedTaskIds.has(taskId)) return '';
+  // Consolidated event handler for TaskRow components
+  function handleTaskAction(event: CustomEvent) {
+    const { type, taskId, data } = event.detail;
     
-    const prevTask = flattenedTasks[index - 1];
-    const nextTask = flattenedTasks[index + 1];
-    
-    const prevSelected = prevTask && taskSelectionState.selectedTaskIds.has(prevTask.task.id);
-    const nextSelected = nextTask && taskSelectionState.selectedTaskIds.has(nextTask.task.id);
-    
-    if (prevSelected && nextSelected) return 'selection-middle';
-    if (prevSelected) return 'selection-bottom';
-    if (nextSelected) return 'selection-top';
-    
-    return '';
+    switch (type) {
+      case 'click':
+        handleTaskClick(data.event, taskId);
+        break;
+      case 'keydown':
+        handleTaskKeydown(data.event, taskId);
+        break;
+      case 'statusChange':
+        handleStatusChange(taskId, data.newStatus);
+        break;
+      case 'titleClick':
+        handleTitleClick(data.event, taskId, data.originalTitle);
+        break;
+      case 'toggleExpansion':
+        toggleTaskExpansion(taskId);
+        break;
+      case 'startEdit':
+        editingTaskId = taskId;
+        editingTitle = data.originalTitle;
+        // Focus will be handled by TaskRow component
+        tick().then(() => {
+          const titleInput = document.querySelector(`[data-task-id="${taskId}"] .task-title-input`) as HTMLInputElement;
+          if (titleInput) {
+            titleInput.focus();
+            titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
+          }
+        });
+        break;
+      case 'saveEdit':
+        saveTitle(taskId, data.newTitle);
+        break;
+      case 'cancelEdit':
+        cancelEdit();
+        break;
+      case 'taskUpdated':
+        handleTaskUpdated(event);
+        break;
+      default:
+        console.warn('Unknown task action type:', type);
+    }
   }
 
   // New task creation - using DRY utilities
@@ -1577,220 +1585,42 @@
   >
     {#if tasks.length > 0}
       {#each flattenedTasks as renderItem, index (renderItem.task.id)}
-        <div 
-          class="task-item"
-          class:completed={renderItem.task.status === 'successfully_completed'}
-          class:in-progress={renderItem.task.status === 'in_progress'}
-          class:cancelled={renderItem.task.status === 'cancelled' || renderItem.task.status === 'failed'}
-          class:has-subtasks={renderItem.hasSubtasks}
-          class:selected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
-          class:task-selected-for-drag={taskSelection.selectedTaskIds.has(renderItem.task.id)}
-          class:multi-select-active={taskSelection.isMultiSelectActive}
-          class:selection-top={getSelectionPositionClass(renderItem.task.id, index, taskSelection) === 'selection-top'}
-          class:selection-middle={getSelectionPositionClass(renderItem.task.id, index, taskSelection) === 'selection-middle'}
-          class:selection-bottom={getSelectionPositionClass(renderItem.task.id, index, taskSelection) === 'selection-bottom'}
-          class:task-deleting={deletingTaskIds.has(renderItem.task.id)}
-          style="--depth: {renderItem.depth || 0}"
-          data-task-id={renderItem.task.id}
-          role="button"
-          tabindex="0"
-          aria-label="Task: {renderItem.task.title}. {taskSelection.selectedTaskIds.has(renderItem.task.id) ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
-          onclick={(e) => editingTaskId === renderItem.task.id ? null : handleTaskClick(e, renderItem.task.id)}
-          onkeydown={(e) => handleTaskKeydown(e, renderItem.task.id)}
-        >
-          <!-- Disclosure Triangle (if has subtasks) -->
-          {#if renderItem.hasSubtasks}
-            <button 
-              class="disclosure-button"
-              onclick={(e) => { e.stopPropagation(); toggleTaskExpansion(renderItem.task.id); }}
-              aria-expanded={renderItem.isExpanded}
-              aria-label={renderItem.isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
-            >
-              <img 
-                src={chevronRight} 
-                alt={renderItem.isExpanded ? 'Expanded' : 'Collapsed'}
-                class="chevron-icon"
-              />
-            </button>
-          {:else}
-            <div class="disclosure-spacer"></div>
-          {/if}
-
-          <!-- Task Status Button -->
-          <div class="task-status">
-            <button 
-              class="status-emoji"
-              onclick={(e) => { 
-                e.stopPropagation();
-                const statusCycle = ['new_task', 'in_progress', 'successfully_completed'];
-                const currentIndex = statusCycle.indexOf(renderItem.task.status);
-                const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
-                handleStatusChange(renderItem.task.id, nextStatus);
-              }}
-              title="Click to change status"
-            >
-              {getTaskStatusEmoji(renderItem.task.status)}
-            </button>
-          </div>
-          
-          <!-- Task Content -->
-          <div class="task-content">
-            {#if editingTaskId === renderItem.task.id}
-              <input 
-                class="task-title task-title-input"
-                bind:value={editingTitle}
-                bind:this={titleInputElement}
-                onkeydown={titleEditHandlers.keydown}
-                onblur={titleEditHandlers.blur}
-              />
-            {:else}
-              <h5 
-                class="task-title"
-                onclick={(e) => handleTitleClick(e, renderItem.task.id, renderItem.task.title)}
-              >
-                {renderItem.task.title}
-              </h5>
-            {/if}
-            
-            <!-- Time Tracking Display -->
-            {#if renderItem.task.status === 'in_progress' || (renderItem.task.accumulated_seconds && renderItem.task.accumulated_seconds > 0)}
-              {@const _ = currentTime} <!-- Force reactivity on time changes -->
-              {@const duration = calculateCurrentDuration(renderItem.task)}
-              {@const formattedTime = formatTimeDuration(duration)}
-              {#if formattedTime}
-                <div class="time-tracking">
-                  <span class="time-icon">⏱️</span>
-                  <span class="time-duration" class:in-progress={renderItem.task.status === 'in_progress'}>
-                    {formattedTime}
-                  </span>
-                </div>
-              {/if}
-            {/if}
-          </div>
-
-          <!-- Task Metadata (Assignment & Notes) -->
-          <div class="task-metadata">
-            <!-- Assignment Indicator -->
-            {#if renderItem.task.assigned_to}
-              <div class="assigned-indicator" title="Assigned to {renderItem.task.assigned_to.name}">
-                <span class="assignee-initials">{renderItem.task.assigned_to.initials}</span>
-              </div>
-            {/if}
-
-            <!-- Notes Indicator -->
-            {#if renderItem.task.notes_count && renderItem.task.notes_count > 0}
-              <div class="notes-indicator" title="{renderItem.task.notes_count} note{renderItem.task.notes_count > 1 ? 's' : ''}">
-                <span class="notes-icon">📝</span>
-                <span class="notes-count">{renderItem.task.notes_count}</span>
-              </div>
-            {/if}
-          </div>
-
-          <!-- Task Actions -->
-          <div class="task-actions">
-            <TaskInfoPopoverHeadless 
-              task={renderItem.task}
-              {jobId}
-              {batchTaskDetails}
-              isSelected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
-              ontask-updated={handleTaskUpdated}
-            />
-          </div>
-        </div>
+        <TaskRow 
+          task={renderItem.task}
+          depth={renderItem.depth}
+          hasSubtasks={renderItem.hasSubtasks}
+          isExpanded={renderItem.isExpanded}
+          isSelected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
+          isEditing={editingTaskId === renderItem.task.id}
+          isDeleting={deletingTaskIds.has(renderItem.task.id)}
+          editingTitle={editingTitle}
+          jobId={jobId}
+          batchTaskDetails={batchTaskDetails}
+          currentTime={currentTime}
+          on:taskaction={handleTaskAction}
+        />
         
         <!-- Inline New Task Row (appears after this task if selected) -->
         {#if insertNewTaskAfter === renderItem.task.id && isShowingInlineNewTaskInput}
-          <div 
-            class="task-item task-item-add-new"
-            style="--depth: {renderItem.depth || 0}"
-          >
-            <!-- Disclosure Spacer -->
-            <div class="disclosure-spacer"></div>
-
-            <!-- Invisible Status for Spacing -->
-            <div class="task-status">
-              <div class="status-emoji">
-                <img src="/icons/plus-circle.svg" alt="Add task" style="width: 16px; height: 16px; opacity: 0.6;" />
-              </div>
-            </div>
-            
-            <!-- Task Content -->
-            <div class="task-content">
-              <input 
-                class="task-title task-title-input"
-                bind:value={inlineNewTaskTitle}
-                bind:this={inlineNewTaskInputElement}
-                placeholder="New Task"
-                onkeydown={inlineTaskManager.handlers.keydown}
-                onblur={inlineTaskManager.handlers.blur}
-                disabled={isCreatingTask}
-              />
-              {#if isCreatingTask}
-                <div class="creating-indicator">
-                  <span class="spinner">⏳</span>
-                </div>
-              {/if}
-            </div>
-
-            <!-- Task Metadata (empty for spacing) -->
-            <div class="task-metadata"></div>
-
-            <!-- Task Actions (empty - no info button) -->
-            <div class="task-actions"></div>
-          </div>
+          <NewTaskRow 
+            mode="inline-after-task"
+            depth={renderItem.depth}
+            manager={inlineTaskManager}
+            isShowing={isShowingInlineNewTaskInput}
+            title={inlineNewTaskTitle}
+          />
         {/if}
       {/each}
     {/if}
       
     <!-- Add New Task Row -->
-      <div 
-        class="task-item task-item-add-new"
-        style="--depth: 0"
-        onclick={handleNewTaskRowClick}
-      >
-        <!-- Disclosure Spacer -->
-        <div class="disclosure-spacer"></div>
-
-        <!-- Invisible Status for Spacing -->
-        <div class="task-status">
-          <div class="status-emoji">
-            <img src="/icons/plus-circle.svg" alt="Add task" style="width: 16px; height: 16px; opacity: 0.6; pointer-events: none;" />
-          </div>
-        </div>
-        
-        <!-- Task Content -->
-        <div class="task-content">
-          {#if isShowingNewTaskInput}
-            <input 
-              class="task-title task-title-input"
-              bind:value={newTaskTitle}
-              bind:this={newTaskInputElement}
-              placeholder="New Task"
-              onkeydown={newTaskManager.handlers.keydown}
-              onblur={newTaskManager.handlers.blur}
-              disabled={isCreatingTask}
-            />
-            {#if isCreatingTask}
-              <div class="creating-indicator">
-                <span class="spinner">⏳</span>
-              </div>
-            {/if}
-          {:else}
-            <h5 
-              class="task-title add-task-placeholder"
-              onclick={() => newTaskManager.show()}
-            >
-              New Task
-            </h5>
-          {/if}
-        </div>
-
-        <!-- Task Metadata (empty for spacing) -->
-        <div class="task-metadata"></div>
-
-        <!-- Task Actions (empty - no info button) -->
-        <div class="task-actions"></div>
-      </div>
+    <NewTaskRow 
+      mode="bottom-row"
+      depth={0}
+      manager={newTaskManager}
+      isShowing={isShowingNewTaskInput}
+      title={newTaskTitle}
+    />
   </div>
 
   <!-- Error dragFeedback only -->
@@ -1913,239 +1743,6 @@
     gap: 0;
   }
 
-  .task-item {
-    display: flex;
-    align-items: flex-start;
-    padding: 4px !important;
-    padding-left: calc(4px + (var(--depth, 0) * 32px)) !important;
-    border: none !important;
-    border-radius: 8px !important;
-    background: none !important;
-    background-color: transparent !important;
-    transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
-    cursor: pointer;
-    user-select: none;
-    position: relative;
-    will-change: transform;
-    outline: none; /* Remove browser focus ring */
-    overflow: hidden;
-  }
-
-  /* Task deletion animation */
-  .task-item.task-deleting {
-    height: 0 !important;
-    opacity: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    pointer-events: none;
-    transform: scale(0.95);
-  }
-
-
-  .task-item.task-selected-for-drag {
-    background-color: rgba(0, 122, 255, 0.2) !important;
-  }
-
-  /* Selection state styling */
-  .task-item.selected {
-    background-color: var(--accent-blue) !important;
-    color: white !important;
-    text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
-  }
-
-  .task-item.multi-select-active.selected {
-    background-color: var(--accent-blue) !important;
-    color: white !important;
-    text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
-  }
-
-  .task-item.task-selected-for-drag {
-    background-color: var(--accent-blue) !important;
-    color: white !important;
-    text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
-  }
-
-  /* Consecutive selection styling */
-  .task-item.selected.selection-middle {
-    border-radius: 0 !important;
-  }
-
-  .task-item.selected.selection-top {
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-  }
-
-  .task-item.selected.selection-bottom {
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-  }
-
-  .task-item.completed .task-title,
-  .task-item.completed .task-content {
-    opacity: 0.75;
-    color: #8E8E93;
-  }
-
-  .task-item.cancelled .task-title,
-  .task-item.cancelled .task-content {
-    opacity: 0.75;
-    color: #8E8E93;
-    text-decoration: line-through;
-    text-decoration-color: #8E8E93;
-    text-decoration-thickness: 1px;
-  }
-
-  .task-content {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .disclosure-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    color: var(--text-tertiary);
-    transition: transform 0.2s ease;
-  }
-
-  .disclosure-button:hover {
-    opacity: 0.8;
-  }
-
-  .chevron-icon {
-    width: 12px;
-    height: 12px;
-    opacity: 0.7;
-    transition: transform 0.2s ease;
-    transform: rotate(0deg);
-  }
-  
-  .disclosure-button[aria-expanded="true"] .chevron-icon {
-    transform: rotate(90deg);
-  }
-
-  .disclosure-spacer {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-
-  .task-status {
-    flex-shrink: 0;
-    padding-top: 2px;
-    position: relative;
-    margin-right: 8px;
-  }
-
-  .status-emoji {
-    font-size: 14px;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-
-  .status-emoji:hover {
-    opacity: 0.8;
-  }
-
-  .task-title {
-    font-size: 17px;
-    color: #FFFFFF;
-    margin: 0;
-    margin-bottom: 2px;
-    word-wrap: break-word;
-    font-weight: 400;
-    line-height: 1.3;
-    cursor: text;
-    outline: none;
-    display: inline-block;
-    min-width: 75px;
-    width: fit-content;
-    max-width: 100%;
-    user-select: text;
-  }
-
-  .task-title-input {
-    background: none;
-    border: none;
-    padding: 0;
-    font-family: inherit;
-    color: inherit;
-    outline: none;
-    width: fit-content;
-    min-width: 75px;
-    max-width: 100%;
-    resize: none;
-  }
-
-  .task-item-add-new .task-status {
-    /* visual alignment with other task rows */
-    margin-right: 8px;
-  }
-
-  .add-task-placeholder {
-    opacity: var(--placeholder-opacity, 0);
-    cursor: pointer;
-    transition: opacity 0.2s ease;
-  }
-
-  .task-item-add-new {
-    --placeholder-opacity: 0;
-  }
-
-  .task-item-add-new:hover {
-    --placeholder-opacity: 0.7;
-  }
-
-  .task-item-add-new .status-emoji {
-    /* Disable hover state entirely for add-new rows to prevent interference */
-    cursor: default;
-  }
-
-  .task-item-add-new .status-emoji:hover {
-    /* Completely disable hover effects for add-new task status emojis */
-    opacity: inherit;
-    transform: none;
-    background: none;
-    cursor: default;
-  }
-
-  .creating-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--text-secondary);
-  }
-
-  .task-actions {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    pointer-events: none;
-    opacity: 0;
-  }
-
-  .task-item:hover .task-actions {
-    opacity: 1;
-  }
-
-  .task-actions:focus-within {
-    opacity: 1;
-  }
 
 
   .task-list-footer {
@@ -2207,14 +1804,6 @@
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
-    .task-item {
-      padding: 4px !important;
-    }
-
-    .task-title {
-      font-size: 16px;
-    }
-
     .empty-state {
       padding: 32px 16px;
     }
@@ -2222,70 +1811,6 @@
     .empty-icon {
       font-size: 40px;
       margin-bottom: 12px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .task-title {
-      font-size: 15px;
-    }
-
-    .disclosure-button,
-    .disclosure-spacer {
-      width: 16px;
-      height: 16px;
-    }
-
-    .status-emoji {
-      width: 18px;
-      height: 18px;
-      font-size: 12px;
-    }
-
-  }
-
-  /* Touch support for tablets */
-  @media (hover: none) and (pointer: coarse) {
-    .task-item {
-      min-height: 44px;
-      touch-action: manipulation;
-    }
-    
-    .status-emoji {
-      min-width: 44px;
-      min-height: 44px;
-    }
-    
-    .disclosure-button {
-      min-width: 44px;
-      min-height: 44px;
-    }
-    
-    
-    .task-item::before {
-      content: '⋮⋮';
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-tertiary);
-      font-size: 16px;
-      opacity: 0.5;
-      pointer-events: none;
-    }
-  }
-
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    .task-item:hover {
-      background-color: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    
-    .task-item.selected {
-      background-color: var(--accent-blue) !important;
-      color: white !important;
-      text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
     }
   }
 
