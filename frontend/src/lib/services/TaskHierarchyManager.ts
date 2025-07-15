@@ -1,5 +1,6 @@
 import { SvelteSet } from 'svelte/reactivity';
 import { shouldShowTask } from '$lib/stores/taskFilter.svelte';
+import type { TaskFilterManager } from './TaskFilterManager';
 
 // Generic task interface that works with both generated types and position calculator types
 export interface BaseTask {
@@ -109,7 +110,32 @@ export class TaskHierarchyManager {
   }
 
   /**
-   * Organize tasks into hierarchical structure with filtering
+   * Organize tasks into hierarchical structure with filtering (using TaskFilterManager)
+   * 
+   * @param taskList - Flat list of tasks
+   * @param filterManager - TaskFilterManager instance to handle filtering
+   * @returns Hierarchical task structure
+   */
+  organizeTasksHierarchicallyWithManager(
+    taskList: BaseTask[], 
+    filterManager: TaskFilterManager
+  ): HierarchicalTask[] {
+    // Use the filter manager to determine which tasks to include
+    const tasksToInclude = new Set<string>();
+    
+    // Find all tasks that pass the filter
+    taskList.forEach(task => {
+      if (filterManager.shouldShowTask(task)) {
+        this.includeTaskAndAncestorsFromList(task.id, taskList, tasksToInclude);
+      }
+    });
+    
+    // Build hierarchy from included tasks
+    return this.buildHierarchyFromIncludedList(taskList, tasksToInclude);
+  }
+
+  /**
+   * Organize tasks into hierarchical structure with filtering (legacy method)
    * 
    * @param taskList - Flat list of tasks
    * @param filterStatuses - Array of statuses to show
@@ -198,6 +224,26 @@ export class TaskHierarchyManager {
       this.includeTaskAndAncestors(task.parent_id, taskMap, tasksToInclude);
     }
   }
+
+  /**
+   * Include a task and all its ancestors in the hierarchy (for TaskFilterManager integration)
+   */
+  private includeTaskAndAncestorsFromList(
+    taskId: string, 
+    taskList: BaseTask[], 
+    tasksToInclude: Set<string>
+  ): void {
+    const task = taskList.find(t => t.id === taskId);
+    if (!task) return;
+    
+    // Include this task
+    tasksToInclude.add(taskId);
+    
+    // Recursively include parent if it exists
+    if (task.parent_id) {
+      this.includeTaskAndAncestorsFromList(task.parent_id, taskList, tasksToInclude);
+    }
+  }
   
   /**
    * Build the final hierarchical structure from the set of included tasks
@@ -214,6 +260,53 @@ export class TaskHierarchyManager {
       const task = taskMap.get(taskId);
       if (task) {
         task.subtasks = [];
+      }
+    });
+    
+    // Build hierarchy from included tasks only
+    taskList.forEach(task => {
+      if (!tasksToInclude.has(task.id)) {
+        return; // Skip tasks not in our include set
+      }
+      
+      const taskWithSubtasks = taskMap.get(task.id)!;
+      
+      if (task.parent_id && tasksToInclude.has(task.parent_id)) {
+        // Add to parent if parent is also included
+        const parent = taskMap.get(task.parent_id)!;
+        parent.subtasks.push(taskWithSubtasks);
+      } else {
+        // This is a root task (no parent or parent not included)
+        rootTasks.push(taskWithSubtasks);
+      }
+    });
+    
+    // Sort root tasks by position
+    rootTasks.sort((a, b) => (a.position || 0) - (b.position || 0));
+    
+    // Sort subtasks by position for each parent
+    this.sortSubtasks(rootTasks);
+    
+    return rootTasks;
+  }
+
+  /**
+   * Build the final hierarchical structure from the set of included tasks (for TaskFilterManager integration)
+   */
+  private buildHierarchyFromIncludedList(
+    taskList: BaseTask[],
+    tasksToInclude: Set<string>
+  ): HierarchicalTask[] {
+    const taskMap = new Map<string, HierarchicalTask>();
+    const rootTasks: HierarchicalTask[] = [];
+    
+    // Create task map for included tasks only
+    taskList.forEach(task => {
+      if (tasksToInclude.has(task.id)) {
+        taskMap.set(task.id, {
+          ...task,
+          subtasks: []
+        });
       }
     });
     
