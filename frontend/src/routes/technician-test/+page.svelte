@@ -41,8 +41,8 @@
   ];
 
   // Local state - this simulates the optimistic updates
-  let localSelectedIds: Set<string> = new Set();
-  let isLoading = false;
+  let localSelectedIds = $state(new Set());
+  let isLoading = $state(false);
 
   // Simulated optimistic technicians derived from local state
   const optimisticTechnicians = $derived(Array.from(localSelectedIds)
@@ -74,7 +74,7 @@
   const extraCount = $derived(Math.max(0, optimisticTechnicians.length - 2));
   const hasAssignments = $derived(optimisticTechnicians.length > 0);
 
-  let basePopover: any;
+  let basePopover = $state();
 </script>
 
 <svelte:head>

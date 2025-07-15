@@ -15,13 +15,13 @@
   
   const dispatch = createEventDispatcher();
   
-  let taskDetails: any = null;
-  let loading = false;
-  let error = '';
-  let noteText = '';
-  let addingNote = false;
-  let timelineContainer: HTMLElement;
-  let currentTime = Date.now();
+  let taskDetails = $state(null);
+  let loading = $state(false);
+  let error = $state('');
+  let noteText = $state('');
+  let addingNote = $state(false);
+  let timelineContainer = $state();
+  let currentTime = $state(Date.now());
   let timer: any;
   
   // Helper function to generate user initials with proper typing
@@ -30,7 +30,7 @@
   }
   
   // Forward popover instance from BasePopover
-  let basePopover: any;
+  let basePopover = $state();
 
   // Update timer every second for in-progress tasks
   $effect(() => {

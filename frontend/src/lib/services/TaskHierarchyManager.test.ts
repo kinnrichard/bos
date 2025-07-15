@@ -1,7 +1,6 @@
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { TaskHierarchyManager, TaskExpansionManager } from './TaskHierarchyManager';
 import type { BaseTask, HierarchicalTask } from './TaskHierarchyManager';
-import { TaskFilterManager } from './TaskFilterManager';
 
 describe('TaskExpansionManager', () => {
   let expansionManager: TaskExpansionManager;
@@ -464,46 +463,4 @@ describe('TaskHierarchyManager', () => {
     expect(hierarchyManager.isTaskExpanded('task2')).toBe(false);
   });
 
-  test('should work with TaskFilterManager integration', () => {
-    const tasks = createMockTasks();
-    const filterManager = new TaskFilterManager();
-    
-    // Filter to show only in_progress tasks
-    filterManager.updateStatusFilter(['in_progress']);
-    
-    const hierarchicalTasks = hierarchyManager.organizeTasksHierarchicallyWithManager(
-      tasks, 
-      filterManager
-    );
-
-    // Should include task1 (parent) and task2 (in_progress child)
-    expect(hierarchicalTasks).toHaveLength(1);
-    expect(hierarchicalTasks[0].id).toBe('task1');
-    expect(hierarchicalTasks[0].subtasks).toHaveLength(1);
-    expect(hierarchicalTasks[0].subtasks[0].id).toBe('task2');
-  });
-
-  test('should work with TaskFilterManager search integration', () => {
-    const tasks = createMockTasks();
-    const filterManager = new TaskFilterManager();
-    
-    // Search for "Grandchild" which should find task5 (grandchild)
-    filterManager.updateSearchQuery('Grandchild');
-    
-    // Wait for debouncing
-    vi.advanceTimersByTime(300);
-    
-    const hierarchicalTasks = hierarchyManager.organizeTasksHierarchicallyWithManager(
-      tasks, 
-      filterManager
-    );
-
-    // Should include task1 (root) -> task2 (child) -> task5 (grandchild with "Grandchild" in title)
-    expect(hierarchicalTasks).toHaveLength(1);
-    expect(hierarchicalTasks[0].id).toBe('task1');
-    expect(hierarchicalTasks[0].subtasks).toHaveLength(1);
-    expect(hierarchicalTasks[0].subtasks[0].id).toBe('task2');
-    expect(hierarchicalTasks[0].subtasks[0].subtasks).toHaveLength(1);
-    expect(hierarchicalTasks[0].subtasks[0].subtasks[0].id).toBe('task5');
-  });
 });

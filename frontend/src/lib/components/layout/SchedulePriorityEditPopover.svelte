@@ -12,17 +12,17 @@
     initialJob?: PopulatedJob | null;
   } = $props();
 
-  let basePopover: any;
+  let basePopover = $state();
 
   // Use the initial job directly (reactive through layout store)
   const job = $derived(initialJob);
 
   // Local form state
-  let localPriority = '';
-  let localStartDate = '';
-  let localStartTime = '';
-  let localDueDate = '';
-  let localDueTime = '';
+  let localPriority = $state('');
+  let localStartDate = $state('');
+  let localStartTime = $state('');
+  let localDueDate = $state('');
+  let localDueTime = $state('');
 
   // Keep local state in sync with job data
   $effect(() => {
