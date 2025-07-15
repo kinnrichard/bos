@@ -1,5 +1,4 @@
 
-import { getTaskStatusString, getTaskStatusInteger } from '$lib/utils/enum-conversions';
 
 // Task status filter store - proper Svelte 5 pattern
 export const taskFilter = $state({
@@ -21,9 +20,8 @@ export function shouldShowTask(task: any, statuses: string[], showDeleted: boole
   // If no status filters selected, show all tasks (that match deletion filter)
   if (statuses.length === 0) return true;
   
-  // Convert task status integer to string for comparison
-  const taskStatusString = getTaskStatusString(task.status);
-  return statuses.includes(taskStatusString);
+  // Task status is now stored as string, compare directly
+  return statuses.includes(task.status);
 }
 
 // Filter function - returns a function that checks if a task should be visible
