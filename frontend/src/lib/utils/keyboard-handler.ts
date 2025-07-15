@@ -14,6 +14,7 @@ export interface KeyboardActions {
   deleteSelected: () => void;
   cancelEditing: () => void;
   scrollToItem?: (id: string) => void;
+  onItemActivate?: (itemId: string, event: KeyboardEvent) => void;
 }
 
 export interface KeyboardBehavior {
@@ -159,6 +160,16 @@ export function KeyboardHandler(config: KeyboardConfig) {
   }
 
   /**
+   * Handle item-level keyboard events (Enter/Space for activation)
+   */
+  function handleItemKeydown(event: KeyboardEvent, itemId: string) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      actions.onItemActivate?.(itemId, event);
+    }
+  }
+
+  /**
    * Main keydown handler
    */
   function handleKeydown(event: KeyboardEvent) {
@@ -215,6 +226,7 @@ export function KeyboardHandler(config: KeyboardConfig) {
   // Return handler object
   return {
     handleKeydown,
+    handleItemKeydown,
     navigate: handleArrowNavigation,
     cleanup: () => {
       // Future: cleanup any internal state if needed

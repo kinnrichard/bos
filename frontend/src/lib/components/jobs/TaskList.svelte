@@ -32,11 +32,6 @@
   let isDragging = false;
   let dragFeedback = $state('');
   
-  // Development alerts state
-  let developmentAlerts = $state([]);
-  
-  // Development environment detection
-  const isDevelopment = import.meta.env.DEV || import.meta.env.NODE_ENV === 'development';
     
   // Outside click and keyboard handling for task deselection
   let taskListContainer: HTMLElement;
@@ -325,7 +320,17 @@
           taskSelectionActions.clearSelection();
         }
       },
-      scrollToItem: scrollTaskIntoView
+      scrollToItem: scrollTaskIntoView,
+      onItemActivate: (taskId, event) => {
+        const mockEvent = {
+          stopPropagation: () => {},
+          shiftKey: event.shiftKey,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey
+        } as MouseEvent;
+        
+        handleTaskClick(mockEvent, taskId);
+      }
     },
     
     behavior: {
@@ -424,22 +429,6 @@
     }
   }
 
-  // Keyboard handler for accessibility
-  function handleTaskKeydown(event: KeyboardEvent, taskId: string) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      
-      const mockEvent = {
-        stopPropagation: () => {},
-        shiftKey: event.shiftKey,
-        ctrlKey: event.ctrlKey,
-        metaKey: event.metaKey
-      } as MouseEvent;
-      
-      handleTaskClick(mockEvent, taskId);
-    }
-  }
-
   // Consolidated event handler for TaskRow components
   function handleTaskAction(event: CustomEvent) {
     const { type, taskId, data } = event.detail;
@@ -449,7 +438,7 @@
         handleTaskClick(data.event, taskId);
         break;
       case 'keydown':
-        handleTaskKeydown(data.event, taskId);
+        keyboardHandler.handleItemKeydown(data.event, taskId);
         break;
       case 'statusChange':
         handleStatusChange(taskId, data.newStatus);
@@ -1111,40 +1100,6 @@
   
   // Removed comparison functions - ReactiveRecord handles all synchronization
   
-  // Development alert system
-  function showDevelopmentAlert(alert: {
-    type: string;
-    message: string;
-    details?: any;
-    actions?: Array<{label: string, action: () => void}>;
-  }) {
-    if (!isDevelopment) return;
-    
-    const alertWithId = {
-      ...alert,
-      id: `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now()
-    };
-    
-    developmentAlerts = [...developmentAlerts, alertWithId];
-    
-    // Auto-dismiss after 10 seconds
-    setTimeout(() => {
-      dismissDevelopmentAlert(alertWithId.id);
-    }, 10000);
-  }
-  
-  function dismissDevelopmentAlert(alertId: string) {
-    developmentAlerts = developmentAlerts.filter(alert => alert.id !== alertId);
-  }
-  
-  function viewConsoleDetails() {
-    console.log('📋 Check the console above for detailed position mismatch debugging information');
-  }
-  
-  function refreshTasks() {
-    window.location.reload();
-  }
 
   // Recursive function to render task tree
   function renderTaskTree(task: any, depth: number): Array<{
@@ -1350,36 +1305,6 @@
   {/if}
 </div>
 
-<!-- Development Alerts (only visible in development) -->
-{#if isDevelopment && developmentAlerts.length > 0}
-  <div class="development-alerts">
-    {#each developmentAlerts as alert (alert.id)}
-      <div class="development-alert" class:position-mismatch={alert.type === 'position-mismatch'}>
-        <div class="alert-header">
-          <div class="alert-icon">🚨</div>
-          <div class="alert-message">{alert.message}</div>
-          <button class="alert-dismiss" onclick={() => dismissDevelopmentAlert(alert.id)}>×</button>
-        </div>
-        
-        {#if alert.details?.patternAnalysis}
-          <div class="alert-details">
-            <strong>Pattern:</strong> {alert.details.patternAnalysis}
-          </div>
-        {/if}
-        
-        {#if alert.actions}
-          <div class="alert-actions">
-            {#each alert.actions as action}
-              <button class="alert-action-button" onclick={action.action}>
-                {action.label}
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    {/each}
-  </div>
-{/if}
 
 <DeletionModal
   open={isShowingDeleteConfirmation}
@@ -1503,121 +1428,5 @@
   }
 
 
-  /* Development Alerts */
-  .development-alerts {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    max-width: 400px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    pointer-events: none;
-  }
-
-  .development-alert {
-    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-    border: 2px solid #ff4757;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 8px 32px rgba(255, 75, 87, 0.3);
-    color: white;
-    font-size: 14px;
-    line-height: 1.4;
-    pointer-events: auto;
-    animation: slideInRight 0.3s ease-out;
-    backdrop-filter: blur(10px);
-  }
-
-  .development-alert.position-mismatch {
-    background: linear-gradient(135deg, #ffa726, #ff9800);
-    border-color: #ff8f00;
-    box-shadow: 0 8px 32px rgba(255, 152, 0, 0.3);
-  }
-
-  .alert-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 8px;
-  }
-
-  .alert-icon {
-    font-size: 18px;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
-
-  .alert-message {
-    flex: 1;
-    font-weight: 600;
-  }
-
-  .alert-dismiss {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 20px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  .alert-dismiss:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .alert-details {
-    margin: 8px 0;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
-    font-size: 13px;
-    border-left: 3px solid rgba(255, 255, 255, 0.3);
-  }
-
-  .alert-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .alert-action-button {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .alert-action-button:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
-    transform: translateY(-1px);
-  }
-
-  @keyframes slideInRight {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
 
 </style>
