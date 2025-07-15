@@ -4,10 +4,10 @@
   import { authService } from '$lib/api/auth';
   import type { ApiError } from '$lib/types/api';
 
-  let email = '';
-  let password = '';
-  let loading = false;
-  let error: string | null = null;
+  let email = $state('');
+  let password = $state('');
+  let loading = $state(false);
+  let error = $state<string | null>(null);
 
   // Get return_to parameter for redirect after login
   const returnTo = $derived($page.url.searchParams.get('return_to') || '/jobs');

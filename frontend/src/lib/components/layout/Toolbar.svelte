@@ -13,9 +13,9 @@
   let { currentJob }: { currentJob?: PopulatedJob | null } = $props();
 
   // Search functionality
-  let searchQuery = '';
-  let searchFocused = false;
-  let filterPopover: any;
+  let searchQuery = $state('');
+  let searchFocused = $state(false);
+  let filterPopover = $state<any>(null);
 
   function handleSearch() {
     if (searchQuery.trim()) {

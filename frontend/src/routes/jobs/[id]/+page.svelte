@@ -14,12 +14,6 @@
   // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
   const jobId = $derived($page.params.id);
   
-  // Debug job ID extraction
-  $effect(() => {
-    console.log('[JobPage] URL params:', $page.params);
-    console.log('[JobPage] Extracted jobId:', jobId);
-    console.log('[JobPage] Page route:', $page.route?.id);
-  });
   
   // ✨ Epic-009: Use ReactiveJob with Rails-style includes()
   const jobQuery = $derived(jobId ? ReactiveJob.includes('client', 'tasks', 'jobAssignments').find(jobId) : null);
@@ -34,18 +28,6 @@
   const isLoading = $derived(jobQuery?.isLoading ?? true);
   const error = $derived(jobQuery?.error);
 
-  // Track Zero.js query refresh cycles specifically  
-  $effect(() => {
-    if (jobQuery && job) {
-      console.log('[JobPage] Zero.js query data update detected:', {
-        jobId: job.id,
-        status: job.status,
-        queryIsLoading: isLoading,
-        timestamp: Date.now(),
-        queryRefreshCycle: true
-      });
-    }
-  });
   
   // ✨ NOTES: Will be loaded via job associations for now
   // TODO: Implement separate NotesReactive query when needed
@@ -62,63 +44,8 @@
   
   // ✨ USE $effect FOR SIDE EFFECTS (NOT REACTIVE STATEMENTS)  
   $effect(() => {
-    console.log('[JobPage] Effect triggered - jobId:', jobId, 'jobQuery available:', !!jobQuery);
-    
-    if (jobQuery) {
-      console.log('[JobPage] JobQuery state - loading:', isLoading, 'error:', !!error, 'data available:', !!job);
-      console.log('[JobPage] Raw jobQuery.data:', jobQuery.data);
-      console.log('[JobPage] Raw jobQuery.isLoading:', jobQuery.isLoading);
-      console.log('[JobPage] Raw jobQuery.error:', jobQuery.error);
-      
-      // NEW: Track query data changes specifically
-      if (job) {
-        console.log('[JobPage] Query returned job with status:', {
-          jobId: job.id,
-          status: job.status,
-          timestamp: Date.now(),
-          isNewJobObject: true // This will help us see if objects are being replaced
-        });
-      }
-    } else {
-      console.log('[JobPage] No jobQuery - jobId present:', !!jobId);
-    }
-    
-    if (job) {
-      // ✨ USE $state.snapshot() TO SAFELY LOG REACTIVE STATE
-      const jobSnapshot = $state.snapshot(job);
-      console.log('[JobPage] Job data loaded with relationships:', {
-        title: jobSnapshot.title,
-        hasClient: !!jobSnapshot.client,
-        clientName: jobSnapshot.client?.name,
-        hasTasks: !!jobSnapshot.tasks,
-        tasksCount: jobSnapshot.tasks?.length || 0,
-        hasJobAssignments: !!jobSnapshot.jobAssignments,
-        techniciansCount: jobSnapshot.jobAssignments?.length || 0,
-        technicians: jobSnapshot.jobAssignments?.map((ja: any) => ja.user?.name).filter(Boolean) || []
-      });
-      
-      // Detailed debugging for missing relationships
-      if (!jobSnapshot.tasks) {
-        console.warn('[JobPage] ⚠️ Tasks relationship not loaded - check .includes() configuration');
-      }
-      if (!jobSnapshot.jobAssignments) {
-        console.warn('[JobPage] ⚠️ JobAssignments relationship not loaded - check .includes() configuration');
-      }
-      
-      // ✨ USE $inspect FOR DEBUGGING REACTIVE STATE IN SVELTE 5
-      $inspect('[JobPage] Zero job structure:', job);
-      
-      // Note: Job is now passed directly to AppLayout - no need for layout store
-    } else if (!isLoading && !error) {
-      console.warn('[JobPage] Job is null but not loading and no error - possible query issue');
-    }
-    
     if (error) {
       console.error('[JobPage] Job loading error:', error.message);
-    }
-    
-    if (notes && notes.length > 0) {
-      console.log('[JobPage] Notes loaded progressively:', notes.length);
     }
   });
 
@@ -131,16 +58,12 @@
 
   // Handle retry - ReactiveQuery automatically syncs, manual refresh available
   function handleRetry() {
-    console.log('[JobPage] Retry requested for jobQuery');
     if (jobQuery) {
       try {
         jobQuery.refresh();
-        console.log('[JobPage] JobQuery refresh triggered successfully');
       } catch (error) {
         console.error('[JobPage] Error during jobQuery refresh:', error);
       }
-    } else {
-      console.warn('[JobPage] JobQuery not available for refresh - jobId may be missing');
     }
   }
 </script>

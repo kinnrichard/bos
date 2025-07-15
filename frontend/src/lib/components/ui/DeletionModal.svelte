@@ -18,9 +18,9 @@
   } = $props();
 
   // Focus management
-  let modalContainerElement: HTMLElement;
-  let deleteButtonElement: HTMLButtonElement;
-  let previouslyFocusedElement: HTMLElement | null = null;
+  let modalContainerElement = $state<HTMLElement>();
+  let deleteButtonElement = $state<HTMLButtonElement>();
+  let previouslyFocusedElement = $state<HTMLElement | null>(null);
 
   // Store focus when modal opens
   $effect(() => {

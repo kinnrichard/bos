@@ -7,9 +7,9 @@
     enabled = true
   } = $props();
 
-  let portalContainer: HTMLElement;
-  let targetElement: HTMLElement;
-  let contentElement: HTMLElement;
+  let portalContainer = $state<HTMLElement>();
+  let targetElement = $state<HTMLElement>();
+  let contentElement = $state<HTMLElement>();
 
   onMount(() => {
     // Resolve target element

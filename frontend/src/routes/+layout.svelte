@@ -17,16 +17,10 @@
 		
 		try {
 			initializationStatus = 'pending';
-			console.log('[Zero] Starting Zero client initialization...');
 			
 			await initZero();
 			
 			initializationStatus = 'success';
-			console.log('[Zero] Client initialized successfully');
-			
-			// Log initial state for debugging
-			const state = getZeroState();
-			console.log('[Zero] Initial state:', state);
 			
 		} catch (error) {
 			initializationStatus = 'error';

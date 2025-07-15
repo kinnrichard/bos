@@ -27,8 +27,8 @@
     portal: null // Use portal for proper event handling
   });
 
-  let buttonElement: HTMLElement;
-  let panelElement: HTMLElement;
+  let buttonElement = $state<HTMLElement>();
+  let panelElement = $state<HTMLElement>();
   
   // Arrow positioning state
   let arrowPosition: { top: number; left: number } = { top: 0, left: 0 };
