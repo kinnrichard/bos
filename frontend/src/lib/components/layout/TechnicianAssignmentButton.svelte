@@ -4,12 +4,11 @@
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { getZeroContext } from '$lib/zero-context.svelte';
   
-  // Use proper ReactiveQuery class for modern Svelte 5 reactivity
-  import { ReactiveQuery, ReactiveQueryOne } from '$lib/zero/reactive-query.svelte';
+  // Epic-009: Use ReactiveRecord models for consistent architecture
   import { ReactiveJob } from '$lib/models/reactive-job';
+  import { ReactiveUser } from '$lib/models/reactive-user';
   import type { UserData } from '$lib/models/types/user-data';
   import type { JobData } from '$lib/models/types/job-data';
-  import { getZero } from '$lib/zero/zero-client';
   import { JobAssignment } from '$lib/models/job-assignment';
   import { debugTechAssignment } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
@@ -33,19 +32,11 @@
 
   let popover = $state();
   
-  // Use proper ReactiveQuery class for users data
-  const usersQuery = new ReactiveQuery<UserData>(
-    () => {
-      const zero = getZero();
-      if (!zero) return null;
-      return zero.query.users.orderBy('created_at', 'desc');
-    },
-    [], // default value
-    '5m' // TTL
-  );
-  // TODO: Need to implement user lookup functionality
-  // const userLookup = useUserLookup();
-  const jobQuery = $derived(jobId ? ReactiveJob.includes('jobAssignments').find(jobId) : null);
+  // Epic-009: Use ReactiveUser model for consistent architecture
+  const usersQuery = ReactiveUser.all().orderBy('name', 'asc').all();
+  
+  // Epic-009: Enhanced job query to include user relationships for better data loading
+  const jobQuery = $derived(jobId ? ReactiveJob.includes('jobAssignments.user').find(jobId) : null);
   
   // Zero uses direct mutations instead of TanStack's createMutation pattern
   let isLoading = $state(false);
@@ -57,7 +48,8 @@
   
   
   // Use populated technicians from job.jobAssignments relationship
-  const assignedTechnicians = $derived(job?.jobAssignments?.map(a => a.user) || initialTechnicians);
+  // Note: TypeScript doesn't know about includes() relationship data, but runtime has it
+  const assignedTechnicians = $derived((job as any)?.jobAssignments?.map((a: any) => a.user) || initialTechnicians);
   const assignedTechniciansForDisplay = $derived(assignedTechnicians);
   
   const errorMessage = $derived(getPopoverErrorMessage(error));
@@ -96,7 +88,7 @@
         debugTechAssignment('Created assignment for %s on job %s', user.name, jobId);
       } else {
         // Find and delete existing job assignment
-        const existingAssignment = job?.jobAssignments?.find(a => a.user_id === user.id);
+        const existingAssignment = (job as any)?.jobAssignments?.find((a: any) => a.user_id === user.id);
         if (existingAssignment?.id) {
           await JobAssignment.destroy(existingAssignment.id);
           debugTechAssignment('Deleted assignment for %s on job %s', user.name, jobId);
@@ -160,10 +152,10 @@
         loading={usersQuery.isLoading}
         maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
         onOptionClick={(user, event) => {
-          const isCurrentlySelected = job?.jobAssignments?.some(a => a.user_id === user.id) || false;
+          const isCurrentlySelected = (job as any)?.jobAssignments?.some((a: any) => a.user_id === user.id) || false;
           handleUserToggle(user, !isCurrentlySelected);
         }}
-        isSelected={(option) => job?.jobAssignments?.some(a => a.user_id === option.id) || false}
+        isSelected={(option) => (job as any)?.jobAssignments?.some((a: any) => a.user_id === option.id) || false}
       >
         <svelte:fragment slot="option-content" let:option>
           <div class="technician-avatar popover-option-left-content">
@@ -173,7 +165,7 @@
           
           <!-- Checkmark bound to actual assignment data -->
           <div class="popover-checkmark-container">
-            {#if job?.jobAssignments?.some(a => a.user_id === option.id)}
+            {#if (job as any)?.jobAssignments?.some((a: any) => a.user_id === option.id)}
               <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
             {/if}
           </div>
