@@ -591,7 +591,7 @@
     // Only activate if not already in input mode
     if (!isShowingNewTaskInput) {
       event.stopPropagation();
-      newTaskManager.show(event);
+      newTaskManager.show();
     }
   }
 
