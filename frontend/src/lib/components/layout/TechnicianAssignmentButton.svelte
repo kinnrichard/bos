@@ -1,5 +1,5 @@
 <script lang="ts">
-  import HeadlessPopoverButton from '$lib/components/ui/HeadlessPopoverButton.svelte';
+  import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { getZeroContext } from '$lib/zero-context.svelte';
@@ -30,7 +30,7 @@
     initialTechnicians?: Array<{id: string}>;
   } = $props();
 
-  let popover = $state();
+  let basePopover = $state();
   
   // Epic-009: Use ReactiveUser model for consistent architecture
   const usersQuery = ReactiveUser.all().orderBy('name', 'asc').all();
@@ -109,39 +109,41 @@
   const hasAssignments = $derived(assignedTechniciansForDisplay.length > 0);
 </script>
 
-<HeadlessPopoverButton 
-  bind:popover
-  title={hasAssignments ? `Technicians: ${assignedTechniciansForDisplay.map(t => t?.name).filter(Boolean).join(', ')}` : 'Technicians'}
-  error={errorMessage}
-  loading={isLoading}
+<BasePopover 
+  bind:popover={basePopover}
+  preferredPlacement="bottom"
   panelWidth="max-content"
-  panelPosition="center"
-  topOffset={POPOVER_CONSTANTS.DEFAULT_TOP_OFFSET}
-  contentPadding={POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING}
-  buttonClass={hasAssignments ? 'has-assignments' : ''}
 >
-  <svelte:fragment slot="button-content">
-    {#if hasAssignments}
-      <!-- Show assigned technician avatars -->
-      <div class="assigned-avatars">
-        {#each displayTechnicians as technician}
-          <UserAvatar user={technician} size="xs" />
-        {/each}
-        {#if extraCount > 0}
-          <div class="extra-count">+{extraCount}</div>
-        {/if}
-      </div>
-    {:else}
-      <!-- Show add-person icon when no assignments -->
-      <img src={POPOVER_CONSTANTS.ADD_PERSON_ICON} alt="Assign technicians" class="add-person-icon" />
-    {/if}
+  <svelte:fragment slot="trigger" let:popover>
+    <button 
+      class="popover-button"
+      class:has-assignments={hasAssignments}
+      use:popover.button
+      title={hasAssignments ? `Technicians: ${assignedTechniciansForDisplay.map(t => t?.name).filter(Boolean).join(', ')}` : 'Technicians'}
+      onclick={(e) => e.stopPropagation()}
+    >
+      {#if hasAssignments}
+        <!-- Show assigned technician avatars -->
+        <div class="assigned-avatars">
+          {#each displayTechnicians as technician}
+            <UserAvatar user={technician} size="xs" />
+          {/each}
+          {#if extraCount > 0}
+            <div class="extra-count">+{extraCount}</div>
+          {/if}
+        </div>
+      {:else}
+        <!-- Show add-person icon when no assignments -->
+        <img src={POPOVER_CONSTANTS.ADD_PERSON_ICON} alt="Assign technicians" class="add-person-icon" />
+      {/if}
+    </button>
   </svelte:fragment>
 
-  <svelte:fragment slot="panel-content" let:error let:loading>
+  <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
     <h3 class="popover-title">Assigned To</h3>
     
-    {#if error}
-      <div class="popover-error-message">{error}</div>
+    {#if errorMessage}
+      <div class="popover-error-message">{errorMessage}</div>
     {/if}
 
     {#if usersQuery.isLoading}
@@ -172,16 +174,38 @@
         </svelte:fragment>
       </PopoverOptionList>
     {/if}
-  </svelte:fragment>
-</HeadlessPopoverButton>
+  </div>
+</BasePopover>
 
 <style>
-  /* Override HeadlessPopoverButton styles for dynamic button sizing */
-  :global(.popover-button.has-assignments) {
-    border-radius: 18px !important;
-    width: auto !important;
-    min-width: 36px !important;
-    padding: 0 6px !important;
+  .popover-button {
+    width: 36px;
+    height: 36px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    padding: 0;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
+  }
+
+  .popover-button:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--accent-blue);
+  }
+
+  /* Override button styles for dynamic button sizing when has assignments */
+  .popover-button.has-assignments {
+    border-radius: 18px;
+    width: auto;
+    min-width: 36px;
+    padding: 0 6px;
   }
 
   .assigned-avatars {
@@ -208,6 +232,20 @@
     width: 20px;
     height: 20px;
     opacity: 0.7;
+  }
+
+  /* Accessibility improvements */
+  @media (prefers-reduced-motion: reduce) {
+    .popover-button {
+      transition: none;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .popover-button {
+      border-width: 2px;
+    }
   }
 
   /* Panel content styling */

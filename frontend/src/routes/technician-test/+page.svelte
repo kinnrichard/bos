@@ -1,6 +1,6 @@
 <script lang="ts">
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
-  import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
+  import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import type { User } from '$lib/types/job';
 
@@ -74,7 +74,7 @@
   const extraCount = $derived(Math.max(0, optimisticTechnicians.length - 2));
   const hasAssignments = $derived(optimisticTechnicians.length > 0);
 
-  let popover: any;
+  let basePopover: any;
 </script>
 
 <svelte:head>
@@ -89,37 +89,42 @@
     <h2>Current Implementation (Fixed)</h2>
     <p>Checkmarks should update immediately with button content - no lag!</p>
     
-    <BasePopoverButton 
-      bind:popover
-      title={hasAssignments ? `Technicians: ${optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Technicians'}
-      loading={isLoading}
+    <BasePopover 
+      bind:popover={basePopover}
+      preferredPlacement="bottom"
       panelWidth="max-content"
-      panelPosition="center"
-      buttonClass={hasAssignments ? 'has-assignments' : ''}
     >
-      <svelte:fragment slot="button-content">
-        {#if hasAssignments}
-          <!-- Show assigned technician avatars -->
-          <div class="assigned-avatars">
-            {#each displayTechnicians as technician}
-              <UserAvatar user={technician} size="xs" />
-            {/each}
-            {#if extraCount > 0}
-              <div class="extra-count">+{extraCount}</div>
-            {/if}
-          </div>
-        {:else}
-          <!-- Show add-person icon when no assignments -->
-          <div class="add-person-placeholder">Add</div>
-        {/if}
+      <svelte:fragment slot="trigger" let:popover>
+        <button 
+          class="popover-button"
+          class:has-assignments={hasAssignments}
+          use:popover.button
+          title={hasAssignments ? `Technicians: ${optimisticTechnicians.map(t => t?.attributes?.name).filter(Boolean).join(', ')}` : 'Technicians'}
+          onclick={(e) => e.stopPropagation()}
+        >
+          {#if hasAssignments}
+            <!-- Show assigned technician avatars -->
+            <div class="assigned-avatars">
+              {#each displayTechnicians as technician}
+                <UserAvatar user={technician} size="xs" />
+              {/each}
+              {#if extraCount > 0}
+                <div class="extra-count">+{extraCount}</div>
+              {/if}
+            </div>
+          {:else}
+            <!-- Show add-person icon when no assignments -->
+            <div class="add-person-placeholder">Add</div>
+          {/if}
+        </button>
       </svelte:fragment>
 
-      <svelte:fragment slot="panel-content" let:loading>
+      <div style="padding: 16px;">
         <h3 class="assignment-title">Assigned To</h3>
         
         <PopoverOptionList
           options={mockUsers}
-          loading={loading}
+          loading={isLoading}
           onOptionClick={(user) => {
             const isCurrentlySelected = localSelectedIds.has(user.id);
             handleUserToggle(user, isCurrentlySelected);
@@ -141,8 +146,8 @@
             </div>
           </svelte:fragment>
         </PopoverOptionList>
-      </svelte:fragment>
-    </BasePopoverButton>
+      </div>
+    </BasePopover>
   </div>
 
   <div class="debug-section">
@@ -200,11 +205,33 @@
   }
 
   /* Button styling */
-  :global(.popover-button.has-assignments) {
-    border-radius: 18px !important;
-    width: auto !important;
-    min-width: 36px !important;
-    padding: 0 6px !important;
+  .popover-button {
+    width: 36px;
+    height: 36px;
+    background-color: var(--bg-secondary, #f8f9fa);
+    border: 1px solid var(--border-primary, #ccc);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    padding: 0;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
+  }
+
+  .popover-button:hover {
+    background-color: var(--bg-tertiary, #e9ecef);
+    border-color: var(--accent-blue, #007bff);
+  }
+
+  .popover-button.has-assignments {
+    border-radius: 18px;
+    width: auto;
+    min-width: 36px;
+    padding: 0 6px;
   }
 
   .assigned-avatars {

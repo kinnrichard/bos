@@ -1136,7 +1136,7 @@
       return targetItem?.task.id;
     }
     
-    // For reordering, determine parent based on the depth we're inserting at
+    // For reordering, determine parent based on the depth we're inserting at.
     // If dropping at the very beginning, it's root level
     if (dropIndex === 0) {
       return undefined;
@@ -1174,8 +1174,7 @@
       return previousItem.task.parent_id || null;
     }
     
-    // If target is at same/shallower depth than previous,
-    // we're inserting at the same level as the previous item
+    // If target is at same/shallower depth than previous, we're inserting at the same level as the previous item
     return previousItem.task.parent_id || null;
   }
   
@@ -1218,6 +1217,7 @@
   }
 
   // Legacy position calculation for client-side prediction (backward compatibility)
+  // TODO: This needs to go
   function calculatePositionFromTarget(dropZone: DropZoneInfo | null, parentId: string | null, draggedTaskIds: string[]): number {
     // Use relative positioning and convert to integer for client prediction
     const relativePosition = calculateRelativePosition(dropZone, parentId, draggedTaskIds);
@@ -1356,8 +1356,6 @@
     gap: 0;
   }
 
-
-
   .task-list-footer {
     margin-top: 20px;
     padding: 12px;
@@ -1414,7 +1412,6 @@
     transition: none !important;
   }
 
-
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .empty-state {
@@ -1426,7 +1423,5 @@
       margin-bottom: 12px;
     }
   }
-
-
 
 </style>

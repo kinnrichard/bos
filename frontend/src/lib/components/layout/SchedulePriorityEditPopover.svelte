@@ -1,5 +1,5 @@
 <script lang="ts">
-  import BasePopoverButton from '$lib/components/ui/BasePopoverButton.svelte';
+  import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import FormInput from '$lib/components/ui/FormInput.svelte';
   import FormSelect from '$lib/components/ui/FormSelect.svelte';
   import type { PopulatedJob } from '$lib/types/job';
@@ -12,7 +12,7 @@
     initialJob?: PopulatedJob | null;
   } = $props();
 
-  let popover: any;
+  let basePopover: any;
 
   // Use the initial job directly (reactive through layout store)
   const job = $derived(initialJob);
@@ -83,18 +83,23 @@
   }
 </script>
 
-<BasePopoverButton
-  bind:popover
-  title="Schedule and Priority"
+<BasePopover
+  bind:popover={basePopover}
+  preferredPlacement="bottom"
   panelWidth="280px"
-  panelPosition="right"
-  contentPadding="20px"
 >
-  <svelte:fragment slot="button-content">
-    <img src="/icons/calendar-add.svg" alt="Schedule" class="calendar-icon" />
+  <svelte:fragment slot="trigger" let:popover>
+    <button 
+      class="popover-button"
+      use:popover.button
+      title="Schedule and Priority"
+      onclick={(e) => e.stopPropagation()}
+    >
+      <img src="/icons/calendar-add.svg" alt="Schedule" class="calendar-icon" />
+    </button>
   </svelte:fragment>
 
-  <svelte:fragment slot="panel-content">
+  <div style="padding: 20px;">
     <h3 class="schedule-title">Schedule & Priority</h3>
 
     <form class="schedule-form" onsubmit={(e) => { e.preventDefault(); handleSave(); }}>
@@ -171,10 +176,32 @@
         </button>
       </div>
     </form>
-  </svelte:fragment>
-</BasePopoverButton>
+  </div>
+</BasePopover>
 
 <style>
+  .popover-button {
+    width: 36px;
+    height: 36px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    padding: 0;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
+  }
+
+  .popover-button:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--accent-blue);
+  }
+
   .calendar-icon {
     width: 20px;
     height: 20px;
@@ -270,13 +297,19 @@
     cursor: not-allowed;
   }
 
-  /* Responsive adjustments handled by BasePopoverButton */
-
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
+    .popover-button,
     .cancel-button,
     .save-button {
       transition: none;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .popover-button {
+      border-width: 2px;
     }
   }
 </style>
