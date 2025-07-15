@@ -49,6 +49,11 @@
   }
 
   function handleTaskKeydown(event: KeyboardEvent) {
+    // Don't handle keyboard events when task is being edited
+    if (isEditing) {
+      return;
+    }
+    
     dispatch('taskaction', {
       type: 'keydown',
       taskId: task.id,
@@ -95,9 +100,11 @@
   }
 
   function handleTitleKeydown(event: KeyboardEvent) {
+    // Always prevent keyboard events from bubbling when editing title
+    event.stopPropagation();
+    
     if (event.key === 'Enter') {
       event.preventDefault();
-      event.stopPropagation(); // Prevent event from bubbling to TaskList
       const newTitle = titleElement?.textContent || '';
       dispatch('taskaction', {
         type: 'saveEdit',
@@ -110,7 +117,6 @@
       }
     } else if (event.key === 'Escape') {
       event.preventDefault();
-      event.stopPropagation(); // Prevent event from bubbling to TaskList
       if (titleElement) {
         titleElement.textContent = originalTitle;
         titleElement.blur();
@@ -120,6 +126,7 @@
         taskId: task.id
       });
     }
+    // For all other keys (including spacebar), allow default behavior but prevent bubbling
   }
 
   function handleTitleBlur() {

@@ -35,17 +35,12 @@
   let isDragging = false;
   let dragFeedback = $state('');
   
-  
   // Development alerts state
   let developmentAlerts = $state([]);
   
   // Development environment detection
   const isDevelopment = import.meta.env.DEV || import.meta.env.NODE_ENV === 'development';
-  
-  // Multi-select state - will be computed from flattenedTasks
-  
-  // Removed optimistic updates - ReactiveRecord handles UI synchronization
-  
+    
   // Outside click and keyboard handling for task deselection
   let taskListContainer: HTMLElement;
 
@@ -104,8 +99,8 @@
 
   function handleKeydown(event: KeyboardEvent) {
     // Don't handle keys if actively editing
+    const activeElement = document.activeElement;
     const isEditing = editingTaskId !== null || isShowingInlineNewTaskInput;
-
     // ESC key handling
     if (event.key === 'Escape') {
       if (isShowingInlineNewTaskInput) {
