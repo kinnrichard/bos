@@ -1,24 +1,20 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { getTaskStatusEmoji } from '$lib/config/emoji';
   import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
-  import { taskSelection, getSelectedTaskIds, taskSelectionActions, type TaskSelectionState } from '$lib/stores/taskSelection.svelte';
-  import { tasksService } from '$lib/api/tasks';
+  import { taskSelection, taskSelectionActions } from '$lib/stores/taskSelection.svelte';
   import { Task as TaskModel } from '$lib/models/task';
-  import { nativeDrag, addDropIndicator, addNestHighlight, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
+  import { nativeDrag, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
-  import { calculateRelativePositionFromTarget, calculatePositionFromTarget as railsCalculatePosition } from '$lib/utils/position-calculator';
+  import { calculateRelativePositionFromTarget } from '$lib/utils/position-calculator';
   import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
   import type { Task, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
-  import TaskInfoPopoverHeadless from '../tasks/TaskInfoPopoverHeadless.svelte';
   import TaskRow from '../tasks/TaskRow.svelte';
   import NewTaskRow from '../tasks/NewTaskRow.svelte';
   import Portal from '../ui/Portal.svelte';
   
   // Import new DRY utilities
   import { createTaskInputManager } from '$lib/utils/task-input-manager';
-  import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
 
   // ✨ SVELTE 5 RUNES
   let { tasks = [], jobId = 'test', batchTaskDetails = null }: {
@@ -99,7 +95,6 @@
 
   function handleKeydown(event: KeyboardEvent) {
     // Don't handle keys if actively editing
-    const activeElement = document.activeElement;
     const isEditing = editingTaskId !== null || isShowingInlineNewTaskInput;
     // ESC key handling
     if (event.key === 'Escape') {
@@ -299,8 +294,7 @@
     const rootTasks: any[] = [];
     
     // First pass: create map of all tasks
-    taskList.forEach((task, index) => {
-      
+    taskList.forEach((task) => {
       taskMap.set(task.id, {
         ...task,
         subtasks: []
@@ -801,7 +795,7 @@
     if (isShowingDeleteConfirmation && modalContainerElement && !modalContainerElement.contains(event.relatedTarget as Node)) {
       setTimeout(() => {
         if (isShowingDeleteConfirmation && modalContainerElement) {
-          modalContainer.focus();
+          modalContainerElement.focus();
         }
       }, 0);
     }
@@ -1091,13 +1085,6 @@
       const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, [relativePosition]);
       await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
       
-      console.log('✅ Task nesting executed via ReactiveRecord pattern', {
-        draggedTaskId: draggedTaskId.substring(0, 8),
-        targetTaskId: targetTaskId.substring(0, 8), 
-        relativePosition,
-        positionUpdates: positionUpdates.length
-      });
-      
     } catch (error: any) {
       console.error('Failed to nest task:', error);
       
@@ -1116,13 +1103,6 @@
       clearAllVisualFeedback();
       return;
     }
-
-    console.log('🎬 handleTaskReorder started:', {
-      draggedTaskId,
-      dropZone: event.dropZone,
-      newIndex: event.newIndex,
-      oldIndex: event.oldIndex
-    });
 
     // Check if this is a nesting operation
     if (event.dropZone && event.dropZone.mode === 'nest' && event.dropZone.targetTaskId) {
@@ -1233,10 +1213,6 @@
       
       // Execute position updates using ReactiveRecord - it handles UI updates automatically
       await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
-      
-      console.log('✅ Position updates executed via ReactiveRecord pattern', {
-        positionUpdates: positionUpdates.length
-      });
             
     } catch (error: any) {
       console.error('Failed to reorder tasks:', error);
@@ -1389,13 +1365,6 @@
     // Resolve any boundary ambiguity
     const resolvedDropZone = resolveParentChildBoundary(dropZone);
     
-    console.log('🎯 calculateRelativePosition called:', {
-      dropZone,
-      resolvedDropZone,
-      parentId,
-      draggedTaskIds
-    });
-    
     // Convert Svelte tasks to Rails task format
     const railsTasks: Task[] = tasks.map(t => ({
       id: t.id,
@@ -1406,11 +1375,6 @@
     
     // Use the new relative position calculator
     const result = calculateRelativePositionFromTarget(railsTasks, resolvedDropZone, parentId, draggedTaskIds);
-    
-    console.log('🎯 Relative positioning result:', {
-      relativePosition: result.relativePosition,
-      reasoning: result.reasoning
-    });
     
     return result.relativePosition;
   }
