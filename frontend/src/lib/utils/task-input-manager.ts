@@ -4,7 +4,47 @@
  */
 
 import { type InputHandlers, TaskInputPatterns } from './input-handlers';
-import { positionCursorAtClick } from './cursor-positioning';
+
+/**
+ * Positions cursor in input element based on click location for new task creation
+ */
+function positionCursorAtClick(
+  event: MouseEvent, 
+  inputElement: HTMLInputElement, 
+  referenceText: string
+): void {
+  if (!inputElement) return;
+  
+  requestAnimationFrame(() => {
+    const clickX = event.clientX;
+    const inputRect = inputElement.getBoundingClientRect();
+    const relativeX = clickX - inputRect.left;
+    
+    // Create temporary measurement element with same styling
+    const tempSpan = document.createElement('span');
+    Object.assign(tempSpan.style, {
+      visibility: 'hidden',
+      position: 'absolute',
+      whiteSpace: 'pre',
+      font: window.getComputedStyle(inputElement).font
+    });
+    tempSpan.textContent = referenceText;
+    
+    document.body.appendChild(tempSpan);
+    
+    try {
+      const charWidth = tempSpan.offsetWidth / referenceText.length;
+      const cursorPosition = Math.max(0, Math.min(
+        Math.round(relativeX / charWidth),
+        referenceText.length
+      ));
+      
+      inputElement.setSelectionRange(cursorPosition, cursorPosition);
+    } finally {
+      document.body.removeChild(tempSpan);
+    }
+  });
+}
 
 interface TaskInputState {
   title: { get: () => string; set: (v: string) => void };
@@ -65,12 +105,3 @@ export function createTaskInputManager(
   };
 }
 
-/**
- * Creates a title editing manager with cursor positioning
- */
-export function createTitleEditManager(
-  saveFn: () => Promise<void> | void,
-  cancelFn: () => void
-): InputHandlers {
-  return TaskInputPatterns.titleEdit(saveFn, cancelFn);
-}

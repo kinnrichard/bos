@@ -58,17 +58,5 @@ export const TaskInputPatterns = {
     onEnter: () => createFn(true),
     onEscape: cancelFn,
     onBlur: () => titleGetter().trim() ? createFn(false) : cancelFn()
-  }),
-
-  /**
-   * Title editing: Enter to save, Escape to cancel, Blur to save
-   */
-  titleEdit: (
-    saveFn: () => Promise<void> | void,
-    cancelFn: () => void
-  ) => createInputHandler({
-    onEnter: saveFn,
-    onEscape: cancelFn,
-    onBlur: saveFn
   })
 };

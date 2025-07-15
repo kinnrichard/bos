@@ -17,8 +17,7 @@
   import Portal from '../ui/Portal.svelte';
   
   // Import new DRY utilities
-  import { createTaskInputManager, createTitleEditManager } from '$lib/utils/task-input-manager';
-  import { positionCursorInText } from '$lib/utils/cursor-positioning';
+  import { createTaskInputManager } from '$lib/utils/task-input-manager';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
 
   // Use static SVG URLs for better compatibility
@@ -291,7 +290,6 @@
   // Task title editing state
   let editingTaskId = $state<string | null>(null);
   let originalTitle = '';
-  let titleInputElement = $state<HTMLInputElement>();
   
   // Inline new task state (for Return key with selection)
   let insertNewTaskAfter = $state<string | null>(null);
@@ -335,10 +333,6 @@
     }
   );
   
-  const titleEditHandlers = createTitleEditManager(
-    () => saveTitle(editingTaskId!, ''), // Title will be read from contenteditable element
-    cancelEdit
-  );
 
   // Organize tasks into hierarchical structure with filtering
   function organizeTasksHierarchically(taskList: typeof tasks, filterStatuses: string[], showDeleted: boolean) {
@@ -681,14 +675,7 @@
     // Title editing now handled by contenteditable element
     originalTitle = currentTitle;
     
-    // Focus the input after DOM update
-    tick().then(() => {
-      if (titleInputElement) {
-        titleInputElement.focus();
-        // ✨ Use DRY cursor positioning utility - eliminates ~30 lines
-        positionCursorInText(event, titleInputElement, currentTitle);
-      }
-    });
+    // Title editing now handled by contenteditable in TaskRow
   }
 
   async function saveTitle(taskId: string, newTitle: string) {
@@ -731,7 +718,6 @@
     originalTitle = '';
   }
 
-  // ✨ Replaced with titleEditHandlers - eliminates ~15 lines
 
   // Inline new task functions
   async function createInlineTask(afterTaskId: string | null, shouldSelectAfterCreate: boolean = false) {
