@@ -9,7 +9,7 @@
  * import { ReactiveJobPerson as JobPerson } from './reactive-job-person';
  * ```
  * 
- * Generated: 2025-07-15 00:07:19 UTC
+ * Generated: 2025-07-15 00:18:01 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
@@ -22,7 +22,8 @@ import { registerModelRelationships } from './base/scoped-query-base';
 const JobPersonConfig = {
   tableName: 'job_people',
   className: 'JobPerson',
-  primaryKey: 'id'
+  primaryKey: 'id',
+  supportsDiscard: false
 };
 
 /**

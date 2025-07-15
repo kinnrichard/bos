@@ -9,7 +9,7 @@
  * import { User } from './user';
  * ```
  * 
- * Generated: 2025-07-15 00:07:19 UTC
+ * Generated: 2025-07-15 00:18:01 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -22,7 +22,8 @@ import { registerModelRelationships } from './base/scoped-query-base';
 const ReactiveUserConfig = {
   tableName: 'users',
   className: 'ReactiveUser',
-  primaryKey: 'id'
+  primaryKey: 'id',
+  supportsDiscard: false
 };
 
 /**

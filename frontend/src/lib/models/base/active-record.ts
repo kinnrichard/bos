@@ -14,6 +14,7 @@ import { getZero } from '../../zero/zero-client';
 import { BaseScopedQuery } from './scoped-query-base';
 import type { 
   BaseRecord, 
+  BaseModelConfig,
   QueryOptions, 
   ScopedQuery, 
   CreateData, 
@@ -24,13 +25,8 @@ import type {
 /**
  * Configuration for ActiveRecord class
  */
-export interface ActiveRecordConfig {
-  /** Table name in Zero.js schema */
-  tableName: string;
-  /** Model class name (for error messages) */
-  className: string;
-  /** Primary key field name */
-  primaryKey?: string;
+export interface ActiveRecordConfig extends BaseModelConfig {
+  // All base configuration properties inherited from BaseModelConfig
 }
 
 /**
@@ -66,8 +62,8 @@ export class RecordInvalidError extends Error {
  * Extends BaseScopedQuery to inherit Rails-style includes() functionality
  */
 class ActiveRecordScopedQuery<T extends BaseRecord> extends BaseScopedQuery<T> implements ScopedQuery<T> {
-  constructor(private config: ActiveRecordConfig) {
-    super(config.tableName);
+  constructor(protected config: ActiveRecordConfig) {
+    super(config);
   }
   
   async all(options: QueryOptions = {}): Promise<T[]> {

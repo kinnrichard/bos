@@ -15,6 +15,7 @@ import { ReactiveQuery } from '../../zero/reactive-query.svelte';
 import { BaseScopedQuery } from './scoped-query-base';
 import type { 
   BaseRecord, 
+  BaseModelConfig,
   QueryOptions, 
   ReactiveScopedQuery, 
   ReactiveQuery as IReactiveQuery,
@@ -26,13 +27,7 @@ import type {
 /**
  * Configuration for ReactiveRecord class
  */
-export interface ReactiveRecordConfig {
-  /** Table name in Zero.js schema */
-  tableName: string;
-  /** Model class name (for error messages) */
-  className: string;
-  /** Primary key field name */
-  primaryKey?: string;
+export interface ReactiveRecordConfig extends BaseModelConfig {
   /** Default TTL for reactive queries */
   defaultTtl?: string;
 }
@@ -152,8 +147,8 @@ export class ReactiveQueryMany<T> implements IReactiveQuery<T[]> {
  * Extends BaseScopedQuery to inherit Rails-style includes() functionality
  */
 class ReactiveRecordScopedQuery<T extends BaseRecord> extends BaseScopedQuery<T> implements ReactiveScopedQuery<T> {
-  constructor(private config: ReactiveRecordConfig) {
-    super(config.tableName);
+  constructor(protected config: ReactiveRecordConfig) {
+    super(config);
   }
   
   all(options: QueryOptions = {}): IReactiveQuery<T[]> {

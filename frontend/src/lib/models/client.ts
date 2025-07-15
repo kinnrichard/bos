@@ -9,7 +9,7 @@
  * import { ReactiveClient as Client } from './reactive-client';
  * ```
  * 
- * Generated: 2025-07-15 00:07:19 UTC
+ * Generated: 2025-07-15 00:18:01 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
@@ -22,7 +22,8 @@ import { registerModelRelationships } from './base/scoped-query-base';
 const ClientConfig = {
   tableName: 'clients',
   className: 'Client',
-  primaryKey: 'id'
+  primaryKey: 'id',
+  supportsDiscard: false
 };
 
 /**

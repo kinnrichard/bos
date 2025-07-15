@@ -17,6 +17,7 @@
  */
 
 import { getZero } from '../../zero/zero-client';
+import type { BaseModelConfig } from './types';
 
 /**
  * Custom error types for relationship handling
@@ -122,6 +123,7 @@ class RelationshipRegistry {
  * Implements the DRY principle by containing all common logic in one place.
  */
 export abstract class BaseScopedQuery<T extends Record<string, any>> {
+  protected config: BaseModelConfig;
   protected tableName: string;
   protected conditions: Partial<T>[] = [];
   protected relationships: string[] = [];
@@ -132,8 +134,9 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
   protected includeDiscarded = false;
   protected onlyDiscarded = false;
 
-  constructor(tableName: string) {
-    this.tableName = tableName;
+  constructor(config: BaseModelConfig) {
+    this.config = config;
+    this.tableName = config.tableName;
   }
 
   /**
@@ -255,11 +258,13 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
 
     let query = queryTable;
 
-    // Apply discard gem filtering
-    if (this.onlyDiscarded) {
-      query = query.where('discarded_at', '!=', null);
-    } else if (!this.includeDiscarded) {
-      query = query.where('discarded_at', null);
+    // Apply discard gem filtering only if model supports it
+    if (this.config.supportsDiscard) {
+      if (this.onlyDiscarded) {
+        query = query.where('discarded_at', '!=', null);
+      } else if (!this.includeDiscarded) {
+        query = query.where('discarded_at', null);
+      }
     }
 
     // Apply conditions

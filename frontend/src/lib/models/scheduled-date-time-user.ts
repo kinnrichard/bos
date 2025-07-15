@@ -9,7 +9,7 @@
  * import { ReactiveScheduledDateTimeUser as ScheduledDateTimeUser } from './reactive-scheduled-date-time-user';
  * ```
  * 
- * Generated: 2025-07-15 00:07:19 UTC
+ * Generated: 2025-07-15 00:18:01 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
@@ -22,7 +22,8 @@ import { registerModelRelationships } from './base/scoped-query-base';
 const ScheduledDateTimeUserConfig = {
   tableName: 'scheduled_date_time_users',
   className: 'ScheduledDateTimeUser',
-  primaryKey: 'id'
+  primaryKey: 'id',
+  supportsDiscard: false
 };
 
 /**

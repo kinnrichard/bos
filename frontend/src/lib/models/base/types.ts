@@ -15,6 +15,20 @@ export interface BaseRecord {
 }
 
 /**
+ * Base configuration interface shared by ActiveRecord and ReactiveRecord
+ */
+export interface BaseModelConfig {
+  /** Table name in Zero.js schema */
+  tableName: string;
+  /** Model class name (for error messages) */
+  className: string;
+  /** Primary key field name */
+  primaryKey?: string;
+  /** Whether this model supports discard gem functionality (has discarded_at column) */
+  supportsDiscard?: boolean;
+}
+
+/**
  * Query options for controlling ActiveRecord and ReactiveRecord behavior
  */
 export interface QueryOptions {

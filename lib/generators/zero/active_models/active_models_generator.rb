@@ -247,7 +247,8 @@ module Zero
           const #{class_name}Config = {
             tableName: '#{table_name}',
             className: '#{class_name}',
-            primaryKey: 'id'
+            primaryKey: 'id',
+            supportsDiscard: #{supports_discard?(patterns)}
           };
 
           /**
@@ -323,7 +324,8 @@ module Zero
           const Reactive#{class_name}Config = {
             tableName: '#{table_name}',
             className: 'Reactive#{class_name}',
-            primaryKey: 'id'
+            primaryKey: 'id',
+            supportsDiscard: #{supports_discard?(patterns)}
           };
 
           /**
@@ -401,6 +403,15 @@ module Zero
           "\n * const discarded#{class_name}s = await #{class_name}.discarded().all();"
         else
           ""
+        end
+      end
+
+      def supports_discard?(patterns)
+        # Return true if the model uses discard gem for soft deletion
+        if patterns[:soft_deletion] && patterns[:soft_deletion][:gem] == "discard"
+          "true"
+        else
+          "false"
         end
       end
 
