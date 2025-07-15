@@ -177,7 +177,7 @@
       if (selectedCount === 0) {
         // No selection: activate bottom "New Task" row
         event.preventDefault();
-        showNewTaskForm();
+        newTaskManager.show();
       } else if (selectedCount === 1) {
         // Single selection: check if it's the last task
         event.preventDefault();
@@ -188,7 +188,7 @@
         if (isLastTask) {
           // Last task selected: activate bottom "New Task" row (cleaner UX)
           taskSelectionActions.clearSelection();
-          showNewTaskForm();
+          newTaskManager.show();
         } else {
           // Not last task: create inline new task as sibling
           insertNewTaskAfter = selectedTaskId;
@@ -1608,6 +1608,7 @@
             manager={inlineTaskManager}
             isShowing={isShowingInlineNewTaskInput}
             title={inlineNewTaskTitle}
+            on:titlechange={(e) => inlineNewTaskTitle = e.detail.value}
           />
         {/if}
       {/each}
@@ -1620,6 +1621,7 @@
       manager={newTaskManager}
       isShowing={isShowingNewTaskInput}
       title={newTaskTitle}
+      on:titlechange={(e) => newTaskTitle = e.detail.value}
     />
   </div>
 

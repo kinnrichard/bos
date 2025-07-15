@@ -70,6 +70,7 @@
         placeholder="New Task"
         onkeydown={manager.handlers.keydown}
         onblur={manager.handlers.blur}
+        oninput={(e) => dispatch('titlechange', { value: e.target.value })}
       />
     {:else if mode === 'bottom-row'}
       <h5 
