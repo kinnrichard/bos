@@ -3,7 +3,7 @@
   import { getTaskStatusEmoji } from '$lib/config/emoji';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
   import { focusActions } from '$lib/stores/focusManager.svelte';
-  import { spellcheck } from '$lib/actions/spellcheck';
+  import { fixContentEditable } from '$lib/actions/fixContentEditable';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
   import '../../styles/task-components.css';
   
@@ -210,7 +210,7 @@
     <h5 
       class="task-title"
       contenteditable="true"
-      use:spellcheck
+      use:fixContentEditable
       onclick={handleTitleClick}
       onkeydown={handleTitleKeydown}
       onblur={handleTitleBlur}
