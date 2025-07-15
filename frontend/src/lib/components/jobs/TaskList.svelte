@@ -5,6 +5,7 @@
   import { TaskHierarchyManager } from '$lib/services/TaskHierarchyManager';
   import type { HierarchicalTask, RenderedTaskItem, BaseTask } from '$lib/services/TaskHierarchyManager';
   import { taskSelection, taskSelectionActions } from '$lib/stores/taskSelection.svelte';
+  import { focusActions } from '$lib/stores/focusManager.svelte';
   import { Task as TaskModel } from '$lib/models/task';
   import { nativeDrag, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
@@ -350,9 +351,56 @@
     }
   });
 
+  // Flag to prevent double-save when clicking another task
+  let isManualSave = false;
+
+  // Auto-save current edit before changing selection
+  async function autoSaveCurrentEdit() {
+    const currentEditingTaskId = focusActions.getCurrentEditingTaskId();
+    if (!currentEditingTaskId) return;
+    
+    // Set transition state to prevent race conditions
+    focusActions.setTransitioning(true);
+    
+    // Set flag to prevent blur handler from also saving
+    isManualSave = true;
+    
+    // Get the current editing element from focus manager
+    const titleElement = focusActions.getCurrentEditingElement();
+    if (titleElement) {
+      const currentTitle = titleElement.textContent || '';
+      const originalTitle = tasks.find(t => t.id === currentEditingTaskId)?.title || '';
+      
+      // Only save if content has changed and is not empty
+      if (currentTitle.trim() !== '' && currentTitle.trim() !== originalTitle) {
+        await saveTitle(currentEditingTaskId, currentTitle);
+      } else if (currentTitle.trim() === '') {
+        // If empty, just cancel the edit
+        cancelEdit();
+      } else {
+        // No change, just exit edit mode
+        cancelEdit();
+      }
+    }
+    
+    // Clear focus through centralized manager
+    focusActions.clearFocus();
+    
+    // Reset flags after a short delay
+    setTimeout(() => {
+      isManualSave = false;
+      focusActions.setTransitioning(false);
+    }, 50);
+  }
+
   // Multi-select click handler
-  function handleTaskClick(event: MouseEvent, taskId: string) {
+  async function handleTaskClick(event: MouseEvent, taskId: string) {
     event.stopPropagation();
+    
+    // Auto-save any existing edit before changing selection
+    if (focusActions.getCurrentEditingTaskId() !== null) {
+      await autoSaveCurrentEdit();
+    }
     
     if (event.shiftKey) {
       taskSelectionActions.handleRangeSelect(taskId, flatTaskIds);
@@ -396,7 +444,10 @@
         });
         break;
       case 'saveEdit':
-        saveTitle(taskId, data.newTitle);
+        // Only save if not already saved manually by autoSaveCurrentEdit
+        if (!isManualSave) {
+          saveTitle(taskId, data.newTitle);
+        }
         break;
       case 'cancelEdit':
         cancelEdit();
@@ -538,7 +589,14 @@
     
     // Enter edit mode
     editingTaskId = taskId;
-    // Title editing now handled by contenteditable in TaskRow
+    
+    // Find the contenteditable element and register with focus manager
+    tick().then(() => {
+      const titleElement = document.querySelector(`[data-task-id="${taskId}"] .task-title`) as HTMLElement;
+      if (titleElement) {
+        focusActions.setEditingElement(titleElement, taskId);
+      }
+    });
   }
 
   async function saveTitle(taskId: string, newTitle: string) {
@@ -571,6 +629,8 @@
   }
 
   function cancelEdit() {
+    // Clear focus through centralized manager
+    focusActions.clearFocus();
     editingTaskId = null;
   }
 

@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { getTaskStatusEmoji } from '$lib/config/emoji';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
+  import { focusActions } from '$lib/stores/focusManager.svelte';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
   import '../../styles/task-components.css';
   
@@ -40,7 +41,8 @@
   let originalTitle = $state('');
 
   function handleTaskClick(event: MouseEvent) {
-    if (isEditing) return;
+    // Always dispatch click event so parent can cancel edit mode
+    // Parent will handle the logic of what to do when editing
     dispatch('taskaction', {
       type: 'click',
       taskId: task.id,
@@ -83,6 +85,8 @@
   }
 
   function handleTitleClick(event: MouseEvent) {
+    // Prevent event from bubbling up to parent task div
+    event.stopPropagation();
     dispatch('taskaction', {
       type: 'titleClick',
       taskId: task.id,
@@ -130,12 +134,15 @@
   }
 
   function handleTitleBlur() {
-    const newTitle = titleElement?.textContent || '';
-    dispatch('taskaction', {
-      type: 'saveEdit',
-      taskId: task.id,
-      data: { newTitle }
-    });
+    // Only process blur if not transitioning and this task is being edited
+    if (!focusActions.isTransitioning() && focusActions.isTaskBeingEdited(task.id)) {
+      const newTitle = titleElement?.textContent || '';
+      dispatch('taskaction', {
+        type: 'saveEdit',
+        taskId: task.id,
+        data: { newTitle }
+      });
+    }
   }
 
   function handleTaskUpdated(event: CustomEvent) {
@@ -146,12 +153,8 @@
     });
   }
 
-  // Focus title element when editing starts
-  $effect(() => {
-    if (isEditing && titleElement) {
-      titleElement.focus();
-    }
-  });
+  // Focus management is now handled by the centralized focus store
+  // The focus store coordinates all focus operations to prevent race conditions
 </script>
 
 <div 
