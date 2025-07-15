@@ -238,6 +238,11 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
     
     // Check if this is dotted notation (Phase 2)
     if (relationshipName.includes('.')) {
+      // Validate only the first part of dotted notation against current model
+      const firstRelationship = relationshipName.split('.')[0];
+      this.validateRelationships([firstRelationship]);
+      this.detectCircularDependencies([...this.getRelationshipNames(), firstRelationship]);
+      
       const parsed = this.parseNestedRelationship(relationshipName);
       newQuery.relationships = [...this.relationships, parsed];
       return newQuery;
@@ -376,18 +381,26 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
     // Apply relationships using Zero.js .related() with callback support
     // Zero.js handles the join logic and memory management
     for (const relationshipConfig of this.relationships) {
-      if (typeof relationshipConfig === 'string') {
-        // Simple string relationship
-        query = query.related(relationshipConfig);
-      } else {
-        // Callback relationship: [relationshipName, refinementCallback]
-        const [relationshipName, refinementCallback] = relationshipConfig;
-        query = query.related(relationshipName, (subQuery: any) => {
-          // Convert Zero.js subquery back to ScopedQuery for refinement
-          const scopedSubQuery = this.wrapZeroQueryInScopedQuery(subQuery);
-          const refinedQuery = refinementCallback(scopedSubQuery);
-          return refinedQuery.buildZeroQuery();
-        });
+      try {
+        if (typeof relationshipConfig === 'string') {
+          // Simple string relationship
+          query = query.related(relationshipConfig);
+        } else {
+          // Callback relationship: [relationshipName, refinementCallback]
+          const [relationshipName, refinementCallback] = relationshipConfig;
+          query = query.related(relationshipName, (zeroSubQuery: any) => {
+            // For dotted notation like 'jobAssignments.user', directly call Zero.js .related()
+            // Skip the ScopedQuery wrapping to avoid circular dependency
+            return this.executeZeroNestedRelationship(zeroSubQuery, refinementCallback);
+          });
+        }
+      } catch (error) {
+        console.error(`Zero.js relationship error for '${typeof relationshipConfig === 'string' ? relationshipConfig : relationshipConfig[0]}' on table '${this.tableName}':`, error);
+        throw new RelationshipError(
+          `Zero.js relationship '${typeof relationshipConfig === 'string' ? relationshipConfig : relationshipConfig[0]}' not found in schema for table '${this.tableName}'. Ensure the relationship is defined in Zero.js schema.`,
+          typeof relationshipConfig === 'string' ? relationshipConfig : relationshipConfig[0],
+          this.tableName
+        );
       }
     }
 
@@ -417,16 +430,33 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
   }
 
   /**
-   * Convert Zero.js subquery back to ScopedQuery for callback refinement
+   * Execute Zero.js nested relationship directly without ScopedQuery wrapping
+   * Handles dotted notation callbacks by calling Zero.js .related() directly
    */
-  private wrapZeroQueryInScopedQuery(zeroQuery: any): BaseScopedQuery<T> {
-    const scopedQuery = this.clone();
-    // Clear existing relationships and conditions since we're starting from the subquery
-    scopedQuery.relationships = [];
-    scopedQuery.conditions = [];
-    // Store the Zero.js query to use as base
-    (scopedQuery as any).baseZeroQuery = zeroQuery;
-    return scopedQuery;
+  private executeZeroNestedRelationship(zeroSubQuery: any, refinementCallback: (query: BaseScopedQuery<T>) => BaseScopedQuery<T>): any {
+    // Create a minimal mock ScopedQuery for the callback to determine the relationship
+    const mockQuery = {
+      relationships: [] as RelationshipConfig<T>[],
+      includes: (relationship: string) => {
+        mockQuery.relationships.push(relationship);
+        return mockQuery;
+      }
+    } as any;
+    
+    // Execute the callback to capture what relationships it wants
+    refinementCallback(mockQuery);
+    
+    // Apply the relationships directly to the Zero.js subquery
+    let currentQuery = zeroSubQuery;
+    for (const rel of mockQuery.relationships) {
+      if (typeof rel === 'string') {
+        currentQuery = currentQuery.related(rel);
+      }
+      // Note: For now, only handle simple string relationships in nested contexts
+      // Complex callbacks within nested relationships would need additional handling
+    }
+    
+    return currentQuery;
   }
 
   /**
@@ -439,7 +469,7 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
       return parts[0];
     }
     
-    // Build nested callback chain recursively
+    // Build nested callback chain recursively  
     const relationshipName = parts[0];
     const remainingPath = parts.slice(1).join('.');
     
