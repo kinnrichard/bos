@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PopulatedJob } from '$lib/types/job';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
+  import { spellcheck } from '$lib/actions/spellcheck';
   import JobInfo from './JobInfo.svelte';
   import TaskList from './TaskList.svelte';
   import StatusIndicator from './StatusIndicator.svelte';
@@ -100,6 +101,7 @@
   <h1 
     class="job-title" 
     contenteditable="true"
+    use:spellcheck
     onkeydown={handleJobTitleKeydown}
     onblur={handleJobTitleBlur}
     onfocus={handleJobTitleFocus}
