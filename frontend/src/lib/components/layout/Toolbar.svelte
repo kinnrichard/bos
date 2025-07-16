@@ -114,7 +114,10 @@
 
     <!-- Job status button (only show on job detail page) -->
     {#if currentPage === 'job-detail' && $page.params.id}
-      <JobStatusButton bind:job={currentJob} />
+      <JobStatusButton 
+        jobId={$page.params.id}
+        initialStatus={currentJob?.status}
+      />
       <TechnicianAssignmentButton 
         jobId={$page.params.id}
         initialTechnicians={currentJob?.technicians || []}

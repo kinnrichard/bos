@@ -1,16 +1,26 @@
 <script lang="ts">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
-  import type { PopulatedJob } from '$lib/types/job';
-
-  // Props
-  let { job }: { job: PopulatedJob } = $props();
   import { getJobStatusEmoji } from '$lib/config/emoji';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import '$lib/styles/popover-common.css';
   import { Job } from '$lib/models/job';
+  import { ReactiveJob } from '$lib/models/reactive-job';
+
+  // Self-sufficient props pattern - matches TechnicianAssignmentButton
+  let {
+    jobId,
+    initialStatus = 'open'
+  }: {
+    jobId: string;
+    initialStatus?: string;
+  } = $props();
 
   let basePopover = $state();
+
+  // Self-sufficient query pattern - matches TechnicianAssignmentButton  
+  const jobQuery = $derived(jobId ? ReactiveJob.find(jobId) : null);
+  const job = $derived(jobQuery?.data);
 
   // All available job statuses with their display information
   const availableStatuses = [
@@ -23,59 +33,41 @@
     { id: 'cancelled', value: 'cancelled', label: 'Cancelled', emoji: '❌' }
   ];
 
-  // Get job status emoji with comprehensive null checks
-  const jobStatusEmoji = $derived(
-    job ? getJobStatusEmoji(currentStatus) : '📝'
-  );
+  // Fallback to initialStatus during loading - self-sufficient pattern
+  const currentStatus = $derived(job?.status || initialStatus);
   
-  // Debug logging for JobStatusButton - track job prop changes
-  $effect(() => {
-    console.log('[JobStatusButton] Job prop changed:', {
-      id: job?.id,
-      status: job?.status,
-      title: job?.title,
-      timestamp: Date.now(),
-      currentStatus: currentStatus,
-      jobStatusEmoji: jobStatusEmoji
-    });
-    
-    // Track if this is the same job object or a new one
-    if (job) {
-      console.log('[JobStatusButton] Job object details:', {
-        isProxy: job.constructor.name === 'Proxy',
-        objectId: job.id,
-        statusValue: job.status,
-        rawJobObject: job
-      });
-    }
-  });
-
-  // Simple direct binding to job status (let Zero.js handle optimistic updates)
-  const currentStatus = $derived(job?.status || 'open');
+  // Get job status emoji with fallback handling
+  const jobStatusEmoji = $derived(
+    job ? getJobStatusEmoji(currentStatus) : getJobStatusEmoji(initialStatus)
+  );
 
   // Handle status change using ActiveRecord pattern (Zero.js handles optimistic updates)
   async function handleStatusChange(statusOption: any) {
+    // Use jobId directly - always available in self-sufficient pattern
+    if (!jobId) {
+      console.warn('[JobStatusButton] handleStatusChange called with invalid jobId - aborting');
+      return;
+    }
+    
     const newStatus = statusOption.value;
     console.log('[JobStatusButton] handleStatusChange called:', {
       newStatus,
       currentStatus,
-      jobId: job?.id,
-      jobStatus: job?.status,
+      jobId,
       timestamp: Date.now()
     });
     
-    if (!job || newStatus === currentStatus) {
-      console.log('[JobStatusButton] Status change skipped - no job or same status');
+    if (newStatus === currentStatus) {
+      console.log('[JobStatusButton] Status change skipped - same status');
       return;
     }
     
     try {
       // Persist to database using ActiveRecord pattern (Zero.js handles optimistic updates)
       console.log('[JobStatusButton] Calling Job.update...');
-      await Job.update(job.id, { status: newStatus });
+      await Job.update(jobId, { status: newStatus });
       
       console.log('[JobStatusButton] AFTER ActiveRecord mutation - SUCCESS:', {
-        jobStatus: job.status,
         persistedStatus: newStatus,
         timestamp: Date.now()
       });
@@ -157,6 +149,7 @@
     font-size: 18px;
     line-height: 1;
   }
+
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
