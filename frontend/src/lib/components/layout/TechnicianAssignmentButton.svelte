@@ -10,7 +10,7 @@
   import type { UserData } from '$lib/models/types/user-data';
   import type { JobData } from '$lib/models/types/job-data';
   import { JobAssignment } from '$lib/models/job-assignment';
-  import { debugTechAssignment } from '$lib/utils/debug';
+  import { debugWorkflow } from '$lib/utils/debug';
   import { POPOVER_CONSTANTS, POPOVER_ERRORS } from '$lib/utils/popover-constants';
   import { getPopoverErrorMessage, createIdSet } from '$lib/utils/popover-utils';
   import { tick } from 'svelte';
@@ -62,17 +62,17 @@
     
     // Epic-008: Zero.js provides reliable data, validation unnecessary
     if (!user?.id) {
-      debugTechAssignment('Missing user ID, ignoring click: %o', user);
+      debugWorkflow('Missing user ID, ignoring click', user);
       return;
     }
     
     // Ensure jobId is valid
     if (!jobId) {
-      debugTechAssignment('Invalid jobId, ignoring click: %o', jobId);
+      debugWorkflow('Invalid jobId, ignoring click', { jobId });
       return;
     }
     
-    debugTechAssignment('User clicked %s %s', user.name, checked ? 'ON' : 'OFF');
+    debugWorkflow('User clicked technician assignment', { userName: user.name, action: checked ? 'ON' : 'OFF' });
     
     // Reactive mutations - UI updates automatically when data changes
     try {
@@ -85,18 +85,18 @@
           job_id: jobId,
           user_id: user.id
         });
-        debugTechAssignment('Created assignment for %s on job %s', user.name, jobId);
+        debugWorkflow('Created assignment', { userName: user.name, jobId });
       } else {
         // Find and delete existing job assignment
         const existingAssignment = (job as any)?.jobAssignments?.find((a: any) => a.user_id === user.id);
         if (existingAssignment?.id) {
           await JobAssignment.destroy(existingAssignment.id);
-          debugTechAssignment('Deleted assignment for %s on job %s', user.name, jobId);
+          debugWorkflow('Deleted assignment', { userName: user.name, jobId });
         }
       }
     } catch (err) {
       error = err as Error;
-      debugTechAssignment('Error during mutation: %o', err);
+      debugWorkflow('Error during assignment mutation', err);
       console.error('TechnicianAssignmentButton mutation error:', err);
     } finally {
       isLoading = false;

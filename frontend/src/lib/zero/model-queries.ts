@@ -10,6 +10,7 @@
  */
 
 import { getZero } from './zero-client';
+import { debugDatabase, debugReactive } from '$lib/utils/debug';
 
 /**
  * Creates a chainable query object with includes() support
@@ -85,12 +86,12 @@ function createQueryChain(tableName: string, baseQuery: any) {
      */
     one() {
       if (!baseQuery) {
-        console.log('🔍 queryJobs().one(): baseQuery not ready, returning null');
+        debugDatabase('queryJobs().one(): baseQuery not ready, returning null');
         return null;
       }
       
       const finalQuery = executeStoredOperations(baseQuery);
-      console.log('🔍 queryJobs().one(): executing with relationships:', storedRelationships);
+      debugReactive('queryJobs().one(): executing with relationships', { relationships: storedRelationships });
       return finalQuery?.one();
     },
     
@@ -99,12 +100,12 @@ function createQueryChain(tableName: string, baseQuery: any) {
      */
     all() {
       if (!baseQuery) {
-        console.log('🔍 queryJobs().all(): baseQuery not ready, returning null');
+        debugDatabase('queryJobs().all(): baseQuery not ready, returning null');
         return null;
       }
       
       const finalQuery = executeStoredOperations(baseQuery);
-      console.log('🔍 queryJobs().all(): executing with relationships:', storedRelationships);
+      debugReactive('queryJobs().all(): executing with relationships', { relationships: storedRelationships });
       return finalQuery;
     },
     
@@ -113,12 +114,12 @@ function createQueryChain(tableName: string, baseQuery: any) {
      */
     materialize(...args: any[]) {
       if (!baseQuery) {
-        console.log('🔍 queryJobs().materialize(): baseQuery not ready, returning null');
+        debugDatabase('queryJobs().materialize(): baseQuery not ready, returning null');
         return null;
       }
       
       const finalQuery = executeStoredOperations(baseQuery);
-      console.log('🔍 queryJobs().materialize(): executing with relationships:', storedRelationships);
+      debugReactive('queryJobs().materialize(): executing with relationships', { relationships: storedRelationships });
       return finalQuery?.materialize(...args);
     }
   };

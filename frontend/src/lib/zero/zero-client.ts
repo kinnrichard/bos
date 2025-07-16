@@ -1,5 +1,6 @@
 import { Zero } from '@rocicorp/zero';
 import { schema, type ZeroClient } from './generated-schema';
+import { debugDatabase, debugAuth, debugAPI, debugError, debugPerformance } from '$lib/utils/debug';
 
 // Conditional import to handle test environments without SvelteKit
 function getBrowserState(): boolean {
@@ -33,13 +34,13 @@ let visibilityChangeHandler: (() => void) | null = null;
 let cachedToken: string | null = null;
 let tokenExpiryTime: number | null = null;
 
-// Enhanced logging
+// Enhanced logging with secure debug functions
 function logZero(message: string, ...args: any[]) {
-  console.log(`[Zero] ${message}`, ...args);
+  debugDatabase(`[Zero] ${message}`, args.length > 0 ? args[0] : undefined);
 }
 
 function logZeroError(message: string, ...args: any[]) {
-  console.error(`[Zero] ${message}`, ...args);
+  debugError(`[Zero] ${message}`, args.length > 0 ? args[0] : undefined);
 }
 
 // Page Visibility API integration
@@ -136,7 +137,7 @@ async function fetchZeroToken(): Promise<string> {
         token: data.token,
         tokenLength: data.token?.length
       };
-      console.log('🔍 Zero User Debug Info:', (window as any).zeroUserDebug);
+      debugAuth('Zero User Debug Info', (window as any).zeroUserDebug);
     }
     
     return data.token || '';
@@ -279,20 +280,19 @@ async function performInitialization(): Promise<ZeroClient> {
         // import { User } from '$lib/models/user';
         // const users = new ReactiveQuery(() => zero.query.users, []);
         testLegacyRemoved: () => {
-          console.log('🔍 Legacy model debug functions removed - use Epic-008 models instead');
+          debugDatabase('Legacy model debug functions removed - use Epic-008 models instead');
         },
         testZeroQuery: async () => {
           try {
             if (!zero?.query?.clients) {
               throw new Error('Zero client or clients query not available');
             }
-            console.log('🔍 Testing zero.query.clients.run()...');
+            debugDatabase('Testing zero.query.clients.run()');
             const result = await zero.query.clients.run();
-            console.log('🔍 zero.query.clients.run() result:', result);
-            console.log('🔍 zero.query.clients.run() result length:', result?.length);
+            debugDatabase('zero.query.clients.run() result', { result, length: result?.length });
             return result;
           } catch (error) {
-            console.error('🔍 zero.query.clients.run() error:', error);
+            debugError('zero.query.clients.run() error', error);
             return error;
           }
         }
@@ -304,9 +304,9 @@ async function performInitialization(): Promise<ZeroClient> {
       
       // Add a simple test function to window
       (window as any).testZeroQueries = async () => {
-        console.log('🔍 === Zero Query Test Suite ===');
-        console.log('🔍 User Debug:', (window as any).zeroUserDebug);
-        console.log('🔍 Zero State:', getZeroState());
+        debugDatabase('=== Zero Query Test Suite ===');
+        debugAuth('User Debug', (window as any).zeroUserDebug);
+        debugDatabase('Zero State', getZeroState());
         
         // Test Zero client directly
         await (window as any).zeroDebug.testZeroQuery();

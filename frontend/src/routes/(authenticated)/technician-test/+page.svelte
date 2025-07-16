@@ -3,6 +3,7 @@
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import type { User } from '$lib/types/job';
+  import { debugAPI } from '$lib/utils/debug';
 
   // Helper function to safely cast popover options to User type
   function asUser(option: any): User {
@@ -65,7 +66,7 @@
     isLoading = true;
     setTimeout(() => {
       isLoading = false;
-      console.log('Simulated API update completed');
+      debugAPI('Simulated API update completed', { userId: user.id, isCurrentlySelected });
     }, 500);
   }
 

@@ -9,6 +9,7 @@
 
 import { Job } from '../models/job';
 import { ReactiveJob } from '../models/reactive-job';
+import { debugDatabase, debugError, debugPerformance } from '$lib/utils/debug';
 
 /**
  * ActiveRecord Examples (Promise-based)
@@ -24,7 +25,7 @@ export class ActiveRecordIncludesExamples {
     const job = await Job.includes('client').where({ id: 'job-123' }).first();
     
     // TypeScript knows job.client is loaded
-    console.log('Client name:', job?.client?.name);
+    debugDatabase('Client name loaded via includes', { clientName: job?.client?.name });
   }
   
   /**
@@ -37,10 +38,12 @@ export class ActiveRecordIncludesExamples {
       .all();
     
     jobs.forEach(job => {
-      console.log('Job:', job.title);
-      console.log('Client:', job.client?.name);
-      console.log('Tasks:', job.tasks?.length);
-      console.log('Assignments:', job.jobAssignments?.length);
+      debugDatabase('Job loaded with multiple relationships', {
+        title: job.title,
+        client: job.client?.name,
+        tasksCount: job.tasks?.length,
+        assignmentsCount: job.jobAssignments?.length
+      });
     });
   }
   
@@ -64,9 +67,11 @@ export class ActiveRecordIncludesExamples {
     const job = await Job.includes('client', 'createdBy').find('job-123');
     
     if (job) {
-      console.log(`Job: ${job.title}`);
-      console.log(`Client: ${job.client?.name}`);
-      console.log(`Created by: ${job.createdBy?.email}`);
+      debugDatabase('Job found with relationships', {
+        title: job.title,
+        client: job.client?.name,
+        createdBy: job.createdBy?.email
+      });
     }
   }
   
@@ -79,7 +84,10 @@ export class ActiveRecordIncludesExamples {
     for (const job of jobsWithoutIncludes) {
       // This triggers a separate query for each job
       const client = await Job.find(job.client_id!);
-      console.log(`Job ${job.title} - Client: ${client?.title}`);
+      debugPerformance('N+1 query pattern - BAD', {
+        jobTitle: job.title,
+        clientTitle: client?.title
+      });
     }
     
     // ✅ Good: Single query with includes() (1 query total)
@@ -88,7 +96,10 @@ export class ActiveRecordIncludesExamples {
     
     jobsWithIncludes.forEach(job => {
       // No additional queries - client data already loaded
-      console.log(`Job ${job.title} - Client: ${job.client?.name}`);
+      debugPerformance('Optimized single query with includes - GOOD', {
+        jobTitle: job.title,
+        clientName: job.client?.name
+      });
     });
   }
   
@@ -101,8 +112,10 @@ export class ActiveRecordIncludesExamples {
       await Job.includes('invalidRelationship').all();
     } catch (error) {
       if (error instanceof Error && error.name === 'RelationshipError') {
-        console.error('Invalid relationship:', error.message);
-        console.error('Valid relationships:', ['client', 'tasks', 'jobAssignments', 'createdBy']);
+        debugError('Invalid relationship in includes', {
+          error: error.message,
+          validRelationships: ['client', 'tasks', 'jobAssignments', 'createdBy']
+        });
       }
     }
   }
@@ -124,7 +137,7 @@ export class ReactiveRecordIncludesExamples {
     // In Svelte component:
     // $: job = jobQuery.data;
     // $: isLoading = jobQuery.isLoading;
-    // $: if (job) console.log('Client:', job.client.name);
+    // $: if (job) debugDatabase('Client loaded', { client: job.client.name });
     
     return jobQuery;
   }
@@ -140,9 +153,11 @@ export class ReactiveRecordIncludesExamples {
     // In Svelte component:
     // $: jobs = jobsQuery.data;
     // $: jobs.forEach(job => {
-    //   console.log('Job:', job.title);
-    //   console.log('Client:', job.client.name);
-    //   console.log('Task count:', job.tasks.length);
+    //   debugDatabase('Job with relationships', {
+    //     title: job.title,
+    //     client: job.client.name,
+    //     taskCount: job.tasks.length
+    //   });
     // });
     
     return jobsQuery;
@@ -363,7 +378,10 @@ export class PerformanceBestPractices {
     
     const jobsResult = await jobs.all();
     jobsResult.forEach(job => {
-      console.log(`${job.title} - ${job.client?.name}`);
+      debugDatabase('Job with included client', {
+        title: job.title,
+        client: job.client?.name
+      });
     });
   }
   
@@ -378,7 +396,9 @@ export class PerformanceBestPractices {
     const jobsResult = await jobs.all();
     jobsResult.forEach(job => {
       // Only using title - other relationships loaded for nothing
-      console.log(job.title);
+      debugPerformance('Inefficient includes - loaded unused relationships', {
+        title: job.title
+      });
     });
   }
   

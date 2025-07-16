@@ -4,6 +4,7 @@
 /// <reference lib="webworker" />
 
 import { build, files, version } from '$service-worker';
+import { debugAPI } from '$lib/utils/debug';
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
@@ -46,7 +47,7 @@ sw.addEventListener('fetch', (event) => {
 	// Skip intercepting API requests entirely - let them go through Vite's proxy
 	// This allows the development/test proxy to handle routing to the correct backend
 	if (url.pathname.startsWith('/api/')) {
-		console.log('[SW] Skipping API request:', url.pathname);
+		debugAPI('[SW] Skipping API request', { pathname: url.pathname });
 		// Don't intercept - let the browser handle this request normally
 		// In development/test: Vite proxy will route to backend
 		// In production: Direct API calls (same origin)

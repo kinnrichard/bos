@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { healthService, api } from '$lib/api';
   import type { HealthResponse } from '$lib/types/api';
+  import { debugAPI, debugError } from '$lib/utils/debug';
 
   let healthStatus: HealthResponse | null = null;
   let loading = false;
@@ -13,29 +14,29 @@
     
     try {
       healthStatus = await healthService.checkHealth();
-      console.log('Health check successful:', healthStatus);
+      debugAPI('Health check successful', { healthStatus });
     } catch (err) {
       error = err instanceof Error ? err.message : 'Health check failed';
-      console.error('Health check failed:', err);
+      debugError('Health check failed', { error: err });
     } finally {
       loading = false;
     }
   }
 
   async function testApiMethods() {
-    console.log('Testing API methods...');
+    debugAPI('Testing API methods...');
     
     try {
       // Test GET
-      console.log('Testing GET /health');
+      debugAPI('Testing GET /health');
       const healthData = await api.get('/health');
-      console.log('GET response:', healthData);
+      debugAPI('GET response', { healthData });
 
       // Test headers and CSRF token
-      console.log('Testing CSRF token handling');
+      debugAPI('Testing CSRF token handling');
       
     } catch (err) {
-      console.error('API test failed:', err);
+      debugError('API test failed', { error: err });
     }
   }
 

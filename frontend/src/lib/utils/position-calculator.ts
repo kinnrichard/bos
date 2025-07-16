@@ -3,6 +3,8 @@
  * Extracted from TaskList.svelte for unit testing
  */
 
+import { debugPerformance } from '$lib/utils/debug';
+
 export interface Task {
   id: string;
   position?: number;
@@ -201,7 +203,7 @@ export function calculateRelativePositionFromTarget(
     const siblings = allSiblings;
     const targetIndex = siblings.findIndex(t => t.id === targetTask.id);
     
-    console.log('🔍 Sibling analysis for same-parent drag:', {
+    debugPerformance('Sibling analysis for same-parent drag', {
       targetTask: { id: targetTask.id.substring(0, 8), title: targetTask.title, position: targetTask.position || 0 },
       allSiblings: allSiblings.map((s, idx) => ({ 
         index: idx,

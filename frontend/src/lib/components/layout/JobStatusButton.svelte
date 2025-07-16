@@ -6,6 +6,7 @@
   import '$lib/styles/popover-common.css';
   import { Job } from '$lib/models/job';
   import { ReactiveJob } from '$lib/models/reactive-job';
+  import { debugComponent, debugWorkflow, debugError } from '$lib/utils/debug';
 
   // Self-sufficient props pattern - matches TechnicianAssignmentButton
   let {
@@ -54,12 +55,12 @@
     
     // Use jobId directly - always available in self-sufficient pattern
     if (!jobId) {
-      console.warn('[JobStatusButton] handleStatusChange called with invalid jobId - aborting');
+      debugError('[JobStatusButton] handleStatusChange called with invalid jobId - aborting');
       return;
     }
     
     const newStatus = statusOption.value;
-    console.log('[JobStatusButton] handleStatusChange called:', {
+    debugComponent('[JobStatusButton] handleStatusChange called', {
       newStatus,
       currentStatus,
       jobId,
@@ -67,21 +68,21 @@
     });
     
     if (newStatus === currentStatus) {
-      console.log('[JobStatusButton] Status change skipped - same status');
+      debugWorkflow('[JobStatusButton] Status change skipped - same status');
       return;
     }
     
     try {
       // 2. Then persist to database using ActiveRecord pattern (Zero.js handles optimistic updates)
-      console.log('[JobStatusButton] Calling Job.update...');
+      debugWorkflow('[JobStatusButton] Calling Job.update');
       await Job.update(jobId, { status: newStatus });
       
-      console.log('[JobStatusButton] AFTER ActiveRecord mutation - SUCCESS:', {
+      debugWorkflow('[JobStatusButton] AFTER ActiveRecord mutation - SUCCESS', {
         persistedStatus: newStatus,
         timestamp: Date.now()
       });
     } catch (error) {
-      console.error('[JobStatusButton] Failed to update job status:', error);
+      debugError('[JobStatusButton] Failed to update job status', error);
       // TODO: Show error toast to user
       // Note: Popover already closed for better UX even on error
     }

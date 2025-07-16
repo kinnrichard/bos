@@ -2,6 +2,7 @@
 // Implements Zero's native addListener for true real-time updates
 
 import { getZero } from './zero-client';
+import { debugDatabase, debugReactive, debugError } from '$lib/utils/debug';
 
 /**
  * Custom Svelte 5 rune for Zero reactive queries
@@ -42,7 +43,7 @@ export function fZero<T>(getQueryBuilder: () => any, defaultValue: T[] = [] as T
         
         // Check if queryBuilder is available
         if (!queryBuilder) {
-          console.log('🔍 fZero: Query builder not ready, retrying in 100ms...');
+          debugDatabase('fZero: Query builder not ready, retrying in 100ms');
           isLoading = true;
           error = null;
           // Retry after a short delay
@@ -50,12 +51,12 @@ export function fZero<T>(getQueryBuilder: () => any, defaultValue: T[] = [] as T
           return;
         }
         
-        console.log('🔍 fZero: Creating materialized view');
+        debugDatabase('fZero: Creating materialized view');
         view = queryBuilder.materialize();
         
         // Set up Zero's native listener for real-time updates
         removeListener = view.addListener((newData: T[]) => {
-          console.log('🔥 ZERO DATA CHANGED! New count:', newData?.length || 0);
+          debugReactive('ZERO DATA CHANGED! New count', { count: newData?.length || 0 });
           data = newData || defaultValue;
           isLoading = false;
           error = null;
@@ -69,10 +70,10 @@ export function fZero<T>(getQueryBuilder: () => any, defaultValue: T[] = [] as T
           error = null;
         }
         
-        console.log('🔍 fZero: Setup complete with initial data:', initialData?.length || 'null');
+        debugDatabase('fZero: Setup complete with initial data', { length: initialData?.length || 'null' });
         
       } catch (err) {
-        console.error('🔍 fZero: Error during setup:', err);
+        debugError('fZero: Error during setup', { error: err });
         error = err instanceof Error ? err : new Error('Unknown error');
         isLoading = false;
       }
@@ -87,11 +88,11 @@ export function fZero<T>(getQueryBuilder: () => any, defaultValue: T[] = [] as T
         clearTimeout(retryTimeoutId);
       }
       if (removeListener) {
-        console.log('🔍 fZero: Removing listener');
+        debugReactive('fZero: Removing listener');
         removeListener();
       }
       if (view) {
-        console.log('🔍 fZero: Destroying view');
+        debugReactive('fZero: Destroying view');
         view.destroy();
       }
     };
@@ -143,7 +144,7 @@ export function fZeroOne<T>(getQueryBuilder: () => any, defaultValue: T | null =
         
         // Check if queryBuilder is available
         if (!queryBuilder) {
-          console.log('🔍 fZeroOne: Query builder not ready, retrying in 100ms...');
+          debugDatabase('fZeroOne: Query builder not ready, retrying in 100ms');
           isLoading = true;
           error = null;
           // Retry after a short delay
@@ -151,12 +152,12 @@ export function fZeroOne<T>(getQueryBuilder: () => any, defaultValue: T | null =
           return;
         }
         
-        console.log('🔍 fZeroOne: Creating materialized view');
+        debugDatabase('fZeroOne: Creating materialized view');
         view = queryBuilder.materialize();
         
         // Set up Zero's native listener for real-time updates
         removeListener = view.addListener((newData: T | null) => {
-          console.log('🔥 ZERO DATA CHANGED! New data:', newData ? 'present' : 'null');
+          debugReactive('ZERO DATA CHANGED! New data', { data: newData ? 'present' : 'null' });
           data = newData || defaultValue;
           isLoading = false;
           error = null;
@@ -170,10 +171,10 @@ export function fZeroOne<T>(getQueryBuilder: () => any, defaultValue: T | null =
           error = null;
         }
         
-        console.log('🔍 fZeroOne: Setup complete with initial data:', initialData ? 'present' : 'null');
+        debugDatabase('fZeroOne: Setup complete with initial data', { data: initialData ? 'present' : 'null' });
         
       } catch (err) {
-        console.error('🔍 fZeroOne: Error during setup:', err);
+        debugError('fZeroOne: Error during setup', { error: err });
         error = err instanceof Error ? err : new Error('Unknown error');
         isLoading = false;
       }
@@ -188,11 +189,11 @@ export function fZeroOne<T>(getQueryBuilder: () => any, defaultValue: T | null =
         clearTimeout(retryTimeoutId);
       }
       if (removeListener) {
-        console.log('🔍 fZeroOne: Removing listener');
+        debugReactive('fZeroOne: Removing listener');
         removeListener();
       }
       if (view) {
-        console.log('🔍 fZeroOne: Destroying view');
+        debugReactive('fZeroOne: Destroying view');
         view.destroy();
       }
     };

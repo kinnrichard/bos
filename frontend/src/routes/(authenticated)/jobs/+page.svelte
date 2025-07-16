@@ -3,6 +3,7 @@
   // Epic-009: Import ReactiveJob for Rails-style includes()
   import { ReactiveJob } from '$lib/models/reactive-job';
   import type { JobData } from '$lib/models/types/job-data';
+  import { debugComponent, debugReactive } from '$lib/utils/debug';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
   // Automatically stays in sync with Zero.js data changes
@@ -64,13 +65,13 @@
     // ReactiveJob automatically stays in sync via Zero.js addListener
     // Manual refresh available if needed
     jobsQuery.refresh();
-    console.log('🔄 Jobs page retry requested - ReactiveJob refreshed');
+    debugComponent('Jobs page retry requested - ReactiveJob refreshed');
   }
 
   // Handle refresh - ReactiveJob stays fresh automatically
   function handleRefresh() {
     // ReactiveJob provides real-time updates via Zero.js addListener
-    console.log('🔄 Jobs page refresh requested - ReactiveJob provides real-time updates');
+    debugReactive('Jobs page refresh requested - ReactiveJob provides real-time updates');
   }
 </script>
 

@@ -18,6 +18,7 @@
 import { zeroClient, ZeroNotAvailableError } from './client';
 import { ZeroQueryBuilder } from './query-builder';
 import type { ZeroClient } from './zero-client';
+import { debugDatabase, debugPerformance, debugError, debugReactive } from '$lib/utils/debug';
 
 // Default TTL for queries when none specified
 const DEFAULT_TTL = '1h';
@@ -78,13 +79,11 @@ export class ReactiveQuery<T> {
     
     // Development warning for missing TTL
     if (this.options.ttl === undefined) {
-      console.warn(
-        `⚠️  ReactiveQuery created without TTL - using default "${DEFAULT_TTL}"`,
-        {
-          queryBuilder: this.getQueryBuilder.toString(),
-          message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
-        }
-      );
+      debugDatabase('ReactiveQuery created without TTL - using default', {
+        defaultTTL: DEFAULT_TTL,
+        queryBuilder: this.getQueryBuilder.toString(),
+        message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
+      });
     }
     
     // Start query if enabled
@@ -191,7 +190,7 @@ export class ReactiveQuery<T> {
         
         // Check if queryBuilder is available
         if (!queryBuilder) {
-          console.log('🔍 ReactiveQuery: Query builder not ready, retrying in 100ms...');
+          debugDatabase('ReactiveQuery: Query builder not ready, retrying in 100ms');
           const { retryDelay = 100 } = this.options;
           this.retryTimeoutId = setTimeout(tryInitialize, retryDelay) as any;
           return;
@@ -202,12 +201,12 @@ export class ReactiveQuery<T> {
         if (queryBuilder instanceof ZeroQueryBuilder) {
           // New query builder - use materialize method
           const ttlValue = this.options.ttl || DEFAULT_TTL;
-          console.log('🔍 ReactiveQuery: Creating materialized view with TTL:', ttlValue);
+          debugDatabase('ReactiveQuery: Creating materialized view with TTL', { ttlValue });
           query = queryBuilder.materialize(ttlValue);
         } else {
           // Legacy pattern - queryBuilder is already a Zero query
           const ttlValue = this.options.ttl || DEFAULT_TTL;
-          console.log('🔍 ReactiveQuery: Creating materialized view (legacy) with TTL:', ttlValue);
+          debugDatabase('ReactiveQuery: Creating materialized view (legacy) with TTL', { ttlValue });
           query = queryBuilder.materialize(ttlValue);
         }
         
@@ -217,7 +216,7 @@ export class ReactiveQuery<T> {
         this.removeListener = this.view.addListener((newData: T[]) => {
           if (this.isDestroyed) return;
           
-          console.log('🔥 ZERO DATA CHANGED! New count:', newData?.length || 0);
+          debugDatabase('ZERO DATA CHANGED! New count', { count: newData?.length || 0 });
           this.updateState({
             data: newData || [],
             isLoading: false,
@@ -248,19 +247,19 @@ export class ReactiveQuery<T> {
           });
         }
         
-        console.log('🔍 ReactiveQuery: Setup complete with initial data:', initialData?.length || 'empty');
+        debugDatabase('ReactiveQuery: Setup complete with initial data', { length: initialData?.length || 'empty' });
         
       } catch (err) {
         if (this.isDestroyed) return;
         
-        console.error('🔍 ReactiveQuery: Error during setup:', err);
+        debugError('ReactiveQuery: Error during setup', { error: err });
         const error = err instanceof Error ? err : new Error('Unknown error');
         
         // Retry logic
         const { retryAttempts = 3, retryDelay = 1000 } = this.options;
         if (this.retryCount < retryAttempts) {
           this.retryCount++;
-          console.log(`🔍 ReactiveQuery: Retrying (${this.retryCount}/${retryAttempts}) in ${retryDelay}ms...`);
+          debugDatabase('ReactiveQuery: Retrying', { retryCount: this.retryCount, retryAttempts, retryDelay });
           this.retryTimeoutId = setTimeout(tryInitialize, retryDelay * this.retryCount) as any;
           return;
         }
@@ -293,7 +292,7 @@ export class ReactiveQuery<T> {
       try {
         callback(newState);
       } catch (err) {
-        console.error('ReactiveQuery subscriber error:', err);
+        debugError('ReactiveQuery subscriber error', { error: err });
       }
     });
   }
@@ -305,13 +304,13 @@ export class ReactiveQuery<T> {
     }
     
     if (this.removeListener) {
-      console.log('🔍 ReactiveQuery: Removing listener');
+      debugDatabase('ReactiveQuery: Removing listener');
       this.removeListener();
       this.removeListener = null;
     }
     
     if (this.view) {
-      console.log('🔍 ReactiveQuery: Destroying view');
+      debugDatabase('ReactiveQuery: Destroying view');
       this.view.destroy();
       this.view = null;
     }
@@ -354,13 +353,11 @@ export class ReactiveQueryOne<T> {
     
     // Development warning for missing TTL
     if (this.options.ttl === undefined) {
-      console.warn(
-        `⚠️  ReactiveQueryOne created without TTL - using default "${DEFAULT_TTL}"`,
-        {
-          queryBuilder: this.getQueryBuilder.toString(),
-          message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
-        }
-      );
+      debugDatabase('ReactiveQueryOne created without TTL - using default', {
+        defaultTTL: DEFAULT_TTL,
+        queryBuilder: this.getQueryBuilder.toString(),
+        message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
+      });
     }
     
     // Start query if enabled
@@ -467,7 +464,7 @@ export class ReactiveQueryOne<T> {
         
         // Check if queryBuilder is available
         if (!queryBuilder) {
-          console.log('🔍 ReactiveQueryOne: Query builder not ready, retrying in 100ms...');
+          debugDatabase('ReactiveQueryOne: Query builder not ready, retrying in 100ms');
           const { retryDelay = 100 } = this.options;
           this.retryTimeoutId = setTimeout(tryInitialize, retryDelay) as any;
           return;
@@ -478,13 +475,13 @@ export class ReactiveQueryOne<T> {
         if (queryBuilder instanceof ZeroQueryBuilder) {
           // New query builder - get one() query and materialize
           const ttlValue = this.options.ttl || DEFAULT_TTL;
-          console.log('🔍 ReactiveQueryOne: Creating materialized view with TTL:', ttlValue);
+          debugDatabase('ReactiveQueryOne: Creating materialized view with TTL', { ttlValue });
           const oneQuery = queryBuilder.clone().limit(1).materialize(ttlValue);
           query = oneQuery;
         } else {
           // Legacy pattern - queryBuilder is already a Zero query
           const ttlValue = this.options.ttl || DEFAULT_TTL;
-          console.log('🔍 ReactiveQueryOne: Creating materialized view (legacy) with TTL:', ttlValue);
+          debugDatabase('ReactiveQueryOne: Creating materialized view (legacy) with TTL', { ttlValue });
           query = queryBuilder.materialize(ttlValue);
         }
         
@@ -502,7 +499,7 @@ export class ReactiveQueryOne<T> {
             data = newData || null;
           }
           
-          console.log('🔥 ZERO DATA CHANGED! New data:', data ? 'present' : 'null');
+          debugReactive('ZERO DATA CHANGED! New data', { data: data ? 'present' : 'null' });
           this.updateState({
             data,
             isLoading: false,
@@ -530,19 +527,19 @@ export class ReactiveQueryOne<T> {
           lastUpdated: Date.now()
         });
         
-        console.log('🔍 ReactiveQueryOne: Setup complete with initial data:', data ? 'present' : 'null');
+        debugDatabase('ReactiveQueryOne: Setup complete with initial data', { data: data ? 'present' : 'null' });
         
       } catch (err) {
         if (this.isDestroyed) return;
         
-        console.error('🔍 ReactiveQueryOne: Error during setup:', err);
+        debugError('ReactiveQueryOne: Error during setup', { error: err });
         const error = err instanceof Error ? err : new Error('Unknown error');
         
         // Retry logic
         const { retryAttempts = 3, retryDelay = 1000 } = this.options;
         if (this.retryCount < retryAttempts) {
           this.retryCount++;
-          console.log(`🔍 ReactiveQueryOne: Retrying (${this.retryCount}/${retryAttempts}) in ${retryDelay}ms...`);
+          debugDatabase('ReactiveQueryOne: Retrying', { retryCount: this.retryCount, retryAttempts, retryDelay });
           this.retryTimeoutId = setTimeout(tryInitialize, retryDelay * this.retryCount) as any;
           return;
         }
@@ -575,7 +572,7 @@ export class ReactiveQueryOne<T> {
       try {
         callback(newState);
       } catch (err) {
-        console.error('ReactiveQueryOne subscriber error:', err);
+        debugError('ReactiveQueryOne subscriber error', { error: err });
       }
     });
   }
@@ -587,13 +584,13 @@ export class ReactiveQueryOne<T> {
     }
     
     if (this.removeListener) {
-      console.log('🔍 ReactiveQueryOne: Removing listener');
+      debugReactive('ReactiveQueryOne: Removing listener');
       this.removeListener();
       this.removeListener = null;
     }
     
     if (this.view) {
-      console.log('🔍 ReactiveQueryOne: Destroying view');
+      debugReactive('ReactiveQueryOne: Destroying view');
       this.view.destroy();
       this.view = null;
     }
@@ -642,7 +639,7 @@ export function useQuery<T>(
         return {
           addListener: (callback: (data: T[]) => void) => {
             // Execute query and call callback
-            Promise.resolve(queryFn()).then(callback).catch(console.error);
+            Promise.resolve(queryFn()).then(callback).catch(err => debugError('useQuery callback error', { error: err }));
             // Return cleanup function
             return () => {};
           },
@@ -673,7 +670,7 @@ export function useQueryOne<T>(
         return {
           addListener: (callback: (data: T | null) => void) => {
             // Execute query and call callback
-            Promise.resolve(queryFn()).then(callback).catch(console.error);
+            Promise.resolve(queryFn()).then(callback).catch(err => debugError('useQueryOne callback error', { error: err }));
             // Return cleanup function
             return () => {};
           },

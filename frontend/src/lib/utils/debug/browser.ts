@@ -45,7 +45,9 @@ function createBrowserDebugHelper(): BrowserDebugHelper {
     },
     
     list: () => {
-      console.log('🐛 Available debug namespaces:');
+      console.log('🐛 Available debug namespaces (19 total):');
+      console.log('');
+      console.log('📦 Core System:');
       console.log('   bos:api - API requests and responses (secure)');
       console.log('   bos:auth - Authentication operations (secure)');
       console.log('   bos:security - Security-related operations (secure)');
@@ -53,12 +55,32 @@ function createBrowserDebugHelper(): BrowserDebugHelper {
       console.log('   bos:state - Component state changes');
       console.log('   bos:component - General component debugging');
       console.log('   bos:cache - Cache and data synchronization');
-      console.log('   bos:technician-assignment - Technician assignment operations');
+      console.log('');
+      console.log('💾 Data & Persistence:');
+      console.log('   bos:database - Database queries and transactions (secure)');
+      console.log('   bos:websocket - WebSocket communication (secure)');
+      console.log('   bos:validation - Form and data validation');
+      console.log('');
+      console.log('⚡ Performance & Monitoring:');
+      console.log('   bos:performance - Performance metrics and timing');
+      console.log('   bos:error - Error handling and recovery');
+      console.log('');
+      console.log('🎨 User Interface:');
+      console.log('   bos:navigation - Routing and page transitions');
+      console.log('   bos:notification - Alerts and messages');
+      console.log('');
+      console.log('🏢 Business Logic:');
+      console.log('   bos:workflow - Business process flows');
+      console.log('   bos:search - Search operations');
+      console.log('   bos:upload - File upload operations (secure)');
+      console.log('   bos:export - Data export operations');
+      console.log('   bos:integration - Third-party integrations (secure)');
       console.log('');
       console.log('💡 Examples:');
       console.log('   bosDebug.enable("bos:*") - Enable all debugging');
       console.log('   bosDebug.enable("bos:api,bos:auth") - Enable specific namespaces');
       console.log('   bosDebug.enable("bos:*,-bos:cache") - Enable all except cache');
+      console.log('   bosDebug.enable("bos:core:*") - Enable all core namespaces');
     }
   };
 }
@@ -80,7 +102,7 @@ export function initializeBrowserDebugHelpers(): void {
   
   // Show available commands
   console.log('🐛 Debug helper available: window.bosDebug');
-  console.log('   bosDebug.enable("bos:*") - Enable all debugging');
+  console.log('   bosDebug.enable("bos:*") - Enable all debugging (19 namespaces)');
   console.log('   bosDebug.enable("bos:api") - Enable API debugging (secure)');
   console.log('   bosDebug.enable("bos:auth") - Enable auth debugging (secure)');
   console.log('   bosDebug.enable("bos:security") - Enable security debugging (secure)');

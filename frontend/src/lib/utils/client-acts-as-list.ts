@@ -4,6 +4,7 @@
  */
 
 import type { Task, PositionUpdate, RelativePositionUpdate } from './position-calculator.js';
+import { debugDatabase, debugValidation, debugPerformance } from '$lib/utils/debug';
 
 export interface ActsAsListResult {
   updatedTasks: Task[];
@@ -291,9 +292,9 @@ export class ClientActsAsList {
       
       await Promise.all(updatePromises);
       
-      console.log(`Successfully updated ${positionUpdates.length} task positions via ActiveRecord pattern`);
+      debugDatabase('Successfully updated task positions via ActiveRecord pattern', { count: positionUpdates.length });
     } catch (error) {
-      console.error('Failed to execute position updates:', error);
+      debugValidation('Failed to execute position updates', { error });
       throw error;
     }
   }
@@ -333,7 +334,7 @@ export class ClientActsAsList {
     
     const hasNormalizationChanges = originalPositions.some((orig, i) => orig.pos !== normalizedPositions[i].pos);
     if (hasNormalizationChanges) {
-      console.log('🔧 Position normalization applied:', {
+      debugDatabase('Position normalization applied', {
         original: originalPositions,
         normalized: normalizedPositions,
         changes: originalPositions.filter((orig, i) => orig.pos !== normalizedPositions[i].pos)
@@ -382,7 +383,7 @@ export class ClientActsAsList {
           targetPosition = 1;
         }
         
-        console.log('🔮 Client prediction: before task (with normalization)', {
+        debugPerformance('Client prediction: before task (with normalization)', {
           movingTask: update.id.substring(0, 8),
           beforeTask: beforeTask ? { id: beforeTask.id.substring(0, 8), position: beforeTask.position } : null,
           movingTaskCurrentPos: movingTask?.position,
@@ -415,7 +416,7 @@ export class ClientActsAsList {
         } else {
           targetPosition = scopeTasksExcludingMoved.length + 1;
         }
-        console.log('🔮 Client prediction: after task (with normalization)', {
+        debugPerformance('Client prediction: after task (with normalization)', {
           movingTask: update.id.substring(0, 8),
           afterTask: afterTask ? { id: afterTask.id.substring(0, 8), position: afterTask.position } : null,
           movingTaskCurrentPos: movingTask?.position,
@@ -428,10 +429,10 @@ export class ClientActsAsList {
         });
       } else if (update.position === 'first') {
         targetPosition = 1;
-        console.log('🔮 Client prediction: first position', { movingTask: update.id.substring(0, 8), targetPosition });
+        debugPerformance('Client prediction: first position', { movingTask: update.id.substring(0, 8), targetPosition });
       } else if (update.position === 'last') {
         targetPosition = scopeTasksExcludingMoved.length + 1;
-        console.log('🔮 Client prediction: last position', { movingTask: update.id.substring(0, 8), targetPosition });
+        debugPerformance('Client prediction: last position', { movingTask: update.id.substring(0, 8), targetPosition });
       }
       
       positionUpdates.push({

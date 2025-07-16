@@ -2,6 +2,7 @@
   import { layout, layoutActions } from '$lib/stores/layout.svelte';
   import { page } from '$app/stores';
   import { taskFilter, taskFilterActions } from '$lib/stores/taskFilter.svelte';
+  import { debugSearch, debugComponent } from '$lib/utils/debug';
   import FilterPopover from './FilterPopover.svelte';
   import JobStatusButton from './JobStatusButton.svelte';
   import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
@@ -19,7 +20,7 @@
 
   function handleSearch() {
     if (searchQuery.trim()) {
-      console.log('Search:', searchQuery);
+      debugSearch('Search query executed', { query: searchQuery });
       // Search functionality is now handled by TaskFilterManager via taskFilter store
     }
   }
@@ -64,19 +65,19 @@
     switch (page) {
       case 'jobs':
         return [
-          { label: 'New Job', icon: '/icons/plus.svg', iconType: 'svg', action: () => console.log('New job') }
+          { label: 'New Job', icon: '/icons/plus.svg', iconType: 'svg', action: () => debugComponent('New job action triggered') }
         ];
       case 'clients':
         return [
-          { label: 'New Client', icon: '➕', iconType: 'emoji', action: () => console.log('New client') }
+          { label: 'New Client', icon: '➕', iconType: 'emoji', action: () => debugComponent('New client action triggered') }
         ];
       case 'people':
         return [
-          { label: 'Add Person', icon: '➕', iconType: 'emoji', action: () => console.log('Add person') }
+          { label: 'Add Person', icon: '➕', iconType: 'emoji', action: () => debugComponent('Add person action triggered') }
         ];
       case 'devices':
         return [
-          { label: 'Add Device', icon: '➕', iconType: 'emoji', action: () => console.log('Add device') }
+          { label: 'Add Device', icon: '➕', iconType: 'emoji', action: () => debugComponent('Add device action triggered') }
         ];
       default:
         return [];

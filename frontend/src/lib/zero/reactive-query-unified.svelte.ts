@@ -3,6 +3,7 @@
 // Single class handles both single and collection results
 
 import { getZero } from './zero-client';
+import { debugDatabase, debugReactive, debugError } from '$lib/utils/debug';
 
 // Centralized Zero.js configuration
 export const ZERO_CONFIG = {
@@ -177,7 +178,7 @@ export class ReactiveQuery<T> {
     }
     
     if (ZERO_CONFIG.DEBUG_LOGGING) {
-      console.log(`🔍 ReactiveQuery: Creating view with TTL: ${ttlValue}`);
+      debugDatabase('ReactiveQuery: Creating view with TTL', { ttlValue });
     }
     
     this.view = queryBuilder.materialize(ttlValue);
@@ -188,7 +189,7 @@ export class ReactiveQuery<T> {
       
       if (ZERO_CONFIG.DEBUG_LOGGING) {
         const count = Array.isArray(newData) ? newData.length : (newData ? 1 : 0);
-        console.log(`🔥 ReactiveQuery: Data updated, count: ${count}`);
+        debugReactive('ReactiveQuery: Data updated', { count });
       }
       
       this.updateState(newData, false, null);
@@ -218,7 +219,7 @@ export class ReactiveQuery<T> {
     const error = err instanceof Error ? err : new ActiveRecordError('Unknown query error');
     this.updateState(this.options.defaultValue || null, false, error);
     
-    console.error('🔍 ReactiveQuery: Error during query:', error);
+    debugError('ReactiveQuery: Error during query', { error });
   }
   
   private updateState(data: T | T[] | null, isLoading: boolean, error: Error | null): void {
@@ -232,7 +233,7 @@ export class ReactiveQuery<T> {
       try {
         callback(data, meta);
       } catch (err) {
-        console.error('ReactiveQuery subscriber error:', err);
+        debugError('ReactiveQuery subscriber error', { error: err });
       }
     });
   }

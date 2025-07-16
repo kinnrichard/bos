@@ -76,8 +76,9 @@ export function isDebugEnabled(namespace: string): boolean {
 export function getEnabledNamespaces(): string[] {
   const enabledNamespaces: string[] = [];
   
-  // Check common BOS namespaces
+  // Check all BOS namespaces (expanded to 19 namespaces)
   const commonNamespaces = [
+    // Core system namespaces
     'bos:api',
     'bos:auth',
     'bos:security',
@@ -85,7 +86,26 @@ export function getEnabledNamespaces(): string[] {
     'bos:state',
     'bos:component',
     'bos:cache',
-    'bos:technician-assignment'
+    
+    // Data and persistence namespaces
+    'bos:database',
+    'bos:websocket',
+    'bos:validation',
+    
+    // Performance and monitoring namespaces
+    'bos:performance',
+    'bos:error',
+    
+    // User interface namespaces
+    'bos:navigation',
+    'bos:notification',
+    
+    // Business logic namespaces
+    'bos:workflow',
+    'bos:search',
+    'bos:upload',
+    'bos:export',
+    'bos:integration'
   ];
   
   for (const namespace of commonNamespaces) {

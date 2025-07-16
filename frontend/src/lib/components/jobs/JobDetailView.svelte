@@ -5,6 +5,7 @@
   import JobInfo from './JobInfo.svelte';
   import TaskList from './TaskList.svelte';
   import StatusIndicator from './StatusIndicator.svelte';
+  import { debugComponent } from '$lib/utils/debug';
 
   // ✨ USE $props() FOR SVELTE 5 RUNES MODE
   let { job, batchTaskDetails = null }: { job: PopulatedJob; batchTaskDetails?: any } = $props();
@@ -21,15 +22,19 @@
   $effect(() => {
     if (job) {
       $inspect('[JobDetailView] Received job data:', job);
-      console.log('[JobDetailView] Job title:', job?.title);
-      console.log('[JobDetailView] Job client:', job?.client?.name || 'Using Zero.js flat structure');
-      console.log('[JobDetailView] Job status:', job?.status);
-      console.log('[JobDetailView] Job tasks type:', typeof job?.tasks);
-      console.log('[JobDetailView] Job tasks length:', job?.tasks?.length);
+      debugComponent('[JobDetailView] Job data loaded', {
+        title: job?.title,
+        client: job?.client?.name || 'Using Zero.js flat structure',
+        status: job?.status,
+        tasksType: typeof job?.tasks,
+        tasksLength: job?.tasks?.length
+      });
       if (job?.tasks && job.tasks.length > 0) {
         $inspect('[JobDetailView] First task:', job.tasks[0]);
-        console.log('[JobDetailView] Task ID:', job.tasks[0]?.id);
-        console.log('[JobDetailView] Task title:', job.tasks[0]?.title);
+        debugComponent('[JobDetailView] First task data', {
+          taskId: job.tasks[0]?.id,
+          taskTitle: job.tasks[0]?.title
+        });
       }
     }
   });

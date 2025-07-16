@@ -3,6 +3,7 @@
   import Portal from './Portal.svelte';
   import { onDestroy, onMount, tick } from 'svelte';
   import { calculatePopoverPosition, type PopoverPosition } from '$lib/utils/popover-positioning';
+  import { debugComponent } from '$lib/utils/debug';
 
   // Core popover props
   let {
@@ -73,7 +74,7 @@
     let arrowTop: number;
     
     // Debug logging
-    console.log('Arrow positioning debug:', {
+    debugComponent('Arrow positioning debug', {
       placement: preferredPlacement,
       triggerRect: { top: triggerRect.top, left: triggerRect.left, width: triggerRect.width, height: triggerRect.height },
       panelRect: { top: panelRect.top, left: panelRect.left, width: panelRect.width, height: panelRect.height },
@@ -91,7 +92,7 @@
         if (distanceFromCenter <= 20) {
           arrowLeft = panelRect.width - 1;
           arrowTop = panelRect.height / 2; // Center the arrow
-          console.log('Left placement - using centered arrow:', { arrowLeft, arrowTop });
+          debugComponent('Left placement - using centered arrow', { arrowLeft, arrowTop });
         } else {
           // Use positioned arrow when trigger is far from center
           arrowLeft = panelRect.width - 1;
@@ -100,7 +101,7 @@
             Math.max(0, relativeTop), 
             panelRect.height - 12
           ));
-          console.log('Left placement - using positioned arrow:', { 
+          debugComponent('Left placement - using positioned arrow', { 
             arrowLeft, 
             arrowTop, 
             triggerCenterY, 
@@ -150,7 +151,7 @@
     panelElement.style.setProperty('--arrow-left', arrowLeft + 'px');
     panelElement.style.setProperty('--arrow-top', arrowTop + 'px');
     
-    console.log('Final arrow position:', { arrowLeft, arrowTop });
+    debugComponent('Final arrow position', { arrowLeft, arrowTop });
   }
 
   // Fallback outside click handler in case Melt UI's doesn't work

@@ -17,6 +17,7 @@
   import { initZero, getZeroState } from '$lib/zero';
   import { authService } from '$lib/api/auth';
   import AppLoading from '$lib/components/AppLoading.svelte';
+  import { debugAuth, debugError } from '$lib/utils/debug';
   
   let { children } = $props();
 
@@ -64,7 +65,7 @@
       // Retry logic for transient failures
       if (retryCount < maxRetries) {
         retryCount++;
-        console.log(`🏗️ [Authenticated Layout] Retrying (${retryCount}/${maxRetries}) in 2s...`);
+        debugAuth(`[Authenticated Layout] Retrying (${retryCount}/${maxRetries}) in 2s...`);
         
         setTimeout(() => {
           // Reset state and retry

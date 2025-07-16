@@ -3,6 +3,7 @@
 // Works seamlessly in both Svelte components and vanilla JavaScript
 
 import { getZero } from './zero-client';
+import { debugDatabase, debugReactive, debugError } from '$lib/utils/debug';
 
 // Default TTL for queries when none specified
 const DEFAULT_TTL = '1h';
@@ -53,14 +54,12 @@ export class ReactiveQuery<T> {
     
     // Development warning for missing TTL (now properly handled)
     if (this.ttl === undefined) {
-      console.warn(
-        `⚠️  ReactiveQuery created without TTL - using default "${DEFAULT_TTL}"`,
-        {
-          queryBuilder: this.getQueryBuilder.toString(),
-          defaultValue: this.defaultValue,
-          message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
-        }
-      );
+      debugDatabase('ReactiveQuery created without TTL - using default', {
+        defaultTTL: DEFAULT_TTL,
+        queryBuilder: this.getQueryBuilder.toString(),
+        defaultValue: this.defaultValue,
+        message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
+      });
     }
     
     // Set up Zero listener
@@ -129,17 +128,17 @@ export class ReactiveQuery<T> {
         
         // Check if queryBuilder is available
         if (!queryBuilder) {
-          console.log('🔍 ReactiveQuery: Query builder not ready, retrying in 100ms...');
+          debugDatabase('ReactiveQuery: Query builder not ready, retrying in 100ms');
           this.updateState(this.defaultValue, false, null, 'loading');
           this.retryTimeoutId = setTimeout(tryInitialize, 100) as any;
           return;
         }
         
-        console.log('🔍 ReactiveQuery: Creating materialized view with TTL:', this.ttl, typeof this.ttl);
+        debugDatabase('ReactiveQuery: Creating materialized view with TTL', { ttl: this.ttl, ttlType: typeof this.ttl });
         
         // Proper TTL handling per Zero.js documentation
         const ttlValue = this.ttl || DEFAULT_TTL; // Use provided TTL or safe default
-        console.log('🔍 ReactiveQuery: Using TTL:', ttlValue);
+        debugDatabase('ReactiveQuery: Using TTL', { ttlValue });
         
         // Validate TTL before passing to Zero
         if (typeof ttlValue !== 'string' && typeof ttlValue !== 'number') {
@@ -150,7 +149,7 @@ export class ReactiveQuery<T> {
         
         // Check if materialize() returned a valid view
         if (!this.view) {
-          console.log('🔍 ReactiveQuery: materialize() returned null, Zero client not ready. Retrying...');
+          debugDatabase('ReactiveQuery: materialize() returned null, Zero client not ready. Retrying');
           this.updateState(this.defaultValue, false, null, 'loading');
           this.retryTimeoutId = setTimeout(tryInitialize, 200) as any;
           return;
@@ -160,7 +159,7 @@ export class ReactiveQuery<T> {
         this.removeListener = this.view.addListener((newData: T[], result?: any) => {
           if (this.isDestroyed) return;
           
-          console.log('🔥 ZERO DATA CHANGED! New count:', newData?.length || 0, 'Result:', result);
+          debugReactive('ZERO DATA CHANGED! New count', { count: newData?.length || 0, result });
           
           // Determine result type based on Zero's completion state
           // Default to 'loading' and only set 'complete' when Zero explicitly confirms
@@ -178,22 +177,22 @@ export class ReactiveQuery<T> {
         
         // CONSERVATIVE APPROACH: Don't mark as complete until listener fires
         // This prevents flash of "no data" while Zero is actually loading
-        console.log('🔍 ReactiveQuery: Waiting for first listener callback...');
+        debugReactive('ReactiveQuery: Waiting for first listener callback');
         
         // Check if we already have synchronous data (rare case)
         const initialData = this.view.data;
         if (initialData !== undefined && initialData !== null && initialData.length > 0) {
           // Only if we have actual data (not empty array), mark as received
-          console.log('🔍 ReactiveQuery: Found immediate data:', initialData.length);
+          debugDatabase('ReactiveQuery: Found immediate data', { length: initialData.length });
           this.updateState(initialData, true, null, 'complete');
         }
         
-        console.log('🔍 ReactiveQuery: Setup complete with initial data:', initialData?.length || 'null');
+        debugDatabase('ReactiveQuery: Setup complete with initial data', { length: initialData?.length || 'null' });
         
       } catch (err) {
         if (this.isDestroyed) return;
         
-        console.error('🔍 ReactiveQuery: Error during setup:', err);
+        debugError('ReactiveQuery: Error during setup', { error: err });
         const error = err instanceof Error ? err : new Error('Unknown error');
         this.updateState(this.defaultValue, true, error, 'error');
       }
@@ -216,7 +215,7 @@ export class ReactiveQuery<T> {
       try {
         callback(data, { isLoading, error });
       } catch (err) {
-        console.error('ReactiveQuery subscriber error:', err);
+        debugError('ReactiveQuery subscriber error', { error: err });
       }
     });
   }
@@ -228,13 +227,13 @@ export class ReactiveQuery<T> {
     }
     
     if (this.removeListener) {
-      console.log('🔍 ReactiveQuery: Removing listener');
+      debugReactive('ReactiveQuery: Removing listener');
       this.removeListener();
       this.removeListener = null;
     }
     
     if (this.view) {
-      console.log('🔍 ReactiveQuery: Destroying view');
+      debugReactive('ReactiveQuery: Destroying view');
       this.view.destroy();
       this.view = null;
     }
@@ -287,14 +286,12 @@ export class ReactiveQueryOne<T> {
     
     // Development warning for missing TTL (now properly handled)
     if (this.ttl === undefined) {
-      console.warn(
-        `⚠️  ReactiveQueryOne created without TTL - using default "${DEFAULT_TTL}"`,
-        {
-          queryBuilder: this.getQueryBuilder.toString(),
-          defaultValue: this.defaultValue,
-          message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
-        }
-      );
+      debugDatabase('ReactiveQueryOne created without TTL - using default', {
+        defaultTTL: DEFAULT_TTL,
+        queryBuilder: this.getQueryBuilder.toString(),
+        defaultValue: this.defaultValue,
+        message: 'Consider adding explicit TTL like "5m" or "2h" for background persistence.'
+      });
     }
     
     // Set up Zero listener
@@ -363,17 +360,17 @@ export class ReactiveQueryOne<T> {
         
         // Check if queryBuilder is available
         if (!queryBuilder) {
-          console.log('🔍 ReactiveQueryOne: Query builder not ready, retrying in 100ms...');
+          debugDatabase('ReactiveQueryOne: Query builder not ready, retrying in 100ms');
           this.updateState(this.defaultValue, false, null, 'loading');
           this.retryTimeoutId = setTimeout(tryInitialize, 100) as any;
           return;
         }
         
-        console.log('🔍 ReactiveQueryOne: Creating materialized view with TTL:', this.ttl, typeof this.ttl);
+        debugDatabase('ReactiveQueryOne: Creating materialized view with TTL', { ttl: this.ttl, ttlType: typeof this.ttl });
         
         // Proper TTL handling per Zero.js documentation
         const ttlValue = this.ttl || DEFAULT_TTL; // Use provided TTL or safe default
-        console.log('🔍 ReactiveQueryOne: Using TTL:', ttlValue);
+        debugDatabase('ReactiveQueryOne: Using TTL', { ttlValue });
         
         // Validate TTL before passing to Zero
         if (typeof ttlValue !== 'string' && typeof ttlValue !== 'number') {
@@ -384,7 +381,7 @@ export class ReactiveQueryOne<T> {
         
         // Check if materialize() returned a valid view
         if (!this.view) {
-          console.log('🔍 ReactiveQueryOne: materialize() returned null, Zero client not ready. Retrying...');
+          debugDatabase('ReactiveQueryOne: materialize() returned null, Zero client not ready. Retrying');
           this.updateState(this.defaultValue, false, null, 'loading');
           this.retryTimeoutId = setTimeout(tryInitialize, 200) as any;
           return;
@@ -394,7 +391,7 @@ export class ReactiveQueryOne<T> {
         this.removeListener = this.view.addListener((newData: T | null, result?: any) => {
           if (this.isDestroyed) return;
           
-          console.log('🔥 ZERO DATA CHANGED! New data:', newData ? 'present' : 'null', 'Result:', result);
+          debugReactive('ZERO DATA CHANGED! New data', { data: newData ? 'present' : 'null', result });
           
           // Determine result type based on Zero's completion state
           // Default to 'loading' and only set 'complete' when Zero explicitly confirms
@@ -412,22 +409,22 @@ export class ReactiveQueryOne<T> {
         
         // CONSERVATIVE APPROACH: Don't mark as complete until listener fires
         // This prevents flash of "no data" while Zero is actually loading
-        console.log('🔍 ReactiveQueryOne: Waiting for first listener callback...');
+        debugReactive('ReactiveQueryOne: Waiting for first listener callback');
         
         // Check if we already have synchronous data (rare case)
         const initialData = this.view.data;
         if (initialData !== undefined && initialData !== null) {
           // Only if we have actual data (not null), mark as received
-          console.log('🔍 ReactiveQueryOne: Found immediate data:', initialData ? 'present' : 'null');
+          debugDatabase('ReactiveQueryOne: Found immediate data', { data: initialData ? 'present' : 'null' });
           this.updateState(initialData, true, null, 'complete');
         }
         
-        console.log('🔍 ReactiveQueryOne: Setup complete with initial data:', initialData ? 'present' : 'null');
+        debugDatabase('ReactiveQueryOne: Setup complete with initial data', { data: initialData ? 'present' : 'null' });
         
       } catch (err) {
         if (this.isDestroyed) return;
         
-        console.error('🔍 ReactiveQueryOne: Error during setup:', err);
+        debugError('ReactiveQueryOne: Error during setup', { error: err });
         const error = err instanceof Error ? err : new Error('Unknown error');
         this.updateState(this.defaultValue, true, error, 'error');
       }
@@ -450,7 +447,7 @@ export class ReactiveQueryOne<T> {
       try {
         callback(data, { isLoading, error });
       } catch (err) {
-        console.error('ReactiveQueryOne subscriber error:', err);
+        debugError('ReactiveQueryOne subscriber error', { error: err });
       }
     });
   }
@@ -462,13 +459,13 @@ export class ReactiveQueryOne<T> {
     }
     
     if (this.removeListener) {
-      console.log('🔍 ReactiveQueryOne: Removing listener');
+      debugReactive('ReactiveQueryOne: Removing listener');
       this.removeListener();
       this.removeListener = null;
     }
     
     if (this.view) {
-      console.log('🔍 ReactiveQueryOne: Destroying view');
+      debugReactive('ReactiveQueryOne: Destroying view');
       this.view.destroy();
       this.view = null;
     }

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getZeroAsync, getZeroState, initZero } from '$lib/zero';
   import { getZeroContext } from '$lib/zero-context.svelte';
+  import { debugDatabase, debugError } from '$lib/utils/debug';
 
   // Get Zero functions from context
   const { Client, Job, User, Task } = getZeroContext();
@@ -21,7 +22,7 @@
   
   function log(message) {
     logs = [...logs, `${new Date().toLocaleTimeString()}: ${message}`];
-    console.log(message);
+    debugDatabase('Zero E2E test log', { message });
   }
   
   async function waitForInitialization(maxWaitTime = 10000) {
