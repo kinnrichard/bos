@@ -381,7 +381,7 @@ const testQuery = createQueryBuilder<Task>('tasks')
   .where('status', 1)
   .orderBy('created_at');
 
-console.log('Query SQL:', testQuery.toSQL());
+debugDatabase('Query SQL:', testQuery.toSQL());
 // Output: SELECT * FROM tasks WHERE status = 1 ORDER BY created_at ASC
 
 // Test reactive query
@@ -399,12 +399,12 @@ const reactiveTest = createReactiveQuery(
 ```typescript
 // Monitor connection state
 const state = zeroClient.getConnectionState();
-console.log('Zero connection:', state);
+debugDatabase('Zero connection:', state);
 
 // Track query performance
 const startTime = performance.now();
 const tasks = await createQueryBuilder<Task>('tasks').run();
-console.log(`Query took ${performance.now() - startTime}ms`);
+debugPerformance(`Query took ${performance.now() - startTime}ms`);
 ```
 
 ## Troubleshooting
@@ -429,15 +429,15 @@ console.log(`Query took ${performance.now() - startTime}ms`);
 
 ```typescript
 // Debug connection
-console.log('Zero state:', zeroClient.getConnectionState());
+debugDatabase('Zero state:', zeroClient.getConnectionState());
 
 // Debug queries
 const query = createQueryBuilder<Task>('tasks').where('status', 1);
-console.log('SQL:', query.toSQL());
+debugDatabase('SQL:', query.toSQL());
 
 // Debug reactive queries
 const reactive = createReactiveQuery(() => query);
-console.log('Reactive state:', reactive.state);
+debugReactive('Reactive state:', reactive.state);
 ```
 
 This migration guide provides a comprehensive path from the current verbose Zero.js patterns to the new streamlined integration layer while maintaining full compatibility with existing ReactiveRecord and ActiveRecord functionality.

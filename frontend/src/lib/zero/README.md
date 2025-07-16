@@ -161,9 +161,9 @@ const tasks = createReactiveQuery(
 
 // Subscribe to changes
 const unsubscribe = tasks.subscribe((state) => {
-  console.log('Data:', state.data);
-  console.log('Loading:', state.isLoading);
-  console.log('Error:', state.error);
+  debugDatabase('Data:', state.data);
+  debugDatabase('Loading:', state.isLoading);
+  debugError('Error:', state.error);
 });
 
 // Cleanup
@@ -250,7 +250,7 @@ import { zeroClient } from './client';
 // Check connection state
 const state = zeroClient.getConnectionState();
 if (!state.isAvailable) {
-  console.log('Zero not available:', state.error);
+  debugError('Zero not available:', state.error);
 }
 
 // Wait for connection
@@ -287,7 +287,7 @@ const query = createQueryBuilder<Task>('tasks')
   .where('status', 1)
   .orderBy('created_at');
 
-console.log('Query SQL:', query.toSQL());
+debugDatabase('Query SQL:', query.toSQL());
 // Output: SELECT * FROM tasks WHERE status = 1 ORDER BY created_at ASC
 ```
 
@@ -300,7 +300,7 @@ const reactiveTest = createReactiveQuery(
 );
 
 // Verify state updates
-console.log('Initial state:', reactiveTest.state);
+debugReactive('Initial state:', reactiveTest.state);
 ```
 
 ## Next Steps

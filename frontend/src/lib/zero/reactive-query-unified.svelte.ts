@@ -21,11 +21,11 @@ export const ZERO_CONFIG = {
  * ```typescript
  * // Single record (like Rails User.find(1))
  * const user = new ReactiveQuery(() => zero.query.users.where('id', '123').one());
- * console.log(user.record); // User | null
+ * debugDatabase('User record:', user.record); // User | null
  * 
  * // Collection (like Rails User.where(active: true))  
  * const users = new ReactiveQuery(() => zero.query.users.where('active', true));
- * console.log(users.records); // User[]
+ * debugDatabase('User records:', users.records); // User[]
  * ```
  */
 export class ReactiveQuery<T> {

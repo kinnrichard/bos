@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { calculatePositionFromTarget } from './position-calculator.js';
 import { ClientActsAsList } from './client-acts-as-list.js';
 import type { Task, DropZoneInfo } from './position-calculator.js';
+import { debugValidation } from './debug';
 
 // Import actual Rails behavior from fixtures
 import singleTaskFixture from './test-fixtures/single_task_move.json';
@@ -41,7 +42,7 @@ describe('Rails Validation Tests', () => {
         expect(actualPosition, `Task ${taskId} should be at position ${expectedPosition}, got ${actualPosition}`).toBe(expectedPosition);
       });
       
-      console.log('✓ Single task move matches Rails behavior');
+      debugValidation('✓ Single task move matches Rails behavior');
     });
   });
 
@@ -79,7 +80,7 @@ describe('Rails Validation Tests', () => {
         expect(actualPosition, `Task ${taskId} should be at position ${expectedPosition}, got ${actualPosition}`).toBe(expectedPosition);
       });
       
-      console.log('✓ Multi task move matches Rails behavior');
+      debugValidation('✓ Multi task move matches Rails behavior');
     });
   });
 
@@ -117,7 +118,7 @@ describe('Rails Validation Tests', () => {
         expect(actualPosition, `Task ${taskId} should be at position ${expectedPosition}, got ${actualPosition}`).toBe(expectedPosition);
       });
       
-      console.log('✓ Three task move matches Rails behavior');
+      debugValidation('✓ Three task move matches Rails behavior');
     });
   });
 
@@ -160,7 +161,7 @@ describe('Rails Validation Tests', () => {
       const task9FinalPosition = simulatedResult.updatedTasks.find(t => t.id === 'task9')?.position;
       expect(task9FinalPosition).toBe(8);
       
-      console.log('✓ Position calculator produces Rails-compatible positions');
+      debugValidation('✓ Position calculator produces Rails-compatible positions');
     });
   });
 });

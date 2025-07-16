@@ -21,7 +21,7 @@ const DEFAULT_TTL = '1h';
  * // In vanilla JS - imperative access
  * const activeJobs = Job.where({ status: 'active' });
  * const currentData = activeJobs.current;
- * activeJobs.subscribe((newData) => console.log('Updated:', newData));
+ * activeJobs.subscribe((newData) => debugDatabase('Updated:', newData));
  * ```
  */
 export class ReactiveQuery<T> {
@@ -253,7 +253,7 @@ export class ReactiveQuery<T> {
  * // In vanilla JS
  * const job = Job.find('job-id');
  * const current = job.current;
- * job.subscribe((data) => console.log('Job updated:', data));
+ * job.subscribe((data) => debugDatabase('Job updated:', data));
  * ```
  */
 export class ReactiveQueryOne<T> {
