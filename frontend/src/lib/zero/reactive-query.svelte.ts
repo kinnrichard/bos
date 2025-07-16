@@ -28,7 +28,9 @@ export class ReactiveQuery<T> {
   private _state = $state({
     data: [] as T[],
     isLoading: true,
-    error: null as Error | null
+    error: null as Error | null,
+    hasReceivedData: false,
+    resultType: 'loading' as 'loading' | 'complete' | 'error'
   });
   
   private view: any = null;
@@ -46,6 +48,8 @@ export class ReactiveQuery<T> {
     this._state.data = defaultValue;
     this._state.isLoading = true;
     this._state.error = null;
+    this._state.hasReceivedData = false;
+    this._state.resultType = 'loading';
     
     // Development warning for missing TTL (now properly handled)
     if (this.ttl === undefined) {
@@ -65,12 +69,13 @@ export class ReactiveQuery<T> {
   
   // Reactive getters for Svelte components - now properly tracked by Svelte
   get data(): T[] { return this._state.data; }
-  get isLoading(): boolean { return this._state.isLoading; }
+  get isLoading(): boolean { return !this._state.hasReceivedData; }
   get error(): Error | null { return this._state.error; }
+  get resultType(): 'loading' | 'complete' | 'error' { return this._state.resultType; }
   
   // Imperative access for vanilla JavaScript
   get current(): T[] { return this._state.data; }
-  get loading(): boolean { return this._state.isLoading; }
+  get loading(): boolean { return !this._state.hasReceivedData; }
   
   /**
    * Subscribe to data changes (for vanilla JS usage)
@@ -81,7 +86,10 @@ export class ReactiveQuery<T> {
     this.subscribers.push(callback);
     
     // Immediately call with current state
-    callback(this._state.data, { isLoading: this._state.isLoading, error: this._state.error });
+    callback(this._state.data, { 
+      isLoading: !this._state.hasReceivedData, 
+      error: this._state.error
+    });
     
     // Return unsubscribe function
     return () => {
@@ -122,7 +130,7 @@ export class ReactiveQuery<T> {
         // Check if queryBuilder is available
         if (!queryBuilder) {
           console.log('🔍 ReactiveQuery: Query builder not ready, retrying in 100ms...');
-          this.updateState(this.defaultValue, true, null);
+          this.updateState(this.defaultValue, false, null, 'loading');
           this.retryTimeoutId = setTimeout(tryInitialize, 100) as any;
           return;
         }
@@ -143,23 +151,41 @@ export class ReactiveQuery<T> {
         // Check if materialize() returned a valid view
         if (!this.view) {
           console.log('🔍 ReactiveQuery: materialize() returned null, Zero client not ready. Retrying...');
-          this.updateState(this.defaultValue, true, null);
+          this.updateState(this.defaultValue, false, null, 'loading');
           this.retryTimeoutId = setTimeout(tryInitialize, 200) as any;
           return;
         }
         
         // Set up Zero's native listener for real-time updates
-        this.removeListener = this.view.addListener((newData: T[]) => {
+        this.removeListener = this.view.addListener((newData: T[], result?: any) => {
           if (this.isDestroyed) return;
           
-          console.log('🔥 ZERO DATA CHANGED! New count:', newData?.length || 0);
-          this.updateState(newData || this.defaultValue, false, null);
+          console.log('🔥 ZERO DATA CHANGED! New count:', newData?.length || 0, 'Result:', result);
+          
+          // Determine result type based on Zero's completion state
+          // Default to 'loading' and only set 'complete' when Zero explicitly confirms
+          let resultType: 'loading' | 'complete' | 'error' = 'loading';
+          if (result?.type === 'complete') {
+            resultType = 'complete';
+          } else if (result?.type === 'error') {
+            resultType = 'error';
+          }
+          // Treat 'unknown' or any other state as still loading
+          
+          // CONSERVATIVE: First listener callback means data is ready
+          this.updateState(newData || this.defaultValue, true, null, resultType);
         });
         
-        // Get initial data synchronously
+        // CONSERVATIVE APPROACH: Don't mark as complete until listener fires
+        // This prevents flash of "no data" while Zero is actually loading
+        console.log('🔍 ReactiveQuery: Waiting for first listener callback...');
+        
+        // Check if we already have synchronous data (rare case)
         const initialData = this.view.data;
-        if (initialData !== undefined && initialData !== null) {
-          this.updateState(initialData, false, null);
+        if (initialData !== undefined && initialData !== null && initialData.length > 0) {
+          // Only if we have actual data (not empty array), mark as received
+          console.log('🔍 ReactiveQuery: Found immediate data:', initialData.length);
+          this.updateState(initialData, true, null, 'complete');
         }
         
         console.log('🔍 ReactiveQuery: Setup complete with initial data:', initialData?.length || 'null');
@@ -169,7 +195,7 @@ export class ReactiveQuery<T> {
         
         console.error('🔍 ReactiveQuery: Error during setup:', err);
         const error = err instanceof Error ? err : new Error('Unknown error');
-        this.updateState(this.defaultValue, false, error);
+        this.updateState(this.defaultValue, true, error, 'error');
       }
     };
     
@@ -177,13 +203,42 @@ export class ReactiveQuery<T> {
     tryInitialize();
   }
   
-  private updateState(data: T[], isLoading: boolean, error: Error | null): void {
+  private updateState(data: T[], hasReceivedData: boolean, error: Error | null, resultType: 'loading' | 'complete' | 'error' = 'loading'): void {
+    // 🧪 QA DEBUG: Track state transitions with precise timing
+    const wasLoading = !this._state.hasReceivedData;
+    const isNowLoading = !hasReceivedData;
+    
+    console.log('🧪 [ReactiveQuery] State Transition:', {
+      timestamp: Date.now(),
+      from: { 
+        isLoading: wasLoading, 
+        hasReceivedData: this._state.hasReceivedData,
+        dataLength: this._state.data?.length || 0,
+        resultType: this._state.resultType
+      },
+      to: { 
+        isLoading: isNowLoading, 
+        hasReceivedData,
+        dataLength: data?.length || 0,
+        resultType
+      },
+      transition: `${wasLoading ? 'LOADING' : 'READY'} → ${isNowLoading ? 'LOADING' : 'READY'}`,
+      triggersCriticalChange: wasLoading && !isNowLoading // Loading → Ready triggers UI update
+    });
+    
     // Update Svelte 5 $state - this will automatically trigger reactivity
     this._state.data = data;
-    this._state.isLoading = isLoading;
+    this._state.hasReceivedData = hasReceivedData;
     this._state.error = error;
+    this._state.resultType = resultType;
+    
+    // 🧪 QA DEBUG: Log if this might cause flash
+    if (wasLoading && !isNowLoading && data.length === 0) {
+      console.warn('🧪 [ReactiveQuery] POTENTIAL FLASH TRIGGER: Loading→Ready with empty data!');
+    }
     
     // Notify subscribers for vanilla JS usage
+    const isLoading = !hasReceivedData;
     this.subscribers.forEach(callback => {
       try {
         callback(data, { isLoading, error });
@@ -234,7 +289,9 @@ export class ReactiveQueryOne<T> {
   private _state = $state({
     data: null as T | null,
     isLoading: true,
-    error: null as Error | null
+    error: null as Error | null,
+    hasReceivedData: false,
+    resultType: 'loading' as 'loading' | 'complete' | 'error'
   });
   
   private view: any = null;
@@ -252,6 +309,8 @@ export class ReactiveQueryOne<T> {
     this._state.data = defaultValue;
     this._state.isLoading = true;
     this._state.error = null;
+    this._state.hasReceivedData = false;
+    this._state.resultType = 'loading';
     
     // Development warning for missing TTL (now properly handled)
     if (this.ttl === undefined) {
@@ -271,12 +330,13 @@ export class ReactiveQueryOne<T> {
   
   // Reactive getters for Svelte components - now properly tracked by Svelte
   get data(): T | null { return this._state.data; }
-  get isLoading(): boolean { return this._state.isLoading; }
+  get isLoading(): boolean { return !this._state.hasReceivedData; }
   get error(): Error | null { return this._state.error; }
+  get resultType(): 'loading' | 'complete' | 'error' { return this._state.resultType; }
   
   // Imperative access for vanilla JavaScript
   get current(): T | null { return this._state.data; }
-  get loading(): boolean { return this._state.isLoading; }
+  get loading(): boolean { return !this._state.hasReceivedData; }
   
   /**
    * Subscribe to data changes (for vanilla JS usage)
@@ -287,7 +347,10 @@ export class ReactiveQueryOne<T> {
     this.subscribers.push(callback);
     
     // Immediately call with current state
-    callback(this._state.data, { isLoading: this._state.isLoading, error: this._state.error });
+    callback(this._state.data, { 
+      isLoading: !this._state.hasReceivedData, 
+      error: this._state.error
+    });
     
     // Return unsubscribe function
     return () => {
@@ -328,7 +391,7 @@ export class ReactiveQueryOne<T> {
         // Check if queryBuilder is available
         if (!queryBuilder) {
           console.log('🔍 ReactiveQueryOne: Query builder not ready, retrying in 100ms...');
-          this.updateState(this.defaultValue, true, null);
+          this.updateState(this.defaultValue, false, null, 'loading');
           this.retryTimeoutId = setTimeout(tryInitialize, 100) as any;
           return;
         }
@@ -349,23 +412,41 @@ export class ReactiveQueryOne<T> {
         // Check if materialize() returned a valid view
         if (!this.view) {
           console.log('🔍 ReactiveQueryOne: materialize() returned null, Zero client not ready. Retrying...');
-          this.updateState(this.defaultValue, true, null);
+          this.updateState(this.defaultValue, false, null, 'loading');
           this.retryTimeoutId = setTimeout(tryInitialize, 200) as any;
           return;
         }
         
         // Set up Zero's native listener for real-time updates
-        this.removeListener = this.view.addListener((newData: T | null) => {
+        this.removeListener = this.view.addListener((newData: T | null, result?: any) => {
           if (this.isDestroyed) return;
           
-          console.log('🔥 ZERO DATA CHANGED! New data:', newData ? 'present' : 'null');
-          this.updateState(newData !== undefined ? newData : this.defaultValue, false, null);
+          console.log('🔥 ZERO DATA CHANGED! New data:', newData ? 'present' : 'null', 'Result:', result);
+          
+          // Determine result type based on Zero's completion state
+          // Default to 'loading' and only set 'complete' when Zero explicitly confirms
+          let resultType: 'loading' | 'complete' | 'error' = 'loading';
+          if (result?.type === 'complete') {
+            resultType = 'complete';
+          } else if (result?.type === 'error') {
+            resultType = 'error';
+          }
+          // Treat 'unknown' or any other state as still loading
+          
+          // CONSERVATIVE: First listener callback means data is ready
+          this.updateState(newData !== undefined ? newData : this.defaultValue, true, null, resultType);
         });
         
-        // Get initial data synchronously
+        // CONSERVATIVE APPROACH: Don't mark as complete until listener fires
+        // This prevents flash of "no data" while Zero is actually loading
+        console.log('🔍 ReactiveQueryOne: Waiting for first listener callback...');
+        
+        // Check if we already have synchronous data (rare case)
         const initialData = this.view.data;
-        if (initialData !== undefined) {
-          this.updateState(initialData, false, null);
+        if (initialData !== undefined && initialData !== null) {
+          // Only if we have actual data (not null), mark as received
+          console.log('🔍 ReactiveQueryOne: Found immediate data:', initialData ? 'present' : 'null');
+          this.updateState(initialData, true, null, 'complete');
         }
         
         console.log('🔍 ReactiveQueryOne: Setup complete with initial data:', initialData ? 'present' : 'null');
@@ -375,7 +456,7 @@ export class ReactiveQueryOne<T> {
         
         console.error('🔍 ReactiveQueryOne: Error during setup:', err);
         const error = err instanceof Error ? err : new Error('Unknown error');
-        this.updateState(this.defaultValue, false, error);
+        this.updateState(this.defaultValue, true, error, 'error');
       }
     };
     
@@ -383,13 +464,15 @@ export class ReactiveQueryOne<T> {
     tryInitialize();
   }
   
-  private updateState(data: T | null, isLoading: boolean, error: Error | null): void {
+  private updateState(data: T | null, hasReceivedData: boolean, error: Error | null, resultType: 'loading' | 'complete' | 'error' = 'loading'): void {
     // Update Svelte 5 $state - this will automatically trigger reactivity
     this._state.data = data;
-    this._state.isLoading = isLoading;
+    this._state.hasReceivedData = hasReceivedData;
     this._state.error = error;
+    this._state.resultType = resultType;
     
     // Notify subscribers for vanilla JS usage
+    const isLoading = !hasReceivedData;
     this.subscribers.forEach(callback => {
       try {
         callback(data, { isLoading, error });

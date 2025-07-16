@@ -7,7 +7,7 @@
 
 import { test, expect } from '@playwright/test';
 import { ReactiveTask } from '../src/lib/models/reactive-task';
-import { ReactiveQuery, ReactiveQueryOne } from '../src/lib/zero/reactive-query.svelte';
+import { ReactiveQuery, ReactiveQueryOne } from '../src/lib/zero/reactive-query.svelte.ts';
 import type { Task as TaskData } from '../src/lib/zero/task.generated';
 
 // Mock Zero client for testing

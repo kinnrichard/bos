@@ -121,8 +121,8 @@
   {:else if job}
     <JobDetailView {job} batchTaskDetails={taskBatchDetails} {notes} notesLoading={notesLoading} />
 
-  <!-- Fallback (should not happen with proper loading states) -->
-  {:else}
+  <!-- Not Found State - Only show when not loading and no job -->
+  {:else if !isLoading}
     <div class="error-state">
       <div class="error-content">
         <h2>Job not found</h2>
