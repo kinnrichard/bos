@@ -30,29 +30,13 @@
   onMount(async () => {
     if (!browser) return;
     
-    const startTime = Date.now();
-    console.log('🧪 [Auth Layout] TIMELINE START:', { timestamp: startTime });
-    
     try {
-      console.log('🏗️ [Authenticated Layout] Starting Zero readiness gate...');
-      
       // Stage 1: Check authentication first
       zeroState = 'checking';
-      const authCheckStart = Date.now();
-      console.log('🧪 [Auth Layout] AUTH CHECK START:', { 
-        timestamp: authCheckStart, 
-        elapsed: authCheckStart - startTime 
-      });
       
       const isAuthenticated = await authService.checkAuth();
-      const authCheckEnd = Date.now();
       
       if (!isAuthenticated) {
-        console.log('🧪 [Auth Layout] AUTH FAILED:', { 
-          timestamp: authCheckEnd, 
-          elapsed: authCheckEnd - startTime,
-          authDuration: authCheckEnd - authCheckStart
-        });
         zeroState = 'unauthenticated';
         
         // Build return URL for post-login redirect
@@ -61,22 +45,10 @@
         return;
       }
       
-      console.log('🧪 [Auth Layout] AUTH SUCCESS:', { 
-        timestamp: authCheckEnd, 
-        elapsed: authCheckEnd - startTime,
-        authDuration: authCheckEnd - authCheckStart
-      });
-      
       // Stage 2: Initialize Zero client
       zeroState = 'initializing';
-      const zeroInitStart = Date.now();
-      console.log('🧪 [Auth Layout] ZERO INIT START:', { 
-        timestamp: zeroInitStart, 
-        elapsed: zeroInitStart - startTime 
-      });
       
       await initZero();
-      const zeroInitEnd = Date.now();
       
       // Verify Zero is actually ready
       const state = getZeroState();
@@ -84,13 +56,6 @@
         throw new Error('Zero client initialization incomplete');
       }
       
-      console.log('🧪 [Auth Layout] ZERO READY! CRITICAL TIMING:', { 
-        timestamp: zeroInitEnd, 
-        totalElapsed: zeroInitEnd - startTime,
-        zeroInitDuration: zeroInitEnd - zeroInitStart,
-        zeroState: state,
-        message: 'Pages will now mount and start queries'
-      });
       zeroState = 'ready';
       
     } catch (error) {

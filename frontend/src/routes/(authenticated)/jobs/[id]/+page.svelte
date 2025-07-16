@@ -28,6 +28,7 @@
   const job = $derived(jobQuery?.data);
   const isLoading = $derived(jobQuery?.isLoading ?? true);
   const error = $derived(jobQuery?.error);
+  const resultType = $derived(jobQuery?.resultType ?? 'loading');
 
   
   // ✨ NOTES: Will be loaded via job associations for now
@@ -121,8 +122,8 @@
   {:else if job}
     <JobDetailView {job} batchTaskDetails={taskBatchDetails} {notes} notesLoading={notesLoading} />
 
-  <!-- Not Found State - Only show when not loading and no job -->
-  {:else if !isLoading}
+  <!-- Not Found State - Zero.js pattern: Only show when complete with no job -->
+  {:else if !job && resultType === 'complete'}
     <div class="error-state">
       <div class="error-content">
         <h2>Job not found</h2>

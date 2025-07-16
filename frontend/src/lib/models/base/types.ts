@@ -67,6 +67,9 @@ export interface ReactiveQuery<T> {
   /** Reactive error state - contains error if query failed */
   readonly error: Error | null;
   
+  /** Zero.js result type - for flash prevention (only show empty state when 'complete') */
+  readonly resultType: 'loading' | 'complete' | 'error';
+  
   /** Whether this query expects a collection (array) result */
   readonly isCollection: boolean;
   

@@ -64,6 +64,10 @@ export class ReactiveQueryOne<T> implements IReactiveQuery<T> {
     return this.reactiveQuery.error;
   }
   
+  get resultType(): 'loading' | 'complete' | 'error' {
+    return this.reactiveQuery.resultType;
+  }
+  
   get isCollection(): boolean {
     return false;
   }
@@ -115,6 +119,10 @@ export class ReactiveQueryMany<T> implements IReactiveQuery<T[]> {
   
   get error(): Error | null {
     return this.reactiveQuery.error;
+  }
+  
+  get resultType(): 'loading' | 'complete' | 'error' {
+    return this.reactiveQuery.resultType;
   }
   
   get isCollection(): boolean {

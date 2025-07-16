@@ -204,38 +204,11 @@ export class ReactiveQuery<T> {
   }
   
   private updateState(data: T[], hasReceivedData: boolean, error: Error | null, resultType: 'loading' | 'complete' | 'error' = 'loading'): void {
-    // 🧪 QA DEBUG: Track state transitions with precise timing
-    const wasLoading = !this._state.hasReceivedData;
-    const isNowLoading = !hasReceivedData;
-    
-    console.log('🧪 [ReactiveQuery] State Transition:', {
-      timestamp: Date.now(),
-      from: { 
-        isLoading: wasLoading, 
-        hasReceivedData: this._state.hasReceivedData,
-        dataLength: this._state.data?.length || 0,
-        resultType: this._state.resultType
-      },
-      to: { 
-        isLoading: isNowLoading, 
-        hasReceivedData,
-        dataLength: data?.length || 0,
-        resultType
-      },
-      transition: `${wasLoading ? 'LOADING' : 'READY'} → ${isNowLoading ? 'LOADING' : 'READY'}`,
-      triggersCriticalChange: wasLoading && !isNowLoading // Loading → Ready triggers UI update
-    });
-    
     // Update Svelte 5 $state - this will automatically trigger reactivity
     this._state.data = data;
     this._state.hasReceivedData = hasReceivedData;
     this._state.error = error;
     this._state.resultType = resultType;
-    
-    // 🧪 QA DEBUG: Log if this might cause flash
-    if (wasLoading && !isNowLoading && data.length === 0) {
-      console.warn('🧪 [ReactiveQuery] POTENTIAL FLASH TRIGGER: Loading→Ready with empty data!');
-    }
     
     // Notify subscribers for vanilla JS usage
     const isLoading = !hasReceivedData;

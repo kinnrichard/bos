@@ -58,54 +58,6 @@
     })
   );
 
-  // 🧪 QA DEBUG: Comprehensive state tracking for flash detection
-  $effect(() => {
-    const debugState = {
-      timestamp: Date.now(),
-      jobsQuery: {
-        isLoading: jobsQuery.isLoading,
-        hasError: !!jobsQuery.error,
-        dataLength: jobsQuery.data?.length || 0,
-        resultType: jobsQuery.resultType,
-        // Try to access internal state for deeper debugging
-        hasReceivedData: (jobsQuery as any)?._state?.hasReceivedData
-      },
-      derivedState: {
-        allJobsCount: allJobs.length,
-        filteredJobsCount: filteredJobs.length,
-        finalJobsCount: jobs.length
-      },
-      renderingDecision: {
-        willShowLoading: jobsQuery.isLoading,
-        willShowError: !!jobsQuery.error,
-        willShowJobs: jobs.length > 0,
-        willShowEmpty: jobs.length === 0 && jobsQuery.resultType === 'complete'
-      }
-    };
-    
-    console.log('🧪 [JOBS PAGE] State Update:', debugState);
-    
-    // 🧪 CRITICAL: Detect flash condition with new Zero.js pattern
-    if (jobs.length === 0 && jobsQuery.resultType === 'complete') {
-      console.log('🧪 [JOBS PAGE] LEGITIMATE EMPTY STATE:', {
-        timestamp: Date.now(),
-        isLoading: jobsQuery.isLoading,
-        jobsLength: jobs.length,
-        resultType: jobsQuery.resultType,
-        hasReceivedData: (jobsQuery as any)?._state?.hasReceivedData,
-        message: 'Zero confirms: no data available - this is NOT a flash!'
-      });
-    } else if (!jobsQuery.isLoading && jobs.length === 0 && jobsQuery.resultType !== 'complete') {
-      console.warn('🧪 [JOBS PAGE] POTENTIAL FLASH DETECTED!', {
-        timestamp: Date.now(),
-        isLoading: jobsQuery.isLoading,
-        jobsLength: jobs.length,
-        resultType: jobsQuery.resultType,
-        hasReceivedData: (jobsQuery as any)?._state?.hasReceivedData,
-        message: 'This might still cause flash - resultType should be "complete" for empty state'
-      });
-    }
-  });
 
   // Handle retry - ReactiveJob uses Zero's native reactivity
   function handleRetry() {
