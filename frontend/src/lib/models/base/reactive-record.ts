@@ -11,7 +11,7 @@
  */
 
 import { getZero } from '../../zero/zero-client';
-import { ReactiveQuery } from '../../zero/reactive-query.svelte.ts';
+import { ReactiveQuery } from '../../zero/reactive-query.svelte';
 import { BaseScopedQuery } from './scoped-query-base';
 import type { 
   BaseRecord, 

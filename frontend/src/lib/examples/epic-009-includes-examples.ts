@@ -38,9 +38,9 @@ export class ActiveRecordIncludesExamples {
     
     jobs.forEach(job => {
       console.log('Job:', job.title);
-      console.log('Client:', job.client.name);
-      console.log('Tasks:', job.tasks.length);
-      console.log('Assignments:', job.jobAssignments.length);
+      console.log('Client:', job.client?.name);
+      console.log('Tasks:', job.tasks?.length);
+      console.log('Assignments:', job.jobAssignments?.length);
     });
   }
   
@@ -65,8 +65,8 @@ export class ActiveRecordIncludesExamples {
     
     if (job) {
       console.log(`Job: ${job.title}`);
-      console.log(`Client: ${job.client.name}`);
-      console.log(`Created by: ${job.createdBy.email}`);
+      console.log(`Client: ${job.client?.name}`);
+      console.log(`Created by: ${job.createdBy?.email}`);
     }
   }
   
@@ -75,20 +75,20 @@ export class ActiveRecordIncludesExamples {
    */
   static async performanceComparison() {
     // ❌ Bad: N+1 queries (1 query for jobs + N queries for clients)
-    const jobsWithoutIncludes = await Job.where({ status: 'open' });
+    const jobsWithoutIncludes = await Job.where({ status: 'open' }).all();
     for (const job of jobsWithoutIncludes) {
       // This triggers a separate query for each job
-      const client = await Job.find(job.client_id);
-      console.log(`Job ${job.title} - Client: ${client?.name}`);
+      const client = await Job.find(job.client_id!);
+      console.log(`Job ${job.title} - Client: ${client?.title}`);
     }
     
     // ✅ Good: Single query with includes() (1 query total)
     const jobsWithIncludes = await Job.includes('client')
-      .where({ status: 'open' });
+      .where({ status: 'open' }).all();
     
     jobsWithIncludes.forEach(job => {
       // No additional queries - client data already loaded
-      console.log(`Job ${job.title} - Client: ${job.client.name}`);
+      console.log(`Job ${job.title} - Client: ${job.client?.name}`);
     });
   }
   
@@ -100,7 +100,7 @@ export class ActiveRecordIncludesExamples {
       // This will throw RelationshipError for invalid relationship
       await Job.includes('invalidRelationship').all();
     } catch (error) {
-      if (error.name === 'RelationshipError') {
+      if (error instanceof Error && error.name === 'RelationshipError') {
         console.error('Invalid relationship:', error.message);
         console.error('Valid relationships:', ['client', 'tasks', 'jobAssignments', 'createdBy']);
       }
@@ -248,14 +248,13 @@ export class AdvancedIncludesPatterns {
     // Load all dashboard data with relationships in parallel
     const [
       openJobs,
-      recentJobs,
-      activeClients
+      recentJobs
     ] = await Promise.all([
       Job.includes('client').where({ status: 'open' }),
-      Job.includes('client', 'createdBy').orderBy('created_at', 'desc').limit(5),
-      // Note: Client model would need similar includes() implementation
-      // Client.includes('jobs').where({ active: true })
+      Job.includes('client', 'createdBy').orderBy('created_at', 'desc').limit(5)
     ]);
+    
+    const activeClients: any[] = []; // Note: Client model would need similar includes() implementation
     
     return {
       openJobs,
@@ -341,9 +340,9 @@ export class TypeSafetyExamples {
     
     if (job) {
       // TypeScript knows these relationships are loaded
-      const clientName: string = job.client.name;
-      const taskCount: number = job.tasks.length;
-      const firstTask = job.tasks[0]; // TypeScript knows this is TaskData
+      const clientName: string = job.client?.name || '';
+      const taskCount: number = job.tasks?.length || 0;
+      const firstTask = job.tasks?.[0]; // TypeScript knows this is TaskData
       
       return { clientName, taskCount, firstTask };
     }
@@ -362,8 +361,9 @@ export class PerformanceBestPractices {
     // Only load relationships you actually use
     const jobs = await Job.includes('client').where({ status: 'open' });
     
-    jobs.forEach(job => {
-      console.log(`${job.title} - ${job.client.name}`);
+    const jobsResult = await jobs.all();
+    jobsResult.forEach(job => {
+      console.log(`${job.title} - ${job.client?.name}`);
     });
   }
   
@@ -375,7 +375,8 @@ export class PerformanceBestPractices {
     const jobs = await Job.includes('client', 'tasks', 'jobAssignments', 'activityLogs')
       .where({ status: 'open' });
     
-    jobs.forEach(job => {
+    const jobsResult = await jobs.all();
+    jobsResult.forEach(job => {
       // Only using title - other relationships loaded for nothing
       console.log(job.title);
     });
