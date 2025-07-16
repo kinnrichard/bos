@@ -73,7 +73,7 @@
       originalJobTitle = newTitle;
       jobTitleElement.blur();
     } catch (error) {
-      console.error('Failed to update job title:', error);
+      debugComponent.error('Job title update failed', { error, jobId, newTitle });
       // Revert to original title on error
       jobTitleElement.textContent = originalJobTitle;
       jobTitleElement.blur();

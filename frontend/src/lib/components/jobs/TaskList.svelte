@@ -18,6 +18,7 @@
   
   // Import new DRY utilities
   import { createTaskInputManager } from '$lib/utils/task-input-manager';
+  import { debugWorkflow, debugComponent } from '$lib/utils/debug';
   import { KeyboardHandler } from '$lib/utils/keyboard-handler';
   import { taskCreationManager } from '$lib/stores/taskCreation.svelte';
 
@@ -452,7 +453,7 @@
         handleTaskUpdated(event);
         break;
       default:
-        console.warn('Unknown task action type:', type);
+        debugComponent.warn('Unknown task action type', { type, event });
     }
   }
 
@@ -535,7 +536,7 @@
       dragFeedback = 'Task created successfully!';
       setTimeout(() => dragFeedback = '', 2000);
     } catch (error: any) {
-      console.error('Failed to create task:', error);
+      debugWorkflow.error('Task creation failed', { error, taskData: inputManager.getTaskData() });
       dragFeedback = 'Failed to create task - please try again';
       setTimeout(() => dragFeedback = '', 3000);
     }
@@ -567,7 +568,7 @@
       const { Task } = await import('$lib/models/task');
       await Task.update(taskId, { status: newStatus });
     } catch (error: any) {
-      console.error('Failed to update task status:', error);
+      debugWorkflow.error('Task status update failed', { error, taskId, newStatus });
       
       if (error.code === 'INVALID_CSRF_TOKEN') {
         dragFeedback = 'Session expired - please try again';
@@ -616,7 +617,7 @@
       editingTaskId = null;
       
     } catch (error) {
-      console.error('Failed to update task title:', error);
+      debugWorkflow.error('Task title update failed', { error, taskId: task.id, newTitle: inputValue });
       dragFeedback = 'Failed to update task title - please try again';
       setTimeout(() => dragFeedback = '', 3000);
       
@@ -699,7 +700,7 @@
       setTimeout(() => dragFeedback = '', 3000);
 
     } catch (error: any) {
-      console.error('Failed to discard tasks:', error);
+      debugWorkflow.error('Task discard failed', { error, taskCount: deletePromises.length });
       
       // Clear animation state on error
       tasksToDeleteCopy.forEach(taskId => {
@@ -867,7 +868,11 @@
     const targetTask = tasks.find(t => t.id === targetTaskId);
     
     if (!draggedTask || !targetTask) {
-      console.error('Could not find dragged or target task');
+      debugWorkflow.error('Could not find dragged or target task', { 
+        draggedTaskId, 
+        targetTaskId, 
+        availableTaskIds: tasks.map(t => t.id) 
+      });
       return;
     }
 
@@ -883,7 +888,7 @@
       await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
       
     } catch (error: any) {
-      console.error('Failed to nest task:', error);
+      debugWorkflow.error('Task nesting failed', { error, draggedTaskId, targetTaskId });
       
       // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();
@@ -1012,7 +1017,7 @@
       await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
             
     } catch (error: any) {
-      console.error('Failed to reorder tasks:', error);
+      debugWorkflow.error('Task reorder failed', { error, relativeUpdates });
       
       // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();

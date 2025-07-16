@@ -24,6 +24,8 @@ function createBrowserDebugHelper(): BrowserDebugHelper {
       localStorage.debug = namespaces;
       console.log(`🐛 Debug enabled for: ${namespaces}`);
       console.log('🔄 Refresh the page to see debug output');
+      console.log('💡 Enhanced features: All debug functions now have .warn() and .error() methods');
+      console.log('   Example: debugAPI.warn("message", data) or debugAPI.error("message", data)');
     },
     
     disable: () => {
@@ -45,7 +47,7 @@ function createBrowserDebugHelper(): BrowserDebugHelper {
     },
     
     list: () => {
-      console.log('🐛 Available debug namespaces (19 total):');
+      console.log('🐛 Available debug namespaces (19 total) - Enhanced with .warn/.error methods:');
       console.log('');
       console.log('📦 Core System:');
       console.log('   bos:api - API requests and responses (secure)');
@@ -76,11 +78,20 @@ function createBrowserDebugHelper(): BrowserDebugHelper {
       console.log('   bos:export - Data export operations');
       console.log('   bos:integration - Third-party integrations (secure)');
       console.log('');
-      console.log('💡 Examples:');
+      console.log('💡 Basic Examples:');
       console.log('   bosDebug.enable("bos:*") - Enable all debugging');
       console.log('   bosDebug.enable("bos:api,bos:auth") - Enable specific namespaces');
       console.log('   bosDebug.enable("bos:*,-bos:cache") - Enable all except cache');
-      console.log('   bosDebug.enable("bos:core:*") - Enable all core namespaces');
+      console.log('');
+      console.log('🎯 Level-based Controls (NEW):');
+      console.log('   bosDebug.enable("bos:api:warn") - Enable API warnings only');
+      console.log('   bosDebug.enable("bos:*:error") - Enable all error levels');
+      console.log('   bosDebug.enable("bos:auth:*") - Enable auth at all levels');
+      console.log('');
+      console.log('🔧 Enhanced Usage:');
+      console.log('   debugAPI("info message", data) - Info level');
+      console.log('   debugAPI.warn("warning message", data) - Warning level');
+      console.log('   debugAPI.error("error message", data) - Error level');
     }
   };
 }
@@ -101,11 +112,13 @@ export function initializeBrowserDebugHelpers(): void {
   window.bosDebug = debugHelper;
   
   // Show available commands
-  console.log('🐛 Debug helper available: window.bosDebug');
+  console.log('🐛 Debug helper available: window.bosDebug (Enhanced with .warn/.error methods)');
   console.log('   bosDebug.enable("bos:*") - Enable all debugging (19 namespaces)');
   console.log('   bosDebug.enable("bos:api") - Enable API debugging (secure)');
   console.log('   bosDebug.enable("bos:auth") - Enable auth debugging (secure)');
   console.log('   bosDebug.enable("bos:security") - Enable security debugging (secure)');
+  console.log('   bosDebug.enable("bos:*:warn") - Enable all warning levels');
+  console.log('   bosDebug.enable("bos:*:error") - Enable all error levels');
   console.log('   bosDebug.disable() - Disable all debugging');
   console.log('   bosDebug.status() - Check current debug settings');
   console.log('   bosDebug.list() - Show all available namespaces');

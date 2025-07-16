@@ -7,23 +7,72 @@ import { securityRedactor } from './redactor';
  */
 
 /**
- * Secure debug function type
+ * Enhanced debug function interface with multiple log levels
+ */
+export interface EnhancedDebugFunction {
+  // Info level (existing functionality)
+  (message: string, data?: any): void;
+  
+  // Warning level (new)
+  warn(message: string, data?: any): void;
+  
+  // Error level (new)
+  error(message: string, data?: any): void;
+  
+  // Properties
+  enabled: boolean;
+  namespace: string;
+}
+
+/**
+ * Legacy secure debug function type (for backward compatibility)
  */
 export type SecureDebugFunction = (message: string, data?: any) => void;
 
 /**
- * Create a secure debug function for a specific namespace
- * 
- * @param namespace - The debug namespace (e.g., 'bos:api')
- * @returns A secure debug function that automatically redacts sensitive data
+ * Shared debug namespace class - eliminates code duplication
  */
-export function createSecureDebugger(namespace: string): SecureDebugFunction {
-  const debugFn = debug(namespace);
-  
-  return function secureDebug(message: string, data?: any) {
-    // Early return if debugging is not enabled for this namespace
-    if (!debugFn.enabled) return;
-    
+class DebugNamespace {
+  private infoFn: any;
+  private warnFn: any;
+  private errorFn: any;
+  public namespace: string;
+
+  constructor(namespace: string) {
+    this.namespace = namespace;
+    this.infoFn = debug(namespace);
+    this.warnFn = debug(`${namespace}:warn`);
+    this.errorFn = debug(`${namespace}:error`);
+  }
+
+  /**
+   * Log info level message with security redaction
+   */
+  log = (message: string, data?: any): void => {
+    if (!this.infoFn.enabled) return;
+    this.secureLog(this.infoFn, message, data);
+  };
+
+  /**
+   * Log warning level message with security redaction
+   */
+  warn = (message: string, data?: any): void => {
+    if (!this.warnFn.enabled) return;
+    this.secureLog(this.warnFn, `⚠️ ${message}`, data);
+  };
+
+  /**
+   * Log error level message with security redaction
+   */
+  error = (message: string, data?: any): void => {
+    if (!this.errorFn.enabled) return;
+    this.secureLog(this.errorFn, `❌ ${message}`, data);
+  };
+
+  /**
+   * Shared secure logging implementation
+   */
+  private secureLog(debugFn: any, message: string, data?: any): void {
     if (data) {
       try {
         // Redact sensitive data before logging
@@ -39,14 +88,71 @@ export function createSecureDebugger(namespace: string): SecureDebugFunction {
     } else {
       debugFn(message);
     }
-  };
+  }
+
+  /**
+   * Check if info level debugging is enabled
+   */
+  get enabled(): boolean {
+    return this.infoFn.enabled;
+  }
 }
 
 /**
- * Create multiple secure debug functions at once
+ * Create enhanced debug function with multiple log levels (DRY implementation)
+ * 
+ * @param namespace - The debug namespace (e.g., 'bos:api')
+ * @returns Enhanced debug function with .warn() and .error() methods
+ */
+export function createEnhancedDebugger(namespace: string): EnhancedDebugFunction {
+  const debugNamespace = new DebugNamespace(namespace);
+  
+  // Create callable function that maintains current API
+  const debugFn = (message: string, data?: any) => debugNamespace.log(message, data);
+  
+  // Add enhanced methods
+  debugFn.warn = debugNamespace.warn;
+  debugFn.error = debugNamespace.error;
+  debugFn.enabled = debugNamespace.enabled;
+  debugFn.namespace = namespace;
+  
+  return debugFn as EnhancedDebugFunction;
+}
+
+/**
+ * Create a secure debug function for a specific namespace (legacy compatibility)
+ * 
+ * @param namespace - The debug namespace (e.g., 'bos:api')
+ * @returns A secure debug function that automatically redacts sensitive data
+ * @deprecated Use createEnhancedDebugger for new code
+ */
+export function createSecureDebugger(namespace: string): SecureDebugFunction {
+  const enhanced = createEnhancedDebugger(namespace);
+  return enhanced as SecureDebugFunction;
+}
+
+/**
+ * Create multiple enhanced debug functions at once
+ * 
+ * @param namespaces - Array of namespace strings
+ * @returns Object with enhanced debug functions keyed by namespace
+ */
+export function createEnhancedDebuggers(namespaces: string[]): Record<string, EnhancedDebugFunction> {
+  const debuggers: Record<string, EnhancedDebugFunction> = {};
+  
+  for (const namespace of namespaces) {
+    debuggers[namespace] = createEnhancedDebugger(namespace);
+  }
+  
+  return debuggers;
+}
+
+/**
+ * Create multiple secure debug functions at once (legacy compatibility)
  * 
  * @param namespaces - Array of namespace strings
  * @returns Object with debug functions keyed by namespace
+ * @deprecated Use createEnhancedDebuggers for new code
  */
 export function createSecureDebuggers(namespaces: string[]): Record<string, SecureDebugFunction> {
   const debuggers: Record<string, SecureDebugFunction> = {};
@@ -69,6 +175,60 @@ export function isDebugEnabled(namespace: string): boolean {
 }
 
 /**
+ * Check if warning level debug is enabled for a specific namespace
+ * 
+ * @param namespace - The debug namespace to check
+ * @returns True if warning debug is enabled for the namespace
+ */
+export function isWarningEnabled(namespace: string): boolean {
+  return debug(`${namespace}:warn`).enabled;
+}
+
+/**
+ * Check if error level debug is enabled for a specific namespace
+ * 
+ * @param namespace - The debug namespace to check
+ * @returns True if error debug is enabled for the namespace
+ */
+export function isErrorEnabled(namespace: string): boolean {
+  return debug(`${namespace}:error`).enabled;
+}
+
+/**
+ * All debug namespaces (DRY constant)
+ */
+export const DEBUG_NAMESPACES = {
+  // Core system namespaces
+  API: 'bos:api',
+  AUTH: 'bos:auth',
+  SECURITY: 'bos:security',
+  REACTIVE: 'bos:reactive',
+  STATE: 'bos:state',
+  COMPONENT: 'bos:component',
+  CACHE: 'bos:cache',
+  
+  // Data and persistence namespaces
+  DATABASE: 'bos:database',
+  WEBSOCKET: 'bos:websocket',
+  VALIDATION: 'bos:validation',
+  
+  // Performance and monitoring namespaces
+  PERFORMANCE: 'bos:performance',
+  ERROR: 'bos:error',
+  
+  // User interface namespaces
+  NAVIGATION: 'bos:navigation',
+  NOTIFICATION: 'bos:notification',
+  
+  // Business logic namespaces
+  WORKFLOW: 'bos:workflow',
+  SEARCH: 'bos:search',
+  UPLOAD: 'bos:upload',
+  EXPORT: 'bos:export',
+  INTEGRATION: 'bos:integration'
+} as const;
+
+/**
  * Get all currently enabled debug namespaces
  * 
  * @returns Array of enabled namespace strings
@@ -76,37 +236,8 @@ export function isDebugEnabled(namespace: string): boolean {
 export function getEnabledNamespaces(): string[] {
   const enabledNamespaces: string[] = [];
   
-  // Check all BOS namespaces (expanded to 19 namespaces)
-  const commonNamespaces = [
-    // Core system namespaces
-    'bos:api',
-    'bos:auth',
-    'bos:security',
-    'bos:reactive',
-    'bos:state',
-    'bos:component',
-    'bos:cache',
-    
-    // Data and persistence namespaces
-    'bos:database',
-    'bos:websocket',
-    'bos:validation',
-    
-    // Performance and monitoring namespaces
-    'bos:performance',
-    'bos:error',
-    
-    // User interface namespaces
-    'bos:navigation',
-    'bos:notification',
-    
-    // Business logic namespaces
-    'bos:workflow',
-    'bos:search',
-    'bos:upload',
-    'bos:export',
-    'bos:integration'
-  ];
+  // Check all BOS namespaces (DRY - using constant)
+  const commonNamespaces = Object.values(DEBUG_NAMESPACES);
   
   for (const namespace of commonNamespaces) {
     if (isDebugEnabled(namespace)) {

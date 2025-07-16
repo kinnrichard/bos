@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from 'svelte';
+  import { debugComponent } from '$lib/utils/debug';
 
   // Portal props
   let {
@@ -26,7 +27,7 @@
         if (element instanceof HTMLElement) {
           targetElement = element;
         } else {
-          console.warn(`Portal target "${target}" not found, falling back to body`);
+          debugComponent.warn('Portal target not found, falling back to body', { target });
           targetElement = document.body;
         }
       }

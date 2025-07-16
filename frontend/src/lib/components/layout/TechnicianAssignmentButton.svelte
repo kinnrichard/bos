@@ -97,7 +97,7 @@
     } catch (err) {
       error = err as Error;
       debugWorkflow('Error during assignment mutation', err);
-      console.error('TechnicianAssignmentButton mutation error:', err);
+      debugWorkflow.error('Technician assignment mutation error', { error: err, jobId, technicianId });
     } finally {
       isLoading = false;
     }

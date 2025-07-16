@@ -3,6 +3,7 @@
   import FormInput from '$lib/components/ui/FormInput.svelte';
   import FormSelect from '$lib/components/ui/FormSelect.svelte';
   import type { PopulatedJob } from '$lib/types/job';
+  import { debugComponent } from '$lib/utils/debug';
 
   let {
     jobId,
@@ -62,7 +63,7 @@
         const { Job } = await import('$lib/models/job');
         await Job.update(job.id, updates);
       } catch (error) {
-        console.error('Failed to update job:', error);
+        debugComponent.error('Job update failed', { error, jobId: job.id, updates });
         // TODO: Show error toast to user
       }
     }

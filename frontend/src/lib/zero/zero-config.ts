@@ -1,6 +1,8 @@
 // Centralized Zero.js Configuration
 // Single source of truth for all Zero.js settings across the application
 
+import { debugDatabase } from '$lib/utils/debug';
+
 /**
  * Zero.js Query Configuration
  * Controls reactive query behavior, TTL, retries, and performance settings
@@ -199,12 +201,17 @@ export function validateZeroConfig(): void {
   
   // Validate timeout values
   if (client.CONNECTION_TIMEOUT < 1000) {
-    console.warn('CONNECTION_TIMEOUT is very low, this may cause connection issues');
+    debugDatabase.warn('Connection timeout very low, may cause issues', { 
+      timeout: client.CONNECTION_TIMEOUT 
+    });
   }
   
   // Environment consistency checks
   if (process.env.NODE_ENV === 'production' && query.DEBUG_LOGGING) {
-    console.warn('DEBUG_LOGGING is enabled in production environment');
+    debugDatabase.warn('Debug logging enabled in production environment', { 
+      nodeEnv: process.env.NODE_ENV,
+      debugLogging: query.DEBUG_LOGGING 
+    });
   }
 }
 

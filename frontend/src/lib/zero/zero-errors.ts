@@ -2,6 +2,7 @@
 // Provides consistent error patterns across all reactive queries
 
 import { ZERO_CONFIG, ZeroConfigHelpers } from './zero-config';
+import { debugDatabase } from '$lib/utils/debug';
 
 /**
  * Base Zero error class
@@ -378,7 +379,7 @@ export class ZeroErrorHandler {
       try {
         callback(error);
       } catch (err) {
-        console.error('Error in error callback:', err);
+        debugDatabase.error('Error in error callback', { error: err, originalError: error });
       }
     });
   }

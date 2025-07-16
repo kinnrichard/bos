@@ -18,6 +18,7 @@
 
 import { getZero } from '../../zero/zero-client';
 import type { BaseModelConfig } from './types';
+import { debugDatabase } from '../../utils/debug';
 
 /**
  * Custom error types for relationship handling
@@ -395,10 +396,15 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
           });
         }
       } catch (error) {
-        console.error(`Zero.js relationship error for '${typeof relationshipConfig === 'string' ? relationshipConfig : relationshipConfig[0]}' on table '${this.tableName}':`, error);
+        const relationshipName = typeof relationshipConfig === 'string' ? relationshipConfig : relationshipConfig[0];
+        debugDatabase.error('Zero.js relationship error', { 
+          relationshipName,
+          tableName: this.tableName,
+          error 
+        });
         throw new RelationshipError(
-          `Zero.js relationship '${typeof relationshipConfig === 'string' ? relationshipConfig : relationshipConfig[0]}' not found in schema for table '${this.tableName}'. Ensure the relationship is defined in Zero.js schema.`,
-          typeof relationshipConfig === 'string' ? relationshipConfig : relationshipConfig[0],
+          `Zero.js relationship '${relationshipName}' not found in schema for table '${this.tableName}'. Ensure the relationship is defined in Zero.js schema.`,
+          relationshipName,
           this.tableName
         );
       }
@@ -501,7 +507,10 @@ export abstract class BaseScopedQuery<T extends Record<string, any>> {
         throw error;
       }
       // If no relationships are registered yet, allow them (will be validated at model generation)
-      console.warn(`Relationship validation failed for ${this.tableName}:`, error);
+      debugDatabase.warn('Relationship validation failed', { 
+        tableName: this.tableName,
+        error 
+      });
     }
   }
 

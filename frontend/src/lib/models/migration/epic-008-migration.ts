@@ -13,6 +13,7 @@
 
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { debugDatabase } from '../../utils/debug';
 
 /**
  * File usage analysis result
@@ -112,7 +113,7 @@ export class Epic008Migration {
 
       return analysis;
     } catch (error) {
-      console.error('Migration analysis failed:', error);
+      debugDatabase.error('Migration analysis failed', { error });
       throw error;
     }
   }
@@ -135,7 +136,7 @@ export class Epic008Migration {
         await this.findFilesRecursive(dir, files, ['.ts', '.js', '.svelte']);
       } catch (error) {
         // Directory might not exist, continue
-        console.warn(`Directory not found: ${dir}`);
+        debugDatabase.warn('Directory not found during migration scan', { dir, error });
       }
     }
 
@@ -162,7 +163,7 @@ export class Epic008Migration {
         }
       }
     } catch (error) {
-      console.warn(`Could not read directory ${dir}:`, error);
+      debugDatabase.warn('Could not read directory during migration scan', { dir, error });
     }
   }
 

@@ -10,6 +10,7 @@
 
 import { getZero, getZeroAsync, type ZeroClient } from './zero-client';
 import type { schema } from './generated-schema';
+import { debugDatabase } from '$lib/utils/debug';
 
 // Error types for better error handling
 export class ZeroNotAvailableError extends Error {
@@ -68,7 +69,7 @@ export class ZeroClientWrapper {
     try {
       return getZero();
     } catch (error) {
-      console.warn('[ZeroClient] Failed to get client:', error);
+      debugDatabase.warn('Failed to get Zero client', { error });
       return null;
     }
   }
@@ -152,7 +153,7 @@ export class ZeroClientWrapper {
         throw new ZeroConnectionError(errorMsg, error);
       }
       
-      console.warn('[ZeroClient]', errorMsg);
+      debugDatabase.warn('Zero client connection issue', { errorMsg, error });
       return null;
     }
   }

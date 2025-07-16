@@ -1,4 +1,5 @@
 import { POPOVER_ERRORS } from './popover-constants';
+import { debugComponent } from './debug';
 
 // Common error handling for popover components
 export function getPopoverErrorMessage(error: any): string {
@@ -141,7 +142,7 @@ export function createOptimisticStateManager<T>({
 
 export function handleZeroMutationError(error: any, context?: string): string {
   const errorMessage = getPopoverErrorMessage(error);
-  console.error(`Zero mutation error${context ? ` in ${context}` : ''}:`, errorMessage);
+  debugComponent.error('Zero mutation error', { error, context, errorMessage });
   return errorMessage;
 }
 

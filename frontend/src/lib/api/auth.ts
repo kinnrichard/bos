@@ -1,6 +1,7 @@
 import { api } from './client';
 import type { AuthResponse, LoginRequest, RefreshTokenRequest } from '$lib/types/api';
 import { csrfTokenManager } from './csrf';
+import { debugAuth } from '$lib/utils/debug';
 
 export class AuthService {
   /**
@@ -15,7 +16,7 @@ export class AuthService {
       // Login successful, store CSRF token for future requests
       return response;
     } catch (error) {
-      console.error('Login failed:', error);
+      debugAuth.error('Login failed', { error, credentials: credentials.email });
       throw error;
     }
   }
@@ -32,7 +33,7 @@ export class AuthService {
       
       return response;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      debugAuth.error('Token refresh failed', { error, refreshData });
       throw error;
     }
   }
@@ -47,7 +48,7 @@ export class AuthService {
       // Clear stored tokens
       csrfTokenManager.clearToken();
     } catch (error) {
-      console.error('Logout failed:', error);
+      debugAuth.error('Logout failed', { error });
       // Still clear tokens even if API call fails
       csrfTokenManager.clearToken();
       throw error;

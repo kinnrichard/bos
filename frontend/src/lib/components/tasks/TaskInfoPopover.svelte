@@ -5,6 +5,7 @@
   import { formatDateTime } from '$lib/utils/date';
   import { getTaskStatusEmoji, getTaskStatusLabel } from '$lib/config/emoji';
   import BasePopover from '../ui/BasePopover.svelte';
+  import { debugComponent } from '$lib/utils/debug';
   
   let {
     task,
@@ -122,7 +123,7 @@
       }, 0);
     } catch (err: any) {
       error = 'Failed to load task details';
-      console.error('Failed to load task details:', err);
+      debugComponent.error('Task details load failed', { error: err, taskId: task.id });
     } finally {
       loading = false;
     }
@@ -161,7 +162,7 @@
       
     } catch (err: any) {
       error = 'Failed to add note';
-      console.error('Failed to add note:', err);
+      debugComponent.error('Note addition failed', { error: err, taskId: task.id, noteText });
     } finally {
       addingNote = false;
     }
