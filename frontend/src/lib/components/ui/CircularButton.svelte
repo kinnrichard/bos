@@ -14,7 +14,23 @@
     dynamicWidth = false,
     minWidth = undefined as number | undefined,
     borderRadius = undefined as number | string | undefined,
-    customClass = ''
+    customClass = '',
+    children
+  }: {
+    size?: 'small' | 'normal' | 'large';
+    variant?: 'default' | 'avatar' | 'primary';
+    disabled?: boolean;
+    title?: string;
+    onclick?: (() => void) | undefined;
+    type?: 'button' | 'submit' | 'reset';
+    ariaLabel?: string;
+    ariaPressed?: boolean | undefined;
+    ariaExpanded?: boolean | undefined;
+    dynamicWidth?: boolean;
+    minWidth?: number | undefined;
+    borderRadius?: number | string | undefined;
+    customClass?: string;
+    children?: import('svelte').Snippet<[{ config: typeof config }]>;
   } = $props();
 
   // Size configurations
@@ -49,7 +65,7 @@
   style:border-radius={borderRadius ? (typeof borderRadius === 'string' ? borderRadius : `${borderRadius}px`) : '50%'}
   onclick={handleClick}
 >
-  <slot {config} />
+  {@render children?.({ config })}
 </button>
 
 <style>

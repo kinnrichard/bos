@@ -4,7 +4,8 @@
     loading = false,
     maxHeight = 'min(400px, 50vh)',
     onOptionClick,
-    isSelected = () => false
+    isSelected = () => false,
+    optionContent
   }: {
     options: Array<{
       id: string;
@@ -14,6 +15,7 @@
     maxHeight?: string;
     onOptionClick: (option: any, event?: MouseEvent) => void;
     isSelected?: (option: any) => boolean;
+    optionContent?: import('svelte').Snippet<[{ option: any }]>;
   } = $props();
 
   function handleOptionClick(option: any, event: MouseEvent) {
@@ -39,7 +41,7 @@
       disabled={loading}
       onclick={(event) => handleOptionClick(option, event)}
     >
-      <slot name="option-content" {option} />
+      {@render optionContent?.({ option })}
     </button>
   {/each}
 </div>

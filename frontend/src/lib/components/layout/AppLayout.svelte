@@ -8,11 +8,13 @@
   let {
     showSidebar = true,
     showToolbar = true,
-    currentJob = null
+    currentJob = null,
+    children
   }: {
     showSidebar?: boolean;
     showToolbar?: boolean;
     currentJob?: PopulatedJob | null;
+    children?: import('svelte').Snippet;
   } = $props();
 </script>
 
@@ -46,7 +48,7 @@
 
     <!-- Page content -->
     <main class="content">
-      <slot />
+      {@render children?.()}
     </main>
   </div>
 </div>

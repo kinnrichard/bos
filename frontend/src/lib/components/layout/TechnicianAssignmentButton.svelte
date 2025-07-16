@@ -114,7 +114,7 @@
   preferredPlacement="bottom"
   panelWidth="max-content"
 >
-  <svelte:fragment slot="trigger" let:popover>
+  {#snippet trigger({ popover })}
     <button 
       class="popover-button"
       class:has-assignments={hasAssignments}
@@ -137,9 +137,10 @@
         <img src={POPOVER_CONSTANTS.ADD_PERSON_ICON} alt="Assign technicians" class="add-person-icon" />
       {/if}
     </button>
-  </svelte:fragment>
+  {/snippet}
 
-  <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
+  {#snippet children({ close })}
+    <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
     <h3 class="popover-title">Assigned To</h3>
     
     {#if errorMessage}
@@ -159,7 +160,7 @@
         }}
         isSelected={(option) => (job as any)?.jobAssignments?.some((a: any) => a.user_id === option.id) || false}
       >
-        <svelte:fragment slot="option-content" let:option>
+        {#snippet optionContent({ option })}
           <div class="technician-avatar popover-option-left-content">
             <UserAvatar user={asUser(option)} size="xs" />
           </div>
@@ -171,10 +172,11 @@
               <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
             {/if}
           </div>
-        </svelte:fragment>
+        {/snippet}
       </PopoverOptionList>
     {/if}
-  </div>
+    </div>
+  {/snippet}
 </BasePopover>
 
 <style>

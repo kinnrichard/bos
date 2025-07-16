@@ -84,7 +84,7 @@
   preferredPlacement="bottom"
   panelWidth="max-content"
 >
-  <svelte:fragment slot="trigger" let:popover>
+  {#snippet trigger({ popover })}
     <button 
       class="popover-button"
       use:popover.button
@@ -98,9 +98,10 @@
         class:active={hasActiveFilters} 
       />
     </button>
-  </svelte:fragment>
+  {/snippet}
 
-  <div class="filter-content">
+  {#snippet children({ close })}
+    <div class="filter-content">
     <h3 class="popover-title">Show…</h3>
     
     <PopoverOptionList
@@ -110,7 +111,7 @@
       onOptionClick={handleStatusToggle}
       isSelected={(option) => selectedStatuses.includes(option.value)}
     >
-      <svelte:fragment slot="option-content" let:option>
+      {#snippet optionContent({ option })}
         <span class="popover-option-main-label">{option.label}</span>
         
         <div class="popover-checkmark-container">
@@ -118,7 +119,7 @@
             <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
           {/if}
         </div>
-      </svelte:fragment>
+      {/snippet}
     </PopoverOptionList>
     
     <!-- Deleted tasks toggle -->
@@ -138,7 +139,8 @@
         </div>
       </button>
     </div>
-  </div>
+    </div>
+  {/snippet}
 </BasePopover>
 
 <style>

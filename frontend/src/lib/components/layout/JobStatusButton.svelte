@@ -92,42 +92,44 @@
   preferredPlacement="bottom"
   panelWidth="max-content"
 >
-  <svelte:fragment slot="trigger" let:popover>
+  {#snippet trigger({ popover })}
     <button 
       class="popover-button"
       use:popover.button
       title={`Job Status: ${jobStatusEmoji}`}
       onclick={(e) => {
         e.stopPropagation();
-        // Store close function from slot props
+        // Store close function from snippet props
         closePopover = popover.close;
       }}
     >
       <span class="job-status-emoji">{jobStatusEmoji}</span>
     </button>
-  </svelte:fragment>
+  {/snippet}
 
-  <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
-    <h3 class="popover-title">Job Status</h3>
+  {#snippet children({ close })}
+    <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
+      <h3 class="popover-title">Job Status</h3>
 
-    <PopoverOptionList
-      options={availableStatuses}
-      onOptionClick={handleStatusChange}
-      isSelected={(option) => option.value === currentStatus}
-    >
-      <svelte:fragment slot="option-content" let:option>
-        <span class="status-emoji popover-option-left-content">{option.emoji}</span>
-        <span class="popover-option-main-label">{option.label}</span>
-        
-        <!-- Selection indicator in same reactive scope -->
-        <div class="popover-checkmark-container">
-          {#if option.value === currentStatus}
-            <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
-          {/if}
-        </div>
-      </svelte:fragment>
-    </PopoverOptionList>
-  </div>
+      <PopoverOptionList
+        options={availableStatuses}
+        onOptionClick={handleStatusChange}
+        isSelected={(option) => option.value === currentStatus}
+      >
+        {#snippet optionContent({ option })}
+          <span class="status-emoji popover-option-left-content">{option.emoji}</span>
+          <span class="popover-option-main-label">{option.label}</span>
+          
+          <!-- Selection indicator in same reactive scope -->
+          <div class="popover-checkmark-container">
+            {#if option.value === currentStatus}
+              <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
+            {/if}
+          </div>
+        {/snippet}
+      </PopoverOptionList>
+    </div>
+  {/snippet}
 </BasePopover>
 
 <style>

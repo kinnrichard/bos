@@ -4,7 +4,12 @@
   // Portal props
   let {
     target = 'body' as HTMLElement | string,
-    enabled = true
+    enabled = true,
+    children
+  }: {
+    target?: HTMLElement | string;
+    enabled?: boolean;
+    children?: import('svelte').Snippet;
   } = $props();
 
   let portalContainer = $state<HTMLElement>();
@@ -66,10 +71,10 @@
 
 {#if enabled}
   <div bind:this={contentElement} style="display: contents;">
-    <slot />
+    {@render children?.()}
   </div>
 {:else}
-  <slot />
+  {@render children?.()}
 {/if}
 
 <style>

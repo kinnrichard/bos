@@ -8,7 +8,15 @@
   let {
     preferredPlacement = 'bottom' as 'top' | 'bottom' | 'left' | 'right',
     panelWidth = '240px',
-    enabled = true
+    enabled = true,
+    trigger,
+    children
+  }: {
+    preferredPlacement?: 'top' | 'bottom' | 'left' | 'right';
+    panelWidth?: string;
+    enabled?: boolean;
+    trigger?: import('svelte').Snippet<[{ popover: { close: () => void; expanded: boolean; button: any } }]>;
+    children?: import('svelte').Snippet<[{ close: () => void }]>;
   } = $props();
 
   // Create the Melt UI popover
@@ -173,14 +181,14 @@
 </script>
 
 <div class="base-popover-container">
-  {#if $$slots.trigger}
-    <!-- Use slot trigger with Melt trigger action -->
+  {#if trigger}
+    <!-- Use trigger snippet with Melt trigger action -->
     <div class="base-popover-trigger" bind:this={buttonElement}>
-      <slot name="trigger" popover={{
+      {@render trigger({ popover: {
         close: closePopover,
         expanded: $open,
         button: meltTrigger
-      }} />
+      } })}
     </div>
   {/if}
 </div>
@@ -199,7 +207,7 @@
       "
     >
       <div class="popover-content-wrapper">
-        <slot close={closePopover} />
+        {@render children?.({ close: closePopover })}
       </div>
     </div>
   {/if}

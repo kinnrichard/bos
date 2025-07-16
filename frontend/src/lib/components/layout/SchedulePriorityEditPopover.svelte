@@ -88,7 +88,7 @@
   preferredPlacement="bottom"
   panelWidth="280px"
 >
-  <svelte:fragment slot="trigger" let:popover>
+  {#snippet trigger({ popover })}
     <button 
       class="popover-button"
       use:popover.button
@@ -97,9 +97,10 @@
     >
       <img src="/icons/calendar-add.svg" alt="Schedule" class="calendar-icon" />
     </button>
-  </svelte:fragment>
+  {/snippet}
 
-  <div style="padding: 20px;">
+  {#snippet children({ close })}
+    <div style="padding: 20px;">
     <h3 class="schedule-title">Schedule & Priority</h3>
 
     <form class="schedule-form" onsubmit={(e) => { e.preventDefault(); handleSave(); }}>
@@ -176,7 +177,8 @@
         </button>
       </div>
     </form>
-  </div>
+    </div>
+  {/snippet}
 </BasePopover>
 
 <style>

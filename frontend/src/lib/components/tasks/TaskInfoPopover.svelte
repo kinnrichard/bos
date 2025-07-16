@@ -319,7 +319,7 @@
     preferredPlacement="left"
     panelWidth="380px"
   >
-    <svelte:fragment slot="trigger" let:popover>
+    {#snippet trigger({ popover })}
       <button 
         class="task-action-button"
         title="Task details"
@@ -328,10 +328,11 @@
       >
         <img src="/icons/{isSelected ? 'info' : 'info-blue'}.svg" alt="Info" class="action-icon" />
       </button>
-    </svelte:fragment>
+    {/snippet}
 
-    <!-- Popover content with scrolling -->
-    <div class="popover-content-scrollable">
+    {#snippet children({ close })}
+      <!-- Popover content with scrolling -->
+      <div class="popover-content-scrollable">
       <!-- Header -->
       <div class="popover-header">
         <h3>Task Info</h3>
@@ -470,7 +471,8 @@
           </div>
         </div>
       {/if}
-    </div>
+      </div>
+    {/snippet}
   </BasePopover>
 </div>
 
