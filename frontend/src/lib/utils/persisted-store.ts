@@ -57,7 +57,7 @@ export function createPersistedStore<T>(options: PersistedStoreOptions<T>): Writ
           if (migrate && typeof parsed === 'object' && parsed !== null && 'version' in parsed) {
             const storedVersion = (parsed as any).version || 1;
             if (storedVersion < version) {
-              debugReactive('Migrating %s from version %d to %d', key, storedVersion, version);
+              debugReactive(`Migrating ${key} from version ${storedVersion} to ${version}`);
               finalValue = migrate((parsed as any).data, storedVersion);
             } else {
               finalValue = (parsed as any).data;
@@ -73,14 +73,14 @@ export function createPersistedStore<T>(options: PersistedStoreOptions<T>): Writ
           }
           
           store.set(finalValue);
-          debugReactive('Loaded persisted data for %s: %o', key, finalValue);
+          debugReactive(`Loaded persisted data for ${key}`, finalValue);
         } catch (error) {
-          debugReactive('Failed to parse stored data for %s: %o', key, error);
+          debugReactive(`Failed to parse stored data for ${key}`, { error });
           // Fall back to initial value on parse error
         }
       }
     } catch (error) {
-      debugReactive('Failed to access localStorage for %s: %o', key, error);
+      debugReactive(`Failed to access localStorage for ${key}`, { error });
     }
 
     // Subscribe to store changes and persist them
@@ -92,9 +92,9 @@ export function createPersistedStore<T>(options: PersistedStoreOptions<T>): Writ
         
         const serialized = serializer.stringify(dataToStore as T);
         localStorage.setItem(key, serialized);
-        debugReactive('Persisted data for %s: %o', key, value);
+        debugReactive(`Persisted data for ${key}`, value);
       } catch (error) {
-        debugReactive('Failed to persist data for %s: %o', key, error);
+        debugReactive(`Failed to persist data for ${key}`, { error });
       }
     });
 
@@ -114,10 +114,10 @@ export function createPersistedStore<T>(options: PersistedStoreOptions<T>): Writ
             
             if (!validator || validator(finalValue)) {
               store.set(finalValue);
-              debugReactive('Synced data across tabs for %s: %o', key, finalValue);
+              debugReactive(`Synced data across tabs for ${key}`, finalValue);
             }
           } catch (error) {
-            debugReactive('Failed to sync data across tabs for %s: %o', key, error);
+            debugReactive(`Failed to sync data across tabs for ${key}`, { error });
           }
         }
       };

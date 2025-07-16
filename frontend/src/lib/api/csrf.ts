@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { debugSecurity } from '$lib/utils/debug';
 
 // Types for better type safety
 interface PendingRequest {
@@ -86,30 +87,30 @@ class CsrfTokenManager {
       // Strategy 1: Try meta tag first (fastest)
       newToken = this.getTokenFromMeta();
       if (newToken) {
-        console.log('[CSRF] Found token in meta tag');
+        debugSecurity('Found token in meta tag');
         this.setToken(newToken);
         this.processQueue(newToken);
         return newToken;
       }
 
       // Strategy 2: Fetch from API
-      console.log('[CSRF] Fetching fresh token from API...');
+      debugSecurity('Fetching fresh token from API...');
       newToken = await this.fetchTokenFromApi();
       
       if (newToken) {
-        console.log('[CSRF] Successfully fetched fresh token');
+        debugSecurity('Successfully fetched fresh token');
         this.setToken(newToken);
         this.processQueue(newToken);
         return newToken;
       }
 
       // Strategy 3: No token available
-      console.warn('[CSRF] No token available from any source');
+      debugSecurity('No token available from any source');
       this.processQueue(null);
       return null;
 
     } catch (error) {
-      console.error('[CSRF] Token refresh failed:', error);
+      debugSecurity('Token refresh failed', { error });
       this.processQueue(null, error as Error);
       return null;
     } finally {
@@ -129,7 +130,7 @@ class CsrfTokenManager {
     );
 
     this.refreshTimer = setTimeout(() => {
-      console.log('[CSRF] Proactively refreshing token before expiry');
+      debugSecurity('Proactively refreshing token before expiry');
       this.refreshTimer = null;
       this.refreshToken();
     }, timeUntilRefresh);
@@ -173,7 +174,7 @@ class CsrfTokenManager {
     this.scheduleProactiveRefresh();
     
     if (import.meta.env.DEV) {
-      console.log(`[CSRF] Token set: ${token.substring(0, 12)}... (expires in ${this.TOKEN_CACHE_DURATION/1000/60}min)`);
+      debugSecurity(`Token set: ${token.substring(0, 12)}... (expires in ${this.TOKEN_CACHE_DURATION/1000/60}min)`);
     }
   }
 
@@ -183,7 +184,7 @@ class CsrfTokenManager {
   setTokenFromResponse(response: Response): void {
     const newToken = response.headers.get('X-CSRF-Token');
     if (newToken && newToken !== this.token) {
-      console.log('[CSRF] Updated token from response headers');
+      debugSecurity('Updated token from response headers');
       this.setToken(newToken);
     }
   }
@@ -192,7 +193,7 @@ class CsrfTokenManager {
    * Clear the stored token and stop refresh timer
    */
   clearToken(): void {
-    console.log('[CSRF] Clearing token cache');
+    debugSecurity('Clearing token cache');
     this.token = null;
     this.tokenFetchTime = 0;
     this.clearRefreshTimer();
@@ -203,7 +204,7 @@ class CsrfTokenManager {
    * Force refresh of token (for error recovery)
    */
   async forceRefresh(): Promise<string | null> {
-    console.log('[CSRF] Force refreshing token');
+    debugSecurity('Force refreshing token');
     this.clearToken();
     return this.refreshToken();
   }
@@ -222,7 +223,7 @@ class CsrfTokenManager {
   private async fetchTokenFromApi(): Promise<string | null> {
     try {
       const baseURL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-      console.log('[CSRF] Fetching token from:', `${baseURL}/health`);
+      debugSecurity('Fetching token from:', { endpoint: `${baseURL}/health` });
       
       const response = await fetch(`${baseURL}/health`, {
         method: 'GET',
@@ -232,22 +233,22 @@ class CsrfTokenManager {
         }
       });
 
-      console.log('[CSRF] Health response status:', response.status);
-      console.log('[CSRF] Health response headers:', Object.fromEntries(response.headers.entries()));
+      debugSecurity('Health response status:', { status: response.status });
+      debugSecurity('Health response headers:', { headers: Object.fromEntries(response.headers.entries()) });
 
       if (response.ok) {
         const token = response.headers.get('X-CSRF-Token');
         if (token) {
-          console.log('[CSRF] Successfully received token from API:', token.substring(0, 10) + '...');
+          debugSecurity('Successfully received token from API:', { tokenPrefix: token.substring(0, 10) + '...' });
           return token;
         } else {
-          console.warn('[CSRF] API response was OK but did not include X-CSRF-Token header');
+          debugSecurity('API response was OK but did not include X-CSRF-Token header');
         }
       } else {
-        console.warn('[CSRF] API response was not OK:', response.status, response.statusText);
+        debugSecurity('API response was not OK:', { status: response.status, statusText: response.statusText });
       }
     } catch (error) {
-      console.error('[CSRF] Error fetching token from API:', error);
+      debugSecurity('Error fetching token from API:', { error });
     }
 
     return null;
@@ -301,6 +302,6 @@ export const csrfTokenManager = new CsrfTokenManager();
 if (import.meta.env.DEV && typeof window !== 'undefined') {
   // @ts-ignore - Development only
   window.csrfDebug = () => {
-    console.log('[CSRF Debug]', csrfTokenManager.getDebugInfo());
+    debugSecurity('CSRF Debug Info:', csrfTokenManager.getDebugInfo());
   };
 }

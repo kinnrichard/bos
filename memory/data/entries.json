@@ -38,5 +38,25 @@
     "checksum": "8236f4aa94bc2abd3d8e9327ad7bde27cfb25d83616d0e1adeb7ace8fd102001",
     "references": [],
     "dependencies": []
+  },
+  {
+    "id": "entry_md5y0hj7_e8yf2zhgb",
+    "key": "epic-012-requirements",
+    "value": "Implement secure debug system with fast-redact filtering, \n  replace console.log usage, add security filtering for tokens/passwords/CSRF",
+    "type": "string",
+    "namespace": "default",
+    "tags": [],
+    "metadata": {},
+    "owner": "system",
+    "accessLevel": "shared",
+    "createdAt": "2025-07-16T12:34:01.027Z",
+    "updatedAt": "2025-07-16T12:34:01.027Z",
+    "lastAccessedAt": "2025-07-16T12:34:01.027Z",
+    "version": 1,
+    "size": 168,
+    "compressed": false,
+    "checksum": "654896840e69ba6eb1c5a072af88a3604aba807b2e1e158f4f39a3da167df66b",
+    "references": [],
+    "dependencies": []
   }
 ]

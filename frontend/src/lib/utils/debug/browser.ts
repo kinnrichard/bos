@@ -1,0 +1,123 @@
+import { getEnabledNamespaces } from './core';
+
+/**
+ * Browser-specific debug helpers module
+ * Provides development tools and browser console integration
+ */
+
+/**
+ * Browser debug helper interface
+ */
+interface BrowserDebugHelper {
+  enable: (namespaces: string) => void;
+  disable: () => void;
+  status: () => void;
+  list: () => void;
+}
+
+/**
+ * Create browser debug helper functions
+ */
+function createBrowserDebugHelper(): BrowserDebugHelper {
+  return {
+    enable: (namespaces: string) => {
+      localStorage.debug = namespaces;
+      console.log(`🐛 Debug enabled for: ${namespaces}`);
+      console.log('🔄 Refresh the page to see debug output');
+    },
+    
+    disable: () => {
+      localStorage.removeItem('debug');
+      console.log('🐛 Debug disabled. Refresh the page.');
+    },
+    
+    status: () => {
+      const current = localStorage.debug;
+      if (current) {
+        console.log(`🐛 Debug enabled: ${current}`);
+        const enabled = getEnabledNamespaces();
+        if (enabled.length > 0) {
+          console.log('🎯 Active namespaces:', enabled);
+        }
+      } else {
+        console.log('🐛 Debug disabled');
+      }
+    },
+    
+    list: () => {
+      console.log('🐛 Available debug namespaces:');
+      console.log('   bos:api - API requests and responses (secure)');
+      console.log('   bos:auth - Authentication operations (secure)');
+      console.log('   bos:security - Security-related operations (secure)');
+      console.log('   bos:reactive - Svelte reactive statements');
+      console.log('   bos:state - Component state changes');
+      console.log('   bos:component - General component debugging');
+      console.log('   bos:cache - Cache and data synchronization');
+      console.log('   bos:technician-assignment - Technician assignment operations');
+      console.log('');
+      console.log('💡 Examples:');
+      console.log('   bosDebug.enable("bos:*") - Enable all debugging');
+      console.log('   bosDebug.enable("bos:api,bos:auth") - Enable specific namespaces');
+      console.log('   bosDebug.enable("bos:*,-bos:cache") - Enable all except cache');
+    }
+  };
+}
+
+/**
+ * Initialize browser debug helpers in development mode
+ */
+export function initializeBrowserDebugHelpers(): void {
+  // Only initialize in browser environment and development mode
+  if (typeof window === 'undefined' || !import.meta.env.DEV) {
+    return;
+  }
+
+  // Create and expose debug helper
+  const debugHelper = createBrowserDebugHelper();
+  
+  // @ts-ignore - Development only
+  window.bosDebug = debugHelper;
+  
+  // Show available commands
+  console.log('🐛 Debug helper available: window.bosDebug');
+  console.log('   bosDebug.enable("bos:*") - Enable all debugging');
+  console.log('   bosDebug.enable("bos:api") - Enable API debugging (secure)');
+  console.log('   bosDebug.enable("bos:auth") - Enable auth debugging (secure)');
+  console.log('   bosDebug.enable("bos:security") - Enable security debugging (secure)');
+  console.log('   bosDebug.disable() - Disable all debugging');
+  console.log('   bosDebug.status() - Check current debug settings');
+  console.log('   bosDebug.list() - Show all available namespaces');
+}
+
+/**
+ * Get debug status for display in UI
+ */
+export function getDebugStatus(): {
+  enabled: boolean;
+  namespaces: string[];
+  current: string | null;
+} {
+  const current = typeof localStorage !== 'undefined' ? localStorage.debug : null;
+  const enabled = !!current;
+  const namespaces = enabled ? getEnabledNamespaces() : [];
+  
+  return {
+    enabled,
+    namespaces,
+    current
+  };
+}
+
+/**
+ * Check if we're in a browser environment
+ */
+export function isBrowserEnvironment(): boolean {
+  return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
+
+/**
+ * Check if we're in development mode
+ */
+export function isDevelopmentMode(): boolean {
+  return import.meta.env.DEV;
+}

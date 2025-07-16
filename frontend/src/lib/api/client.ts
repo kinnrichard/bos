@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import type { ApiError, ApiResponse, RequestConfig, AuthResponse } from '$lib/types/api';
 import { csrfTokenManager } from './csrf';
+import { debugAPI } from '$lib/utils/debug';
 
 class ApiClient {
   private baseURL: string;
@@ -37,7 +38,7 @@ class ApiClient {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       csrfToken = await csrfTokenManager.getToken();
       
-      console.log(`[API] ${method} ${endpoint}: CSRF token`, csrfToken ? `present (${csrfToken.substring(0, 10)}...)` : 'MISSING!');
+      debugAPI(`${method} ${endpoint}: CSRF token`, { tokenPresent: !!csrfToken, tokenPrefix: csrfToken?.substring(0, 10) + '...' });
     }
 
     const requestHeaders: Record<string, string> = {
@@ -47,9 +48,9 @@ class ApiClient {
 
     if (csrfToken) {
       requestHeaders['X-CSRF-Token'] = csrfToken;
-      console.log('[API] Added CSRF token to request headers');
+      debugAPI('Added CSRF token to request headers');
     } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      console.warn(`[API] No CSRF token available for ${method} ${endpoint} - this will likely fail!`);
+      debugAPI(`No CSRF token available for ${method} ${endpoint} - this will likely fail!`);
     }
 
     const requestConfig: globalThis.RequestInit = {
@@ -66,22 +67,18 @@ class ApiClient {
     }
 
     try {
-      console.log(`[API] Making request: ${method} ${url}`);
-      console.log(`[API] Request headers:`, JSON.stringify(requestHeaders, null, 2));
+      debugAPI(`Making request: ${method}`, { url, headers: requestHeaders });
       
       const response = await fetch(url, requestConfig);
       
-      console.log(`[API] Response status: ${response.status} ${response.statusText}`);
-      console.log(`[API] Response headers:`, [...response.headers.entries()]);
+      debugAPI(`Response status: ${response.status} ${response.statusText}`, { headers: [...response.headers.entries()] });
 
       // Update CSRF token from response headers if present
       csrfTokenManager.setTokenFromResponse(response);
 
       // Handle 401 Unauthorized - for cookie auth, just redirect to login
       if (response.status === 401 && retryOnUnauthorized && !skipAuth) {
-        console.error(`[API] 401 Unauthorized for ${method} ${endpoint}`);
-        console.error(`[API] Request was made to: ${url}`);
-        console.error(`[API] Request headers were:`, requestHeaders);
+        debugAPI(`401 Unauthorized for ${method} ${endpoint}`, { url, headers: requestHeaders });
         
         // For cookie-based auth, don't try to refresh - just redirect to login
         if (browser) {
@@ -106,7 +103,7 @@ class ApiClient {
 
         // Special handling for CSRF token errors
         if (response.status === 403 && responseData.code === 'INVALID_CSRF_TOKEN') {
-          console.warn('[API] CSRF token invalid, forcing token refresh');
+          debugAPI('CSRF token invalid, forcing token refresh');
           
           // The backend now provides a fresh token in the error response
           csrfTokenManager.setTokenFromResponse(response);
@@ -202,7 +199,7 @@ class ApiClient {
       
       return response.status === 200;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      debugAPI('Token refresh failed:', { error });
       // Clear any stored tokens on refresh failure
       csrfTokenManager.clearToken();
       return false;

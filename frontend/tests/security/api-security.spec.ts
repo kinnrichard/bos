@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { SecureLogger } from '../../src/lib/utils/secure-logger';
 
 /**
  * Security tests for API client to ensure no sensitive data exposure
@@ -197,8 +196,8 @@ test.describe('API Security Tests', () => {
   });
 });
 
-test.describe('SecureLogger Tests', () => {
-  test('should filter sensitive headers', async ({ page }) => {
+test.describe('Debug Security Tests', () => {
+  test('should filter sensitive headers in debug logs', async ({ page }) => {
     const consoleLogs: string[] = [];
     
     page.on('console', (msg) => {
@@ -207,8 +206,15 @@ test.describe('SecureLogger Tests', () => {
 
     await page.goto('/login');
 
+    // Enable debug logging
     await page.evaluate(() => {
-      const { SecureLogger } = window as any;
+      localStorage.setItem('debug', 'bos:security');
+    });
+
+    await page.reload();
+
+    await page.evaluate(() => {
+      const { debugSecurity } = require('/src/lib/utils/debug.ts');
       
       // Test with sensitive headers
       const testHeaders = {
@@ -219,22 +225,21 @@ test.describe('SecureLogger Tests', () => {
         'Accept': 'application/json'
       };
 
-      SecureLogger.logHeaders(testHeaders, { prefix: '[TEST]' });
+      debugSecurity('Test headers', { headers: testHeaders });
     });
 
     await page.waitForTimeout(500);
 
     // Check that sensitive headers are filtered out
-    const loggedHeaders = consoleLogs.filter(log => log.includes('[TEST]'));
+    const loggedHeaders = consoleLogs.filter(log => log.includes('Test headers'));
     
     loggedHeaders.forEach(log => {
       expect(log).toContain('Content-Type');
       expect(log).toContain('Accept');
-      expect(log).not.toContain('X-CSRF-Token');
-      expect(log).not.toContain('Authorization');
-      expect(log).not.toContain('Cookie');
+      expect(log).toContain('[REDACTED]');
       expect(log).not.toContain('secret-token-123');
       expect(log).not.toContain('secret-jwt-token');
+      expect(log).not.toContain('session=abc123');
     });
   });
 
@@ -248,7 +253,13 @@ test.describe('SecureLogger Tests', () => {
     await page.goto('/login');
 
     await page.evaluate(() => {
-      const { SecureLogger } = window as any;
+      localStorage.setItem('debug', 'bos:security');
+    });
+
+    await page.reload();
+
+    await page.evaluate(() => {
+      const { debugSecurity } = require('/src/lib/utils/debug.ts');
       
       const testObject = {
         name: 'John Doe',
@@ -262,12 +273,12 @@ test.describe('SecureLogger Tests', () => {
         }
       };
 
-      SecureLogger.logObject(testObject, { prefix: '[TEST]' });
+      debugSecurity('Test object', testObject);
     });
 
     await page.waitForTimeout(500);
 
-    const loggedObjects = consoleLogs.filter(log => log.includes('[TEST]'));
+    const loggedObjects = consoleLogs.filter(log => log.includes('Test object'));
     
     loggedObjects.forEach(log => {
       expect(log).toContain('John Doe');
@@ -279,45 +290,5 @@ test.describe('SecureLogger Tests', () => {
       expect(log).not.toContain('jwt-token-456');
       expect(log).not.toContain('hidden-value');
     });
-  });
-
-  test('should only log in development mode when specified', async ({ page }) => {
-    const consoleLogs: string[] = [];
-    
-    page.on('console', (msg) => {
-      consoleLogs.push(msg.text());
-    });
-
-    // Set production mode
-    await page.addInitScript(() => {
-      // @ts-ignore
-      import.meta.env.DEV = false;
-    });
-
-    await page.goto('/login');
-
-    await page.evaluate(() => {
-      const { SecureLogger } = window as any;
-      
-      // This should not log in production
-      SecureLogger.logTokenStatus(true, { 
-        prefix: '[PROD-TEST]', 
-        developmentOnly: true 
-      });
-      
-      // This should log in production
-      SecureLogger.logTokenStatus(true, { 
-        prefix: '[PROD-TEST]', 
-        developmentOnly: false 
-      });
-    });
-
-    await page.waitForTimeout(500);
-
-    const prodLogs = consoleLogs.filter(log => log.includes('[PROD-TEST]'));
-    
-    // Should only have the non-development-only log
-    expect(prodLogs).toHaveLength(1);
-    expect(prodLogs[0]).toContain('Token status: present');
   });
 });

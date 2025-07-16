@@ -37,6 +37,7 @@
 		"@sveltejs/vite-plugin-svelte": "^5.1.0",
 		"@types/debug": "^4.1.12",
 		"@types/eslint": "^9.0.0",
+		"@types/fast-redact": "^3.0.4",
 		"@types/qs": "^6.14.0",
 		"@typescript-eslint/eslint-plugin": "^8.0.0",
 		"@typescript-eslint/parser": "^8.0.0",
@@ -61,6 +62,7 @@
 		"@melt-ui/svelte": "^0.86.6",
 		"@rocicorp/zero": "^0.21.2025070200",
 		"debug": "^4.4.1",
+		"fast-redact": "^3.5.0",
 		"qs": "^6.14.0"
 	}
 }
