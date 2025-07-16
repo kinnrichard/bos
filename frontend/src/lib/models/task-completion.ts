@@ -9,7 +9,7 @@
  * import { ReactiveTaskCompletion as TaskCompletion } from './reactive-task-completion';
  * ```
  * 
- * Generated: 2025-07-15 23:57:11 UTC
+ * Generated: 2025-07-16 00:44:52 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

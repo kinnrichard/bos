@@ -48,7 +48,7 @@
     if (!$page?.route?.id) return 'home';
     
     // Extract page type from route
-    if ($page.route.id === '/jobs/[id]') return 'job-detail';
+    if ($page.route.id === '/(authenticated)/jobs/[id]') return 'job-detail';
     if ($page.route.id.includes('/jobs')) return 'jobs';
     if ($page.route.id.includes('/clients')) return 'clients';
     if ($page.route.id.includes('/people')) return 'people';
@@ -113,13 +113,13 @@
     {/if}
 
     <!-- Job status button (only show on job detail page) -->
-    {#if currentPage === 'job-detail' && currentJob?.id}
+    {#if currentPage === 'job-detail' && $page.params.id}
       <JobStatusButton bind:job={currentJob} />
       <TechnicianAssignmentButton 
-        jobId={currentJob.id}
-        initialTechnicians={currentJob.technicians || []}
+        jobId={$page.params.id}
+        initialTechnicians={currentJob?.technicians || []}
       />
-      <SchedulePriorityEditPopover jobId={currentJob.id} bind:initialJob={currentJob} />  
+      <SchedulePriorityEditPopover jobId={$page.params.id} bind:initialJob={currentJob} />  
     {/if}
   </div>
 
@@ -127,7 +127,7 @@
   <div class="toolbar-right">
     <!-- Search -->
     <!-- Job detail page controls -->
-    {#if currentPage === 'job-detail' && currentJob?.id}
+    {#if currentPage === 'job-detail' && $page.params.id}
       <FilterPopover onFilterChange={handleTaskStatusFilter} onDeletedToggle={handleDeletedToggle} bind:popover={filterPopover} />
     {/if}
 

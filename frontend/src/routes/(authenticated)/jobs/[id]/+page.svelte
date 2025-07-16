@@ -29,6 +29,11 @@
   const isLoading = $derived(jobQuery?.isLoading ?? true);
   const error = $derived(jobQuery?.error);
   const resultType = $derived(jobQuery?.resultType ?? 'loading');
+  
+  // ✨ TOOLBAR STATE: Only pass job to toolbar when fully loaded, null during loading/not-found
+  const currentJobForToolbar = $derived(
+    resultType === 'complete' && job ? job : null
+  );
 
   
   // ✨ NOTES: Will be loaded via job associations for now
@@ -81,7 +86,7 @@
   <title>{pageTitle}</title>
 </svelte:head>
 
-<AppLayout currentJob={job}>
+<AppLayout currentJob={currentJobForToolbar}>
 <div class="job-detail-container">
 
   <!-- Loading State -->
