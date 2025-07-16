@@ -16,7 +16,7 @@
     initialStatus?: string;
   } = $props();
 
-  let basePopover = $state();
+  let closePopover = $state<(() => void) | null>(null);
 
   // Self-sufficient query pattern - matches TechnicianAssignmentButton  
   const jobQuery = $derived(jobId ? ReactiveJob.find(jobId) : null);
@@ -42,7 +42,16 @@
   );
 
   // Handle status change using ActiveRecord pattern (Zero.js handles optimistic updates)
-  async function handleStatusChange(statusOption: any) {
+  async function handleStatusChange(statusOption: any, event?: Event) {
+    // Prevent event bubbling that might interfere with popover closure
+    event?.stopPropagation();
+    event?.preventDefault();
+    
+    // 1. Close popover IMMEDIATELY for instant user feedback
+    if (closePopover) {
+      closePopover();
+    }
+    
     // Use jobId directly - always available in self-sufficient pattern
     if (!jobId) {
       console.warn('[JobStatusButton] handleStatusChange called with invalid jobId - aborting');
@@ -63,7 +72,7 @@
     }
     
     try {
-      // Persist to database using ActiveRecord pattern (Zero.js handles optimistic updates)
+      // 2. Then persist to database using ActiveRecord pattern (Zero.js handles optimistic updates)
       console.log('[JobStatusButton] Calling Job.update...');
       await Job.update(jobId, { status: newStatus });
       
@@ -74,17 +83,12 @@
     } catch (error) {
       console.error('[JobStatusButton] Failed to update job status:', error);
       // TODO: Show error toast to user
-    }
-    
-    // Close popover
-    if (basePopover && basePopover.close) {
-      basePopover.close();
+      // Note: Popover already closed for better UX even on error
     }
   }
 </script>
 
 <BasePopover 
-  bind:popover={basePopover}
   preferredPlacement="bottom"
   panelWidth="max-content"
 >
@@ -93,7 +97,11 @@
       class="popover-button"
       use:popover.button
       title={`Job Status: ${jobStatusEmoji}`}
-      onclick={(e) => e.stopPropagation()}
+      onclick={(e) => {
+        e.stopPropagation();
+        // Store close function from slot props
+        closePopover = popover.close;
+      }}
     >
       <span class="job-status-emoji">{jobStatusEmoji}</span>
     </button>
