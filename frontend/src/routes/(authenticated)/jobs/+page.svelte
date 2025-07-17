@@ -94,55 +94,58 @@
     {/if}
   </div>
 
-  <!-- Loading State -->
-  {#if jobsQuery.isLoading}
-    <div class="jobs-list">
-      <LoadingSkeleton type="job-card" count={5} />
-    </div>
+  <!-- Jobs Content Area (Scrollable) -->
+  <div class="jobs-content">
+    <!-- Loading State -->
+    {#if jobsQuery.isLoading}
+      <div class="jobs-list">
+        <LoadingSkeleton type="job-card" count={5} />
+      </div>
 
-  <!-- Error State -->
-  {:else if jobsQuery.error}
-    <div class="error-state">
-      <div class="error-content">
-        <h2>Unable to load jobs</h2>
-        <p>There was a problem loading your jobs. Please try again.</p>
-        <div class="error-details">
-          <code>{jobsQuery.error.message}</code>
+    <!-- Error State -->
+    {:else if jobsQuery.error}
+      <div class="error-state">
+        <div class="error-content">
+          <h2>Unable to load jobs</h2>
+          <p>There was a problem loading your jobs. Please try again.</p>
+          <div class="error-details">
+            <code>{jobsQuery.error.message}</code>
+          </div>
+          <button 
+            class="button button--primary"
+            onclick={handleRetry}
+          >
+            Try Again
+          </button>
         </div>
-        <button 
-          class="button button--primary"
-          onclick={handleRetry}
-        >
-          Try Again
-        </button>
       </div>
-    </div>
 
-  <!-- Jobs List -->
-  {:else if jobs.length > 0}
-    <div class="jobs-list">
-      {#each jobs as job (job.id)}
-        <JobCard {job} showClient={true} />
-      {/each}
-    </div>
-
-    <!-- Jobs Count Info -->
-    <div class="jobs-info">
-      <p>
-        Showing {jobs.length} jobs
-      </p>
-    </div>
-
-  <!-- Empty State - Zero.js pattern: Only show when complete with no data -->
-  {:else if jobs.length === 0 && jobsQuery.resultType === 'complete'}
-    <div class="empty-state-wrapper">
-      <div class="empty-state">
-        <div class="empty-state-icon">📋</div>
-        <h2>No jobs found</h2>
-        <p>There are currently no jobs to display.</p>
+    <!-- Jobs List -->
+    {:else if jobs.length > 0}
+      <div class="jobs-list">
+        {#each jobs as job (job.id)}
+          <JobCard {job} showClient={true} />
+        {/each}
       </div>
-    </div>
-  {/if}
+
+      <!-- Jobs Count Info -->
+      <div class="jobs-info">
+        <p>
+          Showing {jobs.length} jobs
+        </p>
+      </div>
+
+    <!-- Empty State - Zero.js pattern: Only show when complete with no data -->
+    {:else if jobs.length === 0 && jobsQuery.resultType === 'complete'}
+      <div class="empty-state-wrapper">
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <h2>No jobs found</h2>
+          <p>There are currently no jobs to display.</p>
+        </div>
+      </div>
+    {/if}
+  </div>
 </div>
 </AppLayout>
 
@@ -151,10 +154,20 @@
     padding: 24px;
     max-width: 1200px;
     margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   .page-header {
     margin-bottom: 24px;
+    flex-shrink: 0;
+  }
+
+  .jobs-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
   }
 
   .page-header h1 {
