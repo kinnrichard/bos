@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "test:epic-015": "vitest run --config vitest.epic-015.config.ts",
+    "test:epic-015:watch": "vitest watch --config vitest.epic-015.config.ts",
+    "test:epic-015:coverage": "vitest run --config vitest.epic-015.config.ts --coverage",
+    "test:epic-015:security": "vitest run --config vitest.epic-015.config.ts src/lib/utils/debug/__tests__/epic-015-security.test.ts",
+    "test:epic-015:performance": "vitest run --config vitest.epic-015.config.ts src/lib/utils/debug/__tests__/epic-015-performance.test.ts",
+    "test:epic-015:integration": "vitest run --config vitest.epic-015.config.ts src/lib/utils/debug/__tests__/epic-015-integration.test.ts",
+    "test:epic-015:migration": "vitest run --config vitest.epic-015.config.ts src/lib/utils/debug/__tests__/epic-015-migration.test.ts",
+    "test:epic-015:report": "vitest run --config vitest.epic-015.config.ts --reporter=html --reporter=json --reporter=verbose"
+  }
+}
