@@ -5,6 +5,7 @@ export interface CsrfTokenManager {
   getToken(): Promise<string | null>;
   setTokenFromResponse(response: AxiosResponse): void;
   forceRefresh(): Promise<string | null>;
+  clearToken(): void;
 }
 
 class CsrfTokenManagerImpl implements CsrfTokenManager {
@@ -79,6 +80,12 @@ class CsrfTokenManagerImpl implements CsrfTokenManager {
     } finally {
       this.refreshPromise = null;
     }
+  }
+
+  clearToken(): void {
+    this.token = null;
+    this.tokenExpiry = 0;
+    debugAPI('CSRF token cleared');
   }
 
   private async performRefresh(): Promise<string | null> {

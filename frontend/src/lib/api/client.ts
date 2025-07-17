@@ -17,6 +17,8 @@ export interface RequestConfig extends AxiosRequestConfig {
   };
   _retry?: boolean;
   _retryCount?: number;
+  skipAuth?: boolean;
+  retryOnUnauthorized?: boolean;
 }
 
 export interface QueuedRequest {
@@ -62,6 +64,17 @@ export class EnhancedApiClient {
   }
 
   private async handleRequest(config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> {
+    const requestConfig = config as RequestConfig;
+    
+    // Skip all authentication and CSRF handling for skipAuth requests
+    if (requestConfig.skipAuth) {
+      // Add request timing for performance monitoring
+      (config as any).metadata = {
+        startTime: Date.now()
+      };
+      return config;
+    }
+
     // Ensure headers object exists and convert to AxiosHeaders if needed
     if (!config.headers) {
       config.headers = new AxiosHeaders();
@@ -165,8 +178,11 @@ export class EnhancedApiClient {
       return Promise.reject(error);
     }
 
-    // Handle 401 Unauthorized with automatic refresh
-    if (error.response?.status === 401 && !(originalRequest as any)._retry) {
+    // Handle 401 Unauthorized with automatic refresh (unless disabled)
+    const requestConfig = originalRequest as RequestConfig;
+    if (error.response?.status === 401 && 
+        !(originalRequest as any)._retry && 
+        requestConfig.retryOnUnauthorized !== false) {
       return this.handleAuthError(originalRequest, error);
     }
 

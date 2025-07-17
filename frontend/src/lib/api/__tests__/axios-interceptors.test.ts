@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Mock modules before importing
@@ -223,8 +223,9 @@ describe('EnhancedApiClient - Axios Interceptors', () => {
           headers: { 'x-csrf-token': 'new-token-123' },
           config: { 
             url: '/api/jobs',
+            headers: new AxiosHeaders(),
             metadata: { startTime: Date.now() - 100 }
-          }
+          } as any
         };
 
         // Act
@@ -242,7 +243,10 @@ describe('EnhancedApiClient - Axios Interceptors', () => {
           status: 200,
           statusText: 'OK',
           headers: {},
-          config: { url: '/api/jobs' }
+          config: { 
+            url: '/api/jobs',
+            headers: new AxiosHeaders()
+          } as any
         };
 
         // Act
