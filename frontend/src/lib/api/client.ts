@@ -1,240 +1,387 @@
-import { browser } from '$app/environment';
-import { goto } from '$app/navigation';
-import type { ApiError, ApiResponse, RequestConfig, AuthResponse } from '$lib/types/api';
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig, AxiosHeaders } from 'axios';
 import { csrfTokenManager } from './csrf';
 import { debugAPI } from '$lib/utils/debug';
+import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
 
-class ApiClient {
-  private baseURL: string;
-  private defaultHeaders: Record<string, string>;
+// Extend window interface for showToast
+declare global {
+  interface Window {
+    showToast?: (message: string, type: string) => void;
+  }
+}
+
+export interface RequestConfig extends AxiosRequestConfig {
+  metadata?: {
+    startTime: number;
+  };
+  _retry?: boolean;
+  _retryCount?: number;
+}
+
+export interface QueuedRequest {
+  resolve: (value: any) => void;
+  reject: (error: any) => void;
+  config: AxiosRequestConfig;
+}
+
+export class EnhancedApiClient {
+  private axiosInstance: AxiosInstance;
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<boolean> | null = null;
-  private requestQueue: Array<() => void> = [];
+  private requestQueue: QueuedRequest[] = [];
+  private readonly maxQueueSize = 100; // Prevent memory leaks
+  private readonly maxRetries = 3;
 
   constructor() {
-    this.baseURL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-    this.defaultHeaders = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    };
+    this.axiosInstance = axios.create({
+      baseURL: import.meta.env.PUBLIC_API_URL || 'http://localhost:3000/api/v1',
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      withCredentials: true, // Include cookies for authentication
+    });
+
+    this.setupInterceptors();
   }
 
-  private async request<T>(
-    endpoint: string,
-    config: RequestConfig = {}
-  ): Promise<ApiResponse<T>> {
-    const {
-      method = 'GET',
-      data,
-      headers = {},
-      skipAuth = false,
-      retryOnUnauthorized = true
-    } = config;
+  private setupInterceptors(): void {
+    // Request interceptor - Add CSRF tokens automatically
+    this.axiosInstance.interceptors.request.use(
+      this.handleRequest.bind(this),
+      this.handleRequestError.bind(this)
+    );
 
-    const url = `${this.baseURL}${endpoint}`;
-    
-    // Get CSRF token for state-changing requests
-    let csrfToken = null;
+    // Response interceptor - Handle auth failures and token refresh
+    this.axiosInstance.interceptors.response.use(
+      this.handleResponse.bind(this),
+      this.handleResponseError.bind(this)
+    );
+  }
+
+  private async handleRequest(config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> {
+    // Ensure headers object exists and convert to AxiosHeaders if needed
+    if (!config.headers) {
+      config.headers = new AxiosHeaders();
+    } else if (!(config.headers instanceof AxiosHeaders)) {
+      // Convert plain object to AxiosHeaders
+      const originalHeaders = config.headers;
+      config.headers = new AxiosHeaders();
+      for (const [key, value] of Object.entries(originalHeaders)) {
+        config.headers.set(key, String(value));
+      }
+    }
+
+    // Add CSRF token for state-changing requests
+    const method = config.method?.toUpperCase() || '';
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      csrfToken = await csrfTokenManager.getToken();
-      
-      debugAPI(`${method} ${endpoint}: CSRF token`, { tokenPresent: !!csrfToken, tokenPrefix: csrfToken?.substring(0, 10) + '...' });
-    }
-
-    const requestHeaders: Record<string, string> = {
-      ...this.defaultHeaders,
-      ...headers
-    };
-
-    if (csrfToken) {
-      requestHeaders['X-CSRF-Token'] = csrfToken;
-      debugAPI('Added CSRF token to request headers');
-    } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      debugAPI(`No CSRF token available for ${method} ${endpoint} - this will likely fail!`);
-    }
-
-    const requestConfig: globalThis.RequestInit = {
-      method,
-      headers: requestHeaders,
-      // Always include credentials for all API requests to send cookies
-      credentials: 'include',
-      // Disable browser caching for API requests to prevent stale data
-      cache: 'no-cache',
-    };
-
-    if (data && method !== 'GET') {
-      requestConfig.body = JSON.stringify(data);
-    }
-
-    try {
-      debugAPI(`Making request: ${method}`, { url, headers: requestHeaders });
-      
-      const response = await fetch(url, requestConfig);
-      
-      debugAPI(`Response status: ${response.status} ${response.statusText}`, { headers: [...response.headers.entries()] });
-
-      // Update CSRF token from response headers if present
-      csrfTokenManager.setTokenFromResponse(response);
-
-      // Handle 401 Unauthorized - for cookie auth, just redirect to login
-      if (response.status === 401 && retryOnUnauthorized && !skipAuth) {
-        debugAPI(`401 Unauthorized for ${method} ${endpoint}`, { url, headers: requestHeaders });
+      try {
+        const csrfToken = await csrfTokenManager.getToken();
         
-        // For cookie-based auth, don't try to refresh - just redirect to login
-        if (browser) {
-          goto('/login');
+        if (csrfToken) {
+          config.headers.set('X-CSRF-Token', csrfToken);
+          debugAPI('Added CSRF token to request', { 
+            method: config.method, 
+            url: config.url,
+            tokenPrefix: csrfToken.substring(0, 10) + '...' 
+          });
+        } else {
+          debugAPI('No CSRF token available for request', { 
+            method: config.method, 
+            url: config.url 
+          });
         }
-        throw new Error('Authentication failed');
+      } catch (error) {
+        debugAPI('Failed to get CSRF token', { 
+          method: config.method, 
+          url: config.url,
+          error: error instanceof Error ? error.message : String(error)
+        });
+        // Continue without CSRF token - let the server handle it
       }
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        // Special handling for rate limiting
-        if (response.status === 429) {
-          const error: ApiError = {
-            status: response.status,
-            code: 'RATE_LIMITED',
-            message: 'Too many requests. Please wait a moment and try again.',
-            errors: responseData.errors || []
-          };
-          throw error;
-        }
-
-        // Special handling for CSRF token errors
-        if (response.status === 403 && responseData.code === 'INVALID_CSRF_TOKEN') {
-          debugAPI('CSRF token invalid, forcing token refresh');
-          
-          // The backend now provides a fresh token in the error response
-          csrfTokenManager.setTokenFromResponse(response);
-          
-          const error: ApiError = {
-            status: response.status,
-            code: responseData.code,
-            message: responseData.message || 'CSRF token is invalid or missing',
-            errors: responseData.errors || []
-          };
-          throw error;
-        }
-
-        const error: ApiError = {
-          status: response.status,
-          code: responseData.errors?.[0]?.code || responseData.code || 'UNKNOWN_ERROR',
-          message: responseData.errors?.[0]?.detail || responseData.message || responseData.error || 'An error occurred',
-          errors: responseData.errors || []
-        };
-        throw error;
-      }
-
-      return {
-        data: responseData,
-        status: response.status,
-        headers: response.headers
-      };
-    } catch (error) {
-      // Network errors or other exceptions
-      if ((error as ApiError).status) {
-        throw error; // Re-throw API errors
-      }
-      
-      const networkError: ApiError = {
-        status: 0,
-        code: 'NETWORK_ERROR',
-        message: error instanceof Error ? error.message : 'Network request failed',
-        errors: []
-      };
-      throw networkError;
     }
+
+    // Add request timing for performance monitoring
+    (config as any).metadata = {
+      startTime: Date.now()
+    };
+
+    // Development logging
+    if (import.meta.env.DEV) {
+      debugAPI(`🚀 ${method} ${config.url}`, {
+        headers: config.headers,
+        data: config.data,
+        timeout: config.timeout
+      });
+    }
+
+    return config;
   }
 
-  private async refreshToken(): Promise<boolean> {
-    // Prevent multiple concurrent refresh attempts
-    if (this.isRefreshing && this.refreshPromise) {
-      return this.refreshPromise;
+  private handleRequestError(error: any): Promise<any> {
+    debugAPI('Request interceptor error', { error });
+    return Promise.reject(error);
+  }
+
+  private handleResponse(response: AxiosResponse): AxiosResponse {
+    // Update CSRF token from response headers
+    csrfTokenManager.setTokenFromResponse(response);
+
+    // Performance monitoring
+    const endTime = Date.now();
+    const startTime = (response.config as any).metadata?.startTime || endTime;
+    const duration = endTime - startTime;
+
+    if (import.meta.env.DEV) {
+      debugAPI(`✅ ${response.status} ${response.config.url}`, {
+        status: response.status,
+        data: response.data,
+        duration: `${duration}ms`,
+        headers: Object.fromEntries(Object.entries(response.headers))
+      });
     }
 
-    this.isRefreshing = true;
-    this.refreshPromise = this.performTokenRefresh();
+    return response;
+  }
 
+  private async handleResponseError(error: any): Promise<any> {
+    const originalRequest = error.config;
+    
+    // Development logging
+    if (import.meta.env.DEV) {
+      const duration = Date.now() - ((originalRequest as any)?.metadata?.startTime || Date.now());
+      debugAPI(`❌ ${error.response?.status || 'Network Error'} ${originalRequest?.url}`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        duration: `${duration}ms`
+      });
+    }
+
+    // If there's no originalRequest, this is likely a network error
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    // Handle 401 Unauthorized with automatic refresh
+    if (error.response?.status === 401 && !(originalRequest as any)._retry) {
+      return this.handleAuthError(originalRequest, error);
+    }
+
+    // Handle 403 CSRF token errors
+    if (error.response?.status === 403 && 
+        error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
+      return this.handleCsrfError(originalRequest, error);
+    }
+
+    // Handle 429 Rate Limiting
+    if (error.response?.status === 429) {
+      return this.handleRateLimitError(originalRequest, error);
+    }
+
+    // Handle 5xx Server Errors
+    if (error.response?.status >= 500) {
+      return this.handleServerError(originalRequest, error);
+    }
+
+    return Promise.reject(error);
+  }
+
+  private async handleAuthError(originalRequest: AxiosRequestConfig, error: any): Promise<any> {
+    // Prevent infinite retry loops
+    (originalRequest as any)._retry = true;
+
+    // If we're already refreshing, queue this request
+    if (this.isRefreshing) {
+      return this.queueRequest(originalRequest);
+    }
+
+    // Start refresh process
+    this.isRefreshing = true;
+    
     try {
-      const result = await this.refreshPromise;
+      const refreshSuccess = await this.performTokenRefresh();
       
-      // Process queued requests
-      if (result) {
-        this.processRequestQueue();
+      if (refreshSuccess) {
+        // Process all queued requests
+        this.processRequestQueue(true);
+        
+        // Retry original request
+        return this.axiosInstance.request(originalRequest);
       } else {
-        // Clear queue on failure
-        this.requestQueue = [];
+        // Refresh failed - clear queue and redirect
+        this.processRequestQueue(false);
+        this.redirectToLogin();
+        return Promise.reject(error);
       }
-      
-      return result;
     } finally {
       this.isRefreshing = false;
-      this.refreshPromise = null;
     }
   }
 
-  private processRequestQueue(): void {
+  private queueRequest(config: AxiosRequestConfig): Promise<any> {
+    return new Promise((resolve, reject) => {
+      // Prevent memory leaks by limiting queue size
+      if (this.requestQueue.length >= this.maxQueueSize) {
+        reject(new Error('Request queue is full. Too many concurrent requests.'));
+        return;
+      }
+      
+      this.requestQueue.push({ resolve, reject, config });
+    });
+  }
+
+  private processRequestQueue(success: boolean): void {
     const queue = [...this.requestQueue];
     this.requestQueue = [];
-    
-    // Execute queued requests with staggered timing to prevent rate limiting
-    queue.forEach((callback, index) => {
-      // Add 50ms delay between each request to prevent rate limiting
-      setTimeout(() => {
-        callback();
-      }, index * 50);
+
+    queue.forEach(({ resolve, reject, config }) => {
+      if (success) {
+        resolve(this.axiosInstance.request(config));
+      } else {
+        reject(new Error('Token refresh failed'));
+      }
     });
+  }
+
+  private clearRequestQueue(): void {
+    this.requestQueue.forEach(({ reject }) => {
+      reject(new Error('Authentication failed'));
+    });
+    this.requestQueue = [];
   }
 
   private async performTokenRefresh(): Promise<boolean> {
     try {
-      // For cookie-based auth, try to refresh by calling a lightweight endpoint
-      // This will either succeed if cookies are valid or fail and redirect to login
-      const response = await this.request<any>('/health', {
-        method: 'GET',
-        skipAuth: true,
-        retryOnUnauthorized: false
-      });
+      debugAPI('Attempting token refresh...');
       
-      return response.status === 200;
+      // Use existing CSRF token manager for refresh
+      const newToken = await csrfTokenManager.forceRefresh();
+      
+      if (newToken) {
+        debugAPI('Token refresh successful');
+        return true;
+      } else {
+        debugAPI('Token refresh failed - no new token received');
+        return false;
+      }
     } catch (error) {
-      debugAPI('Token refresh failed:', { error });
-      // Clear any stored tokens on refresh failure
-      csrfTokenManager.clearToken();
+      debugAPI('Token refresh error', { error });
       return false;
     }
   }
 
+  private async handleCsrfError(originalRequest: AxiosRequestConfig, error: any): Promise<any> {
+    debugAPI('CSRF token error - forcing refresh', { error: error.response?.data });
+    
+    try {
+      // Force refresh CSRF token
+      const newToken = await csrfTokenManager.forceRefresh();
+      
+      if (newToken) {
+        // Ensure headers exist
+        if (!originalRequest.headers) {
+          originalRequest.headers = new AxiosHeaders();
+        }
+        // Update request headers with new token
+        if (originalRequest.headers instanceof AxiosHeaders) {
+          originalRequest.headers.set('X-CSRF-Token', newToken);
+        } else {
+          (originalRequest.headers as any)['X-CSRF-Token'] = newToken;
+        }
+        
+        // Retry request
+        return this.axiosInstance.request(originalRequest);
+      }
+    } catch (refreshError) {
+      debugAPI('CSRF token refresh failed', { refreshError });
+    }
+    
+    return Promise.reject(error);
+  }
+
+  private async handleRateLimitError(originalRequest: AxiosRequestConfig, error: any): Promise<any> {
+    const retryAfter = error.response?.headers['retry-after'] || '5';
+    const delayMs = isNaN(parseInt(retryAfter)) ? 5000 : parseInt(retryAfter) * 1000;
+    
+    debugAPI(`Rate limited - retrying after ${delayMs}ms`, { 
+      url: originalRequest.url,
+      retryAfter 
+    });
+    
+    // Show user-friendly message
+    if (typeof window !== 'undefined' && window.showToast) {
+      window.showToast('Please wait a moment before trying again', 'warning');
+    }
+    
+    // Wait and retry
+    await this.delay(delayMs);
+    return this.axiosInstance.request(originalRequest);
+  }
+
+  private async handleServerError(originalRequest: AxiosRequestConfig, error: any): Promise<any> {
+    const retryCount = (originalRequest as any)._retryCount || 0;
+    
+    if (retryCount < this.maxRetries) {
+      (originalRequest as any)._retryCount = retryCount + 1;
+      const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+      
+      debugAPI(`Server error - retrying (${retryCount + 1}/${this.maxRetries}) after ${delay}ms`, {
+        url: originalRequest.url,
+        status: error.response?.status,
+        error: error.response?.data
+      });
+      
+      await this.delay(delay);
+      return this.axiosInstance.request(originalRequest);
+    }
+    
+    debugAPI('Max retries exceeded for server error', { 
+      url: originalRequest.url,
+      retryCount 
+    });
+    
+    return Promise.reject(error);
+  }
+
+  private redirectToLogin(): void {
+    if (browser) {
+      goto('/login');
+    }
+  }
+
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   // Public API methods
-  async get<T>(endpoint: string, config?: Omit<RequestConfig, 'method' | 'data'>): Promise<T> {
-    const response = await this.request<T>(endpoint, { ...config, method: 'GET' });
+  async get<T>(endpoint: string, config?: RequestConfig): Promise<T> {
+    const response = await this.axiosInstance.get(endpoint, config);
     return response.data;
   }
 
-  async post<T>(endpoint: string, data?: any, config?: Omit<RequestConfig, 'method' | 'data'>): Promise<T> {
-    const response = await this.request<T>(endpoint, { ...config, method: 'POST', data });
+  async post<T>(endpoint: string, data?: any, config?: RequestConfig): Promise<T> {
+    const response = await this.axiosInstance.post(endpoint, data, config);
     return response.data;
   }
 
-  async put<T>(endpoint: string, data?: any, config?: Omit<RequestConfig, 'method' | 'data'>): Promise<T> {
-    const response = await this.request<T>(endpoint, { ...config, method: 'PUT', data });
+  async put<T>(endpoint: string, data?: any, config?: RequestConfig): Promise<T> {
+    const response = await this.axiosInstance.put(endpoint, data, config);
     return response.data;
   }
 
-  async patch<T>(endpoint: string, data?: any, config?: Omit<RequestConfig, 'method' | 'data'>): Promise<T> {
-    const response = await this.request<T>(endpoint, { ...config, method: 'PATCH', data });
+  async patch<T>(endpoint: string, data?: any, config?: RequestConfig): Promise<T> {
+    const response = await this.axiosInstance.patch(endpoint, data, config);
     return response.data;
   }
 
-  async delete<T>(endpoint: string, config?: Omit<RequestConfig, 'method' | 'data'>): Promise<T> {
-    const response = await this.request<T>(endpoint, { ...config, method: 'DELETE' });
+  async delete<T>(endpoint: string, config?: RequestConfig): Promise<T> {
+    const response = await this.axiosInstance.delete(endpoint, config);
     return response.data;
   }
 }
 
-// Export a singleton instance
-export const api = new ApiClient();
-
-// Export the class for testing or custom instances
-export { ApiClient };
+// Export singleton instance
+export const api = new EnhancedApiClient();

@@ -1,5 +1,5 @@
 // Export main API client
-export { api, ApiClient } from './client';
+export { api, EnhancedApiClient as ApiClient } from './client';
 
 // Export services
 export { authService, AuthService } from './auth';

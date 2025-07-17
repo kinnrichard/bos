@@ -1,7 +1,7 @@
 /**
  * JobAssignmentData - TypeScript interface for job_assignments table
  * 
- * Generated from Rails schema: 2025-07-16 12:57:13 UTC
+ * Generated from Rails schema: 2025-07-17 12:55:51 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - user: belongs_to User
