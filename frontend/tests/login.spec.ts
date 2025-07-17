@@ -17,7 +17,7 @@ test.describe('Login functionality', () => {
       });
     } catch (error) {
       // Ignore localStorage errors on some origins
-      console.warn('Could not clear storage:', error.message);
+      console.warn('Could not clear storage:', error instanceof Error ? error.message : String(error));
     }
   });
 
