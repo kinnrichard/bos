@@ -117,13 +117,6 @@
   
   <!-- Tasks Section -->
   <div class="tasks-section">
-    <div class="section-header">
-      <div class="task-counts">
-        <!--span class="task-count">
-          {job.attributes.task_counts.completed} / {job.attributes.task_counts.total} completed
-        </span-->
-      </div>
-    </div>
     <TaskList tasks={job?.tasks || []} jobId={job?.id} {batchTaskDetails} />
   </div>
   

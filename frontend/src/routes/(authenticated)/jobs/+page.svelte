@@ -151,16 +151,17 @@
 
 <style>
   .jobs-container {
-    padding: 24px;
+    padding: 0 24px 24px 24px;
     max-width: 1200px;
     margin: 0 auto;
     height: 100%;
     display: flex;
     flex-direction: column;
+    gap: 0;
   }
 
   .page-header {
-    margin-bottom: 24px;
+    margin-bottom: 0;
     flex-shrink: 0;
   }
 
@@ -168,6 +169,7 @@
     flex: 1;
     overflow-y: auto;
     min-height: 0;
+    padding-top: 24px;
   }
 
   .page-header h1 {

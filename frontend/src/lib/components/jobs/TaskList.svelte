@@ -1224,6 +1224,7 @@
     flex: 1;
     overflow-y: auto;
     min-height: 0;
+    padding-top: 24px;
   }
 
   .empty-state {
