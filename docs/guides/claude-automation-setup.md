@@ -1,3 +1,12 @@
+---
+title: "Claude Automation Setup Guide"
+description: "Guide for setting up and configuring Claude CLI integration for automated bug fixing"
+last_updated: "2025-07-17"
+status: "active"
+category: "guide"
+tags: ["claude", "automation", "setup", "bug-fixing", "cli"]
+---
+
 # Claude Automation Setup Guide
 
 This guide explains how to set up and configure the Claude CLI integration for automated bug fixing in bŏs.
@@ -167,3 +176,32 @@ ClaudeAutomationService.new(123).send(:generate_bug_fix_prompt,
 3. **Check Logs** - Regularly review automation logs
 4. **Test First** - Test automation in development before production
 5. **Gradual Rollout** - Start with simple bugs, expand scope gradually
+
+---
+
+## 🔗 Related Documentation
+
+### Development Workflow
+- **[Feature Request Workflow](../workflows/feature-request-workflow.md)** - Feature development process
+- **[Bug to PR Automation](./readme-bug-to-pr-automation.md)** - Complete automation architecture
+- **[Epic Management](../epics/README.md)** - Epic planning and tracking system
+
+### Testing & Quality
+- **[Testing Strategy](../tests/readme-tests.md)** - Testing approach and patterns
+- **[Test Plan Critical Areas](./test-plan-critical-areas.md)** - Testing focus areas
+- **[Playwright Testing](../tests/readme-tasklist-testing.md)** - Frontend testing with Playwright
+
+### Architecture & Setup
+- **[Technical Decisions](../standards/technical-decisions.md)** - Architecture decision records
+- **[GitHub Setup](../setup/github-setup.md)** - GitHub configuration and authentication
+- **[Style Guide](../standards/style-guide.md)** - Code style and conventions
+
+### Frontend Integration
+- **[Frontend Debug System](../frontend/epics/epic-014-debug-system-guide.md)** - Debug system for troubleshooting
+- **[API Integration](../api/frontend-integration.md)** - Frontend API patterns
+- **[Zero.js Integration](../../frontend/src/lib/zero/README.md)** - Zero.js reactive system
+
+### See Also
+- **[Troubleshooting Guide](../architecture/troubleshooting-guide.md)** - Common issues and solutions
+- **[Performance Guidelines](../architecture/performance-guidelines.md)** - Performance optimization
+- **[BMAD Context](../../dev-docs/bmad-context/prd.md)** - Business analysis and development methodology

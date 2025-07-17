@@ -210,5 +210,5 @@ $: searchQuery = createQuery({
 ## Reference Links
 
 - [Stimulus Handbook](https://stimulus.hotwired.dev/handbook/introduction) - Original framework docs
-- [Svelte Migration Stories](../stories/in-progress/SVELTE_MIGRATION_STORIES.md) - Implementation progress
+- [Svelte Migration Stories](../stories/backlog/soon/svelte-migration-stories.md) - Implementation progress
 - [Frontend Architecture](../architecture/frontend-architecture.md) - Current Svelte patterns

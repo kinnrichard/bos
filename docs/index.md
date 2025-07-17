@@ -1,3 +1,12 @@
+---
+title: "bŏs Documentation Index"
+description: "Central documentation index for the bŏs client/job/task management system"
+last_updated: "2025-07-17"
+status: "active"
+category: "index"
+tags: ["documentation", "index", "ai-agents", "architecture", "quick-start"]
+---
+
 # bŏs Documentation Index
 
 ## Overview
@@ -11,7 +20,43 @@ bŏs is a client/job/task management system designed for IT company technicians 
 
 This documentation is optimized for AI development agents to understand the current Svelte-based architecture and patterns necessary for effective contribution.
 
-## Quick Start for AI Agents
+## 🚀 Quick Start by User Type
+
+**Choose your path based on your role and objectives:**
+
+### 👨‍💻 New to the Project?
+- **[Getting Started Hub](./getting-started/README.md)** - Role-based navigation
+- **[New Developer Guide](./getting-started/new-developer.md)** - Complete onboarding
+- **[Onboarding Journey](./getting-started/journeys/onboarding.md)** - Step-by-step path
+
+### 🔧 Developers
+- **[Frontend Developer Guide](./getting-started/frontend-developer.md)** - Svelte + TypeScript
+- **[Backend Developer Guide](./getting-started/backend-developer.md)** - Rails API
+- **[Development Workflow](./getting-started/journeys/development-workflow.md)** - Daily practices
+
+### 📡 API Consumers
+- **[API Consumer Guide](./getting-started/api-consumer.md)** - Integration guide
+- **[API Documentation](./api/README.md)** - Complete API reference
+- **[API Quick Reference](./getting-started/quick-reference/api.md)** - Essential commands
+
+### 🧪 QA Engineers
+- **[QA Engineer Guide](./getting-started/qa-engineer.md)** - Testing ecosystem
+- **[Testing Journey](./getting-started/journeys/testing-workflow.md)** - Comprehensive testing
+- **[Testing Quick Reference](./getting-started/quick-reference/testing.md)** - Test commands
+
+### 🛠️ DevOps Engineers
+- **[DevOps Engineer Guide](./getting-started/devops-engineer.md)** - Infrastructure
+- **[DevOps Journey](./getting-started/journeys/devops.md)** - Deployment mastery
+- **[DevOps Quick Reference](./getting-started/quick-reference/devops.md)** - Operations
+
+### 📚 Quick References
+- **[Frontend Quick Reference](./getting-started/quick-reference/frontend.md)** - Svelte, TypeScript, Tailwind
+- **[Backend Quick Reference](./getting-started/quick-reference/backend.md)** - Rails, PostgreSQL
+- **[Workflow Quick Reference](./getting-started/quick-reference/workflow.md)** - Git, CI/CD
+
+---
+
+## 🤖 Quick Start for AI Agents
 
 Before making any changes:
 1. Read the [Frontend Architecture](./architecture/frontend-architecture.md) - Svelte + TypeScript patterns
@@ -30,7 +75,7 @@ Before making any changes:
 1. [Coding Standards](./architecture/coding-standards.md) - Project conventions and style
 2. [Frontend Architecture](./architecture/frontend-architecture.md) - Svelte + TypeScript patterns
 3. [Testing Guide](./testing-guide.md) - Comprehensive testing strategy
-4. [API Specification](./api/API_SPECIFICATION.md) - JSON API documentation
+4. [API Specification](./api/api-specification.md) - JSON API documentation
 
 ### Architecture Documentation
 
@@ -39,7 +84,7 @@ Before making any changes:
 - [Backend Architecture](./architecture/backend-architecture.md) - Rails API patterns
 
 #### API and Data
-- [API Specification](./api/API_SPECIFICATION.md) - JSON API documentation
+- [API Specification](./api/api-specification.md) - JSON API documentation
 - [Data Models](./architecture/data-models.md) - Business entity definitions
 - [Database Schema](./architecture/database-schema.md) - PostgreSQL structure
 
@@ -57,7 +102,7 @@ Before making any changes:
 - [Svelte Migration PRD](./PRDs/svelte-migration.md) - Frontend framework migration plan
 
 ### User Stories and Epics
-- [Svelte Migration Stories](./stories/in-progress/SVELTE_MIGRATION_STORIES.md) - Implementation stories
+- [Svelte Migration Stories](./stories/backlog/soon/svelte-migration-stories.md) - Implementation stories
 
 ### Development Guides
 - [Testing Guide](./testing-guide.md) - Comprehensive testing strategy

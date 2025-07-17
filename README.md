@@ -1,4 +1,13 @@
-# README
+---
+title: "bŏs - Business Operating System"
+description: "Client/job/task management system for IT company technicians"
+last_updated: "2025-07-17"
+status: "active"
+category: "project-root"
+tags: ["readme", "setup", "getting-started", "project-overview"]
+---
+
+# bŏs - Business Operating System
 
 ## starting up
 

@@ -1,3 +1,12 @@
+---
+title: "Learning About Zero.js: Best Practices and Reactive Integration"
+description: "Comprehensive guide on Zero.js integration best practices and reactive patterns"
+last_updated: "2025-07-17"
+status: "active"
+category: "technical-guide"
+tags: ["zero", "best-practices", "reactive", "integration", "svelte"]
+---
+
 # Learning About Zero.js: Best Practices and Reactive Integration
 
 ## Overview

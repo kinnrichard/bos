@@ -311,3 +311,32 @@ debugReactive('Initial state:', reactiveTest.state);
 4. **Team Training**: Familiarize team with new patterns and benefits
 
 This integration layer provides a solid foundation for Epic-008 while maintaining full compatibility with existing ReactiveRecord and ActiveRecord functionality.
+
+---
+
+## 🔗 Related Documentation
+
+### Epic Documentation
+- **[Epic-008: ReactiveRecord Implementation](../../docs/epics/completed/Epic-008-Simplify-ReactiveRecord-Version-2.md)** - Main epic documentation
+- **[Epic-008 Migration Guide](../epic-008-migration-guide.md)** - Detailed migration guide from current patterns
+- **[ReactiveRecord Usage Guide](../../dev-docs/using-reactive-record.md)** - ActiveRecord-style reactive patterns
+
+### Frontend Development
+- **[Frontend Debug System](../docs/epic-014-debug-system-guide.md)** - Debug system for troubleshooting
+- **[Frontend Architecture](../../docs/architecture/frontend-architecture.md)** - Svelte + TypeScript patterns
+- **[API Integration](../../docs/api/frontend-integration.md)** - Frontend API patterns
+
+### Development & Testing
+- **[Testing Strategy](../../docs/tests/readme-tests.md)** - Testing approach and patterns
+- **[Style Guide](../../docs/standards/style-guide.md)** - Code style and conventions
+- **[Technical Decisions](../../docs/standards/technical-decisions.md)** - Architecture decision records
+
+### Architecture & Implementation
+- **[Zero.js Assessment](../../dev-docs/assessment-of-zero-svelte-query.md)** - Zero.js evaluation and decisions
+- **[Frontend Migration Overview](../epic-008-migration-guide.md)** - Svelte 5 migration patterns
+- **[Performance Guidelines](../../docs/architecture/performance-guidelines.md)** - Performance optimization
+
+### See Also
+- **[Epic Management](../../docs/epics/README.md)** - Epic planning and tracking
+- **[Story Development](../../docs/stories/README.md)** - User stories and implementation
+- **[Claude Automation](../../docs/guides/claude-automation-setup.md)** - Automated development setup
