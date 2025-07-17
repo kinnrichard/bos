@@ -1221,6 +1221,9 @@
     flex-direction: column;
     gap: 0;
     background-color: var(--bg-black);
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
   }
 
   .empty-state {

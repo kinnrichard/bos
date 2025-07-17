@@ -140,6 +140,18 @@
   .job-detail-view {
     display: flex;
     flex-direction: column;
+    height: 100%;
+  }
+
+  .job-title {
+    flex-shrink: 0;
+  }
+
+  .tasks-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .section-header {
@@ -147,6 +159,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-shrink: 0;
   }
 
   .task-counts {

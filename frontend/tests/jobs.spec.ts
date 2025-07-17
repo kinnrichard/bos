@@ -1,24 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { TestDatabase } from '../test-helpers/database';
-import { AuthHelper } from '../test-helpers/auth';
 import { DataFactory } from '../test-helpers/data-factories';
 
 test.describe('Jobs List Page - fZero Rune Migration (Epic-006-Story-002)', () => {
-  let db: TestDatabase;
-  let auth: AuthHelper;
   let dataFactory: DataFactory;
 
   test.beforeEach(async ({ page }) => {
     // Initialize helpers for real database testing
-    db = new TestDatabase();
-    auth = new AuthHelper(page);
     dataFactory = new DataFactory(page);
   });
 
   test('should display jobs list with proper structure', async ({ page }) => {
-    // First authenticate as admin user
-    await auth.setupAuthenticatedSession('admin');
-    
     // Create real test data with unique names
     const timestamp = Date.now();
     const client = await dataFactory.createClient({ name: `Test Client ${timestamp}` });
@@ -31,18 +22,12 @@ test.describe('Jobs List Page - fZero Rune Migration (Epic-006-Story-002)', () =
     });
 
     console.log(`Created job with ID: ${job.id}`);
-    
-    // Wait a moment for the job to be fully created
-    await page.waitForTimeout(1000);
 
     await page.goto('/jobs?scope=all');
     
     // Wait for SvelteKit to fully load
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle');
-    
-    // Wait a bit more for Svelte components to render
-    await page.waitForTimeout(2000);
 
     // Debug: Check what page we're actually on
     const currentUrl = page.url();
@@ -81,13 +66,7 @@ test.describe('Jobs List Page - fZero Rune Migration (Epic-006-Story-002)', () =
     const pageContent = await page.textContent('body');
     console.log('Page content preview:', pageContent?.substring(0, 1000));
 
-    // If we're redirected to login, handle authentication via UI
-    if (currentUrl.includes('/login')) {
-      console.log('Redirected to login, authenticating via UI...');
-      await auth.loginAsTestUserViaUI('admin');
-      await page.goto('/jobs');
-      await page.waitForLoadState('networkidle');
-    }
+    // Should be authenticated via storageState, no login redirect expected
 
     // Check page title
     await expect(page.locator('h1')).toContainText('Jobs');
@@ -306,9 +285,6 @@ test.describe('Jobs List Page - fZero Rune Migration (Epic-006-Story-002)', () =
   });
 
   test('should use fZero rune for real-time updates', async ({ page }) => {
-    // First authenticate as admin user
-    await auth.setupAuthenticatedSession('admin');
-    
     // Create initial test data
     const timestamp = Date.now();
     const client = await dataFactory.createClient({ name: `Real-time Test Client ${timestamp}` });
@@ -347,10 +323,7 @@ test.describe('Jobs List Page - fZero Rune Migration (Epic-006-Story-002)', () =
     });
 
     // Wait for real-time update to occur
-    await page.waitForTimeout(2000);
-    
-    // The new job should appear without page refresh due to fZero rune
-    await expect(page.locator('.job-card-inline')).toHaveCount(2);
+    await expect(page.locator('.job-card-inline')).toHaveCount(2, { timeout: 10000 });
     
     // Verify the new job appears
     const jobCards = page.locator('.job-card-inline');
@@ -362,9 +335,6 @@ test.describe('Jobs List Page - fZero Rune Migration (Epic-006-Story-002)', () =
   });
 
   test('should use Svelte 5 patterns correctly', async ({ page }) => {
-    // First authenticate as admin user
-    await auth.setupAuthenticatedSession('admin');
-    
     // Create test data
     const timestamp = Date.now();
     const client = await dataFactory.createClient({ name: `Svelte5 Test Client ${timestamp}` });
@@ -411,10 +381,11 @@ test.describe('Jobs List Page - fZero Rune Migration (Epic-006-Story-002)', () =
     });
     
     await retryButton.click();
-    await page.waitForTimeout(500);
     
-    // Verify console logging is reduced to appropriate events
-    expect(consoleMessages.length).toBeGreaterThan(0);
+    // Wait for console message to appear
+    await expect(async () => {
+      expect(consoleMessages.length).toBeGreaterThan(0);
+    }).toPass({ timeout: 5000 });
     console.log('Retry console messages:', consoleMessages);
   });
 });
