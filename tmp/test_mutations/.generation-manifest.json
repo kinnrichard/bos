@@ -1,0 +1,110 @@
+{
+  "activity_logs": {
+    "pattern_hash": "8a8fd204c40ce0d1596009857bb82518d0ae41c10946ed6a69fa5dc1742e0fe6",
+    "generated_at": "2025-07-13T17:08:40Z",
+    "generated_files": [
+      "tmp/test_mutations/activity_log.generated.ts",
+      "tmp/test_mutations/activity_log.custom.ts"
+    ],
+    "file_hashes": {
+      "tmp/test_mutations/activity_log.generated.ts": "55c78cce51ddc85da935783fc1c933d425aa148780d3fde426c197d526f6a4c5",
+      "tmp/test_mutations/activity_log.custom.ts": "778b91ee3d488337c83c0e39dc5d054f611af4a195f9e5f379d481ef6da4000c"
+    }
+  },
+  "contact_methods": {
+    "pattern_hash": "8b446bd9c8f3309a71d05f56fe3fe640b10b418989b66fd39e23abc9df2aca41",
+    "generated_at": "2025-07-13T17:08:40Z",
+    "generated_files": [
+      "tmp/test_mutations/contact_method.generated.ts",
+      "tmp/test_mutations/contact_method.custom.ts"
+    ],
+    "file_hashes": {
+      "tmp/test_mutations/contact_method.generated.ts": "20e644fae498b56a7afb644c54880a90edf27c1cca5aab45affa3a258d33e902",
+      "tmp/test_mutations/contact_method.custom.ts": "f1e18cbf7e20a515118ebd1c83807a13282a2f12e62e0aa78f808c6b0ca3f0a9"
+    }
+  },
+  "jobs": {
+    "pattern_hash": "3072ab16d9ab8d920040a3ac80ec0efee858d9f4c0332be72aa4a1f4f6c5cb3b",
+    "generated_at": "2025-07-13T17:08:40Z",
+    "generated_files": [
+      "tmp/test_mutations/job.generated.ts",
+      "tmp/test_mutations/job.custom.ts"
+    ],
+    "file_hashes": {
+      "tmp/test_mutations/job.generated.ts": "5389efa97a3d2930f93f34ae5fd7aade8b9c8b68d3cb01efa9c6cf227f30f89f",
+      "tmp/test_mutations/job.custom.ts": "295063d73d5f0b8ddcb6b519b58f49d58acca1c644b35cdbdafb53424c876074"
+    }
+  },
+  "clients": {
+    "pattern_hash": "69e16e7908482e20fa58ed4a05740836fe6d15ef6d96951d8a06c1bb9708435c",
+    "generated_at": "2025-07-13T17:08:40Z",
+    "generated_files": [
+      "tmp/test_mutations/client.generated.ts",
+      "tmp/test_mutations/client.custom.ts"
+    ],
+    "file_hashes": {
+      "tmp/test_mutations/client.generated.ts": "01de3b08bed2814ad9b305d2dabeabf20dfe8d84d5fc47705d5a2e4630ed5cd6",
+      "tmp/test_mutations/client.custom.ts": "f318f8eabbb0280d8b4d52bf8856e46702232e4689b12d4872c6602791ad8006"
+    }
+  },
+  "notes": {
+    "pattern_hash": "2d09c76cfc7ec16ba712dc652b68b02fa6a4bbd6cdd61ffddfe16f3d10cf03fd",
+    "generated_at": "2025-07-13T17:08:40Z",
+    "generated_files": [
+      "tmp/test_mutations/note.generated.ts",
+      "tmp/test_mutations/note.custom.ts"
+    ],
+    "file_hashes": {
+      "tmp/test_mutations/note.generated.ts": "bbad8f3368da9a9b7f08f1540fe90fd46bbd3043ddfec399ea309aceac0fae7e",
+      "tmp/test_mutations/note.custom.ts": "66b1a812d4513ecddb42d4e7426bab5f70bf0a5e76d7df4aad19784f6d7f27a2"
+    }
+  },
+  "job_targets": {
+    "pattern_hash": "f589d468f05378eba1dc4e2173b8d7fd706f52ce513e3fea9722d3f85cdd6e6e",
+    "generated_at": "2025-07-13T17:08:40Z",
+    "generated_files": [
+      "tmp/test_mutations/job_target.generated.ts",
+      "tmp/test_mutations/job_target.custom.ts"
+    ],
+    "file_hashes": {
+      "tmp/test_mutations/job_target.generated.ts": "a63c92dc8a1c74a67d04bca7f6930baa0f8b544e65f9d8ffd3ceac98bdb5ba20",
+      "tmp/test_mutations/job_target.custom.ts": "152a28fb6697fa1fc5375bd399691f9656396a85c3a6dd32e9c0ba55a56c4de8"
+    }
+  },
+  "scheduled_date_times": {
+    "pattern_hash": "a576ba843ede0e2fdd80c96196f0b58ec10ab8b876aef8d81dbd399c990e5516",
+    "generated_at": "2025-07-13T17:08:40Z",
+    "generated_files": [
+      "tmp/test_mutations/scheduled_date_time.generated.ts",
+      "tmp/test_mutations/scheduled_date_time.custom.ts"
+    ],
+    "file_hashes": {
+      "tmp/test_mutations/scheduled_date_time.generated.ts": "2d932d208477218b301737d925f44d6c4c767a20c39d2bfdedc9d978193fd482",
+      "tmp/test_mutations/scheduled_date_time.custom.ts": "15bb082e9fe7f005509d005aba546ab1e335bf27775eb56c3bbdc0e10404b6bc"
+    }
+  },
+  "tasks": {
+    "pattern_hash": "fb933c7ae24090de0ffd45c35673e7e17bcbd92e16ad7d8264a4d3f368ffe4ae",
+    "generated_at": "2025-07-13T17:08:40Z",
+    "generated_files": [
+      "tmp/test_mutations/task.generated.ts",
+      "tmp/test_mutations/task.custom.ts"
+    ],
+    "file_hashes": {
+      "tmp/test_mutations/task.generated.ts": "8b6b86c7dd0a89766d8c9e1e9961dc6cb7dc5bdf14ac9781e441848c0af9da06",
+      "tmp/test_mutations/task.custom.ts": "162de4c24829c5ee9cb1da75f2623cfd4d02f5908433993273441ac910ae0e2c"
+    }
+  },
+  "users": {
+    "pattern_hash": "68faaa5af0f795650e76540ce547ffd8379046d628e01326d221c19daac93988",
+    "generated_at": "2025-07-13T17:08:40Z",
+    "generated_files": [
+      "tmp/test_mutations/user.generated.ts",
+      "tmp/test_mutations/user.custom.ts"
+    ],
+    "file_hashes": {
+      "tmp/test_mutations/user.generated.ts": "7693ca955c27f85dc2e37bc9eddfe5d835bee83c51b50946f8b6b88a7597638c",
+      "tmp/test_mutations/user.custom.ts": "d2a5e8645ee95390c63d596d9bce516eaa5b485a8bb17812722cb2979a540092"
+    }
+  }
+}

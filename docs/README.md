@@ -72,9 +72,9 @@ tags: ["documentation", "overview", "navigation", "quick-start"]
 - **[Integration Tests](./testing/integration.md)** - Full system tests
 
 ### 📋 Project Management
-- **[Active Epics](./epics/active/)** - Current development epics
-- **[Completed Epics](./epics/completed/)** - Finished development work
-- **[Stories](./stories/)** - User stories and implementation details
+- **[Task Management](../tasks/)** - AI TrackDown task management system
+- **[Legacy Task Archive](./archive/task-management-legacy/)** - Archived epics and stories (migrated to AI TrackDown)
+- **[Migration Mapping](./archive/task-management-legacy/MIGRATION-MAPPING.md)** - Map of legacy IDs to AI TrackDown IDs
 - **[PRDs](./PRDs/)** - Product requirements documents
 
 ### 🔄 Migration & Legacy
@@ -175,7 +175,8 @@ git push
 ### Project Planning & Management
 - **[Workflow Plan](../workflow-plan.md)** - Project execution workflow
 - **[BMAD Context](../dev-docs/bmad-context/prd.md)** - Business context and requirements
-- **[Epic Management](./epics/README.md)** - Epic planning and tracking system
+- **[AI TrackDown](../tasks/)** - Current task management system (epics, issues, tasks)
+- **[Legacy Task Archive](./archive/task-management-legacy/)** - Historical epics and stories
 
 ### Development & Automation
 - **[Claude Automation](./guides/claude-automation-setup.md)** - Automated bug fixing setup
