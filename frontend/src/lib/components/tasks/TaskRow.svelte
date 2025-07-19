@@ -3,7 +3,7 @@
   import { getTaskStatusEmoji } from '$lib/config/emoji';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
   import { focusActions } from '$lib/stores/focusManager.svelte';
-  import { fixContentEditable } from '$lib/actions/fixContentEditable';
+  import EditableTitle from '../ui/EditableTitle.svelte';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
   import '../../styles/task-components.css';
   
@@ -37,9 +37,34 @@
 
   const dispatch = createEventDispatcher();
 
-  // Local state for title editing
-  let titleElement = $state<HTMLHeadingElement>();
-  let originalTitle = $state('');
+  // Dispatch helper for editing events
+  function handleEditingChange(editing: boolean) {
+    if (editing) {
+      // When entering edit mode, dispatch titleClick to notify parent
+      dispatch('taskaction', {
+        type: 'titleClick',
+        taskId: task.id,
+        data: { 
+          event: new MouseEvent('click'), 
+          originalTitle: task.title 
+        }
+      });
+    } else {
+      // When exiting edit mode, dispatch cancelEdit
+      dispatch('taskaction', {
+        type: 'cancelEdit',
+        taskId: task.id
+      });
+    }
+  }
+
+  async function handleSaveTitle(newTitle: string) {
+    dispatch('taskaction', {
+      type: 'saveEdit',
+      taskId: task.id,
+      data: { newTitle }
+    });
+  }
 
   function handleTaskClick(event: MouseEvent) {
     // Always dispatch click event so parent can cancel edit mode
@@ -85,66 +110,8 @@
     });
   }
 
-  function handleTitleClick(event: MouseEvent) {
-    // Prevent event from bubbling up to parent task div
-    event.stopPropagation();
-    dispatch('taskaction', {
-      type: 'titleClick',
-      taskId: task.id,
-      data: { 
-        event, 
-        originalTitle: task.title 
-      }
-    });
-  }
-
-  function handleTitleFocus() {
-    if (titleElement) {
-      originalTitle = titleElement.textContent || '';
-    }
-  }
-
-  function handleTitleKeydown(event: KeyboardEvent) {
-    // Always prevent keyboard events from bubbling when editing title
-    event.stopPropagation();
-    
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      const newTitle = titleElement?.textContent || '';
-      dispatch('taskaction', {
-        type: 'saveEdit',
-        taskId: task.id,
-        data: { newTitle }
-      });
-      // Exit edit mode immediately
-      if (titleElement) {
-        titleElement.blur();
-      }
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      if (titleElement) {
-        titleElement.textContent = originalTitle;
-        titleElement.blur();
-      }
-      dispatch('taskaction', {
-        type: 'cancelEdit',
-        taskId: task.id
-      });
-    }
-    // For all other keys (including spacebar), allow default behavior but prevent bubbling
-  }
-
-  function handleTitleBlur() {
-    // Only process blur if not transitioning and this task is being edited
-    if (!focusActions.isTransitioning() && focusActions.isTaskBeingEdited(task.id)) {
-      const newTitle = titleElement?.textContent || '';
-      dispatch('taskaction', {
-        type: 'saveEdit',
-        taskId: task.id,
-        data: { newTitle }
-      });
-    }
-  }
+  // Handle editing state changes from EditableTitle
+  // The EditableTitle component now manages its own click handling
 
   function handleTaskUpdated(event: CustomEvent) {
     dispatch('taskaction', {
@@ -207,18 +174,15 @@
   
   <!-- Task Content -->
   <div class="task-content">
-    <h5 
-      class="task-title"
-      contenteditable="true"
-      use:fixContentEditable
-      onclick={handleTitleClick}
-      onkeydown={handleTitleKeydown}
-      onblur={handleTitleBlur}
-      onfocus={handleTitleFocus}
-      bind:this={titleElement}
-    >
-      {task.title}
-    </h5>
+    <EditableTitle
+      value={task.title}
+      tag="h5"
+      className="task-title"
+      placeholder="Untitled Task"
+      isEditing={isEditing}
+      onEditingChange={handleEditingChange}
+      onSave={handleSaveTitle}
+    />
     
     <!-- Time Tracking Display -->
     {#if task.status === 'in_progress' || (task.accumulated_seconds && task.accumulated_seconds > 0)}

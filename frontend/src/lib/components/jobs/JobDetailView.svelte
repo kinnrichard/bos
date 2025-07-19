@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PopulatedJob } from '$lib/types/job';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
-  import { fixContentEditable } from '$lib/actions/fixContentEditable';
+  import EditableTitle from '../ui/EditableTitle.svelte';
   import JobInfo from './JobInfo.svelte';
   import TaskList from './TaskList.svelte';
   import StatusIndicator from './StatusIndicator.svelte';
@@ -9,10 +9,6 @@
 
   // ✨ USE $props() FOR SVELTE 5 RUNES MODE
   let { job, batchTaskDetails = null }: { job: PopulatedJob; batchTaskDetails?: any } = $props();
-
-  // Job title editing state
-  let jobTitleElement = $state<HTMLHeadingElement>();
-  let originalJobTitle = $state('');
 
   // ✨ USE $derived FOR COMPUTED VALUES (NOT REACTIVE STATEMENTS)
   const statusEmoji = $derived(getJobStatusEmoji(job?.status));
@@ -44,76 +40,31 @@
   const jobClient = $derived(job?.client?.name || 'Unknown Client'); // Zero.js flat structure
   const jobStatus = $derived(job?.status);
   const jobId = $derived(job?.id || '');
+  const isUntitledJob = $derived(jobTitle === 'Untitled Job' || jobTitle === '');
 
-  // Job title editing functions
-  function handleJobTitleFocus() {
-    if (jobTitleElement) {
-      originalJobTitle = jobTitleElement.textContent || '';
-    }
-  }
-
-  async function saveJobTitle() {
-    if (!jobTitleElement) return;
-    
-    const newTitle = (jobTitleElement.textContent || '').trim();
-    
-    if (newTitle === '' || newTitle === originalJobTitle) {
-      // Revert to original if empty or unchanged
-      jobTitleElement.textContent = originalJobTitle;
-      jobTitleElement.blur();
-      return;
-    }
-
+  // Handle job title save
+  async function handleJobTitleSave(newTitle: string) {
     try {
       // Use the Job ActiveRecord model to update
       const { Job } = await import('$lib/models/job');
       await Job.update(jobId, { title: newTitle });
-      
-      // Update original title for future comparisons
-      originalJobTitle = newTitle;
-      jobTitleElement.blur();
+      debugComponent('Job title updated successfully', { jobId, newTitle });
     } catch (error) {
       debugComponent.error('Job title update failed', { error, jobId, newTitle });
-      // Revert to original title on error
-      jobTitleElement.textContent = originalJobTitle;
-      jobTitleElement.blur();
+      throw error; // Re-throw so EditableTitle can handle the error
     }
-  }
-
-  function cancelJobTitleEdit() {
-    if (jobTitleElement) {
-      jobTitleElement.textContent = originalJobTitle;
-      jobTitleElement.blur();
-    }
-  }
-
-  function handleJobTitleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      saveJobTitle();
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      cancelJobTitleEdit();
-    }
-  }
-
-  function handleJobTitleBlur() {
-    saveJobTitle();
   }
 </script>
 
 <div class="job-detail-view">
-  <h1 
-    class="job-title" 
-    contenteditable="true"
-    use:fixContentEditable
-    onkeydown={handleJobTitleKeydown}
-    onblur={handleJobTitleBlur}
-    onfocus={handleJobTitleFocus}
-    bind:this={jobTitleElement}
-  >
-    {jobTitle}
-  </h1>
+  <EditableTitle
+    value={jobTitle}
+    tag="h1"
+    className="job-title"
+    placeholder="Untitled Job"
+    autoFocus={isUntitledJob}
+    onSave={handleJobTitleSave}
+  />
   
   <!-- Tasks Section -->
   <div class="tasks-section">
@@ -123,26 +74,14 @@
 </div>
 
 <style>
-  h1 {
-    margin: 0;
-    padding: 0;
-  }
-
-  
-  
   .job-detail-view {
     display: flex;
     flex-direction: column;
     height: 100%;
   }
 
-  .job-title {
+  .job-detail-view :global(.job-title) {
     flex-shrink: 0;
-    padding: 3px 8px;
-  }
-
-  .job-title:focus {
-    outline-offset: -2px;
   }
 
   .tasks-section {
@@ -152,30 +91,10 @@
     min-height: 0;
   }
 
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-shrink: 0;
-  }
-
-  .task-counts {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
   /* Responsive layout */
   @media (max-width: 768px) {
     .job-detail-view {
       gap: 24px;
-    }
-
-    .section-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 12px;
     }
   }
 </style>

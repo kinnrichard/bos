@@ -2,36 +2,55 @@
   import { createPopover } from '@melt-ui/svelte';
   import Portal from './Portal.svelte';
   import { onDestroy, onMount, tick } from 'svelte';
+  import { fade } from 'svelte/transition';
   import { calculatePopoverPosition, type PopoverPosition } from '$lib/utils/popover-positioning';
   import { debugComponent } from '$lib/utils/debug';
 
-  // Core popover props
+  // Enhanced popover props with new options
   let {
     preferredPlacement = 'bottom' as 'top' | 'bottom' | 'left' | 'right',
     panelWidth = '240px',
+    panelMaxHeight,
+    panelMinWidth,
+    offset = 8,
+    showArrow = true,
+    closeOnClickOutside = true,
+    closeOnEscape = true,
+    animationDuration = 200,
+    className = '',
+    arrowClassName = '',
     enabled = true,
     trigger,
     children
   }: {
     preferredPlacement?: 'top' | 'bottom' | 'left' | 'right';
     panelWidth?: string;
+    panelMaxHeight?: string;
+    panelMinWidth?: string;
+    offset?: number;
+    showArrow?: boolean;
+    closeOnClickOutside?: boolean;
+    closeOnEscape?: boolean;
+    animationDuration?: number;
+    className?: string;
+    arrowClassName?: string;
     enabled?: boolean;
     trigger?: import('svelte').Snippet<[{ popover: { close: () => void; expanded: boolean; button: any } }]>;
     children?: import('svelte').Snippet<[{ close: () => void }]>;
   } = $props();
 
-  // Create the Melt UI popover
+  // Create the Melt UI popover with enhanced configuration
   const {
     elements: { trigger: meltTrigger, content },
     states: { open }
   } = createPopover({
     positioning: {
       placement: preferredPlacement,
-      gutter: 8,
+      gutter: offset,
       offset: { mainAxis: 4 }
     },
     disableFocusTrap: false,
-    closeOnOutsideClick: true,
+    closeOnOutsideClick: closeOnClickOutside,
     preventScroll: false,
     portal: null // Use portal for proper event handling
   });
@@ -40,13 +59,15 @@
   let panelElement = $state<HTMLElement>();
   
   // Arrow positioning state
-  let arrowPosition: { top: number; left: number } = { top: 0, left: 0 };
-  let arrowPositioned = false;
+  let arrowPosition = $state<{ top: string; left: string }>({ top: '50%', left: '50%' });
+  let arrowPositioned = $state(false);
 
   // Disable custom arrow positioning for now
-  // $: if ($open && buttonElement && panelElement) {
-  //   calculateArrowPosition();
-  // }
+  // $effect(() => {
+  //   if ($open && showArrow && buttonElement && panelElement) {
+  //     calculateArrowPosition();
+  //   }
+  // });
 
   // Reset arrow position when popover closes
   $effect(() => {
@@ -59,7 +80,7 @@
     // Wait for next tick to ensure panel is positioned
     await tick();
     
-    if (!buttonElement || !panelElement) return;
+    if (!buttonElement || !panelElement || !showArrow) return;
     
     // Find the actual button element inside the wrapper
     const actualButton = buttonElement.querySelector('button') || buttonElement;
@@ -70,93 +91,48 @@
     const triggerCenterX = triggerRect.left + (triggerRect.width / 2);
     const triggerCenterY = triggerRect.top + (triggerRect.height / 2);
     
-    let arrowLeft: number;
-    let arrowTop: number;
-    
-    // Debug logging
-    debugComponent('Arrow positioning debug', {
-      placement: preferredPlacement,
-      triggerRect: { top: triggerRect.top, left: triggerRect.left, width: triggerRect.width, height: triggerRect.height },
-      panelRect: { top: panelRect.top, left: panelRect.left, width: panelRect.width, height: panelRect.height },
-      triggerCenterY,
-      triggerCenterX
-    });
+    let arrowLeft: string;
+    let arrowTop: string;
     
     switch (preferredPlacement) {
       case 'left':
-        // Arrow points right to button - check if we should use default centering
-        const panelCenterY = panelRect.top + (panelRect.height / 2);
-        const distanceFromCenter = Math.abs(triggerCenterY - panelCenterY);
-        
-        // If trigger is close to panel center (within 20px), use centered arrow
-        if (distanceFromCenter <= 20) {
-          arrowLeft = panelRect.width - 1;
-          arrowTop = panelRect.height / 2; // Center the arrow
-          debugComponent('Left placement - using centered arrow', { arrowLeft, arrowTop });
-        } else {
-          // Use positioned arrow when trigger is far from center
-          arrowLeft = panelRect.width - 1;
-          let relativeTop = triggerCenterY - panelRect.top;
-          arrowTop = Math.max(12, Math.min(
-            Math.max(0, relativeTop), 
-            panelRect.height - 12
-          ));
-          debugComponent('Left placement - using positioned arrow', { 
-            arrowLeft, 
-            arrowTop, 
-            triggerCenterY, 
-            panelCenterY,
-            distanceFromCenter,
-            relativeTop 
-          });
-        }
-        break;
-        
       case 'right':
-        // Arrow points left to button
-        arrowLeft = 1; // Position arrow at left edge of panel
-        arrowTop = Math.max(12, Math.min(
-          triggerCenterY - panelRect.top,
-          panelRect.height - 12
-        ));
-        break;
-        
-      case 'bottom':
-        // Arrow points up to button - position relative to panel
-        arrowTop = 1; // Position arrow at top edge of panel
-        arrowLeft = Math.max(12, Math.min(
-          triggerCenterX - panelRect.left, // Distance from panel left to trigger center
-          panelRect.width - 12 // Don't go beyond 12px from right edge
-        ));
+        // For horizontal placements, arrow should point to trigger center
+        const relativeY = triggerCenterY - panelRect.top;
+        const clampedY = Math.max(12, Math.min(relativeY, panelRect.height - 12));
+        arrowTop = `${clampedY}px`;
+        arrowLeft = '50%'; // Will be overridden by CSS
         break;
         
       case 'top':
-        // Arrow points down to button
-        arrowTop = panelRect.height - 1; // Position arrow at bottom edge of panel
-        arrowLeft = Math.max(12, Math.min(
-          triggerCenterX - panelRect.left,
-          panelRect.width - 12
-        ));
+      case 'bottom':
+        // For vertical placements, arrow should point to trigger center
+        const relativeX = triggerCenterX - panelRect.left;
+        const clampedX = Math.max(12, Math.min(relativeX, panelRect.width - 12));
+        arrowLeft = `${clampedX}px`;
+        arrowTop = '50%'; // Will be overridden by CSS
         break;
         
       default:
-        arrowLeft = 0;
-        arrowTop = 0;
+        arrowLeft = '50%';
+        arrowTop = '50%';
     }
     
     arrowPosition = { left: arrowLeft, top: arrowTop };
     arrowPositioned = true;
     
-    // Apply CSS custom properties for arrow positioning
-    panelElement.style.setProperty('--arrow-left', arrowLeft + 'px');
-    panelElement.style.setProperty('--arrow-top', arrowTop + 'px');
-    
-    debugComponent('Final arrow position', { arrowLeft, arrowTop });
+    debugComponent('Arrow position calculated', { 
+      placement: preferredPlacement,
+      arrowLeft, 
+      arrowTop,
+      triggerCenter: { x: triggerCenterX, y: triggerCenterY },
+      panelRect: { top: panelRect.top, left: panelRect.left }
+    });
   }
 
-  // Fallback outside click handler in case Melt UI's doesn't work
+  // Enhanced outside click handler with configurable behavior
   function handleOutsideClick(event: MouseEvent) {
-    if (!$open || !enabled) return;
+    if (!$open || !enabled || !closeOnClickOutside) return;
     
     const target = event.target as Node;
     if (!target) return;
@@ -168,13 +144,30 @@
     }
   }
 
-  // Set up fallback outside click listener
+  // Escape key handler
+  function handleKeydown(event: KeyboardEvent) {
+    if (!$open || !enabled || !closeOnEscape) return;
+    
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      open.set(false);
+    }
+  }
+
+  // Set up event listeners
   onMount(() => {
-    window.addEventListener('click', handleOutsideClick, true);
+    if (closeOnClickOutside) {
+      window.addEventListener('click', handleOutsideClick, true);
+    }
+    if (closeOnEscape) {
+      window.addEventListener('keydown', handleKeydown, true);
+    }
   });
 
   onDestroy(() => {
     window.removeEventListener('click', handleOutsideClick, true);
+    window.removeEventListener('keydown', handleKeydown, true);
   });
 
   // Provide close function to slot content
@@ -200,14 +193,22 @@
     <div 
       use:content
       bind:this={panelElement}
-      class="base-popover-panel panel-{preferredPlacement}"
+      class="base-popover-panel panel-{preferredPlacement} {className}"
+      class:has-arrow={showArrow && arrowPositioned}
       style="
         width: {panelWidth};
+        min-width: {panelMinWidth || 'auto'};
         max-width: calc(100vw - 40px);
-        max-height: calc(100vh - 100px);
+        max-height: {panelMaxHeight || 'calc(100vh - 100px)'};
+        --arrow-left: {arrowPosition.left};
+        --arrow-top: {arrowPosition.top};
       "
+      transition:fade={{ duration: animationDuration }}
     >
-      <div class="popover-content-wrapper">
+      {#if showArrow !== false}
+        <!-- Arrow will be added via CSS pseudo-elements -->
+      {/if}
+      <div class="popover-content-wrapper" style="max-height: {panelMaxHeight || 'none'};">
         {@render children?.({ close: closePopover })}
       </div>
     </div>
@@ -232,13 +233,34 @@
     box-shadow: var(--shadow-xl);
     /* Remove overflow: hidden to allow arrows to extend outside panel */
     z-index: 2000;
+    position: relative;
   }
 
   .popover-content-wrapper {
     width: 100%;
     height: 100%;
-    overflow: hidden; /* Apply overflow to content wrapper instead of panel */
+    overflow-y: auto; /* Enable scrolling */
+    overflow-x: hidden;
     border-radius: var(--radius-lg); /* Maintain rounded corners on content */
+    overscroll-behavior: contain; /* Prevent scroll chaining */
+  }
+
+  /* Scrollbar styling */
+  .popover-content-wrapper::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .popover-content-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .popover-content-wrapper::-webkit-scrollbar-thumb {
+    background-color: var(--border-secondary);
+    border-radius: 3px;
+  }
+
+  .popover-content-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: var(--border-primary);
   }
 
   /* CSS Arrow styles - using ::before and ::after pseudo-elements */
