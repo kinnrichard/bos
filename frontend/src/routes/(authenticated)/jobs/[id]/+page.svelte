@@ -147,7 +147,7 @@
 
 <style>
   .job-detail-container {
-    padding: 0 24px;
+    padding: 3px 24px 0 24px;
     max-width: 1200px;
     margin: 0 auto;
     height: 100%;

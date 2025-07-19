@@ -201,7 +201,6 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    background-color: var(--bg-black);
   }
 
   .toolbar-left {

@@ -108,8 +108,7 @@
   }
   
   .add-task-placeholder {
-    opacity: 0.7;
-    font-style: italic;
+    opacity: 0.5;
   }
   
   .add-task-placeholder:hover {

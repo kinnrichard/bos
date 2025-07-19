@@ -1221,11 +1221,11 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-    background-color: var(--bg-black);
+    /* background-color: var(--bg-black); */ /* Removed to prevent overlap with focus ring */
     flex: 1;
     overflow-y: auto;
     min-height: 0;
-    padding-top: 24px;
+    margin-top: 12px;
   }
 
   .empty-state {

@@ -107,9 +107,9 @@
   }
 
   .toolbar-container {
-    height: 64px;
     flex-shrink: 0;
-    background-color: var(--bg-black);
+    margin-top: 12px;
+    margin-bottom: 12px;
   }
 
   .content {

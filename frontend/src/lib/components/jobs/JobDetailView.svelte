@@ -138,6 +138,11 @@
 
   .job-title {
     flex-shrink: 0;
+    padding: 3px 8px;
+  }
+
+  .job-title:focus {
+    outline-offset: -2px;
   }
 
   .tasks-section {
