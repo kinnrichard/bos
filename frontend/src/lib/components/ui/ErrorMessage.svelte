@@ -39,6 +39,7 @@
     {id}
     role="alert"
     aria-live="polite"
+    data-testid="error-message"
     style:font-size={config.fontSize}
     style:padding={variant === 'inline' ? '0' : config.padding}
   >

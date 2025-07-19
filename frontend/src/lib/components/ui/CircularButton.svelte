@@ -15,6 +15,7 @@
     minWidth = undefined as number | undefined,
     borderRadius = undefined as number | string | undefined,
     customClass = '',
+    'data-testid': dataTestId = undefined as string | undefined,
     children
   }: {
     size?: 'small' | 'normal' | 'large';
@@ -30,6 +31,7 @@
     minWidth?: number | undefined;
     borderRadius?: number | string | undefined;
     customClass?: string;
+    'data-testid'?: string | undefined;
     children?: import('svelte').Snippet<[{ config: typeof config }]>;
   } = $props();
 
@@ -59,6 +61,7 @@
   aria-label={ariaLabel || title}
   aria-pressed={ariaPressed}
   aria-expanded={ariaExpanded}
+  data-testid={dataTestId}
   style:width={dynamicWidth ? 'auto' : `${config.width}px`}
   style:height={`${config.height}px`}
   style:min-width={minWidth ? `${minWidth}px` : dynamicWidth ? `${config.width}px` : undefined}

@@ -144,6 +144,7 @@
             size="normal"
             onclick={action.action}
             title={action.label}
+            data-testid={action.label === 'New Job' ? 'create-job-button' : undefined}
           >
             {#if action.iconType === 'svg'}
               <img src={action.icon} alt="" class="action-icon-svg" />

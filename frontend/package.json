@@ -13,7 +13,7 @@
 		"test:real-db": "TEST_STRATEGY=real_db USE_REAL_DB=true playwright test",
 		"test:unit": "playwright test --project=unit",
 		"test:integration": "playwright test --project=integration",
-		"test:e2e": "playwright test --project=e2e",
+		"test:e2e": "playwright test tests/e2e --project=e2e-chromium",
 		"test:vitest": "vitest",
 		"test:vitest:run": "vitest run",
 		"test:vitest:ui": "vitest --ui",

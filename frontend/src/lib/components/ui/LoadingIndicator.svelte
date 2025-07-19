@@ -26,6 +26,7 @@
     class="loading-indicator {type} {size} {color} {customClass}"
     class:center
     class:inline
+    data-testid="loading-spinner"
     style:font-size={config.fontSize}
   >
     {#if type === 'text'}

@@ -18,6 +18,8 @@
   import { authService } from '$lib/api/auth';
   import AppLoading from '$lib/components/AppLoading.svelte';
   import { debugAuth, debugError } from '$lib/utils/debug';
+  import Toast from '$lib/components/ui/Toast.svelte';
+  import { toastStore } from '$lib/stores/toast.svelte';
   
   let { children } = $props();
 
@@ -138,6 +140,16 @@
 {:else if zeroState === 'ready'}
   <!-- Zero is ready - render protected content -->
   {@render children()}
+{/if}
+
+<!-- Global toast notifications -->
+{#if toastStore.currentToast}
+  <Toast 
+    message={toastStore.currentToast.message}
+    type={toastStore.currentToast.type}
+    duration={toastStore.currentToast.duration}
+    onDismiss={() => toastStore.dismiss(toastStore.currentToast.id)}
+  />
 {/if}
 
 <style>

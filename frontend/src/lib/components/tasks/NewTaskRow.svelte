@@ -51,6 +51,7 @@
   class="task-item task-item-add-new"
   style="--depth: {depth}"
   onclick={handleRowClick}
+  data-testid={mode === 'bottom-row' ? 'create-task-button' : undefined}
 >
   <!-- Disclosure Spacer -->
   <div class="disclosure-spacer"></div>
@@ -74,6 +75,7 @@
         value={title}
         bind:this={inputElement}
         placeholder="New Task"
+        data-testid="task-title-input"
         onkeydown={manager.handlers.keydown}
         onblur={manager.handlers.blur}
         oninput={(e) => {

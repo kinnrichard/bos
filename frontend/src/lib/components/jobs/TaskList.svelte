@@ -1148,6 +1148,7 @@
   <!-- Tasks container - always show to include new task row -->
   <div 
     class="tasks-container"
+    data-testid="task-list"
     use:storeDragAction={{
       onStart: handleSortStart,
       onEnd: handleSortEnd,

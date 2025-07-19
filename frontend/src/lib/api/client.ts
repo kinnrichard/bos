@@ -3,13 +3,7 @@ import { csrfTokenManager } from './csrf';
 import { debugAPI } from '$lib/utils/debug';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-
-// Extend window interface for showToast
-declare global {
-  interface Window {
-    showToast?: (message: string, type: string) => void;
-  }
-}
+import { toastStore } from '$lib/stores/toast.svelte';
 
 export interface RequestConfig extends AxiosRequestConfig {
   metadata?: {
@@ -328,8 +322,8 @@ export class EnhancedApiClient {
     });
     
     // Show user-friendly message
-    if (typeof window !== 'undefined' && window.showToast) {
-      window.showToast('Please wait a moment before trying again', 'warning');
+    if (browser) {
+      toastStore.warning('Please wait a moment before trying again');
     }
     
     // Wait and retry

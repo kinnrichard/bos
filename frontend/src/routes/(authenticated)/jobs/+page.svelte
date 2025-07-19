@@ -108,7 +108,7 @@
         <div class="error-content">
           <h2>Unable to load jobs</h2>
           <p>There was a problem loading your jobs. Please try again.</p>
-          <div class="error-details">
+          <div class="error-details" data-testid="error-message">
             <code>{jobsQuery.error.message}</code>
           </div>
           <button 
@@ -122,7 +122,7 @@
 
     <!-- Jobs List -->
     {:else if jobs.length > 0}
-      <div class="jobs-list">
+      <div class="jobs-list" data-testid="job-list">
         {#each jobs as job (job.id)}
           <JobCard {job} showClient={true} />
         {/each}
