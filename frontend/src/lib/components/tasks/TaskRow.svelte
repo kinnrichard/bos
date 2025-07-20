@@ -6,6 +6,7 @@
   import EditableTitle from '../ui/EditableTitle.svelte';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
   import '../../styles/task-components.css';
+  import '../../styles/focus-ring.css';
   
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';
@@ -126,7 +127,7 @@
 </script>
 
 <div 
-  class="task-item"
+  class="task-item focus-ring"
   class:completed={task.status === 'successfully_completed'}
   class:in-progress={task.status === 'in_progress'}
   class:cancelled={task.status === 'cancelled' || task.status === 'failed'}

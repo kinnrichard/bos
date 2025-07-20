@@ -30,7 +30,6 @@
   user-select: none;
   position: relative;
   will-change: transform;
-  outline: none; /* Remove browser focus ring */
   overflow: hidden;
 }
 

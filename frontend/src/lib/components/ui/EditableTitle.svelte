@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { focusManager } from '$lib/stores/focusManager.svelte';
+  import { focusActions } from '$lib/stores/focusManager.svelte';
+  import '../../styles/focus-ring.css';
 
   // Props interface
   interface Props {
@@ -72,7 +73,7 @@
     
     // Skip if value hasn't changed
     if (trimmedValue === originalValue) {
-      exitEditMode();
+      element?.blur();
       return;
     }
     
@@ -80,7 +81,7 @@
     try {
       await onSave(trimmedValue);
       originalValue = trimmedValue;
-      exitEditMode();
+      element?.blur();
     } catch (error) {
       console.error('Failed to save title:', error);
       // Revert on error
@@ -113,9 +114,10 @@
     originalValue = element?.textContent || '';
     onEditingChange?.(true);
     
-    // Set focus manager
+    // Enable spellcheck when focused
     if (element) {
-      focusManager.setEditingElement(element, value);
+      element.setAttribute('spellcheck', 'true');
+      focusActions.setEditingElement(element, value);
     }
     
     if (selectAllOnFocus && element?.textContent) {
@@ -130,7 +132,13 @@
   function handleBlur() {
     hasFocus = false;
     onEditingChange?.(false);
-    focusManager.clearFocus();
+    focusActions.clearFocus();
+    
+    // Disable spellcheck when not focused
+    if (element) {
+      element.setAttribute('spellcheck', 'false');
+    }
+    
     handleSave();
   }
 
@@ -151,16 +159,23 @@
 
   // Fix contenteditable behavior
   function fixContentEditable(node: HTMLElement) {
+    // Set initial state - spellcheck disabled by default
+    node.setAttribute('spellcheck', 'false');
+    
     // Prevent newlines from being inserted
-    node.addEventListener('beforeinput', (e: InputEvent) => {
+    function handleBeforeInput(e: InputEvent) {
       if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
         e.preventDefault();
       }
-    });
+    }
+    
+    // Add event listener
+    node.addEventListener('beforeinput', handleBeforeInput);
 
     return {
       destroy() {
-        // Cleanup if needed
+        // Clean up event listener
+        node.removeEventListener('beforeinput', handleBeforeInput);
       }
     };
   }
@@ -168,7 +183,7 @@
 
 <svelte:element 
   this={tag}
-  class="editable-title {className}"
+  class="editable-title focus-ring-tight {className}"
   class:editing={hasFocus}
   class:saving={isSaving}
   contenteditable="true"

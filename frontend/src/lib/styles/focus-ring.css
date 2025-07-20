@@ -1,0 +1,40 @@
+/*
+ * Shared Focus Ring Styles
+ * 
+ * Provides consistent focus ring styling across all interactive elements
+ * Uses browser-default focus ring with consistent behavior
+ */
+
+/* Default focus ring for interactive elements */
+.focus-ring:focus-visible {
+  /* Let browser handle the focus ring for consistency */
+  outline: auto;
+  outline-offset: 2px;
+}
+
+/* For elements that need tighter focus ring (like contenteditable) */
+.focus-ring-tight:focus-visible {
+  /* Browser default with no offset */
+  outline: auto;
+}
+
+/* Dark mode adjustments if needed */
+@media (prefers-color-scheme: dark) {
+  /* Browser handles dark mode focus rings automatically */
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .focus-ring:focus-visible,
+  .focus-ring-tight:focus-visible {
+    outline-width: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .focus-ring:focus-visible,
+  .focus-ring-tight:focus-visible {
+    /* No animations for focus rings */
+  }
+}
