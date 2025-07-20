@@ -110,6 +110,12 @@
   }
 
   function handleFocus() {
+    // Don't enter edit mode if we're dragging
+    if (isDragging) {
+      element?.blur();
+      return;
+    }
+    
     hasFocus = true;
     originalValue = element?.textContent || '';
     onEditingChange?.(true);
@@ -118,12 +124,6 @@
     if (element) {
       element.setAttribute('spellcheck', 'true');
       focusActions.setEditingElement(element, value);
-      
-      // Disable dragging on parent element to allow text selection
-      const draggableParent = element.closest('[data-task-id]');
-      if (draggableParent) {
-        draggableParent.setAttribute('draggable', 'false');
-      }
     }
     
     if (selectAllOnFocus && element?.textContent) {
@@ -164,9 +164,32 @@
     // Don't prevent default - let the browser handle cursor positioning
   }
 
+  let isDragging = false;
+
   function handleMouseDown(e: MouseEvent) {
     // Always stop mousedown propagation to prevent double-handling
     e.stopPropagation();
+    isDragging = false;
+  }
+
+  function handleDragStart(e: DragEvent) {
+    // Track that we're dragging to prevent focus
+    isDragging = true;
+    
+    // Blur the element if it's focused to prevent edit mode appearance
+    if (hasFocus && element) {
+      element.blur();
+    }
+  }
+
+  function handleMouseUp(e: MouseEvent) {
+    // If we're in edit mode after mouseup, disable dragging
+    if (hasFocus && element) {
+      const draggableParent = element.closest('[data-task-id]');
+      if (draggableParent) {
+        draggableParent.setAttribute('draggable', 'false');
+      }
+    }
   }
 
   // Fix contenteditable behavior
@@ -204,6 +227,8 @@
   bind:this={element}
   onclick={handleClick}
   onmousedown={handleMouseDown}
+  onmouseup={handleMouseUp}
+  ondragstart={handleDragStart}
   onkeydown={handleKeydown}
   onblur={handleBlur}
   onfocus={handleFocus}
