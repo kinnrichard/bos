@@ -5,6 +5,9 @@
 
   // Reactive active item tracking
   const activeItem = $derived(getActiveNavItem($page.url.pathname));
+  
+  // Check if we're on the homepage
+  const isHomepage = $derived($page.url.pathname === '/');
 
 </script>
 
@@ -16,10 +19,12 @@
 
   <!-- Brand/Logo -->
   <div class="brand-section">
-    <!-- Logo -->
-    <div class="logo-container">
-      <img src="/faultless_logo.png" alt="Faultless" class="logo" />
-    </div>
+    <!-- Logo - clickable to go home -->
+    <a href="/" class="logo-link" aria-label="Go to homepage">
+      <div class="logo-container">
+        <img src="/faultless_logo.png" alt="Faultless" class="logo" />
+      </div>
+    </a>
   </div>
 
   <!-- Close button (CSS-controlled visibility) -->
@@ -55,17 +60,26 @@
   
 
       {#each mainNavItems as item (item.id)}
-        <li class="nav-item">
-          <a 
-            href={item.href}
-            class="nav-link"
-            class:active={activeItem === item.id}
-            data-nav-item={item.id}
-          >
-            <span class="nav-icon">{item.icon}</span>
-            <span class="nav-label">{item.label}</span>
-          </a>
-        </li>
+        <!-- Only show certain items when on homepage -->
+        {#if !isHomepage || (item.id === 'people' || item.id === 'jobs')}
+          <li class="nav-item">
+            <a 
+              href={item.href}
+              class="nav-link"
+              class:active={activeItem === item.id}
+              data-nav-item={item.id}
+            >
+              <span class="nav-icon">{item.icon}</span>
+              <span class="nav-label">
+                {#if isHomepage && item.id === 'people'}
+                  Clients
+                {:else}
+                  {item.label}
+                {/if}
+              </span>
+            </a>
+          </li>
+        {/if}
       {/each}
     </ul>
   </nav>
@@ -139,7 +153,16 @@
     padding: 12px;
     margin-bottom: 30px;
   }
-
+  
+  .logo-link {
+    display: block;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+  }
+  
+  .logo-link:hover {
+    opacity: 0.8;
+  }
 
   /* Sidebar logo styling */
   .brand-section .logo-container {
