@@ -394,8 +394,14 @@
   async function handleTaskClick(event: MouseEvent, taskId: string) {
     event.stopPropagation();
     
-    // Auto-save any existing edit before changing selection
-    if (focusActions.getCurrentEditingTaskId() !== null) {
+    // Check if this is a click on the title of the currently editing task
+    const currentEditingId = focusActions.getCurrentEditingTaskId();
+    const isClickOnEditingTitle = currentEditingId === taskId && 
+      (event.target as HTMLElement).closest('.editable-title');
+    
+    // Auto-save any existing edit before changing selection, UNLESS
+    // we're clicking on the title of the task that's currently being edited
+    if (currentEditingId !== null && !isClickOnEditingTitle) {
       await autoSaveCurrentEdit();
     }
     

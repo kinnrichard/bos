@@ -18,6 +18,7 @@
     autoFocus?: boolean;
     isEditing?: boolean;
     onEditingChange?: (editing: boolean) => void;
+    onClick?: (e: MouseEvent) => void;
   }
 
   let {
@@ -34,7 +35,8 @@
     allowEmpty = false,
     autoFocus = false,
     isEditing: externalIsEditing,
-    onEditingChange
+    onEditingChange,
+    onClick
   }: Props = $props();
 
   let element = $state<HTMLElement>();
@@ -133,13 +135,17 @@
   }
 
   function handleClick(e: MouseEvent) {
-    // Stop propagation to prevent row selection or other parent handlers
+    // Always stop propagation to prevent double-handling
     e.stopPropagation();
+    
+    // Call parent's onClick if provided (for row selection)
+    onClick?.(e);
+    
     // Don't prevent default - let the browser handle cursor positioning
   }
 
   function handleMouseDown(e: MouseEvent) {
-    // Also stop mousedown propagation in case row selection happens on mousedown
+    // Always stop mousedown propagation to prevent double-handling
     e.stopPropagation();
   }
 
