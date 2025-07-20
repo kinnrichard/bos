@@ -31,7 +31,7 @@
     className = '',
     fontSize,
     fontWeight,
-    selectAllOnFocus = true,
+    selectAllOnFocus = false,
     trimOnSave = true,
     allowEmpty = false,
     autoFocus = false,
