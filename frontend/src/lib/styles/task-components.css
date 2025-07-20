@@ -67,6 +67,15 @@
   border-radius: 4px;
 }
 
+/* Row also appears selected when it contains an editing title */
+.task-item:has(.editable-title.editing) {
+  background-color: var(--accent-blue) !important;
+  color: white !important;
+  text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
+  border-left: 3px solid var(--accent-blue);
+  border-radius: 4px;
+}
+
 .task-item.multi-select-active.selected {
   background-color: var(--accent-blue) !important;
   color: white !important;
