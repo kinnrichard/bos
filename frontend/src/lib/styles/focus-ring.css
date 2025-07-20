@@ -6,16 +6,18 @@
  */
 
 /* Default focus ring for interactive elements */
-.focus-ring:focus-visible {
-  /* Let browser handle the focus ring for consistency */
-  outline: auto;
-  outline-offset: 2px;
+.focus-ring:focus-visible, .focus-ring-tight:focus-visible {
+  /* Use box-shadow instead of outline to avoid clipping issues */
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.75);
+  position: relative;
+  z-index: 9999; /* Ensures focus ring appears above siblings */
 }
 
 /* For elements that need tighter focus ring (like contenteditable) */
 .focus-ring-tight:focus-visible {
-  /* Browser default with no offset */
-  outline: auto;
+  /* Use inset box-shadow to ensure it's never clipped */
+  box-shadow: inset 0 0 0 2px rgba(0, 163, 255, 0.75);
 }
 
 /* Dark mode adjustments if needed */

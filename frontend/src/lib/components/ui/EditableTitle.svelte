@@ -187,6 +187,7 @@
   class:editing={hasFocus}
   class:saving={isSaving}
   contenteditable="true"
+  spellcheck="false"
   use:fixContentEditable
   bind:this={element}
   onclick={handleClick}
@@ -219,7 +220,7 @@
   
   /* When editing, show visual feedback */
   .editable-title.editing {
-    background-color: var(--bg-primary);
+    background-color: rgba(0,0,0,0.9);
     border-radius: 4px;
   }
   

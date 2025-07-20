@@ -493,7 +493,8 @@
     pointer-events: auto !important;
     position: relative;
     z-index: 10;
-    margin-top: 2.75px !important;
+    vertical-align: middle; /* If inline-flex */
+    
   }
 
   /* Action icon (SVG) styling */

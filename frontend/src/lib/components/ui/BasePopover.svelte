@@ -217,7 +217,8 @@
 
 <style>
   .base-popover-container {
-    display: inline-block;
+    display: flex;
+    align-items: center; /* This centers children vertically */
   }
 
   .base-popover-trigger {
