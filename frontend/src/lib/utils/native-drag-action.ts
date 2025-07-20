@@ -62,6 +62,12 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
     
     const taskId = draggedElement.getAttribute('data-task-id');
     if (!taskId) return;
+    
+    // Blur any contenteditable elements to prevent edit mode appearance during drag
+    const contentEditable = draggedElement.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (contentEditable && contentEditable === document.activeElement) {
+      contentEditable.blur();
+    }
 
     // Get all selected elements for multi-drag
     const selectedElements = Array.from(node.querySelectorAll('.task-selected-for-drag')) as HTMLElement[];

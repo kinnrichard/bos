@@ -110,12 +110,6 @@
   }
 
   function handleFocus() {
-    // Don't enter edit mode if we're dragging
-    if (isDragging) {
-      element?.blur();
-      return;
-    }
-    
     hasFocus = true;
     originalValue = element?.textContent || '';
     onEditingChange?.(true);
@@ -164,22 +158,9 @@
     // Don't prevent default - let the browser handle cursor positioning
   }
 
-  let isDragging = false;
-
   function handleMouseDown(e: MouseEvent) {
     // Always stop mousedown propagation to prevent double-handling
     e.stopPropagation();
-    isDragging = false;
-  }
-
-  function handleDragStart(e: DragEvent) {
-    // Track that we're dragging to prevent focus
-    isDragging = true;
-    
-    // Blur the element if it's focused to prevent edit mode appearance
-    if (hasFocus && element) {
-      element.blur();
-    }
   }
 
   function handleMouseUp(e: MouseEvent) {
@@ -228,7 +209,6 @@
   onclick={handleClick}
   onmousedown={handleMouseDown}
   onmouseup={handleMouseUp}
-  ondragstart={handleDragStart}
   onkeydown={handleKeydown}
   onblur={handleBlur}
   onfocus={handleFocus}
