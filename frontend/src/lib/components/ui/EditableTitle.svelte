@@ -118,6 +118,12 @@
     if (element) {
       element.setAttribute('spellcheck', 'true');
       focusActions.setEditingElement(element, value);
+      
+      // Disable dragging on parent element to allow text selection
+      const draggableParent = element.closest('[data-task-id]');
+      if (draggableParent) {
+        draggableParent.setAttribute('draggable', 'false');
+      }
     }
     
     if (selectAllOnFocus && element?.textContent) {
@@ -137,6 +143,12 @@
     // Disable spellcheck when not focused
     if (element) {
       element.setAttribute('spellcheck', 'false');
+      
+      // Re-enable dragging on parent element
+      const draggableParent = element.closest('[data-task-id]');
+      if (draggableParent) {
+        draggableParent.setAttribute('draggable', 'true');
+      }
     }
     
     handleSave();
