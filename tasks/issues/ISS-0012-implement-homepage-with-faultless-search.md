@@ -1,17 +1,22 @@
 ---
 issue_id: ISS-0012
-id: ISS-0012
-type: issue
 title: Implement Homepage with Faultless Search
-status: TODO
-priority: P1
-labels: [frontend, ui, search, homepage]
-created: 2025-07-20
-updated: 2025-07-20
-assignee: null
-epic: null
-dependencies: []
-blocks: []
+description: Create a homepage for logged-in users with centered search input for finding clients
+status: completed
+priority: high
+assignee: unassigned
+created_date: 2025-07-20T00:00:00.000Z
+updated_date: 2025-07-21T18:35:00.000Z
+estimated_hours: 8
+actual_hours: 8
+tags:
+  - frontend
+  - ui
+  - search
+  - homepage
+epic_id: null
+sprint: null
+completion_percentage: 100
 ---
 
 # ISS-0012: Implement Homepage with Faultless Search
