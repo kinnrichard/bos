@@ -19,8 +19,8 @@
     
     // Only proceed if there's search input
     if (searchInput.trim()) {
-      // Navigate to search results page with query
-      goto(`/clients/search?q=${encodeURIComponent(searchInput.trim())}`);
+      // Navigate to clients page with search query
+      goto(`/clients?q=${encodeURIComponent(searchInput.trim())}`);
     }
   }
   

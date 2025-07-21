@@ -7,11 +7,13 @@
 
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
+  import { onMount, onDestroy } from 'svelte';
   import { ReactiveQuery } from '$lib/zero/reactive-query-unified.svelte';
   import { getZero } from '$lib/zero';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
-  import { clientsSearch, shouldShowClient } from '$lib/stores/clientsSearch.svelte';
+  import { clientsSearch, clientsSearchActions, shouldShowClient } from '$lib/stores/clientsSearch.svelte';
   
   // Create reactive query for all clients ordered alphabetically
   const clientsQuery = new ReactiveQuery(() => {
@@ -55,11 +57,18 @@
   
   // Navigate to client detail page
   function navigateToClient(clientId: string) {
-    goto(`/clients/${clientId}`);
+    clearTimeout(debounceTimer); // Cancel any pending URL update
+    updateUrlNow(); // Force URL update before navigating
+    // Small delay to ensure URL update completes
+    setTimeout(() => {
+      goto(`/clients/${clientId}`);
+    }, 0);
   }
   
   // Navigate to new client creation
   function createNewClient() {
+    clearTimeout(debounceTimer); // Cancel any pending URL update
+    updateUrlNow(); // Force URL update before navigating
     // TODO: Implement new client creation flow
     console.log('Create new client - not yet implemented');
   }
@@ -75,6 +84,51 @@
         return '👤';
     }
   }
+  
+  // URL parameter handling
+  onMount(() => {
+    const searchQuery = $page.url.searchParams.get('q');
+    if (searchQuery) {
+      clientsSearchActions.setSearchQuery(searchQuery);
+    }
+  });
+  
+  // Debounced URL updates
+  let debounceTimer: NodeJS.Timeout;
+  
+  // Helper to update URL immediately
+  function updateUrlNow() {
+    const url = new URL($page.url);
+    
+    if (clientsSearch.searchQuery) {
+      url.searchParams.set('q', clientsSearch.searchQuery);
+    } else {
+      url.searchParams.delete('q');
+    }
+    
+    goto(url.toString(), { 
+      replaceState: true,
+      keepFocus: true,
+      noScroll: true
+    });
+  }
+  
+  // Debounced URL update effect
+  $effect(() => {
+    // Only update URL if we're on the clients page
+    if ($page.route.id === '/(authenticated)/clients') {
+      clearTimeout(debounceTimer);
+      
+      debounceTimer = setTimeout(() => {
+        updateUrlNow();
+      }, 300); // 300ms debounce
+    }
+  });
+  
+  // Clean up timer on unmount
+  onDestroy(() => {
+    clearTimeout(debounceTimer);
+  });
 </script>
 
 <svelte:head>

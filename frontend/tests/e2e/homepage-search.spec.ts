@@ -46,25 +46,28 @@ test.describe('Homepage Search Feature', () => {
     await searchInput.fill('test search');
     await searchButton.click();
     
-    // Should navigate to search results page
-    await expect(page).toHaveURL('/clients/search?q=test+search');
+    // Should navigate to clients page with search query
+    await expect(page).toHaveURL('/clients?q=test+search');
     
-    // Search input should still be visible with the query
-    const resultsSearchInput = page.locator('input[type="search"]');
-    await expect(resultsSearchInput).toHaveValue('test search');
+    // Toolbar search input should be populated with the query
+    const toolbarSearchInput = page.locator('.toolbar .search-input');
+    await expect(toolbarSearchInput).toHaveValue('test search');
   });
 
-  test('should show search results and New Client option', async ({ page }) => {
-    // Navigate directly to search results
-    await page.goto('/clients/search?q=test');
+  test('should show filtered clients on clients page', async ({ page }) => {
+    // Navigate directly to clients page with search
+    await page.goto('/clients?q=test');
     
-    // Wait for the search page to load
-    await page.waitForSelector('.search-results');
+    // Wait for the clients page to load
+    await page.waitForSelector('.clients-page');
     
-    // Check for "New Client" option at the bottom
-    const newClientButton = page.locator('button:has-text("New Client")');
+    // Check that toolbar search is populated
+    const toolbarSearchInput = page.locator('.toolbar .search-input');
+    await expect(toolbarSearchInput).toHaveValue('test');
+    
+    // Check for "New Client" button in page header
+    const newClientButton = page.locator('.new-client-button');
     await expect(newClientButton).toBeVisible();
-    await expect(newClientButton).toHaveClass(/new-client-item/);
   });
 
   test('should navigate back to homepage when clicking logo', async ({ page }) => {

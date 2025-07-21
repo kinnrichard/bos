@@ -85,17 +85,17 @@ test.describe('Homepage Sidebar Integration', () => {
     await expect(page.locator('input[type="search"]')).toBeVisible();
   });
 
-  test('search page should also have sidebar', async ({ page }) => {
-    // Navigate to search results
-    await page.goto('/clients/search?q=test');
+  test('clients page with search should have sidebar and toolbar search', async ({ page }) => {
+    // Navigate to clients with search query
+    await page.goto('/clients?q=test');
     
     // Check that sidebar is visible
     const sidebar = page.locator('.sidebar');
     await expect(sidebar).toBeVisible();
     
-    // Search results page should still have search input
-    const searchInput = page.locator('input[type="search"]');
-    await expect(searchInput).toBeVisible();
-    await expect(searchInput).toHaveValue('test');
+    // Toolbar search should be populated
+    const toolbarSearch = page.locator('.toolbar .search-input');
+    await expect(toolbarSearch).toBeVisible();
+    await expect(toolbarSearch).toHaveValue('test');
   });
 });

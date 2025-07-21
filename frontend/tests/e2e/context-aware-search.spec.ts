@@ -69,16 +69,19 @@ test.describe('Context-Aware Search', () => {
     await expect(searchInput).toHaveAttribute('placeholder', 'Search clients');
   });
 
-  test('should not show search on client search results page', async ({ page }) => {
-    await page.goto('/clients/search?q=test');
+  test('should preserve search when navigating to clients with query', async ({ page }) => {
+    await page.goto('/clients?q=test');
     
-    // Toolbar search should not be visible on search results page
+    // Toolbar search should be visible and populated
     const toolbarSearch = page.locator('.toolbar .search-container');
-    await expect(toolbarSearch).not.toBeVisible();
+    await expect(toolbarSearch).toBeVisible();
     
-    // But the page should have its own search input
-    const pageSearch = page.locator('.search-page .search-input');
-    await expect(pageSearch).toBeVisible();
-    await expect(pageSearch).toHaveValue('test');
+    const searchInput = page.locator('.toolbar .search-input');
+    await expect(searchInput).toHaveValue('test');
+    
+    // URL should update after debounce when typing more
+    await searchInput.fill('test client');
+    await page.waitForTimeout(400); // Wait for 300ms debounce + buffer
+    await expect(page).toHaveURL('/clients?q=test+client');
   });
 });
