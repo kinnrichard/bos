@@ -15,19 +15,10 @@
   // Dynamic footer items based on current client
   const dynamicFooterItems = $derived(
     layout.currentClient 
-      ? [
-          {
-            id: 'client-jobs',
-            label: 'Jobs',
-            href: `/clients/${layout.currentClient.id}/jobs`,
-            icon: '💼',
-            type: 'footer'
-          },
-          ...footerNavItems.map(item => ({
-            ...item,
-            label: item.id === 'logs' ? `Logs for ${layout.currentClient.name}` : item.label
-          }))
-        ]
+      ? footerNavItems.map(item => ({
+          ...item,
+          label: item.id === 'logs' ? `Logs for ${layout.currentClient.name}` : item.label
+        }))
       : []
   );
 
@@ -87,15 +78,19 @@
         {#if !showSimplifiedNav || (item.id === 'people' || item.id === 'jobs')}
           <li class="nav-item">
             <a 
-              href={item.href}
+              href={layout.currentClient && item.id === 'jobs' ? `/clients/${layout.currentClient.id}/jobs` : item.href}
               class="nav-link"
-              class:active={activeItem === item.id}
+              class:active={layout.currentClient && item.id === 'jobs' 
+                ? $page.url.pathname === `/clients/${layout.currentClient.id}/jobs`
+                : activeItem === item.id}
               data-nav-item={item.id}
             >
               <span class="nav-icon">{item.icon}</span>
               <span class="nav-label">
                 {#if showSimplifiedNav && item.id === 'people'}
                   Clients
+                {:else if layout.currentClient && item.id === 'jobs'}
+                  Jobs
                 {:else}
                   {item.label}
                 {/if}
@@ -116,7 +111,7 @@
             <a 
               href={item.href}
               class="nav-link footer-link"
-              class:active={item.id === 'client-jobs' ? $page.url.pathname === item.href : activeItem === item.id}
+              class:active={activeItem === item.id}
             >
               <span class="nav-icon">{item.icon}</span>
               <span class="nav-label">{item.label}</span>

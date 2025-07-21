@@ -25,7 +25,7 @@ export const mainNavItems: NavItem[] = [
   },
   {
     id: 'jobs',
-    label: 'Jobs', 
+    label: 'All Jobs', 
     href: '/jobs',
     icon: '💼',
     type: 'navigation'
