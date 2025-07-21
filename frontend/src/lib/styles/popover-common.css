@@ -73,3 +73,13 @@
   color: var(--accent-blue);
   font-weight: 600;
 }
+
+/* Horizontal separator for popovers - extends to edges */
+.popover-separator-line {
+  height: 0;
+  width: calc(100% + 32px); /* Extend 16px on each side */
+  margin: 12px -16px; /* Negative margin to reach popover edges */
+  border: none;
+  border-top: 1px solid var(--border-primary);
+  background: none;
+}

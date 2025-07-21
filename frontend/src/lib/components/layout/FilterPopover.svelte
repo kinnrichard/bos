@@ -1,6 +1,7 @@
 <script lang="ts">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
+  import PopoverSeparator from '$lib/components/ui/PopoverSeparator.svelte';
   import '$lib/styles/popover-common.css';
 
   interface Props {
@@ -22,6 +23,11 @@
     { id: 'paused', value: 'paused', label: 'Paused' },
     { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed' },
     { id: 'cancelled', value: 'cancelled', label: 'Cancelled' }
+  ];
+
+  // Deleted option for the second list
+  const deletedOption = [
+    { id: 'deleted', value: 'deleted', label: 'Deleted' }
   ];
 
   // Start with all statuses selected (default behavior)
@@ -77,6 +83,11 @@
   function toggleDeleted() {
     showDeleted = !showDeleted;
   }
+
+  // Handle deleted option click
+  function handleDeletedClick(option: any, event?: MouseEvent) {
+    toggleDeleted();
+  }
 </script>
 
 <BasePopover 
@@ -123,22 +134,24 @@
     </PopoverOptionList>
     
     <!-- Deleted tasks toggle -->
-    <div class="filter-separator"></div>
-    <div class="deleted-filter-option">
-      <button 
-        class="deleted-toggle-button"
-        onclick={toggleDeleted}
-        title="Toggle visibility of deleted tasks"
-      >
-        <span class="popover-option-main-label">Deleted</span>
+    <PopoverSeparator spacing="medium" />
+    
+    <PopoverOptionList
+      options={deletedOption}
+      loading={false}
+      onOptionClick={handleDeletedClick}
+      isSelected={(option) => showDeleted}
+    >
+      {#snippet optionContent({ option })}
+        <span class="popover-option-main-label">{option.label}</span>
         
         <div class="popover-checkmark-container">
           {#if showDeleted}
             <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
           {/if}
         </div>
-      </button>
-    </div>
+      {/snippet}
+    </PopoverOptionList>
     </div>
   {/snippet}
 </BasePopover>
@@ -178,47 +191,6 @@
 
   .filter-content {
     padding: 16px;
-  }
-
-  .filter-separator {
-    border-top: 1px solid var(--border-secondary);
-    margin: 12px 0;
-  }
-
-  .deleted-filter-option {
-    margin-top: 8px;
-  }
-
-  .deleted-toggle-button {
-    width: 100%;
-    padding: 8px 12px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: 4px;
-    transition: background-color 0.15s ease;
-  }
-
-  .deleted-toggle-button:hover {
-    background-color: var(--bg-secondary);
-  }
-
-  .deleted-indicator {
-    margin-top: 8px;
-    padding: 6px 12px;
-    background-color: var(--accent-orange-bg);
-    border: 1px solid var(--accent-orange);
-    border-radius: 4px;
-    text-align: center;
-  }
-
-  .deleted-indicator-text {
-    font-size: 12px;
-    color: var(--accent-orange);
-    font-weight: 500;
   }
 
   /* Accessibility improvements */

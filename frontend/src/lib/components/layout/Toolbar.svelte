@@ -22,6 +22,9 @@
     // Jobs listing page
     if ($page.route.id === '/(authenticated)/jobs') return 'jobs';
     
+    // Client jobs page - search client-specific jobs
+    if ($page.route.id === '/(authenticated)/clients/[id]/jobs') return 'client-jobs';
+    
     // Clients listing page (but not search results)
     if ($page.route.id === '/(authenticated)/clients' && !$page.url.pathname.includes('/search')) return 'clients';
     
@@ -36,6 +39,8 @@
     switch (context) {
       case 'jobs':
         return 'Search jobs';
+      case 'client-jobs':
+        return 'Search client jobs';
       case 'clients':
         return 'Search clients';
       case 'tasks':
@@ -55,6 +60,8 @@
     switch (searchContext) {
       case 'jobs':
         return jobsSearch.searchQuery;
+      case 'client-jobs':
+        return jobsSearch.searchQuery; // Use jobs search for client jobs too
       case 'clients':
         return clientsSearch.searchQuery;
       case 'tasks':
@@ -82,6 +89,9 @@
       case 'jobs':
         jobsSearchActions.setSearchQuery(value);
         break;
+      case 'client-jobs':
+        jobsSearchActions.setSearchQuery(value); // Use jobs search for client jobs too
+        break;
       case 'clients':
         clientsSearchActions.setSearchQuery(value);
         break;
@@ -105,6 +115,9 @@
     switch (searchContext) {
       case 'jobs':
         jobsSearchActions.clearSearch();
+        break;
+      case 'client-jobs':
+        jobsSearchActions.clearSearch(); // Use jobs search for client jobs too
         break;
       case 'clients':
         clientsSearchActions.clearSearch();
