@@ -168,7 +168,22 @@
         <div class="empty-state">
           <p class="empty-message">No clients match your search</p>
         </div>
+      {:else if filteredClients.length <= 6}
+        <!-- Simple list for 6 or fewer clients -->
+        <div class="clients-simple-list">
+          {#each filteredClients as client (client.id)}
+            <button
+              class="client-item"
+              onclick={() => navigateToClient(client.id)}
+            >
+              <span class="client-icon">{getClientTypeEmoji(client.client_type)}</span>
+              <span class="client-name">{client.name || 'Unnamed Client'}</span>
+              <span class="client-arrow">→</span>
+            </button>
+          {/each}
+        </div>
       {:else}
+        <!-- Grouped list for more than 6 clients -->
         <div class="clients-list">
           {#each Object.entries(groupedClients) as [letter, letterClients]}
             <div class="letter-group">
@@ -245,6 +260,15 @@
     margin: 0 auto;
   }
   
+  /* Simple list for 6 or fewer clients */
+  .clients-simple-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
   /* Client List */
   .clients-list {
     display: flex;
@@ -276,7 +300,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px;
+    padding: 8px 16px;
     background-color: var(--bg-secondary, #1C1C1D);
     border: 1px solid var(--border-primary, #38383A);
     border-radius: 8px;
