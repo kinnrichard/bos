@@ -44,6 +44,7 @@
       <div class="hero-search">
         <form class="search-form" onsubmit={handleSearch}>
           <div class="search-input-container">
+            <img src="/icons/magnifyingglass.svg" alt="Search" class="search-icon" />
             <input
               type="search"
               class="search-input"
@@ -98,9 +99,17 @@
     box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
   }
   
+  .search-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.5;
+    margin-left: 20px;
+    flex-shrink: 0;
+  }
+
   .search-input {
     flex: 1;
-    padding: 16px 20px;
+    padding: 16px 20px 16px 12px;
     background: none;
     border: none;
     color: var(--text-primary, #F2F2F7);
@@ -146,9 +155,15 @@
   
   /* Responsive adjustments */
   @media (max-width: 640px) {
+    .search-icon {
+      width: 18px;
+      height: 18px;
+      margin-left: 16px;
+    }
+    
     .search-input {
       font-size: 16px;
-      padding: 14px 16px;
+      padding: 14px 16px 14px 10px;
     }
     
     .search-button {
