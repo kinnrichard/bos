@@ -17,7 +17,7 @@
     layout.currentClient 
       ? footerNavItems.map(item => ({
           ...item,
-          label: item.id === 'logs' ? `${layout.currentClient.name}'s Logs` : item.label
+          label: item.id === 'logs' ? `Logs for ${layout.currentClient.name}` : item.label
         }))
       : []
   );
@@ -56,15 +56,15 @@
   	  <!-- Current Client Section -->
   	  {#if layout.currentClient}
   	    <li class="nav-item">
-  	      <button 
+  	      <a 
+  	        href="/clients/{layout.currentClient.id}"
   	        class="nav-link"
-  	        type="button"
   	      >
   	        <span class="nav-icon">
   	          {getClientTypeEmoji(layout.currentClient.client_type)}
   	        </span>
   	        <span class="nav-label">{layout.currentClient.name}</span>
-  	      </button>
+  	      </a>
   	    </li>
         <!-- Invisible spacer -->
         <li class="nav-spacer" aria-hidden="true"></li>
