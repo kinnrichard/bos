@@ -6,8 +6,11 @@
   // Reactive active item tracking
   const activeItem = $derived(getActiveNavItem($page.url.pathname));
   
-  // Check if we're on the homepage
+  // Check if we're on a page without a specific object loaded
   const isHomepage = $derived($page.url.pathname === '/');
+  const isClientsListing = $derived($page.url.pathname === '/clients');
+  const isJobsListing = $derived($page.url.pathname === '/jobs');
+  const showSimplifiedNav = $derived(isHomepage || isClientsListing || isJobsListing);
   
   // Dynamic footer items based on current client
   const dynamicFooterItems = $derived(
@@ -70,8 +73,8 @@
   
 
       {#each mainNavItems as item (item.id)}
-        <!-- Only show certain items when on homepage -->
-        {#if !isHomepage || (item.id === 'people' || item.id === 'jobs')}
+        <!-- Only show certain items when showing simplified nav -->
+        {#if !showSimplifiedNav || (item.id === 'people' || item.id === 'jobs')}
           <li class="nav-item">
             <a 
               href={item.href}
@@ -81,7 +84,7 @@
             >
               <span class="nav-icon">{item.icon}</span>
               <span class="nav-label">
-                {#if isHomepage && item.id === 'people'}
+                {#if showSimplifiedNav && item.id === 'people'}
                   Clients
                 {:else}
                   {item.label}
