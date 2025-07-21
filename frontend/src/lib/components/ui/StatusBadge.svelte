@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getJobStatusEmoji, getTaskStatusEmoji } from '$lib/config/emoji';
+  import { getJobStatusEmoji, getTaskStatusEmoji, getTaskEmoji } from '$lib/config/emoji';
   import type { JobStatus } from '$lib/models/types/job-status';
   import type { TaskStatus } from '$lib/models/types/task-status';
 
@@ -9,20 +9,24 @@
     type = 'job',
     size = 'medium',
     showLabel = true,
-    class: className = ''
+    class: className = '',
+    task = null
   }: {
     status: JobStatus | TaskStatus;
     type?: 'job' | 'task';
     size?: 'small' | 'medium' | 'large';
     showLabel?: boolean;
     class?: string;
+    task?: { discarded_at?: string | number | null } | null;
   } = $props();
 
   // Get the appropriate emoji based on type
   const emoji = $derived(
     type === 'job' 
       ? getJobStatusEmoji(status as JobStatus)
-      : getTaskStatusEmoji(status as TaskStatus)
+      : task 
+        ? getTaskEmoji(task as any)
+        : getTaskStatusEmoji(status as TaskStatus)
   );
 
   // Get status label with proper formatting

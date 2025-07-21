@@ -17,7 +17,7 @@
     layout.currentClient 
       ? footerNavItems.map(item => ({
           ...item,
-          label: item.id === 'logs' ? `Logs for ${layout.currentClient.name}` : item.label
+          label: item.id === 'logs' ? `Logs` : item.label
         }))
       : []
   );

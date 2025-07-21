@@ -98,6 +98,19 @@ export function getTaskStatusEmoji(status: string | number | null | undefined): 
 }
 
 /**
+ * Get emoji for a task, considering both status and deleted state
+ * @param task - The task object
+ */
+export function getTaskEmoji(task: { status: string | number; discarded_at?: string | number | null }): string {
+  // If task is deleted, always return trash emoji
+  if (task.discarded_at) {
+    return '🗑️';
+  }
+  
+  return getTaskStatusEmoji(task.status);
+}
+
+/**
  * Get label for a task status
  */
 export function getTaskStatusLabel(status: string | number | null | undefined): string {

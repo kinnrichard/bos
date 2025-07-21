@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { getTaskStatusEmoji } from '$lib/config/emoji';
+  import { getTaskEmoji } from '$lib/config/emoji';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
   import { focusActions } from '$lib/stores/focusManager.svelte';
   import EditableTitle from '../ui/EditableTitle.svelte';
@@ -169,7 +169,7 @@
       onclick={handleStatusChange}
       title="Click to change status"
     >
-      {getTaskStatusEmoji(task.status)}
+      {getTaskEmoji(task)}
     </button>
   </div>
   

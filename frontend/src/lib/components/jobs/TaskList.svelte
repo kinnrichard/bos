@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
+  import { taskFilter, shouldShowTask, taskFilterCapabilities } from '$lib/stores/taskFilter.svelte';
   import { TaskHierarchyManager } from '$lib/services/TaskHierarchyManager';
   import type { HierarchicalTask, RenderedTaskItem, BaseTask } from '$lib/services/TaskHierarchyManager';
   import { taskSelection, taskSelectionActions } from '$lib/stores/taskSelection.svelte';
@@ -31,6 +31,9 @@
   
   // Task hierarchy management
   const hierarchyManager = new TaskHierarchyManager();
+  
+  // Derived state for UI capabilities
+  const canCreateTasks = $derived(taskFilterCapabilities.canCreateTasks);
   
   // Drag & drop state
   let isDragging = false;
@@ -240,6 +243,7 @@
       select: (id) => taskSelectionActions.selectTask(id),
       clearSelection: () => taskSelectionActions.clearSelection(),
       createInline: (afterId) => {
+        if (!canCreateTasks) return; // Elegant guard clause
         insertNewTaskAfter = afterId;
         taskCreationManager.show('inline');
         taskSelectionActions.clearSelection();
@@ -247,7 +251,10 @@
         // Focus is now handled automatically by the NewTaskRow component
         // No need to manage DOM references here
       },
-      createBottom: () => newTaskManager.show(),
+      createBottom: () => {
+        if (!canCreateTasks) return; // Elegant guard clause
+        newTaskManager.show();
+      },
       deleteSelected: () => showDeleteConfirmation(),
       cancelEditing: () => {
         if (inlineTaskState.isShowing) {
@@ -1146,8 +1153,12 @@
   {#if tasks.length === 0}
     <div class="empty-state">
       <div class="empty-icon">📋</div>
-      <h4>No tasks yet</h4>
-      <p>Click "New Task" below to get started.</p>
+      <h4>{taskFilter.showDeleted ? 'No deleted tasks' : 'No tasks yet'}</h4>
+      {#if canCreateTasks}
+        <p>Click "New Task" below to get started.</p>
+      {:else}
+        <p>Clear the deleted filter to view active tasks.</p>
+      {/if}
     </div>
   {/if}
   
@@ -1180,7 +1191,7 @@
         />
         
         <!-- Inline New Task Row (appears after this task if selected) -->
-        {#if insertNewTaskAfter === renderItem.task.id && inlineTaskState.isShowing}
+        {#if canCreateTasks && insertNewTaskAfter === renderItem.task.id && inlineTaskState.isShowing}
           <NewTaskRow 
             mode="inline-after-task"
             depth={renderItem.depth}
@@ -1194,14 +1205,16 @@
     {/if}
       
     <!-- Add New Task Row -->
-    <NewTaskRow 
-      mode="bottom-row"
-      depth={0}
-      manager={newTaskManager}
-      taskState={bottomTaskState}
-      onStateChange={(changes) => taskCreationManager.updateState('bottom', changes)}
-      on:titlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
-    />
+    {#if canCreateTasks}
+      <NewTaskRow 
+        mode="bottom-row"
+        depth={0}
+        manager={newTaskManager}
+        taskState={bottomTaskState}
+        onStateChange={(changes) => taskCreationManager.updateState('bottom', changes)}
+        on:titlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
+      />
+    {/if}
   </div>
 
   <!-- Error dragFeedback only -->

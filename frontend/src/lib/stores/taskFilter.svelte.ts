@@ -97,6 +97,14 @@ export function getFilterSummary(): string[] {
   return summary;
 }
 
+// Derived state for UI capabilities based on filter state
+export const taskFilterCapabilities = {
+  // Check if task creation should be allowed based on current filter state
+  get canCreateTasks(): boolean {
+    return !taskFilter.showDeleted;
+  }
+};
+
 // Actions for managing task filters
 export const taskFilterActions = {
   setStatuses: (statuses: string[]) => {
