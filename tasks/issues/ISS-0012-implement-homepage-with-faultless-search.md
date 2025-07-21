@@ -1,4 +1,5 @@
 ---
+issue_id: ISS-0012
 id: ISS-0012
 type: issue
 title: Implement Homepage with Faultless Search
@@ -7,6 +8,7 @@ priority: P1
 labels: [frontend, ui, search, homepage]
 created: 2025-07-20
 updated: 2025-07-20
+assignee: null
 epic: null
 dependencies: []
 blocks: []
