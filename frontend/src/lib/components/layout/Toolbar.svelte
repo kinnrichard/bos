@@ -305,8 +305,7 @@
   /* Search container */
   .search-container {
     position: relative;
-    min-width: 100px;
-    max-width: 300px;
+    width: 240px;
   }
 
   .search-input-wrapper {
@@ -349,6 +348,7 @@
     font-size: 14px;
     min-width: 0;
     height: 100%;
+    width: 100%;
   }
 
   .search-input::placeholder {
@@ -410,7 +410,7 @@
   /* Responsive adjustments */
   @media (max-width: 1024px) {
     .search-container {
-      min-width: 280px;
+      width: 220px;
     }
 
   }
@@ -426,7 +426,7 @@
     }
 
     .search-container {
-      min-width: 240px;
+      width: 180px;
     }
 
     .page-actions {
@@ -436,7 +436,7 @@
 
   @media (max-width: 480px) {
     .search-container {
-      min-width: 150px;
+      width: 150px;
     }
 
 
