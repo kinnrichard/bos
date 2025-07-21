@@ -59,6 +59,7 @@
   	      <a 
   	        href="/clients/{layout.currentClient.id}"
   	        class="nav-link"
+  	        class:active={$page.url.pathname === `/clients/${layout.currentClient.id}`}
   	      >
   	        <span class="nav-icon">
   	          {getClientTypeEmoji(layout.currentClient.client_type)}

@@ -52,7 +52,7 @@ export function getActiveNavItem(currentPath: string): string | null {
   // Handle route-based matches (e.g., /jobs/123 should match jobs)
   if (currentPath.startsWith('/jobs')) return 'jobs';
   if (currentPath.startsWith('/people')) return 'people'; 
-  if (currentPath.startsWith('/clients')) return 'people'; // clients maps to people nav item
+  if (currentPath === '/clients') return 'people'; // Only highlight for clients listing, not client details
   if (currentPath.startsWith('/devices')) return 'devices';
   if (currentPath.startsWith('/logs')) return 'logs';
 
