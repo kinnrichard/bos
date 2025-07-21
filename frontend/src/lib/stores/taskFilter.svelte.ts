@@ -16,11 +16,11 @@ export function shouldShowTask(task: any): boolean {
   // If showDeleted is false, exclude discarded tasks
   if (!taskFilter.showDeleted && isDiscarded) return false;
   
-  // If showDeleted is true, only show discarded tasks
+  // If showDeleted is true, only show discarded tasks (ignore status filter)
   if (taskFilter.showDeleted && !isDiscarded) return false;
   
-  // Status filter
-  if (taskFilter.selectedStatuses.length > 0) {
+  // Status filter - only apply when NOT showing deleted tasks
+  if (!taskFilter.showDeleted && taskFilter.selectedStatuses.length > 0) {
     if (!taskFilter.selectedStatuses.includes(task.status)) return false;
   }
   
@@ -53,14 +53,20 @@ export function shouldShowTaskLegacy(task: any, statuses: string[], showDeleted:
   // If showDeleted is false, exclude discarded tasks
   if (!showDeleted && isDiscarded) return false;
   
-  // If showDeleted is true, only show discarded tasks
+  // If showDeleted is true, only show discarded tasks (ignore status filter)
   if (showDeleted && !isDiscarded) return false;
   
-  // If no status filters selected, show all tasks (that match deletion filter)
-  if (statuses.length === 0) return true;
+  // Status filter - only apply when NOT showing deleted tasks
+  if (!showDeleted) {
+    // If no status filters selected, show all tasks (that match deletion filter)
+    if (statuses.length === 0) return true;
+    
+    // Task status is now stored as string, compare directly
+    return statuses.includes(task.status);
+  }
   
-  // Task status is now stored as string, compare directly
-  return statuses.includes(task.status);
+  // If showing deleted, ignore status filter
+  return true;
 }
 
 // Filter function - returns a function that checks if a task should be visible
@@ -72,20 +78,20 @@ export function getTaskFilterFunction() {
 export function getFilterSummary(): string[] {
   const summary: string[] = [];
   
-  // Status filter summary
-  if (taskFilter.selectedStatuses.length > 0) {
-    const statusCount = taskFilter.selectedStatuses.length;
-    summary.push(`Status: ${statusCount} selected`);
+  // Deleted filter summary - show first since it overrides status
+  if (taskFilter.showDeleted) {
+    summary.push('Showing deleted tasks');
+  } else {
+    // Status filter summary - only show when not viewing deleted
+    if (taskFilter.selectedStatuses.length > 0) {
+      const statusCount = taskFilter.selectedStatuses.length;
+      summary.push(`Status: ${statusCount} selected`);
+    }
   }
   
   // Search filter summary
   if (taskFilter.searchQuery.trim().length > 0) {
     summary.push(`Search: "${taskFilter.searchQuery}"`);
-  }
-  
-  // Deleted filter summary
-  if (taskFilter.showDeleted) {
-    summary.push('Including deleted');
   }
   
   return summary;
