@@ -1,7 +1,7 @@
 /**
  * ClientData - TypeScript interface for clients table
  * 
- * Generated from Rails schema: 2025-07-20 19:28:52 UTC
+ * Generated from Rails schema: 2025-07-21 14:06:50 UTC
  * * Relationships (loaded via includes()):
  * - activityLogs: has_many ActivityLog
  * - people: has_many Person

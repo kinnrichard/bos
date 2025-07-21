@@ -189,6 +189,7 @@
       onEditingChange={handleEditingChange}
       onSave={handleSaveTitle}
       onClick={handleTaskClick}
+      editable={canEdit}
     />
     
     <!-- Time Tracking Display -->

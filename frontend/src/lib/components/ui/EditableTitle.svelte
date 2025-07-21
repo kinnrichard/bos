@@ -20,6 +20,7 @@
     isEditing?: boolean;
     onEditingChange?: (editing: boolean) => void;
     onClick?: (e: MouseEvent) => void;
+    editable?: boolean;
   }
 
   let {
@@ -37,7 +38,8 @@
     autoFocus = false,
     isEditing: externalIsEditing,
     onEditingChange,
-    onClick
+    onClick,
+    editable = true
   }: Props = $props();
 
   let element = $state<HTMLElement>();
@@ -202,7 +204,7 @@
   class="editable-title focus-ring-tight {className}"
   class:editing={hasFocus}
   class:saving={isSaving}
-  contenteditable="true"
+  contenteditable={editable ? "true" : "false"}
   spellcheck="false"
   use:fixContentEditable
   bind:this={element}

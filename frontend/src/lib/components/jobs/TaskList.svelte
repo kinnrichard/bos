@@ -174,7 +174,7 @@
   let isDeletingTasks = $state(false);
   
   // Computed deletion title for the modal
-  const deletionTitle = $derived(() => {
+  const deletionTitle = $derived.by(() => {
     if (tasksToDelete.length === 1) {
       const taskToDelete = tasks.find(t => t.id === tasksToDelete[0]);
       const taskName = taskToDelete ? `"${taskToDelete.title}"` : '"this task"';
@@ -634,7 +634,7 @@
       editingTaskId = null;
       
     } catch (error) {
-      debugWorkflow.error('Task title update failed', { error, taskId: task.id, newTitle: inputValue });
+      debugWorkflow.error('Task title update failed', { error, taskId, newTitle });
       dragFeedback = 'Failed to update task title - please try again';
       setTimeout(() => dragFeedback = '', 3000);
       
@@ -1235,7 +1235,7 @@
 
 <DeletionModal
   open={isShowingDeleteConfirmation}
-  title={deletionTitle()}
+  title={deletionTitle}
   onCancel={cancelDeleteConfirmation}
   onConfirm={confirmDeleteTasks}
 />

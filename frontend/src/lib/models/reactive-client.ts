@@ -9,7 +9,7 @@
  * import { Client } from './client';
  * ```
  * 
- * Generated: 2025-07-20 19:28:52 UTC
+ * Generated: 2025-07-21 14:06:50 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
