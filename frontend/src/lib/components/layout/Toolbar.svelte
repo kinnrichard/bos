@@ -241,7 +241,7 @@
 	{#if showSearch}
 	  <div class="search-container" class:focused={searchFocused}>
 	    <div class="search-input-wrapper">
-	      <img src="/icons/search.svg" alt="Search" class="search-icon" />
+	      <img src="/icons/magnifyingglass.svg" alt="Search" class="search-icon" />
 	      <input
 	        type="text"
 	        placeholder={searchPlaceholder}
@@ -334,10 +334,9 @@
   .search-icon {
     width: 16px;
     height: 16px;
+    opacity: 0.5;
     margin-left: 12px;
     flex-shrink: 0;
-    filter: invert(1);
-    opacity: 0.6;
   }
 
   .search-input {
