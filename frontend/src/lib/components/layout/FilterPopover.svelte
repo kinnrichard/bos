@@ -143,11 +143,17 @@
       isSelected={(option) => showDeleted}
     >
       {#snippet optionContent({ option })}
-        <span class="popover-option-main-label">{option.label}</span>
+        <span class="popover-option-main-label deleted-option-label" class:selected={showDeleted}>
+          {option.label}
+        </span>
         
         <div class="popover-checkmark-container">
           {#if showDeleted}
-            <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
+            <img 
+              src="/icons/checkmark.svg" 
+              alt="Selected" 
+              class="popover-checkmark-icon deleted-checkmark" 
+            />
           {/if}
         </div>
       {/snippet}
@@ -191,6 +197,17 @@
 
   .filter-content {
     padding: 16px;
+  }
+
+  /* Special styling for deleted option */
+  .deleted-option-label.selected {
+    color: var(--accent-red, #FF3B30) !important;
+    font-weight: 600;
+  }
+
+  /* Make the checkmark red for deleted option */
+  .deleted-checkmark {
+    filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(5722%) hue-rotate(348deg) brightness(95%) contrast(104%);
   }
 
   /* Accessibility improvements */
