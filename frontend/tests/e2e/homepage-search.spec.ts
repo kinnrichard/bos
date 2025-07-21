@@ -47,7 +47,7 @@ test.describe('Homepage Search Feature', () => {
     await searchButton.click();
     
     // Should navigate to search results page
-    await expect(page).toHaveURL('/search?q=test+search');
+    await expect(page).toHaveURL('/clients/search?q=test+search');
     
     // Search input should still be visible with the query
     const resultsSearchInput = page.locator('input[type="search"]');
@@ -56,7 +56,7 @@ test.describe('Homepage Search Feature', () => {
 
   test('should show search results and New Client option', async ({ page }) => {
     // Navigate directly to search results
-    await page.goto('/search?q=test');
+    await page.goto('/clients/search?q=test');
     
     // Wait for the search page to load
     await page.waitForSelector('.search-results');

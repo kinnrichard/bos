@@ -48,7 +48,7 @@
     
     if (searchInput.trim()) {
       // Update URL with new search query
-      goto(`/search?q=${encodeURIComponent(searchInput.trim())}`, { replaceState: false });
+      goto(`/clients/search?q=${encodeURIComponent(searchInput.trim())}`, { replaceState: false });
     } else {
       // Clear search - go back to homepage
       goto('/');

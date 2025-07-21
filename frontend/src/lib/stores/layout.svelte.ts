@@ -67,17 +67,4 @@ export const layoutActions = {
   }
 };
 
-// Initialize with mock client data for now (will be replaced with API data)
-if (browser) {
-  // Mock Vital Planet client data
-  layout.currentClient = {
-    id: 'vital-planet-uuid',
-    name: 'Vital Planet',
-    client_type: 'business',
-    attributes: {
-      name: 'Vital Planet',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  };
-}
+// Current client will be set based on page context

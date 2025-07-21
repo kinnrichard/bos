@@ -12,7 +12,7 @@
   <title>{client.name} - Client Details</title>
 </svelte:head>
 
-<AppLayout>
+<AppLayout currentClient={client}>
 <div class="client-page">
   <div class="page-header">
     <h1 class="page-title">Client Details</h1>

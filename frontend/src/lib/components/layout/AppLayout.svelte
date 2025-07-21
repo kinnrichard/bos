@@ -9,13 +9,47 @@
     showSidebar = true,
     showToolbar = true,
     currentJob = null,
+    currentClient = null,
     children
   }: {
     showSidebar?: boolean;
     showToolbar?: boolean;
     currentJob?: PopulatedJob | null;
+    currentClient?: any | null;
     children?: import('svelte').Snippet;
   } = $props();
+  
+  // Update current client based on the job or direct client prop
+  $effect(() => {
+    if (currentClient) {
+      // Direct client prop takes precedence
+      layoutActions.setCurrentClient({
+        id: currentClient.id,
+        name: currentClient.name || 'Unnamed Client',
+        client_type: currentClient.client_type as 'business' | 'individual',
+        attributes: {
+          name: currentClient.name || 'Unnamed Client',
+          created_at: currentClient.created_at || new Date().toISOString(),
+          updated_at: currentClient.updated_at || new Date().toISOString()
+        }
+      });
+    } else if (currentJob && currentJob.client) {
+      // Fall back to job's client
+      layoutActions.setCurrentClient({
+        id: currentJob.client.id,
+        name: currentJob.client.name || 'Unnamed Client',
+        client_type: currentJob.client.client_type as 'business' | 'individual',
+        attributes: {
+          name: currentJob.client.name || 'Unnamed Client',
+          created_at: currentJob.client.created_at || new Date().toISOString(),
+          updated_at: currentJob.client.updated_at || new Date().toISOString()
+        }
+      });
+    } else {
+      // Clear current client when there's no job or client
+      layoutActions.setCurrentClient(null);
+    }
+  });
 </script>
 
 <div class="app-container">

@@ -8,6 +8,16 @@
   
   // Check if we're on the homepage
   const isHomepage = $derived($page.url.pathname === '/');
+  
+  // Dynamic footer items based on current client
+  const dynamicFooterItems = $derived(
+    layout.currentClient 
+      ? footerNavItems.map(item => ({
+          ...item,
+          label: item.id === 'logs' ? `${layout.currentClient.name}'s Logs` : item.label
+        }))
+      : []
+  );
 
 </script>
 
@@ -84,23 +94,25 @@
     </ul>
   </nav>
 
-  <!-- Footer Navigation -->
-  <div class="footer-nav">
-    <ul class="nav-list">
-      {#each footerNavItems as item (item.id)}
-        <li class="nav-item">
-          <a 
-            href={item.href}
-            class="nav-link footer-link"
-            class:active={activeItem === item.id}
-          >
-            <span class="nav-icon">{item.icon}</span>
-            <span class="nav-label">{item.label}</span>
-          </a>
-        </li>
-      {/each}
-    </ul>
-  </div>
+  <!-- Footer Navigation - Only show when there's a current client -->
+  {#if layout.currentClient}
+    <div class="footer-nav">
+      <ul class="nav-list">
+        {#each dynamicFooterItems as item (item.id)}
+          <li class="nav-item">
+            <a 
+              href={item.href}
+              class="nav-link footer-link"
+              class:active={activeItem === item.id}
+            >
+              <span class="nav-icon">{item.icon}</span>
+              <span class="nav-label">{item.label}</span>
+            </a>
+          </li>
+        {/each}
+      </ul>
+    </div>
+  {/if}
 </div>
 
 <style>

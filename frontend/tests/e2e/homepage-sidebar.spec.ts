@@ -87,7 +87,7 @@ test.describe('Homepage Sidebar Integration', () => {
 
   test('search page should also have sidebar', async ({ page }) => {
     // Navigate to search results
-    await page.goto('/search?q=test');
+    await page.goto('/clients/search?q=test');
     
     // Check that sidebar is visible
     const sidebar = page.locator('.sidebar');

@@ -20,7 +20,7 @@
     // Only proceed if there's search input
     if (searchInput.trim()) {
       // Navigate to search results page with query
-      goto(`/search?q=${encodeURIComponent(searchInput.trim())}`);
+      goto(`/clients/search?q=${encodeURIComponent(searchInput.trim())}`);
     }
   }
   
@@ -47,7 +47,7 @@
             <input
               type="search"
               class="search-input"
-              placeholder="Search"
+              placeholder="Search Clients"
               bind:value={searchInput}
               disabled={isLoading}
             />
@@ -67,23 +67,17 @@
 
 <style>
   .homepage {
-    min-height: 100vh;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
-    background-color: var(--bg-black, #000);
+    padding: 0 0 60px 0;
   }
   
   .homepage-content {
     width: 100%;
     max-width: 600px;
     text-align: center;
-  }
-  
-  /* Hero Search Styles */
-  .hero-search {
-    margin-bottom: 48px;
   }
   
   .search-form {
@@ -96,12 +90,11 @@
     align-items: center;
     background-color: var(--bg-secondary, #1C1C1D);
     border: 1px solid var(--border-primary, #38383A);
-    border-radius: 12px;
-    transition: all 0.15s ease;
+    border-radius: 999px;
   }
   
   .search-input-container:focus-within {
-    border-color: var(--accent-blue, #00A3FF);
+    border: 2px solid var(--accent-blue, #00A3FF);
     box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
   }
   
@@ -134,11 +127,10 @@
     background-color: var(--accent-blue, #00A3FF);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 999px;
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
     white-space: nowrap;
   }
   
