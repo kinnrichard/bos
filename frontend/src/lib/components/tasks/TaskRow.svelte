@@ -20,6 +20,7 @@
     isSelected = false, 
     isEditing = false, 
     isDeleting = false,
+    canEdit = true,
     jobId = '',
     batchTaskDetails = null,
     currentTime = Date.now()
@@ -31,6 +32,7 @@
     isSelected?: boolean;
     isEditing?: boolean;
     isDeleting?: boolean;
+    canEdit?: boolean;
     jobId?: string;
     batchTaskDetails?: any;
     currentTime?: number;
@@ -40,6 +42,8 @@
 
   // Dispatch helper for editing events
   function handleEditingChange(editing: boolean) {
+    if (!canEdit && editing) return; // Prevent entering edit mode if not allowed
+    
     if (editing) {
       // When entering edit mode, dispatch titleClick to notify parent
       dispatch('taskaction', {
@@ -135,6 +139,7 @@
   class:selected={isSelected}
   class:task-selected-for-drag={isSelected}
   class:task-deleting={isDeleting}
+  class:non-editable={!canEdit}
   style="--depth: {depth || 0}"
   data-task-id={task.id}
   role="button"

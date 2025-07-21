@@ -102,6 +102,11 @@ export const taskFilterCapabilities = {
   // Check if task creation should be allowed based on current filter state
   get canCreateTasks(): boolean {
     return !taskFilter.showDeleted;
+  },
+  
+  // Check if task editing should be allowed based on current filter state
+  get canEditTasks(): boolean {
+    return !taskFilter.showDeleted;
   }
 };
 

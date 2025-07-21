@@ -34,6 +34,7 @@
   
   // Derived state for UI capabilities
   const canCreateTasks = $derived(taskFilterCapabilities.canCreateTasks);
+  const canEditTasks = $derived(taskFilterCapabilities.canEditTasks);
   
   // Drag & drop state
   let isDragging = false;
@@ -442,6 +443,7 @@
         toggleTaskExpansion(taskId);
         break;
       case 'startEdit':
+        if (!canEditTasks) break; // Elegant guard clause
         editingTaskId = taskId;
         // Title editing now handled by contenteditable element
         // Focus will be handled by TaskRow component
@@ -594,6 +596,8 @@
 
   // Task title editing functions - using DRY cursor positioning
   function handleTitleClick(event: MouseEvent, taskId: string) {
+    if (!canEditTasks) return; // Elegant guard clause
+    
     event.stopPropagation(); // Prevent task selection
     taskSelectionActions.clearSelection(); // Clear any existing selection when editing
     
@@ -1184,6 +1188,7 @@
           isSelected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
           isEditing={editingTaskId === renderItem.task.id}
           isDeleting={deletingTaskIds.has(renderItem.task.id)}
+          canEdit={canEditTasks}
           jobId={jobId}
           batchTaskDetails={batchTaskDetails}
           currentTime={currentTime}

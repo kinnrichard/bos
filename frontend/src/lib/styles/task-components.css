@@ -204,6 +204,16 @@
   user-select: text;
 }
 
+/* Non-editable state styling */
+.task-item.non-editable .task-title {
+  cursor: default;
+  user-select: none;
+}
+
+.task-item.non-editable .task-title:hover {
+  background-color: transparent;
+}
+
 .task-title-input {
   background: none;
   padding: 0;
