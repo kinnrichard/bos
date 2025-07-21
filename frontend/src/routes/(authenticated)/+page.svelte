@@ -90,12 +90,12 @@
     display: flex;
     align-items: center;
     background-color: var(--bg-secondary, #1C1C1D);
-    border: 1px solid var(--border-primary, #38383A);
+    border: 2px solid var(--border-primary, #38383A);
     border-radius: 999px;
   }
   
   .search-input-container:focus-within {
-    border: 2px solid var(--accent-blue, #00A3FF);
+    border-color: var(--accent-blue, #00A3FF);
     box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
   }
   
