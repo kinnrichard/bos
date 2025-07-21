@@ -334,9 +334,10 @@
   .search-icon {
     width: 16px;
     height: 16px;
-    opacity: 0.5;
     margin-left: 12px;
     flex-shrink: 0;
+    filter: invert(1);
+    opacity: 0.6;
   }
 
   .search-input {
