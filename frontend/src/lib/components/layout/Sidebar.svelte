@@ -229,6 +229,11 @@
     font-size: 13px;
     font-weight: 500;
     margin: 0;
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
   }
 
   .nav-link:hover {

@@ -41,7 +41,14 @@ if (browser) {
 
 // Client type helper functions
 export function getClientTypeEmoji(clientType: ClientType): string {
-  return clientType === 'business' ? '🏢' : '👤';
+  switch (clientType) {
+    case 'business':
+      return '🏢';
+    case 'residential':
+      return '🏠';
+    default:
+      return '👤';
+  }
 }
 
 export function getClientTypeLabel(clientType: ClientType): string {
