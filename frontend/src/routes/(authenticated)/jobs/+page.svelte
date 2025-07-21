@@ -4,6 +4,7 @@
   import { ReactiveJob } from '$lib/models/reactive-job';
   import type { JobData } from '$lib/models/types/job-data';
   import { debugComponent, debugReactive } from '$lib/utils/debug';
+  import { jobsSearch, shouldShowJob } from '$lib/stores/jobsSearch.svelte';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
   // Automatically stays in sync with Zero.js data changes
@@ -40,9 +41,14 @@
     })
   );
 
-  // ✨ USE $derived FOR FINAL FILTERING WITH TECHNICIAN SUPPORT
+  // ✨ USE $derived FOR FINAL FILTERING WITH TECHNICIAN AND SEARCH SUPPORT
   const jobs = $derived(
     filteredJobs.filter((job: JobData) => {
+      // Apply search filter first
+      if (!shouldShowJob(job)) {
+        return false;
+      }
+      
       // Filter by technician if specified
       if (technicianId) {
         const hasMatchingTechnician = job.jobAssignments?.some((assignment: any) => 

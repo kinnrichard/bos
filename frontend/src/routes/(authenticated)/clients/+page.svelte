@@ -11,6 +11,7 @@
   import { getZero } from '$lib/zero';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
+  import { clientsSearch, shouldShowClient } from '$lib/stores/clientsSearch.svelte';
   
   // Create reactive query for all clients ordered alphabetically
   const clientsQuery = new ReactiveQuery(() => {
@@ -26,11 +27,16 @@
   const isLoading = $derived(clientsQuery.isLoading);
   const error = $derived(clientsQuery.error);
   
-  // Group clients by first letter
+  // Filter clients based on search
+  const filteredClients = $derived(
+    clients.filter(client => shouldShowClient(client))
+  );
+  
+  // Group filtered clients by first letter
   const groupedClients = $derived.by(() => {
     const groups: Record<string, typeof clients> = {};
     
-    for (const client of clients) {
+    for (const client of filteredClients) {
       const firstLetter = (client.name || 'Unknown').charAt(0).toUpperCase();
       if (!groups[firstLetter]) {
         groups[firstLetter] = [];
@@ -103,6 +109,10 @@
             <span class="button-icon">➕</span>
             Create Your First Client
           </button>
+        </div>
+      {:else if filteredClients.length === 0}
+        <div class="empty-state">
+          <p class="empty-message">No clients match your search</p>
         </div>
       {:else}
         <div class="clients-list">

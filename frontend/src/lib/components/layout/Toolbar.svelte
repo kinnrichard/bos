@@ -2,6 +2,8 @@
   import { layout, layoutActions } from '$lib/stores/layout.svelte';
   import { page } from '$app/stores';
   import { taskFilter, taskFilterActions } from '$lib/stores/taskFilter.svelte';
+  import { jobsSearch, jobsSearchActions } from '$lib/stores/jobsSearch.svelte';
+  import { clientsSearch, clientsSearchActions } from '$lib/stores/clientsSearch.svelte';
   import { debugSearch, debugComponent } from '$lib/utils/debug';
   import FilterPopover from './FilterPopover.svelte';
   import JobStatusButton from './JobStatusButton.svelte';
@@ -13,21 +15,80 @@
   // Props - accept job directly instead of using layout.currentJob
   let { currentJob }: { currentJob?: PopulatedJob | null } = $props();
 
-  // Search functionality - sync with taskFilter store
-  const searchQuery = $derived(taskFilter.searchQuery);
+  // Search context detection
+  function getSearchContext() {
+    if (!$page?.route?.id) return null;
+    
+    // Jobs listing page
+    if ($page.route.id === '/(authenticated)/jobs') return 'jobs';
+    
+    // Clients listing page (but not search results)
+    if ($page.route.id === '/(authenticated)/clients' && !$page.url.pathname.includes('/search')) return 'clients';
+    
+    // Job detail page - search tasks
+    if ($page.route.id === '/(authenticated)/jobs/[id]') return 'tasks';
+    
+    return null;
+  }
+
+  // Get appropriate search placeholder
+  function getSearchPlaceholder(context: string | null) {
+    switch (context) {
+      case 'jobs':
+        return 'Search jobs';
+      case 'clients':
+        return 'Search clients';
+      case 'tasks':
+        return 'Search tasks';
+      default:
+        return 'Search';
+    }
+  }
+
+  // Context-aware search state
+  const searchContext = $derived(getSearchContext());
+  const searchPlaceholder = $derived(getSearchPlaceholder(searchContext));
+  const showSearch = $derived(searchContext !== null);
+  
+  // Get the appropriate search query based on context
+  const searchQuery = $derived.by(() => {
+    switch (searchContext) {
+      case 'jobs':
+        return jobsSearch.searchQuery;
+      case 'clients':
+        return clientsSearch.searchQuery;
+      case 'tasks':
+        return taskFilter.searchQuery;
+      default:
+        return '';
+    }
+  });
+  
   let searchFocused = $state(false);
   let filterPopover = $state<any>(null);
 
   function handleSearch() {
     if (searchQuery.trim()) {
-      debugSearch('Search query executed', { query: searchQuery });
-      // Search functionality is now handled by TaskFilterManager via taskFilter store
+      debugSearch('Search query executed', { query: searchQuery, context: searchContext });
+      // Search is handled by the respective stores
     }
   }
 
   function handleSearchInput(event: Event) {
     const target = event.target as HTMLInputElement;
-    taskFilterActions.setSearchQuery(target.value);
+    const value = target.value;
+    
+    switch (searchContext) {
+      case 'jobs':
+        jobsSearchActions.setSearchQuery(value);
+        break;
+      case 'clients':
+        clientsSearchActions.setSearchQuery(value);
+        break;
+      case 'tasks':
+        taskFilterActions.setSearchQuery(value);
+        break;
+    }
   }
 
   function handleSearchKeydown(event: KeyboardEvent) {
@@ -35,14 +96,35 @@
       handleSearch();
     }
     if (event.key === 'Escape') {
-      taskFilterActions.clearSearch();
+      handleSearchClear();
       (event.target as HTMLInputElement).blur();
     }
   }
 
   function handleSearchClear() {
-    taskFilterActions.clearSearch();
+    switch (searchContext) {
+      case 'jobs':
+        jobsSearchActions.clearSearch();
+        break;
+      case 'clients':
+        clientsSearchActions.clearSearch();
+        break;
+      case 'tasks':
+        taskFilterActions.clearSearch();
+        break;
+    }
   }
+
+  // Clear search when context changes
+  $effect(() => {
+    // When we navigate to a new page context, clear the previous search
+    if (searchContext) {
+      // Clear all search stores to ensure clean state
+      jobsSearchActions.clearSearch();
+      clientsSearchActions.clearSearch();
+      taskFilterActions.clearSearch();
+    }
+  });
 
   // Get current page from route
   function getCurrentPage() {
@@ -156,30 +238,32 @@
       </div>
     {/if}
 	
-	<div class="search-container" class:focused={searchFocused}>
-	  <div class="search-input-wrapper">
-	    <img src="/icons/search.svg" alt="Search" class="search-icon" />
-	    <input
-	      type="text"
-	      placeholder="Search"
-	      value={searchQuery}
-	      oninput={handleSearchInput}
-	      onfocus={() => searchFocused = true}
-	      onblur={() => searchFocused = false}
-	      onkeydown={handleSearchKeydown}
-	      class="search-input"
-	    />
-	    {#if searchQuery}
-	      <button 
-	        class="search-clear"
-	        onclick={handleSearchClear}
-	        aria-label="Clear search"
-	      >
-	        <img src="/icons/close.svg" alt="Clear" />
-	      </button>
-	    {/if}
+	{#if showSearch}
+	  <div class="search-container" class:focused={searchFocused}>
+	    <div class="search-input-wrapper">
+	      <img src="/icons/search.svg" alt="Search" class="search-icon" />
+	      <input
+	        type="text"
+	        placeholder={searchPlaceholder}
+	        value={searchQuery}
+	        oninput={handleSearchInput}
+	        onfocus={() => searchFocused = true}
+	        onblur={() => searchFocused = false}
+	        onkeydown={handleSearchKeydown}
+	        class="search-input"
+	      />
+	      {#if searchQuery}
+	        <button 
+	          class="search-clear"
+	          onclick={handleSearchClear}
+	          aria-label="Clear search"
+	        >
+	          <img src="/icons/close.svg" alt="Clear" />
+	        </button>
+	      {/if}
+	    </div>
 	  </div>
-	</div>
+	{/if}
 
     <!-- User menu -->
     <div class="user-menu">
@@ -239,6 +323,12 @@
   .search-container.focused .search-input-wrapper {
     border-color: var(--accent-blue);
     box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
+  }
+
+  /* Active search indicator */
+  .search-container:has(.search-input:not(:placeholder-shown)) .search-input-wrapper {
+    border-color: var(--accent-blue);
+    background-color: rgba(0, 163, 255, 0.05);
   }
 
   .search-icon {
