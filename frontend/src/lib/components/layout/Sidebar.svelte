@@ -15,10 +15,19 @@
   // Dynamic footer items based on current client
   const dynamicFooterItems = $derived(
     layout.currentClient 
-      ? footerNavItems.map(item => ({
-          ...item,
-          label: item.id === 'logs' ? `Logs for ${layout.currentClient.name}` : item.label
-        }))
+      ? [
+          {
+            id: 'client-jobs',
+            label: 'Jobs',
+            href: `/clients/${layout.currentClient.id}/jobs`,
+            icon: '💼',
+            type: 'footer'
+          },
+          ...footerNavItems.map(item => ({
+            ...item,
+            label: item.id === 'logs' ? `Logs for ${layout.currentClient.name}` : item.label
+          }))
+        ]
       : []
   );
 
@@ -107,7 +116,7 @@
             <a 
               href={item.href}
               class="nav-link footer-link"
-              class:active={activeItem === item.id}
+              class:active={item.id === 'client-jobs' ? $page.url.pathname === item.href : activeItem === item.id}
             >
               <span class="nav-icon">{item.icon}</span>
               <span class="nav-label">{item.label}</span>
