@@ -89,8 +89,8 @@
       dateGroups.get(dateKey)!.push(log);
     });
     
-    // Sort by date descending (most recent first)
-    return Array.from(dateGroups.entries()).sort(([a], [b]) => b.localeCompare(a));
+    // Sort by date ascending (oldest first, recent at bottom)
+    return Array.from(dateGroups.entries()).sort(([a], [b]) => a.localeCompare(b));
   }
 
   // Helper function to format date headers
@@ -337,11 +337,6 @@
           priority,
           lastActivity: new Date(log.created_at)
         });
-        
-        // Initialize collapsed state
-        if (!(groupKey in groupStates)) {
-          groupStates[groupKey] = true;
-        }
       }
 
       const group = groups.get(groupKey)!;
@@ -355,7 +350,7 @@
     });
 
     // Step 3: Enhanced sorting with priority and recency
-    return Array.from(groups.values()).sort((a, b) => {
+    const sortedGroups = Array.from(groups.values()).sort((a, b) => {
       // First by priority (lower number = higher priority)
       if (a.priority !== b.priority) {
         return a.priority - b.priority;
@@ -364,6 +359,15 @@
       // Then by most recent activity
       return b.lastActivity.getTime() - a.lastActivity.getTime();
     });
+
+    // Step 4: Initialize collapsed states - expand most recent group, collapse others
+    sortedGroups.forEach((group, index) => {
+      if (!(group.key in groupStates)) {
+        groupStates[group.key] = index !== 0; // Expand first (most recent) group, collapse others
+      }
+    });
+
+    return sortedGroups;
   });
 
   // Helper function to detect duplicate actions within time windows
@@ -421,7 +425,7 @@
     }
     
     return processedLogs.sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   }
 
