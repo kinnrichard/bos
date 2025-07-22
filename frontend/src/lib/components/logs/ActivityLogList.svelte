@@ -114,21 +114,177 @@
     }
   }
 
-  // Helper function to format log messages with rich content
+  // Helper function to format log messages with rich content matching Rails logic
   function formatLogMessage(log: ActivityLogData): string {
-    // Use the existing helper from ActivityLogRow if available
-    // For now, return a basic formatted message
-    const action = log.action || 'performed an action';
-    const entity = log.loggable_type || '';
+    const loggableTypeEmoji = getLoggableTypeEmoji(log.loggable_type);
+    const loggableName = getLoggableName(log);
+    const metadata = log.metadata || {};
     
-    if (log.metadata?.changes) {
-      const changes = Object.keys(log.metadata.changes);
-      if (changes.length > 0) {
-        return `${action} on ${entity.toLowerCase()} (${changes.join(', ')} changed)`;
-      }
+    switch (log.action) {
+      case 'created':
+        return `created ${loggableTypeEmoji} ${loggableName}`;
+        
+      case 'viewed':
+        return `viewed ${loggableTypeEmoji} ${loggableName}`;
+        
+      case 'renamed':
+        const oldName = metadata.old_name || 'Unknown';
+        const newName = metadata.name || loggableName;
+        return `renamed ${oldName} to ${newName}`;
+        
+      case 'updated':
+        if (metadata.changes) {
+          // Filter out unimportant attributes
+          const filteredChanges = Object.fromEntries(
+            Object.entries(metadata.changes).filter(([field]) => 
+              !['position', 'lock_version', 'reordered_at', 'parent_id'].includes(field)
+            )
+          );
+          
+          const changeKeys = Object.keys(filteredChanges);
+          
+          if (changeKeys.length === 0) {
+            return null; // Hide unimportant updates
+          }
+          
+          // Handle special field changes
+          if (changeKeys.length === 1 && changeKeys[0] === 'priority') {
+            const [, newPriority] = filteredChanges.priority;
+            const priorityEmoji = getPriorityEmoji(newPriority);
+            return `marked ${loggableTypeEmoji} ${loggableName} as ${priorityEmoji} ${newPriority?.charAt(0)?.toUpperCase() + newPriority?.slice(1)} Priority`;
+          }
+          
+          if (changeKeys.length === 1 && changeKeys[0] === 'assigned_to_id') {
+            const [oldId, newId] = filteredChanges.assigned_to_id;
+            if (!newId) {
+              return `unassigned ${loggableTypeEmoji} ${loggableName}`;
+            } else {
+              // Look up user name from metadata or use fallback
+              const assignedToName = metadata.assigned_to || `user #${newId}`;
+              return `assigned ${loggableTypeEmoji} ${loggableName} to ${assignedToName}`;
+            }
+          }
+          
+          // Format other changes
+          const changesText = changeKeys.map(field => {
+            const [oldValue, newValue] = filteredChanges[field];
+            return `${field}: ${oldValue} → ${newValue}`;
+          }).join(', ');
+          
+          return `updated ${loggableName}: ${changesText}`;
+        }
+        return `updated ${loggableTypeEmoji} ${loggableName}`;
+        
+      case 'deleted':
+        return `deleted ${loggableTypeEmoji} ${loggableName}`;
+        
+      case 'assigned':
+        const assignedTo = metadata.assigned_to || 'someone';
+        return `assigned ${loggableTypeEmoji} ${loggableName} to ${assignedTo}`;
+        
+      case 'unassigned':
+        const unassignedFrom = metadata.unassigned_from || 'someone';
+        return `unassigned ${unassignedFrom} from ${loggableTypeEmoji} ${loggableName}`;
+        
+      case 'status_changed':
+        const newStatusLabel = metadata.new_status_label || metadata.new_status || 'Unknown';
+        const statusEmoji = getStatusEmoji(metadata.new_status);
+        return `set ${loggableTypeEmoji} ${loggableName} to ${statusEmoji} ${newStatusLabel}`;
+        
+      case 'added':
+        const parentType = metadata.parent_type || 'container';
+        const parentName = metadata.parent_name || 'Unknown';
+        return `added ${loggableTypeEmoji} ${loggableName} to ${parentType} ${parentName}`;
+        
+      case 'logged_in':
+        return 'signed into bŏs';
+        
+      case 'logged_out':
+        return 'signed out of bŏs';
+        
+      default:
+        return `${log.action} ${loggableName}`;
+    }
+  }
+  
+  // Helper function to get emoji for loggable types
+  function getLoggableTypeEmoji(loggableType: string): string {
+    switch (loggableType) {
+      case 'Client':
+        return '🏢'; // Could be 🏠 for residential, but we'd need the client data
+      case 'Job':
+        return '💼';
+      case 'Task':
+        return '☑️';
+      case 'Person':
+        return '👤';
+      default:
+        return '';
+    }
+  }
+  
+  // Helper function to get loggable name
+  function getLoggableName(log: ActivityLogData): string {
+    const metadata = log.metadata || {};
+    
+    if (metadata.name) {
+      return metadata.name;
     }
     
-    return `${action} on ${entity.toLowerCase()}`;
+    // Try to get name from the related objects
+    switch (log.loggable_type) {
+      case 'Client':
+        return log.client?.name || 'Unknown Client';
+      case 'Job':
+        return log.job?.title || 'Unknown Job';
+      case 'Task':
+        return metadata.title || 'Unknown Task';
+      case 'Person':
+        const personName = metadata.person_name || 'Unknown Person';
+        const clientName = log.client?.name || 'Unknown Client';
+        const clientEmoji = log.client?.business ? '🏢' : '🏠';
+        return `${personName} with ${clientEmoji} ${clientName}`;
+      default:
+        return log.loggable_type || 'Unknown';
+    }
+  }
+  
+  // Helper function to get priority emoji
+  function getPriorityEmoji(priority: string): string {
+    switch (priority?.toLowerCase()) {
+      case 'high':
+      case 'urgent':
+        return '🔴';
+      case 'medium':
+      case 'normal':
+        return '🟡';
+      case 'low':
+        return '🟢';
+      default:
+        return '⚪';
+    }
+  }
+  
+  // Helper function to get status emoji
+  function getStatusEmoji(status: string): string {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+      case 'done':
+        return '✅';
+      case 'in_progress':
+      case 'working':
+        return '🔄';
+      case 'pending':
+      case 'waiting':
+        return '⏳';
+      case 'cancelled':
+      case 'canceled':
+        return '❌';
+      case 'on_hold':
+        return '⏸️';
+      default:
+        return '📋';
+    }
   }
 
   // Helper function to check if log has duplicates
@@ -399,9 +555,13 @@
                     <td class="logs-table__action-cell" colspan="2">
                       <div class="action-time-container">
                         <div class="action-content">
-                          {@html formatLogMessage(log)}
-                          {#if hasDuplicates(log)}
-                            <span class="log-count-badge">{getDuplicateCount(log)}×</span>
+                          {#if formatLogMessage(log)}
+                            {@html formatLogMessage(log)}
+                            {#if hasDuplicates(log)}
+                              <span class="log-count-badge">{getDuplicateCount(log)}×</span>
+                            {/if}
+                          {:else}
+                            <em class="log-hidden">Update with minor changes</em>
                           {/if}
                         </div>
                         <div class="time-content">
@@ -628,6 +788,12 @@
     border-radius: 10px;
     margin-left: 8px;
     vertical-align: middle;
+  }
+
+  .log-hidden {
+    color: var(--text-tertiary);
+    font-style: italic;
+    font-size: 13px;
   }
 
   .time-content {
