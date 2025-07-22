@@ -16,6 +16,7 @@
   import { browser } from '$app/environment';
   import { initZero, getZeroState } from '$lib/zero';
   import { authService } from '$lib/api/auth';
+  import { setCurrentUser } from '$lib/auth/current-user';
   import AppLoading from '$lib/components/AppLoading.svelte';
   import { debugAuth, debugError } from '$lib/utils/debug';
   import Toast from '$lib/components/ui/Toast.svelte';
@@ -46,6 +47,26 @@
         const returnTo = encodeURIComponent($page.url.pathname + $page.url.search);
         await goto(`/login?return_to=${returnTo}`, { replaceState: true });
         return;
+      }
+      
+      // Stage 1.5: Fetch and set current user for mutators
+      try {
+        const userData = await authService.getCurrentUser();
+        console.log('[Auth Layout] User data structure:', userData);
+        console.log('[Auth Layout] User attributes:', userData.attributes);
+        
+        // The user data comes in JSON:API format with nested attributes
+        // We need to pass the full user object with ID at the top level
+        const currentUserData = {
+          id: userData.id,
+          ...userData.attributes
+        };
+        
+        setCurrentUser(currentUserData);
+        debugAuth('Current user set:', currentUserData);
+      } catch (error) {
+        debugAuth.error('Failed to fetch current user:', error);
+        // Don't fail completely, but user attribution may not work
       }
       
       // Stage 2: Initialize Zero client

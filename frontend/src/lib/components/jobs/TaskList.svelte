@@ -218,6 +218,7 @@
     tasks as BaseTask[], 
     shouldShowTask
   ));
+  
 
   
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
@@ -551,7 +552,7 @@
       dragFeedback = 'Task created successfully!';
       setTimeout(() => dragFeedback = '', 2000);
     } catch (error: any) {
-      debugWorkflow.error('Task creation failed', { error, taskData: inputManager.getTaskData() });
+      debugWorkflow.error('Task creation failed', { error, taskData: state });
       dragFeedback = 'Failed to create task - please try again';
       setTimeout(() => dragFeedback = '', 3000);
     }

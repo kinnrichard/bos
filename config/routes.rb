@@ -46,7 +46,11 @@ Rails.application.routes.draw do
       end
 
       # Resource endpoints
-      resources :users, only: [ :index ]
+      resources :users, only: [ :index ] do
+        collection do
+          get :me
+        end
+      end
       resources :clients
 
       resources :jobs do

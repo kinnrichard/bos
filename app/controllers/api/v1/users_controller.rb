@@ -1,6 +1,13 @@
 class Api::V1::UsersController < Api::V1::BaseController
   before_action :authenticate_request
 
+  # GET /api/v1/users/me
+  def me
+    render json: {
+      data: user_data(current_user)
+    }
+  end
+
   # GET /api/v1/users
   def index
     page = params[:page]&.to_i || 1

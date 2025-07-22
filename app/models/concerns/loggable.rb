@@ -56,14 +56,16 @@ module Loggable
         new_status_label: status_label
       })
     elsif saved_changes["name"] && is_a?(Client)
-      log_action("renamed", metadata: {
+      log_action("updated", metadata: {
+        changes: { name: saved_changes["name"] },
         old_name: saved_changes["name"][0],
         new_name: saved_changes["name"][1]
       })
     elsif saved_changes["title"] && (is_a?(Job) || is_a?(Task))
-      log_action("renamed", metadata: {
-        old_name: saved_changes["title"][0],
-        new_name: saved_changes["title"][1]
+      log_action("updated", metadata: {
+        changes: { title: saved_changes["title"] },
+        old_title: saved_changes["title"][0],
+        new_title: saved_changes["title"][1]
       })
     elsif changes_data.any?
       log_action("updated", metadata: { changes: changes_data })

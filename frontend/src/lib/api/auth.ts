@@ -69,6 +69,19 @@ export class AuthService {
       return false;
     }
   }
+
+  /**
+   * Get current user data
+   */
+  async getCurrentUser(): Promise<any> {
+    try {
+      const response = await api.get('/users/me');
+      return response.data;
+    } catch (error) {
+      debugAuth.error('Failed to fetch current user', { error });
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

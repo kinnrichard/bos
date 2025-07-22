@@ -24,3 +24,14 @@ automation:
   auto_update_timestamps: true
   auto_calculate_tokens: false
   auto_sync_status: true
+github_sync:
+  enabled: true
+  repository: fluffyx/bos
+  token: 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
+  auto_sync: true
+  conflict_resolution: most_recent
+  sync_labels: true
+  sync_milestones: true
+  sync_assignees: true
+  batch_size: 50
+  rate_limit_delay: 100

@@ -51,6 +51,8 @@ export interface QueryOptions {
   limit?: number;
   /** Skip number of results (offset) */
   offset?: number;
+  /** Current user for mutations (used by mutator hooks) */
+  user?: { id: string; [key: string]: any };
 }
 
 /**

@@ -12,6 +12,8 @@
 
 import { getZero } from '../../zero/zero-client';
 import { BaseScopedQuery } from './scoped-query-base';
+import { executeMutatorWithTracking } from '../../shared/mutators/model-mutators';
+import { getCurrentUser } from '../../auth/current-user';
 import type { 
   BaseRecord, 
   BaseModelConfig,
@@ -21,6 +23,7 @@ import type {
   UpdateData, 
   CrudResult 
 } from './types';
+import type { MutatorContext } from '../../shared/mutators/base-mutator';
 
 /**
  * Configuration for ActiveRecord class
@@ -268,15 +271,38 @@ export class ActiveRecord<T extends BaseRecord> {
     const id = crypto.randomUUID();
     const now = Date.now();
     
-    const fullData = {
+    const baseData = {
       ...data,
       id,
       created_at: now,
       updated_at: now,
     };
+
+    // Apply mutator pipeline
+    const context: MutatorContext = {
+      action: 'create',
+      user: getCurrentUser(),
+      offline: !navigator.onLine,
+      environment: import.meta.env?.MODE || 'development' // Use Vite's env instead of process.env
+    };
+
+    console.log('[ActiveRecord] Creating with mutator context:', {
+      tableName: this.config.tableName,
+      hasUser: !!context.user,
+      environment: context.environment,
+      offline: context.offline
+    });
+
+    const mutatedData = await executeMutatorWithTracking(
+      this.config.tableName,
+      baseData,
+      null, // No original data for creates
+      context,
+      { trackChanges: false } // No changes to track for creation
+    );
     
     try {
-      await (zero.mutate as any)[this.config.tableName].insert(fullData);
+      await (zero.mutate as any)[this.config.tableName].insert(mutatedData);
       return await this.find(id, { withDiscarded: true });
     } catch (error) {
       throw new Error(`Create failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -292,17 +318,33 @@ export class ActiveRecord<T extends BaseRecord> {
       throw new Error('Zero client not initialized');
     }
     
-    // Verify record exists first
-    await this.find(id, options);
+    // Get original record for change tracking
+    const originalRecord = await this.find(id, { withDiscarded: true });
     
-    const updateData = {
+    const baseUpdateData = {
       ...data,
       id,
       updated_at: Date.now(),
     };
+
+    // Apply mutator pipeline with change tracking
+    const context: MutatorContext = {
+      action: 'update',
+      user: getCurrentUser(),
+      offline: !navigator.onLine,
+      environment: import.meta.env?.MODE || 'development' // Use Vite's env instead of process.env
+    };
+
+    const mutatedData = await executeMutatorWithTracking(
+      this.config.tableName,
+      baseUpdateData,
+      originalRecord,
+      context,
+      { trackChanges: true } // Enable change tracking for updates
+    );
     
     try {
-      await (zero.mutate as any)[this.config.tableName].update(updateData);
+      await (zero.mutate as any)[this.config.tableName].update(mutatedData);
       return await this.find(id, { withDiscarded: true });
     } catch (error) {
       throw new Error(`Update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

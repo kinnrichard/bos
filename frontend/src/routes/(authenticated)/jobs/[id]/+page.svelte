@@ -16,8 +16,8 @@
   const jobId = $derived($page.params.id);
   
   
-  // ✨ Epic-009: Use ReactiveJob with Rails-style includes()
-  const jobQuery = $derived(jobId ? ReactiveJob.includes('client', 'tasks', 'jobAssignments').find(jobId) : null);
+  // ✨ Epic-009: Use ReactiveJob with Rails-style includes() - proper chained pattern
+  const jobQuery = $derived(jobId ? ReactiveJob.includes('client').includes('tasks').includes('jobAssignments').find(jobId) : null);
   // TODO: Add notes query when NotesReactive model is ready
   // const notesQuery = $derived(NotesReactive.where({ notable_id: jobId }));
   
