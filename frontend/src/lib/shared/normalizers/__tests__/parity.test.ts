@@ -4,22 +4,22 @@ import { normalizeString } from '../name-normalizer';
 // These test cases should match the Ruby test cases exactly
 const PARITY_TEST_CASES = [
   // Input -> Expected output
-  ['Café', 'CAFE'],
-  ['niño', 'NINO'],
-  ['François', 'FRANCOIS'],
-  ['Zürich', 'ZURICH'],
-  ['São Paulo', 'SAOPAULO'],
-  ['Köln', 'KOLN'],
-  ['test', 'TEST'],
-  ['MiXeD', 'MIXED'],
-  ['ABC & Co.', 'ABCCO'],
-  ['Test-Name', 'TESTNAME'],
-  ['Name (with) [brackets]', 'NAMEWITHBRACKETS'],
-  ['Name @ Company', 'NAMECOMPANY'],
-  ['  spaced   out  ', 'SPACEDOUT'],
-  ['line\nbreak', 'LINEBREAK'],
-  ['tab\tseparated', 'TABSEPARATED'],
-  ['Test123', 'TEST123'],
+  ['Café', 'cafe'],
+  ['niño', 'nino'],
+  ['François', 'francois'],
+  ['Zürich', 'zurich'],
+  ['São Paulo', 'saopaulo'],
+  ['Köln', 'koln'],
+  ['test', 'test'],
+  ['MiXeD', 'mixed'],
+  ['ABC & Co.', 'abcco'],
+  ['Test-Name', 'testname'],
+  ['Name (with) [brackets]', 'namewithbrackets'],
+  ['Name @ Company', 'namecompany'],
+  ['  spaced   out  ', 'spacedout'],
+  ['line\nbreak', 'linebreak'],
+  ['tab\tseparated', 'tabseparated'],
+  ['Test123', 'test123'],
   ['', null],
   ['!@#$%^&*()', null],
   ['   ', null],
@@ -36,10 +36,10 @@ describe('Ruby/TypeScript Parity Tests', () => {
   
   it('matches Ruby implementation documentation examples', () => {
     // Examples from the Ruby README
-    expect(normalizeString('Café René')).toBe('CAFERENE');
-    expect(normalizeString('naïve')).toBe('NAIVE');
-    expect(normalizeString('résumé')).toBe('RESUME');
-    expect(normalizeString('piñata')).toBe('PINATA');
-    expect(normalizeString('über')).toBe('UBER');
+    expect(normalizeString('Café René')).toBe('caferene');
+    expect(normalizeString('naïve')).toBe('naive');
+    expect(normalizeString('résumé')).toBe('resume');
+    expect(normalizeString('piñata')).toBe('pinata');
+    expect(normalizeString('über')).toBe('uber');
   });
 });

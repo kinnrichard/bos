@@ -4,7 +4,7 @@
  */
 
 /**
- * Normalize a string value by removing accents, converting to uppercase,
+ * Normalize a string value by removing accents, converting to lowercase,
  * and removing non-alphanumeric characters
  */
 export function normalizeString(value: string | null | undefined): string | null {
@@ -18,11 +18,11 @@ export function normalizeString(value: string | null | undefined): string | null
   // \u0300-\u036f matches Unicode combining diacritical marks
   normalized = normalized.replace(/[\u0300-\u036f]/g, '');
   
-  // Convert to uppercase
-  normalized = normalized.toUpperCase();
+  // Convert to lowercase
+  normalized = normalized.toLowerCase();
   
   // Remove all non-alphanumeric characters
-  normalized = normalized.replace(/[^A-Z0-9]/g, '');
+  normalized = normalized.replace(/[^a-z0-9]/g, '');
   
   // Return null if result is empty
   return normalized || null;

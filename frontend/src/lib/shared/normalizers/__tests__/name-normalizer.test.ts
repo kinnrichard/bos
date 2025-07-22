@@ -3,27 +3,27 @@ import { normalizeClientName } from '../name-normalizer';
 
 describe('normalizeClientName', () => {
   it('removes accents from names', () => {
-    expect(normalizeClientName('Café')).toBe('CAFE');
-    expect(normalizeClientName('niño')).toBe('NINO');
-    expect(normalizeClientName('François')).toBe('FRANCOIS');
+    expect(normalizeClientName('Café')).toBe('cafe');
+    expect(normalizeClientName('niño')).toBe('nino');
+    expect(normalizeClientName('François')).toBe('francois');
   });
   
   it('handles complex Unicode characters', () => {
-    expect(normalizeClientName('Zürich')).toBe('ZURICH');
-    expect(normalizeClientName('São Paulo')).toBe('SAOPAULO');
-    expect(normalizeClientName('Köln')).toBe('KOLN');
+    expect(normalizeClientName('Zürich')).toBe('zurich');
+    expect(normalizeClientName('São Paulo')).toBe('saopaulo');
+    expect(normalizeClientName('Köln')).toBe('koln');
   });
   
-  it('converts to uppercase', () => {
-    expect(normalizeClientName('test')).toBe('TEST');
-    expect(normalizeClientName('MiXeD')).toBe('MIXED');
+  it('converts to lowercase', () => {
+    expect(normalizeClientName('test')).toBe('test');
+    expect(normalizeClientName('MiXeD')).toBe('mixed');
   });
   
   it('removes special characters and spaces', () => {
-    expect(normalizeClientName('ABC & Co.')).toBe('ABCCO');
-    expect(normalizeClientName('Test-Name')).toBe('TESTNAME');
-    expect(normalizeClientName('Name (with) [brackets]')).toBe('NAMEWITHBRACKETS');
-    expect(normalizeClientName('Name @ Company')).toBe('NAMECOMPANY');
+    expect(normalizeClientName('ABC & Co.')).toBe('abcco');
+    expect(normalizeClientName('Test-Name')).toBe('testname');
+    expect(normalizeClientName('Name (with) [brackets]')).toBe('namewithbrackets');
+    expect(normalizeClientName('Name @ Company')).toBe('namecompany');
   });
   
   it('handles null and undefined values', () => {
@@ -36,13 +36,13 @@ describe('normalizeClientName', () => {
   });
   
   it('removes all whitespace', () => {
-    expect(normalizeClientName('  spaced   out  ')).toBe('SPACEDOUT');
-    expect(normalizeClientName('line\nbreak')).toBe('LINEBREAK');
-    expect(normalizeClientName('tab\tseparated')).toBe('TABSEPARATED');
+    expect(normalizeClientName('  spaced   out  ')).toBe('spacedout');
+    expect(normalizeClientName('line\nbreak')).toBe('linebreak');
+    expect(normalizeClientName('tab\tseparated')).toBe('tabseparated');
   });
   
   it('keeps only alphanumeric characters', () => {
-    expect(normalizeClientName('Test123')).toBe('TEST123');
+    expect(normalizeClientName('Test123')).toBe('test123');
     expect(normalizeClientName('!@#$%^&*()')).toBeNull();
   });
 });
@@ -54,7 +54,7 @@ describe('normalizeClientName with object input', () => {
     
     expect(result).toEqual({
       name: 'Café René',
-      normalized_name: 'CAFERENE'
+      normalized_name: 'caferene'
     });
   });
   
@@ -68,7 +68,7 @@ describe('normalizeClientName with object input', () => {
     
     expect(result).toEqual({
       name: 'Test Company',
-      normalized_name: 'TESTCOMPANY',
+      normalized_name: 'testcompany',
       id: '123',
       type: 'client'
     });
