@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ActivityLogList Component Test</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        
+        .component-container {
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #2a2a2a;
+        }
+        
+        .mock-logs-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .logs-group-header {
+            position: sticky;
+            top: -1px;
+            background-color: #2a2a2a;
+            z-index: 9;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .logs-group-header:hover {
+            background-color: #333;
+        }
+        
+        .logs-group-header--general {
+            background-color: #1a2f3f;
+        }
+        
+        .logs-group-header td {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+            border-bottom: 2px solid #333;
+        }
+        
+        .logs-group-header-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .logs-group-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            color: #999;
+        }
+        
+        .chevron-icon {
+            transition: transform 0.2s ease;
+            width: 8px;
+            height: 12px;
+        }
+        
+        .chevron-icon.expanded {
+            transform: rotate(90deg);
+        }
+        
+        .logs-group-count {
+            margin-left: auto;
+            color: #999;
+            font-weight: 400;
+            font-size: 13px;
+        }
+        
+        .logs-table__date-header {
+            position: sticky;
+            top: 39px;
+            background-color: #2a2a2a;
+            z-index: 8;
+        }
+        
+        .logs-table__date-header-cell {
+            padding: 8px 16px;
+            border-bottom: 1px solid #333;
+            font-weight: 600;
+            font-size: 13px;
+            color: #999;
+            background-color: #2a2a2a;
+        }
+        
+        .date-header-action-time {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .date-header-time {
+            color: white;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 20px;
+        }
+        
+        .logs-table__row {
+            border-bottom: 1px solid #333;
+        }
+        
+        .logs-table__row--alt {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+        
+        .logs-table__user-cell {
+            white-space: nowrap;
+            text-align: right;
+            width: 140px;
+            padding: 8px 16px;
+            vertical-align: top;
+        }
+        
+        .user-info {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        
+        .user-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #0099ff;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 600;
+        }
+        
+        .user-name {
+            color: white;
+            font-weight: 500;
+        }
+        
+        .logs-table__action-cell {
+            color: white;
+            line-height: 1.4;
+            padding: 8px 16px;
+            vertical-align: top;
+        }
+        
+        .action-time-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        
+        .action-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .time-content {
+            flex-shrink: 0;
+            text-align: right;
+            color: #999;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+        
+        .log-count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #333;
+            color: #999;
+            font-weight: 600;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        
+        .group-content {
+            display: none;
+        }
+        
+        .group-content.expanded {
+            display: table-row;
+        }
+        
+        .test-note {
+            background-color: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>ActivityLogList Component Test</h1>
+        
+        <div class="test-note">
+            <p><strong>Testing the fixed toggle functionality:</strong></p>
+            <ul>
+                <li>Groups should start collapsed by default</li>
+                <li>Clicking the chevron should expand/collapse the group</li>
+                <li>Chevron should rotate 90 degrees when expanded</li>
+                <li>Content should be hidden when collapsed</li>
+            </ul>
+        </div>
+        
+        <div class="component-container">
+            <table class="mock-logs-table" id="logsTable">
+                <!-- General Activity Group -->
+                <tbody>
+                    <tr class="logs-group-header logs-group-header--general" onclick="toggleGroup('general')">
+                        <td colspan="3">
+                            <div class="logs-group-header-content">
+                                <span class="logs-group-toggle">
+                                    <svg class="chevron-icon" id="chevron-general" viewBox="0 0 8 12" fill="currentColor">
+                                        <path d="M2 2L6 6L2 10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
+                                <span class="logs-group-title">⚙️ General Activity</span>
+                                <span class="logs-group-count">(3)</span>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Date header -->
+                    <tr class="logs-table__date-header group-content" id="general-content-1">
+                        <td class="logs-table__date-header-cell">
+                            <span>User</span>
+                        </td>
+                        <td class="logs-table__date-header-cell" colspan="2">
+                            <div class="date-header-action-time">
+                                <span>Action</span>
+                                <span class="date-header-time">Today</span>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Log entries -->
+                    <tr class="logs-table__row group-content" id="general-content-2">
+                        <td class="logs-table__user-cell">
+                            <div class="user-info">
+                                <div class="user-avatar">JD</div>
+                                <span class="user-name">John Doe</span>
+                            </div>
+                        </td>
+                        <td class="logs-table__action-cell" colspan="2">
+                            <div class="action-time-container">
+                                <div class="action-content">
+                                    Updated system settings
+                                    <span class="log-count-badge">3×</span>
+                                </div>
+                                <div class="time-content">
+                                    2:45 PM
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <tr class="logs-table__row logs-table__row--alt group-content" id="general-content-3">
+                        <td class="logs-table__user-cell">
+                            <div class="user-info">
+                                <div class="user-avatar" style="background-color: #ff6b35;">AS</div>
+                                <span class="user-name">Alice Smith</span>
+                            </div>
+                        </td>
+                        <td class="logs-table__action-cell" colspan="2">
+                            <div class="action-time-container">
+                                <div class="action-content">Created new user account</div>
+                                <div class="time-content">1:30 PM</div>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <tr class="logs-table__row group-content" id="general-content-4">
+                        <td class="logs-table__user-cell">
+                            <div class="user-info">
+                                <div class="user-avatar" style="background-color: #8E8E93;">S</div>
+                                <span class="user-name">System</span>
+                            </div>
+                        </td>
+                        <td class="logs-table__action-cell" colspan="2">
+                            <div class="action-time-container">
+                                <div class="action-content">Automated backup completed</div>
+                                <div class="time-content">12:00 PM</div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function toggleGroup(groupId) {
+            const chevron = document.getElementById(`chevron-${groupId}`);
+            const contentElements = document.querySelectorAll(`[id^="${groupId}-content-"]`);
+            
+            // Check current state
+            const isExpanded = chevron.classList.contains('expanded');
+            
+            if (isExpanded) {
+                // Collapse
+                chevron.classList.remove('expanded');
+                contentElements.forEach(el => el.classList.remove('expanded'));
+            } else {
+                // Expand
+                chevron.classList.add('expanded');
+                contentElements.forEach(el => el.classList.add('expanded'));
+            }
+        }
+    </script>
+</body>
+</html>

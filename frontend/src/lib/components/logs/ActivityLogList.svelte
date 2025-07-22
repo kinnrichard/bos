@@ -22,7 +22,6 @@
     client?: ClientData;
     job?: JobData;
     logs: ActivityLogData[];
-    isCollapsed: boolean;
     priority: number; // For sorting groups
     lastActivity: Date; // For recency sorting
   }
@@ -34,6 +33,132 @@
     error = null,
     onRetry
   }: Props = $props();
+  
+  let tableContainer: HTMLElement;
+  let groupStates = $state<Record<string, boolean>>({});
+
+  // Helper function to toggle group collapse state
+  function toggleGroup(group: LogGroup) {
+    groupStates[group.key] = !(groupStates[group.key] ?? true);
+  }
+
+  // Helper function to get group collapsed state
+  function isGroupCollapsed(groupKey: string): boolean {
+    return groupStates[groupKey] ?? true; // Default to collapsed
+  }
+
+  // Helper function to get group header CSS class
+  function getGroupHeaderClass(groupType: LogGroup['type']): string {
+    switch (groupType) {
+      case 'general':
+        return 'logs-group-header--general';
+      case 'cross-reference':
+        return 'logs-group-header--cross-reference';
+      default:
+        return '';
+    }
+  }
+
+  // Helper function to render group title
+  function renderGroupTitle(group: LogGroup) {
+    switch (group.type) {
+      case 'client':
+        return `👤 ${group.client?.name || 'Unknown Client'}`;
+      case 'job':
+        return `💼 ${group.client?.name || 'Unknown Client'} - ${group.job?.title || 'Unknown Job'}`;
+      case 'cross-reference':
+        return `🔗 ${group.client?.name || 'Unknown Client'} - ${group.job?.title || 'Unknown Job'} (Cross-reference)`;
+      case 'general':
+        return '⚙️ General Activity';
+      default:
+        return 'Activity';
+    }
+  }
+
+  // Helper function to group logs by date
+  function getLogsByDate(logs: ActivityLogData[]): [string, ActivityLogData[]][] {
+    const dateGroups = new Map<string, ActivityLogData[]>();
+    
+    logs.forEach(log => {
+      const date = new Date(log.created_at);
+      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      if (!dateGroups.has(dateKey)) {
+        dateGroups.set(dateKey, []);
+      }
+      dateGroups.get(dateKey)!.push(log);
+    });
+    
+    // Sort by date descending (most recent first)
+    return Array.from(dateGroups.entries()).sort(([a], [b]) => b.localeCompare(a));
+  }
+
+  // Helper function to format date headers
+  function formatDateHeader(dateKey: string): string {
+    const date = new Date(dateKey);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (dateKey === today.toISOString().split('T')[0]) {
+      return 'Today';
+    } else if (dateKey === yesterday.toISOString().split('T')[0]) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    }
+  }
+
+  // Helper function to format log messages with rich content
+  function formatLogMessage(log: ActivityLogData): string {
+    // Use the existing helper from ActivityLogRow if available
+    // For now, return a basic formatted message
+    const action = log.action || 'performed an action';
+    const entity = log.loggable_type || '';
+    
+    if (log.metadata?.changes) {
+      const changes = Object.keys(log.metadata.changes);
+      if (changes.length > 0) {
+        return `${action} on ${entity.toLowerCase()} (${changes.join(', ')} changed)`;
+      }
+    }
+    
+    return `${action} on ${entity.toLowerCase()}`;
+  }
+
+  // Helper function to check if log has duplicates
+  function hasDuplicates(log: ActivityLogData): boolean {
+    return !!(log.metadata?.duplicateCount && log.metadata.duplicateCount > 1);
+  }
+
+  // Helper function to get duplicate count
+  function getDuplicateCount(log: ActivityLogData): number {
+    return log.metadata?.duplicateCount || 1;
+  }
+
+  // Helper function to format timestamps
+  function formatTimestamp(createdAt: string): string {
+    const date = new Date(createdAt);
+    return date.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  }
+
+  // Auto-scroll to bottom on mount to show most recent activity
+  $effect(() => {
+    if (tableContainer && logs.length > 0) {
+      requestAnimationFrame(() => {
+        tableContainer.scrollTop = tableContainer.scrollHeight;
+      });
+    }
+  });
 
   // Enhanced grouping algorithm with duplicate detection and cross-references
   const groupedLogs = $derived(() => {
@@ -53,10 +178,14 @@
           client: log.client,
           job: log.job,
           logs: [],
-          isCollapsed: false,
           priority,
           lastActivity: new Date(log.created_at)
         });
+        
+        // Initialize collapsed state
+        if (!(groupKey in groupStates)) {
+          groupStates[groupKey] = true;
+        }
       }
 
       const group = groups.get(groupKey)!;
@@ -179,7 +308,7 @@
 
 </script>
 
-<div class="activity-log-list">
+<div class="logs-container">
   {#if isLoading}
     <LoadingSkeleton type="generic" count={8} />
   {:else if error}
@@ -203,22 +332,310 @@
   {:else if logs.length === 0}
     <ActivityLogEmpty {context} />
   {:else}
-    {#each groupedLogs() as group (group.key)}
-      <ActivityLogGroup
-        groupType={group.type}
-        client={group.client}
-        job={group.job}
-        logs={group.logs}
-        isCollapsed={group.isCollapsed}
-      />
-    {/each}
+    <div class="logs-table-container" bind:this={tableContainer}>
+      <table class="logs-table">
+        <tbody>
+          {#each groupedLogs() as group (group.key)}
+            <!-- Group header row -->
+            <tr class="logs-group-header {getGroupHeaderClass(group.type)} {group.isCollapsed ? 'logs-group--collapsed' : ''}"
+                onclick={() => toggleGroup(group)}>
+              <td colspan="3">
+                <div class="logs-group-header-content">
+                  <span class="logs-group-toggle">
+                    <img 
+                      src="/icons/chevron-right.svg" 
+                      alt={group.isCollapsed ? "Expand" : "Collapse"}
+                      class="chevron-icon"
+                      class:expanded={!isGroupCollapsed(group.key)}
+                      width="8" 
+                      height="12" 
+                    />
+                  </span>
+                  
+                  <span class="logs-group-title">{renderGroupTitle(group)}</span>
+                  
+                  <span class="logs-group-count">({group.logs.length})</span>
+                </div>
+              </td>
+            </tr>
+
+            {#if !isGroupCollapsed(group.key)}
+              {#each getLogsByDate(group.logs) as [dateKey, dateLogs]}
+                <!-- Date header row -->
+                <tr class="logs-table__date-header logs-group-content">
+                  <td class="logs-table__date-header-cell">
+                    <span class="date-header-user">User</span>
+                  </td>
+                  <td class="logs-table__date-header-cell" colspan="2">
+                    <div class="date-header-action-time">
+                      <span class="date-header-action">Action</span>
+                      <span class="date-header-time">{formatDateHeader(dateKey)}</span>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Log entry rows -->
+                {#each dateLogs as log, index (log.id)}
+                  <tr class="logs-table__row logs-group-content" 
+                      class:logs-table__row--alt={index % 2 === 1}>
+                    <!-- User cell -->
+                    <td class="logs-table__user-cell">
+                      <div class="user-info">
+                        {#if log.user}
+                          <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
+                            {log.user.initials || log.user.name?.charAt(0) || 'U'}
+                          </div>
+                          <span class="user-name">{log.user.name}</span>
+                        {:else}
+                          <div class="user-avatar" style="background-color: #8E8E93;">
+                            S
+                          </div>
+                          <span class="user-name">System</span>
+                        {/if}
+                      </div>
+                    </td>
+                    
+                    <!-- Action cell -->
+                    <td class="logs-table__action-cell" colspan="2">
+                      <div class="action-time-container">
+                        <div class="action-content">
+                          {@html formatLogMessage(log)}
+                          {#if hasDuplicates(log)}
+                            <span class="log-count-badge">{getDuplicateCount(log)}×</span>
+                          {/if}
+                        </div>
+                        <div class="time-content">
+                          <time datetime={log.created_at} title={new Date(log.created_at).toString()}>
+                            {formatTimestamp(log.created_at)}
+                          </time>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                {/each}
+              {/each}
+            {/if}
+          {/each}
+        </tbody>
+      </table>
+    </div>
   {/if}
 </div>
 
 <style>
-  .activity-log-list {
-    padding: 1rem;
-    max-width: 100%;
+  .logs-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logs-table-container {
+    flex: 1;
+    overflow-y: auto;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+  }
+
+  .logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  /* Group header rows (Client/Job) */
+  .logs-table :global(tr.logs-group-header) {
+    position: sticky;
+    top: -1px; /* Offset by -1px to prevent transparency gap */
+    background-color: var(--bg-secondary);
+    z-index: 9;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .logs-table :global(tr.logs-group-header:hover) {
+    background-color: var(--bg-tertiary);
+  }
+
+  .logs-table :global(tr.logs-group-header.logs-group-header--general) {
+    background-color: #1a2f3f; /* Solid blue-tinted background */
+  }
+
+  .logs-table :global(tr.logs-group-header.logs-group-header--cross-reference) {
+    background-color: #3a2f1f; /* Solid orange-tinted background */
+  }
+
+  .logs-table :global(tr.logs-group-header td) {
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border-primary);
+  }
+
+  .logs-group-header-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logs-group-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    color: var(--text-tertiary);
+  }
+
+  .chevron-icon {
+    transition: transform 0.2s ease;
+    color: var(--text-tertiary);
+  }
+
+  .chevron-icon.expanded {
+    transform: rotate(90deg);
+  }
+
+  .logs-group-count {
+    margin-left: auto;
+    color: var(--text-tertiary);
+    font-weight: 400;
+    font-size: 13px;
+  }
+
+  /* Date header rows */
+  .logs-table :global(tr.logs-table__date-header) {
+    position: sticky;
+    top: 39px; /* Positioned to overlap with group header border */
+    background-color: var(--bg-secondary);
+    z-index: 8;
+  }
+
+  .logs-table :global(td.logs-table__date-header-cell) {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-primary);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background-color: var(--bg-secondary); /* Ensure solid background */
+  }
+
+  .logs-table :global(td.logs-table__date-header-cell:first-child) {
+    text-align: right;
+    width: 140px; /* Match user cell width */
+    white-space: nowrap;
+  }
+
+  .date-header-user {
+    display: block;
+  }
+
+  .date-header-action-time {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .date-header-action {
+    color: var(--text-secondary);
+  }
+
+  .date-header-time {
+    color: var(--text-primary);
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 20px;
+  }
+
+  /* Log entry rows */
+  .logs-table :global(tr.logs-table__row) {
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  /* Alternating row colors */
+  .logs-table :global(tr.logs-table__row--alt) {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  .logs-table :global(td) {
+    padding: 8px 16px;
+    vertical-align: top;
+  }
+
+  /* User cell styling */
+  .logs-table :global(td.logs-table__user-cell) {
+    white-space: nowrap;
+    text-align: right;
+    width: 140px; /* Fixed width to align with header */
+  }
+
+  .user-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    vertical-align: baseline;
+  }
+
+  .user-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: var(--accent-blue);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .user-name {
+    color: var(--text-primary);
+    font-weight: 500;
+    line-height: 20px; /* Match avatar height for alignment */
+  }
+
+  /* Action cell styling */
+  .logs-table :global(td.logs-table__action-cell) {
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+
+  .action-time-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .action-content {
+    flex: 1;
+    min-width: 0; /* Allow text to wrap if needed */
+  }
+
+  .log-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .time-content {
+    flex-shrink: 0;
+    text-align: right;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    font-size: 13px;
   }
 
   /* Error State */
