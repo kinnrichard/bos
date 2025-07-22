@@ -1,9 +1,10 @@
 # Activity Logs Layout Integration
 
 > Created: 2025-07-22
-> Status: Planning
+> Status: Completed
 > Priority: Medium
 > Estimated effort: 3-4 hours
+> Completed: 2025-07-22
 
 ## Overview
 

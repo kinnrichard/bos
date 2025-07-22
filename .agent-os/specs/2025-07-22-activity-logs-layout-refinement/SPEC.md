@@ -1,9 +1,10 @@
 # Activity Logs Layout Refinement - Rails Parity
 
 > Created: 2025-07-22
-> Status: Planning
+> Status: Completed
 > Priority: High
 > Estimated effort: 4-6 hours
+> Completed: 2025-07-22
 
 ## Overview
 
