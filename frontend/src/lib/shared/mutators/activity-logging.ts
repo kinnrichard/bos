@@ -220,12 +220,8 @@ function buildMetadata(
       // Clear the changes from metadata for renamed action
       delete metadata.changes;
       
-      if (changes.name) {
-        metadata.old_name = changes.name[0];
-        metadata.new_name = changes.name[1];
-      } else if (changes.title) {
-        metadata.old_name = changes.title[0];
-        metadata.new_name = changes.title[1];
+      if (changes.name || changes.title) {
+        metadata.old_name = changes.name ? changes.name[0] : changes.title[0];
       }
     }
 
@@ -240,10 +236,8 @@ function buildMetadata(
     Object.assign(metadata, context.metadata);
   }
 
-  // Add record name for display purposes (but not for renamed action)
-  if (action !== 'renamed') {
-    metadata.name = getRecordDisplayName(data, config.loggableType);
-  }
+  // Add record name for display purposes
+  metadata.name = getRecordDisplayName(data, config.loggableType);
 
   return metadata;
 }

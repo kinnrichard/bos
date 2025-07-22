@@ -24,7 +24,7 @@ class ActivityLog < ApplicationRecord
     when "viewed"
       "#{activity_type&.past_tense || action} #{loggable_type_emoji} #{loggable_name}"
     when "renamed"
-      "#{activity_type&.past_tense || action} #{metadata['old_name']} to #{metadata['new_name']}"
+      "#{activity_type&.past_tense || action} #{metadata['old_name']} to #{metadata['name']}"
     when "updated"
       if metadata["changes"].present?
         # Filter out unimportant attributes
