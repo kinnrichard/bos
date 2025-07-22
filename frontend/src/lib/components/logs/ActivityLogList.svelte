@@ -38,8 +38,6 @@
   
   let tableContainer: HTMLElement;
   let groupStates = $state<Record<string, boolean>>({});
-  let previousLogIds = $state<Set<string>>(new Set());
-  let newLogIds = $state<Set<string>>(new Set());
   let autoScrolled = $state<boolean>(false);
 
   // Helper function to toggle group collapse state
@@ -313,39 +311,11 @@
   }
 
 
-  // Track new logs for animation - simplified to prevent loops
-  $effect(() => {
-    const currentIds = logs.map(log => log.id);
-    const currentIdSet = new Set(currentIds);
-    
-    // Only process if we have logs and previous state exists
-    if (currentIds.length > 0 && previousLogIds.size > 0) {
-      const newLogs = new Set<string>();
-      for (const id of currentIds) {
-        if (!previousLogIds.has(id)) {
-          newLogs.add(id);
-        }
-      }
-      
-      if (newLogs.size > 0) {
-        newLogIds = newLogs;
-        // Clear indicators after animation
-        setTimeout(() => {
-          newLogIds = new Set();
-        }, 600);
-      }
-    }
-    
-    // Update previous set for next comparison
-    previousLogIds = currentIdSet;
-  });
-
   // Auto-scroll to bottom on mount and when new logs arrive
   $effect(() => {
     if (tableContainer && logs.length > 0) {
       requestAnimationFrame(() => {
-        const shouldAutoScroll = !autoScrolled || newLogIds.size > 0;
-        if (shouldAutoScroll) {
+        if (!autoScrolled) {
           tableContainer.scrollTop = tableContainer.scrollHeight;
           autoScrolled = true;
         }
@@ -584,10 +554,8 @@
                             {@const currentUserId = log.user?.id || 'system'}
                             {@const previousUserId = index > 0 ? (dateLogs[index - 1].user?.id || 'system') : null}
                             {@const shouldShowUser = index === 0 || currentUserId !== previousUserId}
-                            {@const isNewLog = newLogIds.has(log.id)}
                             <tr class="logs-table__row logs-group-content" 
-                                class:logs-table__row--alt={index % 2 === 1}
-                                class:logs-table__row--new={isNewLog}>
+                                class:logs-table__row--alt={index % 2 === 1}>
                               <!-- User cell -->
                               <td class="logs-table__user-cell">
                                 {#if shouldShowUser}
@@ -797,29 +765,6 @@
     background-color: rgba(255, 255, 255, 0.02);
   }
 
-  /* New log highlighting - smooth and subtle */
-  .logs-table :global(tr.logs-table__row--new) {
-    background: linear-gradient(90deg, 
-      rgba(0, 153, 255, 0.1) 0%, 
-      transparent 100%) !important;
-    border-left: 2px solid var(--accent-blue);
-    animation: newItemGlow 3s ease-out forwards;
-  }
-
-  @keyframes newItemGlow {
-    0% { 
-      background-color: rgba(0, 153, 255, 0.15);
-      transform: translateX(4px);
-    }
-    50% {
-      background-color: rgba(0, 153, 255, 0.08);
-      transform: translateX(2px);
-    }
-    100% { 
-      background-color: transparent;
-      transform: translateX(0);
-    }
-  }
 
   .logs-table :global(td) {
     padding: 8px 16px 6px 16px;
