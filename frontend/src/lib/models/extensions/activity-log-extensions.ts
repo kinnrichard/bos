@@ -11,18 +11,46 @@ import { ReactiveActivityLog } from '../reactive-activity-log';
 Object.defineProperties(ReactiveActivityLog.prototype, {
   formattedMessage: {
     get(this: ReactiveActivityLog) {
-      // Handle different action types and build appropriate messages
       const action = this.action || '';
       const loggableType = this.loggable_type || '';
+      const metadata = this.metadata || {};
       
-      // For now, return a simple formatted message
-      // This can be enhanced based on metadata structure
-      if (this.metadata?.message) {
-        return this.metadata.message;
+      // Custom message if provided
+      if (metadata.message) {
+        return metadata.message;
       }
       
-      // Default message format
-      return `${action} ${loggableType}`.trim();
+      // Get the entity name from metadata
+      const entityName = metadata.name || `${loggableType} #${this.loggable_id}`;
+      
+      // Build message based on action type
+      switch (action) {
+        case 'created':
+          return `Created ${loggableType.toLowerCase()} "${entityName}"`;
+        case 'updated':
+          return `Updated ${loggableType.toLowerCase()} "${entityName}"`;
+        case 'deleted':
+        case 'discarded':
+          return `Deleted ${loggableType.toLowerCase()} "${entityName}"`;
+        case 'status_changed':
+          if (metadata.new_status_label) {
+            return `Changed status to ${metadata.new_status_label} for "${entityName}"`;
+          }
+          return `Changed status for "${entityName}"`;
+        case 'assigned':
+          return `Assigned "${entityName}" to someone`;
+        case 'unassigned':
+          return `Unassigned "${entityName}"`;
+        case 'renamed':
+          if (metadata.old_name) {
+            return `Renamed from "${metadata.old_name}" to "${entityName}"`;
+          }
+          return `Renamed ${loggableType.toLowerCase()} to "${entityName}"`;
+        default:
+          // For custom actions, try to humanize the action
+          const humanizedAction = action.replace(/_/g, ' ').toLowerCase();
+          return `${humanizedAction} ${loggableType.toLowerCase()} "${entityName}"`;
+      }
     }
   },
   
