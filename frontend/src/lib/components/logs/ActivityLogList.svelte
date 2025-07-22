@@ -522,15 +522,15 @@
               {#each getLogsByDate(group.logs) as [dateKey, dateLogs]}
                 <!-- Date header row -->
                 <tr class="logs-table__date-header logs-group-content">
-                  <td class="logs-table__date-header-cell">
+                  <th class="logs-table__date-header-cell" scope="col">
                     <span class="date-header-user">User</span>
-                  </td>
-                  <td class="logs-table__date-header-cell" colspan="2">
+                  </th>
+                  <th class="logs-table__date-header-cell" colspan="2" scope="col">
                     <div class="date-header-action-time">
                       <span class="date-header-action">Action</span>
                       <span class="date-header-time">{formatDateHeader(dateKey)}</span>
                     </div>
-                  </td>
+                  </th>
                 </tr>
                 
                 <!-- Log entry rows -->
@@ -675,7 +675,7 @@
     z-index: 8;
   }
 
-  .logs-table :global(td.logs-table__date-header-cell) {
+  .logs-table :global(th.logs-table__date-header-cell) {
     padding: 8px 16px;
     border-bottom: 1px solid var(--border-primary);
     font-weight: 600;
@@ -684,7 +684,7 @@
     background-color: var(--bg-secondary); /* Ensure solid background */
   }
 
-  .logs-table :global(td.logs-table__date-header-cell:first-child) {
+  .logs-table :global(th.logs-table__date-header-cell:first-child) {
     text-align: right;
     width: 140px; /* Match user cell width */
     white-space: nowrap;
