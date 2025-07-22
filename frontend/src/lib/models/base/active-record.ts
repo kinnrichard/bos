@@ -322,7 +322,8 @@ export class ActiveRecord<T extends BaseRecord> {
     const originalRecord = await this.find(id, { withDiscarded: true });
     
     const baseUpdateData = {
-      ...data,
+      ...originalRecord,  // Include all original fields for mutators to access
+      ...data,           // Override with fields being updated
       id,
       updated_at: Date.now(),
     };

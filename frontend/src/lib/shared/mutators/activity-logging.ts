@@ -106,14 +106,17 @@ async function logActivity(
 
   const metadata = buildMetadata(data, context, config);
   
+  const clientId = await Promise.resolve(config.getAssociatedClientId?.(data)) || null;
+  const jobId = await Promise.resolve(config.getAssociatedJobId?.(data)) || null;
+  
   const activityLogData: CreateActivityLogData = {
     user_id: currentUser.id,
     action,
     loggable_type: config.loggableType,
     loggable_id: data.id || '',
     metadata,
-    client_id: await Promise.resolve(config.getAssociatedClientId?.(data)) || null,
-    job_id: await Promise.resolve(config.getAssociatedJobId?.(data)) || null
+    client_id: clientId,
+    job_id: jobId
   };
 
   // Import ActivityLog here to avoid circular dependencies
@@ -304,16 +307,16 @@ export const taskActivityLoggingMutator = createActivityLoggingMutator({
   excludeFields: ['updated_at', 'created_at', 'position', 'lock_version', 'reordered_at', 'parent_id'],
   getAssociatedJobId: (data) => data.job_id,
   getAssociatedClientId: async (data) => {
-    // Tasks don't have client_id directly, need to get from job
+    // Tasks don't have client_id directly, need to get from job using ActiveRecord
     if (!data.job_id) return null;
     
     try {
-      // Use Zero.js to look up the job - this is instant since data is in memory
+      // Use ActiveRecord Job model for direct database lookup
       const { Job } = await import('../../models/job');
-      const job = await Job.findBy({ id: data.job_id });
+      const job = await Job.find(data.job_id);
       return job?.client_id || null;
     } catch (error) {
-      // Silently fail - activity log will still be created without client_id
+      // If job not found or other error, return null
       return null;
     }
   }
