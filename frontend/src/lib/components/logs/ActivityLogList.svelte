@@ -360,10 +360,10 @@
       return b.lastActivity.getTime() - a.lastActivity.getTime();
     });
 
-    // Step 4: Initialize collapsed states - expand most recent group, collapse others
-    sortedGroups.forEach((group, index) => {
+    // Step 4: Initialize collapsed states - all groups collapsed by default
+    sortedGroups.forEach((group) => {
       if (!(group.key in groupStates)) {
-        groupStates[group.key] = index !== 0; // Expand first (most recent) group, collapse others
+        groupStates[group.key] = true; // Default to collapsed
       }
     });
 
