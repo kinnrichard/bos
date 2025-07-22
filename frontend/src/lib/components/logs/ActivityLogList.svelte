@@ -582,20 +582,38 @@
                                 <!-- Action cell -->
                                 <td class="logs-table__action-cell" colspan="2">
                                   <div class="action-time-container">
-                                    <div class="action-content">
-                                      {#if formatLogMessage(log)}
-                                        {@html formatLogMessage(log)}
-                                        {#if hasDuplicates(log)}
-                                          <span class="log-count-badge">{getDuplicateCount(log)}×</span>
+                                    <!-- Show user info inline on mobile when user column is hidden -->
+                                    {#if shouldShowUser}
+                                      <div class="mobile-user-info">
+                                        {#if log.user}
+                                          <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
+                                            {log.user.initials || log.user.name?.charAt(0) || 'U'}
+                                          </div>
+                                          <span class="user-name">{log.user.name}</span>
+                                        {:else}
+                                          <div class="user-avatar" style="background-color: #8E8E93;">
+                                            S
+                                          </div>
+                                          <span class="user-name">System</span>
                                         {/if}
-                                      {:else}
-                                        <em class="log-hidden">Update with minor changes</em>
-                                      {/if}
-                                    </div>
-                                    <div class="time-content">
-                                      <time datetime={log.created_at} title={new Date(log.created_at).toString()}>
-                                        {formatTimestamp(log.created_at)}
-                                      </time>
+                                      </div>
+                                    {/if}
+                                    <div class="action-time-row">
+                                      <div class="action-content">
+                                        {#if formatLogMessage(log)}
+                                          {@html formatLogMessage(log)}
+                                          {#if hasDuplicates(log)}
+                                            <span class="log-count-badge">{getDuplicateCount(log)}×</span>
+                                          {/if}
+                                        {:else}
+                                          <em class="log-hidden">Update with minor changes</em>
+                                        {/if}
+                                      </div>
+                                      <div class="time-content">
+                                        <time datetime={log.created_at} title={new Date(log.created_at).toString()}>
+                                          {formatTimestamp(log.created_at)}
+                                        </time>
+                                      </div>
                                     </div>
                                   </div>
                                 </td>
@@ -875,6 +893,14 @@
     gap: 16px;
   }
 
+  .action-time-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    width: 100%;
+  }
+
   .action-content {
     flex: 1;
     min-width: 0;
@@ -969,5 +995,159 @@
 
   .button--primary:hover {
     background-color: var(--accent-blue-hover, #0089E0);
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .logs-table-container {
+      padding: 8px;
+    }
+
+    .logs-group-container {
+      margin-bottom: 12px;
+    }
+
+    /* Reduce padding on mobile */
+    .logs-table :global(td) {
+      padding: 6px 12px;
+    }
+
+    .logs-table :global(th.logs-table__date-header-cell) {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* Group headers - more touch-friendly */
+    .logs-table :global(tr.logs-group-header td) {
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    .logs-group-title {
+      font-size: 13px;
+    }
+
+    .logs-group-count {
+      font-size: 11px;
+      padding: 1px 6px;
+      min-width: 20px;
+    }
+
+    /* Hide user column on very small screens */
+    @media (max-width: 480px) {
+      .logs-table :global(td.logs-table__user-cell) {
+        display: none;
+      }
+
+      .logs-table :global(th.logs-table__date-header-cell:first-child) {
+        display: none;
+      }
+
+      /* Show user info inline with action */
+      .user-info {
+        display: inline-flex;
+        justify-content: flex-start;
+        margin-bottom: 4px;
+      }
+
+      .user-avatar {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+      }
+
+      .user-name {
+        font-size: 12px;
+      }
+    }
+
+    /* Adjust action/time layout on mobile */
+    .action-time-container {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Keep action and time on same line */
+    .action-time-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .action-content {
+      font-size: 13px;
+      flex: 1;
+    }
+
+    .time-content {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* Date headers on mobile */
+    .date-header-action-time {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .date-header-time {
+      margin-left: 0;
+      font-size: 12px;
+    }
+
+    .date-header-action {
+      display: none; /* Hide ACTION header on mobile */
+    }
+
+    /* Chevron icon - larger touch target */
+    .logs-group-toggle {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  /* For very narrow screens, show user info differently */
+  @media (max-width: 480px) {
+    /* Move user info inside action cell */
+    .logs-table :global(td.logs-table__action-cell) {
+      padding-top: 8px;
+    }
+  }
+
+  /* Mobile user info - hidden by default */
+  .mobile-user-info {
+    display: none;
+  }
+
+  /* Show mobile user info when screen is narrow */
+  @media (max-width: 480px) {
+    .mobile-user-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .mobile-user-info .user-avatar {
+      width: 16px;
+      height: 16px;
+      font-size: 8px;
+      transform: none; /* Remove baseline adjustment on mobile */
+    }
+
+    .mobile-user-info .user-name {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Ensure action/time stay on same line even with user info above */
+    .action-time-container {
+      flex-wrap: nowrap;
+    }
   }
 </style>

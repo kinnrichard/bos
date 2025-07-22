@@ -28,10 +28,10 @@
 
 ### Phase 5: UI Polish & Performance (2 days)
 - [x] Add expand/collapse animations
-- [ ] Implement virtual scrolling for large lists
+- [ ] ~~Implement virtual scrolling for large lists~~ (not optimal with Zero.js)
 - [x] Add loading states and skeletons
 - [x] Optimize re-renders and performance
-- [ ] Mobile responsive adjustments
+- [x] Mobile responsive adjustments
 
 ### Phase 6: Testing & Edge Cases (1 day)
 - [ ] Add Playwright E2E tests
