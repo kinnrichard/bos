@@ -7,6 +7,8 @@
   import ActivityLogDateHeader from './ActivityLogDateHeader.svelte';
   import ActivityLogRow from './ActivityLogRow.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
+  import { slide, fade } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
 
   interface Props {
     logs: ActivityLogData[];
@@ -36,6 +38,9 @@
   
   let tableContainer: HTMLElement;
   let groupStates = $state<Record<string, boolean>>({});
+  let previousLogIds = $state<Set<string>>(new Set());
+  let newLogIds = $state<Set<string>>(new Set());
+  let autoScrolled = $state<boolean>(false);
 
   // Helper function to toggle group collapse state
   function toggleGroup(group: LogGroup) {
@@ -307,11 +312,40 @@
     });
   }
 
-  // Auto-scroll to bottom on mount to show most recent activity
+
+  // Track new logs for animation
+  $effect(() => {
+    const currentLogIds = new Set(logs.map(log => log.id));
+    
+    // Find new logs (not in previous set)
+    const newLogs = new Set<string>();
+    for (const id of currentLogIds) {
+      if (!previousLogIds.has(id)) {
+        newLogs.add(id);
+      }
+    }
+    
+    // Update states
+    newLogIds = newLogs;
+    previousLogIds = currentLogIds;
+    
+    // Clear new log indicators after animation duration
+    if (newLogs.size > 0) {
+      setTimeout(() => {
+        newLogIds = new Set();
+      }, 600); // Match animation duration
+    }
+  });
+
+  // Auto-scroll to bottom on mount and when new logs arrive
   $effect(() => {
     if (tableContainer && logs.length > 0) {
       requestAnimationFrame(() => {
-        tableContainer.scrollTop = tableContainer.scrollHeight;
+        const shouldAutoScroll = !autoScrolled || newLogIds.size > 0;
+        if (shouldAutoScroll) {
+          tableContainer.scrollTop = tableContainer.scrollHeight;
+          autoScrolled = true;
+        }
       });
     }
   });
@@ -525,7 +559,8 @@
             {#if !isGroupCollapsed(group.key)}
               {#each getLogsByDate(group.logs) as [dateKey, dateLogs]}
                 <!-- Date header row -->
-                <tr class="logs-table__date-header logs-group-content">
+                <tr class="logs-table__date-header logs-group-content"
+                    transition:slide|global={{ duration: 250, easing: quintOut }}>
                   <th class="logs-table__date-header-cell" scope="col">
                     <span class="date-header-user">User</span>
                   </th>
@@ -542,8 +577,11 @@
                   {@const currentUserId = log.user?.id || 'system'}
                   {@const previousUserId = index > 0 ? (dateLogs[index - 1].user?.id || 'system') : null}
                   {@const shouldShowUser = index === 0 || currentUserId !== previousUserId}
+                  {@const isNewLog = newLogIds.has(log.id)}
                   <tr class="logs-table__row logs-group-content" 
-                      class:logs-table__row--alt={index % 2 === 1}>
+                      class:logs-table__row--alt={index % 2 === 1}
+                      class:logs-table__row--new={isNewLog}
+                      transition:slide|global={{ duration: 250, easing: quintOut }}>
                     <!-- User cell -->
                     <td class="logs-table__user-cell">
                       {#if shouldShowUser}
@@ -631,6 +669,7 @@
   .logs-table :global(tr.logs-group-header:hover) {
     background-color: var(--bg-tertiary);
   }
+
 
   .logs-table :global(tr.logs-group-header.logs-group-header--general) {
     background-color: #1a2f3f; /* Solid blue-tinted background */
@@ -726,11 +765,36 @@
   /* Log entry rows */
   .logs-table :global(tr.logs-table__row) {
     border-bottom: 1px solid var(--border-primary);
+    transition: all 0.3s ease;
   }
 
   /* Alternating row colors */
   .logs-table :global(tr.logs-table__row--alt) {
     background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  /* New log highlighting - smooth and subtle */
+  .logs-table :global(tr.logs-table__row--new) {
+    background: linear-gradient(90deg, 
+      rgba(0, 153, 255, 0.1) 0%, 
+      transparent 100%) !important;
+    border-left: 2px solid var(--accent-blue);
+    animation: newItemGlow 3s ease-out forwards;
+  }
+
+  @keyframes newItemGlow {
+    0% { 
+      background-color: rgba(0, 153, 255, 0.15);
+      transform: translateX(4px);
+    }
+    50% {
+      background-color: rgba(0, 153, 255, 0.08);
+      transform: translateX(2px);
+    }
+    100% { 
+      background-color: transparent;
+      transform: translateX(0);
+    }
   }
 
   .logs-table :global(td) {

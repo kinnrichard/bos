@@ -6,7 +6,7 @@
   // ReactiveRecord handles subscriptions internally
   const logsQuery = ReactiveActivityLog
     .includes(['user', 'client', 'job'])
-    .orderBy('created_at', 'desc')
+    .orderBy('created_at', 'asc')
     .limit(500)
     .all();
 

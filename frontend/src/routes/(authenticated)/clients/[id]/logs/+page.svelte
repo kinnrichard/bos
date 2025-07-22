@@ -14,7 +14,7 @@
   $: logsQuery = ReactiveActivityLog
     .includes(['user', 'client', 'job'])
     .where({ client_id: clientId })
-    .orderBy('created_at', 'desc')
+    .orderBy('created_at', 'asc')
     .limit(500)
     .all();
 
