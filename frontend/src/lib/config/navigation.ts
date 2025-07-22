@@ -54,7 +54,9 @@ export function getActiveNavItem(currentPath: string): string | null {
   if (currentPath.startsWith('/people')) return 'people'; 
   if (currentPath === '/clients') return 'people'; // Only highlight for clients listing, not client details
   if (currentPath.startsWith('/devices')) return 'devices';
-  if (currentPath.startsWith('/logs')) return 'logs';
+  
+  // Handle logs routes - both /logs and /clients/[id]/logs
+  if (currentPath === '/logs' || currentPath.includes('/logs')) return 'logs';
 
   return null;
 }

@@ -6,10 +6,14 @@
   import ActivityLogEmpty from './ActivityLogEmpty.svelte';
   import ActivityLogDateHeader from './ActivityLogDateHeader.svelte';
   import ActivityLogRow from './ActivityLogRow.svelte';
+  import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
 
   interface Props {
     logs: ActivityLogData[];
     context?: 'system' | 'client';
+    isLoading?: boolean;
+    error?: Error | null;
+    onRetry?: () => void;
   }
 
   interface LogGroup {
@@ -21,7 +25,13 @@
     isCollapsed: boolean;
   }
 
-  let { logs, context = 'system' }: Props = $props();
+  let { 
+    logs, 
+    context = 'system',
+    isLoading = false,
+    error = null,
+    onRetry
+  }: Props = $props();
 
   // Group logs by context (client/job combination)
   const groupedLogs = $derived(() => {
@@ -79,7 +89,27 @@
 </script>
 
 <div class="activity-log-list">
-  {#if logs.length === 0}
+  {#if isLoading}
+    <LoadingSkeleton type="generic" count={8} />
+  {:else if error}
+    <div class="error-state">
+      <div class="error-content">
+        <h2>Unable to load activity logs</h2>
+        <p>There was a problem loading the activity logs. Please try again.</p>
+        <div class="error-details">
+          <code>{error.message}</code>
+        </div>
+        {#if onRetry}
+          <button 
+            class="button button--primary"
+            onclick={onRetry}
+          >
+            Try Again
+          </button>
+        {/if}
+      </div>
+    </div>
+  {:else if logs.length === 0}
     <ActivityLogEmpty {context} />
   {:else}
     {#each groupedLogs() as group (group.key)}
@@ -98,5 +128,65 @@
   .activity-log-list {
     padding: 1rem;
     max-width: 100%;
+  }
+
+  /* Error State */
+  .error-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 40px 20px;
+  }
+
+  .error-content {
+    text-align: center;
+    max-width: 400px;
+  }
+
+  .error-content h2 {
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .error-content p {
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .error-details {
+    margin-bottom: 20px;
+    padding: 12px;
+    background-color: var(--bg-tertiary);
+    border-radius: 6px;
+    border: 1px solid var(--border-primary);
+  }
+
+  .error-details code {
+    color: var(--accent-red);
+    font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-size: 0.875rem;
+  }
+
+  .button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .button--primary {
+    background-color: var(--accent-blue);
+    color: white;
+  }
+
+  .button--primary:hover {
+    background-color: var(--accent-blue-hover, #0089E0);
   }
 </style>
