@@ -68,9 +68,9 @@
       case 'client':
         return `👤 ${group.client?.name || 'Unknown Client'}`;
       case 'job':
-        return `💼 ${group.client?.name || 'Unknown Client'} - ${group.job?.title || 'Unknown Job'}`;
+        return `💼 ${group.job?.title || 'Unknown Job'} for ${group.client?.name || 'Unknown Client'}`;
       case 'cross-reference':
-        return `🔗 ${group.client?.name || 'Unknown Client'} - ${group.job?.title || 'Unknown Job'} (Cross-reference)`;
+        return `🔗 ${group.job?.title || 'Unknown Job'} for ${group.client?.name || 'Unknown Client'}} (Cross-reference)`;
       case 'general':
         return '⚙️ General Activity';
       default:
@@ -363,8 +363,8 @@
         return a.priority - b.priority;
       }
       
-      // Then by most recent activity
-      return b.lastActivity.getTime() - a.lastActivity.getTime();
+      // Then by oldest activity first (most recent last)
+      return a.lastActivity.getTime() - b.lastActivity.getTime();
     });
 
     // Step 4: Initialize collapsed states - all groups collapsed by default
@@ -503,113 +503,115 @@
     <ActivityLogEmpty {context} />
   {:else}
     <div class="logs-table-container" bind:this={tableContainer}>
-      <table class="logs-table">
-        <tbody>
-          {#each groupedLogs() as group (group.key)}
-            <!-- Group header row -->
-            <tr class="logs-group-header {getGroupHeaderClass(group.type)} {isGroupCollapsed(group.key) ? 'logs-group--collapsed' : ''}"
-                onclick={() => toggleGroup(group)}>
-              <td colspan="3">
-                <div class="logs-group-header-content">
-                  <span class="logs-group-toggle">
-                    <img 
-                      src="/icons/chevron-right.svg" 
-                      alt={group.isCollapsed ? "Expand" : "Collapse"}
-                      class="chevron-icon"
-                      class:expanded={!isGroupCollapsed(group.key)}
-                      width="8" 
-                      height="12" 
-                    />
-                  </span>
-                  
-                  <span class="logs-group-title">{renderGroupTitle(group)}</span>
-                  
-                  <span class="logs-group-count">({group.logs.length})</span>
-                </div>
-              </td>
-            </tr>
-
-            {#if !isGroupCollapsed(group.key)}
-              <tr class="group-content-wrapper">
-                <td colspan="3" class="group-wrapper-cell">
-                  <div class="group-content-container" transition:slide|global={{ duration: 250, easing: quintOut }}>
-                    <table class="nested-logs-table">
-                      <tbody>
-                        {#each getLogsByDate(group.logs) as [dateKey, dateLogs]}
-                          <!-- Date header row -->
-                          <tr class="logs-table__date-header logs-group-content">
-                            <th class="logs-table__date-header-cell" scope="col">
-                              <span class="date-header-user">User</span>
-                            </th>
-                            <th class="logs-table__date-header-cell" colspan="2" scope="col">
-                              <div class="date-header-action-time">
-                                <span class="date-header-action">Action</span>
-                                <span class="date-header-time">{formatDateHeader(dateKey)}</span>
-                              </div>
-                            </th>
-                          </tr>
-                          
-                          <!-- Log entry rows -->
-                          {#each dateLogs as log, index (log.id)}
-                            {@const currentUserId = log.user?.id || 'system'}
-                            {@const previousUserId = index > 0 ? (dateLogs[index - 1].user?.id || 'system') : null}
-                            {@const shouldShowUser = index === 0 || currentUserId !== previousUserId}
-                            <tr class="logs-table__row logs-group-content" 
-                                class:logs-table__row--alt={index % 2 === 1}>
-                              <!-- User cell -->
-                              <td class="logs-table__user-cell">
-                                {#if shouldShowUser}
-                                  <div class="user-info">
-                                    {#if log.user}
-                                      <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
-                                        {log.user.initials || log.user.name?.charAt(0) || 'U'}
-                                      </div>
-                                      <span class="user-name">{log.user.name}</span>
-                                    {:else}
-                                      <div class="user-avatar" style="background-color: #8E8E93;">
-                                        S
-                                      </div>
-                                      <span class="user-name">System</span>
-                                    {/if}
-                                  </div>
-                                {:else}
-                                  <!-- Empty cell to maintain table structure -->
-                                  <div class="user-info user-info--hidden"></div>
-                                {/if}
-                              </td>
-                              
-                              <!-- Action cell -->
-                              <td class="logs-table__action-cell" colspan="2">
-                                <div class="action-time-container">
-                                  <div class="action-content">
-                                    {#if formatLogMessage(log)}
-                                      {@html formatLogMessage(log)}
-                                      {#if hasDuplicates(log)}
-                                        <span class="log-count-badge">{getDuplicateCount(log)}×</span>
-                                      {/if}
-                                    {:else}
-                                      <em class="log-hidden">Update with minor changes</em>
-                                    {/if}
-                                  </div>
-                                  <div class="time-content">
-                                    <time datetime={log.created_at} title={new Date(log.created_at).toString()}>
-                                      {formatTimestamp(log.created_at)}
-                                    </time>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          {/each}
-                        {/each}
-                      </tbody>
-                    </table>
+      {#each groupedLogs() as group (group.key)}
+        <div class="logs-group-container">
+          <table class="logs-table">
+            <tbody>
+              <!-- Group header row -->
+              <tr class="logs-group-header {getGroupHeaderClass(group.type)} {isGroupCollapsed(group.key) ? 'logs-group--collapsed' : ''}"
+                  onclick={() => toggleGroup(group)}>
+                <td colspan="3">
+                  <div class="logs-group-header-content">
+                    <span class="logs-group-toggle">
+                      <img 
+                        src="/icons/chevron-right.svg" 
+                        alt={group.isCollapsed ? "Expand" : "Collapse"}
+                        class="chevron-icon"
+                        class:expanded={!isGroupCollapsed(group.key)}
+                        width="8" 
+                        height="12" 
+                      />
+                    </span>
+                    
+                    <span class="logs-group-title">{renderGroupTitle(group)}</span>
+                    
+                    <span class="logs-group-count">{group.logs.length}</span>
                   </div>
                 </td>
               </tr>
-            {/if}
-          {/each}
-        </tbody>
-      </table>
+
+              {#if !isGroupCollapsed(group.key)}
+                <tr class="group-content-wrapper">
+                  <td colspan="3" class="group-wrapper-cell">
+                    <div class="group-content-container" transition:slide|global={{ duration: 250, easing: quintOut }}>
+                      <table class="nested-logs-table">
+                        <tbody>
+                          {#each getLogsByDate(group.logs) as [dateKey, dateLogs]}
+                            <!-- Date header row -->
+                            <tr class="logs-table__date-header logs-group-content">
+                              <th class="logs-table__date-header-cell" scope="col">
+                                <span class="date-header-user">User</span>
+                              </th>
+                              <th class="logs-table__date-header-cell" colspan="2" scope="col">
+                                <div class="date-header-action-time">
+                                  <span class="date-header-action">Action</span>
+                                  <span class="date-header-time">{formatDateHeader(dateKey)}</span>
+                                </div>
+                              </th>
+                            </tr>
+                            
+                            <!-- Log entry rows -->
+                            {#each dateLogs as log, index (log.id)}
+                              {@const currentUserId = log.user?.id || 'system'}
+                              {@const previousUserId = index > 0 ? (dateLogs[index - 1].user?.id || 'system') : null}
+                              {@const shouldShowUser = index === 0 || currentUserId !== previousUserId}
+                              <tr class="logs-table__row logs-group-content" 
+                                  class:logs-table__row--alt={index % 2 === 1}>
+                                <!-- User cell -->
+                                <td class="logs-table__user-cell">
+                                  {#if shouldShowUser}
+                                    <div class="user-info">
+                                      {#if log.user}
+                                        <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
+                                          {log.user.initials || log.user.name?.charAt(0) || 'U'}
+                                        </div>
+                                        <span class="user-name">{log.user.name}</span>
+                                      {:else}
+                                        <div class="user-avatar" style="background-color: #8E8E93;">
+                                          S
+                                        </div>
+                                        <span class="user-name">System</span>
+                                      {/if}
+                                    </div>
+                                  {:else}
+                                    <!-- Empty cell to maintain table structure -->
+                                    <div class="user-info user-info--hidden"></div>
+                                  {/if}
+                                </td>
+                                
+                                <!-- Action cell -->
+                                <td class="logs-table__action-cell" colspan="2">
+                                  <div class="action-time-container">
+                                    <div class="action-content">
+                                      {#if formatLogMessage(log)}
+                                        {@html formatLogMessage(log)}
+                                        {#if hasDuplicates(log)}
+                                          <span class="log-count-badge">{getDuplicateCount(log)}×</span>
+                                        {/if}
+                                      {:else}
+                                        <em class="log-hidden">Update with minor changes</em>
+                                      {/if}
+                                    </div>
+                                    <div class="time-content">
+                                      <time datetime={log.created_at} title={new Date(log.created_at).toString()}>
+                                        {formatTimestamp(log.created_at)}
+                                      </time>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            {/each}
+                          {/each}
+                        </tbody>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+              {/if}
+            </tbody>
+          </table>
+        </div>
+      {/each}
     </div>
   {/if}
 </div>
@@ -624,9 +626,18 @@
   .logs-table-container {
     flex: 1;
     overflow-y: auto;
-    background-color: var(--bg-primary);
+  }
+
+  .logs-group-container {
+    margin-bottom: 16px;
     border: 1px solid var(--border-primary);
     border-radius: 8px;
+    background-color: var(--bg-primary);
+    overflow: hidden;
+  }
+
+  .logs-group-container:last-child {
+    margin-bottom: 0;
   }
 
   .logs-table {
@@ -638,10 +649,7 @@
 
   /* Group header rows (Client/Job) */
   .logs-table :global(tr.logs-group-header) {
-    position: sticky;
-    top: -1px; /* Offset by -1px to prevent transparency gap */
     background-color: var(--bg-secondary);
-    z-index: 9;
     cursor: pointer;
     user-select: none;
   }
@@ -741,16 +749,20 @@
 
   .logs-group-count {
     margin-left: auto;
-    color: var(--text-tertiary);
-    font-weight: 400;
-    font-size: 13px;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    min-width: 24px;
+    text-align: center;
+    display: inline-block;
   }
 
   /* Date header rows */
   .logs-table :global(tr.logs-table__date-header) {
-    position: sticky;
     background-color: var(--bg-secondary);
-    z-index: 8;
   }
 
   .logs-table :global(th.logs-table__date-header-cell) {
