@@ -10,16 +10,18 @@
   const isHomepage = $derived($page.url.pathname === '/');
   const isClientsListing = $derived($page.url.pathname === '/clients');
   const isJobsListing = $derived($page.url.pathname === '/jobs');
-  const showSimplifiedNav = $derived(isHomepage || isClientsListing || isJobsListing);
+  const isLogsListing = $derived($page.url.pathname === '/logs');
+  const showSimplifiedNav = $derived(isHomepage || isClientsListing || isJobsListing || isLogsListing);
   
   // Dynamic footer items based on current client
   const dynamicFooterItems = $derived(
-    layout.currentClient 
-      ? footerNavItems.map(item => ({
-          ...item,
-          label: item.id === 'logs' ? `Logs` : item.label
-        }))
-      : []
+    footerNavItems.map(item => ({
+      ...item,
+      href: item.id === 'logs' && layout.currentClient 
+        ? `/clients/${layout.currentClient.id}/logs` 
+        : item.href,
+      label: item.id === 'logs' ? 'Logs' : item.label
+    }))
   );
 
 </script>
@@ -102,25 +104,23 @@
     </ul>
   </nav>
 
-  <!-- Footer Navigation - Only show when there's a current client -->
-  {#if layout.currentClient}
-    <div class="footer-nav">
-      <ul class="nav-list">
-        {#each dynamicFooterItems as item (item.id)}
-          <li class="nav-item">
-            <a 
-              href={item.href}
-              class="nav-link footer-link"
-              class:active={activeItem === item.id}
-            >
-              <span class="nav-icon">{item.icon}</span>
-              <span class="nav-label">{item.label}</span>
-            </a>
-          </li>
-        {/each}
-      </ul>
-    </div>
-  {/if}
+  <!-- Footer Navigation -->
+  <div class="footer-nav">
+    <ul class="nav-list">
+      {#each dynamicFooterItems as item (item.id)}
+        <li class="nav-item">
+          <a 
+            href={item.href}
+            class="nav-link footer-link"
+            class:active={activeItem === item.id}
+          >
+            <span class="nav-icon">{item.icon}</span>
+            <span class="nav-label">{item.label}</span>
+          </a>
+        </li>
+      {/each}
+    </ul>
+  </div>
 </div>
 
 <style>
@@ -283,11 +283,6 @@
   }
 
   .footer-link:hover {
-    color: var(--text-primary);
-  }
-
-  .footer-link.active {
-    background-color: var(--bg-tertiary);
     color: var(--text-primary);
   }
 
