@@ -722,7 +722,7 @@
   }
 
   .logs-table :global(td) {
-    padding: 8px 16px;
+    padding: 8px 16px 7px 16px;
     vertical-align: baseline;
   }
 
@@ -754,7 +754,7 @@
     font-weight: 600;
     flex-shrink: 0;
     align-self: baseline;
-    margin-bottom: 3px;
+    transform: translateY(-2px);
   }
 
   .user-name {
