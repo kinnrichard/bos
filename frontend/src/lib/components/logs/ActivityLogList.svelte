@@ -666,7 +666,7 @@
   .group-content-container {
     overflow: hidden;
     transform-origin: top;
-    margin: 0;
+    margin: -2px 0 0 0; /* Negative top margin to pull up and eliminate gap */
     padding: 0;
   }
 
@@ -677,6 +677,25 @@
     font-size: 14px;
     margin: 0;
     padding: 0;
+    border-spacing: 0;
+    border: none;
+  }
+
+  /* Remove any default spacing from nested table elements */
+  .nested-logs-table tbody {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure first row in nested table has no top spacing */
+  .nested-logs-table tr:first-child {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .nested-logs-table tr:first-child th {
+    margin-top: 0;
+    padding-top: 0;
   }
 
 
