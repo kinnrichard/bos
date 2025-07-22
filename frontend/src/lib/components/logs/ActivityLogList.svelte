@@ -667,7 +667,7 @@
   .group-content-container {
     overflow: hidden;
     transform-origin: top;
-    margin: -2px 0 0 0; /* Small negative margin to eliminate border gap */
+    margin: 0;
     padding: 0;
   }
 
@@ -680,6 +680,7 @@
     margin: 0;
     padding: 0;
     border: none;
+    table-layout: fixed; /* Prevent layout recalculation during animation */
   }
 
   /* Remove any default spacing from nested table elements */
@@ -691,12 +692,10 @@
   /* Ensure first row in nested table has no top spacing */
   .nested-logs-table tr:first-child {
     margin-top: 0;
-    padding-top: 0;
   }
 
   .nested-logs-table tr:first-child th {
     margin-top: 0;
-    padding-top: 4px; /* Reduce top padding on first header row */
   }
 
 
@@ -732,7 +731,7 @@
   }
 
   .chevron-icon {
-    transition: transform 0.2s ease;
+    transition: transform 0.25s ease;
     color: var(--text-tertiary);
   }
 
@@ -761,6 +760,7 @@
     font-size: 13px;
     color: var(--text-secondary);
     background-color: var(--bg-secondary); /* Ensure solid background */
+    vertical-align: top; /* Prevent baseline shifts during animation */
   }
 
   .logs-table :global(th.logs-table__date-header-cell:first-child) {
