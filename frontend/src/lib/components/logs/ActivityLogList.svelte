@@ -535,23 +535,31 @@
                 
                 <!-- Log entry rows -->
                 {#each dateLogs as log, index (log.id)}
+                  {@const currentUserId = log.user?.id || 'system'}
+                  {@const previousUserId = index > 0 ? (dateLogs[index - 1].user?.id || 'system') : null}
+                  {@const shouldShowUser = index === 0 || currentUserId !== previousUserId}
                   <tr class="logs-table__row logs-group-content" 
                       class:logs-table__row--alt={index % 2 === 1}>
                     <!-- User cell -->
                     <td class="logs-table__user-cell">
-                      <div class="user-info">
-                        {#if log.user}
-                          <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
-                            {log.user.initials || log.user.name?.charAt(0) || 'U'}
-                          </div>
-                          <span class="user-name">{log.user.name}</span>
-                        {:else}
-                          <div class="user-avatar" style="background-color: #8E8E93;">
-                            S
-                          </div>
-                          <span class="user-name">System</span>
-                        {/if}
-                      </div>
+                      {#if shouldShowUser}
+                        <div class="user-info">
+                          {#if log.user}
+                            <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
+                              {log.user.initials || log.user.name?.charAt(0) || 'U'}
+                            </div>
+                            <span class="user-name">{log.user.name}</span>
+                          {:else}
+                            <div class="user-avatar" style="background-color: #8E8E93;">
+                              S
+                            </div>
+                            <span class="user-name">System</span>
+                          {/if}
+                        </div>
+                      {:else}
+                        <!-- Empty cell to maintain table structure -->
+                        <div class="user-info user-info--hidden"></div>
+                      {/if}
                     </td>
                     
                     <!-- Action cell -->
@@ -739,6 +747,12 @@
     justify-content: flex-end;
     gap: 6px;
     line-height: 1.4;
+  }
+
+  .user-info--hidden {
+    /* Maintain cell height but hide content */
+    height: 20px;
+    min-height: 20px;
   }
 
   .user-avatar {

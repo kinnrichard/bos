@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Deduplication Test - Before vs After</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .section {
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #2a2a2a;
+        }
+        
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        .before h2 {
+            color: #ff6b6b;
+        }
+        
+        .after h2 {
+            color: #51cf66;
+        }
+        
+        .mock-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 14px;
+        }
+        
+        .mock-table th {
+            background-color: #2a2a2a;
+            padding: 8px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #999;
+            border-bottom: 1px solid #333;
+            text-align: left;
+        }
+        
+        .mock-table th:first-child {
+            text-align: right;
+            width: 140px;
+        }
+        
+        .mock-table td {
+            padding: 8px 16px 6px 16px;
+            border-bottom: 1px solid #333;
+            vertical-align: baseline;
+        }
+        
+        .mock-table tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+        
+        .user-cell {
+            width: 140px;
+            text-align: right;
+            white-space: nowrap;
+        }
+        
+        .user-info {
+            display: inline-flex;
+            align-items: baseline;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        
+        .user-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #0099ff;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 600;
+            transform: translateY(-2px);
+        }
+        
+        .user-avatar.alice {
+            background-color: #ff6b35;
+        }
+        
+        .user-avatar.system {
+            background-color: #8E8E93;
+        }
+        
+        .user-name {
+            color: white;
+            font-weight: 500;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+        
+        .action-cell {
+            line-height: 1.4;
+            font-size: 14px;
+        }
+        
+        .time-cell {
+            text-align: right;
+            color: #999;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: nowrap;
+        }
+        
+        /* Hidden user styling for after example */
+        .user-info--hidden {
+            height: 20px;
+            min-height: 20px;
+        }
+        
+        .benefits {
+            background-color: #1a2e1a;
+            border: 1px solid #4a6f4a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .benefits h3 {
+            color: #51cf66;
+            margin-top: 0;
+        }
+        
+        .date-header {
+            background-color: #2a2a2a;
+            font-weight: 600;
+            color: #74c0fc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👥 User Deduplication: Before vs After</h1>
+        
+        <div class="comparison">
+            <div class="section before">
+                <h2>❌ Before: Repetitive User Display</h2>
+                <table class="mock-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th colspan="2">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Action</span>
+                                    <span>Today</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info">
+                                    <div class="user-avatar">TA</div>
+                                    <span class="user-name">Test Admin</span>
+                                </div>
+                            </td>
+                            <td class="action-cell">renamed gerbil big GAY to gerbil big ddd GAY</td>
+                            <td class="time-cell">9:02 AM</td>
+                        </tr>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info">
+                                    <div class="user-avatar">TA</div>
+                                    <span class="user-name">Test Admin</span>
+                                </div>
+                            </td>
+                            <td class="action-cell">renamed gerbil big one yyp GAY to gerbil big GAY</td>
+                            <td class="time-cell">8:45 AM</td>
+                        </tr>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info">
+                                    <div class="user-avatar">TA</div>
+                                    <span class="user-name">Test Admin</span>
+                                </div>
+                            </td>
+                            <td class="action-cell">created new task for client onboarding</td>
+                            <td class="time-cell">8:30 AM</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- Yesterday Section -->\n                <table class="mock-table" style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th colspan="2">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Action</span>
+                                    <span>Yesterday</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info">
+                                    <div class="user-avatar">TA</div>
+                                    <span class="user-name">Test Admin</span>
+                                </div>
+                            </td>
+                            <td class="action-cell">deleted outdated task</td>
+                            <td class="time-cell">7:15 PM</td>
+                        </tr>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info">
+                                    <div class="user-avatar alice">AS</div>
+                                    <span class="user-name">Alice Smith</span>
+                                </div>
+                            </td>
+                            <td class="action-cell">assigned server maintenance to tech team</td>
+                            <td class="time-cell">7:00 PM</td>
+                        </tr>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info">
+                                    <div class="user-avatar alice">AS</div>
+                                    <span class="user-name">Alice Smith</span>
+                                </div>
+                            </td>
+                            <td class="action-cell">completed database backup verification</td>
+                            <td class="time-cell">6:45 PM</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 15px; font-size: 13px; color: #ff9999;">
+                    <strong>Issues:</strong>
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li>Repetitive user information creates visual noise</li>
+                        <li>Harder to scan and identify user changes</li>
+                        <li>Wastes horizontal space with duplicate info</li>
+                        <li>Less focus on the actual actions performed</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section after">
+                <h2>✅ After: Smart User Deduplication</h2>
+                <table class="mock-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th colspan="2">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Action</span>
+                                    <span>Today</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info">
+                                    <div class="user-avatar">TA</div>
+                                    <span class="user-name">Test Admin</span>
+                                </div>
+                            </td>
+                            <td class="action-cell">renamed gerbil big GAY to gerbil big ddd GAY</td>
+                            <td class="time-cell">9:02 AM</td>
+                        </tr>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info--hidden"></div>
+                            </td>
+                            <td class="action-cell">renamed gerbil big one yyp GAY to gerbil big GAY</td>
+                            <td class="time-cell">8:45 AM</td>
+                        </tr>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info--hidden"></div>
+                            </td>
+                            <td class="action-cell">created new task for client onboarding</td>
+                            <td class="time-cell">8:30 AM</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- Yesterday Section with Reset -->
+                <table class="mock-table" style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th colspan="2">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Action</span>
+                                    <span>Yesterday</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info">
+                                    <div class="user-avatar">TA</div>
+                                    <span class="user-name">Test Admin</span>
+                                </div>
+                            </td>
+                            <td class="action-cell">deleted outdated task</td>
+                            <td class="time-cell">7:15 PM</td>
+                        </tr>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info">
+                                    <div class="user-avatar alice">AS</div>
+                                    <span class="user-name">Alice Smith</span>
+                                </div>
+                            </td>
+                            <td class="action-cell">assigned server maintenance to tech team</td>
+                            <td class="time-cell">7:00 PM</td>
+                        </tr>
+                        <tr>
+                            <td class="user-cell">
+                                <div class="user-info--hidden"></div>
+                            </td>
+                            <td class="action-cell">completed database backup verification</td>
+                            <td class="time-cell">6:45 PM</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 15px; font-size: 13px; color: #99ff99;">
+                    <strong>Improvements:</strong>
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li>Reduced visual clutter and repetitive information</li>
+                        <li>Easier to scan and spot user changes</li>
+                        <li>User info reappears after headers (date sections)</li>
+                        <li>More focus on actions and chronological flow</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="benefits">
+            <h3>🎯 Deduplication Logic Implementation</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4 style="color: #74c0fc;">Smart Rules</h4>
+                    <ul>
+                        <li><strong>Hide Same User:</strong> If previous row has same user, hide user info</li>
+                        <li><strong>Reset After Headers:</strong> Always show user after `<th>` header rows</li>
+                        <li><strong>First Row:</strong> Always show user in first row of each date group</li>
+                        <li><strong>User Changes:</strong> Always show when user changes</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: #74c0fc;">Technical Implementation</h4>
+                    <ul>
+                        <li>✅ Compare current vs previous user ID</li>
+                        <li>✅ Reset tracking after header elements</li>
+                        <li>✅ Maintain table cell structure with empty divs</li>
+                        <li>✅ Preserve visual alignment and spacing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
