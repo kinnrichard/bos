@@ -104,7 +104,7 @@ async function logActivity(
     return;
   }
 
-  const metadata = buildMetadata(data, context, config);
+  const metadata = buildMetadata(data, context, config, action);
   
   const clientId = await Promise.resolve(config.getAssociatedClientId?.(data)) || null;
   const jobId = await Promise.resolve(config.getAssociatedJobId?.(data)) || null;
@@ -194,7 +194,8 @@ function determineUpdateAction(
 function buildMetadata(
   data: Loggable,
   context: MutatorContext,
-  config: ActivityLoggingConfig & typeof DEFAULT_ACTIVITY_LOGGING_CONFIG
+  config: ActivityLoggingConfig & typeof DEFAULT_ACTIVITY_LOGGING_CONFIG,
+  action: string
 ): any {
   const metadata: any = {};
   const changes = context.changes || {};
@@ -239,8 +240,10 @@ function buildMetadata(
     Object.assign(metadata, context.metadata);
   }
 
-  // Add record name for display purposes
-  metadata.name = getRecordDisplayName(data, config.loggableType);
+  // Add record name for display purposes (but not for renamed action)
+  if (action !== 'renamed') {
+    metadata.name = getRecordDisplayName(data, config.loggableType);
+  }
 
   return metadata;
 }
