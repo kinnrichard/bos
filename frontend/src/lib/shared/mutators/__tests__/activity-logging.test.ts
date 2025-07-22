@@ -179,9 +179,6 @@ describe('Activity Logging Mutator', () => {
         loggable_id: 'task-1',
         metadata: {
           name: 'Renamed Task',
-          changes: {
-            title: ['Original Task', 'Renamed Task']
-          },
           old_name: 'Original Task',
           new_name: 'Renamed Task'
         },
@@ -258,9 +255,6 @@ describe('Activity Logging Mutator', () => {
         loggable_id: 'task-1',
         metadata: {
           name: 'Test Task',
-          changes: {
-            title: ['Old Title', 'Test Task']
-          },
           old_name: 'Old Title',
           new_name: 'Test Task'
         },

@@ -179,7 +179,12 @@ function determineUpdateAction(
     return changes.discarded_at[1] ? 'discarded' : 'undiscarded';
   }
 
-  // Always return 'updated' for other changes (including name/title)
+  // Check for name/title changes (renamed action)
+  if (changes.name || changes.title) {
+    return 'renamed';
+  }
+
+  // Return 'updated' for other changes
   return 'updated';
 }
 
@@ -209,16 +214,18 @@ function buildMetadata(
       metadata.new_status_label = getStatusLabel(changes.status[1], config.loggableType);
     }
 
-    // For name/title changes, include in metadata but don't use old_name/new_name
-    // to match Rails behavior which uses 'updated' action
-    if (changes.name) {
-      metadata.old_name = changes.name[0];
-      metadata.new_name = changes.name[1];
-    }
-
-    if (changes.title) {
-      metadata.old_title = changes.title[0];
-      metadata.new_title = changes.title[1];
+    // For renamed action, use simple metadata structure
+    if (context.action === 'update' && determineUpdateAction(data, context, config) === 'renamed') {
+      // Clear the changes from metadata for renamed action
+      delete metadata.changes;
+      
+      if (changes.name) {
+        metadata.old_name = changes.name[0];
+        metadata.new_name = changes.name[1];
+      } else if (changes.title) {
+        metadata.old_name = changes.title[0];
+        metadata.new_name = changes.title[1];
+      }
     }
 
     if (changes.assigned_to_id) {
