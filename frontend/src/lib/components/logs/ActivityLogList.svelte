@@ -313,28 +313,31 @@
   }
 
 
-  // Track new logs for animation
+  // Track new logs for animation - simplified to prevent loops
   $effect(() => {
-    const currentLogIds = new Set(logs.map(log => log.id));
+    const currentIds = logs.map(log => log.id);
+    const currentIdSet = new Set(currentIds);
     
-    // Find new logs (not in previous set)
-    const newLogs = new Set<string>();
-    for (const id of currentLogIds) {
-      if (!previousLogIds.has(id)) {
-        newLogs.add(id);
+    // Only process if we have logs and previous state exists
+    if (currentIds.length > 0 && previousLogIds.size > 0) {
+      const newLogs = new Set<string>();
+      for (const id of currentIds) {
+        if (!previousLogIds.has(id)) {
+          newLogs.add(id);
+        }
+      }
+      
+      if (newLogs.size > 0) {
+        newLogIds = newLogs;
+        // Clear indicators after animation
+        setTimeout(() => {
+          newLogIds = new Set();
+        }, 600);
       }
     }
     
-    // Update states
-    newLogIds = newLogs;
-    previousLogIds = currentLogIds;
-    
-    // Clear new log indicators after animation duration
-    if (newLogs.size > 0) {
-      setTimeout(() => {
-        newLogIds = new Set();
-      }, 600); // Match animation duration
-    }
+    // Update previous set for next comparison
+    previousLogIds = currentIdSet;
   });
 
   // Auto-scroll to bottom on mount and when new logs arrive
@@ -557,76 +560,84 @@
             </tr>
 
             {#if !isGroupCollapsed(group.key)}
-              {#each getLogsByDate(group.logs) as [dateKey, dateLogs]}
-                <!-- Date header row -->
-                <tr class="logs-table__date-header logs-group-content"
-                    transition:slide|global={{ duration: 250, easing: quintOut }}>
-                  <th class="logs-table__date-header-cell" scope="col">
-                    <span class="date-header-user">User</span>
-                  </th>
-                  <th class="logs-table__date-header-cell" colspan="2" scope="col">
-                    <div class="date-header-action-time">
-                      <span class="date-header-action">Action</span>
-                      <span class="date-header-time">{formatDateHeader(dateKey)}</span>
-                    </div>
-                  </th>
-                </tr>
-                
-                <!-- Log entry rows -->
-                {#each dateLogs as log, index (log.id)}
-                  {@const currentUserId = log.user?.id || 'system'}
-                  {@const previousUserId = index > 0 ? (dateLogs[index - 1].user?.id || 'system') : null}
-                  {@const shouldShowUser = index === 0 || currentUserId !== previousUserId}
-                  {@const isNewLog = newLogIds.has(log.id)}
-                  <tr class="logs-table__row logs-group-content" 
-                      class:logs-table__row--alt={index % 2 === 1}
-                      class:logs-table__row--new={isNewLog}
-                      transition:slide|global={{ duration: 250, easing: quintOut }}>
-                    <!-- User cell -->
-                    <td class="logs-table__user-cell">
-                      {#if shouldShowUser}
-                        <div class="user-info">
-                          {#if log.user}
-                            <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
-                              {log.user.initials || log.user.name?.charAt(0) || 'U'}
-                            </div>
-                            <span class="user-name">{log.user.name}</span>
-                          {:else}
-                            <div class="user-avatar" style="background-color: #8E8E93;">
-                              S
-                            </div>
-                            <span class="user-name">System</span>
-                          {/if}
-                        </div>
-                      {:else}
-                        <!-- Empty cell to maintain table structure -->
-                        <div class="user-info user-info--hidden"></div>
-                      {/if}
-                    </td>
-                    
-                    <!-- Action cell -->
-                    <td class="logs-table__action-cell" colspan="2">
-                      <div class="action-time-container">
-                        <div class="action-content">
-                          {#if formatLogMessage(log)}
-                            {@html formatLogMessage(log)}
-                            {#if hasDuplicates(log)}
-                              <span class="log-count-badge">{getDuplicateCount(log)}×</span>
-                            {/if}
-                          {:else}
-                            <em class="log-hidden">Update with minor changes</em>
-                          {/if}
-                        </div>
-                        <div class="time-content">
-                          <time datetime={log.created_at} title={new Date(log.created_at).toString()}>
-                            {formatTimestamp(log.created_at)}
-                          </time>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                {/each}
-              {/each}
+              <tr class="group-content-wrapper">
+                <td colspan="3" style="padding: 0;">
+                  <div class="group-content-container" transition:slide|global={{ duration: 250, easing: quintOut }}>
+                    <table class="nested-logs-table">
+                      <tbody>
+                        {#each getLogsByDate(group.logs) as [dateKey, dateLogs]}
+                          <!-- Date header row -->
+                          <tr class="logs-table__date-header logs-group-content">
+                            <th class="logs-table__date-header-cell" scope="col">
+                              <span class="date-header-user">User</span>
+                            </th>
+                            <th class="logs-table__date-header-cell" colspan="2" scope="col">
+                              <div class="date-header-action-time">
+                                <span class="date-header-action">Action</span>
+                                <span class="date-header-time">{formatDateHeader(dateKey)}</span>
+                              </div>
+                            </th>
+                          </tr>
+                          
+                          <!-- Log entry rows -->
+                          {#each dateLogs as log, index (log.id)}
+                            {@const currentUserId = log.user?.id || 'system'}
+                            {@const previousUserId = index > 0 ? (dateLogs[index - 1].user?.id || 'system') : null}
+                            {@const shouldShowUser = index === 0 || currentUserId !== previousUserId}
+                            {@const isNewLog = newLogIds.has(log.id)}
+                            <tr class="logs-table__row logs-group-content" 
+                                class:logs-table__row--alt={index % 2 === 1}
+                                class:logs-table__row--new={isNewLog}>
+                              <!-- User cell -->
+                              <td class="logs-table__user-cell">
+                                {#if shouldShowUser}
+                                  <div class="user-info">
+                                    {#if log.user}
+                                      <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
+                                        {log.user.initials || log.user.name?.charAt(0) || 'U'}
+                                      </div>
+                                      <span class="user-name">{log.user.name}</span>
+                                    {:else}
+                                      <div class="user-avatar" style="background-color: #8E8E93;">
+                                        S
+                                      </div>
+                                      <span class="user-name">System</span>
+                                    {/if}
+                                  </div>
+                                {:else}
+                                  <!-- Empty cell to maintain table structure -->
+                                  <div class="user-info user-info--hidden"></div>
+                                {/if}
+                              </td>
+                              
+                              <!-- Action cell -->
+                              <td class="logs-table__action-cell" colspan="2">
+                                <div class="action-time-container">
+                                  <div class="action-content">
+                                    {#if formatLogMessage(log)}
+                                      {@html formatLogMessage(log)}
+                                      {#if hasDuplicates(log)}
+                                        <span class="log-count-badge">{getDuplicateCount(log)}×</span>
+                                      {/if}
+                                    {:else}
+                                      <em class="log-hidden">Update with minor changes</em>
+                                    {/if}
+                                  </div>
+                                  <div class="time-content">
+                                    <time datetime={log.created_at} title={new Date(log.created_at).toString()}>
+                                      {formatTimestamp(log.created_at)}
+                                    </time>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          {/each}
+                        {/each}
+                      </tbody>
+                    </table>
+                  </div>
+                </td>
+              </tr>
             {/if}
           {/each}
         </tbody>
@@ -668,6 +679,19 @@
 
   .logs-table :global(tr.logs-group-header:hover) {
     background-color: var(--bg-tertiary);
+  }
+
+  /* Group content container for slide animation */
+  .group-content-container {
+    overflow: hidden;
+    transform-origin: top;
+  }
+
+  /* Nested table for group content */
+  .nested-logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
   }
 
 
