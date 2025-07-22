@@ -531,7 +531,7 @@
 
             {#if !isGroupCollapsed(group.key)}
               <tr class="group-content-wrapper">
-                <td colspan="3" style="padding: 0;">
+                <td colspan="3" class="group-wrapper-cell">
                   <div class="group-content-container" transition:slide|global={{ duration: 250, easing: quintOut }}>
                     <table class="nested-logs-table">
                       <tbody>
@@ -649,10 +649,25 @@
     background-color: var(--bg-tertiary);
   }
 
+  /* Wrapper row and cell for group content - remove all spacing */
+  .group-content-wrapper {
+    border: none;
+    background: transparent;
+  }
+
+  .group-wrapper-cell {
+    padding: 0 !important;
+    margin: 0;
+    border: none;
+    vertical-align: top;
+  }
+
   /* Group content container for slide animation */
   .group-content-container {
     overflow: hidden;
     transform-origin: top;
+    margin: 0;
+    padding: 0;
   }
 
   /* Nested table for group content */
@@ -660,6 +675,8 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    margin: 0;
+    padding: 0;
   }
 
 
