@@ -427,9 +427,10 @@
 
   // Helper function to determine group classification and priority
   function determineLogGroup(log: ActivityLogData): { groupKey: string; groupType: LogGroup['type']; priority: number } {
-    // Cross-reference detection: actions that span multiple contexts
+    // True cross-reference detection: only for explicitly marked cross-references
+    // or operations that genuinely span multiple unrelated contexts
     const isCrossReference = log.metadata?.cross_reference || 
-      (log.client_id && log.job_id && log.loggable_type !== 'Job' && log.loggable_type !== 'Client');
+      (log.metadata?.is_cross_reference === true);
     
     if (isCrossReference) {
       return {
@@ -439,6 +440,8 @@
       };
     }
     
+    // If we have both client_id and job_id, this is job-specific activity
+    // (tasks within jobs, job updates, etc.)
     if (log.client_id && log.job_id) {
       return {
         groupKey: `job-${log.job_id}`,

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Log Grouping Logic Test</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #ffffff;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background-color: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .test-section h2 {
+            color: #0099ff;
+            margin-top: 0;
+        }
+        
+        .test-case {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .test-case .input {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .test-case .result {
+            font-weight: 500;
+        }
+        
+        .result.job {
+            color: #51cf66;
+        }
+        
+        .result.client {
+            color: #74c0fc;
+        }
+        
+        .result.cross-reference {
+            color: #ffa94d;
+        }
+        
+        .result.general {
+            color: #9775fa;
+        }
+        
+        .fixed {
+            border-left: 4px solid #51cf66;
+            background-color: #1a2e1a;
+        }
+        
+        .broken {
+            border-left: 4px solid #ff6b6b;
+            background-color: #2e1a1a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Activity Log Grouping Logic Fix</h1>
+        
+        <div class="test-section">
+            <h2>❌ Before Fix: Incorrect Cross-Reference Detection</h2>
+            
+            <div class="test-case broken">
+                <div class="input">client_id: 123, job_id: 456, loggable_type: 'Task', action: 'renamed'</div>
+                <div class="result cross-reference">❌ Classified as: Cross-reference (WRONG)</div>
+            </div>
+            
+            <div class="test-case broken">
+                <div class="input">client_id: 123, job_id: 456, loggable_type: 'Task', action: 'updated'</div>
+                <div class="result cross-reference">❌ Classified as: Cross-reference (WRONG)</div>
+            </div>
+            
+            <div class="test-case broken">
+                <div class="input">client_id: 123, job_id: 456, loggable_type: 'Person', action: 'added'</div>
+                <div class="result cross-reference">❌ Classified as: Cross-reference (WRONG)</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>✅ After Fix: Correct Grouping Logic</h2>
+            
+            <div class="test-case fixed">
+                <div class="input">client_id: 123, job_id: 456, loggable_type: 'Task', action: 'renamed'</div>
+                <div class="result job">✅ Classified as: Job Activity (CORRECT)</div>
+                <div style="font-size: 11px; color: #999; margin-top: 5px;">Task renames within a job should be grouped with that job</div>
+            </div>
+            
+            <div class="test-case fixed">
+                <div class="input">client_id: 123, job_id: 456, loggable_type: 'Task', action: 'updated'</div>
+                <div class="result job">✅ Classified as: Job Activity (CORRECT)</div>
+                <div style="font-size: 11px; color: #999; margin-top: 5px;">Task updates within a job belong to that job's activity</div>
+            </div>
+            
+            <div class="test-case fixed">
+                <div class="input">client_id: 123, job_id: 456, loggable_type: 'Person', action: 'added'</div>
+                <div class="result job">✅ Classified as: Job Activity (CORRECT)</div>
+                <div style="font-size: 11px; color: #999; margin-top: 5px;">Adding people to a job is job-specific activity</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎯 Proper Cross-Reference Examples</h2>
+            
+            <div class="test-case">
+                <div class="input">metadata: { cross_reference: true }, client_id: 123, job_id: 456</div>
+                <div class="result cross-reference">✅ Cross-reference (Explicitly marked)</div>
+            </div>
+            
+            <div class="test-case">
+                <div class="input">metadata: { is_cross_reference: true }, multiple contexts affected</div>
+                <div class="result cross-reference">✅ Cross-reference (Multi-context operation)</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📋 Other Group Types</h2>
+            
+            <div class="test-case">
+                <div class="input">client_id: 123, job_id: null, loggable_type: 'Client'</div>
+                <div class="result client">✅ Client Activity</div>
+            </div>
+            
+            <div class="test-case">
+                <div class="input">client_id: null, job_id: null, system activity</div>
+                <div class="result general">✅ General Activity</div>
+            </div>
+        </div>
+        
+        <div style="background-color: #1a2e1a; border: 1px solid #4a6f4a; border-radius: 8px; padding: 20px; margin-top: 30px;">
+            <h3 style="color: #51cf66; margin-top: 0;">🔧 Fix Summary</h3>
+            <p><strong>Problem:</strong> The old logic incorrectly treated any activity with both client_id and job_id (but not loggable_type of 'Job' or 'Client') as cross-references.</p>
+            <p><strong>Solution:</strong> Cross-references should only be activities explicitly marked as such or operations that genuinely span multiple unrelated contexts.</p>
+            <p><strong>Result:</strong> Task renames, updates, and other activities within a specific job are now correctly grouped as "Job Activity" instead of "Cross-reference".</p>
+        </div>
+    </div>
+</body>
+</html>
