@@ -507,7 +507,7 @@
         <tbody>
           {#each groupedLogs() as group (group.key)}
             <!-- Group header row -->
-            <tr class="logs-group-header {getGroupHeaderClass(group.type)} {group.isCollapsed ? 'logs-group--collapsed' : ''}"
+            <tr class="logs-group-header {getGroupHeaderClass(group.type)} {isGroupCollapsed(group.key) ? 'logs-group--collapsed' : ''}"
                 onclick={() => toggleGroup(group)}>
               <td colspan="3">
                 <div class="logs-group-header-content">
@@ -631,7 +631,8 @@
 
   .logs-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 14px;
   }
 
@@ -666,18 +667,18 @@
   .group-content-container {
     overflow: hidden;
     transform-origin: top;
-    margin: -2px 0 0 0; /* Negative top margin to pull up and eliminate gap */
+    margin: -2px 0 0 0; /* Small negative margin to eliminate border gap */
     padding: 0;
   }
 
   /* Nested table for group content */
   .nested-logs-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 14px;
     margin: 0;
     padding: 0;
-    border-spacing: 0;
     border: none;
   }
 
@@ -695,7 +696,7 @@
 
   .nested-logs-table tr:first-child th {
     margin-top: 0;
-    padding-top: 0;
+    padding-top: 4px; /* Reduce top padding on first header row */
   }
 
 
@@ -712,7 +713,7 @@
     font-weight: 600;
     font-size: 14px;
     color: var(--text-primary);
-    border-bottom: 2px solid var(--border-primary);
+    border-bottom: 1px solid var(--border-primary);
   }
 
   .logs-group-header-content {
@@ -749,7 +750,6 @@
   /* Date header rows */
   .logs-table :global(tr.logs-table__date-header) {
     position: sticky;
-    top: 39px; /* Positioned to overlap with group header border */
     background-color: var(--bg-secondary);
     z-index: 8;
   }
@@ -793,7 +793,6 @@
   /* Log entry rows */
   .logs-table :global(tr.logs-table__row) {
     border-bottom: 1px solid var(--border-primary);
-    transition: all 0.3s ease;
   }
 
   /* Alternating row colors */
