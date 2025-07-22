@@ -1,7 +1,7 @@
 <script lang="ts">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
-  import { getJobStatusEmoji } from '$lib/config/emoji';
+  import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import '$lib/styles/popover-common.css';
   import { Job } from '$lib/models/job';
@@ -25,13 +25,13 @@
 
   // All available job statuses with their display information
   const availableStatuses = [
-    { id: 'open', value: 'open', label: 'Open', emoji: '⚫' },
-    { id: 'in_progress', value: 'in_progress', label: 'In Progress', emoji: '🟢' },
-    { id: 'paused', value: 'paused', label: 'Paused', emoji: '⏸️' },
-    { id: 'waiting_for_customer', value: 'waiting_for_customer', label: 'Waiting for Customer', emoji: '⏳' },
-    { id: 'waiting_for_scheduled_appointment', value: 'waiting_for_scheduled_appointment', label: 'Scheduled', emoji: '📅' },
-    { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed', emoji: '✅' },
-    { id: 'cancelled', value: 'cancelled', label: 'Cancelled', emoji: '❌' }
+    { id: 'open', value: 'open', label: 'Open', emoji: EMOJI_MAPPINGS.jobStatuses.open },
+    { id: 'in_progress', value: 'in_progress', label: 'In Progress', emoji: EMOJI_MAPPINGS.jobStatuses.in_progress },
+    { id: 'paused', value: 'paused', label: 'Paused', emoji: EMOJI_MAPPINGS.jobStatuses.paused },
+    { id: 'waiting_for_customer', value: 'waiting_for_customer', label: 'Waiting for Customer', emoji: EMOJI_MAPPINGS.jobStatuses.waiting_for_customer },
+    { id: 'waiting_for_scheduled_appointment', value: 'waiting_for_scheduled_appointment', label: 'Scheduled', emoji: EMOJI_MAPPINGS.jobStatuses.waiting_for_scheduled_appointment },
+    { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed', emoji: EMOJI_MAPPINGS.jobStatuses.successfully_completed },
+    { id: 'cancelled', value: 'cancelled', label: 'Cancelled', emoji: EMOJI_MAPPINGS.jobStatuses.cancelled }
   ];
 
   // Fallback to initialStatus during loading - self-sufficient pattern

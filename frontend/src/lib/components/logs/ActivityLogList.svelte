@@ -7,6 +7,9 @@
   import ActivityLogDateHeader from './ActivityLogDateHeader.svelte';
   import ActivityLogRow from './ActivityLogRow.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
+  import EntityEmoji from '$lib/components/ui/EntityEmoji.svelte';
+  import ActivityTypeEmoji from '$lib/components/ui/ActivityTypeEmoji.svelte';
+  import { getTaskStatusEmoji, getJobStatusEmoji, getTaskPriorityEmoji } from '$lib/config/emoji';
   import { slide, fade } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
@@ -62,20 +65,28 @@
     }
   }
 
-  // Helper function to render group title
-  function renderGroupTitle(group: LogGroup) {
+  // Helper function to render group title (now returns object for component use)
+  function getGroupTitleData(group: LogGroup): { type: LogGroup['type']; text: string } {
+    let text: string;
+    
     switch (group.type) {
       case 'client':
-        return `👤 ${group.client?.name || 'Unknown Client'}`;
+        text = `${group.client?.name || 'Unknown Client'}`;
+        break;
       case 'job':
-        return `💼 ${group.job?.title || 'Unknown Job'} for ${group.client?.name || 'Unknown Client'}`;
+        text = `${group.job?.title || 'Unknown Job'} for ${group.client?.name || 'Unknown Client'}`;
+        break;
       case 'cross-reference':
-        return `🔗 ${group.job?.title || 'Unknown Job'} for ${group.client?.name || 'Unknown Client'}} (Cross-reference)`;
+        text = `${group.job?.title || 'Unknown Job'} for ${group.client?.name || 'Unknown Client'}} (Cross-reference)`;
+        break;
       case 'general':
-        return '⚙️ General Activity';
+        text = 'General Activity';
+        break;
       default:
-        return 'Activity';
+        text = 'Activity';
     }
+    
+    return { type: group.type, text };
   }
 
   // Helper function to group logs by date
@@ -133,7 +144,7 @@
       case 'renamed':
         const oldName = metadata.old_name || 'Unknown';
         const newName = metadata.name || loggableName;
-        return `renamed ${oldName} to ${newName}`;
+        return `renamed ${loggableTypeEmoji} ${oldName} to ${loggableTypeEmoji} ${newName}`;
         
       case 'updated':
         if (metadata.changes) {
@@ -153,7 +164,7 @@
           // Handle special field changes
           if (changeKeys.length === 1 && changeKeys[0] === 'priority') {
             const [, newPriority] = filteredChanges.priority;
-            const priorityEmoji = getPriorityEmoji(newPriority);
+            const priorityEmoji = getTaskPriorityEmoji(newPriority);
             return `marked ${loggableTypeEmoji} ${loggableName} as ${priorityEmoji} ${newPriority?.charAt(0)?.toUpperCase() + newPriority?.slice(1)} Priority`;
           }
           
@@ -191,7 +202,7 @@
         
       case 'status_changed':
         const newStatusLabel = metadata.new_status_label || metadata.new_status || 'Unknown';
-        const statusEmoji = getStatusEmoji(metadata.new_status);
+        const statusEmoji = getStatusEmoji(metadata.new_status, log.loggable_type);
         return `set ${loggableTypeEmoji} ${loggableName} to ${statusEmoji} ${newStatusLabel}`;
         
       case 'added':
@@ -212,6 +223,7 @@
   
   // Helper function to get emoji for loggable types
   function getLoggableTypeEmoji(loggableType: string): string {
+    // Use EntityEmoji's logic but return string for now
     switch (loggableType) {
       case 'Client':
         return '🏢'; // Could be 🏠 for residential, but we'd need the client data
@@ -252,24 +264,15 @@
     }
   }
   
-  // Helper function to get priority emoji
-  function getPriorityEmoji(priority: string): string {
-    switch (priority?.toLowerCase()) {
-      case 'high':
-      case 'urgent':
-        return '🔴';
-      case 'medium':
-      case 'normal':
-        return '🟡';
-      case 'low':
-        return '🟢';
-      default:
-        return '⚪';
+  // Helper function to get status emoji based on entity type
+  function getStatusEmoji(status: string, loggableType?: string): string {
+    if (loggableType === 'Task') {
+      return getTaskStatusEmoji(status);
+    } else if (loggableType === 'Job') {
+      return getJobStatusEmoji(status);
     }
-  }
-  
-  // Helper function to get status emoji
-  function getStatusEmoji(status: string): string {
+    
+    // Fallback for other types
     switch (status?.toLowerCase()) {
       case 'completed':
       case 'done':
@@ -523,7 +526,10 @@
                       />
                     </span>
                     
-                    <span class="logs-group-title">{renderGroupTitle(group)}</span>
+                    <span class="logs-group-title">
+                      <ActivityTypeEmoji type={group.type} size="small" />
+                      <span>{getGroupTitleData(group).text}</span>
+                    </span>
                     
                     <span class="logs-group-count">{group.logs.length}</span>
                   </div>
@@ -763,6 +769,12 @@
 
   .chevron-icon.expanded {
     transform: rotate(90deg);
+  }
+
+  .logs-group-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .logs-group-count {

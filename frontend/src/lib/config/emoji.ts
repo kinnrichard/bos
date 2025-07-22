@@ -48,6 +48,24 @@ const TASK_PRIORITY_EMOJIS: Record<string, string> = {
   'low': '🟢'
 };
 
+// Activity Type Emoji Mappings
+const ACTIVITY_TYPE_EMOJIS: Record<string, string> = {
+  'client': '👤',
+  'job': '💼',
+  'cross-reference': '🔗',
+  'general': '⚙️'
+};
+
+// Entity Type Emoji Mappings
+const ENTITY_TYPE_EMOJIS: Record<string, string> = {
+  'Client': '👤', // Default for client when type is unknown
+  'Job': '💼',
+  'Task': '☑️',
+  'Person': '👤',
+  'Device': '💻',
+  'Note': '📝'
+};
+
 // Utility Emojis
 const UTILITY_EMOJIS = {
   timer: '⏱️',
@@ -161,6 +179,38 @@ export function getScheduleTypeEmoji(type: keyof typeof UTILITY_EMOJIS.schedule_
 }
 
 /**
+ * Get activity type emoji for activity log groups
+ */
+export function getActivityTypeEmoji(type: string): string {
+  return ACTIVITY_TYPE_EMOJIS[type] || '📋';
+}
+
+/**
+ * Get entity type emoji for different entity types
+ * @param entityType - The entity type (Client, Job, Task, etc.)
+ * @param entityData - Optional entity data for client type detection
+ */
+export function getEntityTypeEmoji(
+  entityType: string, 
+  entityData?: { client_type?: string; business?: boolean }
+): string {
+  // Special handling for Client type
+  if (entityType === 'Client' && entityData) {
+    if ('client_type' in entityData && entityData.client_type === 'business') {
+      return '🏢';
+    } else if ('client_type' in entityData && entityData.client_type === 'residential') {
+      return '🏠';
+    } else if ('business' in entityData && entityData.business) {
+      return '🏢';
+    } else if ('business' in entityData && entityData.business === false) {
+      return '🏠';
+    }
+  }
+  
+  return ENTITY_TYPE_EMOJIS[entityType] || '📄';
+}
+
+/**
  * Helper function to get status with emoji and label
  */
 export function getJobStatusWithEmoji(status: string | number | null | undefined): string {
@@ -188,5 +238,7 @@ export const EMOJI_MAPPINGS = {
   jobPriorities: JOB_PRIORITY_EMOJIS,
   taskStatuses: TASK_STATUS_EMOJIS,
   taskPriorities: TASK_PRIORITY_EMOJIS,
+  activityTypes: ACTIVITY_TYPE_EMOJIS,
+  entityTypes: ENTITY_TYPE_EMOJIS,
   utility: UTILITY_EMOJIS
 } as const;

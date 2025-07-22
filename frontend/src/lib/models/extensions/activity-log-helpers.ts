@@ -7,6 +7,7 @@
 
 import type { ActivityLogData } from '../types/activity-log-data';
 import type { ClientData } from '../types/client-data';
+import { getEntityTypeEmoji } from '$lib/config/emoji';
 
 export function getFormattedMessage(log: ActivityLogData): string {
   const action = log.action || '';
@@ -52,29 +53,7 @@ export function getFormattedMessage(log: ActivityLogData): string {
 }
 
 export function getEntityEmoji(log: ActivityLogData, client?: ClientData): string {
-  switch (log.loggable_type) {
-    case 'Client':
-      // Check if client is loaded and has client_type
-      if (client?.client_type === 'business') {
-        return '🏢';
-      } else if (client?.client_type === 'residential') {
-        return '🏠';
-      }
-      // Default for client when type is unknown
-      return '👤';
-    case 'Job':
-      return '💼';
-    case 'Task':
-      return '📋';
-    case 'Person':
-      return '👤';
-    case 'Device':
-      return '💻';
-    case 'Note':
-      return '📝';
-    default:
-      return '📄';
-  }
+  return getEntityTypeEmoji(log.loggable_type, client);
 }
 
 export function isLinkable(log: ActivityLogData): boolean {
