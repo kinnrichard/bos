@@ -723,7 +723,7 @@
 
   .logs-table :global(td) {
     padding: 8px 16px;
-    vertical-align: top;
+    vertical-align: baseline;
   }
 
   /* User cell styling */
@@ -735,10 +735,10 @@
 
   .user-info {
     display: inline-flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: flex-end;
     gap: 6px;
-    vertical-align: baseline;
+    line-height: 1.4;
   }
 
   .user-avatar {
@@ -753,12 +753,15 @@
     font-size: 9px;
     font-weight: 600;
     flex-shrink: 0;
+    align-self: baseline;
+    margin-bottom: -2px;
   }
 
   .user-name {
     color: var(--text-primary);
     font-weight: 500;
-    line-height: 20px; /* Match avatar height for alignment */
+    line-height: 1.4;
+    font-size: 14px;
   }
 
   /* Action cell styling */
@@ -776,7 +779,9 @@
 
   .action-content {
     flex: 1;
-    min-width: 0; /* Allow text to wrap if needed */
+    min-width: 0;
+    line-height: 1.4;
+    font-size: 14px;
   }
 
   .log-count-badge {
@@ -804,7 +809,8 @@
     text-align: right;
     color: var(--text-tertiary);
     white-space: nowrap;
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 1.4;
   }
 
   /* Error State */
