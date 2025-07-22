@@ -722,7 +722,7 @@
   }
 
   .logs-table :global(td) {
-    padding: 8px 16px 7px 16px;
+    padding: 8px 16px 6px 16px;
     vertical-align: baseline;
   }
 
