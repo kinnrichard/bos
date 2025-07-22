@@ -841,7 +841,7 @@
     font-weight: 600;
     flex-shrink: 0;
     align-self: baseline;
-    transform: translateY(-2px);
+    transform: translateY(2px); /* Move avatar down to align with text baseline */
   }
 
   .user-name {
