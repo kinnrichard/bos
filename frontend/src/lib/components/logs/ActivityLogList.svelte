@@ -754,7 +754,7 @@
     font-weight: 600;
     flex-shrink: 0;
     align-self: baseline;
-    margin-bottom: 0px;
+    margin-bottom: 3px;
   }
 
   .user-name {
