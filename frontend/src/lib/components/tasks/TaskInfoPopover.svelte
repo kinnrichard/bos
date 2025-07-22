@@ -5,7 +5,12 @@
   import { formatDateTime } from '$lib/utils/date';
   import { getTaskStatusEmoji, getTaskStatusLabel } from '$lib/config/emoji';
   import BasePopover from '../ui/BasePopover.svelte';
-  import { debugComponent } from '$lib/utils/debug';
+  import { debugComponent } from '$lib/utils/debug/namespaces';
+  import { ReactiveActivityLog } from '$lib/models/reactive-activity-log';
+  import { ReactiveNote } from '$lib/models/reactive-note';
+  import { ReactiveTask } from '$lib/models/reactive-task';
+  import { getCurrentUser } from '$lib/auth/current-user';
+  import { getZero } from '$lib/zero/zero-client';
   
   let {
     task,
@@ -17,7 +22,6 @@
   const dispatch = createEventDispatcher();
   
   let taskDetails = $state(null);
-  let loading = $state(false);
   let error = $state('');
   let noteText = $state('');
   let addingNote = $state(false);
@@ -25,17 +29,55 @@
   let currentTime = $state(Date.now());
   let timer: any;
   
+  // ReactiveRecord queries
+  let activityLogQuery = $state(null);
+  let noteQuery = $state(null);
+  
   // Helper function to generate user initials with proper typing
   function getUserInitials(name: string): string {
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   }
   
-  // Forward popover instance from BasePopover
-  let basePopover = $state();
-
-  // Update timer every second for in-progress tasks
+  // Store popover open state directly
+  let popoverOpen = $state(false);
+  let popoverContentElement = $state(null);
+  
+  // Initialize ReactiveRecord queries when component mounts and task is available
   $effect(() => {
-    if (basePopover && basePopover.expanded && task?.status === 'in_progress') {
+    if (task && !activityLogQuery && !noteQuery) {
+      debugComponent('Setting up ReactiveRecord queries on mount', { taskId: task.id });
+      
+      // Set up reactive queries - they execute automatically
+      activityLogQuery = ReactiveActivityLog
+        .where({
+          loggable_type: 'Task',
+          loggable_id: task.id
+        })
+        .includes('user')
+        .orderBy('created_at', 'asc')
+        .all();
+        
+      noteQuery = ReactiveNote
+        .where({
+          notable_type: 'Task',
+          notable_id: task.id
+        })
+        .includes('user')
+        .orderBy('created_at', 'asc')
+        .all();
+        
+      debugComponent('Queries created', { 
+        activityLogQuery: !!activityLogQuery, 
+        noteQuery: !!noteQuery,
+        activityLogIsLoading: activityLogQuery?.isLoading,
+        noteIsLoading: noteQuery?.isLoading
+      });
+    }
+  });
+  
+  // Update timer every second for in-progress tasks when popover is open
+  $effect(() => {
+    if (popoverOpen && task?.status === 'in_progress') {
       timer = setInterval(() => {
         currentTime = Date.now();
       }, 1000);
@@ -45,117 +87,145 @@
     }
   });
   
-  // Clean up timer when component is destroyed
+  // Clean up timer and queries when component is destroyed
   onDestroy(() => {
     if (timer) clearInterval(timer);
+    
+    // Clean up queries
+    if (activityLogQuery?.destroy) {
+      activityLogQuery.destroy();
+    }
+    if (noteQuery?.destroy) {
+      noteQuery.destroy();
+    }
   });
   
-  // Load task details when popover becomes expanded
+  // Track when popover content element exists to know when popover is open
   $effect(() => {
-    if (basePopover && basePopover.expanded && task && !taskDetails) {
-      loadTaskDetails();
+    if (popoverContentElement) {
+      popoverOpen = true;
+    } else {
+      popoverOpen = false;
     }
   });
 
-  // Check for batch details data when it becomes available
+  // Auto-scroll when data changes
   $effect(() => {
-    if (batchTaskDetails && batchTaskDetails.data && task && !taskDetails) {
-      checkBatchDetails();
+    if (queriesInitialized) {
+      debugComponent('Query state check', {
+        activityLogQuery: {
+          isLoading: activityLogQuery?.isLoading,
+          hasData: !!activityLogQuery?.data,
+          dataLength: activityLogQuery?.data?.length ?? 0,
+          error: activityLogQuery?.error,
+          resultType: activityLogQuery?.resultType
+        },
+        noteQuery: {
+          isLoading: noteQuery?.isLoading,
+          hasData: !!noteQuery?.data,
+          dataLength: noteQuery?.data?.length ?? 0,
+          error: noteQuery?.error,
+          resultType: noteQuery?.resultType
+        }
+      });
+    }
+    
+    if (activityLogQuery?.data || noteQuery?.data) {
+      debugComponent('Query data received', {
+        activityLogs: activityLogQuery?.data?.length ?? 0,
+        notes: noteQuery?.data?.length ?? 0,
+        activityLogData: activityLogQuery?.data,
+        noteData: noteQuery?.data
+      });
+      
+      // Auto-scroll to bottom after content loads
+      setTimeout(() => {
+        if (timelineContainer) {
+          timelineContainer.scrollTop = timelineContainer.scrollHeight;
+        }
+      }, 0);
     }
   });
   
   // Reset state when task changes
   $effect(() => {
     if (task) {
-      taskDetails = null;
       error = '';
     }
   });
   
-  function checkBatchDetails() {
-    if (!batchTaskDetails?.data || !task) return;
-    
-    // Find this task's details in the batch data
-    const taskDetailData = batchTaskDetails.data.find((t: any) => t.id === task.id);
-    if (taskDetailData) {
-      // Transform the JSON:API format to match the expected format
-      taskDetails = {
-        id: taskDetailData.id,
-        title: taskDetailData.attributes.title,
-        status: taskDetailData.attributes.status,
-        position: taskDetailData.attributes.position,
-        parent_id: taskDetailData.attributes.parent_id,
-        created_at: taskDetailData.attributes.created_at,
-        updated_at: taskDetailData.attributes.updated_at,
-        completed_at: taskDetailData.attributes.completed_at,
-        notes: taskDetailData.attributes.notes || [],
-        activity_logs: taskDetailData.attributes.activity_logs || [],
-        // Don't include available_technicians - they're already cached via useUsersQuery
-      };
-      
-      // Auto-scroll to bottom after content loads
-      setTimeout(() => {
-        if (timelineContainer) {
-          timelineContainer.scrollTop = timelineContainer.scrollHeight;
-        }
-      }, 0);
-    }
-  }
-
-  async function loadTaskDetails() {
-    // First check if we have batch details available
-    if (batchTaskDetails?.data) {
-      checkBatchDetails();
-      if (taskDetails) return; // Exit early if batch details provided the data
-    }
-    
-    // Fall back to individual API call if batch details not available
-    loading = true;
-    error = '';
-    
-    try {
-      taskDetails = await tasksService.getTaskDetails(jobId, task.id);
-      // Auto-scroll to bottom after content loads
-      setTimeout(() => {
-        if (timelineContainer) {
-          timelineContainer.scrollTop = timelineContainer.scrollHeight;
-        }
-      }, 0);
-    } catch (err: any) {
+  // Derived state for loading and error
+  let isLoading = $derived((activityLogQuery?.isLoading || noteQuery?.isLoading) ?? false);
+  let queryError = $derived(activityLogQuery?.error || noteQuery?.error);
+  let hasData = $derived(
+    (activityLogQuery?.data !== undefined && activityLogQuery?.data !== null) || 
+    (noteQuery?.data !== undefined && noteQuery?.data !== null)
+  );
+  let queriesInitialized = $derived(!!activityLogQuery && !!noteQuery);
+  
+  // Handle query errors
+  $effect(() => {
+    if (queryError) {
       error = 'Failed to load task details';
-      debugComponent.error('Task details load failed', { error: err, taskId: task.id });
-    } finally {
-      loading = false;
+      debugComponent.error('Task details load failed', { error: queryError, taskId: task?.id });
+    } else if (!isLoading && error && (activityLogQuery?.data || noteQuery?.data)) {
+      // Clear error when data loads successfully
+      error = '';
     }
-  }
+  });
   
   async function addNote() {
     if (!noteText.trim() || addingNote) return;
     
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      error = 'You must be logged in to add notes';
+      return;
+    }
+    
     addingNote = true;
     
     try {
-      const response = await tasksService.addNote(jobId, task.id, noteText.trim());
-      
-      // Update task details with new note
-      if (taskDetails && taskDetails.notes) {
-        taskDetails.notes.push(response.note);
+      // Get Zero client instance
+      const zero = getZero();
+      if (!zero) {
+        throw new Error('Zero client not initialized');
       }
       
-      // Update task via ActiveRecord pattern
-      const { Task } = await import('$lib/models/task');
-      await Task.update(task.id, { 
-        notes_count: (task.notes_count || 0) + 1 
+      // Create note using Zero.js mutation
+      const noteId = crypto.randomUUID();
+      await zero.mutate.notes.insert({
+        id: noteId,
+        content: noteText.trim(),
+        notable_type: 'Task',
+        notable_id: task.id,
+        user_id: currentUser.id,
+        created_at: Date.now(),
+        updated_at: Date.now()
+      });
+      
+      // Update task notes count
+      const currentNotesCount = task.notes_count || 0;
+      await zero.mutate.tasks.update({
+        id: task.id,
+        notes_count: currentNotesCount + 1,
+        updated_at: Date.now()
       });
       
       noteText = '';
+      
+      // The ReactiveRecord queries should automatically update
+      // but we can force a refresh if needed
+      if (noteQuery && typeof noteQuery.refresh === 'function') {
+        noteQuery.refresh();
+      }
       
       // Auto-scroll to bottom to show new note
       setTimeout(() => {
         if (timelineContainer) {
           timelineContainer.scrollTop = timelineContainer.scrollHeight;
         }
-      }, 0);
+      }, 100);
       
       // Notify parent component of the update
       dispatch('task-updated', { task });
@@ -231,27 +301,32 @@
   }
 
 
-  // Build timeline items from task details
-  function getTimelineItems(taskDetails: any): any[] {
-    if (!taskDetails) return [];
+  // Build timeline items from ReactiveRecord data
+  function getTimelineItems(activityLogs: any[], notes: any[]): any[] {
+    debugComponent('Building timeline items', { 
+      activityLogsCount: activityLogs?.length ?? 0,
+      notesCount: notes?.length ?? 0,
+      activityLogs,
+      notes
+    });
     
     let items: any[] = [];
     
     // Add activity logs (created, status changes, etc.)
-    if (taskDetails.activity_logs) {
-      taskDetails.activity_logs.forEach((log: any) => {
+    if (activityLogs && activityLogs.length > 0) {
+      activityLogs.forEach((log: any) => {
         if (log.action === 'created') {
           items.push({
             type: 'created',
             timestamp: log.created_at,
-            user: log.user_name ? { name: log.user_name } : null,
+            user: log.user,
             log: log
           });
         } else if (log.action === 'status_changed') {
           items.push({
             type: 'status_change',
             timestamp: log.created_at,
-            user: log.user_name ? { name: log.user_name } : null,
+            user: log.user,
             status: log.metadata?.new_status,
             log: log
           });
@@ -261,7 +336,8 @@
     
     // If no created log exists, add a fallback created item
     const hasCreatedLog = items.some(item => item.type === 'created');
-    if (!hasCreatedLog) {
+    if (!hasCreatedLog && task) {
+      debugComponent('Adding fallback created item', { taskCreatedAt: task.created_at });
       items.push({
         type: 'created',
         timestamp: task.created_at,
@@ -270,12 +346,12 @@
     }
     
     // Add notes
-    if (taskDetails.notes) {
-      taskDetails.notes.forEach((note: any) => {
+    if (notes && notes.length > 0) {
+      notes.forEach((note: any) => {
         items.push({
           type: 'note',
           timestamp: note.created_at,
-          user: { name: note.user_name },
+          user: note.user,
           content: note.content,
           note: note
         });
@@ -283,7 +359,9 @@
     }
     
     // Sort by timestamp
-    return items.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const sortedItems = items.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    debugComponent('Timeline items built', { itemCount: sortedItems.length, items: sortedItems });
+    return sortedItems;
   }
 
   // Group timeline items by user and date
@@ -316,7 +394,6 @@
 <div class="task-info-popover-container">
   <!-- Task Info Button (Trigger) -->
   <BasePopover 
-    bind:popover={basePopover}
     preferredPlacement="left"
     panelWidth="380px"
   >
@@ -325,7 +402,9 @@
         class="task-action-button"
         title="Task details"
         use:popover.button
-        onclick={(e) => e.stopPropagation()}
+        onclick={(e) => {
+          e.stopPropagation();
+        }}
       >
         <img src="/icons/{isSelected ? 'info' : 'info-blue'}.svg" alt="Info" class="action-icon" />
       </button>
@@ -333,7 +412,7 @@
 
     {#snippet children({ close })}
       <!-- Popover content with scrolling -->
-      <div class="popover-content-scrollable">
+      <div class="popover-content-scrollable" bind:this={popoverContentElement}>
       <!-- Header -->
       <div class="popover-header">
         <h3>Task Info</h3>
@@ -349,7 +428,28 @@
         {/if}
       </div>
 
-      {#if loading}
+      <!-- Debug info -->
+      {#if false}
+        <div style="padding: 8px; background: #333; font-size: 11px; font-family: monospace;">
+          <div>Popover open: {popoverOpen}</div>
+          <div>Task ID: {task?.id ?? 'null'}</div>
+          <div>Queries initialized: {queriesInitialized}</div>
+          <div>Is loading: {isLoading}</div>
+          <div>Has data: {hasData}</div>
+          <div>Error: {error || 'none'}</div>
+          <div>Activity logs: {activityLogQuery?.data?.length ?? 'null'}</div>
+          <div>Notes: {noteQuery?.data?.length ?? 'null'}</div>
+        </div>
+      {/if}
+      
+      {#if !queriesInitialized}
+        <div class="timeline-section">
+          <div class="loading-state">
+            <span class="spinner">⏳</span>
+            <span>Initializing...</span>
+          </div>
+        </div>
+      {:else if isLoading}
         <div class="timeline-section">
           <div class="loading-state">
             <span class="spinner">⏳</span>
@@ -361,14 +461,24 @@
           <div class="error-state">
             <span>❌</span>
             <span>{error}</span>
-            <button onclick={loadTaskDetails}>Retry</button>
+            <button onclick={() => { 
+              activityLogQuery?.refresh?.(); 
+              noteQuery?.refresh?.();
+              error = '';
+            }}>Retry</button>
           </div>
         </div>
-      {:else if taskDetails}
+      {:else if hasData}
         <!-- Timeline section -->
         <div class="timeline-section">
           <div class="timeline-container" bind:this={timelineContainer}>
-            {#each groupTimelineItems(getTimelineItems(taskDetails)) as item}
+            {#if getTimelineItems(activityLogQuery?.data || [], noteQuery?.data || []).length === 0}
+              <div class="empty-state">
+                <span class="empty-icon">📋</span>
+                <span class="empty-message">No activity yet</span>
+              </div>
+            {:else}
+              {#each groupTimelineItems(getTimelineItems(activityLogQuery?.data || [], noteQuery?.data || [])) as item}
               {#if item.type === 'header'}
                 <div class="timeline-header">
                   <div class="timeline-header-left">
@@ -448,6 +558,7 @@
                 </div>
               {/if}
             {/each}
+            {/if}
           </div>
         </div>
 
@@ -755,7 +866,8 @@
 
   /* Loading and error states */
   .loading-state,
-  .error-state {
+  .error-state,
+  .empty-state {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -763,6 +875,22 @@
     text-align: center;
     color: var(--text-secondary);
     justify-content: center;
+  }
+  
+  .empty-state {
+    flex-direction: column;
+    padding: 40px 20px;
+  }
+  
+  .empty-icon {
+    font-size: 32px;
+    opacity: 0.5;
+    margin-bottom: 8px;
+  }
+  
+  .empty-message {
+    font-size: 14px;
+    color: var(--text-muted);
   }
 
   .spinner {
