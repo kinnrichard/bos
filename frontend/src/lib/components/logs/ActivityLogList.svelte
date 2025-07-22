@@ -23,6 +23,8 @@
     job?: JobData;
     logs: ActivityLogData[];
     isCollapsed: boolean;
+    priority: number; // For sorting groups
+    lastActivity: Date; // For recency sorting
   }
 
   let { 
@@ -33,24 +35,16 @@
     onRetry
   }: Props = $props();
 
-  // Group logs by context (client/job combination)
+  // Enhanced grouping algorithm with duplicate detection and cross-references
   const groupedLogs = $derived(() => {
+    // Step 1: Detect and group duplicate actions
+    const processedLogs = detectDuplicateActions(logs);
+    
+    // Step 2: Create context groups
     const groups = new Map<string, LogGroup>();
 
-    logs.forEach(log => {
-      let groupKey: string;
-      let groupType: LogGroup['type'];
-      
-      if (log.client_id && log.job_id) {
-        groupKey = `job-${log.job_id}`;
-        groupType = 'job';
-      } else if (log.client_id && !log.job_id) {
-        groupKey = `client-${log.client_id}`;
-        groupType = 'client';
-      } else {
-        groupKey = 'general';
-        groupType = 'general';
-      }
+    processedLogs.forEach(log => {
+      const { groupKey, groupType, priority } = determineLogGroup(log);
 
       if (!groups.has(groupKey)) {
         groups.set(groupKey, {
@@ -59,33 +53,130 @@
           client: log.client,
           job: log.job,
           logs: [],
-          isCollapsed: false
+          isCollapsed: false,
+          priority,
+          lastActivity: new Date(log.created_at)
         });
       }
 
-      groups.get(groupKey)!.logs.push(log);
+      const group = groups.get(groupKey)!;
+      group.logs.push(log);
+      
+      // Update last activity time for recency sorting
+      const logDate = new Date(log.created_at);
+      if (logDate > group.lastActivity) {
+        group.lastActivity = logDate;
+      }
     });
 
-    // Sort groups: general first, then by client name, then by job title
+    // Step 3: Enhanced sorting with priority and recency
     return Array.from(groups.values()).sort((a, b) => {
-      if (a.type === 'general' && b.type !== 'general') return -1;
-      if (a.type !== 'general' && b.type === 'general') return 1;
-      
-      if (a.client?.name && b.client?.name) {
-        const clientCompare = a.client.name.localeCompare(b.client.name);
-        if (clientCompare !== 0) return clientCompare;
+      // First by priority (lower number = higher priority)
+      if (a.priority !== b.priority) {
+        return a.priority - b.priority;
       }
       
-      if (a.job?.title && b.job?.title) {
-        return a.job.title.localeCompare(b.job.title);
-      }
-      
-      return 0;
+      // Then by most recent activity
+      return b.lastActivity.getTime() - a.lastActivity.getTime();
     });
   });
 
-  // For now, show all logs in a simple list within groups
-  // Full date grouping will be implemented in Phase 3
+  // Helper function to detect duplicate actions within time windows
+  function detectDuplicateActions(logs: ActivityLogData[]): ActivityLogData[] {
+    const duplicateWindow = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const duplicateGroups = new Map<string, ActivityLogData[]>();
+    
+    // Group potentially duplicate actions
+    logs.forEach(log => {
+      const actionKey = `${log.action}-${log.loggable_type}-${log.loggable_id}-${log.user_id}`;
+      const logTime = new Date(log.created_at).getTime();
+      
+      // Find existing group within time window
+      let foundGroup = false;
+      for (const [key, group] of duplicateGroups) {
+        if (key.startsWith(actionKey)) {
+          const groupTime = new Date(group[0].created_at).getTime();
+          if (Math.abs(logTime - groupTime) <= duplicateWindow) {
+            group.push(log);
+            foundGroup = true;
+            break;
+          }
+        }
+      }
+      
+      if (!foundGroup) {
+        duplicateGroups.set(`${actionKey}-${logTime}`, [log]);
+      }
+    });
+    
+    // Process groups to mark duplicates
+    const processedLogs: ActivityLogData[] = [];
+    for (const group of duplicateGroups.values()) {
+      if (group.length > 1) {
+        // Keep the most recent log and mark it with duplicate count
+        const sortedGroup = group.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        const primaryLog = { ...sortedGroup[0] };
+        
+        // Add duplicate metadata
+        primaryLog.metadata = {
+          ...primaryLog.metadata,
+          duplicateCount: group.length,
+          duplicateTimespan: {
+            start: sortedGroup[sortedGroup.length - 1].created_at,
+            end: sortedGroup[0].created_at
+          }
+        };
+        
+        processedLogs.push(primaryLog);
+      } else {
+        processedLogs.push(group[0]);
+      }
+    }
+    
+    return processedLogs.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }
+
+  // Helper function to determine group classification and priority
+  function determineLogGroup(log: ActivityLogData): { groupKey: string; groupType: LogGroup['type']; priority: number } {
+    // Cross-reference detection: actions that span multiple contexts
+    const isCrossReference = log.metadata?.cross_reference || 
+      (log.client_id && log.job_id && log.loggable_type !== 'Job' && log.loggable_type !== 'Client');
+    
+    if (isCrossReference) {
+      return {
+        groupKey: `cross-ref-${log.client_id}-${log.job_id}`,
+        groupType: 'cross-reference',
+        priority: 2 // Medium priority
+      };
+    }
+    
+    if (log.client_id && log.job_id) {
+      return {
+        groupKey: `job-${log.job_id}`,
+        groupType: 'job',
+        priority: 1 // High priority - most specific context
+      };
+    }
+    
+    if (log.client_id && !log.job_id) {
+      return {
+        groupKey: `client-${log.client_id}`,
+        groupType: 'client',
+        priority: 3 // Lower priority - broader context
+      };
+    }
+    
+    return {
+      groupKey: 'general',
+      groupType: 'general',
+      priority: 4 // Lowest priority - system-wide actions
+    };
+  }
+
 </script>
 
 <div class="activity-log-list">

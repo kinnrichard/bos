@@ -57,7 +57,18 @@
     type="button"
   >
     <span class="header-content">
-      {#if client && job}
+      {#if groupType === 'cross-reference'}
+        <span class="cross-ref-indicator">🔗</span>
+        <span>Cross-Reference</span>
+        {#if client && job}
+          <span class="separator">›</span>
+          <EntityEmoji entityType="Client" entity={client} />
+          <span class="client-name">{client.name}</span>
+          <span class="separator">›</span>
+          <EntityEmoji entityType="Job" />
+          <span>{job.title}</span>
+        {/if}
+      {:else if client && job}
         <EntityEmoji entityType="Client" entity={client} />
         <span class="client-name">{client.name}</span>
         <span class="separator">›</span>
@@ -67,7 +78,8 @@
         <EntityEmoji entityType="Client" entity={client} />
         <span>{client.name}</span>
       {:else if groupType === 'general'}
-        <span>General Activity</span>
+        <span class="system-indicator">⚙️</span>
+        <span>System Activity</span>
       {/if}
     </span>
     <span class="log-count">({logs.length})</span>
@@ -132,6 +144,20 @@
   .separator {
     color: var(--text-secondary);
     font-size: 0.875rem;
+  }
+
+  .cross-ref-indicator,
+  .system-indicator {
+    font-size: 1rem;
+    margin-right: 0.25rem;
+  }
+
+  .cross-ref-indicator {
+    color: var(--accent-orange, #FF9500);
+  }
+
+  .system-indicator {
+    color: var(--text-secondary);
   }
 
   .log-count {

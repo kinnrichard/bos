@@ -7,9 +7,15 @@
     log: ActivityLogData;
     showGroupIndicator?: boolean;
     groupCount?: number;
+    showDuplicateIndicator?: boolean;
   }
 
-  let { log, showGroupIndicator = false, groupCount = 1 }: Props = $props();
+  let { 
+    log, 
+    showGroupIndicator = false, 
+    groupCount = 1,
+    showDuplicateIndicator = true
+  }: Props = $props();
 
   // Format timestamp
   const formattedTime = $derived(() => {
@@ -42,6 +48,20 @@
   const formattedMessage = $derived(getFormattedMessage(log));
   const linkable = $derived(isLinkable(log));
   const loggablePath = $derived(getLoggablePath(log));
+  
+  // Duplicate detection from metadata
+  const duplicateCount = $derived(log.metadata?.duplicateCount || 0);
+  const hasDuplicates = $derived(duplicateCount > 1);
+  const duplicateTimespan = $derived(log.metadata?.duplicateTimespan);
+  
+  // Format duplicate timespan for tooltip
+  const duplicateTooltip = $derived(() => {
+    if (!duplicateTimespan) return '';
+    const start = new Date(duplicateTimespan.start);
+    const end = new Date(duplicateTimespan.end);
+    const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60)); // minutes
+    return `${duplicateCount} similar actions over ${duration} minute${duration !== 1 ? 's' : ''}`;
+  });
 </script>
 
 <div class="activity-log-row">
@@ -63,6 +83,13 @@
       
       {#if showGroupIndicator && groupCount > 1}
         <span class="group-badge">{groupCount}x</span>
+      {/if}
+      
+      {#if showDuplicateIndicator && hasDuplicates}
+        <span class="duplicate-badge" title={duplicateTooltip()}>
+          <span class="duplicate-icon">↻</span>
+          <span class="duplicate-count">{duplicateCount}x</span>
+        </span>
       {/if}
     </div>
     
@@ -140,6 +167,28 @@
     border-radius: 0.75rem;
     font-size: 0.75rem;
     font-weight: 500;
+  }
+
+  .duplicate-badge {
+    background-color: var(--accent-orange, #FF9500);
+    color: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: help;
+  }
+
+  .duplicate-icon {
+    font-size: 0.875rem;
+    opacity: 0.9;
+  }
+
+  .duplicate-count {
+    font-weight: 600;
   }
 
   .time-column {
