@@ -57,12 +57,10 @@ module Loggable
       })
     elsif saved_changes["name"] && is_a?(Client)
       log_action("renamed", metadata: {
-        name: saved_changes["name"][1],
         old_name: saved_changes["name"][0]
       })
     elsif saved_changes["title"] && (is_a?(Job) || is_a?(Task))
       log_action("renamed", metadata: {
-        name: saved_changes["title"][1],
         old_name: saved_changes["title"][0]
       })
     elsif changes_data.any?
