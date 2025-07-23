@@ -255,11 +255,7 @@
 /* ===== NEW TASK ROW STYLING ===== */
 
 .task-item-add-new {
-  --placeholder-opacity: 0;
-}
-
-.task-item-add-new:hover {
-  --placeholder-opacity: 0.7;
+  --text-color: var(--text-secondary, #8E8E93);
 }
 
 .task-item-add-new .task-status {
@@ -268,14 +264,80 @@
 }
 
 .add-task-placeholder {
-  opacity: var(--placeholder-opacity, 0);
+  color: var(--text-color);
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  transition: color 0.15s ease, opacity 0.15s ease;
+  opacity: 0.5;
+}
+
+/* Always show full opacity on row hover */
+.task-item-add-new:hover .add-task-placeholder {
+  opacity: 1;
+}
+
+/* Desktop hover states */
+@media (hover: hover) and (pointer: fine) {
+  .task-item-add-new:hover {
+    --text-color: var(--accent-blue, #007AFF);
+  }
+  
+  .task-item-add-new:hover .add-task-placeholder {
+    color: var(--text-color);
+  }
+  
+  /* Hide label by default when list has tasks (desktop only) */
+  .task-item-add-new:not(.is-empty-list) .add-task-placeholder {
+    opacity: 0;
+  }
+  
+  /* Show label on hover when list has tasks */
+  .task-item-add-new:not(.is-empty-list):hover .add-task-placeholder {
+    opacity: 1;
+  }
+}
+
+/* Mobile styles - always show label */
+@media (hover: none) and (pointer: coarse) {
+  .task-item-add-new .add-task-placeholder {
+    opacity: 0.5;
+  }
+  
+  .task-item-add-new:active .add-task-placeholder {
+    opacity: 1 !important;
+  }
+  
+  /* Never hide text on mobile */
+  .task-item-add-new .add-task-placeholder.hide-on-hover {
+    opacity: 0.5 !important;
+    pointer-events: auto !important;
+  }
+  
+  .task-item-add-new:active .add-task-placeholder.hide-on-hover {
+    opacity: 1 !important;
+  }
+  
+  /* Color change on touch */
+  .task-item-add-new:active {
+    --text-color: var(--accent-blue, #007AFF);
+  }
+  
+  .task-item-add-new:active .add-task-placeholder {
+    color: var(--text-color);
+  }
 }
 
 .task-item-add-new .status-emoji {
   /* Disable hover state entirely for add-new rows to prevent interference */
   cursor: default;
+}
+
+.task-item-add-new .status-emoji img {
+  transition: none;
+  opacity: 0.8;
+}
+
+.task-item-add-new:hover .status-emoji img {
+  opacity: 1;
 }
 
 .task-item-add-new .status-emoji:hover {

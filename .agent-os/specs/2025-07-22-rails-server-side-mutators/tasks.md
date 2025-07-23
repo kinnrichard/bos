@@ -3,7 +3,9 @@
 These are the tasks to be completed for the spec detailed in @.agent-os/specs/2025-07-22-rails-server-side-mutators/spec.md
 
 > Created: 2025-07-22
-> Status: Ready for Implementation
+> Status: Not Started
+> Last Updated: 2025-07-23
+> Dependencies: Requires completion of 2025-07-21-zero-custom-mutations Task 2 (Mutator Hook System)
 
 ## Tasks
 

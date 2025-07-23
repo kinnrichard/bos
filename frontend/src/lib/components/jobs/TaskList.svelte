@@ -232,6 +232,9 @@
     return hierarchyManager.flattenTasks(hierarchicalTasks);
   });
   
+  // Check if task list is empty for positioning New Task button
+  const hasNoTasks = $derived(flattenedTasks.length === 0);
+  
   // Update flat task IDs for multi-select functionality
   const flatTaskIds = $derived(hierarchyManager.getFlatTaskIds(flattenedTasks));
 
@@ -1156,18 +1159,6 @@
 
 <div class="task-list" bind:this={taskListContainer}>
 
-  {#if tasks.length === 0}
-    <div class="empty-state">
-      <div class="empty-icon">📋</div>
-      <h4>{taskFilter.showDeleted ? 'No deleted tasks' : 'No tasks yet'}</h4>
-      {#if canCreateTasks}
-        <p>Click "New Task" below to get started.</p>
-      {:else}
-        <p>Clear the deleted filter to view active tasks.</p>
-      {/if}
-    </div>
-  {/if}
-  
   <!-- Tasks container - always show to include new task row -->
   <div 
     class="tasks-container"
@@ -1180,7 +1171,32 @@
     }}
     bind:this={tasksContainer}
   >
-    {#if tasks.length > 0}
+    <!-- Add New Task Row at top when list is empty -->
+    {#if canCreateTasks && hasNoTasks}
+      <NewTaskRow 
+        mode="bottom-row"
+        depth={0}
+        manager={newTaskManager}
+        taskState={bottomTaskState}
+        isEmptyList={true}
+        onStateChange={(changes) => taskCreationManager.updateState('bottom', changes)}
+        on:titlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
+      />
+    {/if}
+    
+    {#if tasks.length === 0}
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h4>{taskFilter.showDeleted ? 'No deleted tasks' : 'No tasks yet'}</h4>
+        {#if canCreateTasks}
+          <p>Click "New Task" above to get started.</p>
+        {:else}
+          <p>Clear the deleted filter to view active tasks.</p>
+        {/if}
+      </div>
+    {/if}
+    
+    {#if flattenedTasks.length > 0}
       {#each flattenedTasks as renderItem, index (renderItem.task.id)}
         <TaskRow 
           task={renderItem.task}
@@ -1211,13 +1227,14 @@
       {/each}
     {/if}
       
-    <!-- Add New Task Row -->
-    {#if canCreateTasks}
+    <!-- Add New Task Row at bottom when tasks exist -->
+    {#if canCreateTasks && !hasNoTasks}
       <NewTaskRow 
         mode="bottom-row"
         depth={0}
         manager={newTaskManager}
         taskState={bottomTaskState}
+        isEmptyList={false}
         onStateChange={(changes) => taskCreationManager.updateState('bottom', changes)}
         on:titlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
       />

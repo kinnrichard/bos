@@ -10,13 +10,15 @@
     depth = 0,
     manager,
     taskState,
-    onStateChange
+    onStateChange,
+    isEmptyList = false
   }: {
     mode?: 'bottom-row' | 'inline-after-task';
     depth?: number;
     manager: TaskInputManager;
     taskState?: TaskCreationState;
     onStateChange?: (changes: Partial<TaskCreationState>) => void;
+    isEmptyList?: boolean;
   } = $props();
 
   const dispatch = createEventDispatcher();
@@ -27,6 +29,7 @@
   
   // Local state
   let inputElement = $state<HTMLInputElement>();
+  let isHovered = $state(false);
 
   function handleRowClick(event: MouseEvent) {
     if (mode === 'bottom-row' && !isShowing) {
@@ -49,8 +52,12 @@
 
 <div 
   class="task-item task-item-add-new"
+  class:is-empty-list={isEmptyList}
+  class:is-hovered={isHovered}
   style="--depth: {depth}"
   onclick={handleRowClick}
+  onmouseenter={() => isHovered = true}
+  onmouseleave={() => isHovered = false}
   data-testid={mode === 'bottom-row' ? 'create-task-button' : undefined}
 >
   <!-- Disclosure Spacer -->
@@ -60,9 +67,9 @@
   <div class="task-status">
     <div class="status-emoji">
       <img 
-        src="/icons/plus-circle.svg" 
+        src={isHovered ? '/icons/plus-circle-blue.svg' : '/icons/plus-circle.svg'}
         alt="Add task" 
-        style="width: 16px; height: 16px; opacity: 0.6; {mode === 'bottom-row' ? 'pointer-events: none;' : ''}" 
+        style="width: 16px; height: 16px; {mode === 'bottom-row' ? 'pointer-events: none;' : ''}" 
       />
     </div>
   </div>
