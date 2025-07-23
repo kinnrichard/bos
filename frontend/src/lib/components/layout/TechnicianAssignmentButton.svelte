@@ -1,6 +1,6 @@
 <script lang="ts">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
-  import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
+  import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { getZeroContext } from '$lib/zero-context.svelte';
   
@@ -54,14 +54,33 @@
   
   const errorMessage = $derived(getPopoverErrorMessage(error));
   
+  // Create options array for PopoverMenu with custom properties
+  const menuOptions = $derived(
+    availableUsers.map(user => ({
+      id: user.id,
+      value: user.id,
+      label: user.name,
+      user: user, // Include full user object for avatar rendering
+      selected: (job as any)?.jobAssignments?.some((a: any) => a.user_id === user.id) || false
+    }))
+  );
+
+  // Get currently selected user IDs
+  const selectedUserIds = $derived(
+    (job as any)?.jobAssignments?.map((a: any) => a.user_id) || []
+  );
+
   // Reactive state derived directly from job assignments - no local state needed
 
   // Handle checkbox changes - reactive mutations with automatic UI updates
-  async function handleUserToggle(user: UserData, checked: boolean) {
+  async function handleUserToggle(userId: string, option: any) {
     // Remove loading guard to allow optimistic updates
     
+    const user = option.user as UserData;
+    const isCurrentlySelected = selectedUserIds.includes(userId);
+    
     // Epic-008: Zero.js provides reliable data, validation unnecessary
-    if (!user?.id) {
+    if (!userId) {
       debugWorkflow('Missing user ID, ignoring click', user);
       return;
     }
@@ -72,23 +91,23 @@
       return;
     }
     
-    debugWorkflow('User clicked technician assignment', { userName: user.name, action: checked ? 'ON' : 'OFF' });
+    debugWorkflow('User clicked technician assignment', { userName: user.name, action: !isCurrentlySelected ? 'ON' : 'OFF' });
     
     // Reactive mutations - UI updates automatically when data changes
     try {
       isLoading = true;
       error = null;
       
-      if (checked) {
+      if (!isCurrentlySelected) {
         // Create new job assignment
         await JobAssignment.create({
           job_id: jobId,
-          user_id: user.id
+          user_id: userId
         });
         debugWorkflow('Created assignment', { userName: user.name, jobId });
       } else {
         // Find and delete existing job assignment
-        const existingAssignment = (job as any)?.jobAssignments?.find((a: any) => a.user_id === user.id);
+        const existingAssignment = (job as any)?.jobAssignments?.find((a: any) => a.user_id === userId);
         if (existingAssignment?.id) {
           await JobAssignment.destroy(existingAssignment.id);
           debugWorkflow('Deleted assignment', { userName: user.name, jobId });
@@ -97,7 +116,7 @@
     } catch (err) {
       error = err as Error;
       debugWorkflow('Error during assignment mutation', err);
-      debugWorkflow.error('Technician assignment mutation error', { error: err, jobId, technicianId });
+      debugWorkflow.error('Technician assignment mutation error', { error: err, jobId, userId });
     } finally {
       isLoading = false;
     }
@@ -140,42 +159,50 @@
   {/snippet}
 
   {#snippet children({ close })}
-    <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
-    <h3 class="popover-title">Assigned To</h3>
-    
     {#if errorMessage}
-      <div class="popover-error-message">{errorMessage}</div>
-    {/if}
-
-    {#if usersQuery.isLoading}
-      <div class="popover-loading-indicator">Loading users...</div>
+      <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
+        <div class="popover-error-message">{errorMessage}</div>
+      </div>
+    {:else if usersQuery.isLoading}
+      <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
+        <div class="popover-loading-indicator">Loading users...</div>
+      </div>
     {:else}
-      <PopoverOptionList
-        options={availableUsers}
-        loading={usersQuery.isLoading}
-        maxHeight={POPOVER_CONSTANTS.DEFAULT_MAX_HEIGHT}
-        onOptionClick={(user, event) => {
-          const isCurrentlySelected = (job as any)?.jobAssignments?.some((a: any) => a.user_id === user.id) || false;
-          handleUserToggle(user, !isCurrentlySelected);
-        }}
-        isSelected={(option) => (job as any)?.jobAssignments?.some((a: any) => a.user_id === option.id) || false}
+      <PopoverMenu
+        options={[
+          { id: 'title', value: 'title', label: 'Assigned To', header: true },
+          ...menuOptions
+        ]}
+        selected={selectedUserIds}
+        multiple={true}
+        onSelect={handleUserToggle}
+        onClose={close}
+        showCheckmarks={true}
+        showIcons={false}
+        enableKeyboard={true}
+        autoFocus={true}
+        className="technician-assignment-menu"
       >
-        {#snippet optionContent({ option })}
-          <div class="technician-avatar popover-option-left-content">
-            <UserAvatar user={asUser(option)} size="xs" />
-          </div>
-          <span class="popover-option-main-label">{option.name}</span>
-          
-          <!-- Checkmark bound to actual assignment data -->
-          <div class="popover-checkmark-container">
-            {#if (job as any)?.jobAssignments?.some((a: any) => a.user_id === option.id)}
-              <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
-            {/if}
-          </div>
+        {#snippet optionContent({ option, isSelected, isFocused })}
+          {#if !option.header}
+            <div class="popover-menu-checkmark">
+              {#if isSelected}
+                <img 
+                  src={isFocused ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
+                  alt="Selected"
+                  width="12"
+                  height="12"
+                />
+              {/if}
+            </div>
+            <div class="technician-avatar">
+              <UserAvatar user={option.user} size="xs" />
+            </div>
+            <span class="popover-menu-label">{option.label}</span>
+          {/if}
         {/snippet}
-      </PopoverOptionList>
+      </PopoverMenu>
     {/if}
-    </div>
   {/snippet}
 </BasePopover>
 
@@ -250,6 +277,11 @@
   }
 
   /* Panel content styling */
+  
+  .technician-avatar {
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
 
   /* Component-specific option styling removed - now using shared classes */
 

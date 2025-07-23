@@ -10,6 +10,7 @@
     disabled?: boolean;
     divider?: boolean;  // Render as divider
     header?: boolean;   // Render as header
+    [key: string]: any; // Allow custom properties
   }
 
   // Props interface
@@ -28,6 +29,7 @@
     enableKeyboard?: boolean;
     autoFocus?: boolean;
     maxHeight?: string;
+    optionContent?: import('svelte').Snippet<[{ option: MenuOption, isSelected: boolean, isFocused: boolean }]>;
   }
 
   let {
@@ -44,7 +46,8 @@
     selectedClassName = '',
     enableKeyboard = true,
     autoFocus = true,
-    maxHeight = ''
+    maxHeight = '',
+    optionContent
   }: Props = $props();
   
   let menuElement = $state<HTMLElement>();
@@ -207,39 +210,43 @@
           if (idx >= 0) focusedIndex = idx;
         }}
       >
-        {#if showCheckmarks}
-          <div class="popover-menu-checkmark">
-            {#if isSelected(option.value)}
-              <img 
-                src={option === focusedOption ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
-                alt="Selected"
-                width="12"
-                height="12"
-              />
-            {/if}
-          </div>
-        {/if}
-        
-        {#if showIcons && option.icon && iconPosition === 'left'}
-          <span class="popover-menu-icon popover-menu-icon-left">
-            {#if option.icon.startsWith('/') || option.icon.startsWith('http')}
-              <img src={option.icon} alt="" />
-            {:else}
-              {option.icon}
-            {/if}
-          </span>
-        {/if}
-        
-        <span class="popover-menu-label">{option.label}</span>
-        
-        {#if showIcons && option.icon && iconPosition === 'right' && !showCheckmarks}
-          <span class="popover-menu-icon popover-menu-icon-right">
-            {#if option.icon.startsWith('/') || option.icon.startsWith('http')}
-              <img src={option.icon} alt="" />
-            {:else}
-              {option.icon}
-            {/if}
-          </span>
+        {#if optionContent}
+          {@render optionContent({ option, isSelected: isSelected(option.value), isFocused: option === focusedOption })}
+        {:else}
+          {#if showCheckmarks}
+            <div class="popover-menu-checkmark">
+              {#if isSelected(option.value)}
+                <img 
+                  src={option === focusedOption ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
+                  alt="Selected"
+                  width="12"
+                  height="12"
+                />
+              {/if}
+            </div>
+          {/if}
+          
+          {#if showIcons && option.icon && iconPosition === 'left'}
+            <span class="popover-menu-icon popover-menu-icon-left">
+              {#if option.icon.startsWith('/') || option.icon.startsWith('http')}
+                <img src={option.icon} alt="" />
+              {:else}
+                {option.icon}
+              {/if}
+            </span>
+          {/if}
+          
+          <span class="popover-menu-label">{option.label}</span>
+          
+          {#if showIcons && option.icon && iconPosition === 'right' && !showCheckmarks}
+            <span class="popover-menu-icon popover-menu-icon-right">
+              {#if option.icon.startsWith('/') || option.icon.startsWith('http')}
+                <img src={option.icon} alt="" />
+              {:else}
+                {option.icon}
+              {/if}
+            </span>
+          {/if}
         {/if}
       </button>
     {/if}
