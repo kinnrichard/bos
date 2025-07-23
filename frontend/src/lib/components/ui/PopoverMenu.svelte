@@ -210,9 +210,12 @@
         {#if showCheckmarks}
           <div class="popover-menu-checkmark">
             {#if isSelected(option.value)}
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+              <img 
+                src={option === focusedOption ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
+                alt="Selected"
+                width="16"
+                height="16"
+              />
             {/if}
           </div>
         {/if}
@@ -359,7 +362,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent-blue);
   }
   
   .popover-menu-divider {
