@@ -2,7 +2,8 @@
 
 > Spec: New Task Button Refinement
 > Created: 2025-07-23
-> Status: Planning
+> Status: Completed
+> Implementation Date: 2025-07-23
 
 ## Overview
 

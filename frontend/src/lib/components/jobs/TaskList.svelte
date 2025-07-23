@@ -486,6 +486,9 @@
     let position = tasks.length + 1;
     let parentId: string | undefined;
     
+    // Clear the form immediately to prevent visual glitch
+    taskCreationManager.hide(type);
+    
     // Calculate position and parent for inline tasks
     if (type === 'inline' && insertNewTaskAfter) {
       const afterTask = tasks.find(t => t.id === insertNewTaskAfter);
@@ -547,16 +550,15 @@
         taskSelectionActions.selectTask(newTask.id);
       }
       
-      // Clear the form
-      taskCreationManager.hide(type);
-      if (type === 'inline') {
-        insertNewTaskAfter = null;
-      }
-      
       dragFeedback = 'Task created successfully!';
       setTimeout(() => dragFeedback = '', 2000);
     } catch (error: any) {
       debugWorkflow.error('Task creation failed', { error, taskData: state });
+      
+      // Restore the input state on error
+      taskCreationManager.show(type);
+      taskCreationManager.setTitle(type, title);
+      
       dragFeedback = 'Failed to create task - please try again';
       setTimeout(() => dragFeedback = '', 3000);
     }
