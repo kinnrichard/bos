@@ -1,8 +1,7 @@
 <script lang="ts">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
-  import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
-  import PopoverSeparator from '$lib/components/ui/PopoverSeparator.svelte';
-  import '$lib/styles/popover-common.css';
+  import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
+  import PopoverMenuSeparator from '$lib/components/ui/PopoverMenuSeparator.svelte';
 
   interface Props {
     onFilterChange?: (statuses: string[]) => void;
@@ -25,10 +24,12 @@
     { id: 'cancelled', value: 'cancelled', label: 'Cancelled' }
   ];
 
-  // Deleted option for the second list
-  const deletedOption = [
+  // Build menu options with separator
+  const menuOptions = $derived([
+    ...statusOptions,
+    { id: 'separator', divider: true },
     { id: 'deleted', value: 'deleted', label: 'Deleted' }
-  ];
+  ]);
 
   // Start with all statuses selected (default behavior)
   let selectedStatuses: string[] = $state(statusOptions.map(option => option.value));
@@ -112,53 +113,45 @@
   {/snippet}
 
   {#snippet children({ close })}
-    <div class="filter-content">
-    <h3 class="popover-title">Show…</h3>
-    
-    <PopoverOptionList
-      options={statusOptions}
-      loading={false}
-      maxHeight="min(300px, 40vh)"
-      onOptionClick={handleStatusToggle}
-      isSelected={(option) => selectedStatuses.includes(option.value)}
+    <PopoverMenu
+      title="Show…"
+      options={menuOptions}
+      showCheckmarks={true}
+      onOptionClick={(option, event) => {
+        if (option.value === 'deleted') {
+          toggleDeleted();
+        } else if (option.value) {
+          handleStatusToggle(option, event);
+        }
+      }}
+      isSelected={(option) => {
+        if (option.value === 'deleted') {
+          return showDeleted;
+        }
+        return option.value ? selectedStatuses.includes(option.value) : false;
+      }}
+      onClose={close}
     >
-      {#snippet optionContent({ option })}
-        <span class="popover-option-main-label">{option.label}</span>
+      {#snippet optionContent({ option, isSelected, isFocused })}
+        {#if true}
+          <div class="popover-menu-checkmark">
+            {#if isSelected}
+              <img 
+                src={isFocused ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
+                alt="Selected"
+                width="12"
+                height="12"
+                class={option.value === 'deleted' && !isFocused ? 'deleted-checkmark' : ''}
+              />
+            {/if}
+          </div>
+        {/if}
         
-        <div class="popover-checkmark-container">
-          {#if selectedStatuses.includes(option.value)}
-            <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
-          {/if}
-        </div>
-      {/snippet}
-    </PopoverOptionList>
-    
-    <!-- Deleted tasks toggle -->
-    <PopoverSeparator spacing="medium" />
-    
-    <PopoverOptionList
-      options={deletedOption}
-      loading={false}
-      onOptionClick={handleDeletedClick}
-      isSelected={(option) => showDeleted}
-    >
-      {#snippet optionContent({ option })}
-        <span class="popover-option-main-label deleted-option-label" class:selected={showDeleted}>
+        <span class="popover-menu-label{option.value === 'deleted' && isSelected ? ' deleted-label' : ''}">
           {option.label}
         </span>
-        
-        <div class="popover-checkmark-container">
-          {#if showDeleted}
-            <img 
-              src="/icons/checkmark.svg" 
-              alt="Selected" 
-              class="popover-checkmark-icon deleted-checkmark" 
-            />
-          {/if}
-        </div>
       {/snippet}
-    </PopoverOptionList>
-    </div>
+    </PopoverMenu>
   {/snippet}
 </BasePopover>
 
@@ -194,14 +187,9 @@
     opacity: 1;
   }
 
-  .filter-content {
-    padding: 16px;
-  }
-
   /* Special styling for deleted option */
-  .deleted-option-label.selected {
-    color: var(--accent-red, #FF3B30) !important;
-    font-weight: 600;
+  .deleted-label {
+    color: var(--accent-red, #FF3B30);
   }
 
   /* Make the checkmark red for deleted option */
