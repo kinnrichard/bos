@@ -19,16 +19,16 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.8 Create index files for TypeScript exports
   - [ ] 1.9 Verify all tests pass
 
-- [ ] 2. Implement Mutator Hook System
-  - [ ] 2.1 Write tests for mutator hooks in ReactiveRecord
-  - [ ] 2.2 Create mutator-hooks.ts with interfaces and types
-  - [ ] 2.3 Update ReactiveRecord base class to support hooks
-  - [ ] 2.4 Implement runHooks method for executing mutator chains
-  - [ ] 2.5 Implement runValidators method with error handling
-  - [ ] 2.6 Update ActiveRecord create/update methods to use hooks
-  - [ ] 2.7 Add hook registration to model configuration
-  - [ ] 2.8 Add support for afterCreate and afterUpdate hooks
-  - [ ] 2.9 Verify all tests pass
+- [x] 2. Implement Mutator Hook System
+  - [x] 2.1 Write tests for mutator hooks in ReactiveRecord
+  - [x] 2.2 Create mutator-hooks.ts with interfaces and types
+  - [x] 2.3 Update ReactiveRecord base class to support hooks
+  - [x] 2.4 Implement runHooks method for executing mutator chains
+  - [x] 2.5 Implement runValidators method with error handling
+  - [x] 2.6 Update ActiveRecord create/update methods to use hooks
+  - [x] 2.7 Add hook registration to model configuration
+  - [x] 2.8 Add support for afterCreate and afterUpdate hooks
+  - [x] 2.9 Verify all tests pass
 
 - [x] 3. Implement Name Normalizer
   - [x] 3.1 Write identical test suites for Ruby and TypeScript normalizers

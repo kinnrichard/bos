@@ -14,6 +14,7 @@ import { getZero } from '../../zero/zero-client';
 import { BaseScopedQuery } from './scoped-query-base';
 import { executeMutatorWithTracking } from '../../shared/mutators/model-mutators';
 import { getCurrentUser } from '../../auth/current-user';
+import { runMutators, runValidators, ValidationError as MutatorValidationError, type MutatorHooks, type ModelWithMutators } from './mutator-hooks';
 import type { 
   BaseRecord, 
   BaseModelConfig,
@@ -152,7 +153,13 @@ class ActiveRecordScopedQuery<T extends BaseRecord> extends BaseScopedQuery<T> i
  * - discard(id) - soft delete using discard gem
  * - undiscard(id) - restore discarded record
  */
-export class ActiveRecord<T extends BaseRecord> {
+export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> {
+  /**
+   * Mutator hooks configuration for this model
+   * Can be overridden in subclasses to provide model-specific hooks
+   */
+  static mutatorHooks?: MutatorHooks<any>;
+  
   constructor(private config: ActiveRecordConfig) {}
   
   /**
@@ -260,6 +267,14 @@ export class ActiveRecord<T extends BaseRecord> {
   }
   
   /**
+   * Get mutator hooks for this model
+   * Looks for hooks on the constructor (class static property)
+   */
+  private getMutatorHooks(): MutatorHooks<T> | undefined {
+    return (this.constructor as any).mutatorHooks;
+  }
+
+  /**
    * Create a new record - Rails .create() behavior
    */
   async create(data: CreateData<T>, options: QueryOptions = {}): Promise<T> {
@@ -271,31 +286,48 @@ export class ActiveRecord<T extends BaseRecord> {
     const id = crypto.randomUUID();
     const now = Date.now();
     
-    const baseData = {
+    let processedData: any = {
       ...data,
       id,
       created_at: now,
       updated_at: now,
     };
 
-    // Apply mutator pipeline
+    // Create mutator context
     const context: MutatorContext = {
       action: 'create',
       user: getCurrentUser(),
       offline: !navigator.onLine,
-      environment: import.meta.env?.MODE || 'development' // Use Vite's env instead of process.env
+      environment: import.meta.env?.MODE || 'development'
     };
 
-    console.log('[ActiveRecord] Creating with mutator context:', {
-      tableName: this.config.tableName,
-      hasUser: !!context.user,
-      environment: context.environment,
-      offline: context.offline
-    });
+    // Get mutator hooks for this model
+    const hooks = this.getMutatorHooks();
+    
+    if (hooks) {
+      // Run beforeSave hooks
+      if (hooks.beforeSave) {
+        processedData = await runMutators(processedData, hooks.beforeSave, context);
+      }
+      
+      // Run beforeCreate hooks
+      if (hooks.beforeCreate) {
+        processedData = await runMutators(processedData, hooks.beforeCreate, context);
+      }
+      
+      // Run validators
+      if (hooks.validators) {
+        const validationResult = await runValidators(processedData, hooks.validators, context);
+        if (!validationResult.valid) {
+          throw new MutatorValidationError('Validation failed', validationResult.errors || {});
+        }
+      }
+    }
 
+    // Apply legacy mutator pipeline (for backward compatibility)
     const mutatedData = await executeMutatorWithTracking(
       this.config.tableName,
-      baseData,
+      processedData,
       null, // No original data for creates
       context,
       { trackChanges: false } // No changes to track for creation
@@ -303,8 +335,23 @@ export class ActiveRecord<T extends BaseRecord> {
     
     try {
       await (zero.mutate as any)[this.config.tableName].insert(mutatedData);
-      return await this.find(id, { withDiscarded: true });
+      const createdRecord = await this.find(id, { withDiscarded: true });
+      
+      // Run after hooks
+      if (hooks) {
+        if (hooks.afterCreate) {
+          await runMutators(createdRecord as any, hooks.afterCreate, context);
+        }
+        if (hooks.afterSave) {
+          await runMutators(createdRecord as any, hooks.afterSave, context);
+        }
+      }
+      
+      return createdRecord;
     } catch (error) {
+      if (error instanceof MutatorValidationError) {
+        throw error;
+      }
       throw new Error(`Create failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -321,24 +368,48 @@ export class ActiveRecord<T extends BaseRecord> {
     // Get original record for change tracking
     const originalRecord = await this.find(id, { withDiscarded: true });
     
-    const baseUpdateData = {
+    let processedData: any = {
       ...originalRecord,  // Include all original fields for mutators to access
       ...data,           // Override with fields being updated
       id,
       updated_at: Date.now(),
     };
 
-    // Apply mutator pipeline with change tracking
+    // Create mutator context
     const context: MutatorContext = {
       action: 'update',
       user: getCurrentUser(),
       offline: !navigator.onLine,
-      environment: import.meta.env?.MODE || 'development' // Use Vite's env instead of process.env
+      environment: import.meta.env?.MODE || 'development'
     };
 
+    // Get mutator hooks for this model
+    const hooks = this.getMutatorHooks();
+    
+    if (hooks) {
+      // Run beforeSave hooks
+      if (hooks.beforeSave) {
+        processedData = await runMutators(processedData, hooks.beforeSave, context);
+      }
+      
+      // Run beforeUpdate hooks
+      if (hooks.beforeUpdate) {
+        processedData = await runMutators(processedData, hooks.beforeUpdate, context);
+      }
+      
+      // Run validators
+      if (hooks.validators) {
+        const validationResult = await runValidators(processedData, hooks.validators, context);
+        if (!validationResult.valid) {
+          throw new MutatorValidationError('Validation failed', validationResult.errors || {});
+        }
+      }
+    }
+
+    // Apply legacy mutator pipeline (for backward compatibility)
     const mutatedData = await executeMutatorWithTracking(
       this.config.tableName,
-      baseUpdateData,
+      processedData,
       originalRecord,
       context,
       { trackChanges: true } // Enable change tracking for updates
@@ -346,8 +417,23 @@ export class ActiveRecord<T extends BaseRecord> {
     
     try {
       await (zero.mutate as any)[this.config.tableName].update(mutatedData);
-      return await this.find(id, { withDiscarded: true });
+      const updatedRecord = await this.find(id, { withDiscarded: true });
+      
+      // Run after hooks
+      if (hooks) {
+        if (hooks.afterUpdate) {
+          await runMutators(updatedRecord as any, hooks.afterUpdate, context);
+        }
+        if (hooks.afterSave) {
+          await runMutators(updatedRecord as any, hooks.afterSave, context);
+        }
+      }
+      
+      return updatedRecord;
     } catch (error) {
+      if (error instanceof MutatorValidationError) {
+        throw error;
+      }
       throw new Error(`Update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
