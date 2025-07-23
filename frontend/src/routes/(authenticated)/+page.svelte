@@ -139,7 +139,6 @@
     border-radius: 999px;
     font-size: 16px;
     font-weight: 500;
-    cursor: pointer;
     white-space: nowrap;
   }
   

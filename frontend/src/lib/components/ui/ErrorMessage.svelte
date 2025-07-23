@@ -118,7 +118,6 @@
     background: none;
     border: none;
     color: inherit;
-    cursor: pointer;
     padding: 2px;
     border-radius: 2px;
     flex-shrink: 0;

@@ -14,7 +14,7 @@
   background: none;
   border: none;
   padding: 0;
-  cursor: pointer;
+  cursor: normal;
   
   &:focus {
     outline: none;
@@ -93,7 +93,7 @@
   font-size: 14px;
   color: var(--text-primary);
   text-decoration: none;
-  cursor: pointer;
+  cursor: normal;
   transition: background-color 0.15s ease;
   
   &:hover {

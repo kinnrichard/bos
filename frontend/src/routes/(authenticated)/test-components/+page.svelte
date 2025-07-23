@@ -334,7 +334,6 @@
     background: var(--bg-tertiary);
     border: 1px solid var(--border-primary);
     border-radius: 8px;
-    cursor: pointer;
     font-size: 14px;
     color: var(--text-primary);
     transition: all 0.15s ease;

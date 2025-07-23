@@ -65,7 +65,7 @@
   border: none;
   font-size: var(--font-size-2xl);
   color: var(--color-text-muted);
-  cursor: pointer;
+  cursor: normal;
   padding: var(--spacing-xs);
   line-height: 1;
   transition: color 0.2s ease;
@@ -243,7 +243,7 @@
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   background-color: var(--bg-primary);
-  cursor: pointer;
+  cursor: normal;
   transition: all 0.2s ease;
   
   &:hover {

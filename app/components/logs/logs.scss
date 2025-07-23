@@ -62,7 +62,7 @@
       top: -1px; // Offset by -1px to prevent transparency gap
       background-color: var(--bg-secondary);
       z-index: 9;
-      cursor: pointer;
+      cursor: normal;
       user-select: none;
       
       &:hover {
@@ -297,7 +297,7 @@
           .logs-link {
             color: inherit;
             text-decoration: none;
-            cursor: pointer;
+            cursor: normal;
             
             &:hover {
               text-decoration: none;

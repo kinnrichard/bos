@@ -186,7 +186,6 @@
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 50%;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;

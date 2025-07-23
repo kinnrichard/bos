@@ -43,7 +43,7 @@
     border-radius: 8px;
     color: var(--text-primary);
     font-size: 15px;
-    cursor: pointer;
+    cursor: normal;
     
     &:focus {
       outline: none;
@@ -52,7 +52,7 @@
     
     // Style the calendar icon
     &::-webkit-calendar-picker-indicator {
-      cursor: pointer;
+      cursor: normal;
       filter: invert(0.8);
     }
   }
@@ -89,7 +89,7 @@
   border: 1px solid var(--border-primary);
   border-radius: 8px;
   color: var(--text-primary);
-  cursor: pointer;
+  cursor: normal;
   transition: all 0.15s ease;
   font-size: 13px;
   text-align: center;
@@ -177,11 +177,11 @@
     gap: 6px;
     font-size: 13px;
     color: var(--text-secondary);
-    cursor: pointer;
+    cursor: normal;
     white-space: nowrap;
     
     input[type="checkbox"] {
-      cursor: pointer;
+      cursor: normal;
     }
   }
 }
@@ -202,7 +202,7 @@
   border: 1px solid var(--border-primary);
   border-radius: 20px;
   font-size: 13px;
-  cursor: pointer;
+  cursor: normal;
   transition: all 0.15s ease;
   
   &:hover {

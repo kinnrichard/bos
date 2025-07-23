@@ -265,7 +265,6 @@
   }
 
   .action-button:not(:disabled) {
-    cursor: pointer;
     opacity: 1;
   }
 

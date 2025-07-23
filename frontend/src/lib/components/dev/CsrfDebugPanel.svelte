@@ -153,7 +153,6 @@
     border: none;
     border-radius: 6px;
     padding: 8px 12px;
-    cursor: pointer;
     font-weight: 600;
     font-size: 11px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -241,7 +240,6 @@
     border-radius: 6px;
     font-size: 10px;
     font-weight: 600;
-    cursor: pointer;
     transition: all 0.15s ease;
   }
 

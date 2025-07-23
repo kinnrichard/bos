@@ -251,7 +251,7 @@
 // New task wrapper
 .new-task-wrapper {
   .task-item {
-    cursor: pointer;
+    cursor: normal;
     transition: background-color 0.15s ease;
     
     &:hover {
@@ -306,7 +306,7 @@
   padding: 0;
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: normal;
   font-size: 14px;
   display: flex;
   align-items: center;
@@ -346,7 +346,7 @@
   padding: 0;
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: normal;
   color: var(--text-tertiary);
   transition: transform 0.2s ease;
   flex-shrink: 0;
@@ -424,7 +424,7 @@
   border: none;
   color: var(--accent-blue);
   font-size: 16px;
-  cursor: pointer;
+  cursor: normal;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -486,7 +486,7 @@
 .task-icon {
   font-size: 18px;
   color: #8E8E93;
-  cursor: pointer;
+  cursor: normal;
   
   &:hover {
     color: #AEAEB2;
@@ -522,7 +522,7 @@
   color: var(--text-secondary);
   font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: normal;
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
@@ -731,7 +731,7 @@
   background: transparent;
   border: none;
   color: var(--text-primary);
-  cursor: pointer;
+  cursor: normal;
   transition: background-color 0.15s;
   text-align: left;
   font-size: 15px;
@@ -764,7 +764,7 @@
   background: transparent;
   border: none;
   color: var(--text-primary);
-  cursor: pointer;
+  cursor: normal;
   transition: background-color 0.15s;
   text-align: left;
   font-size: 15px;
@@ -821,7 +821,7 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
+  cursor: normal;
   transition: background-color 0.15s;
   
   &:hover {
@@ -839,7 +839,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  cursor: pointer;
+  cursor: normal;
   transition: background-color 0.15s ease;
   min-width: fit-content; // Allow bubble to expand for multiple avatars
   

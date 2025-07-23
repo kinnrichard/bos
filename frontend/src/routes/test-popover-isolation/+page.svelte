@@ -224,7 +224,6 @@
     border: 1px solid var(--border-secondary);
     border-radius: var(--radius-sm);
     text-align: left;
-    cursor: pointer;
     transition: all 0.2s;
   }
   

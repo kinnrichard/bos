@@ -141,7 +141,7 @@
     }
     
     select.form-input {
-      cursor: pointer;
+      cursor: normal;
     }
     
     textarea.form-input {
@@ -173,7 +173,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        cursor: pointer;
+        cursor: normal;
         
         &:hover {
           background-color: var(--bg-secondary);

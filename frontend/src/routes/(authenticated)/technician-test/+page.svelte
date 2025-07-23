@@ -198,7 +198,6 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     background: white;
-    cursor: pointer;
   }
 
   .test-buttons button:hover {
@@ -212,7 +211,6 @@
     background-color: var(--bg-secondary, #f8f9fa);
     border: 1px solid var(--border-primary, #ccc);
     border-radius: 50%;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -189,7 +189,6 @@
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 50%;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -267,7 +266,6 @@
     font-size: 13px;
     font-weight: 500;
     transition: all 0.15s ease;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;

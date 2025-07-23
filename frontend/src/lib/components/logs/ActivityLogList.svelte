@@ -674,7 +674,6 @@
   /* Group header rows (Client/Job) */
   .logs-table :global(tr.logs-group-header) {
     background-color: var(--bg-secondary);
-    cursor: pointer;
     user-select: none;
   }
 
@@ -996,7 +995,6 @@
     font-size: 0.875rem;
     font-weight: 500;
     border: none;
-    cursor: pointer;
     transition: all 0.15s ease;
   }
 

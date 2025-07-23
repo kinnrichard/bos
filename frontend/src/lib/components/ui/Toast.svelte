@@ -96,7 +96,6 @@
     background: none;
     border: none;
     color: white;
-    cursor: pointer;
     padding: 4px;
     border-radius: 4px;
     display: flex;

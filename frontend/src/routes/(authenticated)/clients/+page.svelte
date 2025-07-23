@@ -241,7 +241,6 @@
     border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
-    cursor: pointer;
     transition: all 0.15s ease;
   }
   
@@ -308,7 +307,6 @@
     font-size: 16px;
     font-weight: 400;
     text-align: left;
-    cursor: pointer;
     transition: all 0.15s ease;
     width: 100%;
   }
@@ -372,7 +370,6 @@
     border-radius: 8px;
     font-size: 16px;
     font-weight: 500;
-    cursor: pointer;
     transition: all 0.15s ease;
   }
   

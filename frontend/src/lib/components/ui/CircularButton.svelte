@@ -75,7 +75,6 @@
   .circular-button {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -217,7 +217,6 @@
     font-weight: 500;
     flex: 1;
     border: none;
-    cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;

@@ -117,7 +117,6 @@
     padding: 0.75rem 1rem;
     background-color: var(--bg-secondary);
     border: none;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: space-between;

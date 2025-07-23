@@ -75,7 +75,7 @@ textarea.form-input {
 
 // Select specific
 select.form-input {
-  cursor: pointer;
+  cursor: normal;
 }
 
 // Client type selector
@@ -91,7 +91,7 @@ select.form-input {
 
 .client-type-option {
   position: relative;
-  cursor: pointer;
+  cursor: normal;
 }
 
 .client-type-radio {
@@ -174,11 +174,11 @@ select.form-input {
   input[type="checkbox"] {
     width: 16px;
     height: 16px;
-    cursor: pointer;
+    cursor: normal;
   }
   
   label {
-    cursor: pointer;
+    cursor: normal;
     font-size: 14px;
     color: var(--text-primary);
   }

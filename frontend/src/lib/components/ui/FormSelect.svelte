@@ -135,8 +135,6 @@
     line-height: 1.4;
     width: 100%;
     box-sizing: border-box;
-    cursor: pointer;
-    
     /* Remove default arrow */
     -webkit-appearance: none;
     -moz-appearance: none;

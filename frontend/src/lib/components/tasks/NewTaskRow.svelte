@@ -104,7 +104,6 @@
 <style>
   /* Component-specific styles will inherit from parent TaskList styles */
   .task-item-add-new {
-    cursor: pointer;
   }
   
   .add-task-placeholder {

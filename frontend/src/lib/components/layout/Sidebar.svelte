@@ -238,7 +238,6 @@
     background: none;
     border: none;
     text-align: left;
-    cursor: pointer;
   }
 
   .nav-link:hover {

@@ -214,7 +214,6 @@
   
   /* Clickable variant */
   button.avatar--clickable {
-    cursor: pointer;
   }
   
   button.avatar--clickable:hover {

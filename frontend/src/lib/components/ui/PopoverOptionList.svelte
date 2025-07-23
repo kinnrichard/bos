@@ -64,7 +64,6 @@
     transition: background-color 0.15s ease;
     text-align: left;
     width: 100%;
-    cursor: pointer;
     /* Hardware acceleration to prevent transition interruption */
     will-change: background-color;
     transform: translateZ(0);

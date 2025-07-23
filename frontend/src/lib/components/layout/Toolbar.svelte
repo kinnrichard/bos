@@ -373,7 +373,6 @@
     height: 20px;
     background: none;
     border: none;
-    cursor: pointer;
     margin-right: 8px;
     border-radius: 4px;
     display: flex;

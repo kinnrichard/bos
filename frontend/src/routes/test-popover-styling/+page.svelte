@@ -147,7 +147,7 @@
     color: white;
     border: none;
     border-radius: var(--radius-md);
-    cursor: pointer;
+    cursor: default;
     font-weight: 500;
     transition: background 0.15s;
   }
