@@ -12,49 +12,42 @@ class JobTest < ActiveSupport::TestCase
     job = @client.jobs.build(
       title: "Test Job",
       status: "open",
-      priority: "normal",
-      created_by: @user
+      priority: "normal"
     )
 
     assert_valid job
   end
 
   test "requires title" do
-    job = @client.jobs.build(status: "open", created_by: @user)
+    job = @client.jobs.build(status: "open")
 
     assert_invalid job, attribute: :title
   end
 
   test "requires valid status" do
-    job = @client.jobs.build(title: "Test", created_by: @user)
+    job = @client.jobs.build(title: "Test")
 
     assert_valid job # Should default to open
     assert_equal "open", job.status
   end
 
   test "requires valid priority" do
-    job = @client.jobs.build(title: "Test", created_by: @user)
+    job = @client.jobs.build(title: "Test")
 
     assert_valid job # Should default to normal
     assert_equal "normal", job.priority
   end
 
   test "belongs to client" do
-    job = Job.new(title: "Test", created_by: @user)
+    job = Job.new(title: "Test")
 
     assert_invalid job
     assert job.errors[:client].any?
   end
 
-  test "belongs to creator" do
-    job = @client.jobs.build(title: "Test")
-
-    assert_invalid job
-    assert job.errors[:created_by].any?
-  end
 
   test "status enum values" do
-    job = @client.jobs.create!(title: "Test", created_by: @user)
+    job = @client.jobs.create!(title: "Test")
 
     # Test all status values
     assert job.open!
@@ -74,7 +67,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "priority enum values" do
-    job = @client.jobs.create!(title: "Test", created_by: @user)
+    job = @client.jobs.create!(title: "Test")
 
     # Test all priority values
     assert job.critical!
@@ -94,7 +87,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "has many tasks" do
-    job = @client.jobs.create!(title: "Test", created_by: @user)
+    job = @client.jobs.create!(title: "Test")
     task1 = job.tasks.create!(title: "Task 1", status: "new_task")
     task2 = job.tasks.create!(title: "Task 2", status: "new_task")
 
@@ -104,7 +97,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "has many job assignments" do
-    job = @client.jobs.create!(title: "Test", created_by: @user)
+    job = @client.jobs.create!(title: "Test")
     assignment1 = job.job_assignments.create!(user: @user)
     assignment2 = job.job_assignments.create!(user: @tech)
 
@@ -122,7 +115,6 @@ class JobTest < ActiveSupport::TestCase
 
     job = @client.jobs.create!(
       title: "Scheduled Job",
-      created_by: @user,
       starts_at: start_datetime,
       start_time_set: true
     )
@@ -133,7 +125,7 @@ class JobTest < ActiveSupport::TestCase
 
   test "activity logging on create" do
     assert_difference "ActivityLog.count", 1 do
-      job = @client.jobs.create!(title: "New Job", created_by: @user)
+      job = @client.jobs.create!(title: "New Job")
 
       log = ActivityLog.last
       assert_equal "created", log.action
@@ -144,7 +136,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "activity logging on update" do
-    job = @client.jobs.create!(title: "Test Job", created_by: @user)
+    job = @client.jobs.create!(title: "Test Job")
 
     assert_difference "ActivityLog.count", 1 do
       job.update!(title: "Updated Job")
@@ -164,9 +156,9 @@ class JobTest < ActiveSupport::TestCase
   # test "priority emojis"
 
   test "closed scope" do
-    open_job = @client.jobs.create!(title: "Open", created_by: @user, status: "open")
-    completed_job = @client.jobs.create!(title: "Completed", created_by: @user, status: "successfully_completed")
-    cancelled_job = @client.jobs.create!(title: "Cancelled", created_by: @user, status: "cancelled")
+    open_job = @client.jobs.create!(title: "Open", status: "open")
+    completed_job = @client.jobs.create!(title: "Completed", status: "successfully_completed")
+    cancelled_job = @client.jobs.create!(title: "Cancelled", status: "cancelled")
 
     closed_jobs = Job.closed
 
@@ -176,10 +168,10 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "active jobs (not closed)" do
-    open_job = @client.jobs.create!(title: "Open", created_by: @user, status: "open")
-    in_progress_job = @client.jobs.create!(title: "In Progress", created_by: @user, status: "in_progress")
-    paused_job = @client.jobs.create!(title: "Paused", created_by: @user, status: "paused")
-    completed_job = @client.jobs.create!(title: "Completed", created_by: @user, status: "successfully_completed")
+    open_job = @client.jobs.create!(title: "Open", status: "open")
+    in_progress_job = @client.jobs.create!(title: "In Progress", status: "in_progress")
+    paused_job = @client.jobs.create!(title: "Paused", status: "paused")
+    completed_job = @client.jobs.create!(title: "Completed", status: "successfully_completed")
 
     # Active jobs are those not closed
     active_jobs = Job.where.not(status: [ :successfully_completed, :cancelled ])
@@ -191,9 +183,9 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "my_jobs scope" do
-    job1 = @client.jobs.create!(title: "Job 1", created_by: @user)
-    job2 = @client.jobs.create!(title: "Job 2", created_by: @user)
-    job3 = @client.jobs.create!(title: "Job 3", created_by: @user)
+    job1 = @client.jobs.create!(title: "Job 1")
+    job2 = @client.jobs.create!(title: "Job 2")
+    job3 = @client.jobs.create!(title: "Job 3")
 
     job1.job_assignments.create!(user: @tech)
     job2.job_assignments.create!(user: @user)
@@ -208,8 +200,8 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "unassigned scope" do
-    assigned_job = @client.jobs.create!(title: "Assigned", created_by: @user)
-    unassigned_job = @client.jobs.create!(title: "Unassigned", created_by: @user)
+    assigned_job = @client.jobs.create!(title: "Assigned")
+    unassigned_job = @client.jobs.create!(title: "Unassigned")
 
     assigned_job.job_assignments.create!(user: @tech)
 
@@ -225,14 +217,14 @@ class JobTest < ActiveSupport::TestCase
     Job.destroy_all
 
     # Create jobs with different statuses and assignments
-    my_open_job = @client.jobs.create!(title: "My Open", created_by: @user, status: "open")
+    my_open_job = @client.jobs.create!(title: "My Open", status: "open")
     my_open_job.job_assignments.create!(user: @user)
 
-    my_completed_job = @client.jobs.create!(title: "My Completed", created_by: @user, status: "successfully_completed")
+    my_completed_job = @client.jobs.create!(title: "My Completed", status: "successfully_completed")
     my_completed_job.job_assignments.create!(user: @user)
 
-    unassigned_open = @client.jobs.create!(title: "Unassigned Open", created_by: @user, status: "open")
-    unassigned_completed = @client.jobs.create!(title: "Unassigned Completed", created_by: @user, status: "successfully_completed")
+    unassigned_open = @client.jobs.create!(title: "Unassigned Open", status: "open")
+    unassigned_completed = @client.jobs.create!(title: "Unassigned Completed", status: "successfully_completed")
 
     # Test "My Jobs" count - should only count active jobs
     my_active_jobs = Job.where.not(status: [ :successfully_completed, :cancelled ]).my_jobs(@user)
@@ -255,7 +247,7 @@ class JobTest < ActiveSupport::TestCase
 
   # Test for permission checking bug
   test "delete permission should be checked server-side" do
-    job = @client.jobs.create!(title: "Test Job", created_by: @user)
+    job = @client.jobs.create!(title: "Test Job")
 
     # This test documents expected behavior for server-side permission checking
     # Currently the can_delete? method is not implemented on User model
@@ -272,7 +264,7 @@ class JobTest < ActiveSupport::TestCase
   # test "soft delete functionality"
 
   test "cascading deletes" do
-    job = @client.jobs.create!(title: "Test Job", created_by: @user)
+    job = @client.jobs.create!(title: "Test Job")
     task = job.tasks.create!(title: "Test Task", status: "new_task")
     assignment = job.job_assignments.create!(user: @tech)
     note = job.notes.create!(user: @user, content: "Test note")

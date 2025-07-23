@@ -14,6 +14,7 @@
   import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
   import type { Task, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
   import { calculatePosition } from '$lib/shared/utils/positioning-v2';
+  import { sortTasks } from '$lib/shared/utils/task-sorting';
   import TaskRow from '../tasks/TaskRow.svelte';
   import NewTaskRow from '../tasks/NewTaskRow.svelte';
   import DeletionModal from '../ui/DeletionModal.svelte';
@@ -486,6 +487,7 @@
     const title = state.title.trim();
     let position: number;
     let parentId: string | undefined;
+    let lastRootTask: Task | null = null;
     
     // Clear the form immediately to prevent visual glitch
     taskCreationManager.hide(type);
@@ -497,13 +499,13 @@
         parentId = afterTask.parent_id || undefined;
         
         // Get tasks in the same scope (sibling tasks with same parent)
-        const scopeTasks = tasks.filter(t => (t.parent_id || null) === (parentId || null))
-                                 .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        let scopeTasks = tasks.filter(t => (t.parent_id || null) === (parentId || null));
+        scopeTasks = sortTasks(scopeTasks);
         
         // Find position after the target task
         const afterIndex = scopeTasks.findIndex(t => t.id === insertNewTaskAfter);
         if (afterIndex !== -1 && afterIndex < scopeTasks.length - 1) {
-          // Use fractional positioning utility for conflict-free insertion
+          // Use integer positioning utility for conflict-free insertion
           const nextTask = scopeTasks[afterIndex + 1];
           const afterPosition = afterTask.position ?? 0;
           const nextPosition = nextTask.position ?? null;
@@ -512,31 +514,59 @@
           // Inserting at the end - use utility for consistent spacing
           position = calculatePosition(afterTask.position ?? 0, null);
         }
+      } else {
+        // After task not found - fall back to bottom creation
+        console.error('[TaskList] After task not found:', insertNewTaskAfter);
+        // Calculate position as if adding at bottom
+        const rootTasks = tasks.filter(t => !t.parent_id);
+        const sortedRootTasks = sortTasks(rootTasks);
+        lastRootTask = sortedRootTasks.length > 0 ? sortedRootTasks[sortedRootTasks.length - 1] : null;
+        position = lastRootTask ? calculatePosition(lastRootTask.position ?? 0, null) : calculatePosition(null, null);
       }
     } else {
       // Bottom task creation - add at the end of root level tasks
-      const rootTasks = tasks.filter(t => !t.parent_id)
-                             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      // Get the last root task from the existing tasks array
+      const rootTasks = tasks.filter(t => !t.parent_id);
+      const sortedRootTasks = sortTasks(rootTasks);
+      lastRootTask = sortedRootTasks.length > 0 ? sortedRootTasks[sortedRootTasks.length - 1] : null;
       
-      if (rootTasks.length > 0) {
-        const lastTask = rootTasks[rootTasks.length - 1];
-        position = calculatePosition(lastTask.position ?? 0, null);
+      if (lastRootTask) {
+        position = calculatePosition(lastRootTask.position ?? 0, null);
       } else {
         // First task in the job
         position = calculatePosition(null, null);
       }
     }
     
+    // Determine which task this is being positioned after
+    let repositionedAfterId: string | null = null;
+    if (type === 'inline' && insertNewTaskAfter) {
+      repositionedAfterId = insertNewTaskAfter;
+    } else if (type === 'bottom' && lastRootTask) {
+      // Use the lastRootTask we already fetched above
+      repositionedAfterId = lastRootTask.id;
+    }
+    
+    // Log the data being sent to create
+    const createData = {
+      title,
+      job_id: jobId,
+      status: 'new_task',
+      position,
+      repositioned_after_id: repositionedAfterId,
+      parent_id: parentId,
+      lock_version: 0,
+      applies_to_all_targets: false
+    };
+    
+    console.log('[TaskList] Creating task with data:', createData);
+    console.log('[TaskList] Position:', position, 'Type:', typeof position);
+    console.log('[TaskList] RepositionedAfterId:', repositionedAfterId);
+    console.log('[TaskList] ParentId:', parentId);
+    
     try {
-      const newTask = await TaskModel.create({
-        title,
-        job_id: jobId,
-        status: 'new_task',
-        position,
-        parent_id: parentId,
-        lock_version: 0,
-        applies_to_all_targets: false
-      });
+      const newTask = await TaskModel.create(createData);
+      console.log('[TaskList] Task created successfully:', newTask);
       
       // Add the new task to our local tasks array
       if (type === 'inline' && insertNewTaskAfter) {
@@ -573,6 +603,13 @@
       dragFeedback = 'Task created successfully!';
       setTimeout(() => dragFeedback = '', 2000);
     } catch (error: any) {
+      console.error('[TaskList] Task creation failed:', error);
+      console.error('[TaskList] Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        error,
+        taskData: createData
+      });
       debugWorkflow.error('Task creation failed', { error, taskData: state });
       
       // Restore the input state on error
@@ -878,9 +915,9 @@
     // Recursive function to traverse hierarchy and assign visual indices
     function traverseAndIndex(parentId: string | null, depth: number = 0) {
       // Get tasks for this parent, sorted by position
-      const childTasks = tasks
-        .filter(t => (t.parent_id || null) === parentId)
-        .sort((a, b) => (a.position || 0) - (b.position || 0));
+      let childTasks = tasks
+        .filter(t => (t.parent_id || null) === parentId);
+      childTasks = sortTasks(childTasks);
 
       // Assign visual index to each task and recurse into children
       childTasks.forEach(task => {
@@ -1015,7 +1052,8 @@
               const existingChildren = tasks.filter(t => 
                 t.parent_id === newParentId && 
                 !sortedTaskIds.includes(t.id)
-              ).sort((a, b) => (a.position || 0) - (b.position || 0));
+              );
+              const scopedTasks = sortTasks(tempTasks);
               
               if (existingChildren.length > 0) {
                 // Position after the last existing child

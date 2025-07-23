@@ -78,7 +78,6 @@ class SidebarStatsServiceTest < ActiveSupport::TestCase
     # Create a new job to change the counts
     new_job = @client.jobs.create!(
       title: "New Test Job",
-      created_by: @user,
       status: "open"
     )
 
@@ -112,13 +111,11 @@ class SidebarStatsServiceTest < ActiveSupport::TestCase
     # Create specific test jobs
     active_job = @client.jobs.create!(
       title: "Active Test Job",
-      created_by: @user,
       status: "in_progress"
     )
 
     closed_job = @client.jobs.create!(
       title: "Closed Test Job",
-      created_by: @user,
       status: "successfully_completed"
     )
 

@@ -3,7 +3,6 @@ class Job < ApplicationRecord
   include Touchable
 
   belongs_to :client
-  belongs_to :created_by, class_name: "User"
 
   has_many :job_assignments, dependent: :destroy
   has_many :technicians, through: :job_assignments, source: :user

@@ -30,6 +30,5 @@ export const permissions = definePermissions(generatedSchema, () => {
     job_assignments: { row: { select: allowAll, insert: allowAll, update: { preMutation: allowAll, postMutation: allowAll }, delete: allowAll } },
     job_people: { row: { select: allowAll, insert: allowAll, update: { preMutation: allowAll, postMutation: allowAll }, delete: allowAll } },
     job_targets: { row: { select: allowAll, insert: allowAll, update: { preMutation: allowAll, postMutation: allowAll }, delete: allowAll } },
-    task_completions: { row: { select: allowAll, insert: allowAll, update: { preMutation: allowAll, postMutation: allowAll }, delete: allowAll } }
   };
 });

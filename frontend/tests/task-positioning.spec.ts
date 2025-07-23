@@ -9,7 +9,7 @@ test.describe('Task Positioning', () => {
     await page.waitForSelector('.task-item', { timeout: 5000 });
   });
 
-  test('should insert tasks with fractional positions', async ({ page }) => {
+  test('should insert tasks with integer positions', async ({ page }) => {
     // Get initial task count
     const initialTasks = await page.locator('.task-item').count();
     
@@ -46,7 +46,7 @@ test.describe('Task Positioning', () => {
     for (let i = 1; i <= 3; i++) {
       await firstTask.click();
       await page.keyboard.press('Enter');
-      await page.keyboard.type(`Fractional Task ${i}`);
+      await page.keyboard.type(`Inserted Task ${i}`);
       await page.keyboard.press('Enter');
       await page.waitForTimeout(100); // Small delay to ensure task is created
     }
@@ -54,19 +54,19 @@ test.describe('Task Positioning', () => {
     // Verify all tasks were created
     const taskTitles = await page.locator('.task-title').allTextContents();
     
-    // Check that all fractional tasks exist
-    expect(taskTitles.some(t => t.includes('Fractional Task 1'))).toBe(true);
-    expect(taskTitles.some(t => t.includes('Fractional Task 2'))).toBe(true);
-    expect(taskTitles.some(t => t.includes('Fractional Task 3'))).toBe(true);
+    // Check that all inserted tasks exist
+    expect(taskTitles.some(t => t.includes('Inserted Task 1'))).toBe(true);
+    expect(taskTitles.some(t => t.includes('Inserted Task 2'))).toBe(true);
+    expect(taskTitles.some(t => t.includes('Inserted Task 3'))).toBe(true);
     
     // They should all appear after the first task
     const firstTaskIndex = 0;
-    const fractionalIndices = taskTitles
+    const insertedIndices = taskTitles
       .map((title, index) => ({ title, index }))
-      .filter(item => item.title.includes('Fractional Task'))
+      .filter(item => item.title.includes('Inserted Task'))
       .map(item => item.index);
     
-    fractionalIndices.forEach(index => {
+    insertedIndices.forEach(index => {
       expect(index).toBeGreaterThan(firstTaskIndex);
     });
   });
@@ -89,7 +89,7 @@ test.describe('Task Positioning', () => {
   });
 
   test('should maintain order after page reload', async ({ page }) => {
-    // Create a few tasks with fractional positions
+    // Create a few tasks with integer positions
     const firstTask = page.locator('.task-item').first();
     
     await firstTask.click();

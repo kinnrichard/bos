@@ -93,7 +93,7 @@ class ActivityLogTest < ActiveSupport::TestCase
   end
 
   test "for_loggable scope" do
-    other_job = @client.jobs.create!(title: "Other Job", created_by: @user)
+    other_job = @client.jobs.create!(title: "Other Job")
 
     job_log = ActivityLog.create!(user: @user, action: "created", loggable: @job)
     other_log = ActivityLog.create!(user: @user, action: "created", loggable: other_job)
@@ -463,7 +463,6 @@ class ActivityLogTest < ActiveSupport::TestCase
     assert_difference "ActivityLog.count", 1 do
       job = @client.jobs.create!(
         title: "Test Job",
-        created_by: @user,
         status: "open"
       )
 
@@ -588,7 +587,7 @@ class ActivityLogTest < ActiveSupport::TestCase
       client = Client.create!(name: "Test Client", client_type: "residential")
 
       # Create jobs
-      job = Job.create!(title: "Test Job", client: client, created_by: user1, status: "open")
+      job = Job.create!(title: "Test Job", client: client, status: "open")
 
       # Verify no activity logs were created
       assert_equal 0, ActivityLog.count

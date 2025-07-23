@@ -1,7 +1,7 @@
 /**
  * PersonData - TypeScript interface for people table
  * 
- * Generated from Rails schema: 2025-07-23 12:27:47 UTC
+ * Generated from Rails schema: 2025-07-23 20:58:14 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
  * - activityLogs: has_many ActivityLog

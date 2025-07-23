@@ -15,6 +15,7 @@ import { BaseScopedQuery } from './scoped-query-base';
 import { executeMutatorWithTracking } from '../../shared/mutators/model-mutators';
 import { getCurrentUser } from '../../auth/current-user';
 import { runMutators, runValidators, ValidationError as MutatorValidationError, type MutatorHooks, type ModelWithMutators } from './mutator-hooks';
+import { getDatabaseTimestamp } from '../../shared/utils/utc-timestamp';
 import type { 
   BaseRecord, 
   BaseModelConfig,
@@ -275,6 +276,14 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
   }
 
   /**
+   * Get current UTC timestamp for consistent database operations
+   * Centralizes timestamp generation to fix timezone bugs
+   */
+  protected currentTime(): number {
+    return getDatabaseTimestamp();
+  }
+
+  /**
    * Create a new record - Rails .create() behavior
    */
   async create(data: CreateData<T>, options: QueryOptions = {}): Promise<T> {
@@ -284,7 +293,7 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
     }
     
     const id = crypto.randomUUID();
-    const now = Date.now();
+    const now = this.currentTime();
     
     let processedData: any = {
       ...data,
@@ -334,8 +343,18 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
     );
     
     try {
+      console.log(`[ActiveRecord] Creating ${this.config.tableName} with data:`, mutatedData);
+      
+      // Check if Zero client is properly initialized
+      if (!zero.mutate || !(zero.mutate as any)[this.config.tableName]) {
+        throw new Error(`Zero mutation table '${this.config.tableName}' not found. Available tables: ${Object.keys(zero.mutate || {}).join(', ')}`);
+      }
+      
       await (zero.mutate as any)[this.config.tableName].insert(mutatedData);
+      console.log(`[ActiveRecord] Insert successful for ${this.config.tableName}:`, id);
+      
       const createdRecord = await this.find(id, { withDiscarded: true });
+      console.log(`[ActiveRecord] Record retrieved after creation:`, createdRecord);
       
       // Run after hooks
       if (hooks) {
@@ -349,6 +368,13 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
       
       return createdRecord;
     } catch (error) {
+      console.error(`[ActiveRecord] Create failed for ${this.config.tableName}:`, error);
+      console.error('[ActiveRecord] Error details:', {
+        table: this.config.tableName,
+        data: mutatedData,
+        error: error instanceof Error ? { message: error.message, stack: error.stack } : error
+      });
+      
       if (error instanceof MutatorValidationError) {
         throw error;
       }
@@ -372,7 +398,7 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
       ...originalRecord,  // Include all original fields for mutators to access
       ...data,           // Override with fields being updated
       id,
-      updated_at: Date.now(),
+      updated_at: this.currentTime(),
     };
 
     // Create mutator context

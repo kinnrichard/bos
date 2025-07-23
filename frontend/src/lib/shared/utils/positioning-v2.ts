@@ -1,14 +1,22 @@
 /**
- * Fractional positioning system for conflict-free task ordering
+ * Randomized integer-based positioning system for task ordering
  * 
  * This module provides utilities for calculating positions between existing items
- * using fractional/decimal values. This approach allows infinite insertions between
- * any two positions without conflicts.
+ * using randomized integer values within specified ranges to reduce position
+ * conflicts during offline operations. When conflicts do occur (same position),
+ * the client handles them by secondary sorting on created_at.
+ * 
+ * Randomization is used to prevent multiple offline clients from choosing the
+ * same position when inserting at the same location.
+ * 
+ * Top-of-list positioning uses negative integers to allow infinite insertions
+ * before the first item in the list.
  */
 
 export interface PositionConfig {
   defaultSpacing?: number;
   initialPosition?: number;
+  randomRangePercent?: number;
 }
 
 export interface Positionable {
@@ -22,31 +30,53 @@ export interface Positionable {
  * @param prevPosition - Position of the item before the insertion point (null if inserting at start)
  * @param nextPosition - Position of the item after the insertion point (null if inserting at end)
  * @param config - Optional configuration for spacing and initial position
- * @returns A position value that will sort between the two given positions
+ * @returns An integer position value that will sort between the two given positions
  */
 export function calculatePosition(
   prevPosition: number | null,
   nextPosition: number | null,
   config: PositionConfig = {}
 ): number {
-  const { defaultSpacing = 1000, initialPosition = 1000 } = config;
+  const { 
+    defaultSpacing = 10000, 
+    initialPosition = 10000,
+    randomRangePercent = 0.5
+  } = config;
 
-  // If inserting at the start of the list
-  if (prevPosition === null && nextPosition !== null) {
-    return nextPosition / 2;
+  // Between two positions
+  if (prevPosition !== null && nextPosition !== null) {
+    const gap = nextPosition - prevPosition;
+
+    // Use randomization only if gap is large enough
+    if (gap >= 4) {
+      const rangeSize = gap * randomRangePercent;
+      const rangeStart = prevPosition + (gap - rangeSize) / 2;
+      const rangeEnd = rangeStart + rangeSize;
+
+      return Math.floor(rangeStart + Math.random() * (rangeEnd - rangeStart));
+    }
+
+    // Fallback to midpoint for small gaps
+    return Math.floor((prevPosition + nextPosition) / 2);
   }
 
-  // If inserting at the end of the list
+  // At start: use negative positioning with randomization to allow infinite insertions before
+  if (prevPosition === null && nextPosition !== null) {
+    // Generate random negative position to allow infinite insertions before
+    return -Math.floor(Math.random() * defaultSpacing + 1);
+  }
+
+  // At end: randomize around default spacing
   if (prevPosition !== null && nextPosition === null) {
+    if (defaultSpacing >= 4) {
+      const minSpacing = defaultSpacing * (1 - randomRangePercent / 2);
+      const maxSpacing = defaultSpacing * (1 + randomRangePercent / 2);
+      return prevPosition + Math.floor(minSpacing + Math.random() * (maxSpacing - minSpacing));
+    }
     return prevPosition + defaultSpacing;
   }
 
-  // If inserting between two items
-  if (prevPosition !== null && nextPosition !== null) {
-    return (prevPosition + nextPosition) / 2;
-  }
-
-  // If the list is empty
+  // Empty list
   return initialPosition;
 }
 
@@ -102,14 +132,14 @@ export function needsRebalancing(positions: number[], threshold = 1e-10): boolea
  * Generate evenly spaced position values for rebalancing
  * 
  * @param count - Number of positions to generate
- * @param startPos - Starting position value (default: 1000)
- * @param spacing - Space between positions (default: 1000)
+ * @param startPos - Starting position value (default: 10000)
+ * @param spacing - Space between positions (default: 10000)
  * @returns Array of evenly spaced position values
  */
 export function rebalancePositions(
   count: number,
-  startPos = 1000,
-  spacing = 1000
+  startPos = 10000,
+  spacing = 10000
 ): number[] {
   if (count <= 0) {
     return [];

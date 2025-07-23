@@ -12,7 +12,6 @@ class JobSerializer < ApplicationSerializer
 
   # Relationships - clean and simple with UUID primary keys
   belongs_to :client
-  belongs_to :created_by, serializer: :user
 
   has_many :technicians, serializer: :user
   has_many :people

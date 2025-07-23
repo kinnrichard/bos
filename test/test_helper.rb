@@ -102,7 +102,6 @@ module ActiveSupport
 
       job = client.jobs.create!(
         title: "Test Job",
-        created_by: user,
         status: 0,
         priority: 2
       )

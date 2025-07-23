@@ -11,7 +11,6 @@ class Api::V1::JobsControllerTest < ActionDispatch::IntegrationTest
       job = Job.create!(
         client: clients(:acme),
         title: "Test Job #{i}",
-        created_by: users(:admin),
         status: i.even? ? "open" : "in_progress",
         priority: i % 3
       )
@@ -177,7 +176,6 @@ class Api::V1::JobsControllerTest < ActionDispatch::IntegrationTest
     job = Job.create!(
       client: clients(:acme),
       title: "To Delete",
-      created_by: owner,
       status: "open",
       priority: "normal"
     )

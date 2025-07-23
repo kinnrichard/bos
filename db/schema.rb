@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_14_052452) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_23_200202) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -119,7 +119,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_14_052452) do
     t.text "description"
     t.integer "lock_version", default: 0, null: false
     t.uuid "client_id"
-    t.uuid "created_by_id"
     t.datetime "due_at", precision: nil
     t.boolean "due_time_set", default: false, null: false
     t.datetime "starts_at", precision: nil
@@ -127,7 +126,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_14_052452) do
     t.string "status", null: false
     t.string "priority", null: false
     t.index ["client_id"], name: "index_jobs_on_client_id"
-    t.index ["created_by_id"], name: "index_jobs_on_created_by_id"
     t.index ["id"], name: "index_jobs_on_id", unique: true
     t.index ["lock_version"], name: "index_jobs_on_lock_version"
   end
@@ -365,22 +363,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_14_052452) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
-  create_table "task_completions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.string "status", default: "new_task", null: false
-    t.datetime "completed_at"
-    t.text "notes"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.uuid "task_id"
-    t.uuid "job_target_id"
-    t.uuid "completed_by_id"
-    t.index ["completed_by_id"], name: "index_task_completions_on_completed_by_id"
-    t.index ["id"], name: "index_task_completions_on_id", unique: true
-    t.index ["job_target_id"], name: "index_task_completions_on_job_target_id"
-    t.index ["status"], name: "index_task_completions_on_status"
-    t.index ["task_id"], name: "index_task_completions_on_task_id"
-  end
-
   create_table "tasks", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "title"
     t.integer "position"
@@ -395,6 +377,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_14_052452) do
     t.uuid "parent_id"
     t.datetime "discarded_at"
     t.string "status", null: false
+    t.uuid "repositioned_after_id"
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
     t.index ["discarded_at"], name: "index_tasks_on_discarded_at"
     t.index ["id"], name: "index_tasks_on_id", unique: true
@@ -403,6 +386,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_14_052452) do
     t.index ["lock_version"], name: "index_tasks_on_lock_version"
     t.index ["parent_id"], name: "index_tasks_on_parent_id"
     t.index ["reordered_at"], name: "index_tasks_on_reordered_at"
+    t.index ["repositioned_after_id"], name: "index_tasks_on_repositioned_after_id"
   end
 
   create_table "unique_ids", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -454,16 +438,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_14_052452) do
   add_foreign_key "job_people", "people"
   add_foreign_key "job_targets", "jobs"
   add_foreign_key "jobs", "clients"
-  add_foreign_key "jobs", "users", column: "created_by_id"
   add_foreign_key "notes", "users"
   add_foreign_key "people", "clients"
   add_foreign_key "refresh_tokens", "users"
   add_foreign_key "scheduled_date_time_users", "scheduled_date_times"
   add_foreign_key "scheduled_date_time_users", "users"
-  add_foreign_key "task_completions", "job_targets"
-  add_foreign_key "task_completions", "tasks"
-  add_foreign_key "task_completions", "users", column: "completed_by_id"
   add_foreign_key "tasks", "jobs"
   add_foreign_key "tasks", "tasks", column: "parent_id"
+  add_foreign_key "tasks", "tasks", column: "repositioned_after_id"
   add_foreign_key "tasks", "users", column: "assigned_to_id"
 end

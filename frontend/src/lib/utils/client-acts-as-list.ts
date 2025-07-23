@@ -5,6 +5,9 @@
 
 import type { Task, PositionUpdate, RelativePositionUpdate } from './position-calculator.js';
 import { debugDatabase, debugValidation, debugPerformance } from '$lib/utils/debug';
+import { sortTasks } from '$lib/shared/utils/task-sorting';
+import { calculatePosition } from '$lib/shared/utils/positioning-v2';
+import { getDatabaseTimestamp } from '$lib/shared/utils/utc-timestamp';
 
 export interface ActsAsListResult {
   updatedTasks: Task[];
@@ -16,6 +19,7 @@ export interface PositionUpdateBatch {
   taskId: string;
   position: number;
   parent_id?: string | null;
+  repositioned_after_id?: string | null;
   reason: string;
 }
 
@@ -60,8 +64,8 @@ export class ClientActsAsList {
       // Step 1: Remove task from original position (creates gap)
       const originalScope = originalParent;
       const originalScopeTasks = Array.from(taskMap.values())
-        .filter(t => (t.parent_id || null) === originalScope && t.id !== update.id)
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        .filter(t => (t.parent_id || null) === originalScope && t.id !== update.id);
+      const sortedOriginalTasks = sortTasks(originalScopeTasks);
       
       // Gap elimination: shift tasks after the original position down
       originalScopeTasks.forEach(task => {
@@ -87,8 +91,8 @@ export class ClientActsAsList {
       // Step 2: Insert task at target position
       const targetScope = targetParent;
       const targetScopeTasks = Array.from(taskMap.values())
-        .filter(t => (t.parent_id || null) === targetScope && t.id !== update.id)
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        .filter(t => (t.parent_id || null) === targetScope && t.id !== update.id);
+      const sortedTargetTasks = sortTasks(targetScopeTasks);
       
       if (isCrossParentMove) {
         // Cross-parent move: positioning gem uses minimal shifting
@@ -279,12 +283,22 @@ export class ClientActsAsList {
       const { Task } = await import('$lib/models/task');
       
       // Execute all updates in parallel for better performance
+      const reorderedAt = getDatabaseTimestamp(); // Single timestamp for all related position updates
+      
       const updatePromises = positionUpdates.map(update => {
-        const updateData: any = { position: update.position };
+        const updateData: any = { 
+          position: update.position,
+          reordered_at: reorderedAt // Set UTC timestamp for when repositioning occurred
+        };
         
         // Include parent_id if it's specified in the update
         if (update.parent_id !== undefined) {
           updateData.parent_id = update.parent_id;
+        }
+        
+        // Include repositioned_after_id if it's specified in the update
+        if (update.repositioned_after_id !== undefined) {
+          updateData.repositioned_after_id = update.repositioned_after_id;
         }
         
         return Task.update(update.taskId, updateData);
@@ -348,12 +362,13 @@ export class ClientActsAsList {
       if (!task) return;
       
       let targetPosition = 1;
+      let repositionedAfterId: string | null = null;
       const targetParent = update.parent_id !== undefined ? update.parent_id : task.parent_id;
       
       // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
       // This is critical - we need the full scope to understand current positions
-      const allScopeTasks = normalizedTasks.filter(t => (t.parent_id || null) === (targetParent || null))
-                                 .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      const allScopeTasks = normalizedTasks.filter(t => (t.parent_id || null) === (targetParent || null));
+      const sortedAllScopeTasks = sortTasks(allScopeTasks);
       
       // Get tasks excluding the moving task (for target identification)
       const scopeTasksExcludingMoved = allScopeTasks.filter(t => t.id !== update.id);
@@ -364,6 +379,12 @@ export class ClientActsAsList {
         const movingTask = normalizedTasks.find(t => t.id === update.id); // Search in full task list, not just target scope
         
         if (beforeTask) {
+          // Find the task that comes before the beforeTask to set repositioned_after_id
+          const beforeTaskIndex = sortedAllScopeTasks.findIndex(t => t.id === beforeTask.id);
+          if (beforeTaskIndex > 0) {
+            repositionedAfterId = sortedAllScopeTasks[beforeTaskIndex - 1].id;
+          }
+          
           if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
             // Same-parent move: consider relative positions
             if ((movingTask.position ?? 0) < (beforeTask.position ?? 0)) {
@@ -391,6 +412,7 @@ export class ClientActsAsList {
           targetParent: targetParent || 'null',
           isCrossParentMove: movingTask ? (movingTask.parent_id || null) !== (targetParent || null) : 'unknown',
           targetPosition,
+          repositionedAfterId: repositionedAfterId ? repositionedAfterId.substring(0, 8) : null,
           allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
           note: movingTask && (movingTask.parent_id || null) !== (targetParent || null) 
             ? 'Cross-parent: takes target position, target shifts up'
@@ -402,6 +424,9 @@ export class ClientActsAsList {
         const movingTask = normalizedTasks.find(t => t.id === update.id); // Search in full task list, not just target scope
         
         if (afterTask) {
+          // The task is being positioned after afterTask
+          repositionedAfterId = afterTask.id;
+          
           if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
             // Same-parent move: consider relative positions
             if ((movingTask.position ?? 0) < (afterTask.position ?? 0)) {
@@ -424,21 +449,39 @@ export class ClientActsAsList {
           targetParent: targetParent || 'null',
           isCrossParentMove: movingTask ? (movingTask.parent_id || null) !== (targetParent || null) : 'unknown',
           targetPosition,
+          repositionedAfterId: repositionedAfterId ? repositionedAfterId.substring(0, 8) : null,
           allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
           note: 'positioning gem places immediately after target, considering current positions and parent scope'
         });
       } else if (update.position === 'first') {
-        targetPosition = 1;
-        debugPerformance('Client prediction: first position', { movingTask: update.id.substring(0, 8), targetPosition });
+        // Use the new positioning algorithm for top-of-list insertion
+        const sortedScopeTasks = sortTasks(scopeTasksExcludingMoved);
+        const nextTask = sortedScopeTasks.length > 0 ? sortedScopeTasks[0] : null;
+        
+        targetPosition = calculatePosition(null, nextTask?.position || null);
+        // First position means no task before it
+        repositionedAfterId = null;
+        debugPerformance('Client prediction: first position (using negative positioning)', { 
+          movingTask: update.id.substring(0, 8), 
+          targetPosition,
+          nextTaskPosition: nextTask?.position || null,
+          note: 'Using calculatePosition(null, nextPosition) for negative positioning'
+        });
       } else if (update.position === 'last') {
         targetPosition = scopeTasksExcludingMoved.length + 1;
-        debugPerformance('Client prediction: last position', { movingTask: update.id.substring(0, 8), targetPosition });
+        // Last position means after the last task in scope
+        if (scopeTasksExcludingMoved.length > 0) {
+          const sortedScopeTasks = sortTasks(scopeTasksExcludingMoved);
+          repositionedAfterId = sortedScopeTasks[sortedScopeTasks.length - 1].id;
+        }
+        debugPerformance('Client prediction: last position', { movingTask: update.id.substring(0, 8), targetPosition, repositionedAfterId: repositionedAfterId ? repositionedAfterId.substring(0, 8) : null });
       }
       
       positionUpdates.push({
         id: update.id,
         position: targetPosition,
-        parent_id: targetParent
+        parent_id: targetParent,
+        repositioned_after_id: repositionedAfterId
       });
     });
     

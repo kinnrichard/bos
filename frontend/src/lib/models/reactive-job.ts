@@ -9,7 +9,7 @@
  * import { Job } from './job';
  * ```
  * 
- * Generated: 2025-07-23 12:27:47 UTC
+ * Generated: 2025-07-23 20:58:14 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -70,7 +70,6 @@ export const ReactiveJob = createReactiveRecord<JobData>(ReactiveJobConfig);
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('jobs', {
   client: { type: 'belongsTo', model: 'Client' },
-  createdBy: { type: 'belongsTo', model: 'User' },
   activityLogs: { type: 'hasMany', model: 'ActivityLog' },
   jobAssignments: { type: 'hasMany', model: 'JobAssignment' },
   technicians: { type: 'hasMany', model: 'User' },

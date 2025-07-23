@@ -1,7 +1,7 @@
 /**
  * TaskData - TypeScript interface for tasks table
  * 
- * Generated from Rails schema: 2025-07-23 12:27:47 UTC
+ * Generated from Rails schema: 2025-07-23 20:58:14 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - assignedTo: belongs_to User
@@ -38,6 +38,7 @@ export interface TaskData extends BaseRecord {
   parent_id?: string;
   discarded_at?: string | number;
   status: 'new_task' | 'in_progress' | 'paused' | 'successfully_completed' | 'cancelled';
+  repositioned_after_id?: string;
 
   // Epic-011: Relationship properties (optional - loaded via includes())
   job?: JobData; // belongs_to

@@ -35,7 +35,6 @@ class JobCreationService
 
   def create_job
     @job = @client.jobs.build(sanitized_job_params)
-    @job.created_by = @user
     @job.save!
   end
 

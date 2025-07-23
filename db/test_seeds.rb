@@ -166,7 +166,6 @@ puts "💼 Creating test jobs..."
 # Simple job for basic testing
 simple_job = Job.find_or_create_by(title: "Simple Website Setup") do |j|
   j.client = created_clients[:client_1]
-  j.created_by = created_users[:admin]
   j.status = "open"
   j.priority = "normal"
   j.description = "Basic website setup and configuration"
@@ -177,7 +176,6 @@ puts "  ✓ #{simple_job.title}"
 # Complex job for hierarchical testing
 complex_job = Job.find_or_create_by(title: "Enterprise Software Deployment") do |j|
   j.client = created_clients[:client_2]
-  j.created_by = created_users[:admin]
   j.status = "in_progress"
   j.priority = "high"
   j.description = "Large scale enterprise software deployment with multiple phases"
@@ -188,7 +186,6 @@ puts "  ✓ #{complex_job.title}"
 # Mixed status job for status testing
 mixed_job = Job.find_or_create_by(title: "Mobile App Development") do |j|
   j.client = created_clients[:client_3]
-  j.created_by = created_users[:admin]
   j.status = "in_progress"
   j.priority = "normal"
   j.description = "Mobile app development with mixed task statuses"
@@ -199,7 +196,6 @@ puts "  ✓ #{mixed_job.title}"
 # Large job for performance testing
 large_job = Job.find_or_create_by(title: "System Migration Project") do |j|
   j.client = created_clients[:client_4]
-  j.created_by = created_users[:admin]
   j.status = "in_progress"
   j.priority = "high"
   j.description = "Large system migration with many tasks"
@@ -210,7 +206,6 @@ puts "  ✓ #{large_job.title}"
 # Empty job for creation testing
 empty_job = Job.find_or_create_by(title: "Empty Project Template") do |j|
   j.client = created_clients[:client_5]
-  j.created_by = created_users[:admin]
   j.status = "open"
   j.priority = "low"
   j.description = "Empty project for testing task creation"

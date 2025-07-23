@@ -4,10 +4,12 @@
  */
 
 import { debugPerformance } from '$lib/utils/debug';
+import { sortTasks } from '$lib/shared/utils/task-sorting';
 
 export interface Task {
   id: string;
   position?: number;
+  repositioned_after_id?: string | null;
   parent_id?: string;
   title?: string;
   status?: string;
@@ -25,6 +27,7 @@ export interface PositionUpdate {
   id: string;
   position: number;
   parent_id?: string | null;
+  repositioned_after_id?: string | null;
 }
 
 export interface RelativePositionUpdate {
@@ -114,7 +117,9 @@ export function calculateRelativePositionFromTarget(
     const existingChildren = tasks.filter(t => 
       t.parent_id === dropZone.targetTaskId && 
       !draggedTaskIds.includes(t.id)
-    ).sort((a, b) => (a.position || 0) - (b.position || 0));
+    );
+    
+    const sortedChildren = sortTasks(existingChildren);
     
     // Position after the last child, or at first position if no children exist
     const lastChild = existingChildren[existingChildren.length - 1];
@@ -139,13 +144,17 @@ export function calculateRelativePositionFromTarget(
     // Get all siblings in the destination parent scope (including target task for position calculations)
     const allSiblings = tasks.filter(t => 
       (t.parent_id || null) === parentId
-    ).sort((a, b) => (a.position || 0) - (b.position || 0));
+    );
+    
+    const sortedSiblings = sortTasks(allSiblings);
     
     // Get siblings excluding dragged tasks (for finding next/previous tasks)
     const destinationSiblings = tasks.filter(t => 
       (t.parent_id || null) === parentId &&
       !draggedTaskIds.includes(t.id)
-    ).sort((a, b) => (a.position || 0) - (b.position || 0));
+    );
+    
+    const sortedDestinationSiblings = sortTasks(destinationSiblings);
     
     // Handle cross-parent drag
     if ((targetTask.parent_id || null) !== parentId) {

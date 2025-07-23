@@ -45,7 +45,6 @@ export class JobsService {
     return response.data.map(job => {
       // Find related resources
       const client = includedMap.get(`clients:${job.relationships.client.data.id}`);
-      const createdBy = includedMap.get(`users:${job.relationships.created_by.data.id}`);
       const technicians = job.relationships.technicians.data.map(tech => 
         includedMap.get(`users:${tech.id}`)
       ).filter(Boolean);
@@ -56,7 +55,6 @@ export class JobsService {
       return {
         ...job,
         client: { ...client?.attributes, id: client?.id },
-        created_by: { ...createdBy?.attributes, id: createdBy?.id },
         technicians: technicians.map(tech => ({ ...tech?.attributes, id: tech?.id })),
         tasks: tasks.map(task => ({ ...task?.attributes, id: task?.id }))
       } as PopulatedJob;
@@ -87,7 +85,7 @@ export class JobsService {
    * Get single job by ID with included relationships
    */
   async getJobWithDetails(id: string): Promise<PopulatedJob> {
-    const include = 'client,created_by,technicians,tasks,tasks.subtasks';
+    const include = 'client,technicians,tasks,tasks.subtasks';
     const endpoint = `/jobs/${id}?include=${include}`;
     
     const response = await api.get<JobApiResponse>(endpoint);

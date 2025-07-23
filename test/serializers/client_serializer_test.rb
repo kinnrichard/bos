@@ -46,8 +46,8 @@ class ClientSerializerTest < ActiveSupport::TestCase
     client = Client.create!(name: "Test Client", client_type: "residential")
 
     # Create some jobs for the client
-    3.times { client.jobs.create!(title: "Test job", created_by: users(:admin), status: "open") }
-    2.times { client.jobs.create!(title: "Old job", created_by: users(:admin), status: "successfully_completed", created_at: 40.days.ago) }
+    3.times { client.jobs.create!(title: "Test job", status: "open") }
+    2.times { client.jobs.create!(title: "Old job", status: "successfully_completed", created_at: 40.days.ago) }
 
     serialization = ClientSerializer.new(client).serializable_hash
     attributes = serialization[:data][:attributes]
@@ -59,7 +59,7 @@ class ClientSerializerTest < ActiveSupport::TestCase
 
   test "computes active status correctly" do
     # Client with recent job should be active
-    @client.jobs.create!(title: "Recent job", created_by: users(:admin), created_at: 5.days.ago)
+    @client.jobs.create!(title: "Recent job", created_at: 5.days.ago)
 
     serialization = ClientSerializer.new(@client).serializable_hash
     assert serialization[:data][:attributes][:isActive]

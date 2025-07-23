@@ -150,7 +150,6 @@ class TasksControllerTest < ActionDispatch::IntegrationTest
     # Create a recent job and task
     tech_job = @client.jobs.create!(
       title: "Tech Job",
-      created_by: @technician,
       created_at: 2.minutes.ago
     )
     tech_task = tech_job.tasks.create!(title: "Tech Task", status: "new_task")
@@ -168,7 +167,6 @@ class TasksControllerTest < ActionDispatch::IntegrationTest
     # Create an old job
     old_job = @client.jobs.create!(
       title: "Old Job",
-      created_by: @technician,
       created_at: 10.minutes.ago
     )
     old_task = old_job.tasks.create!(title: "Old Task", status: "new_task")

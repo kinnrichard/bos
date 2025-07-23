@@ -127,7 +127,6 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     # Create a job as technician
     tech_job = @client.jobs.create!(
       title: "Tech's Job",
-      created_by: @technician,
       status: "cancelled",
       created_at: 2.minutes.ago
     )
@@ -145,7 +144,6 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     # Create an old job
     old_job = @client.jobs.create!(
       title: "Old Tech Job",
-      created_by: @technician,
       status: "cancelled",
       created_at: 10.minutes.ago
     )
@@ -236,19 +234,15 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
   test "filters unpermitted parameters" do
     sign_in_as @admin
 
-    original_created_by = @job.created_by
-
     patch client_job_path(@client, @job), params: {
       job: {
         title: "Updated",
-        created_by_id: @technician.id, # Should be filtered
         client_id: clients(:techstartup).id # Should be filtered
       }
     }
 
     @job.reload
     assert_equal "Updated", @job.title
-    assert_equal original_created_by, @job.created_by
     assert_equal @client, @job.client
   end
 
@@ -305,8 +299,8 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as @admin
 
     # Create jobs with specific titles
-    @client.jobs.create!(title: "Server Maintenance", created_by: @admin)
-    @client.jobs.create!(title: "Network Setup", created_by: @admin)
+    @client.jobs.create!(title: "Server Maintenance")
+    @client.jobs.create!(title: "Network Setup")
 
     get client_jobs_path(@client), params: { q: "Server" }
 
@@ -321,7 +315,6 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     # Create jobs with different statuses
     completed_job = @client.jobs.create!(
       title: "Completed Job",
-      created_by: @admin,
       status: "successfully_completed"
     )
 

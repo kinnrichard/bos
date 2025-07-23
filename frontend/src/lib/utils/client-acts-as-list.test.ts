@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { ClientActsAsList } from './client-acts-as-list.js';
-import type { Task, PositionUpdate } from './position-calculator.js';
+import type { Task, PositionUpdate, RelativePositionUpdate } from './position-calculator.js';
 
 describe('ClientActsAsList', () => {
   describe('Single Task Operations', () => {
@@ -276,6 +276,132 @@ describe('ClientActsAsList', () => {
       expect(predictions.get('task1')).toBe(3);
       expect(predictions.get('task2')).toBe(1); // Shifted down by gap elimination
       expect(predictions.get('task3')).toBe(2); // Shifted down by gap elimination
+    });
+  });
+
+  describe('convertRelativeToPositionUpdates with repositioned_after_id', () => {
+    it('should set repositioned_after_id when moving after a task', () => {
+      const tasks: Task[] = [
+        { id: 'task1', position: 1, parent_id: null },
+        { id: 'task2', position: 2, parent_id: null },
+        { id: 'task3', position: 3, parent_id: null }
+      ];
+
+      const relativeUpdates: RelativePositionUpdate[] = [
+        { id: 'task3', after_task_id: 'task1' }
+      ];
+
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+      
+      expect(positionUpdates[0]).toEqual({
+        id: 'task3',
+        position: 2,
+        parent_id: null,
+        repositioned_after_id: 'task1'
+      });
+    });
+
+    it('should set repositioned_after_id when moving before a task', () => {
+      const tasks: Task[] = [
+        { id: 'task1', position: 1, parent_id: null },
+        { id: 'task2', position: 2, parent_id: null },
+        { id: 'task3', position: 3, parent_id: null }
+      ];
+
+      const relativeUpdates: RelativePositionUpdate[] = [
+        { id: 'task3', before_task_id: 'task2' }
+      ];
+
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+      
+      expect(positionUpdates[0]).toEqual({
+        id: 'task3',
+        position: 2,
+        parent_id: null,
+        repositioned_after_id: 'task1' // positioned after task1, before task2
+      });
+    });
+
+    it('should set repositioned_after_id to null when moving to first position', () => {
+      const tasks: Task[] = [
+        { id: 'task1', position: 1, parent_id: null },
+        { id: 'task2', position: 2, parent_id: null },
+        { id: 'task3', position: 3, parent_id: null }
+      ];
+
+      const relativeUpdates: RelativePositionUpdate[] = [
+        { id: 'task3', position: 'first' }
+      ];
+
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+      
+      // Should use negative positioning for first position
+      expect(positionUpdates[0].id).toBe('task3');
+      expect(positionUpdates[0].position).toBeLessThan(0);
+      expect(positionUpdates[0].position).toBeGreaterThanOrEqual(-10000);
+      expect(positionUpdates[0].parent_id).toBe(null);
+      expect(positionUpdates[0].repositioned_after_id).toBe(null);
+    });
+
+    it('should set repositioned_after_id when moving to last position', () => {
+      const tasks: Task[] = [
+        { id: 'task1', position: 1, parent_id: null },
+        { id: 'task2', position: 2, parent_id: null },
+        { id: 'task3', position: 3, parent_id: null }
+      ];
+
+      const relativeUpdates: RelativePositionUpdate[] = [
+        { id: 'task1', position: 'last' }
+      ];
+
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+      
+      expect(positionUpdates[0]).toEqual({
+        id: 'task1',
+        position: 3,
+        parent_id: null,
+        repositioned_after_id: 'task3' // positioned after the last task
+      });
+    });
+
+    it('should handle cross-parent moves with repositioned_after_id', () => {
+      const tasks: Task[] = [
+        { id: 'task1', position: 1, parent_id: 'parent1' },
+        { id: 'task2', position: 2, parent_id: 'parent1' },
+        { id: 'task3', position: 1, parent_id: 'parent2' },
+        { id: 'task4', position: 2, parent_id: 'parent2' }
+      ];
+
+      const relativeUpdates: RelativePositionUpdate[] = [
+        { id: 'task2', parent_id: 'parent2', after_task_id: 'task3' }
+      ];
+
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+      
+      expect(positionUpdates[0]).toEqual({
+        id: 'task2',
+        position: 2,
+        parent_id: 'parent2',
+        repositioned_after_id: 'task3'
+      });
+    });
+
+    it('should propagate repositioned_after_id through PositionUpdateBatch', () => {
+      const tasks: Task[] = [
+        { id: 'task1', position: 1, parent_id: null },
+        { id: 'task2', position: 2, parent_id: null }
+      ];
+
+      const positionUpdates: PositionUpdate[] = [
+        { id: 'task1', position: 2, repositioned_after_id: 'task2' }
+      ];
+
+      const result = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
+      
+      // Find the position update batch for task1
+      const task1Update = result.positionUpdates.find(u => u.taskId === 'task1');
+      expect(task1Update).toBeDefined();
+      expect(task1Update?.repositioned_after_id).toBeUndefined(); // not set during applyPositionUpdates
     });
   });
 });

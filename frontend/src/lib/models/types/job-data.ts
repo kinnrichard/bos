@@ -1,10 +1,9 @@
 /**
  * JobData - TypeScript interface for jobs table
  * 
- * Generated from Rails schema: 2025-07-23 12:27:47 UTC
+ * Generated from Rails schema: 2025-07-23 20:58:14 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
- * - createdBy: belongs_to User
  * - activityLogs: has_many ActivityLog
  * - jobAssignments: has_many JobAssignment
  * - technicians: has_many User, through: job_assignments
@@ -20,9 +19,9 @@
 
 import type { BaseRecord } from '../base/types';
 import type { ClientData } from './client-data';
-import type { UserData } from './user-data';
 import type { ActivityLogData } from './activity-log-data';
 import type { JobAssignmentData } from './job-assignment-data';
+import type { UserData } from './user-data';
 import type { JobPersonData } from './job-person-data';
 import type { PersonData } from './person-data';
 import type { TaskData } from './task-data';
@@ -41,7 +40,6 @@ export interface JobData extends BaseRecord {
   lock_version: number;
   id: string;
   client_id?: string;
-  created_by_id?: string;
   due_at?: string | number;
   due_time_set: boolean;
   starts_at?: string | number;
@@ -51,7 +49,6 @@ export interface JobData extends BaseRecord {
 
   // Epic-011: Relationship properties (optional - loaded via includes())
   client?: ClientData; // belongs_to
-  createdBy?: UserData; // belongs_to
   activityLogs?: ActivityLogData[]; // has_many
   jobAssignments?: JobAssignmentData[]; // has_many
   technicians?: UserData[]; // has_many
@@ -67,10 +64,10 @@ export interface JobData extends BaseRecord {
  * Create Job data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateJobData = Omit<JobData, 'id' | 'created_at' | 'updated_at' | 'client' | 'createdBy' | 'activityLogs' | 'jobAssignments' | 'technicians' | 'jobPeople' | 'people' | 'tasks' | 'allTasks' | 'notes' | 'scheduledDateTimes'>;
+export type CreateJobData = Omit<JobData, 'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'jobAssignments' | 'technicians' | 'jobPeople' | 'people' | 'tasks' | 'allTasks' | 'notes' | 'scheduledDateTimes'>;
 
 /**
  * Update Job data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateJobData = Partial<Omit<JobData, 'id' | 'created_at' | 'updated_at' | 'client' | 'createdBy' | 'activityLogs' | 'jobAssignments' | 'technicians' | 'jobPeople' | 'people' | 'tasks' | 'allTasks' | 'notes' | 'scheduledDateTimes'>>;
+export type UpdateJobData = Partial<Omit<JobData, 'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'jobAssignments' | 'technicians' | 'jobPeople' | 'people' | 'tasks' | 'allTasks' | 'notes' | 'scheduledDateTimes'>>;

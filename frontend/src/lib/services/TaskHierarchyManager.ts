@@ -1,10 +1,12 @@
 import { SvelteSet } from 'svelte/reactivity';
 import { shouldShowTask, shouldShowTaskLegacy } from '$lib/stores/taskFilter.svelte';
+import { sortTasksInPlace } from '$lib/shared/utils/task-sorting';
 
 // Generic task interface that works with both generated types and position calculator types
 export interface BaseTask {
   id: string;
   position?: number;
+  repositioned_after_id?: string | null;
   parent_id?: string;
   title?: string;
   status?: string;
@@ -281,7 +283,7 @@ export class TaskHierarchyManager {
     });
     
     // Sort root tasks by position
-    rootTasks.sort((a, b) => (a.position || 0) - (b.position || 0));
+    sortTasksInPlace(rootTasks);
     
     // Sort subtasks by position for each parent
     this.sortSubtasks(rootTasks);
@@ -328,7 +330,7 @@ export class TaskHierarchyManager {
     });
     
     // Sort root tasks by position
-    rootTasks.sort((a, b) => (a.position || 0) - (b.position || 0));
+    sortTasksInPlace(rootTasks);
     
     // Sort subtasks by position for each parent
     this.sortSubtasks(rootTasks);
@@ -342,7 +344,7 @@ export class TaskHierarchyManager {
   private sortSubtasks(tasks: HierarchicalTask[]): void {
     tasks.forEach(task => {
       if (task.subtasks && task.subtasks.length > 0) {
-        task.subtasks.sort((a, b) => (a.position || 0) - (b.position || 0));
+        sortTasksInPlace(task.subtasks);
         this.sortSubtasks(task.subtasks);
       }
     });
