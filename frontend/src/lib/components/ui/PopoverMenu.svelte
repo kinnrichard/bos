@@ -91,19 +91,31 @@
       case 'ArrowDown':
         e.preventDefault();
         e.stopPropagation();
-        const nextIndex = focusedIndex < selectableOptions.length - 1 
-          ? focusedIndex + 1 
-          : 0;
-        focusedIndex = nextIndex;
+        if (focusedIndex === -1) {
+          // First arrow press - select first item
+          focusedIndex = 0;
+        } else {
+          // Normal cycling
+          const nextIndex = focusedIndex < selectableOptions.length - 1 
+            ? focusedIndex + 1 
+            : 0;
+          focusedIndex = nextIndex;
+        }
         break;
         
       case 'ArrowUp':
         e.preventDefault();
         e.stopPropagation();
-        const prevIndex = focusedIndex > 0 
-          ? focusedIndex - 1 
-          : selectableOptions.length - 1;
-        focusedIndex = prevIndex;
+        if (focusedIndex === -1) {
+          // First arrow press - select last item
+          focusedIndex = selectableOptions.length - 1;
+        } else {
+          // Normal cycling
+          const prevIndex = focusedIndex > 0 
+            ? focusedIndex - 1 
+            : selectableOptions.length - 1;
+          focusedIndex = prevIndex;
+        }
         break;
         
       case 'Enter':
@@ -148,16 +160,7 @@
   onMount(() => {
     if (autoFocus && menuElement) {
       menuElement.focus();
-      
-      // Set initial focus to selected item
-      if (selected !== undefined && !Array.isArray(selected)) {
-        const selectedIndex = selectableOptions.findIndex(
-          opt => opt.value === selected
-        );
-        if (selectedIndex >= 0) {
-          focusedIndex = selectedIndex;
-        }
-      }
+      // Don't set initial focus - let user initiate with keyboard or mouse
     }
     
     return () => {
