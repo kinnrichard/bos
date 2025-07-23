@@ -501,8 +501,15 @@
         
         // Find position after the target task
         const afterIndex = scopeTasks.findIndex(t => t.id === insertNewTaskAfter);
-        if (afterIndex !== -1) {
-          position = (afterTask.position ?? 0) + 1;
+        if (afterIndex !== -1 && afterIndex < scopeTasks.length - 1) {
+          // Calculate fractional position between this task and the next
+          const nextTask = scopeTasks[afterIndex + 1];
+          const afterPosition = afterTask.position ?? 0;
+          const nextPosition = nextTask.position ?? afterPosition + 1000;
+          position = (afterPosition + nextPosition) / 2;
+        } else {
+          // Inserting at the end - add standard gap
+          position = (afterTask.position ?? 0) + 1000;
         }
       }
     }
