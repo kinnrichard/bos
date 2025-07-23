@@ -254,7 +254,7 @@
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-    /* Remove overflow: hidden to allow arrows to extend outside panel */
+    overflow: hidden; /* Ensure content is properly clipped to panel bounds */
     z-index: 2000;
     position: relative;
   }
@@ -264,7 +264,6 @@
     max-height: calc(100vh - 100px); /* Match parent's default max-height */
     overflow-y: auto; /* Enable scrolling */
     overflow-x: hidden;
-    border-radius: var(--radius-lg); /* Maintain rounded corners on content */
     overscroll-behavior: contain; /* Prevent scroll chaining */
   }
 
