@@ -293,7 +293,6 @@
     flex-direction: column;
     padding: 4px;
     min-width: 200px;
-    padding-bottom: 8px; /* Extra padding to prevent last item from being cut off */
     outline: none;
   }
 

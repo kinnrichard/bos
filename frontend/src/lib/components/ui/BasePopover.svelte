@@ -343,7 +343,7 @@
   .panel-top::after {
     content: '';
     position: absolute;
-    bottom: -8px; /* Moved 1px up to overlap the border */
+    bottom: -9px; /* Consistent with other arrow directions */
     left: 50%;
     transform: translateX(-50%);
     width: 0;
