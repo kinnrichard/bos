@@ -30,6 +30,8 @@
     autoFocus?: boolean;
     maxHeight?: string;
     optionContent?: import('svelte').Snippet<[{ option: MenuOption, isSelected: boolean, isFocused: boolean }]>;
+    headerContent?: import('svelte').Snippet<[{ option: MenuOption }]>;
+    iconContent?: import('svelte').Snippet<[{ option: MenuOption }]>;
   }
 
   let {
@@ -47,7 +49,9 @@
     enableKeyboard = true,
     autoFocus = true,
     maxHeight = '',
-    optionContent
+    optionContent,
+    headerContent,
+    iconContent
   }: Props = $props();
   
   let menuElement = $state<HTMLElement>();
@@ -166,6 +170,18 @@
       // Don't set initial focus - let user initiate with keyboard or mouse
     }
     
+    // Fix for text truncation bug: Force browser to recalculate layout
+    // Without this, long text items (like "Test Customer Specialist") get truncated
+    // until hover triggers a repaint. This is likely due to the popover's width
+    // being calculated before the content is fully rendered.
+    requestAnimationFrame(() => {
+      if (menuElement) {
+        menuElement.style.display = 'none';
+        menuElement.offsetHeight; // Trigger reflow
+        menuElement.style.display = '';
+      }
+    });
+    
     return () => {
       clearTimeout(searchTimeout);
     };
@@ -191,7 +207,21 @@
       <div class="popover-menu-divider" role="separator"></div>
     {:else if option.header}
       <div class="popover-menu-header" role="heading" aria-level="3">
-        {option.label}
+        {#if headerContent}
+          {@render headerContent({ option })}
+        {:else}
+          {#if showCheckmarks}
+            <div class="popover-menu-checkmark">
+              <!-- Empty placeholder for alignment -->
+            </div>
+          {/if}
+          {#if showIcons && iconPosition === 'left'}
+            <span class="popover-menu-icon popover-menu-icon-left">
+              <!-- Empty placeholder for alignment -->
+            </span>
+          {/if}
+          <span class="popover-menu-label">{option.label}</span>
+        {/if}
       </div>
     {:else}
       <button
@@ -226,12 +256,16 @@
             </div>
           {/if}
           
-          {#if showIcons && option.icon && iconPosition === 'left'}
+          {#if showIcons && iconPosition === 'left'}
             <span class="popover-menu-icon popover-menu-icon-left">
-              {#if option.icon.startsWith('/') || option.icon.startsWith('http')}
-                <img src={option.icon} alt="" />
-              {:else}
-                {option.icon}
+              {#if iconContent}
+                {@render iconContent({ option })}
+              {:else if option.icon}
+                {#if option.icon.startsWith('/') || option.icon.startsWith('http')}
+                  <img src={option.icon} alt="" />
+                {:else}
+                  {option.icon}
+                {/if}
               {/if}
             </span>
           {/if}
@@ -260,7 +294,7 @@
     padding: 4px;
     min-width: 200px;
     outline: none;
-    overscroll-behavior: contain;
+    overflow: visible; /* Let BasePopover handle overflow */
   }
 
   /* Scrollbar styling */
@@ -280,7 +314,6 @@
   .popover-menu-option {
     display: flex;
     align-items: center;
-    gap: 8px;
     padding: 4px 12px;
     border: none;
     background: none;
@@ -348,6 +381,7 @@
   }
 
   .popover-menu-icon-left {
+    margin-right: 8px;
   }
 
   .popover-menu-icon-right {
@@ -364,8 +398,10 @@
   
   .popover-menu-checkmark {
     flex-shrink: 0;
+    min-width: 12px;
     width: 12px;
     height: 12px;
+    margin-right: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -380,15 +416,17 @@
   .popover-menu-header {
     display: flex;
     align-items: center;
-    gap: 8px;
     padding: 4px 12px;
     font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
     opacity: 0.33;
     line-height: 1.5;
-    /* Add invisible checkmark and icon space for alignment */
-    padding-left: 60px; /* 12px padding + 20px checkmark + 4px gap + 20px icon + 8px gap */
+  }
+  
+  .popover-menu-header .popover-menu-label {
+    /* Remove the right padding since headers don't need space for right-side elements */
+    padding-right: 0;
   }
 
   /* Accessibility improvements */

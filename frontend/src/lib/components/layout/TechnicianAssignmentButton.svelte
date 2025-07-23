@@ -132,6 +132,7 @@
   bind:popover={basePopover}
   preferredPlacement="bottom"
   panelWidth="max-content"
+  panelMinWidth="240px"
 >
   {#snippet trigger({ popover })}
     <button 
@@ -178,27 +179,15 @@
         onSelect={handleUserToggle}
         onClose={close}
         showCheckmarks={true}
-        showIcons={false}
+        showIcons={true}
+        iconPosition="left"
         enableKeyboard={true}
         autoFocus={true}
         className="technician-assignment-menu"
       >
-        {#snippet optionContent({ option, isSelected, isFocused })}
-          {#if !option.header}
-            <div class="popover-menu-checkmark">
-              {#if isSelected}
-                <img 
-                  src={isFocused ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
-                  alt="Selected"
-                  width="12"
-                  height="12"
-                />
-              {/if}
-            </div>
-            <div class="technician-avatar">
-              <UserAvatar user={option.user} size="xs" />
-            </div>
-            <span class="popover-menu-label">{option.label}</span>
+        {#snippet iconContent({ option })}
+          {#if option.user}
+            <UserAvatar user={option.user} size="xs" />
           {/if}
         {/snippet}
       </PopoverMenu>
@@ -281,8 +270,22 @@
   .technician-avatar {
     flex-shrink: 0;
     margin-right: 8px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  /* Component-specific option styling removed - now using shared classes */
+  /* Ensure UserAvatar fits within the icon container */
+  .technician-assignment-menu :global(.popover-menu-icon .user-avatar) {
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* Remove extra padding since we don't have right-side elements */
+  .technician-assignment-menu :global(.popover-menu-label) {
+    padding-right: 12px;
+  }
 
 </style>

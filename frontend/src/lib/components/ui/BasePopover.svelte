@@ -230,7 +230,7 @@
       {#if showArrow !== false}
         <!-- Arrow will be added via CSS pseudo-elements -->
       {/if}
-      <div class="popover-content-wrapper" style="max-height: {panelMaxHeight || 'none'};">
+      <div class="popover-content-wrapper">
         {@render children?.({ close: closePopover })}
       </div>
     </div>
@@ -261,7 +261,7 @@
 
   .popover-content-wrapper {
     width: 100%;
-    height: 100%;
+    max-height: calc(100vh - 100px); /* Match parent's default max-height */
     overflow-y: auto; /* Enable scrolling */
     overflow-x: hidden;
     border-radius: var(--radius-lg); /* Maintain rounded corners on content */
