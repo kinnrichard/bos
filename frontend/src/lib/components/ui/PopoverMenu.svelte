@@ -44,7 +44,7 @@
     selectedClassName = '',
     enableKeyboard = true,
     autoFocus = true,
-    maxHeight = 'min(400px, 50vh)'
+    maxHeight = ''
   }: Props = $props();
   
   let menuElement = $state<HTMLElement>();
@@ -178,7 +178,7 @@
   tabindex="0"
   bind:this={menuElement}
   onkeydown={handleKeydown}
-  style="max-height: {maxHeight};"
+  style="{maxHeight ? `max-height: ${maxHeight};` : ''}"
 >
   {#each options as option (option.id)}
     {#if option.divider}
@@ -204,6 +204,16 @@
           if (idx >= 0) focusedIndex = idx;
         }}
       >
+        {#if showCheckmarks}
+          <div class="popover-menu-checkmark">
+            {#if isSelected(option.value)}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            {/if}
+          </div>
+        {/if}
+        
         {#if showIcons && option.icon && iconPosition === 'left'}
           <span class="popover-menu-icon popover-menu-icon-left">
             {#if option.icon.startsWith('/') || option.icon.startsWith('http')}
@@ -225,16 +235,6 @@
             {/if}
           </span>
         {/if}
-        
-        {#if showCheckmarks}
-          <div class="popover-menu-checkmark">
-            {#if isSelected(option.value)}
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            {/if}
-          </div>
-        {/if}
       </button>
     {/if}
   {/each}
@@ -247,7 +247,6 @@
     padding: 4px;
     min-width: 200px;
     outline: none;
-    overflow-y: auto;
     overscroll-behavior: contain;
   }
 
@@ -302,7 +301,6 @@
   .popover-menu-option.focused:not(.disabled) {
     background-color: var(--accent-blue);
     color: #FFFFFF;
-    font-weight: bold;
     text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
   
@@ -314,7 +312,6 @@
   .popover-menu-option.selected.focused:not(.disabled) {
     background-color: var(--accent-blue);
     color: #FFFFFF;
-    font-weight: bold;
     text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
   
@@ -362,7 +359,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: auto;
+    margin-right: 4px;
     color: var(--accent-blue);
   }
   
@@ -381,9 +378,10 @@
     font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
+    opacity: 0.66;
     line-height: 1.5;
-    /* Add invisible icon space for alignment */
-    padding-left: 40px; /* 12px padding + 20px icon + 8px gap */
+    /* Add invisible checkmark and icon space for alignment */
+    padding-left: 64px; /* 12px padding + 20px checkmark + 4px gap + 20px icon + 8px gap */
   }
 
   /* Accessibility improvements */

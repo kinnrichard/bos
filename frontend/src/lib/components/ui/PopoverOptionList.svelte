@@ -2,7 +2,7 @@
   let {
     options,
     loading = false,
-    maxHeight = 'min(400px, 50vh)',
+    maxHeight = '',
     onOptionClick,
     isSelected = () => false,
     optionContent
