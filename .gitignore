@@ -52,3 +52,20 @@ node_modules/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Rails
+tmp/
+log/
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-*
+.bundle
+config/master.key
+config/credentials.yml.enc
+storage/
+public/assets/
+public/packs/
+public/packs-test/
+
+# Bootsnap cache
+tmp/cache/bootsnap*
