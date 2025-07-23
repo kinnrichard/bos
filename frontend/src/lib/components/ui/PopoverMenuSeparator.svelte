@@ -18,7 +18,7 @@
 
   .separator-line {
     height: 1px;
-    background-color: var(--border-secondary, rgba(255, 255, 255, 0.1));
+    background-color: var(--border-primary);
     width: 100%;
     /* Align with where text starts in menu items (after checkmark) */
     margin-left: 20px;
