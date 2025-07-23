@@ -160,6 +160,11 @@ export const taskPermissionHelpers = {
     return taskPermissions.hasPermission('delete', { task });
   },
 
+  // Check if a specific task's status can be changed
+  canChangeStatus(task: any): boolean {
+    return taskPermissions.hasPermission('changeStatus', { task });
+  },
+
   // Get permissions for a specific task
   getTaskPermissions(task: any): Record<TaskPermission, boolean> {
     return taskPermissions.getAllPermissions({ task });

@@ -43,6 +43,7 @@
   
   // Derive task-specific permissions
   const taskCanEdit = $derived(canEdit && taskPermissionHelpers.canEditTask(task));
+  const taskCanChangeStatus = $derived(canEdit && taskPermissionHelpers.canChangeStatus(task));
 
   // Dispatch helper for editing events
   function handleEditingChange(editing: boolean) {
@@ -108,6 +109,12 @@
 
   function handleStatusChange(event: MouseEvent) {
     event.stopPropagation();
+    
+    // Check if status change is allowed
+    if (!taskCanChangeStatus) {
+      return;
+    }
+    
     const statusCycle = ['new_task', 'in_progress', 'successfully_completed'];
     const currentIndex = statusCycle.indexOf(task.status);
     const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
@@ -175,8 +182,10 @@
   <div class="task-status">
     <button 
       class="status-emoji"
+      class:disabled={!taskCanChangeStatus}
       onclick={handleStatusChange}
-      title="Click to change status"
+      title={taskCanChangeStatus ? "Click to change status" : "Status cannot be changed"}
+      disabled={!taskCanChangeStatus}
     >
       {getTaskEmoji(task)}
     </button>
