@@ -69,6 +69,15 @@
 
   // Use $derived for computed values in Svelte 5
   let hasActiveFilters = $derived(selectedStatuses.length > 0 && selectedStatuses.length < statusOptions.length || showDeleted);
+  
+  // Compute selected values for PopoverMenu
+  let selectedValues = $derived(() => {
+    const values = [...selectedStatuses];
+    if (showDeleted) {
+      values.push('deleted');
+    }
+    return values;
+  })();
 
   // Use $effect to notify parent when filters change
   $effect(() => {
@@ -117,18 +126,15 @@
       title="Show…"
       options={menuOptions}
       showCheckmarks={true}
-      onOptionClick={(option, event) => {
-        if (option.value === 'deleted') {
+      multiple={true}
+      selected={selectedValues}
+      onSelect={(value, option) => {
+        if (value === 'deleted') {
           toggleDeleted();
-        } else if (option.value) {
+        } else if (value) {
+          const event = new MouseEvent('click');
           handleStatusToggle(option, event);
         }
-      }}
-      isSelected={(option) => {
-        if (option.value === 'deleted') {
-          return showDeleted;
-        }
-        return option.value ? selectedStatuses.includes(option.value) : false;
       }}
       onClose={close}
     >
