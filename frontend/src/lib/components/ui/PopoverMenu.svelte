@@ -253,7 +253,7 @@
             <div class="popover-menu-checkmark">
               {#if isSelected(option.value)}
                 <img 
-                  src={option === focusedOption ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
+                  src="/icons/checkmark-white.svg"
                   alt="Selected"
                   width="12"
                   height="12"
@@ -324,7 +324,7 @@
     background: none;
     text-align: left;
     border-radius: 6px;
-    color: var(--text-primary);
+    color: #FFFFFF; /* Always white text */
     font-size: 14px;
     font-weight: 400;
     line-height: 1.5;
@@ -348,18 +348,15 @@
   
   .popover-menu-option.focused:not(.disabled) {
     background-color: var(--accent-blue);
-    color: #FFFFFF;
     text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
   
   .popover-menu-option.selected:not(.disabled) {
     background-color: var(--accent-blue-bg);
-    color: var(--accent-blue);
   }
   
   .popover-menu-option.selected.focused:not(.disabled) {
     background-color: var(--accent-blue);
-    color: #FFFFFF;
     text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
   
@@ -424,7 +421,7 @@
     padding: 4px 12px;
     font-size: 14px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #FFFFFF; /* Always white text */
     opacity: 0.33;
     line-height: 1.5;
   }
