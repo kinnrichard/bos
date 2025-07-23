@@ -124,6 +124,7 @@
       title="Show…"
       options={menuOptions}
       showCheckmarks={true}
+      showIcons={false}
       multiple={true}
       selected={selectedValues}
       onSelect={(value, option) => {

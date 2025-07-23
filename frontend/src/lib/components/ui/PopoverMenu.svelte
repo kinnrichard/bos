@@ -414,7 +414,7 @@
   .popover-menu-divider {
     height: 1px;
     background-color: var(--border-primary);
-    margin: 4px 8px;
+    margin: 4px 12px;
   }
   
   .popover-menu-header {
