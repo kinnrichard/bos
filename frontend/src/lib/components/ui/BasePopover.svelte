@@ -274,6 +274,7 @@
 
   .popover-content-wrapper::-webkit-scrollbar-track {
     background: transparent;
+    border-radius: 3px;
   }
 
   .popover-content-wrapper::-webkit-scrollbar-thumb {
