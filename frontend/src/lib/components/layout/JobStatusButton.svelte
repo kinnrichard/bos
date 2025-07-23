@@ -24,6 +24,7 @@
 
   // All available job statuses with their display information - formatted for PopoverMenu
   const availableStatuses = [
+    { id: 'title', value: 'title', label: 'Job Status', header: true },
     { id: 'open', value: 'open', label: 'Open', icon: EMOJI_MAPPINGS.jobStatuses.open },
     { id: 'in_progress', value: 'in_progress', label: 'In Progress', icon: EMOJI_MAPPINGS.jobStatuses.in_progress },
     { id: 'paused', value: 'paused', label: 'Paused', icon: EMOJI_MAPPINGS.jobStatuses.paused },
@@ -95,21 +96,17 @@
   {/snippet}
 
   {#snippet children({ close })}
-    <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
-      <h3 class="popover-title">Job Status</h3>
-
-      <PopoverMenu
-        options={availableStatuses}
-        selected={currentStatus}
-        onSelect={handleStatusChange}
-        onClose={close}
-        showCheckmarks={true}
-        showIcons={true}
-        iconPosition="left"
-        enableKeyboard={true}
-        autoFocus={true}
-      />
-    </div>
+    <PopoverMenu
+      options={availableStatuses}
+      selected={currentStatus}
+      onSelect={handleStatusChange}
+      onClose={close}
+      showCheckmarks={true}
+      showIcons={true}
+      iconPosition="left"
+      enableKeyboard={true}
+      autoFocus={true}
+    />
   {/snippet}
 </BasePopover>
 

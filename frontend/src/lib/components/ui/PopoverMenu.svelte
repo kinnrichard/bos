@@ -300,7 +300,10 @@
   }
   
   .popover-menu-option.focused:not(.disabled) {
-    background-color: var(--bg-tertiary);
+    background-color: var(--accent-blue);
+    color: #FFFFFF;
+    font-weight: bold;
+    text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
   
   .popover-menu-option.selected:not(.disabled) {
@@ -309,7 +312,10 @@
   }
   
   .popover-menu-option.selected.focused:not(.disabled) {
-    background-color: var(--accent-blue-bg);
+    background-color: var(--accent-blue);
+    color: #FFFFFF;
+    font-weight: bold;
+    text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
   
   .popover-menu-option.disabled {
@@ -367,12 +373,17 @@
   }
   
   .popover-menu-header {
-    padding: 8px 12px 4px;
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    min-height: 36px;
+    font-size: 14px;
     font-weight: 600;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    color: var(--text-primary);
+    line-height: 1.5;
+    /* Add invisible icon space for alignment */
+    padding-left: 40px; /* 12px padding + 20px icon + 8px gap */
   }
 
   /* Accessibility improvements */
