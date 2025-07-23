@@ -91,6 +91,11 @@
     }
   }
   
+  function handleMouseLeave() {
+    // Clear highlight when mouse leaves menu (native macOS behavior)
+    focusedIndex = -1;
+  }
+  
   function handleKeydown(e: KeyboardEvent) {
     if (!enableKeyboard) return;
     
@@ -200,6 +205,7 @@
   tabindex="0"
   bind:this={menuElement}
   onkeydown={handleKeydown}
+  onmouseleave={handleMouseLeave}
   style="{maxHeight ? `max-height: ${maxHeight};` : ''}"
 >
   {#each options as option (option.id)}
