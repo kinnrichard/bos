@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { taskFilter, shouldShowTask, taskFilterCapabilities } from '$lib/stores/taskFilter.svelte';
+  import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
+  import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
   import { TaskHierarchyManager } from '$lib/services/TaskHierarchyManager';
   import type { HierarchicalTask, RenderedTaskItem, BaseTask } from '$lib/services/TaskHierarchyManager';
   import { taskSelection, taskSelectionActions } from '$lib/stores/taskSelection.svelte';
   import { focusActions } from '$lib/stores/focusManager.svelte';
-  import { Task as TaskModel } from '$lib/models/task';
+  import { Task as TaskModel } from '$lib/models/task-with-permissions';
   import { nativeDrag, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
   import { calculateRelativePositionFromTarget } from '$lib/utils/position-calculator';
@@ -32,9 +33,9 @@
   // Task hierarchy management
   const hierarchyManager = new TaskHierarchyManager();
   
-  // Derived state for UI capabilities
-  const canCreateTasks = $derived(taskFilterCapabilities.canCreateTasks);
-  const canEditTasks = $derived(taskFilterCapabilities.canEditTasks);
+  // Derived state for UI capabilities using new permission system
+  const canCreateTasks = $derived(taskPermissionHelpers.canCreateTasks);
+  const canEditTasks = $derived(taskPermissionHelpers.canEditTasks);
   
   // Drag & drop state
   let isDragging = false;

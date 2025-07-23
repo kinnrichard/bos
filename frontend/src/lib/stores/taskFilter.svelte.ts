@@ -97,15 +97,16 @@ export function getFilterSummary(): string[] {
   return summary;
 }
 
-// Derived state for UI capabilities based on filter state
+// DEPRECATED: Use taskPermissions store instead
+// Kept for backward compatibility during migration
 export const taskFilterCapabilities = {
-  // Check if task creation should be allowed based on current filter state
   get canCreateTasks(): boolean {
+    console.warn('taskFilterCapabilities.canCreateTasks is deprecated. Use taskPermissionHelpers.canCreateTasks instead.');
     return !taskFilter.showDeleted;
   },
   
-  // Check if task editing should be allowed based on current filter state
   get canEditTasks(): boolean {
+    console.warn('taskFilterCapabilities.canEditTasks is deprecated. Use taskPermissionHelpers.canEditTasks instead.');
     return !taskFilter.showDeleted;
   }
 };

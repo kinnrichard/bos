@@ -3,6 +3,7 @@
   import { getTaskEmoji } from '$lib/config/emoji';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
   import { focusActions } from '$lib/stores/focusManager.svelte';
+  import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
   import EditableTitle from '../ui/EditableTitle.svelte';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
   import '../../styles/task-components.css';
@@ -39,6 +40,9 @@
   } = $props();
 
   const dispatch = createEventDispatcher();
+  
+  // Derive task-specific permissions
+  const taskCanEdit = $derived(canEdit && taskPermissionHelpers.canEditTask(task));
 
   // Dispatch helper for editing events
   function handleEditingChange(editing: boolean) {
@@ -139,7 +143,7 @@
   class:selected={isSelected}
   class:task-selected-for-drag={isSelected}
   class:task-deleting={isDeleting}
-  class:non-editable={!canEdit}
+  class:non-editable={!taskCanEdit}
   style="--depth: {depth || 0}"
   data-task-id={task.id}
   role="button"
@@ -189,7 +193,7 @@
       onEditingChange={handleEditingChange}
       onSave={handleSaveTitle}
       onClick={handleTaskClick}
-      editable={canEdit}
+      editable={taskCanEdit}
     />
     
     <!-- Time Tracking Display -->

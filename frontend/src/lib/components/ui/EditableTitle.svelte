@@ -112,6 +112,12 @@
   }
 
   function handleFocus() {
+    // Prevent focus if not editable
+    if (!editable) {
+      element?.blur();
+      return;
+    }
+    
     hasFocus = true;
     originalValue = element?.textContent || '';
     onEditingChange?.(true);
@@ -157,7 +163,10 @@
     // Call parent's onClick if provided (for row selection)
     onClick?.(e);
     
-    // Don't prevent default - let the browser handle cursor positioning
+    // If not editable, prevent focusing
+    if (!editable) {
+      e.preventDefault();
+    }
   }
 
   function handleMouseDown(e: MouseEvent) {
@@ -204,6 +213,7 @@
   class="editable-title focus-ring-tight {className}"
   class:editing={hasFocus}
   class:saving={isSaving}
+  class:not-editable={!editable}
   contenteditable={editable ? "true" : "false"}
   spellcheck="false"
   use:fixContentEditable
@@ -217,9 +227,10 @@
   style:font-size={fontSize}
   style:font-weight={fontWeight}
   data-placeholder={placeholder}
-  role="textbox"
-  aria-label="Edit title"
-  tabindex="0"
+  role={editable ? "textbox" : "text"}
+  aria-label={editable ? "Edit title" : "Title (read-only)"}
+  aria-readonly={!editable}
+  tabindex={editable ? "0" : "-1"}
 >
   {value || ''}
 </svelte:element>
@@ -233,6 +244,13 @@
     /* Always have padding to prevent layout shift when focus ring appears */
     padding: 3px 8px;
     margin: -3px -8px;
+  }
+  
+  /* Non-editable state */
+  .editable-title.not-editable {
+    cursor: default;
+    user-select: none;
+    pointer-events: none;
   }
   
   /* Remove hover effect for desktop-style experience */
