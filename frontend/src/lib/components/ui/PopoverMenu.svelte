@@ -268,14 +268,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    min-height: 36px;
+    padding: 4px 12px;
     border: none;
     background: none;
     text-align: left;
-    cursor: pointer;
     border-radius: 6px;
-    transition: all 0.15s ease;
     color: var(--text-primary);
     font-size: 14px;
     font-weight: 400;
@@ -338,7 +335,6 @@
   }
 
   .popover-menu-icon-left {
-    margin-right: 4px;
   }
 
   .popover-menu-icon-right {
@@ -350,16 +346,16 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding-right: 30px;
   }
   
   .popover-menu-checkmark {
     flex-shrink: 0;
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 4px;
     color: var(--accent-blue);
   }
   
@@ -373,12 +369,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    min-height: 36px;
+    padding: 4px 12px;
     font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
-    opacity: 0.66;
+    opacity: 0.33;
     line-height: 1.5;
     /* Add invisible checkmark and icon space for alignment */
     padding-left: 64px; /* 12px padding + 20px checkmark + 4px gap + 20px icon + 8px gap */
