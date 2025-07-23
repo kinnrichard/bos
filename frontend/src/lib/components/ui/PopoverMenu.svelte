@@ -213,8 +213,8 @@
               <img 
                 src={option === focusedOption ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
                 alt="Selected"
-                width="16"
-                height="16"
+                width="12"
+                height="12"
               />
             {/if}
           </div>
@@ -357,8 +357,8 @@
   
   .popover-menu-checkmark {
     flex-shrink: 0;
-    width: 16px;
-    height: 16px;
+    width: 12px;
+    height: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -381,7 +381,7 @@
     opacity: 0.33;
     line-height: 1.5;
     /* Add invisible checkmark and icon space for alignment */
-    padding-left: 64px; /* 12px padding + 20px checkmark + 4px gap + 20px icon + 8px gap */
+    padding-left: 60px; /* 12px padding + 20px checkmark + 4px gap + 20px icon + 8px gap */
   }
 
   /* Accessibility improvements */
