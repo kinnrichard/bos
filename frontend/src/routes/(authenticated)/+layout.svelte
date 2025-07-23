@@ -21,6 +21,7 @@
   import { debugAuth, debugError } from '$lib/utils/debug';
   import Toast from '$lib/components/ui/Toast.svelte';
   import { toastStore } from '$lib/stores/toast.svelte';
+  import { initializeStores } from '$lib/stores/initializeStores';
   
   let { children } = $props();
 
@@ -33,6 +34,9 @@
 
   onMount(async () => {
     if (!browser) return;
+    
+    // Initialize store connections before anything else
+    initializeStores();
     
     try {
       // Stage 1: Check authentication first

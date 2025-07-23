@@ -1,5 +1,3 @@
-import { taskFilter } from './taskFilter.svelte';
-
 // Task permission types
 export type TaskPermission = 
   | 'create'
@@ -14,14 +12,24 @@ export type TaskPermission =
 // Permission context for evaluating permissions
 interface PermissionContext {
   task?: any;
-  filterState?: typeof taskFilter;
+  filterState?: {
+    showDeleted: boolean;
+  };
+}
+
+// Getter function for filter state to avoid circular dependency
+let getFilterState: () => { showDeleted: boolean } = () => ({ showDeleted: false });
+
+// Function to set the filter state getter (called during app initialization)
+export function setFilterStateGetter(getter: () => { showDeleted: boolean }) {
+  getFilterState = getter;
 }
 
 // Centralized permission system for task operations
 class TaskPermissionSystem {
   // Check if a specific permission is allowed
   hasPermission(permission: TaskPermission, context: PermissionContext = {}): boolean {
-    const filterState = context.filterState || taskFilter;
+    const filterState = context.filterState || getFilterState();
     const task = context.task;
 
     // Global rules based on filter state
@@ -100,7 +108,7 @@ class TaskPermissionSystem {
 
   // Get a human-readable reason why a permission is denied
   getPermissionDenialReason(permission: TaskPermission, context: PermissionContext = {}): string | null {
-    const filterState = context.filterState || taskFilter;
+    const filterState = context.filterState || getFilterState();
     const task = context.task;
 
     // Check if permission is allowed first

@@ -7,7 +7,7 @@
   import type { HierarchicalTask, RenderedTaskItem, BaseTask } from '$lib/services/TaskHierarchyManager';
   import { taskSelection, taskSelectionActions } from '$lib/stores/taskSelection.svelte';
   import { focusActions } from '$lib/stores/focusManager.svelte';
-  import { Task as TaskModel } from '$lib/models/task-with-permissions';
+  import { Task as TaskModel } from '$lib/models/task';
   import { nativeDrag, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
   import { calculateRelativePositionFromTarget } from '$lib/utils/position-calculator';

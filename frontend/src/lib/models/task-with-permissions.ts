@@ -8,7 +8,6 @@
 import { Task as BaseTask } from './task';
 import type { TaskData, CreateTaskData, UpdateTaskData } from './types/task-data';
 import { taskPermissions } from '../stores/taskPermissions.svelte';
-import { taskFilter } from '../stores/taskFilter.svelte';
 
 /**
  * Permission-aware Task model
