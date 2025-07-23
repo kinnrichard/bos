@@ -69,3 +69,6 @@ public/packs-test/
 
 # Bootsnap cache
 tmp/cache/bootsnap*
+
+# Zero.js schema backups
+frontend/src/lib/zero/generated-schema.ts.backup.*
