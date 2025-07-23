@@ -71,13 +71,11 @@
   let hasActiveFilters = $derived(selectedStatuses.length > 0 && selectedStatuses.length < statusOptions.length || showDeleted);
   
   // Compute selected values for PopoverMenu
-  let selectedValues = $derived(() => {
-    const values = [...selectedStatuses];
-    if (showDeleted) {
-      values.push('deleted');
-    }
-    return values;
-  })();
+  let selectedValues = $derived(
+    showDeleted 
+      ? [...selectedStatuses, 'deleted']
+      : selectedStatuses
+  );
 
   // Use $effect to notify parent when filters change
   $effect(() => {
@@ -137,27 +135,7 @@
         }
       }}
       onClose={close}
-    >
-      {#snippet optionContent({ option, isSelected, isFocused })}
-        {#if true}
-          <div class="popover-menu-checkmark">
-            {#if isSelected}
-              <img 
-                src={isFocused ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
-                alt="Selected"
-                width="12"
-                height="12"
-                class={option.value === 'deleted' && !isFocused ? 'deleted-checkmark' : ''}
-              />
-            {/if}
-          </div>
-        {/if}
-        
-        <span class="popover-menu-label{option.value === 'deleted' && isSelected ? ' deleted-label' : ''}">
-          {option.label}
-        </span>
-      {/snippet}
-    </PopoverMenu>
+    />
   {/snippet}
 </BasePopover>
 
@@ -193,15 +171,6 @@
     opacity: 1;
   }
 
-  /* Special styling for deleted option */
-  .deleted-label {
-    color: var(--accent-red, #FF3B30);
-  }
-
-  /* Make the checkmark red for deleted option */
-  .deleted-checkmark {
-    filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(5722%) hue-rotate(348deg) brightness(95%) contrast(104%);
-  }
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
