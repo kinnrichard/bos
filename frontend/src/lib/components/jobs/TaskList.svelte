@@ -7,6 +7,7 @@
   import type { HierarchicalTask, RenderedTaskItem, BaseTask } from '$lib/services/TaskHierarchyManager';
   import { taskSelection, taskSelectionActions } from '$lib/stores/taskSelection.svelte';
   import { focusActions } from '$lib/stores/focusManager.svelte';
+  import { ReactiveTask } from '$lib/models/reactive-task';
   import { Task as TaskModel } from '$lib/models/task';
   import { nativeDrag, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
@@ -539,12 +540,17 @@
     }
     
     // Determine which task this is being positioned after
-    let repositionedAfterId: string | null = null;
+    let repositionedAfterId: string | number | null = null;
     if (type === 'inline' && insertNewTaskAfter) {
       repositionedAfterId = insertNewTaskAfter;
-    } else if (type === 'bottom' && lastRootTask) {
-      // Use the lastRootTask we already fetched above
-      repositionedAfterId = lastRootTask.id;
+    } else if (type === 'bottom') {
+      if (lastRootTask) {
+        // Use the lastRootTask we already fetched above
+        repositionedAfterId = lastRootTask.id;
+      } else {
+        // First task in the job - use special value -1 for "top of list"
+        repositionedAfterId = -1;
+      }
     }
     
     // Log the data being sent to create

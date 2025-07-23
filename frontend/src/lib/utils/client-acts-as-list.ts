@@ -362,7 +362,7 @@ export class ClientActsAsList {
       if (!task) return;
       
       let targetPosition = 1;
-      let repositionedAfterId: string | null = null;
+      let repositionedAfterId: string | number | null = null;
       const targetParent = update.parent_id !== undefined ? update.parent_id : task.parent_id;
       
       // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
@@ -379,27 +379,20 @@ export class ClientActsAsList {
         const movingTask = normalizedTasks.find(t => t.id === update.id); // Search in full task list, not just target scope
         
         if (beforeTask) {
-          // Find the task that comes before the beforeTask to set repositioned_after_id
+          // Find the task that comes before the beforeTask
           const beforeTaskIndex = sortedAllScopeTasks.findIndex(t => t.id === beforeTask.id);
-          if (beforeTaskIndex > 0) {
-            repositionedAfterId = sortedAllScopeTasks[beforeTaskIndex - 1].id;
+          const prevTask = beforeTaskIndex > 0 
+            ? sortedAllScopeTasks[beforeTaskIndex - 1] 
+            : null;
+          
+          // Set repositioned_after_id
+          if (prevTask) {
+            repositionedAfterId = prevTask.id;
           }
           
-          if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
-            // Same-parent move: consider relative positions
-            if ((movingTask.position ?? 0) < (beforeTask.position ?? 0)) {
-              // Moving task is currently before target - it will take position (target.position - 1)
-              targetPosition = (beforeTask.position ?? 0) - 1;
-            } else {
-              // Moving task is currently after target - it will take target's current position
-              targetPosition = beforeTask.position ?? 0;
-            }
-          } else {
-            // Cross-parent move: positioning gem takes target's current position, shifts target up
-            // For "before Task X", the moving task takes Task X's current position and Task X shifts up
-            // This is different from same-parent moves where we calculate position - 1
-            targetPosition = beforeTask.position ?? 0;
-          }
+          // Calculate position using the new algorithm (with randomization in production)
+          const isTestEnvironment = typeof window === 'undefined' || process.env.NODE_ENV === 'test';
+          targetPosition = calculatePosition(prevTask?.position || null, beforeTask.position ?? 0, { disableRandomization: isTestEnvironment });
         } else {
           targetPosition = 1;
         }
@@ -412,7 +405,7 @@ export class ClientActsAsList {
           targetParent: targetParent || 'null',
           isCrossParentMove: movingTask ? (movingTask.parent_id || null) !== (targetParent || null) : 'unknown',
           targetPosition,
-          repositionedAfterId: repositionedAfterId ? repositionedAfterId.substring(0, 8) : null,
+          repositionedAfterId: typeof repositionedAfterId === 'string' ? repositionedAfterId.substring(0, 8) : repositionedAfterId,
           allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
           note: movingTask && (movingTask.parent_id || null) !== (targetParent || null) 
             ? 'Cross-parent: takes target position, target shifts up'
@@ -427,17 +420,16 @@ export class ClientActsAsList {
           // The task is being positioned after afterTask
           repositionedAfterId = afterTask.id;
           
-          if (movingTask && (movingTask.parent_id || null) === (targetParent || null)) {
-            // Same-parent move: consider relative positions
-            if ((movingTask.position ?? 0) < (afterTask.position ?? 0)) {
-              targetPosition = afterTask.position ?? 0; // Target moved down, so we take its original position
-            } else {
-              targetPosition = (afterTask.position ?? 0) + 1; // Target stays, we go after it
-            }
-          } else {
-            // Cross-parent move: moving task enters new scope after target
-            targetPosition = (afterTask.position ?? 0) + 1;
-          }
+          // Use the new randomized positioning algorithm
+          // Find the task that comes after the afterTask to calculate position between them
+          const afterTaskIndex = sortedAllScopeTasks.findIndex(t => t.id === afterTask.id);
+          const nextTask = afterTaskIndex < sortedAllScopeTasks.length - 1 
+            ? sortedAllScopeTasks[afterTaskIndex + 1] 
+            : null;
+          
+          // Calculate position using the new algorithm (with randomization in production)
+          const isTestEnvironment = typeof window === 'undefined' || process.env.NODE_ENV === 'test';
+          targetPosition = calculatePosition(afterTask.position ?? 0, nextTask?.position || null, { disableRandomization: isTestEnvironment });
         } else {
           targetPosition = scopeTasksExcludingMoved.length + 1;
         }
@@ -449,7 +441,7 @@ export class ClientActsAsList {
           targetParent: targetParent || 'null',
           isCrossParentMove: movingTask ? (movingTask.parent_id || null) !== (targetParent || null) : 'unknown',
           targetPosition,
-          repositionedAfterId: repositionedAfterId ? repositionedAfterId.substring(0, 8) : null,
+          repositionedAfterId: typeof repositionedAfterId === 'string' ? repositionedAfterId.substring(0, 8) : repositionedAfterId,
           allScopeTasks: allScopeTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position })),
           note: 'positioning gem places immediately after target, considering current positions and parent scope'
         });
@@ -458,9 +450,11 @@ export class ClientActsAsList {
         const sortedScopeTasks = sortTasks(scopeTasksExcludingMoved);
         const nextTask = sortedScopeTasks.length > 0 ? sortedScopeTasks[0] : null;
         
-        targetPosition = calculatePosition(null, nextTask?.position || null);
-        // First position means no task before it
-        repositionedAfterId = null;
+        // Detect if we're in test environment to use deterministic positioning
+        const isTestEnvironment = typeof window === 'undefined' || process.env.NODE_ENV === 'test';
+        targetPosition = calculatePosition(null, nextTask?.position || null, { disableRandomization: isTestEnvironment });
+        // First position means no task before it - use special value -1 for "top of list"
+        repositionedAfterId = -1;
         debugPerformance('Client prediction: first position (using negative positioning)', { 
           movingTask: update.id.substring(0, 8), 
           targetPosition,
@@ -468,13 +462,25 @@ export class ClientActsAsList {
           note: 'Using calculatePosition(null, nextPosition) for negative positioning'
         });
       } else if (update.position === 'last') {
-        targetPosition = scopeTasksExcludingMoved.length + 1;
+        // Use the new positioning algorithm for end-of-list insertion
+        const sortedScopeTasks = sortTasks(scopeTasksExcludingMoved);
+        const lastTask = sortedScopeTasks.length > 0 ? sortedScopeTasks[sortedScopeTasks.length - 1] : null;
+        
+        // Detect if we're in test environment to use deterministic positioning
+        const isTestEnvironment = typeof window === 'undefined' || process.env.NODE_ENV === 'test';
+        targetPosition = calculatePosition(lastTask?.position || null, null, { disableRandomization: isTestEnvironment });
+        
         // Last position means after the last task in scope
-        if (scopeTasksExcludingMoved.length > 0) {
-          const sortedScopeTasks = sortTasks(scopeTasksExcludingMoved);
-          repositionedAfterId = sortedScopeTasks[sortedScopeTasks.length - 1].id;
+        if (lastTask) {
+          repositionedAfterId = lastTask.id;
         }
-        debugPerformance('Client prediction: last position', { movingTask: update.id.substring(0, 8), targetPosition, repositionedAfterId: repositionedAfterId ? repositionedAfterId.substring(0, 8) : null });
+        debugPerformance('Client prediction: last position (using randomized positioning)', { 
+          movingTask: update.id.substring(0, 8), 
+          targetPosition, 
+          repositionedAfterId: typeof repositionedAfterId === 'string' ? repositionedAfterId.substring(0, 8) : repositionedAfterId,
+          lastTaskPosition: lastTask?.position || null,
+          note: 'Using calculatePosition(lastPosition, null) for end-of-list insertion'
+        });
       }
       
       positionUpdates.push({

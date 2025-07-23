@@ -17,6 +17,7 @@ export interface PositionConfig {
   defaultSpacing?: number;
   initialPosition?: number;
   randomRangePercent?: number;
+  disableRandomization?: boolean; // For testing purposes
 }
 
 export interface Positionable {
@@ -40,7 +41,8 @@ export function calculatePosition(
   const { 
     defaultSpacing = 10000, 
     initialPosition = 10000,
-    randomRangePercent = 0.5
+    randomRangePercent = 0.5,
+    disableRandomization = false
   } = config;
 
   // Between two positions
@@ -48,7 +50,7 @@ export function calculatePosition(
     const gap = nextPosition - prevPosition;
 
     // Use randomization only if gap is large enough
-    if (gap >= 4) {
+    if (gap >= 4 && !disableRandomization) {
       const rangeSize = gap * randomRangePercent;
       const rangeStart = prevPosition + (gap - rangeSize) / 2;
       const rangeEnd = rangeStart + rangeSize;
@@ -62,12 +64,20 @@ export function calculatePosition(
 
   // At start: use negative positioning with randomization to allow infinite insertions before
   if (prevPosition === null && nextPosition !== null) {
+    if (disableRandomization) {
+      // For testing: use deterministic negative position
+      return -1;
+    }
     // Generate random negative position to allow infinite insertions before
     return -Math.floor(Math.random() * defaultSpacing + 1);
   }
 
   // At end: randomize around default spacing
   if (prevPosition !== null && nextPosition === null) {
+    if (disableRandomization) {
+      // For testing: use deterministic spacing
+      return prevPosition + defaultSpacing;
+    }
     if (defaultSpacing >= 4) {
       const minSpacing = defaultSpacing * (1 - randomRangePercent / 2);
       const maxSpacing = defaultSpacing * (1 + randomRangePercent / 2);
