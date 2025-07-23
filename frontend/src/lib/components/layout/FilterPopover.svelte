@@ -24,8 +24,9 @@
     { id: 'cancelled', value: 'cancelled', label: 'Cancelled' }
   ];
 
-  // Build menu options with separator
+  // Build menu options with title and separator
   const menuOptions = $derived([
+    { id: 'title', value: 'title', label: 'Filter Tasks', header: true },
     ...statusOptions,
     { id: 'separator', divider: true },
     { id: 'deleted', value: 'deleted', label: 'Deleted' }
@@ -121,7 +122,6 @@
 
   {#snippet children({ close })}
     <PopoverMenu
-      title="Show…"
       options={menuOptions}
       showCheckmarks={true}
       showIcons={false}
