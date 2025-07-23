@@ -260,9 +260,8 @@
   .base-popover-inner {
     /* All visual styling moved here */
     background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
+    box-shadow: inset 0 0 0 1px var(--border-primary), var(--shadow-xl);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xl);
     overflow: hidden; /* Clip content to rounded corners */
     width: 100%;
     height: 100%;
@@ -315,7 +314,7 @@
   .panel-bottom::after {
     content: '';
     position: absolute;
-    top: -10px;
+    top: -9px; /* Moved 1px down to overlap the border */
     left: 50%;
     transform: translateX(-50%);
     width: 0;
@@ -344,7 +343,7 @@
   .panel-top::after {
     content: '';
     position: absolute;
-    bottom: -9px;
+    bottom: -8px; /* Moved 1px up to overlap the border */
     left: 50%;
     transform: translateX(-50%);
     width: 0;
@@ -373,7 +372,7 @@
   .panel-left::after {
     content: '';
     position: absolute;
-    right: -9px;
+    right: -9px; /* Moved 1px left to overlap the border */
     top: 50%;
     transform: translateY(-50%);
     width: 0;
@@ -402,7 +401,7 @@
   .panel-right::after {
     content: '';
     position: absolute;
-    left: -9px;
+    left: -9px; /* Moved 1px right to overlap the border */
     top: 50%;
     transform: translateY(-50%);
     width: 0;
