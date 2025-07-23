@@ -230,8 +230,10 @@
       {#if showArrow !== false}
         <!-- Arrow will be added via CSS pseudo-elements -->
       {/if}
-      <div class="popover-content-wrapper">
-        {@render children?.({ close: closePopover })}
+      <div class="base-popover-inner">
+        <div class="popover-content-wrapper">
+          {@render children?.({ close: closePopover })}
+        </div>
       </div>
     </div>
   {/if}
@@ -250,13 +252,20 @@
   }
 
   .base-popover-panel {
+    /* Panel is now just a positioning container for arrows */
+    z-index: 2000;
+    position: relative;
+  }
+
+  .base-popover-inner {
+    /* All visual styling moved here */
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-    overflow: hidden; /* Ensure content is properly clipped to panel bounds */
-    z-index: 2000;
-    position: relative;
+    overflow: hidden; /* Clip content to rounded corners */
+    width: 100%;
+    height: 100%;
   }
 
   .popover-content-wrapper {
@@ -306,7 +315,7 @@
   .panel-bottom::after {
     content: '';
     position: absolute;
-    top: -9px;
+    top: -10px;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
