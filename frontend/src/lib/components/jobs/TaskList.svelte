@@ -13,6 +13,7 @@
   import { calculateRelativePositionFromTarget } from '$lib/utils/position-calculator';
   import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
   import type { Task, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
+  import { calculatePosition } from '$lib/shared/utils/positioning-v2';
   import TaskRow from '../tasks/TaskRow.svelte';
   import NewTaskRow from '../tasks/NewTaskRow.svelte';
   import DeletionModal from '../ui/DeletionModal.svelte';
@@ -483,13 +484,13 @@
     if (!state.title.trim()) return;
     
     const title = state.title.trim();
-    let position = tasks.length + 1;
+    let position: number;
     let parentId: string | undefined;
     
     // Clear the form immediately to prevent visual glitch
     taskCreationManager.hide(type);
     
-    // Calculate position and parent for inline tasks
+    // Calculate position based on creation type
     if (type === 'inline' && insertNewTaskAfter) {
       const afterTask = tasks.find(t => t.id === insertNewTaskAfter);
       if (afterTask) {
@@ -502,15 +503,27 @@
         // Find position after the target task
         const afterIndex = scopeTasks.findIndex(t => t.id === insertNewTaskAfter);
         if (afterIndex !== -1 && afterIndex < scopeTasks.length - 1) {
-          // Calculate fractional position between this task and the next
+          // Use fractional positioning utility for conflict-free insertion
           const nextTask = scopeTasks[afterIndex + 1];
           const afterPosition = afterTask.position ?? 0;
-          const nextPosition = nextTask.position ?? afterPosition + 1000;
-          position = (afterPosition + nextPosition) / 2;
+          const nextPosition = nextTask.position ?? null;
+          position = calculatePosition(afterPosition, nextPosition);
         } else {
-          // Inserting at the end - add standard gap
-          position = (afterTask.position ?? 0) + 1000;
+          // Inserting at the end - use utility for consistent spacing
+          position = calculatePosition(afterTask.position ?? 0, null);
         }
+      }
+    } else {
+      // Bottom task creation - add at the end of root level tasks
+      const rootTasks = tasks.filter(t => !t.parent_id)
+                             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      
+      if (rootTasks.length > 0) {
+        const lastTask = rootTasks[rootTasks.length - 1];
+        position = calculatePosition(lastTask.position ?? 0, null);
+      } else {
+        // First task in the job
+        position = calculatePosition(null, null);
       }
     }
     
