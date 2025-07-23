@@ -30,24 +30,24 @@ test.describe('Job Status Button Component', () => {
     await page.goto(`/jobs/${job.id}`);
     
     // Wait for the job detail page to load and job status button to be visible
-    await expect(page.locator('.popover-button[title="Job Status"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.popover-button[title*="Job Status"]')).toBeVisible({ timeout: 10000 });
   });
 
   test('should display job status button with correct emoji', async ({ page }) => {
     // Find the job status button
-    const statusButton = page.locator('.popover-button[title="Job Status"]');
+    const statusButton = page.locator('.popover-button[title*="Job Status"]');
     await expect(statusButton).toBeVisible();
 
     // Check that it shows the correct emoji for in_progress status
     await expect(statusButton.locator('.job-status-emoji')).toContainText('🟢');
 
     // Check button has proper accessibility attributes
-    await expect(statusButton).toHaveAttribute('title', 'Job Status');
+    await expect(statusButton).toHaveAttribute('title', /Job Status/);
   });
 
   test('should open popover when status button is clicked', async ({ page }) => {
     // Click the job status button
-    const statusButton = page.locator('.popover-button[title="Job Status"]');
+    const statusButton = page.locator('.popover-button[title*="Job Status"]');
     await statusButton.click();
 
     // Check that popover panel appears
@@ -265,7 +265,7 @@ test.describe('Job Status Button Component', () => {
     
     // Verify button is still visible and accessible
     await expect(statusButton).toBeVisible();
-    await expect(statusButton).toHaveAttribute('title', 'Job Status');
+    await expect(statusButton).toHaveAttribute('title', /Job Status/);
   });
 
   test('should not change status when clicking same status', async ({ page }) => {

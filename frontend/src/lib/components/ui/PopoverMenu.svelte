@@ -91,17 +91,19 @@
       case 'ArrowDown':
         e.preventDefault();
         e.stopPropagation();
-        focusedIndex = focusedIndex < selectableOptions.length - 1 
+        const nextIndex = focusedIndex < selectableOptions.length - 1 
           ? focusedIndex + 1 
           : 0;
+        focusedIndex = nextIndex;
         break;
         
       case 'ArrowUp':
         e.preventDefault();
         e.stopPropagation();
-        focusedIndex = focusedIndex > 0 
+        const prevIndex = focusedIndex > 0 
           ? focusedIndex - 1 
           : selectableOptions.length - 1;
+        focusedIndex = prevIndex;
         break;
         
       case 'Enter':
@@ -173,7 +175,7 @@
   class="popover-menu {className}"
   role={multiple ? 'listbox' : 'menu'}
   aria-multiselectable={multiple}
-  tabindex="-1"
+  tabindex="0"
   bind:this={menuElement}
   onkeydown={handleKeydown}
   style="max-height: {maxHeight};"
@@ -281,6 +283,16 @@
     line-height: 1.5;
     width: 100%;
     position: relative;
+    outline: none; /* Remove focus outline */
+  }
+  
+  /* Remove focus styles from all states */
+  .popover-menu-option:focus {
+    outline: none;
+  }
+  
+  .popover-menu-option:focus-visible {
+    outline: none;
   }
   
   .popover-menu-option:hover:not(.disabled) {
@@ -289,8 +301,6 @@
   
   .popover-menu-option.focused:not(.disabled) {
     background-color: var(--bg-tertiary);
-    outline: 2px solid var(--accent-blue);
-    outline-offset: -2px;
   }
   
   .popover-menu-option.selected:not(.disabled) {
@@ -300,7 +310,6 @@
   
   .popover-menu-option.selected.focused:not(.disabled) {
     background-color: var(--accent-blue-bg);
-    outline: 2px solid var(--accent-blue);
   }
   
   .popover-menu-option.disabled {
@@ -376,7 +385,8 @@
   /* High contrast mode */
   @media (prefers-contrast: high) {
     .popover-menu-option.focused {
-      outline-width: 3px;
+      /* Use stronger background instead of outline for high contrast */
+      background-color: var(--bg-tertiary);
     }
     
     .popover-menu-option.selected {

@@ -5,6 +5,7 @@
   import { fade } from 'svelte/transition';
   import { calculatePopoverPosition, type PopoverPosition } from '$lib/utils/popover-positioning';
   import { debugComponent } from '$lib/utils/debug';
+  import { registerPopover } from '$lib/stores/popover-state';
 
   // Enhanced popover props with new options
   let {
@@ -172,6 +173,27 @@
 
   // Provide close function to slot content
   const closePopover = () => open.set(false);
+  
+  // Register with global popover state when open
+  let unregisterPopover: (() => void) | null = null;
+  
+  $effect(() => {
+    if ($open && enabled) {
+      // Register this popover as open
+      unregisterPopover = registerPopover();
+    } else if (unregisterPopover) {
+      // Unregister when closing
+      unregisterPopover();
+      unregisterPopover = null;
+    }
+  });
+  
+  // Clean up on destroy
+  onDestroy(() => {
+    if (unregisterPopover) {
+      unregisterPopover();
+    }
+  });
 </script>
 
 <div class="base-popover-container">

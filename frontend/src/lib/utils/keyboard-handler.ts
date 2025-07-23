@@ -5,6 +5,9 @@
  * Uses stateless approach - queries current state on each keydown
  */
 
+import { get } from 'svelte/store';
+import { isAnyPopoverOpen } from '$lib/stores/popover-state';
+
 export interface KeyboardActions {
   navigate: (direction: 'up' | 'down') => void;
   select: (id: string) => void;
@@ -197,6 +200,11 @@ export function KeyboardHandler(config: KeyboardConfig) {
    * Main keydown handler
    */
   function handleKeydown(event: KeyboardEvent) {
+    // Skip ALL keyboard handling if any popover is open
+    if (get(isAnyPopoverOpen)) {
+      return;
+    }
+    
     const editing = isEditing();
     const selectedIds = selection();
     

@@ -1,6 +1,6 @@
 <script lang="ts">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
-  import PopoverOptionList from '$lib/components/ui/PopoverOptionList.svelte';
+  import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
   import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
   import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
   import '$lib/styles/popover-common.css';
@@ -17,21 +17,20 @@
     initialStatus?: string;
   } = $props();
 
-  let closePopover = $state<(() => void) | null>(null);
 
   // Self-sufficient query pattern - matches TechnicianAssignmentButton  
   const jobQuery = $derived(jobId ? ReactiveJob.find(jobId) : null);
   const job = $derived(jobQuery?.data);
 
-  // All available job statuses with their display information
+  // All available job statuses with their display information - formatted for PopoverMenu
   const availableStatuses = [
-    { id: 'open', value: 'open', label: 'Open', emoji: EMOJI_MAPPINGS.jobStatuses.open },
-    { id: 'in_progress', value: 'in_progress', label: 'In Progress', emoji: EMOJI_MAPPINGS.jobStatuses.in_progress },
-    { id: 'paused', value: 'paused', label: 'Paused', emoji: EMOJI_MAPPINGS.jobStatuses.paused },
-    { id: 'waiting_for_customer', value: 'waiting_for_customer', label: 'Waiting for Customer', emoji: EMOJI_MAPPINGS.jobStatuses.waiting_for_customer },
-    { id: 'waiting_for_scheduled_appointment', value: 'waiting_for_scheduled_appointment', label: 'Scheduled', emoji: EMOJI_MAPPINGS.jobStatuses.waiting_for_scheduled_appointment },
-    { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed', emoji: EMOJI_MAPPINGS.jobStatuses.successfully_completed },
-    { id: 'cancelled', value: 'cancelled', label: 'Cancelled', emoji: EMOJI_MAPPINGS.jobStatuses.cancelled }
+    { id: 'open', value: 'open', label: 'Open', icon: EMOJI_MAPPINGS.jobStatuses.open },
+    { id: 'in_progress', value: 'in_progress', label: 'In Progress', icon: EMOJI_MAPPINGS.jobStatuses.in_progress },
+    { id: 'paused', value: 'paused', label: 'Paused', icon: EMOJI_MAPPINGS.jobStatuses.paused },
+    { id: 'waiting_for_customer', value: 'waiting_for_customer', label: 'Waiting for Customer', icon: EMOJI_MAPPINGS.jobStatuses.waiting_for_customer },
+    { id: 'waiting_for_scheduled_appointment', value: 'waiting_for_scheduled_appointment', label: 'Scheduled', icon: EMOJI_MAPPINGS.jobStatuses.waiting_for_scheduled_appointment },
+    { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed', icon: EMOJI_MAPPINGS.jobStatuses.successfully_completed },
+    { id: 'cancelled', value: 'cancelled', label: 'Cancelled', icon: EMOJI_MAPPINGS.jobStatuses.cancelled }
   ];
 
   // Fallback to initialStatus during loading - self-sufficient pattern
@@ -43,23 +42,13 @@
   );
 
   // Handle status change using ActiveRecord pattern (Zero.js handles optimistic updates)
-  async function handleStatusChange(statusOption: any, event?: Event) {
-    // Prevent event bubbling that might interfere with popover closure
-    event?.stopPropagation();
-    event?.preventDefault();
-    
-    // 1. Close popover IMMEDIATELY for instant user feedback
-    if (closePopover) {
-      closePopover();
-    }
-    
+  async function handleStatusChange(newStatus: string, option: any) {
     // Use jobId directly - always available in self-sufficient pattern
     if (!jobId) {
       debugError('[JobStatusButton] handleStatusChange called with invalid jobId - aborting');
       return;
     }
     
-    const newStatus = statusOption.value;
     debugComponent('[JobStatusButton] handleStatusChange called', {
       newStatus,
       currentStatus,
@@ -73,7 +62,7 @@
     }
     
     try {
-      // 2. Then persist to database using ActiveRecord pattern (Zero.js handles optimistic updates)
+      // Persist to database using ActiveRecord pattern (Zero.js handles optimistic updates)
       debugWorkflow('[JobStatusButton] Calling Job.update');
       await Job.update(jobId, { status: newStatus });
       
@@ -84,7 +73,6 @@
     } catch (error) {
       debugError('[JobStatusButton] Failed to update job status', error);
       // TODO: Show error toast to user
-      // Note: Popover already closed for better UX even on error
     }
   }
 </script>
@@ -100,8 +88,6 @@
       title={`Job Status: ${jobStatusEmoji}`}
       onclick={(e) => {
         e.stopPropagation();
-        // Store close function from snippet props
-        closePopover = popover.close;
       }}
     >
       <span class="job-status-emoji">{jobStatusEmoji}</span>
@@ -112,23 +98,17 @@
     <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
       <h3 class="popover-title">Job Status</h3>
 
-      <PopoverOptionList
+      <PopoverMenu
         options={availableStatuses}
-        onOptionClick={handleStatusChange}
-        isSelected={(option) => option.value === currentStatus}
-      >
-        {#snippet optionContent({ option })}
-          <span class="status-emoji popover-option-left-content">{option.emoji}</span>
-          <span class="popover-option-main-label">{option.label}</span>
-          
-          <!-- Selection indicator in same reactive scope -->
-          <div class="popover-checkmark-container">
-            {#if option.value === currentStatus}
-              <img src="/icons/checkmark.svg" alt="Selected" class="popover-checkmark-icon" />
-            {/if}
-          </div>
-        {/snippet}
-      </PopoverOptionList>
+        selected={currentStatus}
+        onSelect={handleStatusChange}
+        onClose={close}
+        showCheckmarks={true}
+        showIcons={true}
+        iconPosition="left"
+        enableKeyboard={true}
+        autoFocus={true}
+      />
     </div>
   {/snippet}
 </BasePopover>
