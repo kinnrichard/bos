@@ -5,7 +5,7 @@
   // Epic-009: Import ReactiveJob for Rails-style includes()
   import { ReactiveJob } from '$lib/models/reactive-job';
   import type { JobData } from '$lib/models/types/job-data';
-  import { taskFilterActions } from '$lib/stores/taskFilter.svelte';
+  import { taskFilterActions, shouldShowTask } from '$lib/stores/taskFilter.svelte';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
