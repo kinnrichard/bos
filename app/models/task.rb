@@ -79,7 +79,10 @@ class Task < ApplicationRecord
     "<Task.find '#{id}'
           title: #{title}
        position: #{position}
-      parent_id: #{parent_id}
+      parent_id: #{parent_id}" +
+    (repositioned_after_id ? " - repositioned_after_id: #{repositioned_after_id}" : "") +
+    (repositioned_after_id ? " - repositioned_after_id: #{repositioned_after_id}" : "") +
+    "
 >"
   end
 

@@ -360,6 +360,7 @@ export class ClientActsAsList {
       
       let targetPosition = 1;
       let repositionedAfterId: string | number | null = null;
+      let isPositionedAtTop = false; // Track if this is a top-of-list position
       const targetParent = 'parent_id' in update ? (update.parent_id || null) : (task.parent_id || null);
       
       // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
@@ -386,6 +387,9 @@ export class ClientActsAsList {
           // Set repositioned_after_id
           if (prevTask) {
             repositionedAfterId = prevTask.id;
+          } else {
+            // No previous task means we're positioning at the top of this scope
+            isPositionedAtTop = true;
           }
           
           // Calculate position using the new algorithm (with randomization in production)
@@ -450,8 +454,9 @@ export class ClientActsAsList {
         // Detect if we're in test environment to use deterministic positioning
         const isTestEnvironment = typeof window === 'undefined' || process.env.NODE_ENV === 'test';
         targetPosition = calculatePosition(null, nextTask?.position || null, { disableRandomization: isTestEnvironment });
-        // First position means no task before it - set repositioned_to_top flag
+        // First position means no task before it
         repositionedAfterId = null;  // No task before this one
+        isPositionedAtTop = true;  // Always at top when explicitly positioned first
         debugPerformance('Client prediction: first position (using negative positioning)', { 
           movingTask: update.id.substring(0, 8), 
           targetPosition,
@@ -479,8 +484,11 @@ export class ClientActsAsList {
         });
       }
       
-      // Determine boolean flags based on position update type
-      const isTopOfList = update.position === 'first' && repositionedAfterId === null;
+      // Also check if we're moving to a parent with no existing children (first child)
+      const isMovingToEmptyParent = (task.parent_id || null) !== targetParent && scopeTasksExcludingMoved.length === 0;
+      if (isMovingToEmptyParent) {
+        isPositionedAtTop = true;
+      }
       
       positionUpdates.push({
         id: update.id,
@@ -488,7 +496,7 @@ export class ClientActsAsList {
         parent_id: targetParent,
         repositioned_after_id: repositionedAfterId,
         position_finalized: false,  // Client-side positioning, not finalized by server
-        repositioned_to_top: isTopOfList
+        repositioned_to_top: isPositionedAtTop  // Explicitly true or false
       });
     });
     
