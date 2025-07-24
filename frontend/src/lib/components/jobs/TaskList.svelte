@@ -47,7 +47,7 @@
   
   // Apply cleanup to both task arrays using $derived
   const cleanedTasks = $derived(cleanupSelfReferences(tasks));
-  const cleanedKeptTasks = $derived(cleanupSelfReferences(cleanedKeptTasks));
+  const cleanedKeptTasks = $derived(cleanupSelfReferences(keptTasks));
   
   // Task hierarchy management
   const hierarchyManager = new TaskHierarchyManager();
