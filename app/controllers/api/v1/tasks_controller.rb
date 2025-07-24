@@ -36,25 +36,7 @@ class Api::V1::TasksController < Api::V1::BaseController
   end
 
   def show
-    render json: {
-      data: {
-        type: "tasks",
-        id: @task.id,
-        attributes: {
-          title: @task.title,
-          status: @task.status,
-          position: @task.position,
-          parent_id: @task.parent_id,
-          created_at: @task.created_at,
-          updated_at: @task.updated_at
-        },
-        relationships: {
-          assigned_to: {
-            data: @task.assigned_to ? { type: "users", id: @task.assigned_to.id } : nil
-          }
-        }
-      }
-    }
+    render json: TaskSerializer.new(@task).serializable_hash
   end
 
   # GET /api/v1/jobs/:job_id/tasks/:id/details
@@ -197,24 +179,21 @@ class Api::V1::TasksController < Api::V1::BaseController
 
   def create
     task_data = task_params
-    after_task_id = task_data.delete(:after_task_id)
+
+    # If client sends position instead of repositioned_after_id, mark as finalized
+    if task_data[:position].present? && !task_data.key?(:position_finalized)
+      task_data[:position_finalized] = true
+    end
+
+    # Legacy support: convert after_task_id to repositioned_after_id
+    if task_data[:after_task_id].present? && task_data[:repositioned_after_id].blank?
+      task_data[:repositioned_after_id] = task_data.delete(:after_task_id)
+      task_data[:position_finalized] = false
+    end
 
     @task = @job.tasks.build(task_data)
 
     if @task.save
-      # Handle relative positioning after task is saved
-      if after_task_id.present?
-        begin
-          target_task = @job.tasks.find(after_task_id)
-          @task.update!(position: { after: target_task })
-        rescue ActiveRecord::RecordNotFound
-          # Target task not found - silently append at end (no user feedback)
-        rescue => e
-          # Any other positioning error - silently append at end
-          Rails.logger.warn "Task positioning failed: #{e.message}"
-        end
-      end
-
       render json: {
         status: "success",
         task: task_attributes(@task)
@@ -581,7 +560,8 @@ class Api::V1::TasksController < Api::V1::BaseController
   end
 
   def task_params
-    params.require(:task).permit(:title, :status, :parent_id, :position, :assigned_to_id, :after_task_id)
+    params.require(:task).permit(:title, :status, :parent_id, :position, :assigned_to_id, :after_task_id,
+                                  :repositioned_after_id, :position_finalized, :repositioned_to_top)
   end
 
   def task_attributes(task)

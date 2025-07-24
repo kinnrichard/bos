@@ -50,6 +50,12 @@ class Task < ApplicationRecord
   # Automatically reorder tasks when status changes
   after_update :reorder_by_status, if: :saved_change_to_status?
 
+  # Calculate position from repositioned_after_id if not finalized
+  # Use after_initialize to set position before positioning gem sees it
+  after_initialize :prepare_position_calculation, if: :new_record?
+  before_validation :calculate_position_from_repositioned_after, on: :create, unless: :position_finalized?
+  before_validation :calculate_position_from_repositioned_after, on: :update, unless: :position_finalized?
+
   # Update reordered_at when position or parent changes
   before_save :update_reordered_at, if: -> { position_changed? || parent_id_changed? }
 
@@ -161,6 +167,8 @@ class Task < ApplicationRecord
 
   def set_defaults
     self.status ||= :new_task
+    # Default to finalized unless explicitly set to false
+    self.position_finalized = true if position_finalized.nil?
   end
 
   def prevent_self_reference
@@ -257,4 +265,101 @@ class Task < ApplicationRecord
   end
 
   # Removed skip_lock_version_for_position_updates method - using locking_column = nil instead
+
+  def prepare_position_calculation
+    # Set a temporary position to prevent positioning gem from auto-assigning
+    if !position_finalized?
+      self.position = -999999999 # Temporary position
+    end
+  end
+
+  def calculate_position_from_repositioned_after
+    # Clear invalid repositioned_after_id to avoid foreign key constraint
+    if repositioned_after_id.present? && !Task.exists?(id: repositioned_after_id)
+      self.repositioned_after_id = nil
+    end
+
+    # Handle top-of-list positioning
+    if repositioned_to_top?
+      # Find the minimum position in the current scope
+      siblings = Task.kept.where(job_id: job_id, parent_id: parent_id)
+                     .where.not(id: id) # Exclude self if updating
+
+      if siblings.any?
+        min_position = siblings.minimum(:position) || 0
+        # Generate random negative position before the first task
+        self.position = rand(-10000...min_position.to_i).clamp(-2_000_000_000, min_position - 1)
+      else
+        # First task in the list
+        self.position = rand(1000..10000)
+      end
+    elsif repositioned_after_id.present?
+      # Position after a specific task
+      after_task = Task.find_by(id: repositioned_after_id)
+
+      if after_task && after_task.job_id == job_id
+        # Get the next sibling after the reference task
+        next_sibling = Task.kept
+                          .where(job_id: job_id, parent_id: parent_id)
+                          .where("position > ?", after_task.position)
+                          .where.not(id: id) # Exclude self if updating
+                          .order(:position)
+                          .first
+
+        if next_sibling
+          # Calculate position between after_task and next_sibling
+          gap = next_sibling.position - after_task.position
+
+          if gap > 1
+            # Place randomly in the middle 50% of the gap
+            quarter_gap = gap / 4
+            min_offset = quarter_gap
+            max_offset = gap - quarter_gap
+
+            # Add microsecond-based randomness to ensure different positions
+            micro_random = Time.current.usec % 1000
+            offset = rand(min_offset..max_offset) + (micro_random.to_f / 1000)
+            self.position = (after_task.position + offset).floor.clamp(after_task.position + 1, next_sibling.position - 1)
+          else
+            # Gap too small, position right after
+            self.position = after_task.position + 1
+          end
+        else
+          # Last position - add standard spacing with randomization
+          base_spacing = 10000
+          # Use microseconds for additional randomness
+          micro_random = Time.current.usec % 5000
+          random_offset = rand(0..base_spacing/2) + micro_random
+          self.position = after_task.position + base_spacing + random_offset
+        end
+      else
+        # Referenced task not found or wrong job, fall back to end of list
+        calculate_end_position
+      end
+    elsif !position.present?
+      # No repositioned_after_id and no position set, place at end
+      calculate_end_position
+    end
+
+    # Mark position as finalized after calculation
+    self.position_finalized = true
+    # Clear repositioning fields after use
+    self.repositioned_after_id = nil
+    self.repositioned_to_top = false
+  end
+
+  def calculate_end_position
+    siblings = Task.kept.where(job_id: job_id, parent_id: parent_id)
+                   .where.not(id: id) # Exclude self if updating
+
+    if siblings.any?
+      max_position = siblings.maximum(:position) || 0
+      base_spacing = 10000
+      random_offset = rand(0...base_spacing/2)
+      self.position = max_position + base_spacing + random_offset
+    else
+      # First task
+      self.position = rand(1000..10000)
+    end
+  end
 end
