@@ -8,7 +8,6 @@ import { debugDatabase, debugValidation, debugPerformance } from '$lib/utils/deb
 import { sortTasks } from '$lib/shared/utils/task-sorting';
 import { calculatePosition } from '$lib/shared/utils/positioning-v2';
 import { getDatabaseTimestamp } from '$lib/shared/utils/utc-timestamp';
-import { NIL_UUID } from '$lib/shared/utils/constants';
 
 export interface ActsAsListResult {
   updatedTasks: Task[];
@@ -21,6 +20,8 @@ export interface PositionUpdateBatch {
   position: number;
   parent_id?: string | null;
   repositioned_after_id?: string | null;
+  position_finalized?: boolean;
+  repositioned_to_top?: boolean;
   reason: string;
 }
 
@@ -302,6 +303,16 @@ export class ClientActsAsList {
           updateData.repositioned_after_id = update.repositioned_after_id;
         }
         
+        // Include position_finalized if it's specified in the update
+        if (update.position_finalized !== undefined) {
+          updateData.position_finalized = update.position_finalized;
+        }
+        
+        // Include repositioned_to_top if it's specified in the update
+        if (update.repositioned_to_top !== undefined) {
+          updateData.repositioned_to_top = update.repositioned_to_top;
+        }
+        
         return Task.update(update.taskId, updateData);
       });
       
@@ -454,8 +465,8 @@ export class ClientActsAsList {
         // Detect if we're in test environment to use deterministic positioning
         const isTestEnvironment = typeof window === 'undefined' || process.env.NODE_ENV === 'test';
         targetPosition = calculatePosition(null, nextTask?.position || null, { disableRandomization: isTestEnvironment });
-        // First position means no task before it - use NIL_UUID for "top of list"
-        repositionedAfterId = NIL_UUID;
+        // First position means no task before it - set repositioned_to_top flag
+        repositionedAfterId = null;  // No task before this one
         debugPerformance('Client prediction: first position (using negative positioning)', { 
           movingTask: update.id.substring(0, 8), 
           targetPosition,
@@ -484,11 +495,16 @@ export class ClientActsAsList {
         });
       }
       
+      // Determine boolean flags based on position update type
+      const isTopOfList = update.position === 'first' && repositionedAfterId === null;
+      
       positionUpdates.push({
         id: update.id,
         position: targetPosition,
         parent_id: targetParent,
-        repositioned_after_id: repositionedAfterId
+        repositioned_after_id: repositionedAfterId,
+        position_finalized: false,  // Client-side positioning, not finalized by server
+        repositioned_to_top: isTopOfList
       });
     });
     

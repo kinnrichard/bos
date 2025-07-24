@@ -4,7 +4,7 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 
 > Created: 2025-07-23
 > Updated: 2025-07-24
-> Status: In Progress - Foundation Complete, UUID Constraint Fix Required
+> Status: In Progress - Foundation Complete, Two-Boolean Solution Required
 
 ## Tasks
 
@@ -20,10 +20,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.9 Write tests for getAdjacentPositions helper
   - [x] 1.10 Implement getAdjacentPositions function
   - [x] 1.11 **COMPLETED**: All unit tests pass (45/45) and integration tests updated for randomization (10/10)
-  - [ ] 1.12 **NEW**: Define NIL_UUID constant in shared constants file
-  - [ ] 1.13 **NEW**: Update client-acts-as-list.ts to use NIL_UUID instead of -1
-  - [ ] 1.14 **NEW**: Update all tests that check for repositioned_after_id = -1 to use NIL_UUID
-  - [ ] 1.15 **NEW**: Verify UUID constraint compliance with PostgreSQL
+  - [ ] 1.12 **REVISED**: Add position_finalized boolean column to tasks table
+  - [ ] 1.13 **REVISED**: Add repositioned_to_top boolean column to tasks table
+  - [ ] 1.14 **REVISED**: Update client-acts-as-list.ts to use repositioned_to_top=true instead of -1
+  - [ ] 1.15 **REVISED**: Update all tests to use new boolean approach
+  - [ ] 1.16 **NEW**: Update Zero.js schema to include new boolean columns
+  - [ ] 1.17 **NEW**: Verify PostgreSQL foreign key constraint compliance
 
 - [x] 2. Update Task Creation to Use Randomized Positioning ✅ **COMPLETED**
   - [x] 2.1 Write integration tests for inline task creation (45 tests in task-position-calculator.test.ts + E2E tests)
@@ -89,10 +91,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 - **Server-Side Rebalancing**: Need to remove client-side rebalancing and implement backend logic
 
 ### Next Priority Actions
-1. **Implement server-side position calculation**: Rails backend should use repositioned_after_id to calculate positions
-2. **Remove client-side rebalancing utilities** (server-side only approach)
-3. **Test full end-to-end flow** with server-side positioning
-4. **Complete Task 4 and Task 5** for full server-side integration
+1. **Implement two-boolean solution**: Add position_finalized and repositioned_to_top columns
+2. **Update client code**: Replace -1/NIL_UUID approach with boolean flags
+3. **Implement server-side position calculation**: Rails backend should use repositioned_after_id to calculate positions
+4. **Remove client-side rebalancing utilities** (server-side only approach)
+5. **Test full end-to-end flow** with server-side positioning
+6. **Complete Task 4 and Task 5** for full server-side integration
 
 ### Critical Issues Identified
 
@@ -113,5 +117,8 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 #### 4. UUID Constraint Violation ⚠️ **IDENTIFIED**
 **Problem**: Using `-1` for `repositioned_after_id` violates PostgreSQL UUID constraint
 **Root Cause**: `repositioned_after_id` is defined as `uuid REFERENCES tasks(id)`, but `-1` is not a valid UUID
-**Solution**: Use RFC 4122 nil UUID `00000000-0000-0000-0000-000000000000` for top-of-list positioning
-**Status**: ⚠️ Spec amended, implementation needs update
+**Initial Solution Attempt**: Use RFC 4122 nil UUID - but this also violates FK constraint as no task exists with that ID
+**Final Solution**: Use two boolean columns to separate concerns:
+  - `position_finalized`: Whether server has processed the final position
+  - `repositioned_to_top`: Whether task should be positioned at top of list
+**Status**: ⚠️ Architecture decision made, implementation pending

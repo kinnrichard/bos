@@ -5,7 +5,6 @@
 import { describe, it, expect } from 'vitest';
 import { ClientActsAsList } from './client-acts-as-list.js';
 import type { Task, PositionUpdate, RelativePositionUpdate } from './position-calculator.js';
-import { NIL_UUID } from '$lib/shared/utils/constants';
 
 describe('ClientActsAsList', () => {
   describe('Single Task Operations', () => {
@@ -344,7 +343,9 @@ describe('ClientActsAsList', () => {
       expect(positionUpdates[0].position).toBeLessThan(0);
       expect(positionUpdates[0].position).toBeGreaterThanOrEqual(-10000);
       expect(positionUpdates[0].parent_id).toBe(null);
-      expect(positionUpdates[0].repositioned_after_id).toBe(NIL_UUID);
+      expect(positionUpdates[0].repositioned_after_id).toBe(null);
+      expect(positionUpdates[0].position_finalized).toBe(false);
+      expect(positionUpdates[0].repositioned_to_top).toBe(true);
     });
 
     it('should set repositioned_after_id when moving to last position', () => {

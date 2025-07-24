@@ -548,10 +548,13 @@
         // Use the lastRootTask we already fetched above
         repositionedAfterId = lastRootTask.id;
       } else {
-        // First task in the job - use special value -1 for "top of list"
-        repositionedAfterId = -1;
+        // First task in the job - use null and set repositioned_to_top flag
+        repositionedAfterId = null;
       }
     }
+    
+    // Determine if this is a top-of-list insertion
+    const isTopOfList = repositionedAfterId === null && parentId === null && type === 'bottom';
     
     // Log the data being sent to create
     const createData = {
@@ -562,7 +565,9 @@
       repositioned_after_id: repositionedAfterId,
       parent_id: parentId,
       lock_version: 0,
-      applies_to_all_targets: false
+      applies_to_all_targets: false,
+      position_finalized: false,  // Client-side positioning
+      repositioned_to_top: isTopOfList
     };
     
     console.log('[TaskList] Creating task with data:', createData);
