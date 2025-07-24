@@ -260,7 +260,7 @@ class Api::V1::TasksController < Api::V1::BaseController
       end
     end
 
-    @task.insert_at(position)
+    @task.update!(position: position)
 
     render json: {
       status: "success",
@@ -312,8 +312,8 @@ class Api::V1::TasksController < Api::V1::BaseController
             position: position_data[:position].to_i
           )
         else
-          # If only position is changing, use acts_as_list method
-          task.insert_at(position_data[:position].to_i)
+          # If only position is changing, update directly
+          task.update!(position: position_data[:position].to_i)
         end
       end
     end
@@ -393,7 +393,7 @@ class Api::V1::TasksController < Api::V1::BaseController
           end
         end
 
-        # Handle relative positioning using positioning gem syntax
+        # Handle relative positioning using custom system
         position_update = {}
 
         # Handle parent_id change
@@ -401,21 +401,34 @@ class Api::V1::TasksController < Api::V1::BaseController
           position_update[:parent_id] = position_data[:parent_id]
         end
 
-        # Handle relative positioning
+        # Handle relative positioning using our custom system
         if position_data[:before_task_id]
-          # Position before specific task
+          # Position before specific task - use repositioned_after_id of the task before the target
           target_task = @job.tasks.find(position_data[:before_task_id])
-          position_update[:position] = { before: target_task }
+          before_target = @job.tasks.kept
+                                   .where(job_id: @job.id, parent_id: position_data[:parent_id])
+                                   .where("position < ?", target_task.position)
+                                   .order(:position)
+                                   .last
+          if before_target
+            position_update[:repositioned_after_id] = before_target.id
+          else
+            position_update[:repositioned_to_top] = true
+          end
+          position_update[:position_finalized] = false
         elsif position_data[:after_task_id]
           # Position after specific task
-          target_task = @job.tasks.find(position_data[:after_task_id])
-          position_update[:position] = { after: target_task }
+          position_update[:repositioned_after_id] = position_data[:after_task_id]
+          position_update[:position_finalized] = false
         elsif position_data[:position] == "first"
           # Position at the beginning
-          position_update[:position] = :first
+          position_update[:repositioned_to_top] = true
+          position_update[:position_finalized] = false
         elsif position_data[:position] == "last"
-          # Position at the end
-          position_update[:position] = :last
+          # Position at the end - let server calculate end position
+          position_update[:repositioned_after_id] = nil
+          position_update[:repositioned_to_top] = false
+          position_update[:position_finalized] = false
         end
 
         # Apply the positioning update

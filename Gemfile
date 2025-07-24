@@ -18,8 +18,8 @@ gem "puma", ">= 5.0"
 gem "rack-cors"
 gem "jsonapi-serializer"
 # gem "rack-attack" # Temporarily disabled for development
-# For drag-and-drop ordering
-gem "positioning"
+# For drag-and-drop ordering - REMOVED (using custom position calculation system)
+# gem "positioning"
 # Soft deletion
 gem "discard", "~> 1.3"
 # Pagination

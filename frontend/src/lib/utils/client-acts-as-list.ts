@@ -345,32 +345,20 @@ export class ClientActsAsList {
   /**
    * Convert relative positioning updates to integer position updates for client-side prediction
    * This maintains offline functionality by allowing immediate UI updates
-   * Updated to match Rails positioning gem behavior exactly
+   * Updated to use 2025-07-23-robust-task-positioning specification (no normalization)
    */
   static convertRelativeToPositionUpdates(
     tasks: Task[],
     relativeUpdates: RelativePositionUpdate[]
   ): PositionUpdate[] {
-    // Step 1: Normalize positions to eliminate gaps (matching positioning gem behavior)
-    const { normalizedTasks } = this.normalizePositions(tasks);
-    
-    // Log normalization effect for debugging
-    const originalPositions = tasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position, parent: t.parent_id || 'null' }));
-    const normalizedPositions = normalizedTasks.map(t => ({ id: t.id.substring(0, 8), pos: t.position, parent: t.parent_id || 'null' }));
-    
-    const hasNormalizationChanges = originalPositions.some((orig, i) => orig.pos !== normalizedPositions[i].pos);
-    if (hasNormalizationChanges) {
-      debugDatabase('Position normalization applied', {
-        original: originalPositions,
-        normalized: normalizedPositions,
-        changes: originalPositions.filter((orig, i) => orig.pos !== normalizedPositions[i].pos)
-      });
-    }
+    // Use tasks directly without normalization to preserve large randomized numbers
+    // This aligns with 2025-07-23-robust-task-positioning specification
+    const workingTasks = tasks;
     
     const positionUpdates: PositionUpdate[] = [];
     
     relativeUpdates.forEach(update => {
-      const task = normalizedTasks.find(t => t.id === update.id);
+      const task = workingTasks.find(t => t.id === update.id);
       if (!task) return;
       
       let targetPosition = 1;
@@ -379,7 +367,7 @@ export class ClientActsAsList {
       
       // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
       // This is critical - we need the full scope to understand current positions
-      const allScopeTasks = normalizedTasks.filter(t => (t.parent_id || null) === (targetParent || null));
+      const allScopeTasks = workingTasks.filter(t => (t.parent_id || null) === (targetParent || null));
       const sortedAllScopeTasks = sortTasks(allScopeTasks);
       
       // Get tasks excluding the moving task (for target identification)
@@ -388,7 +376,7 @@ export class ClientActsAsList {
       if (update.before_task_id) {
         // Position before specific task - positioning gem places immediately before target
         const beforeTask = allScopeTasks.find(t => t.id === update.before_task_id);
-        const movingTask = normalizedTasks.find(t => t.id === update.id); // Search in full task list, not just target scope
+        const movingTask = workingTasks.find(t => t.id === update.id); // Search in full task list, not just target scope
         
         if (beforeTask) {
           // Find the task that comes before the beforeTask
@@ -409,7 +397,7 @@ export class ClientActsAsList {
           targetPosition = 1;
         }
         
-        debugPerformance('Client prediction: before task (with normalization)', {
+        debugPerformance('Client prediction: before task (with preserved positions)', {
           movingTask: update.id.substring(0, 8),
           beforeTask: beforeTask ? { id: beforeTask.id.substring(0, 8), position: beforeTask.position } : null,
           movingTaskCurrentPos: movingTask?.position,
@@ -426,7 +414,7 @@ export class ClientActsAsList {
       } else if (update.after_task_id) {
         // Position after specific task - positioning gem places immediately after target
         const afterTask = allScopeTasks.find(t => t.id === update.after_task_id);
-        const movingTask = normalizedTasks.find(t => t.id === update.id); // Search in full task list, not just target scope
+        const movingTask = workingTasks.find(t => t.id === update.id); // Search in full task list, not just target scope
         
         if (afterTask) {
           // The task is being positioned after afterTask
@@ -445,7 +433,7 @@ export class ClientActsAsList {
         } else {
           targetPosition = scopeTasksExcludingMoved.length + 1;
         }
-        debugPerformance('Client prediction: after task (with normalization)', {
+        debugPerformance('Client prediction: after task (with preserved positions)', {
           movingTask: update.id.substring(0, 8),
           afterTask: afterTask ? { id: afterTask.id.substring(0, 8), position: afterTask.position } : null,
           movingTaskCurrentPos: movingTask?.position,

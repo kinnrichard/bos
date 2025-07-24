@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_24_005133) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_24_025818) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -378,12 +378,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_24_005133) do
     t.datetime "discarded_at"
     t.string "status", null: false
     t.uuid "repositioned_after_id"
-    t.boolean "position_finalized", default: true, null: false
+    t.boolean "position_finalized", default: false, null: false
     t.boolean "repositioned_to_top", default: false, null: false
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
     t.index ["discarded_at"], name: "index_tasks_on_discarded_at"
     t.index ["id"], name: "index_tasks_on_id", unique: true
-    t.index ["job_id", "parent_id", "position"], name: "index_tasks_on_scope_and_position", unique: true
+    t.index ["job_id", "parent_id", "position"], name: "index_tasks_on_scope_and_position_non_unique"
     t.index ["job_id"], name: "index_tasks_on_job_id"
     t.index ["lock_version"], name: "index_tasks_on_lock_version"
     t.index ["parent_id"], name: "index_tasks_on_parent_id"
