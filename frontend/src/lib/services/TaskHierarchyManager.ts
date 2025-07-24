@@ -486,7 +486,8 @@ export class TaskHierarchyManager {
     });
 
     // Sort tasks at each level
-    this.sortTasksRecursively(rootTasks);
+    sortTasksInPlace(rootTasks);
+    this.sortSubtasks(rootTasks);
     
     return rootTasks;
   }

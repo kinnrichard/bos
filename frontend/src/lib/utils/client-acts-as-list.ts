@@ -59,7 +59,7 @@ export class ClientActsAsList {
       const originalPosition = movingTask.position;
       const targetPosition = update.position;
       const originalParent = movingTask.parent_id || null;
-      const targetParent = update.parent_id !== undefined ? (update.parent_id || null) : originalParent;
+      const targetParent = 'parent_id' in update ? (update.parent_id || null) : originalParent;
       
       const isCrossParentMove = originalParent !== targetParent;
       
@@ -363,7 +363,7 @@ export class ClientActsAsList {
       
       let targetPosition = 1;
       let repositionedAfterId: string | number | null = null;
-      const targetParent = update.parent_id !== undefined ? update.parent_id : task.parent_id;
+      const targetParent = 'parent_id' in update ? (update.parent_id || null) : (task.parent_id || null);
       
       // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
       // This is critical - we need the full scope to understand current positions

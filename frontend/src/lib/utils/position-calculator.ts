@@ -156,8 +156,12 @@ export function calculateRelativePositionFromTarget(
     
     const sortedDestinationSiblings = sortTasks(destinationSiblings);
     
+    // Get the dragged task to check if this is a cross-parent move
+    const draggedTask = tasks.find(t => t.id === draggedTaskIds[0]);
+    const isCrossParentMove = draggedTask && (draggedTask.parent_id || null) !== parentId;
+    
     // Handle cross-parent drag
-    if ((targetTask.parent_id || null) !== parentId) {
+    if (isCrossParentMove) {
       // For cross-parent drops, use the target task as visual reference
       if (dropZone.position === 'above') {
         return {
