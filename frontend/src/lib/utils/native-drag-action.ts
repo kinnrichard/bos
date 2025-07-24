@@ -94,9 +94,8 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
       from: node
     });
 
-    // Hide dragged elements
+    // Add dragging class to elements (opacity handled by CSS)
     elementsToAdd.forEach(el => {
-      el.style.opacity = '0.1';
       el.classList.add('task-dragging');
     });
 
@@ -190,10 +189,21 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
   function handleDragEnd() {
     if (!dragState.isDragging) return;
 
-    // Restore dragged elements
-    dragState.draggedElements.forEach(el => {
-      el.style.opacity = '1';
-      el.classList.remove('task-dragging');
+    // Store references before they're cleared
+    const elementsToRestore = [...dragState.draggedElements];
+    
+    // Restore dragged elements with fade-in animation
+    requestAnimationFrame(() => {
+      elementsToRestore.forEach(el => {
+        // Add animation class before removing dragging class
+        el.classList.add('task-drag-ending');
+        el.classList.remove('task-dragging');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+          el.classList.remove('task-drag-ending');
+        }, 1000); // Match animation duration
+      });
     });
 
     clearAllVisualFeedback();

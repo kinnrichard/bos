@@ -81,7 +81,7 @@ class Task < ApplicationRecord
        position: #{position}
       parent_id: #{parent_id}" +
     (repositioned_after_id ? " - repositioned_after_id: #{repositioned_after_id}" : "") +
-    (repositioned_after_id ? " - repositioned_after_id: #{repositioned_after_id}" : "") +
+      (repositioned_to_top ? " - repositioned_to_top: #{repositioned_to_top}" : "") +
     "
 >"
   end
