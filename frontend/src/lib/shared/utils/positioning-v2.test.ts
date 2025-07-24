@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculatePosition, getAdjacentPositions, needsRebalancing, rebalancePositions } from './positioning-v2';
+import { NIL_UUID } from './constants';
 
 describe('calculatePosition', () => {
   describe('basic position calculations', () => {
@@ -370,9 +371,9 @@ describe('rebalancePositions', () => {
 });
 
 describe('repositioned_after_id special values', () => {
-  describe('top-of-list positioning with repositioned_after_id = -1', () => {
-    it('should generate negative position when repositioned_after_id is -1', () => {
-      // When repositioned_after_id is -1, it means "insert at top of list"
+  describe('top-of-list positioning with repositioned_after_id = NIL_UUID', () => {
+    it('should generate negative position when repositioned_after_id is NIL_UUID', () => {
+      // When repositioned_after_id is NIL_UUID, it means "insert at top of list"
       // This should behave like prevPosition=null, nextPosition=firstItem.position
       const firstItemPosition = 10000;
       const position = calculatePosition(null, firstItemPosition);
@@ -383,7 +384,7 @@ describe('repositioned_after_id special values', () => {
     });
 
     it('should generate multiple different negative positions for top-of-list', () => {
-      // Multiple calls with repositioned_after_id = -1 should generate different positions
+      // Multiple calls with repositioned_after_id = NIL_UUID should generate different positions
       const firstItemPosition = 10000;
       const positions = new Set();
       
@@ -401,7 +402,7 @@ describe('repositioned_after_id special values', () => {
       });
     });
 
-    it('should allow infinite insertions before first item with repositioned_after_id = -1', () => {
+    it('should allow infinite insertions before first item with repositioned_after_id = NIL_UUID', () => {
       // Test that we can insert multiple tasks at the top
       const originalFirstPosition = 10000;
       const topPositions: number[] = [];
@@ -423,15 +424,15 @@ describe('repositioned_after_id special values', () => {
       expect(allPositions[allPositions.length - 1]).toBe(originalFirstPosition);
     });
 
-    it('should handle repositioned_after_id = -1 with empty list', () => {
-      // When list is empty and repositioned_after_id = -1, should use initial position
+    it('should handle repositioned_after_id = NIL_UUID with empty list', () => {
+      // When list is empty and repositioned_after_id = NIL_UUID, should use initial position
       const position = calculatePosition(null, null);
       
       // Should use default initial position since list is empty
       expect(position).toBe(10000); // Default initialPosition
     });
 
-    it('should handle repositioned_after_id = -1 with single item at negative position', () => {
+    it('should handle repositioned_after_id = NIL_UUID with single item at negative position', () => {
       // Edge case: first item is already at negative position
       const firstItemPosition = -5000;
       const position = calculatePosition(null, firstItemPosition);
@@ -449,10 +450,10 @@ describe('repositioned_after_id special values', () => {
     });
   });
 
-    it('should properly handle repositioned_after_id = -1 in workflow context', () => {
+    it('should properly handle repositioned_after_id = NIL_UUID in workflow context', () => {
       // Simulate typical workflow: user drags task to top of list
       // This should:
-      // 1. Set repositioned_after_id = -1 to indicate "top of list"
+      // 1. Set repositioned_after_id = NIL_UUID to indicate "top of list"
       // 2. Calculate position using calculatePosition(null, firstItem.position)
       // 3. Generate negative position for proper sorting
       
@@ -462,11 +463,11 @@ describe('repositioned_after_id special values', () => {
         { id: '3', position: 30000 }
       ];
       
-      // Simulate dragging task to top (repositioned_after_id = -1)
-      const repositioned_after_id = -1;
+      // Simulate dragging task to top (repositioned_after_id = NIL_UUID)
+      const repositioned_after_id = NIL_UUID;
       const firstTaskPosition = existingTasks[0].position;
       
-      // When repositioned_after_id = -1, calculate position as "before first item"
+      // When repositioned_after_id = NIL_UUID, calculate position as "before first item"
       const newPosition = calculatePosition(null, firstTaskPosition);
       
       // Verify the new position will sort before all existing tasks
@@ -499,7 +500,7 @@ describe('repositioned_after_id special values', () => {
       // This test documents expected behavior for other special values
       // that might be implemented in the future
       
-      // repositioned_after_id = -1: top of list (implemented)
+      // repositioned_after_id = NIL_UUID: top of list (implemented)
       // repositioned_after_id = 0: no specific positioning (normal behavior)
       // repositioned_after_id > 0: position after specific task (future implementation)
       
@@ -511,14 +512,14 @@ describe('repositioned_after_id special values', () => {
 
     it('should maintain consistency with server-side repositioned_after_id handling', () => {
       // This test ensures client-side positioning is compatible with server expectations
-      // Server should receive repositioned_after_id = -1 for top-of-list insertions
+      // Server should receive repositioned_after_id = NIL_UUID for top-of-list insertions
       
       const topOfListPosition = calculatePosition(null, 10000);
       
       // Position should be negative (client-side calculation)
       expect(topOfListPosition).toBeLessThan(0);
       
-      // Server should be able to use repositioned_after_id = -1 to understand
+      // Server should be able to use repositioned_after_id = NIL_UUID to understand
       // that this is a top-of-list insertion and handle conflicts accordingly
       expect(typeof topOfListPosition).toBe('number');
       expect(Number.isInteger(topOfListPosition)).toBe(true);

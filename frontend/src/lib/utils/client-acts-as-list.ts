@@ -8,6 +8,7 @@ import { debugDatabase, debugValidation, debugPerformance } from '$lib/utils/deb
 import { sortTasks } from '$lib/shared/utils/task-sorting';
 import { calculatePosition } from '$lib/shared/utils/positioning-v2';
 import { getDatabaseTimestamp } from '$lib/shared/utils/utc-timestamp';
+import { NIL_UUID } from '$lib/shared/utils/constants';
 
 export interface ActsAsListResult {
   updatedTasks: Task[];
@@ -453,8 +454,8 @@ export class ClientActsAsList {
         // Detect if we're in test environment to use deterministic positioning
         const isTestEnvironment = typeof window === 'undefined' || process.env.NODE_ENV === 'test';
         targetPosition = calculatePosition(null, nextTask?.position || null, { disableRandomization: isTestEnvironment });
-        // First position means no task before it - use special value -1 for "top of list"
-        repositionedAfterId = -1;
+        // First position means no task before it - use NIL_UUID for "top of list"
+        repositionedAfterId = NIL_UUID;
         debugPerformance('Client prediction: first position (using negative positioning)', { 
           movingTask: update.id.substring(0, 8), 
           targetPosition,

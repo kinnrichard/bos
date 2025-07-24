@@ -3,8 +3,8 @@
 These are the tasks to be completed for the spec detailed in @.agent-os/specs/2025-07-23-robust-task-positioning/spec.md
 
 > Created: 2025-07-23
-> Updated: 2025-07-23
-> Status: In Progress - Foundation Complete
+> Updated: 2025-07-24
+> Status: In Progress - Foundation Complete, UUID Constraint Fix Required
 
 ## Tasks
 
@@ -14,12 +14,16 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.3 Implement calculatePosition in positioning-v2.ts (integer-based with randomization in middle 50% of range)
   - [x] 1.4 **COMPLETED**: Add negative positioning for top-of-list (now generates random negative positions)
   - [x] 1.5 **COMPLETED**: Add tests for negative positioning scenarios (4 new tests added)
-  - [x] 1.6 **COMPLETED**: Add tests for repositioned_after_id special values (-1 for top) (10 comprehensive tests added)
+  - [x] 1.6 **COMPLETED**: Add tests for repositioned_after_id special values (-1 for top) (10 comprehensive tests added) ⚠️ **NEEDS UPDATE: Use NIL_UUID instead of -1**
   - [x] 1.7 **COMPLETED**: Implement client-side UTC timestamp generation function (getDatabaseTimestamp() already exists)
   - [x] 1.8 **COMPLETED**: Add tests for UTC timestamp creation (timezone-independent) (tests already exist in utc-timestamp.test.ts)
   - [x] 1.9 Write tests for getAdjacentPositions helper
   - [x] 1.10 Implement getAdjacentPositions function
   - [x] 1.11 **COMPLETED**: All unit tests pass (45/45) and integration tests updated for randomization (10/10)
+  - [ ] 1.12 **NEW**: Define NIL_UUID constant in shared constants file
+  - [ ] 1.13 **NEW**: Update client-acts-as-list.ts to use NIL_UUID instead of -1
+  - [ ] 1.14 **NEW**: Update all tests that check for repositioned_after_id = -1 to use NIL_UUID
+  - [ ] 1.15 **NEW**: Verify UUID constraint compliance with PostgreSQL
 
 - [x] 2. Update Task Creation to Use Randomized Positioning ✅ **COMPLETED**
   - [x] 2.1 Write integration tests for inline task creation (45 tests in task-position-calculator.test.ts + E2E tests)
@@ -40,7 +44,7 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 - [ ] 4. Implement Server-Side Position Calculation ❌ **NOT IMPLEMENTED**
   - [ ] 4.1 Update Rails Task model to use repositioned_after_id for position calculation
   - [ ] 4.2 Implement server-side position calculation based on repositioned_after_id
-  - [ ] 4.3 Handle special repositioned_after_id values (-1 for top-of-list)
+  - [ ] 4.3 Handle special repositioned_after_id values (NIL_UUID for top-of-list)
   - [ ] 4.4 Add server-side conflict resolution for concurrent positioning
   - [ ] 4.5 Test server-side position calculation with various scenarios
   - [ ] 4.6 Verify positions are correctly calculated on the server
@@ -96,6 +100,7 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 **Problem**: Current implementation sets position to 1 when dragging to top, preventing insertion before it
 **Solution**: Use negative random positions (-1 to -defaultSpacing) and repositioned_after_id = -1 for top-of-list
 **Status**: ✅ Implemented - Algorithm now generates negative positions for top-of-list insertions
+**Update**: ⚠️ Must use NIL_UUID (`00000000-0000-0000-0000-000000000000`) instead of -1 for UUID constraint compliance
 
 #### 2. Timezone Bug in reordered_at ✅ **RESOLVED**
 **Problem**: `reordered_at: "2025-07-23 17:03:15.535135000 +0000"` shows local time instead of UTC
@@ -104,3 +109,9 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 #### 3. Server-Side Position Calculation Missing  
 **Problem**: Server doesn't use `repositioned_after_id` to help calculate positions
 **Solution**: Rails backend should use `repositioned_after_id` for relative positioning and conflict resolution
+
+#### 4. UUID Constraint Violation ⚠️ **IDENTIFIED**
+**Problem**: Using `-1` for `repositioned_after_id` violates PostgreSQL UUID constraint
+**Root Cause**: `repositioned_after_id` is defined as `uuid REFERENCES tasks(id)`, but `-1` is not a valid UUID
+**Solution**: Use RFC 4122 nil UUID `00000000-0000-0000-0000-000000000000` for top-of-list positioning
+**Status**: ⚠️ Spec amended, implementation needs update

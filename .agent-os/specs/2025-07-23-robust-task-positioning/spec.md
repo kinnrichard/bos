@@ -175,3 +175,79 @@ const taskUpdate = {
 - Convert to user's local timezone only for display purposes
 - Ensure consistent ordering regardless of user timezone
 
+## Amendment: UUID Constraint Fix
+
+> Added: 2025-07-24
+> Issue: Using `-1` for repositioned_after_id violates PostgreSQL UUID constraint
+
+### Problem
+
+The original spec defined using `-1` as a special value for `repositioned_after_id` to indicate "top of list" positioning. However, the database column is defined as:
+
+```sql
+repositioned_after_id uuid REFERENCES tasks(id)
+```
+
+This creates a PostgreSQL constraint violation because `-1` is not a valid UUID value.
+
+### Solution: RFC 4122 Nil UUID
+
+Use the RFC 4122 standard nil UUID for "beginning of list" positioning:
+
+```
+00000000-0000-0000-0000-000000000000
+```
+
+### Updated Implementation
+
+#### Constants Definition
+
+```typescript
+// Client-side constant
+export const NIL_UUID = '00000000-0000-0000-0000-000000000000';
+
+// Server-side constant (Ruby)
+class Task
+  NIL_UUID = '00000000-0000-0000-0000-000000000000'.freeze
+  
+  def at_beginning?
+    repositioned_after_id == NIL_UUID
+  end
+end
+```
+
+#### Updated repositioned_after_id Special Values
+
+- `null`: Task positioned by the server; client should only use the position column for sorting
+- `00000000-0000-0000-0000-000000000000`: Task was repositioned to the top of the list (replaces `-1`)
+- `<valid_task_uuid>`: Task was positioned after the specified task ID
+
+#### Client-Side Updates
+
+Replace all occurrences of `repositioned_after_id = -1` with `repositioned_after_id = NIL_UUID`:
+
+```typescript
+// Before (causes UUID constraint violation)
+repositionedAfterId = -1; // ❌ Invalid UUID
+
+// After (RFC 4122 compliant)
+repositionedAfterId = NIL_UUID; // ✅ Valid UUID constant
+```
+
+### Benefits
+
+1. **Type Safety**: Maintains UUID constraint integrity in PostgreSQL
+2. **Semantic Clarity**: Clear meaning without magic numbers
+3. **Zero.js Compatibility**: No sync system changes needed - nil UUID is a valid UUID
+4. **Industry Standard**: RFC 4122 compliant approach
+5. **Performance**: Excellent indexing characteristics for UUID columns
+6. **Backwards Compatibility**: Can be deployed without database migration
+
+### Migration Notes
+
+1. Update `client-acts-as-list.ts` line 457 to use `NIL_UUID` instead of `-1`
+2. Update all test files that check for `repositioned_after_id = -1` to use `NIL_UUID`
+3. Add the `NIL_UUID` constant to shared constants file
+4. Update server-side code to recognize nil UUID as "top of list" indicator
+5. No database migration required - nil UUID is a valid UUID value
+
