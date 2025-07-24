@@ -1028,8 +1028,8 @@
       const relativePosition = calculateRelativePosition(null, targetTaskId, [draggedTaskId]);
       
       // Convert relative position to position updates and execute via ReactiveRecord
-      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(cleanedTasks, [relativePosition]);
-      await RailsClientActsAsList.applyAndExecutePositionUpdates(cleanedTasks, positionUpdates);
+      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(cleanedKeptTasks, [relativePosition]);
+      await RailsClientActsAsList.applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
       
     } catch (error: any) {
       debugWorkflow.error('Task nesting failed', { error, draggedTaskId, targetTaskId });
@@ -1177,10 +1177,10 @@
       }
       
       // Convert relative updates to position updates
-      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(cleanedTasks, relativeUpdates);
+      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(cleanedKeptTasks, relativeUpdates);
       
       // Execute position updates using ReactiveRecord - it handles UI updates automatically
-      await RailsClientActsAsList.applyAndExecutePositionUpdates(cleanedTasks, positionUpdates);
+      await RailsClientActsAsList.applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
             
     } catch (error: any) {
       debugWorkflow.error('Task reorder failed', { error, relativeUpdates });
@@ -1277,13 +1277,16 @@
     // Resolve any boundary ambiguity
     const resolvedDropZone = resolveParentChildBoundary(dropZone);
     
-    // Convert Svelte tasks to Rails task format
-    const railsTasks: Task[] = cleanedKeptTasks.map(t => ({
-      id: t.id,
-      position: t.position || 0,
-      parent_id: t.parent_id,
-      title: t.title
-    }));
+    // Convert Svelte tasks to Rails task format and sort by position
+    // Important: Sort to use ReactiveRecord's true positions, not DOM order during drag
+    const railsTasks: Task[] = cleanedKeptTasks
+      .map(t => ({
+        id: t.id,
+        position: t.position || 0,
+        parent_id: t.parent_id,
+        title: t.title
+      }))
+      .sort((a, b) => (a.position || 0) - (b.position || 0));
     
     // Use the new relative position calculator
     const result = calculateRelativePositionFromTarget(railsTasks, resolvedDropZone, parentId, draggedTaskIds);

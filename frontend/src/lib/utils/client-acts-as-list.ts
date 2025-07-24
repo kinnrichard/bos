@@ -364,7 +364,9 @@ export class ClientActsAsList {
       
       // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
       // This is critical - we need the full scope to understand current positions
-      const allScopeTasks = workingTasks.filter(t => (t.parent_id || null) === (targetParent || null));
+      const allScopeTasks = workingTasks
+        .filter(t => (t.parent_id || null) === (targetParent || null))
+        .sort((a, b) => (a.position || 0) - (b.position || 0));
       
       // Get tasks excluding the moving task (for target identification)
       const scopeTasksExcludingMoved = allScopeTasks.filter(t => t.id !== update.id);

@@ -65,11 +65,11 @@ export function calculatePosition(
   // At start: use negative positioning with randomization to allow infinite insertions before
   if (prevPosition === null && nextPosition !== null) {
     if (disableRandomization) {
-      // For testing: use deterministic negative position
-      return -1;
+      // For testing: use deterministic position before the first task
+      return nextPosition - 1;
     }
-    // Generate random negative position to allow infinite insertions before
-    return -Math.floor(Math.random() * defaultSpacing + 1);
+    // Generate position before the first task
+    return nextPosition - Math.floor(Math.random() * defaultSpacing + 1);
   }
 
   // At end: randomize around default spacing
