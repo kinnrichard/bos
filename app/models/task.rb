@@ -57,6 +57,9 @@ class Task < ApplicationRecord
   after_save :touch_job_updated_at
   after_destroy :touch_job_updated_at
 
+  # Check if automatic rebalancing is needed after position changes
+  after_save :check_for_rebalancing, if: :saved_change_to_position?
+
 
   # Temporarily disable optimistic locking for positioning compatibility testing
   self.locking_column = nil
@@ -212,6 +215,45 @@ class Task < ApplicationRecord
     # Update job's updated_at timestamp without incrementing lock_version
     # This preserves the "last activity" tracking without causing lock conflicts
     job.update_column(:updated_at, Time.current) if job.present?
+  end
+
+  def check_for_rebalancing
+    # Skip if this is already part of a rebalancing operation
+    return if Thread.current[:skip_rebalancing_check]
+
+    # Get sibling tasks in the same scope
+    siblings = Task.kept.where(job_id: job_id, parent_id: parent_id).order(:position).pluck(:id, :position)
+
+    # Only check if there are enough tasks to matter
+    return if siblings.count < 10
+
+    # Check if rebalancing is needed
+    if needs_automatic_rebalancing?(siblings)
+      # Trigger rebalancing in background to avoid blocking
+      RebalanceTasksJob.perform_later(job_id, parent_id)
+    end
+  end
+
+  def needs_automatic_rebalancing?(siblings)
+    return false if siblings.count < 2
+
+    positions = siblings.map { |_, pos| pos }
+    gaps = []
+
+    # Calculate gaps between consecutive positions
+    (1...positions.length).each do |i|
+      gap = positions[i] - positions[i-1]
+      gaps << gap if gap > 0
+    end
+
+    return false if gaps.empty?
+
+    min_gap = gaps.min
+
+    # Trigger rebalancing if:
+    # 1. Any gap is less than 2 (approaching precision limits)
+    # 2. We're approaching integer limits
+    min_gap < 2 || positions.last > 2_000_000_000
   end
 
   # Removed skip_lock_version_for_position_updates method - using locking_column = nil instead

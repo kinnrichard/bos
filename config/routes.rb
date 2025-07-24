@@ -59,6 +59,7 @@ Rails.application.routes.draw do
             patch :batch_reorder
             patch :batch_reorder_relative
             get :batch_details
+            post :rebalance
           end
           member do
             patch :reorder

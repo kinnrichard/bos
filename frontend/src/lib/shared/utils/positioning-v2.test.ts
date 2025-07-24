@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculatePosition, getAdjacentPositions, needsRebalancing, rebalancePositions } from './positioning-v2';
+import { calculatePosition, getAdjacentPositions } from './positioning-v2';
 
 describe('calculatePosition', () => {
   describe('basic position calculations', () => {
@@ -282,89 +282,5 @@ describe('getAdjacentPositions', () => {
       prev: { id: '1', position: 30000 },
       next: { id: '3', position: 20000 }
     });
-  });
-});
-
-describe('needsRebalancing', () => {
-  it('should detect when positions are too close', () => {
-    // Use positions that are actually close enough for JavaScript to distinguish
-    // but still within our threshold
-    const positions = [1, 1 + 1e-11, 1 + 2e-11];
-    expect(needsRebalancing(positions)).toBe(true);
-  });
-
-  it('should not trigger for well-spaced positions', () => {
-    const positions = [10000, 20000, 30000, 40000];
-    expect(needsRebalancing(positions)).toBe(false);
-  });
-
-  it('should handle integer positions with good spacing', () => {
-    const positions = [1000, 2000, 3000, 4000, 5000];
-    expect(needsRebalancing(positions)).toBe(false);
-  });
-
-  it('should detect precision issues after many subdivisions', () => {
-    // Simulate many insertions between two positions
-    let positions = [1, 2];
-    for (let i = 0; i < 50; i++) {
-      const mid = (positions[0] + positions[1]) / 2;
-      positions = [positions[0], mid, positions[1]];
-    }
-    expect(needsRebalancing(positions)).toBe(true);
-  });
-
-  it('should handle empty array', () => {
-    expect(needsRebalancing([])).toBe(false);
-  });
-
-  it('should handle single position', () => {
-    expect(needsRebalancing([1000])).toBe(false);
-  });
-
-  it('should use custom threshold', () => {
-    const positions = [1, 1.001, 1.002];
-    expect(needsRebalancing(positions, 0.01)).toBe(true);
-    expect(needsRebalancing(positions, 0.0001)).toBe(false);
-  });
-});
-
-describe('rebalancePositions', () => {
-  it('should create evenly spaced positions', () => {
-    const positions = rebalancePositions(5);
-    expect(positions).toEqual([10000, 20000, 30000, 40000, 50000]);
-  });
-
-  it('should handle custom start position', () => {
-    const positions = rebalancePositions(3, 5000);
-    expect(positions).toEqual([5000, 15000, 25000]);
-  });
-
-  it('should handle custom spacing', () => {
-    const positions = rebalancePositions(4, 0, 1000);
-    expect(positions).toEqual([0, 1000, 2000, 3000]);
-  });
-
-  it('should handle single item', () => {
-    const positions = rebalancePositions(1);
-    expect(positions).toEqual([10000]);
-  });
-
-  it('should handle zero count', () => {
-    const positions = rebalancePositions(0);
-    expect(positions).toEqual([]);
-  });
-
-  it('should create positions suitable for future insertions', () => {
-    const positions = rebalancePositions(3);
-    // Should have enough space for insertions
-    const gap1 = positions[1] - positions[0];
-    const gap2 = positions[2] - positions[1];
-    expect(gap1).toBe(10000);
-    expect(gap2).toBe(10000);
-  });
-
-  it('should work with custom integer start and spacing', () => {
-    const positions = rebalancePositions(3, 100, 50);
-    expect(positions).toEqual([100, 150, 200]);
   });
 });

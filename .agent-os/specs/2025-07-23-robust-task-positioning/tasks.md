@@ -20,12 +20,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.9 Write tests for getAdjacentPositions helper
   - [x] 1.10 Implement getAdjacentPositions function
   - [x] 1.11 **COMPLETED**: All unit tests pass (45/45) and integration tests updated for randomization (10/10)
-  - [ ] 1.12 **REVISED**: Add position_finalized boolean column to tasks table
-  - [ ] 1.13 **REVISED**: Add repositioned_to_top boolean column to tasks table
-  - [ ] 1.14 **REVISED**: Update client-acts-as-list.ts to use repositioned_to_top=true instead of -1
-  - [ ] 1.15 **REVISED**: Update all tests to use new boolean approach
-  - [ ] 1.16 **NEW**: Update Zero.js schema to include new boolean columns
-  - [ ] 1.17 **NEW**: Verify PostgreSQL foreign key constraint compliance
+  - [x] 1.12 **REVISED**: Add position_finalized boolean column to tasks table ✅ **COMPLETED**
+  - [x] 1.13 **REVISED**: Add repositioned_to_top boolean column to tasks table ✅ **COMPLETED**
+  - [x] 1.14 **REVISED**: Update client-acts-as-list.ts to use repositioned_to_top=true instead of -1 ✅ **COMPLETED**
+  - [x] 1.15 **REVISED**: Update all tests to use new boolean approach ✅ **COMPLETED**
+  - [x] 1.16 **NEW**: Update Zero.js schema to include new boolean columns ✅ **COMPLETED**
+  - [x] 1.17 **NEW**: Verify PostgreSQL foreign key constraint compliance ✅ **COMPLETED**
 
 - [x] 2. Update Task Creation to Use Randomized Positioning ✅ **COMPLETED**
   - [x] 2.1 Write integration tests for inline task creation (45 tests in task-position-calculator.test.ts + E2E tests)
@@ -52,14 +52,14 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [ ] 4.6 Verify positions are correctly calculated on the server
   - [ ] 4.7 Test API endpoints accept repositioned_after_id instead of position
 
-- [ ] 5. Add Server-Side Position Rebalancing ❌ **NOT IMPLEMENTED**
-  - [ ] 5.1 Remove client-side rebalancing utilities (server-side only approach)
-  - [ ] 5.2 Create Rails backend endpoint for position rebalancing
-  - [ ] 5.3 Implement server-side precision checking logic
-  - [ ] 5.4 Implement server-side automatic rebalancing when needed
+- [ ] 5. Add Server-Side Position Rebalancing 🔄 **IN PROGRESS**
+  - [x] 5.1 Remove client-side rebalancing utilities (server-side only approach) ✅ **COMPLETED**
+  - [x] 5.2 Create Rails backend endpoint for position rebalancing ✅ **COMPLETED**
+  - [x] 5.3 Implement server-side precision checking logic ✅ **COMPLETED**
+  - [x] 5.4 Implement server-side automatic rebalancing when needed ✅ **COMPLETED**
   - [ ] 5.5 Test server-side rebalancing with large task lists
   - [ ] 5.6 Verify server-side rebalancing maintains task order
-  - [ ] 5.7 Remove client-side rebalancing tests (move to backend)
+  - [x] 5.7 Remove client-side rebalancing tests (move to backend) ✅ **COMPLETED** (removed in 5.1)
 
 - [ ] 6. End-to-End Testing and Polish 🔄 **PARTIALLY COMPLETE**
   - [x] 6.1 Write comprehensive E2E test suite (task-positioning.spec.ts with real browser tests)

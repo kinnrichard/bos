@@ -512,6 +512,49 @@ class Api::V1::TasksController < Api::V1::BaseController
     end
   end
 
+  # POST /api/v1/jobs/:job_id/tasks/rebalance
+  # Rebalances task positions to ensure even spacing and prevent precision issues
+  def rebalance
+    # Optional parameters for customization
+    parent_id = params[:parent_id] # Rebalance only tasks with this parent_id
+    spacing = params[:spacing]&.to_i || 10000 # Default spacing between tasks
+
+    Task.transaction do
+      # Get tasks to rebalance
+      tasks_scope = @job.tasks.kept
+      tasks_scope = tasks_scope.where(parent_id: parent_id) if params.key?(:parent_id)
+      tasks = tasks_scope.order(:position)
+
+      # Check if rebalancing is needed
+      if tasks.count > 1 && needs_rebalancing?(tasks)
+        # Rebalance positions with even spacing
+        tasks.each_with_index do |task, index|
+          new_position = spacing * (index + 1)
+          task.update_column(:position, new_position) if task.position != new_position
+        end
+
+        render json: {
+          status: "success",
+          message: "Tasks rebalanced successfully",
+          tasks_rebalanced: tasks.count,
+          timestamp: Time.current
+        }
+      else
+        render json: {
+          status: "success",
+          message: "No rebalancing needed",
+          tasks_checked: tasks.count,
+          timestamp: Time.current
+        }
+      end
+    end
+  rescue => e
+    Rails.logger.error "Task rebalancing failed: #{e.message}"
+    render json: {
+      error: "Failed to rebalance tasks: #{e.message}"
+    }, status: :internal_server_error
+  end
+
   private
 
   def set_current_user
@@ -592,5 +635,40 @@ class Api::V1::TasksController < Api::V1::BaseController
         }
       end
     end
+  end
+
+  # Check if tasks need rebalancing based on position gaps
+  def needs_rebalancing?(tasks)
+    return false if tasks.count < 2
+
+    # Configuration
+    min_gap_threshold = 2 # Minimum gap size that indicates potential precision issues
+    max_gap_ratio = 100 # Maximum ratio between largest and smallest gap
+
+    positions = tasks.pluck(:position)
+    gaps = []
+
+    # Calculate gaps between consecutive positions
+    (1...positions.length).each do |i|
+      gap = positions[i] - positions[i-1]
+      gaps << gap if gap > 0
+    end
+
+    return false if gaps.empty?
+
+    min_gap = gaps.min
+    max_gap = gaps.max
+
+    # Check if any gap is too small (indicating precision issues)
+    return true if min_gap < min_gap_threshold
+
+    # Check if gap variance is too high (indicating uneven distribution)
+    return true if max_gap > min_gap * max_gap_ratio
+
+    # Check if we're approaching integer limits
+    last_position = positions.last
+    return true if last_position > 2_000_000_000 # Leave room before 32-bit int limit
+
+    false
   end
 end
