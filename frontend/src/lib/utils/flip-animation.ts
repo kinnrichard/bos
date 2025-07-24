@@ -21,6 +21,7 @@ export interface AnimationOptions {
 
 export class FlipAnimator {
   private positions = new Map<string, Position>();
+  private preDragPositions = new Map<string, Position>();
   private animationFrame: number | null = null;
   private isAnimating = false;
 
@@ -32,6 +33,22 @@ export class FlipAnimator {
       const rect = element.getBoundingClientRect();
       const key = getKey(element);
       this.positions.set(key, {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height
+      });
+    });
+  }
+
+  /**
+   * Capture pre-drag positions from ghost elements during multi-drag
+   */
+  capturePreDragPositions(elements: HTMLElement[], getKey: (el: HTMLElement) => string) {
+    elements.forEach(element => {
+      const rect = element.getBoundingClientRect();
+      const key = getKey(element);
+      this.preDragPositions.set(key, {
         x: rect.left,
         y: rect.top,
         width: rect.width,
@@ -82,13 +99,19 @@ export class FlipAnimator {
     }> = [];
 
     currentPositions.forEach((current, key) => {
-      const previous = this.positions.get(key);
+      // Use pre-drag position if available (for multi-drag), otherwise use regular previous position
+      const preDragPos = this.preDragPositions.get(key);
+      const previous = preDragPos || this.positions.get(key);
+      
       if (previous) {
         const deltaX = previous.x - current.position.x;
         const deltaY = previous.y - current.position.y;
         
         // Only animate if there's a significant change
         if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+          if (preDragPos) {
+            console.log(`[FLIP] Task ${key} using pre-drag position: from (${previous.x}, ${previous.y}) to (${current.position.x}, ${current.position.y})`);
+          }
           animations.push({
             element: current.element,
             deltaX,
@@ -145,6 +168,8 @@ export class FlipAnimator {
         if (container) {
           container.dataset.flipActive = 'false';
         }
+        // Clear pre-drag positions after animation completes
+        this.preDragPositions.clear();
         this.isAnimating = false;
         this.capturePositions(elements, getKey);
         onComplete?.();
@@ -175,7 +200,15 @@ export class FlipAnimator {
    */
   clear() {
     this.positions.clear();
+    this.preDragPositions.clear();
     this.cancel();
+  }
+
+  /**
+   * Clear pre-drag positions only
+   */
+  clearPreDragPositions() {
+    this.preDragPositions.clear();
   }
 }
 

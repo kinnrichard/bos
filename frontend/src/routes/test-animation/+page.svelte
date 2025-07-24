@@ -55,6 +55,33 @@
       });
     }, 0);
   }
+
+  function simulateMultiDrag() {
+    // Simulate a multi-drag by capturing "pre-drag" positions first
+    const elements = Array.from(container.querySelectorAll('.demo-task')) as HTMLElement[];
+    
+    // Capture current positions as "pre-drag"
+    animator.capturePreDragPositions(elements, el => el.dataset.taskId || '');
+    
+    // Move tasks 1 and 3 to the end
+    const task1 = tasks.find(t => t.id === '1');
+    const task3 = tasks.find(t => t.id === '3');
+    const otherTasks = tasks.filter(t => t.id !== '1' && t.id !== '3');
+    
+    if (task1 && task3) {
+      tasks = [...otherTasks, task1, task3];
+      
+      // Animate after DOM updates using pre-drag positions
+      setTimeout(() => {
+        const elements = Array.from(container.querySelectorAll('.demo-task')) as HTMLElement[];
+        animator.animate(elements, el => el.dataset.taskId || '', {
+          duration: 400,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          stagger: 30
+        });
+      }, 0);
+    }
+  }
 </script>
 
 <div class="container">
@@ -64,6 +91,7 @@
   <div class="controls">
     <button onclick={reorderTasks}>Reorder First Two</button>
     <button onclick={shuffleTasks}>Shuffle All</button>
+    <button onclick={simulateMultiDrag}>Simulate Multi-Drag</button>
   </div>
   
   <div class="task-container" bind:this={container}>

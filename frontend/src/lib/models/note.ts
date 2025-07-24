@@ -9,7 +9,7 @@
  * import { ReactiveNote as Note } from './reactive-note';
  * ```
  * 
- * Generated: 2025-07-24 10:12:30 UTC
+ * Generated: 2025-07-24 17:46:08 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

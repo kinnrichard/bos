@@ -920,15 +920,28 @@
   function handleSortStart(event: DragSortEvent) {
     isDragging = true;
     
+    const draggedTaskId = event.item.dataset.taskId;
+    const isMultiSelectDrag = draggedTaskId && taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
+    
     // Capture positions before drag starts
     if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
       const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+      
+      if (isMultiSelectDrag) {
+        // For multi-drag, capture positions of all selected tasks as pre-drag positions
+        const selectedElements = taskElements.filter(el => 
+          el.dataset.taskId && taskSelection.selectedTaskIds.has(el.dataset.taskId)
+        );
+        console.log('[Multi-Drag] Capturing pre-drag positions for', selectedElements.length, 'selected tasks');
+        flipAnimator.capturePreDragPositions(selectedElements, el => el.dataset.taskId || '');
+      }
+      
+      // Always capture normal positions for all tasks (for non-selected task animations)
       flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
     }
     
-    // Check for multi-select drag
+    // Check for multi-select drag for badge
     const selectedCount = taskSelection.selectedTaskIds.size;
-    const draggedTaskId = event.item.dataset.taskId;
     
     if (draggedTaskId && taskSelection.selectedTaskIds.has(draggedTaskId) && selectedCount > 1) {
       // Show multi-drag badge
