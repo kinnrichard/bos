@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Animation Test</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 20px 0;
+        }
+        
+        .task-item {
+            background: #1c1c1e;
+            padding: 16px;
+            border-radius: 8px;
+            cursor: move;
+            transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
+        
+        .task-item:hover {
+            background: #2c2c2e;
+        }
+        
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+        }
+        
+        button:hover {
+            background: #0051D5;
+        }
+        
+        .status {
+            background: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 10px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Task List Animation Demo</h1>
+        <p>This demonstrates the FLIP animation technique for smooth task reordering.</p>
+        
+        <button onclick="reorderTasks()">Reorder Tasks</button>
+        <button onclick="shuffleTasks()">Shuffle All</button>
+        
+        <div class="task-list" id="taskList">
+            <div class="task-item" data-task-id="1">Task 1: Setup development environment</div>
+            <div class="task-item" data-task-id="2">Task 2: Design database schema</div>
+            <div class="task-item" data-task-id="3">Task 3: Implement user authentication</div>
+            <div class="task-item" data-task-id="4">Task 4: Create API endpoints</div>
+            <div class="task-item" data-task-id="5">Task 5: Build frontend components</div>
+        </div>
+        
+        <div class="status" id="status">Ready</div>
+    </div>
+    
+    <script type="module">
+        // Import our FLIP animation logic
+        class FlipAnimator {
+            constructor() {
+                this.positions = new Map();
+                this.isAnimating = false;
+            }
+            
+            capturePositions(elements) {
+                elements.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    this.positions.set(el.dataset.taskId, {
+                        x: rect.left,
+                        y: rect.top
+                    });
+                });
+            }
+            
+            animate(elements, options = {}) {
+                if (this.isAnimating) return;
+                
+                const { duration = 300, easing = 'cubic-bezier(0.4, 0, 0.2, 1)' } = options;
+                
+                // First: capture new positions
+                const first = new Map();
+                elements.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    first.set(el.dataset.taskId, {
+                        x: rect.left,
+                        y: rect.top,
+                        element: el
+                    });
+                });
+                
+                // Invert: calculate deltas and apply transforms
+                const animations = [];
+                first.forEach((firstPos, id) => {
+                    const lastPos = this.positions.get(id);
+                    if (lastPos) {
+                        const deltaX = lastPos.x - firstPos.x;
+                        const deltaY = lastPos.y - firstPos.y;
+                        
+                        if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+                            firstPos.element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                            firstPos.element.style.transition = 'none';
+                            animations.push(firstPos.element);
+                        }
+                    }
+                });
+                
+                if (animations.length === 0) {
+                    this.capturePositions(elements);
+                    return;
+                }
+                
+                this.isAnimating = true;
+                
+                // Force reflow
+                void document.body.offsetHeight;
+                
+                // Play: animate to final positions
+                requestAnimationFrame(() => {
+                    animations.forEach(el => {
+                        el.style.transform = '';
+                        el.style.transition = `transform ${duration}ms ${easing}`;
+                    });
+                    
+                    setTimeout(() => {
+                        animations.forEach(el => {
+                            el.style.transform = '';
+                            el.style.transition = '';
+                        });
+                        this.isAnimating = false;
+                        this.capturePositions(elements);
+                        updateStatus('Animation complete');
+                    }, duration);
+                });
+            }
+        }
+        
+        const animator = new FlipAnimator();
+        const taskList = document.getElementById('taskList');
+        const status = document.getElementById('status');
+        
+        function updateStatus(text) {
+            status.textContent = text;
+        }
+        
+        // Initialize positions
+        animator.capturePositions(Array.from(taskList.children));
+        
+        // Reorder first two tasks
+        window.reorderTasks = function() {
+            updateStatus('Reordering tasks...');
+            
+            const tasks = Array.from(taskList.children);
+            if (tasks.length >= 2) {
+                // Swap first two tasks
+                taskList.insertBefore(tasks[1], tasks[0]);
+                
+                // Animate the change
+                animator.animate(Array.from(taskList.children));
+            }
+        };
+        
+        // Shuffle all tasks
+        window.shuffleTasks = function() {
+            updateStatus('Shuffling tasks...');
+            
+            const tasks = Array.from(taskList.children);
+            
+            // Fisher-Yates shuffle
+            for (let i = tasks.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                taskList.insertBefore(tasks[j], tasks[i].nextSibling);
+                taskList.insertBefore(tasks[i], tasks[j]);
+            }
+            
+            // Animate the change
+            animator.animate(Array.from(taskList.children));
+        };
+        
+        // Enable drag and drop
+        let draggedElement = null;
+        
+        taskList.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('task-item')) {
+                draggedElement = e.target;
+                e.target.style.opacity = '0.5';
+            }
+        });
+        
+        taskList.addEventListener('dragend', (e) => {
+            if (e.target.classList.contains('task-item')) {
+                e.target.style.opacity = '';
+            }
+        });
+        
+        taskList.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(taskList, e.clientY);
+            if (afterElement == null) {
+                taskList.appendChild(draggedElement);
+            } else {
+                taskList.insertBefore(draggedElement, afterElement);
+            }
+        });
+        
+        taskList.addEventListener('drop', (e) => {
+            e.preventDefault();
+            updateStatus('Drag complete');
+            // Animate after drop
+            animator.animate(Array.from(taskList.children));
+        });
+        
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.task-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+        
+        // Make tasks draggable
+        document.querySelectorAll('.task-item').forEach(task => {
+            task.draggable = true;
+        });
+    </script>
+</body>
+</html>

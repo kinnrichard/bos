@@ -19,6 +19,7 @@
   import TaskRow from '../tasks/TaskRow.svelte';
   import NewTaskRow from '../tasks/NewTaskRow.svelte';
   import DeletionModal from '../ui/DeletionModal.svelte';
+  import { FlipAnimator, createDebouncedAnimator } from '$lib/utils/flip-animation';
   
   // Import new DRY utilities
   import { createTaskInputManager } from '$lib/utils/task-input-manager';
@@ -121,6 +122,13 @@
     // Add event listeners for outside click and keyboard
     document.addEventListener('click', handleOutsideClick);
     document.addEventListener('keydown', keyboardHandler.handleKeydown);
+    
+    // Capture initial positions for animations
+    if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
+      const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+      flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
+      lastTaskCount = taskElements.length;
+    }
   });
 
   // Clean up any lingering visual dragFeedback when component is destroyed
@@ -131,6 +139,8 @@
     document.removeEventListener('keydown', keyboardHandler.handleKeydown);
     // Cleanup keyboard handler
     keyboardHandler.cleanup();
+    // Cleanup animator
+    flipAnimator.clear();
   });
   
   // Rails-compatible client-side acts_as_list implementation
@@ -273,6 +283,56 @@
   
   // Update flat task IDs for multi-select functionality
   const flatTaskIds = $derived(hierarchyManager.getFlatTaskIds(flattenedTasks));
+  
+  // Track previous task order for animation detection
+  let previousTaskOrder: string[] = [];
+  
+  // Watch for task position changes and animate them
+  $effect(() => {
+    // Access reactive dependencies
+    const currentTasks = flattenedTasks;
+    const currentTaskOrder = currentTasks.map(item => item.task.id);
+    
+    if (!tasksContainer || FlipAnimator.prefersReducedMotion() || skipNextAnimation || isDragging) {
+      previousTaskOrder = currentTaskOrder;
+      return;
+    }
+    
+    // Wait for DOM to update
+    tick().then(() => {
+      const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+      
+      // Check if this is just an initialization
+      if (previousTaskOrder.length === 0) {
+        flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
+        previousTaskOrder = currentTaskOrder;
+        return;
+      }
+      
+      // Check if order has changed (not just count)
+      const orderChanged = currentTaskOrder.some((id, index) => id !== previousTaskOrder[index]);
+      const countChanged = currentTaskOrder.length !== previousTaskOrder.length;
+      
+      if (countChanged) {
+        // Just capture new positions for additions/deletions
+        flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
+      } else if (orderChanged && taskElements.length > 0) {
+        // Animate reordering
+        flipAnimator.animate(taskElements, el => el.dataset.taskId || '', {
+          duration: 300,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          stagger: 15,
+          onComplete: () => {
+            // Ensure we capture final positions
+            const elements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+            flipAnimator.capturePositions(elements, el => el.dataset.taskId || '');
+          }
+        });
+      }
+      
+      previousTaskOrder = currentTaskOrder;
+    });
+  });
 
   // Keyboard navigation handler
   const keyboardHandler = KeyboardHandler({
@@ -327,6 +387,11 @@
   // Reference to the tasks container element for drag action updates
   let tasksContainer: HTMLElement;
   let dragActionInstance: any;
+  
+  // FLIP animation setup
+  const { animator: flipAnimator, animateDebounced } = createDebouncedAnimator(50);
+  let skipNextAnimation = false;
+  let lastTaskCount = 0;
 
   // Store action instance for manual updates
   function storeDragAction(node: HTMLElement, options: any) {
@@ -641,6 +706,12 @@
         taskSelectionActions.selectTask(newTask.id);
       }
       
+      // Skip animation for the next update since this is an addition
+      skipNextAnimation = true;
+      tick().then(() => {
+        skipNextAnimation = false;
+      });
+      
       dragFeedback = 'Task created successfully!';
       setTimeout(() => dragFeedback = '', 2000);
     } catch (error: any) {
@@ -818,6 +889,12 @@
         deletingTaskIds.delete(taskId);
       });
       deletingTaskIds = deletingTaskIds;
+      
+      // Skip animation for the next update since this is a deletion
+      skipNextAnimation = true;
+      tick().then(() => {
+        skipNextAnimation = false;
+      });
 
       // Show success dragFeedback
       dragFeedback = `Successfully discarded ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
@@ -842,6 +919,12 @@
   // Native drag event handlers
   function handleSortStart(event: DragSortEvent) {
     isDragging = true;
+    
+    // Capture positions before drag starts
+    if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
+      const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+      flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
+    }
     
     // Check for multi-select drag
     const selectedCount = taskSelection.selectedTaskIds.size;
@@ -879,6 +962,9 @@
     if (badge) {
       badge.remove();
     }
+    
+    // Prepare for animation after drag completes
+    skipNextAnimation = false;
   }
 
   // Handle move detection during drag operations
@@ -1181,7 +1267,9 @@
       
       // Execute position updates using ReactiveRecord - it handles UI updates automatically
       await RailsClientActsAsList.applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
-            
+      
+      // Animation will be triggered by the $effect watching flattenedTasks
+      
     } catch (error: any) {
       debugWorkflow.error('Task reorder failed', { error, relativeUpdates });
       

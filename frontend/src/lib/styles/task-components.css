@@ -67,6 +67,35 @@
   border-radius: 4px;
 }
 
+/* ===== FLIP ANIMATION STYLES ===== */
+
+/* Animation performance optimization */
+.task-item[data-flip-animating="true"] {
+  will-change: transform;
+  z-index: 10;
+}
+
+/* Prevent interaction during animations */
+.tasks-container[data-flip-active="true"] {
+  pointer-events: none;
+}
+
+/* Smooth transform-only animations for reordering */
+.task-item.animating-position {
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .task-item {
+    transition: none !important;
+  }
+  
+  .task-item.animating-position {
+    transition: none !important;
+  }
+}
+
 /* Row also appears selected when it contains an editing title */
 .task-item:has(.editable-title.editing) {
   background-color: var(--accent-blue) !important;
