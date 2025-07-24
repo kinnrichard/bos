@@ -348,9 +348,9 @@ export class ClientActsAsList {
     tasks: Task[],
     relativeUpdates: RelativePositionUpdate[]
   ): PositionUpdate[] {
-    // Use tasks directly without normalization to preserve large randomized numbers
-    // This aligns with 2025-07-23-robust-task-positioning specification
-    const workingTasks = tasks;
+    // Create a mutable working copy to track position changes as we process updates
+    // This ensures subsequent tasks see the updated positions of previously processed tasks
+    const workingTasks = tasks.map(t => ({...t}));
     
     const positionUpdates: PositionUpdate[] = [];
     
@@ -488,6 +488,18 @@ export class ClientActsAsList {
       const isMovingToEmptyParent = (task.parent_id || null) !== targetParent && scopeTasksExcludingMoved.length === 0;
       if (isMovingToEmptyParent) {
         isPositionedAtTop = true;
+      }
+      
+      // Update the working task state so subsequent tasks see the new position
+      const taskToUpdate = workingTasks.find(t => t.id === update.id);
+      if (taskToUpdate) {
+        taskToUpdate.position = targetPosition;
+        if (targetParent !== undefined) {
+          taskToUpdate.parent_id = targetParent ?? undefined;
+        }
+        
+        // Re-sort workingTasks to maintain position order for next iteration
+        workingTasks.sort((a, b) => (a.position || 0) - (b.position || 0));
       }
       
       positionUpdates.push({
