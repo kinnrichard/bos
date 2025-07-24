@@ -391,62 +391,24 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
       throw new Error('Zero client not initialized');
     }
     
-    // Get original record for change tracking
-    const originalRecord = await this.find(id, { withDiscarded: true });
-    
-    let processedData: any = {
-      ...originalRecord,  // Include all original fields for mutators to access
-      ...data,           // Override with fields being updated
-      id,
-      updated_at: this.currentTime(),
-    };
-
-    // Create mutator context
-    const context: MutatorContext = {
-      action: 'update',
-      user: getCurrentUser(),
-      offline: !navigator.onLine,
-      environment: import.meta.env?.MODE || 'development'
-    };
-
-    // Get mutator hooks for this model
-    const hooks = this.getMutatorHooks();
-    
-    if (hooks) {
-      // Run beforeSave hooks
-      if (hooks.beforeSave) {
-        processedData = await runMutators(processedData, hooks.beforeSave, context);
-      }
-      
-      // Run beforeUpdate hooks
-      if (hooks.beforeUpdate) {
-        processedData = await runMutators(processedData, hooks.beforeUpdate, context);
-      }
-      
-      // Run validators
-      if (hooks.validators) {
-        const validationResult = await runValidators(processedData, hooks.validators, context);
-        if (!validationResult.valid) {
-          throw new MutatorValidationError('Validation failed', validationResult.errors || {});
-        }
-      }
-    }
-
-    // Apply legacy mutator pipeline (for backward compatibility)
-    const mutatedData = await executeMutatorWithTracking(
-      this.config.tableName,
-      processedData,
-      originalRecord,
-      context,
-      { trackChanges: true } // Enable change tracking for updates
-    );
-    
     try {
+      // Process data through mutator pipeline
+      const mutatedData = await this.processUpdateData(id, data);
+      
+      // Execute single mutation
       await (zero.mutate as any)[this.config.tableName].update(mutatedData);
       const updatedRecord = await this.find(id, { withDiscarded: true });
       
       // Run after hooks
+      const hooks = this.getMutatorHooks();
       if (hooks) {
+        const context: MutatorContext = {
+          action: 'update',
+          user: getCurrentUser(),
+          offline: !navigator.onLine,
+          environment: import.meta.env?.MODE || 'development'
+        };
+        
         if (hooks.afterUpdate) {
           await runMutators(updatedRecord as any, hooks.afterUpdate, context);
         }
@@ -514,6 +476,159 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
     } else {
       // Create new record
       return this.create(data as CreateData<T>, options);
+    }
+  }
+
+  /**
+   * Process update data through mutator pipeline (extracted for reuse in batch operations)
+   */
+  private async processUpdateData(id: string, data: UpdateData<T>): Promise<any> {
+    // Get original record for change tracking
+    const originalRecord = await this.find(id, { withDiscarded: true });
+    
+    let processedData: any = {
+      ...originalRecord,  // Include all original fields for mutators to access
+      ...data,           // Override with fields being updated
+      id,
+      updated_at: this.currentTime(),
+    };
+
+    // Create mutator context
+    const context: MutatorContext = {
+      action: 'update',
+      user: getCurrentUser(),
+      offline: !navigator.onLine,
+      environment: import.meta.env?.MODE || 'development'
+    };
+
+    // Get mutator hooks for this model
+    const hooks = this.getMutatorHooks();
+    
+    if (hooks) {
+      // Run beforeSave hooks
+      if (hooks.beforeSave) {
+        processedData = await runMutators(processedData, hooks.beforeSave, context);
+      }
+      
+      // Run beforeUpdate hooks
+      if (hooks.beforeUpdate) {
+        processedData = await runMutators(processedData, hooks.beforeUpdate, context);
+      }
+      
+      // Run validators
+      if (hooks.validators) {
+        const validationResult = await runValidators(processedData, hooks.validators, context);
+        if (!validationResult.valid) {
+          throw new MutatorValidationError('Validation failed', validationResult.errors || {});
+        }
+      }
+    }
+
+    // Apply legacy mutator pipeline (for backward compatibility)
+    const mutatedData = await executeMutatorWithTracking(
+      this.config.tableName,
+      processedData,
+      originalRecord,
+      context,
+      { trackChanges: true } // Enable change tracking for updates
+    );
+
+    return mutatedData;
+  }
+
+  /**
+   * Batch update multiple records using Zero's native mutateBatch API
+   * All updates are executed atomically - either all succeed or all fail
+   * 
+   * @param updates Array of {id, data} objects to update
+   * @param options Query options (currently unused but kept for consistency)
+   * @returns Promise<T[]> Array of updated records
+   * 
+   * @example
+   * ```typescript
+   * // Batch update multiple tasks
+   * const updates = [
+   *   { id: 'task1', data: { position: 1 } },
+   *   { id: 'task2', data: { position: 2 } },
+   *   { id: 'task3', data: { position: 3 } }
+   * ];
+   * const updatedTasks = await Task.updateBatch(updates);
+   * ```
+   */
+  async updateBatch(updates: Array<{id: string, data: UpdateData<T>}>, options: QueryOptions = {}): Promise<T[]> {
+    const zero = getZero();
+    if (!zero) {
+      throw new Error('Zero client not initialized');
+    }
+
+    if (updates.length === 0) {
+      return [];
+    }
+
+    try {
+      console.log(`[ActiveRecord] Starting batch update for ${this.config.tableName}:`, {
+        count: updates.length,
+        ids: updates.map(u => u.id.substring(0, 8)).join(', ')
+      });
+
+      // Process all updates through mutator pipeline first
+      const processedUpdates: Array<{id: string, processedData: any}> = [];
+      
+      for (const update of updates) {
+        const processedData = await this.processUpdateData(update.id, update.data);
+        processedUpdates.push({ id: update.id, processedData });
+      }
+
+      // Execute all mutations in a single atomic batch using Zero's native API
+      await zero.mutateBatch(async (tx: any) => {
+        for (const { processedData } of processedUpdates) {
+          await tx[this.config.tableName].update(processedData);
+        }
+      });
+
+      console.log(`[ActiveRecord] Batch update successful for ${this.config.tableName}`, {
+        count: updates.length
+      });
+
+      // Retrieve all updated records and run after hooks
+      const updatedRecords: T[] = [];
+      const hooks = this.getMutatorHooks();
+      
+      for (const { id } of processedUpdates) {
+        const updatedRecord = await this.find(id, { withDiscarded: true });
+        updatedRecords.push(updatedRecord);
+        
+        // Run after hooks for each record
+        if (hooks) {
+          const context: MutatorContext = {
+            action: 'update',
+            user: getCurrentUser(),
+            offline: !navigator.onLine,
+            environment: import.meta.env?.MODE || 'development'
+          };
+          
+          if (hooks.afterUpdate) {
+            await runMutators(updatedRecord as any, hooks.afterUpdate, context);
+          }
+          if (hooks.afterSave) {
+            await runMutators(updatedRecord as any, hooks.afterSave, context);
+          }
+        }
+      }
+
+      return updatedRecords;
+    } catch (error) {
+      console.error(`[ActiveRecord] Batch update failed for ${this.config.tableName}:`, error);
+      console.error('[ActiveRecord] Batch error details:', {
+        table: this.config.tableName,
+        updateCount: updates.length,
+        error: error instanceof Error ? { message: error.message, stack: error.stack } : error
+      });
+      
+      if (error instanceof MutatorValidationError) {
+        throw error;
+      }
+      throw new Error(`Batch update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

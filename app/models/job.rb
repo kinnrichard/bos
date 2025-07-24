@@ -1,6 +1,5 @@
 class Job < ApplicationRecord
   include Loggable
-  include Touchable
 
   belongs_to :client
 

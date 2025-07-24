@@ -1,6 +1,7 @@
 export interface DragActionOptions {
   onSort?: (event: DragSortEvent) => void;
   onStart?: (event: DragStartEvent) => void;
+  onBeforeStart?: (event: DragStartEvent) => void;
   onEnd?: (event: DragEndEvent) => void;
   onMove?: (event: DragMoveEvent) => boolean | void;
 }
@@ -86,6 +87,13 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
     dragState.draggedData = elementsToAdd.map(el => el.getAttribute('data-task-id') || '');
     dragState.dragContainer = node;
 
+    // Call onBeforeStart callback BEFORE applying any styling changes
+    options.onBeforeStart?.({
+      item: draggedElement,
+      items: elementsToAdd,
+      from: node
+    });
+
     // Hide dragged elements
     elementsToAdd.forEach(el => {
       el.style.opacity = '0.1';
@@ -122,16 +130,6 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
     if (!dropZone) return;
 
     // Debug logging
-    const taskTitle = targetElement.querySelector('.task-title')?.textContent || 'Unknown';
-    console.log('[drag-action] handleDragOver:', {
-      targetTaskId: targetElement.getAttribute('data-task-id'),
-      targetTaskTitle: taskTitle,
-      dropZone,
-      draggedTaskId: dragState.draggedElements[0]?.getAttribute('data-task-id'),
-      clientY: event.clientY,
-      targetRect: targetElement.getBoundingClientRect()
-    });
-
     dragState.currentDropZone = dropZone;
     dragOverElement = targetElement;
 
@@ -174,18 +172,6 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
       if (dropZone.mode === 'reorder' && dropZone.position === 'below') {
         newIndex += 1;
       }
-
-      console.log('[drag-action] handleDrop:', {
-        targetTaskId: targetElement.getAttribute('data-task-id'),
-        targetTaskTitle: targetElement.querySelector('.task-title')?.textContent,
-        dropZone,
-        newIndex,
-        oldIndex,
-        childrenCount: node.children.length,
-        allChildrenIds: Array.from(node.children).map(el => 
-          (el as HTMLElement).getAttribute('data-task-id')
-        )
-      });
 
       options.onSort?.({
         item: dragState.draggedElements[0],

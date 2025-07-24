@@ -5,16 +5,22 @@
   import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
   import { TaskHierarchyManager } from '$lib/services/TaskHierarchyManager';
   import type { HierarchicalTask, RenderedTaskItem, BaseTask } from '$lib/services/TaskHierarchyManager';
-  import { taskSelection, taskSelectionActions } from '$lib/stores/taskSelection.svelte';
+  import { taskSelection, taskSelectionActions, getSelectionOrder } from '$lib/stores/taskSelection.svelte';
   import { focusActions } from '$lib/stores/focusManager.svelte';
   import { ReactiveTask } from '$lib/models/reactive-task';
   import { Task as TaskModel } from '$lib/models/task';
   import { nativeDrag, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
   import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
   import { calculateRelativePositionFromTarget } from '$lib/utils/position-calculator';
-  import { ClientActsAsList as RailsClientActsAsList } from '$lib/utils/client-acts-as-list';
-  import type { Task, DropZoneInfo, PositionUpdate, RelativePositionUpdate } from '$lib/utils/position-calculator';
-  import { calculatePosition } from '$lib/shared/utils/positioning-v2';
+  // Direct position calculation imports (replacing client-acts-as-list.ts)
+  import type { Task, DropZoneInfo } from '$lib/utils/position-calculator';
+  import { 
+    calculatePosition, 
+    convertRelativeToPositionUpdates,
+    type PositionUpdate, 
+    type RelativePositionUpdate 
+  } from '$lib/shared/utils/positioning-v2';
+  import { getDatabaseTimestamp } from '$lib/shared/utils/utc-timestamp';
   import { sortTasks } from '$lib/shared/utils/task-sorting';
   import TaskRow from '../tasks/TaskRow.svelte';
   import NewTaskRow from '../tasks/NewTaskRow.svelte';
@@ -143,41 +149,52 @@
     flipAnimator.clear();
   });
   
-  // Rails-compatible client-side acts_as_list implementation
-  // TODO: This needs to be re-engineered completely for our offline-first experience.
-  //       Zero.js custom mutator required with new server-side logic. Decimal positioning
+  // Direct position calculation helpers (using positioning-v2.ts utilities)
+  
+  // Execute position updates using Task.updatePositions batch API
+  async function executePositionUpdates(positionUpdates: PositionUpdate[]): Promise<void> {
+    if (positionUpdates.length === 0) return;
+    
+    const reorderedAt = getDatabaseTimestamp();
+    const batchUpdates = positionUpdates.map(update => ({
+      taskId: update.id,
+      position: update.position,
+      parent_id: update.parent_id !== undefined ? update.parent_id : undefined,
+      repositioned_after_id: update.repositioned_after_id,
+      position_finalized: false,
+      repositioned_to_top: update.repositioned_after_id === null && update.parent_id === null,
+      reason: `Direct position calculation (${update.position})`
+    }));
+    
+    await TaskModel.updatePositions(batchUpdates);
+  }
+  
+  // Apply and execute position updates in one operation  
+  async function applyAndExecutePositionUpdates(
+    tasks: Task[], 
+    positionUpdates: PositionUpdate[]
+  ): Promise<void> {
+    await executePositionUpdates(positionUpdates);
+  }
+  
+  // Legacy compatibility class (simplified for client-side predictions)
   class ClientActsAsList {
-    // Apply position updates using validated Rails-compatible logic
     static applyPositionUpdates(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): any[] {
-      // Convert to Rails task format
-      const railsTasks: Task[] = cleanedTasks.map(t => ({
-        id: t.id,
-        position: t.position || 0,
-        parent_id: t.parent_id || null
-      }));
+      const taskMap = new Map(tasks.map(t => [t.id, {...t}]));
       
-      // Convert position updates to Rails format
-      const railsUpdates: PositionUpdate[] = positionUpdates.map(update => ({
-        id: update.id,
-        position: update.position,
-        parent_id: update.parent_id !== undefined ? (update.parent_id || null) : undefined
-      }));
-      
-      // Use the validated Rails-compatible logic
-      const result = RailsClientActsAsList.applyPositionUpdates(railsTasks, railsUpdates);
-      
-      // Convert back to Svelte task format
-      return result.updatedTasks.map(railsTask => {
-        const originalTask = cleanedTasks.find(t => t.id === railsTask.id);
-        return {
-          ...originalTask,
-          position: railsTask.position,
-          parent_id: railsTask.parent_id
-        };
+      positionUpdates.forEach(update => {
+        const task = taskMap.get(update.id);
+        if (task) {
+          task.position = update.position;
+          if (update.parent_id !== undefined) {
+            task.parent_id = update.parent_id;
+          }
+        }
       });
+      
+      return Array.from(taskMap.values());
     }
     
-    // Predict what server positions will be after operation
     static predictServerPositions(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): Map<string, number> {
       const updatedTasks = this.applyPositionUpdates(tasks, positionUpdates);
       return new Map(updatedTasks.map(t => [t.id, t.position]));
@@ -287,51 +304,49 @@
   // Track previous task order for animation detection
   let previousTaskOrder: string[] = [];
   
-  // Watch for task position changes and animate them
+  // Watch for task position changes and animate them (reactive animations)
   $effect(() => {
     // Access reactive dependencies
     const currentTasks = flattenedTasks;
     const currentTaskOrder = currentTasks.map(item => item.task.id);
     
-    if (!tasksContainer || FlipAnimator.prefersReducedMotion() || skipNextAnimation || isDragging) {
+    // Skip animation if explicitly disabled or if this is the first render
+    if (skipNextAnimation || previousTaskOrder.length === 0) {
+      console.log('[FLIP] Skipping reactive animation:', skipNextAnimation ? 'explicitly disabled' : 'first render');
       previousTaskOrder = currentTaskOrder;
-      return;
-    }
-    
-    // Wait for DOM to update
-    tick().then(() => {
-      const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
       
-      // Check if this is just an initialization
-      if (previousTaskOrder.length === 0) {
-        flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
-        previousTaskOrder = currentTaskOrder;
-        return;
-      }
-      
-      // Check if order has changed (not just count)
-      const orderChanged = currentTaskOrder.some((id, index) => id !== previousTaskOrder[index]);
-      const countChanged = currentTaskOrder.length !== previousTaskOrder.length;
-      
-      if (countChanged) {
-        // Just capture new positions for additions/deletions
-        flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
-      } else if (orderChanged && taskElements.length > 0) {
-        // Animate reordering
-        flipAnimator.animate(taskElements, el => el.dataset.taskId || '', {
-          duration: 300,
-          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-          stagger: 15,
-          onComplete: () => {
-            // Ensure we capture final positions
-            const elements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
-            flipAnimator.capturePositions(elements, el => el.dataset.taskId || '');
+      // Still capture positions for future animations
+      if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
+        tick().then(() => {
+          const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+          if (taskElements.length > 0) {
+            flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
           }
         });
       }
+      return;
+    }
+    
+    // Check if the order actually changed
+    const orderChanged = currentTaskOrder.length !== previousTaskOrder.length ||
+      currentTaskOrder.some((id, index) => id !== previousTaskOrder[index]);
+    
+    if (orderChanged && tasksContainer && !FlipAnimator.prefersReducedMotion()) {
+      console.log('[FLIP] Task order changed, triggering reactive animation');
       
-      previousTaskOrder = currentTaskOrder;
-    });
+      tick().then(() => {
+        const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+        if (taskElements.length > 0) {
+          animateDebounced(taskElements, el => el.dataset.taskId || '', {
+            duration: 300,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            stagger: 15
+          });
+        }
+      });
+    }
+    
+    previousTaskOrder = currentTaskOrder;
   });
 
   // Keyboard navigation handler
@@ -405,6 +420,7 @@
       // Wait for DOM to update before setting draggable attributes
       tick().then(() => {
         dragActionInstance.update({
+          onBeforeStart: handleBeforeSortStart,
           onStart: handleSortStart,
           onEnd: handleSortEnd,
           onSort: handleTaskReorder,
@@ -504,6 +520,30 @@
     }, 50);
   }
 
+  // Capture positions immediately after selection changes for better drag animation timing
+  function capturePositionsAfterSelection() {
+    if (!tasksContainer) return;
+    
+    // Always capture current positions for all tasks
+    const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+    flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
+    
+    // If there are multiple selected tasks, also capture their pre-drag positions now
+    // This ensures we get clean positions before any drag operations begin
+    const selectedElements = taskElements.filter(el => 
+      el.dataset.taskId && taskSelection.selectedTaskIds.has(el.dataset.taskId)
+    );
+    
+    if (selectedElements.length > 1) {
+      const selectionOrder = getSelectionOrder();
+      flipAnimator.capturePreDragPositions(selectedElements, el => el.dataset.taskId || '', selectionOrder);
+      console.log('[Selection] Captured pre-drag positions for multi-select:', {
+        count: selectedElements.length,
+        selectionOrder: selectionOrder.map(id => id.substring(0, 8))
+      });
+    }
+  }
+
   // Multi-select click handler
   async function handleTaskClick(event: MouseEvent, taskId: string) {
     event.stopPropagation();
@@ -526,6 +566,10 @@
     } else {
       taskSelectionActions.selectTask(taskId);
     }
+    
+    // Capture positions immediately after selection changes
+    // This happens when elements are in their natural positions, before any drag styling
+    capturePositionsAfterSelection();
   }
 
   // Consolidated event handler for TaskRow components
@@ -916,29 +960,123 @@
     }
   }
 
+  // Position capture function that runs BEFORE native drag modifies elements
+  function capturePreDragPositions(draggedTaskId: string) {
+    if (!tasksContainer || FlipAnimator.prefersReducedMotion()) return;
+    
+    const isMultiSelectDrag = draggedTaskId && taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
+    const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+    
+    if (isMultiSelectDrag) {
+      // Debug: Check if DOM order matches expected order
+      console.log('[DEBUG] DOM Order vs Flattened Order:');
+      taskElements.forEach((el, index) => {
+        const taskId = el.dataset.taskId;
+        const flattenedIndex = flattenedTasks.findIndex(t => t.task.id === taskId);
+        const rect = el.getBoundingClientRect();
+        const isSelected = taskId && taskSelection.selectedTaskIds.has(taskId);
+        console.log(`DOM[${index}]: ${taskId?.substring(0, 8)} at y:${rect.y.toFixed(1)} | Flattened[${flattenedIndex}] | Selected: ${isSelected}`);
+      });
+
+      // For multi-drag, capture positions of all selected tasks as pre-drag positions
+      const selectedElements = taskElements.filter(el => 
+        el.dataset.taskId && taskSelection.selectedTaskIds.has(el.dataset.taskId)
+      );
+      console.log('[Multi-Drag] Capturing pre-drag positions for', selectedElements.length, 'selected tasks BEFORE native drag styling');
+      
+      // Debug selected elements order
+      console.log('[DEBUG] Selected elements in query order:');
+      selectedElements.forEach((el, index) => {
+        const taskId = el.dataset.taskId;
+        const rect = el.getBoundingClientRect();
+        console.log(`Selected[${index}]: ${taskId?.substring(0, 8)} at y:${rect.y.toFixed(1)}`);
+      });
+      
+      // Get container bounds for debugging
+      const containerRect = tasksContainer.getBoundingClientRect();
+      console.log('[Multi-Drag] Container bounds:', {
+        top: containerRect.top,
+        left: containerRect.left,
+        width: containerRect.width,
+        height: containerRect.height
+      });
+      
+      // Ensure elements are visible and properly positioned before capturing
+      const visibleSelectedElements = selectedElements.filter((el, index) => {
+        const rect = el.getBoundingClientRect();
+        const taskId = el.dataset.taskId;
+        const isVisible = rect.width > 0 && rect.height > 0 && rect.x >= -50 && rect.y >= -50;
+        
+        // Enhanced debug logging for first task specifically
+        if (index === 0) {
+          console.log(`[Multi-Drag] FIRST TASK DEBUG (PRE-NATIVE-DRAG):`, {
+            taskId: taskId?.substring(0, 8),
+            elementIndex: index,
+            rect: {
+              x: rect.x,
+              y: rect.y,
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height
+            },
+            containerRelative: {
+              x: rect.x - containerRect.x,
+              y: rect.y - containerRect.y,
+              top: rect.top - containerRect.top,
+              left: rect.left - containerRect.left
+            },
+            isVisible,
+            domOrder: Array.from(taskElements).indexOf(el),
+            selectionOrder: Array.from(taskSelection.selectedTaskIds).indexOf(taskId || ''),
+            hasTaskDraggingClass: el.classList.contains('task-dragging'),
+            note: 'Captured BEFORE native drag applies styling'
+          });
+        } else {
+          console.log(`[Multi-Drag] Task ${index + 1} (PRE-NATIVE-DRAG):`, {
+            taskId: taskId?.substring(0, 8),
+            rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+            isVisible,
+            hasTaskDraggingClass: el.classList.contains('task-dragging')
+          });
+        }
+        
+        return isVisible;
+      });
+      
+      if (visibleSelectedElements.length > 0) {
+        const selectionOrder = getSelectionOrder();
+        flipAnimator.capturePreDragPositions(visibleSelectedElements, el => el.dataset.taskId || '', selectionOrder);
+        console.log('[Multi-Drag] Using selection order:', selectionOrder.map(id => id.substring(0, 8)));
+      } else {
+        console.warn('[Multi-Drag] No visible selected elements found for pre-drag capture');
+      }
+    }
+    
+    // Always capture normal positions for all tasks (for non-selected task animations)
+    flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
+  }
+
+  // Called BEFORE native drag applies styling - positions should already be captured at selection time
+  function handleBeforeSortStart(event: DragStartEvent) {
+    const draggedTaskId = event.item.dataset.taskId;
+    if (draggedTaskId) {
+      console.log('[Drag] Starting drag operation for task:', draggedTaskId.substring(0, 8));
+      
+      // For single drag operations (not multi-select), we still need to capture positions
+      if (!taskSelection.selectedTaskIds.has(draggedTaskId) || taskSelection.selectedTaskIds.size === 1) {
+        capturePreDragPositions(draggedTaskId);
+      } else {
+        console.log('[Drag] Using pre-captured positions from selection time for multi-drag');
+      }
+    }
+  }
+
   // Native drag event handlers
   function handleSortStart(event: DragSortEvent) {
     isDragging = true;
     
     const draggedTaskId = event.item.dataset.taskId;
-    const isMultiSelectDrag = draggedTaskId && taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
-    
-    // Capture positions before drag starts
-    if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
-      const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
-      
-      if (isMultiSelectDrag) {
-        // For multi-drag, capture positions of all selected tasks as pre-drag positions
-        const selectedElements = taskElements.filter(el => 
-          el.dataset.taskId && taskSelection.selectedTaskIds.has(el.dataset.taskId)
-        );
-        console.log('[Multi-Drag] Capturing pre-drag positions for', selectedElements.length, 'selected tasks');
-        flipAnimator.capturePreDragPositions(selectedElements, el => el.dataset.taskId || '');
-      }
-      
-      // Always capture normal positions for all tasks (for non-selected task animations)
-      flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
-    }
     
     // Check for multi-select drag for badge
     const selectedCount = taskSelection.selectedTaskIds.size;
@@ -967,6 +1105,27 @@
   function handleSortEnd(event: DragSortEvent) {
     isDragging = false;
     
+    // IMMEDIATELY capture current DOM positions before any cleanup or processing
+    // This captures the actual destination positions while elements are transitioning
+    let capturedCurrentPositions: Map<string, { x: number; y: number; width: number; height: number }> | undefined;
+    if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
+      capturedCurrentPositions = new Map();
+      const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+      taskElements.forEach(element => {
+        const rect = element.getBoundingClientRect();
+        const key = element.dataset.taskId || '';
+        if (key) {
+          capturedCurrentPositions!.set(key, {
+            x: rect.left,
+            y: rect.top,
+            width: rect.width,
+            height: rect.height
+          });
+        }
+      });
+      console.log('[FLIP] Captured current positions immediately at drag end for', capturedCurrentPositions.size, 'elements');
+    }
+    
     // Clear all visual dragFeedback
     clearAllVisualFeedback();
     
@@ -976,8 +1135,9 @@
       badge.remove();
     }
     
-    // Prepare for animation after drag completes
-    skipNextAnimation = false;
+    // Clean up pre-drag positions (manual animations disabled - using reactive animations instead)
+    flipAnimator.clearPreDragPositions();
+    console.log('[FLIP] Manual drag animations disabled - relying on reactive animations after Zero.js updates');
   }
 
   // Handle move detection during drag operations
@@ -1126,9 +1286,9 @@
       // Calculate relative position for nesting
       const relativePosition = calculateRelativePosition(null, targetTaskId, [draggedTaskId]);
       
-      // Convert relative position to position updates and execute via ReactiveRecord
-      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(cleanedKeptTasks, [relativePosition]);
-      await RailsClientActsAsList.applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
+      // Convert relative position to position updates and execute via positioning-v2.ts utilities
+      const positionUpdates = convertRelativeToPositionUpdates(cleanedKeptTasks, [relativePosition]);
+      await applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
       
     } catch (error: any) {
       debugWorkflow.error('Task nesting failed', { error, draggedTaskId, targetTaskId });
@@ -1275,13 +1435,13 @@
         relativeUpdates.push(singleTaskUpdate);
       }
       
-      // Convert relative updates to position updates
-      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(cleanedKeptTasks, relativeUpdates);
+      // Convert relative updates to position updates using positioning-v2.ts utilities
+      const positionUpdates = convertRelativeToPositionUpdates(cleanedKeptTasks, relativeUpdates);
       
-      // Execute position updates using ReactiveRecord - it handles UI updates automatically
-      await RailsClientActsAsList.applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
+      // Execute position updates using our batch API - it handles UI updates automatically
+      await applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
       
-      // Animation will be triggered by the $effect watching flattenedTasks
+      // Reactive animations will trigger automatically when Zero.js updates the task data
       
     } catch (error: any) {
       debugWorkflow.error('Task reorder failed', { error, relativeUpdates });
@@ -1401,9 +1561,9 @@
     // Use relative positioning and convert to integer for client prediction
     const relativePosition = calculateRelativePosition(dropZone, parentId, draggedTaskIds);
     
-    // Convert to integer position for optimistic updates
-    const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(
-      cleanedKeptTasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id, title: t.title })),
+    // Convert to integer position for optimistic updates using positioning-v2.ts utilities
+    const positionUpdates = convertRelativeToPositionUpdates(
+      cleanedKeptTasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id })),
       [relativePosition]
     );
     
@@ -1419,6 +1579,7 @@
     class="tasks-container"
     data-testid="task-list"
     use:storeDragAction={{
+      onBeforeStart: handleBeforeSortStart,
       onStart: handleSortStart,
       onEnd: handleSortEnd,
       onSort: handleTaskReorder,
