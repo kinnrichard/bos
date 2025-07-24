@@ -750,6 +750,8 @@
     const tasksToDeleteCopy = [...tasksToDelete]; // Copy for async operations
     tasksToDelete = []; // Clear the original array
 
+    let deletePromises: Promise<any>[] = []; // Declare outside try block
+
     try {
       // Clear selection
       taskSelectionActions.clearSelection();
@@ -763,7 +765,7 @@
       deletingTaskIds = deletingTaskIds;
 
       // Delete tasks in parallel while animation is running using ActiveRecord-style API
-      const deletePromises = tasksToDeleteCopy.map(async taskId => {
+      deletePromises = tasksToDeleteCopy.map(async taskId => {
         // Find the task data and create an ActiveRecord-style instance
         const taskData = tasks.find(t => t.id === taskId);
         if (!taskData) {
@@ -792,7 +794,7 @@
       setTimeout(() => dragFeedback = '', 3000);
 
     } catch (error: any) {
-      debugWorkflow.error('Task discard failed', { error, taskCount: deletePromises.length });
+      debugWorkflow.error('Task discard failed', { error, taskCount: tasksToDeleteCopy.length });
       
       // Clear animation state on error
       tasksToDeleteCopy.forEach(taskId => {

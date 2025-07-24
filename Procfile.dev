@@ -1,4 +1,3 @@
 web: bin/rails server -p 3000 -b 0.0.0.0
-# css: bin/rails dartsass:watch # Not needed for API mode - frontend handles CSS
 zero: npx zero-cache-dev
 frontend: cd frontend && npm run dev

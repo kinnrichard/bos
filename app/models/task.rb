@@ -25,14 +25,6 @@ class Task < ApplicationRecord
     next_repositioned_task&.title
   end
 
-  def inspect
-    "<Task.find('#{id}')
-                    title: #{title}
-                 position: #{position}
-      repositioned_to_top: #{repositioned_to_top}
-                  diagram: #{repositioned_after_title} . . . THIS:<#{title}> . . . #{next_repositioned_task_title}
->"
-  end
 
   enum :status, {
     new_task: "new_task",
@@ -46,8 +38,6 @@ class Task < ApplicationRecord
   validates :status, presence: true
   validate :prevent_self_reference
   validate :prevent_circular_reference
-
-  self.attributes_for_inspect = [ :position, :title, :id, :repositioned_to_top ]
 
   # Position management handled by custom calculate_position_from_repositioned_after method
   # (positioning gem removed to avoid conflicts with custom system)

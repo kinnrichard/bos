@@ -1,11 +1,14 @@
 /**
  * TaskData - TypeScript interface for tasks table
  * 
- * Generated from Rails schema: 2025-07-24 00:23:04 UTC
+ * Generated from Rails schema: 2025-07-24 06:47:57 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - assignedTo: belongs_to User
  * - parent: belongs_to Task
+ * - repositionedAfter: belongs_to Task
+ * - client: has_one Client
+ * - nextRepositionedTask: has_one Task
  * - notes: has_many Note
  * - activityLogs: has_many ActivityLog
  * - subtasks: has_many Task
@@ -16,6 +19,7 @@
 import type { BaseRecord } from '../base/types';
 import type { JobData } from './job-data';
 import type { UserData } from './user-data';
+import type { ClientData } from './client-data';
 import type { NoteData } from './note-data';
 import type { ActivityLogData } from './activity-log-data';
 
@@ -39,11 +43,16 @@ export interface TaskData extends BaseRecord {
   discarded_at?: string | number;
   status: 'new_task' | 'in_progress' | 'paused' | 'successfully_completed' | 'cancelled';
   repositioned_after_id?: string;
+  position_finalized: boolean;
+  repositioned_to_top: boolean;
 
   // Epic-011: Relationship properties (optional - loaded via includes())
   job?: JobData; // belongs_to
   assignedTo?: UserData; // belongs_to
   parent?: TaskData; // belongs_to
+  repositionedAfter?: TaskData; // belongs_to
+  client?: ClientData; // has_one
+  nextRepositionedTask?: TaskData; // has_one
   notes?: NoteData[]; // has_many
   activityLogs?: ActivityLogData[]; // has_many
   subtasks?: TaskData[]; // has_many
@@ -53,10 +62,10 @@ export interface TaskData extends BaseRecord {
  * Create Task data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateTaskData = Omit<TaskData, 'id' | 'created_at' | 'updated_at' | 'job' | 'assignedTo' | 'parent' | 'notes' | 'activityLogs' | 'subtasks'>;
+export type CreateTaskData = Omit<TaskData, 'id' | 'created_at' | 'updated_at' | 'job' | 'assignedTo' | 'parent' | 'repositionedAfter' | 'client' | 'nextRepositionedTask' | 'notes' | 'activityLogs' | 'subtasks'>;
 
 /**
  * Update Task data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateTaskData = Partial<Omit<TaskData, 'id' | 'created_at' | 'updated_at' | 'job' | 'assignedTo' | 'parent' | 'notes' | 'activityLogs' | 'subtasks'>>;
+export type UpdateTaskData = Partial<Omit<TaskData, 'id' | 'created_at' | 'updated_at' | 'job' | 'assignedTo' | 'parent' | 'repositionedAfter' | 'client' | 'nextRepositionedTask' | 'notes' | 'activityLogs' | 'subtasks'>>;
