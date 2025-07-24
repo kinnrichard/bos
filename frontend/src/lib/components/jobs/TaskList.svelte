@@ -533,8 +533,7 @@
         parentId = afterTask.parent_id || undefined;
         
         // Get tasks in the same scope (sibling tasks with same parent)
-        let scopeTasks = cleanedKeptTasks.filter(t => (t.parent_id || null) === (parentId || null));
-        scopeTasks = sortTasks(scopeTasks);
+        const scopeTasks = cleanedKeptTasks.filter(t => (t.parent_id || null) === (parentId || null));
         
         // Find position after the target task
         const afterIndex = scopeTasks.findIndex(t => t.id === insertNewTaskAfter);
@@ -553,16 +552,14 @@
         console.error('[TaskList] After task not found:', insertNewTaskAfter);
         // Calculate position as if adding at bottom
         const rootTasks = cleanedKeptTasks.filter(t => !t.parent_id);
-        const sortedRootTasks = sortTasks(rootTasks);
-        lastRootTask = sortedRootTasks.length > 0 ? sortedRootTasks[sortedRootTasks.length - 1] : null;
+        lastRootTask = rootTasks.length > 0 ? rootTasks[rootTasks.length - 1] : null;
         position = lastRootTask ? calculatePosition(lastRootTask.position ?? 0, null) : calculatePosition(null, null);
       }
     } else {
       // Bottom task creation - add at the end of root level tasks
       // Get the last root task from the existing tasks array
       const rootTasks = cleanedKeptTasks.filter(t => !t.parent_id);
-      const sortedRootTasks = sortTasks(rootTasks);
-      lastRootTask = sortedRootTasks.length > 0 ? sortedRootTasks[sortedRootTasks.length - 1] : null;
+      lastRootTask = rootTasks.length > 0 ? rootTasks[rootTasks.length - 1] : null;
       
       if (lastRootTask) {
         position = calculatePosition(lastRootTask.position ?? 0, null);
@@ -981,10 +978,9 @@
 
     // Recursive function to traverse hierarchy and assign visual indices
     function traverseAndIndex(parentId: string | null, depth: number = 0) {
-      // Get tasks for this parent, sorted by position
-      let childTasks = cleanedKeptTasks
+      // Get tasks for this parent (already sorted by database)
+      const childTasks = cleanedKeptTasks
         .filter(t => (t.parent_id || null) === parentId);
-      childTasks = sortTasks(childTasks);
 
       // Assign visual index to each task and recurse into children
       childTasks.forEach(task => {
@@ -1110,14 +1106,14 @@
       hierarchyManager.expandTask(newParentId);
     }
     
+    // Declare relativeUpdates outside try block so it's accessible in catch
+    const relativeUpdates: RelativePositionUpdate[] = [];
+    
     try {
       // Get the task IDs that are being moved (again, for the rest of the function)
       const taskIdsToMove = isMultiSelectDrag 
         ? Array.from(taskSelection.selectedTaskIds)
         : [draggedTaskId];
-      
-      // Calculate relative positioning for each task
-      const relativeUpdates: RelativePositionUpdate[] = [];
       
       if (isMultiSelectDrag && taskIdsToMove.length > 1) {
         // For multi-task operations: use sequential positioning to avoid circular references
@@ -1142,11 +1138,10 @@
                 t.parent_id === newParentId && 
                 !sortedTaskIds.includes(t.id)
               );
-              const sortedExistingChildren = sortTasks(existingChildren);
               
-              if (sortedExistingChildren.length > 0) {
+              if (existingChildren.length > 0) {
                 // Position after the last existing child
-                const lastChild = sortedExistingChildren[sortedExistingChildren.length - 1];
+                const lastChild = existingChildren[existingChildren.length - 1];
                 relativeUpdates.push({
                   id: taskId,
                   parent_id: newParentId,

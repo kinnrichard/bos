@@ -5,7 +5,6 @@
 
 import type { Task, PositionUpdate, RelativePositionUpdate } from './position-calculator.js';
 import { debugDatabase, debugValidation, debugPerformance } from '$lib/utils/debug';
-import { sortTasks } from '$lib/shared/utils/task-sorting';
 import { calculatePosition } from '$lib/shared/utils/positioning-v2';
 import { getDatabaseTimestamp } from '$lib/shared/utils/utc-timestamp';
 
@@ -67,7 +66,6 @@ export class ClientActsAsList {
       const originalScope = originalParent;
       const originalScopeTasks = Array.from(taskMap.values())
         .filter(t => (t.parent_id || null) === originalScope && t.id !== update.id);
-      const sortedOriginalTasks = sortTasks(originalScopeTasks);
       
       // Gap elimination: shift tasks after the original position down
       originalScopeTasks.forEach(task => {
@@ -94,7 +92,6 @@ export class ClientActsAsList {
       const targetScope = targetParent;
       const targetScopeTasks = Array.from(taskMap.values())
         .filter(t => (t.parent_id || null) === targetScope && t.id !== update.id);
-      const sortedTargetTasks = sortTasks(targetScopeTasks);
       
       if (isCrossParentMove) {
         // Cross-parent move: positioning gem uses minimal shifting
@@ -368,7 +365,6 @@ export class ClientActsAsList {
       // Get tasks in the target scope, INCLUDING the moving task for positioning calculations
       // This is critical - we need the full scope to understand current positions
       const allScopeTasks = workingTasks.filter(t => (t.parent_id || null) === (targetParent || null));
-      const sortedAllScopeTasks = sortTasks(allScopeTasks);
       
       // Get tasks excluding the moving task (for target identification)
       const scopeTasksExcludingMoved = allScopeTasks.filter(t => t.id !== update.id);
@@ -380,9 +376,9 @@ export class ClientActsAsList {
         
         if (beforeTask) {
           // Find the task that comes before the beforeTask
-          const beforeTaskIndex = sortedAllScopeTasks.findIndex(t => t.id === beforeTask.id);
+          const beforeTaskIndex = allScopeTasks.findIndex(t => t.id === beforeTask.id);
           const prevTask = beforeTaskIndex > 0 
-            ? sortedAllScopeTasks[beforeTaskIndex - 1] 
+            ? allScopeTasks[beforeTaskIndex - 1] 
             : null;
           
           // Set repositioned_after_id
@@ -422,9 +418,9 @@ export class ClientActsAsList {
           
           // Use the new randomized positioning algorithm
           // Find the task that comes after the afterTask to calculate position between them
-          const afterTaskIndex = sortedAllScopeTasks.findIndex(t => t.id === afterTask.id);
-          const nextTask = afterTaskIndex < sortedAllScopeTasks.length - 1 
-            ? sortedAllScopeTasks[afterTaskIndex + 1] 
+          const afterTaskIndex = allScopeTasks.findIndex(t => t.id === afterTask.id);
+          const nextTask = afterTaskIndex < allScopeTasks.length - 1 
+            ? allScopeTasks[afterTaskIndex + 1] 
             : null;
           
           // Calculate position using the new algorithm (with randomization in production)
@@ -447,8 +443,7 @@ export class ClientActsAsList {
         });
       } else if (update.position === 'first') {
         // Use the new positioning algorithm for top-of-list insertion
-        const sortedScopeTasks = sortTasks(scopeTasksExcludingMoved);
-        const nextTask = sortedScopeTasks.length > 0 ? sortedScopeTasks[0] : null;
+        const nextTask = scopeTasksExcludingMoved.length > 0 ? scopeTasksExcludingMoved[0] : null;
         
         // Detect if we're in test environment to use deterministic positioning
         const isTestEnvironment = typeof window === 'undefined' || process.env.NODE_ENV === 'test';
@@ -463,8 +458,7 @@ export class ClientActsAsList {
         });
       } else if (update.position === 'last') {
         // Use the new positioning algorithm for end-of-list insertion
-        const sortedScopeTasks = sortTasks(scopeTasksExcludingMoved);
-        const lastTask = sortedScopeTasks.length > 0 ? sortedScopeTasks[sortedScopeTasks.length - 1] : null;
+        const lastTask = scopeTasksExcludingMoved.length > 0 ? scopeTasksExcludingMoved[scopeTasksExcludingMoved.length - 1] : null;
         
         // Detect if we're in test environment to use deterministic positioning
         const isTestEnvironment = typeof window === 'undefined' || process.env.NODE_ENV === 'test';

@@ -60,10 +60,6 @@ class Task < ApplicationRecord
   # Set defaults
   after_initialize :set_defaults, if: :new_record?
 
-  # TODO: remove
-  # Automatically reorder tasks when status changes
-  # after_update :reorder_by_status, if: :saved_change_to_status?
-
   # Calculate position from repositioned_after_id if not finalized
   # Use after_initialize to set position before positioning gem sees it
   after_initialize :prepare_position_calculation, if: :new_record?
@@ -79,6 +75,13 @@ class Task < ApplicationRecord
   # Check if automatic rebalancing is needed after position changes
   after_save :check_for_rebalancing, if: :saved_change_to_position?
 
+  def inspect
+    "<Task.find '#{id}'
+          title: #{title}
+       position: #{position}
+      parent_id: #{parent_id}
+>"
+  end
 
   # Temporarily disable optimistic locking for positioning compatibility testing
   self.locking_column = nil
@@ -203,32 +206,6 @@ class Task < ApplicationRecord
       visited.add(current.id)
       current = current.parent
     end
-  end
-
-  def reorder_by_status
-    return
-    return unless resort_enabled?
-
-    # Get all sibling tasks (same parent_id) ordered by status - only kept tasks
-    siblings = Task.kept.where(job_id: job_id, parent_id: parent_id)
-                   .ordered_by_status
-
-    # Use proper spacing (10000 intervals) instead of sequential 1,2,3...
-    Task.transaction do
-      siblings.each_with_index do |task, index|
-        new_position = (index + 1) * 10000
-        # Only update if position actually changed - reduces unnecessary DB calls
-        if task.position != new_position
-          task.update_column(:position, new_position)
-        end
-      end
-    end
-  end
-
-  def resort_enabled?
-    # Check if the current user has resort enabled
-    # Fall back to true if no current user (default behavior)
-    User.current_user&.resort_tasks_on_status_change != false
   end
 
   def update_reordered_at

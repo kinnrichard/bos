@@ -20,7 +20,7 @@
   // Filter tasks to exclude deleted ones (discarded_at IS NULL)
   const jobQuery = $derived(jobId ? ReactiveJob
     .includes('client')
-    .includes('tasks')
+    .includes('tasks', { orderBy: ['position', 'created_at'] })
     .includes('jobAssignments')
     .find(jobId) : null);
   // TODO: Add notes query when NotesReactive model is ready

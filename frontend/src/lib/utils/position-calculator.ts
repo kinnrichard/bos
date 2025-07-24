@@ -4,7 +4,6 @@
  */
 
 import { debugPerformance } from '$lib/utils/debug';
-import { sortTasks } from '$lib/shared/utils/task-sorting';
 
 export interface Task {
   id: string;
@@ -119,8 +118,6 @@ export function calculateRelativePositionFromTarget(
       !draggedTaskIds.includes(t.id)
     );
     
-    const sortedChildren = sortTasks(existingChildren);
-    
     // Position after the last child, or at first position if no children exist
     const lastChild = existingChildren[existingChildren.length - 1];
     
@@ -146,7 +143,7 @@ export function calculateRelativePositionFromTarget(
       (t.parent_id || null) === parentId
     );
     
-    const sortedSiblings = sortTasks(allSiblings);
+    // allSiblings already sorted by database
     
     // Get siblings excluding dragged tasks (for finding next/previous tasks)
     const destinationSiblings = tasks.filter(t => 
@@ -154,7 +151,7 @@ export function calculateRelativePositionFromTarget(
       !draggedTaskIds.includes(t.id)
     );
     
-    const sortedDestinationSiblings = sortTasks(destinationSiblings);
+    // destinationSiblings already sorted by database
     
     // Get the dragged task to check if this is a cross-parent move
     const draggedTask = tasks.find(t => t.id === draggedTaskIds[0]);
