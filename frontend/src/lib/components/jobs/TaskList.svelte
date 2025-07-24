@@ -27,11 +27,27 @@
   import { taskCreationManager } from '$lib/stores/taskCreation.svelte';
 
   // ✨ SVELTE 5 RUNES
-  let { tasks = [], jobId = 'test', batchTaskDetails = null }: {
+  let { tasks = [], keptTasks = [], jobId = 'test', batchTaskDetails = null }: {
     tasks?: Array<Task>;
+    keptTasks?: Array<Task>;
     jobId?: string;
     batchTaskDetails?: any;
   } = $props();
+  
+  // Clean up any self-references in the data (for offline resilience)
+  function cleanupSelfReferences<T extends Task>(taskList: T[]): T[] {
+    return taskList.map(task => {
+      if (task.parent_id === task.id) {
+        debugWorkflow.warn(`[TaskList] Cleaning self-reference for task ${task.id} "${task.title}"`);
+        return { ...task, parent_id: null };
+      }
+      return task;
+    });
+  }
+  
+  // Apply cleanup to both task arrays using $derived
+  const cleanedTasks = $derived(cleanupSelfReferences(tasks));
+  const cleanedKeptTasks = $derived(cleanupSelfReferences(cleanedKeptTasks));
   
   // Task hierarchy management
   const hierarchyManager = new TaskHierarchyManager();
@@ -124,7 +140,7 @@
     // Apply position updates using validated Rails-compatible logic
     static applyPositionUpdates(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): any[] {
       // Convert to Rails task format
-      const railsTasks: Task[] = tasks.map(t => ({
+      const railsTasks: Task[] = cleanedTasks.map(t => ({
         id: t.id,
         position: t.position || 0,
         parent_id: t.parent_id || null
@@ -142,7 +158,7 @@
       
       // Convert back to Svelte task format
       return result.updatedTasks.map(railsTask => {
-        const originalTask = tasks.find(t => t.id === railsTask.id);
+        const originalTask = cleanedTasks.find(t => t.id === railsTask.id);
         return {
           ...originalTask,
           position: railsTask.position,
@@ -180,7 +196,7 @@
   // Computed deletion title for the modal
   const deletionTitle = $derived.by(() => {
     if (tasksToDelete.length === 1) {
-      const taskToDelete = tasks.find(t => t.id === tasksToDelete[0]);
+      const taskToDelete = cleanedTasks.find(t => t.id === tasksToDelete[0]);
       const taskName = taskToDelete ? `"${taskToDelete.title}"` : '"this task"';
       return `Are you sure you want to delete the task ${taskName}?`;
     } else {
@@ -219,20 +235,37 @@
 
   // Use pure reactive filtering with TaskHierarchyManager
   const hierarchicalTasks = $derived(hierarchyManager.organizeTasksHierarchicallyWithFilter(
-    tasks as BaseTask[], 
+    cleanedTasks as BaseTask[], 
     shouldShowTask
+  ));
+  
+  // Create a separate hierarchy from cleanedKeptTasks for position calculations
+  // This includes ALL non-discarded tasks, regardless of filters
+  const cleanedKeptTasksHierarchy = $derived(hierarchyManager.organizeTasksSimple(
+    cleanedKeptTasks as BaseTask[]
   ));
   
 
   
+  // Track if we've done initial auto-expansion
+  let hasAutoExpanded = false;
+  
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
   $effect(() => {
-    hierarchyManager.autoExpandAll(hierarchicalTasks);
+    if (hierarchicalTasks.length > 0 && !hasAutoExpanded) {
+      hierarchyManager.autoExpandAll(hierarchicalTasks);
+      hasAutoExpanded = true;
+    }
   });
   
   // Make rendering reactive to expansion state changes
   const flattenedTasks = $derived.by(() => {
     return hierarchyManager.flattenTasks(hierarchicalTasks);
+  });
+  
+  // Flattened kept tasks for position calculations (includes all non-discarded tasks)
+  const flattenedKeptTasks = $derived.by(() => {
+    return hierarchyManager.flattenTasks(cleanedKeptTasksHierarchy);
   });
   
   // Check if task list is empty for positioning New Task button
@@ -382,7 +415,7 @@
     const titleElement = focusActions.getCurrentEditingElement();
     if (titleElement) {
       const currentTitle = titleElement.textContent || '';
-      const originalTitle = tasks.find(t => t.id === currentEditingTaskId)?.title || '';
+      const originalTitle = cleanedTasks.find(t => t.id === currentEditingTaskId)?.title || '';
       
       // Only save if content has changed and is not empty
       if (currentTitle.trim() !== '' && currentTitle.trim() !== originalTitle) {
@@ -495,12 +528,12 @@
     
     // Calculate position based on creation type
     if (type === 'inline' && insertNewTaskAfter) {
-      const afterTask = tasks.find(t => t.id === insertNewTaskAfter);
+      const afterTask = cleanedKeptTasks.find(t => t.id === insertNewTaskAfter);
       if (afterTask) {
         parentId = afterTask.parent_id || undefined;
         
         // Get tasks in the same scope (sibling tasks with same parent)
-        let scopeTasks = tasks.filter(t => (t.parent_id || null) === (parentId || null));
+        let scopeTasks = cleanedKeptTasks.filter(t => (t.parent_id || null) === (parentId || null));
         scopeTasks = sortTasks(scopeTasks);
         
         // Find position after the target task
@@ -519,7 +552,7 @@
         // After task not found - fall back to bottom creation
         console.error('[TaskList] After task not found:', insertNewTaskAfter);
         // Calculate position as if adding at bottom
-        const rootTasks = tasks.filter(t => !t.parent_id);
+        const rootTasks = cleanedKeptTasks.filter(t => !t.parent_id);
         const sortedRootTasks = sortTasks(rootTasks);
         lastRootTask = sortedRootTasks.length > 0 ? sortedRootTasks[sortedRootTasks.length - 1] : null;
         position = lastRootTask ? calculatePosition(lastRootTask.position ?? 0, null) : calculatePosition(null, null);
@@ -527,7 +560,7 @@
     } else {
       // Bottom task creation - add at the end of root level tasks
       // Get the last root task from the existing tasks array
-      const rootTasks = tasks.filter(t => !t.parent_id);
+      const rootTasks = cleanedKeptTasks.filter(t => !t.parent_id);
       const sortedRootTasks = sortTasks(rootTasks);
       lastRootTask = sortedRootTasks.length > 0 ? sortedRootTasks[sortedRootTasks.length - 1] : null;
       
@@ -585,25 +618,25 @@
         const visualIndex = flatTaskIds.indexOf(insertNewTaskAfter);
         if (visualIndex !== -1 && visualIndex < flatTaskIds.length - 1) {
           const nextTaskId = flatTaskIds[visualIndex + 1];
-          const nextTaskIndex = tasks.findIndex(t => t.id === nextTaskId);
+          const nextTaskIndex = cleanedTasks.findIndex(t => t.id === nextTaskId);
           
           if (nextTaskIndex !== -1) {
             tasks = [
-              ...tasks.slice(0, nextTaskIndex),
+              ...cleanedTasks.slice(0, nextTaskIndex),
               newTask,
-              ...tasks.slice(nextTaskIndex)
+              ...cleanedTasks.slice(nextTaskIndex)
             ];
           } else {
-            tasks = [...tasks, newTask];
+            tasks = [...cleanedTasks, newTask];
           }
         } else {
-          tasks = [...tasks, newTask];
+          tasks = [...cleanedTasks, newTask];
         }
         
         // Update insertNewTaskAfter to point to the newly created task
         insertNewTaskAfter = newTask.id;
       } else {
-        tasks = [...tasks, newTask];
+        tasks = [...cleanedTasks, newTask];
       }
       
       // Select the newly created task only if requested (Return key, not blur)
@@ -644,10 +677,10 @@
     const updatedTask = event.detail.task;
     
     // Update the task in our tasks array
-    const taskIndex = tasks.findIndex(t => t.id === updatedTask.id);
+    const taskIndex = cleanedTasks.findIndex(t => t.id === updatedTask.id);
     if (taskIndex !== -1) {
-      tasks[taskIndex] = { ...tasks[taskIndex], ...updatedTask };
-      tasks = [...tasks]; // Trigger reactivity
+      tasks[taskIndex] = { ...cleanedTasks[taskIndex], ...updatedTask };
+      tasks = [...cleanedTasks]; // Trigger reactivity
     }
   }
 
@@ -696,7 +729,7 @@
 
     try {
       // Find the task data and create an ActiveRecord-style instance
-      const taskData = tasks.find(t => t.id === taskId);
+      const taskData = cleanedTasks.find(t => t.id === taskId);
       if (!taskData) {
         throw new Error('Task not found');
       }
@@ -767,7 +800,7 @@
       // Delete tasks in parallel while animation is running using ActiveRecord-style API
       deletePromises = tasksToDeleteCopy.map(async taskId => {
         // Find the task data and create an ActiveRecord-style instance
-        const taskData = tasks.find(t => t.id === taskId);
+        const taskData = cleanedTasks.find(t => t.id === taskId);
         if (!taskData) {
           throw new Error(`Task with ID ${taskId} not found`);
         }
@@ -859,17 +892,38 @@
       return true;
     }
 
-    // Let native-drag-action handle visual dragFeedback, but validate nesting
-    if (dropZone.mode === 'nest' && dropZone.targetTaskId) {
-      const draggedElement = event.dragged;
-      const draggedTaskId = draggedElement?.getAttribute('data-task-id');
+    // Get all tasks being dragged (single or multi-select)
+    const draggedElement = event.dragged;
+    const draggedTaskId = draggedElement?.getAttribute('data-task-id');
+    
+    if (draggedTaskId) {
+      // Check if this is a multi-select drag
+      const draggedTaskIds = taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1
+        ? Array.from(taskSelection.selectedTaskIds)
+        : [draggedTaskId];
       
-      if (draggedTaskId) {
-        const validation = isValidNesting(draggedTaskId, dropZone.targetTaskId);
+      // For nesting operations, validate all dragged tasks
+      if (dropZone.mode === 'nest' && dropZone.targetTaskId) {
+        // Prevent self-nesting
+        if (draggedTaskIds.includes(dropZone.targetTaskId)) {
+          return false; // This prevents the drop zone from being highlighted
+        }
         
-        // Return false to prevent invalid nesting
-        if (!validation.valid) {
-          return false;
+        // Prevent circular references (can't drop parent onto descendant)
+        const wouldCreateCircular = draggedTaskIds.some(taskId => 
+          isDescendantOf(dropZone.targetTaskId, taskId)
+        );
+        
+        if (wouldCreateCircular) {
+          return false; // This prevents the drop zone from being highlighted
+        }
+        
+        // For single-task operations, use existing validation
+        if (draggedTaskIds.length === 1) {
+          const validation = isValidNesting(draggedTaskId, dropZone.targetTaskId);
+          if (!validation.valid) {
+            return false;
+          }
         }
       }
     }
@@ -884,8 +938,8 @@
       return {valid: false, reason: 'Task cannot be nested under itself'};
     }
 
-    const draggedTask = tasks.find(t => t.id === draggedTaskId);
-    const targetTask = tasks.find(t => t.id === targetTaskId);
+    const draggedTask = cleanedKeptTasks.find(t => t.id === draggedTaskId);
+    const targetTask = cleanedKeptTasks.find(t => t.id === targetTaskId);
     
     if (!draggedTask || !targetTask) {
       return {valid: false, reason: 'Task not found'};
@@ -900,7 +954,7 @@
   }
 
   function isDescendantOf(potentialDescendantId: string, ancestorId: string): boolean {
-    const potentialDescendant = tasks.find(t => t.id === potentialDescendantId);
+    const potentialDescendant = cleanedKeptTasks.find(t => t.id === potentialDescendantId);
     if (!potentialDescendant || !potentialDescendant.parent_id) {
       return false;
     }
@@ -913,7 +967,7 @@
   }
 
   function getTaskDepth(taskId: string): number {
-    const task = tasks.find(t => t.id === taskId);
+    const task = cleanedKeptTasks.find(t => t.id === taskId);
     if (!task || !task.parent_id) {
       return 0;
     }
@@ -928,7 +982,7 @@
     // Recursive function to traverse hierarchy and assign visual indices
     function traverseAndIndex(parentId: string | null, depth: number = 0) {
       // Get tasks for this parent, sorted by position
-      let childTasks = tasks
+      let childTasks = cleanedKeptTasks
         .filter(t => (t.parent_id || null) === parentId);
       childTasks = sortTasks(childTasks);
 
@@ -958,14 +1012,14 @@
       return;
     }
 
-    const draggedTask = tasks.find(t => t.id === draggedTaskId);
-    const targetTask = tasks.find(t => t.id === targetTaskId);
+    const draggedTask = cleanedKeptTasks.find(t => t.id === draggedTaskId);
+    const targetTask = cleanedKeptTasks.find(t => t.id === targetTaskId);
     
     if (!draggedTask || !targetTask) {
       debugWorkflow.error('Could not find dragged or target task', { 
         draggedTaskId, 
         targetTaskId, 
-        availableTaskIds: tasks.map(t => t.id) 
+        availableTaskIds: cleanedKeptTasks.map(t => t.id) 
       });
       return;
     }
@@ -978,8 +1032,8 @@
       const relativePosition = calculateRelativePosition(null, targetTaskId, [draggedTaskId]);
       
       // Convert relative position to position updates and execute via ReactiveRecord
-      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, [relativePosition]);
-      await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
+      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(cleanedTasks, [relativePosition]);
+      await RailsClientActsAsList.applyAndExecutePositionUpdates(cleanedTasks, positionUpdates);
       
     } catch (error: any) {
       debugWorkflow.error('Task nesting failed', { error, draggedTaskId, targetTaskId });
@@ -1023,10 +1077,34 @@
       newParentId = event.dropZone.targetTaskId;
     } else if (event.dropZone?.mode === 'reorder' && event.dropZone.targetTaskId) {
       // For reordering: use target task's parent
-      const targetTask = tasks.find(t => t.id === event.dropZone!.targetTaskId);
+      const targetTask = cleanedKeptTasks.find(t => t.id === event.dropZone!.targetTaskId);
       newParentId = targetTask?.parent_id;
     } else {
       newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
+    }
+    
+    // Safety validation before proceeding
+    if (newParentId) {
+      // Get the task IDs that are being moved
+      const taskIdsToMove = isMultiSelectDrag 
+        ? Array.from(taskSelection.selectedTaskIds)
+        : [draggedTaskId];
+      
+      // Safety check: ensure no self-references
+      if (taskIdsToMove.includes(newParentId)) {
+        clearAllVisualFeedback();
+        return; // Silently abort - this should never happen due to handleMoveDetection
+      }
+      
+      // Safety check: prevent circular references
+      const wouldCreateCircular = taskIdsToMove.some(taskId => 
+        isDescendantOf(newParentId, taskId)
+      );
+      
+      if (wouldCreateCircular) {
+        clearAllVisualFeedback();
+        return; // Silently abort - this should never happen due to handleMoveDetection
+      }
     }
     
     // Auto-expand target task for nesting operations
@@ -1035,7 +1113,7 @@
     }
     
     try {
-      // Get the task IDs that are being moved
+      // Get the task IDs that are being moved (again, for the rest of the function)
       const taskIdsToMove = isMultiSelectDrag 
         ? Array.from(taskSelection.selectedTaskIds)
         : [draggedTaskId];
@@ -1046,7 +1124,7 @@
       if (isMultiSelectDrag && taskIdsToMove.length > 1) {
         // For multi-task operations: use sequential positioning to avoid circular references
         // Sort tasks by their visual order in the hierarchy (not just position within parent)
-        const visualOrderMap = createVisualOrderMap(tasks);
+        const visualOrderMap = createVisualOrderMap(cleanedKeptTasks);
         const sortedTaskIds = Array.from(taskSelection.selectedTaskIds);
         sortedTaskIds.sort((a, b) => {
           const visualOrderA = visualOrderMap.get(a) || 0;
@@ -1055,22 +1133,22 @@
         });
                 
         sortedTaskIds.forEach((taskId, index) => {
-          const currentTask = tasks.find(t => t.id === taskId);
+          const currentTask = cleanedKeptTasks.find(t => t.id === taskId);
           if (!currentTask) return;
           
           if (index === 0) {
             // First task: position appropriately without considering other moving tasks
             if (event.dropZone?.mode === 'nest') {
               // For nesting: find existing children (excluding tasks being moved)
-              const existingChildren = tasks.filter(t => 
+              const existingChildren = cleanedKeptTasks.filter(t => 
                 t.parent_id === newParentId && 
                 !sortedTaskIds.includes(t.id)
               );
-              const scopedTasks = sortTasks(tempTasks);
+              const sortedExistingChildren = sortTasks(existingChildren);
               
-              if (existingChildren.length > 0) {
+              if (sortedExistingChildren.length > 0) {
                 // Position after the last existing child
-                const lastChild = existingChildren[existingChildren.length - 1];
+                const lastChild = sortedExistingChildren[sortedExistingChildren.length - 1];
                 relativeUpdates.push({
                   id: taskId,
                   parent_id: newParentId,
@@ -1106,10 +1184,10 @@
       }
       
       // Convert relative updates to position updates
-      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
+      const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(cleanedTasks, relativeUpdates);
       
       // Execute position updates using ReactiveRecord - it handles UI updates automatically
-      await RailsClientActsAsList.applyAndExecutePositionUpdates(tasks, positionUpdates);
+      await RailsClientActsAsList.applyAndExecutePositionUpdates(cleanedTasks, positionUpdates);
             
     } catch (error: any) {
       debugWorkflow.error('Task reorder failed', { error, relativeUpdates });
@@ -1127,9 +1205,10 @@
 
   // Calculate parent task based on drop position in flattened list
   function calculateParentFromPosition(dropIndex: number, dropMode: 'reorder' | 'nest'): string | undefined {
+    // Use flattenedKeptTasks for position calculations (all non-discarded tasks)
     // If explicitly nesting, the target becomes the parent
     if (dropMode === 'nest') {
-      const targetItem = flattenedTasks[dropIndex];
+      const targetItem = flattenedKeptTasks[dropIndex];
       return targetItem?.task.id;
     }
     
@@ -1140,13 +1219,13 @@
     }
     
     // Look at the task immediately before the drop position
-    const previousItem = flattenedTasks[dropIndex - 1];
+    const previousItem = flattenedKeptTasks[dropIndex - 1];
     if (!previousItem) {
       return undefined; // Root level
     }
     
     // Also look at the task at the drop position (if it exists)
-    const targetItem = flattenedTasks[dropIndex];
+    const targetItem = flattenedKeptTasks[dropIndex];
     
     // Enhanced root level detection: if previous item is at depth 0, we're likely at root level too
     if (previousItem.depth === 0) {
@@ -1179,12 +1258,12 @@
   function resolveParentChildBoundary(dropZone: DropZoneInfo | null): DropZoneInfo | null {
     if (!dropZone?.targetTaskId) return dropZone;
     
-    const targetTask = tasks.find(t => t.id === dropZone.targetTaskId);
+    const targetTask = cleanedKeptTasks.find(t => t.id === dropZone.targetTaskId);
     if (!targetTask) return dropZone;
     
     // If dropping below a task that has children, and the first child is immediately after it
     if (dropZone.position === 'below') {
-      const hasChildren = tasks.some(t => t.parent_id === targetTask.id);
+      const hasChildren = cleanedKeptTasks.some(t => t.parent_id === targetTask.id);
       if (hasChildren) {
         // For "below parent with children", prefer staying at parent level
         // rather than becoming first child (user can drag to middle of task to nest)
@@ -1200,7 +1279,7 @@
     const resolvedDropZone = resolveParentChildBoundary(dropZone);
     
     // Convert Svelte tasks to Rails task format
-    const railsTasks: Task[] = tasks.map(t => ({
+    const railsTasks: Task[] = cleanedKeptTasks.map(t => ({
       id: t.id,
       position: t.position || 0,
       parent_id: t.parent_id,
@@ -1221,7 +1300,7 @@
     
     // Convert to integer position for optimistic updates
     const positionUpdates = RailsClientActsAsList.convertRelativeToPositionUpdates(
-      tasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id, title: t.title })),
+      cleanedKeptTasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id, title: t.title })),
       [relativePosition]
     );
     
@@ -1257,7 +1336,7 @@
       />
     {/if}
     
-    {#if tasks.length === 0}
+    {#if cleanedTasks.length === 0}
       <div class="empty-state">
         <div class="empty-icon">📋</div>
         <h4>{taskFilter.showDeleted ? 'No deleted tasks' : 'No tasks yet'}</h4>

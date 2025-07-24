@@ -8,7 +8,15 @@
   import { debugComponent } from '$lib/utils/debug';
 
   // ✨ USE $props() FOR SVELTE 5 RUNES MODE
-  let { job, batchTaskDetails = null }: { job: PopulatedJob; batchTaskDetails?: any } = $props();
+  let { 
+    job, 
+    keptTasks = [], 
+    batchTaskDetails = null 
+  }: { 
+    job: PopulatedJob; 
+    keptTasks?: any[];
+    batchTaskDetails?: any 
+  } = $props();
 
   // ✨ USE $derived FOR COMPUTED VALUES (NOT REACTIVE STATEMENTS)
   const statusEmoji = $derived(getJobStatusEmoji(job?.status));
@@ -68,7 +76,12 @@
   
   <!-- Tasks Section -->
   <div class="tasks-section">
-    <TaskList tasks={job?.tasks || []} jobId={job?.id} {batchTaskDetails} />
+    <TaskList 
+      tasks={job?.tasks || []} 
+      keptTasks={keptTasks} 
+      jobId={job?.id} 
+      {batchTaskDetails} 
+    />
   </div>
   
 </div>

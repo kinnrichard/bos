@@ -272,6 +272,13 @@ export class TaskHierarchyManager {
       
       const taskWithSubtasks = taskMap.get(task.id)!;
       
+      // Defensive check: Skip self-referencing tasks
+      if (task.parent_id === task.id) {
+        console.error(`[TaskHierarchy] Task ${task.id} has self-reference, treating as root task`);
+        rootTasks.push(taskWithSubtasks);
+        return;
+      }
+      
       if (task.parent_id && tasksToInclude.has(task.parent_id)) {
         // Add to parent if parent is also included
         const parent = taskMap.get(task.parent_id)!;
@@ -318,6 +325,13 @@ export class TaskHierarchyManager {
       }
       
       const taskWithSubtasks = taskMap.get(task.id)!;
+      
+      // Defensive check: Skip self-referencing tasks
+      if (task.parent_id === task.id) {
+        console.error(`[TaskHierarchy] Task ${task.id} has self-reference, treating as root task`);
+        rootTasks.push(taskWithSubtasks);
+        return;
+      }
       
       if (task.parent_id && tasksToInclude.has(task.parent_id)) {
         // Add to parent if parent is also included
@@ -428,5 +442,52 @@ export class TaskHierarchyManager {
    */
   resetExpansion(): void {
     this.expansionManager.reset();
+  }
+
+  /**
+   * Simple method to organize tasks hierarchically without any filtering
+   * Used for position calculations where we need all tasks regardless of filters
+   * 
+   * @param taskList - Flat list of tasks
+   * @returns Hierarchical task structure with all tasks included
+   */
+  organizeTasksSimple(taskList: BaseTask[]): HierarchicalTask[] {
+    // Build task map
+    const taskMap = new Map<string, HierarchicalTask>();
+    
+    taskList.forEach((task) => {
+      taskMap.set(task.id, {
+        ...task,
+        subtasks: []
+      });
+    });
+
+    // Build hierarchy
+    const rootTasks: HierarchicalTask[] = [];
+    
+    taskList.forEach((task) => {
+      const hierarchicalTask = taskMap.get(task.id)!;
+      
+      // Defensive check: Skip self-referencing tasks
+      if (task.parent_id === task.id) {
+        console.error(`[TaskHierarchy] Task ${task.id} has self-reference, treating as root task`);
+        rootTasks.push(hierarchicalTask);
+        return;
+      }
+      
+      if (task.parent_id && taskMap.has(task.parent_id)) {
+        // Add as child to parent
+        const parent = taskMap.get(task.parent_id)!;
+        parent.subtasks.push(hierarchicalTask);
+      } else {
+        // No parent or parent not in list - treat as root
+        rootTasks.push(hierarchicalTask);
+      }
+    });
+
+    // Sort tasks at each level
+    this.sortTasksRecursively(rootTasks);
+    
+    return rootTasks;
   }
 }

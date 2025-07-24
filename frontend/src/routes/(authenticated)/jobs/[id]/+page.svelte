@@ -44,15 +44,19 @@
   const notes = $derived(job?.notes || []);
   const notesLoading = $derived(false); // Notes load with job for now
 
-  // ✨ Filter out discarded tasks
+  // ✨ DUAL QUERY PATTERN:
+  // keptTasks: All non-discarded tasks (for positioning calculations)
   const keptTasks = $derived(job?.tasks?.filter(t => !t.discarded_at) || []);
   
-  // ✨ TASK BATCH DETAILS: Extract from Zero job relationships (filtered tasks only)
-  const taskBatchDetails = $derived(keptTasks.length > 0 ? {
-    total: keptTasks.length,
-    completed: keptTasks.filter((task: any) => task.status === 'completed').length,
-    pending: keptTasks.filter((task: any) => task.status === 'pending').length,
-    in_progress: keptTasks.filter((task: any) => task.status === 'in_progress').length
+  // displayedTasks: Tasks matching current filters (for UI rendering)
+  const displayedTasks = $derived(job?.tasks?.filter(shouldShowTask) || []);
+  
+  // ✨ TASK BATCH DETAILS: Based on displayed tasks (what user sees)
+  const taskBatchDetails = $derived(displayedTasks.length > 0 ? {
+    total: displayedTasks.length,
+    completed: displayedTasks.filter((task: any) => task.status === 'completed').length,
+    pending: displayedTasks.filter((task: any) => task.status === 'pending').length,
+    in_progress: displayedTasks.filter((task: any) => task.status === 'in_progress').length
   } : undefined);
   
   // ✨ USE $effect FOR SIDE EFFECTS (NOT REACTIVE STATEMENTS)  
@@ -131,7 +135,13 @@
 
   <!-- Job Detail Content -->
   {:else if job}
-    <JobDetailView job={{...job, tasks: keptTasks}} batchTaskDetails={taskBatchDetails} {notes} notesLoading={notesLoading} />
+    <JobDetailView 
+      job={{...job, tasks: displayedTasks}} 
+      keptTasks={keptTasks}
+      batchTaskDetails={taskBatchDetails} 
+      {notes} 
+      notesLoading={notesLoading} 
+    />
 
   <!-- Not Found State - Zero.js pattern: Only show when complete with no job -->
   {:else if !job && resultType === 'complete'}

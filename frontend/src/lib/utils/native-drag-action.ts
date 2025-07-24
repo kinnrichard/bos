@@ -60,6 +60,12 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
     const draggedElement = (event.target as HTMLElement).closest('[data-task-id]') as HTMLElement;
     if (!draggedElement) return;
     
+    // Prevent dragging non-editable tasks (e.g., discarded tasks)
+    if (draggedElement.classList.contains('non-editable')) {
+      event.preventDefault();
+      return;
+    }
+    
     const taskId = draggedElement.getAttribute('data-task-id');
     if (!taskId) return;
     
@@ -206,7 +212,9 @@ export function nativeDrag(node: HTMLElement, options: DragActionOptions = {}) {
   function setupDraggableAttributes() {
     const draggableElements = node.querySelectorAll('[data-task-id]');
     draggableElements.forEach(el => {
-      el.setAttribute('draggable', 'true');
+      // Only make tasks draggable if they're not marked as non-editable
+      const isNonEditable = el.classList.contains('non-editable');
+      el.setAttribute('draggable', isNonEditable ? 'false' : 'true');
     });
   }
 
