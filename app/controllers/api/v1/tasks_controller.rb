@@ -1,6 +1,6 @@
 class Api::V1::TasksController < Api::V1::BaseController
   before_action :find_job
-  before_action :find_task, except: [ :index, :create, :reorder, :batch_reorder, :batch_reorder_relative, :batch_details ]
+  before_action :find_task, except: [ :index, :create, :reorder, :batch_reorder, :batch_reorder_relative, :batch_details, :rebalance ]
   before_action :set_current_user
 
   # Temporarily skip CSRF for testing
