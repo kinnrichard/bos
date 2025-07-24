@@ -1204,60 +1204,35 @@
   // Calculate parent task based on drop position in flattened list
   function calculateParentFromPosition(dropIndex: number, dropMode: 'reorder' | 'nest'): string | undefined {
     // Use flattenedKeptTasks for position calculations (all non-discarded tasks)
-    console.log('[calculateParentFromPosition] Called with:', {
-      dropIndex,
-      dropMode,
-      flattenedKeptTasksLength: flattenedKeptTasks.length,
-      flattenedKeptTasks: flattenedKeptTasks.map(item => ({
-        id: item.task.id,
-        title: item.task.title,
-        depth: item.depth,
-        parent_id: item.task.parent_id
-      }))
-    });
-    
     // If explicitly nesting, the target becomes the parent
     if (dropMode === 'nest') {
       const targetItem = flattenedKeptTasks[dropIndex];
-      console.log('[calculateParentFromPosition] Nest mode, returning parent:', targetItem?.task.id);
       return targetItem?.task.id;
     }
     
     // For reordering, determine parent based on the depth we're inserting at.
     // If dropping at the very beginning, it's root level
     if (dropIndex === 0) {
-      console.log('[calculateParentFromPosition] Drop at index 0, returning undefined (root)');
       return undefined;
     }
     
     // Look at the task immediately before the drop position
     const previousItem = flattenedKeptTasks[dropIndex - 1];
     if (!previousItem) {
-      console.log('[calculateParentFromPosition] No previous item, returning undefined (root)');
       return undefined; // Root level
     }
     
     // Also look at the task at the drop position (if it exists)
     const targetItem = flattenedKeptTasks[dropIndex];
     
-    console.log('[calculateParentFromPosition] Previous and target items:', {
-      previousItem: {
-        id: previousItem.task.id,
-        title: previousItem.task.title,
-        depth: previousItem.depth,
-        parent_id: previousItem.task.parent_id
-      },
-      targetItem: targetItem ? {
-        id: targetItem.task.id,
-        title: targetItem.task.title,
-        depth: targetItem.depth,
-        parent_id: targetItem.task.parent_id
-      } : null
-    });
+    // Special case: dropping between a parent and its first child
+    // If the target item is a child of the previous item, we should become a child too
+    if (targetItem && targetItem.task.parent_id === previousItem.task.id) {
+      return previousItem.task.id; // Become child of the parent
+    }
     
-    // Enhanced root level detection: if previous item is at depth 0, we're likely at root level too
-    if (previousItem.depth === 0) {
-      console.log('[calculateParentFromPosition] Previous item at depth 0, returning undefined (root)');
+    // Enhanced root level detection: if previous item is at depth 0 and we're not inserting as its child
+    if (previousItem.depth === 0 && (!targetItem || targetItem.depth === 0)) {
       return undefined;
     }
     
