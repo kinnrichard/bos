@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
+  import { slide } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
   import { SvelteSet } from 'svelte/reactivity';
   import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
   import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
@@ -289,6 +291,37 @@
   const flattenedTasks = $derived.by(() => {
     return hierarchyManager.flattenTasks(hierarchicalTasks);
   });
+
+  // Group consecutive subtasks by parent for animation
+  interface TaskGroup {
+    parent: RenderedTaskItem;
+    subtasks: RenderedTaskItem[];
+  }
+
+  const taskGroups = $derived.by((): TaskGroup[] => {
+    const groups: TaskGroup[] = [];
+    let currentGroup: TaskGroup | null = null;
+    
+    for (const renderItem of flattenedTasks) {
+      if (renderItem.depth === 0) {
+        // Root task - finalize previous group and start new one
+        if (currentGroup) {
+          groups.push(currentGroup);
+        }
+        currentGroup = { parent: renderItem, subtasks: [] };
+      } else if (renderItem.depth > 0 && currentGroup) {
+        // Subtask - add to current group
+        currentGroup.subtasks.push(renderItem);
+      }
+    }
+    
+    // Don't forget the last group
+    if (currentGroup) {
+      groups.push(currentGroup);
+    }
+    
+    return groups;
+  });
   
   // Flattened kept tasks for position calculations (includes all non-discarded tasks)
   const flattenedKeptTasks = $derived.by(() => {
@@ -310,10 +343,11 @@
     const currentTasks = flattenedTasks;
     const currentTaskOrder = currentTasks.map(item => item.task.id);
     
-    // Skip animation if explicitly disabled, during batch operations, or if this is the first render
-    if (skipNextAnimation || previousTaskOrder.length === 0) {
+    // Skip animation if explicitly disabled, during slide transitions, or if this is the first render
+    if (skipNextAnimation || isSlideAnimating || previousTaskOrder.length === 0) {
       console.log('[FLIP] Skipping reactive animation:', 
         skipNextAnimation ? 'explicitly disabled' : 
+        isSlideAnimating ? 'slide animation in progress' :
         'first render'
       );
       previousTaskOrder = currentTaskOrder;
@@ -410,6 +444,7 @@
   // This debounced animator causes visual glitches; so I sent to 0ms
   const { animator: flipAnimator, animateDebounced } = createDebouncedAnimator(0);
   let skipNextAnimation = false;
+  let isSlideAnimating = false; // Track slide transition state to prevent FLIP conflicts
   let lastTaskCount = 0;
 
   // Store action instance for manual updates
@@ -1621,16 +1656,17 @@
       </div>
     {/if}
     
-    {#if flattenedTasks.length > 0}
-      {#each flattenedTasks as renderItem, index (renderItem.task.id)}
+    {#if taskGroups.length > 0}
+      {#each taskGroups as group (group.parent.task.id)}
+        <!-- Render parent task -->
         <TaskRow 
-          task={renderItem.task}
-          depth={renderItem.depth}
-          hasSubtasks={renderItem.hasSubtasks}
-          isExpanded={renderItem.isExpanded}
-          isSelected={taskSelection.selectedTaskIds.has(renderItem.task.id)}
-          isEditing={editingTaskId === renderItem.task.id}
-          isDeleting={deletingTaskIds.has(renderItem.task.id)}
+          task={group.parent.task}
+          depth={group.parent.depth}
+          hasSubtasks={group.parent.hasSubtasks}
+          isExpanded={group.parent.isExpanded}
+          isSelected={taskSelection.selectedTaskIds.has(group.parent.task.id)}
+          isEditing={editingTaskId === group.parent.task.id}
+          isDeleting={deletingTaskIds.has(group.parent.task.id)}
           canEdit={canEditTasks}
           jobId={jobId}
           batchTaskDetails={batchTaskDetails}
@@ -1638,16 +1674,57 @@
           on:taskaction={handleTaskAction}
         />
         
-        <!-- Inline New Task Row (appears after this task if selected) -->
-        {#if canCreateTasks && insertNewTaskAfter === renderItem.task.id && inlineTaskState.isShowing}
+        <!-- Inline New Task Row for parent task -->
+        {#if canCreateTasks && insertNewTaskAfter === group.parent.task.id && inlineTaskState.isShowing}
           <NewTaskRow 
             mode="inline-after-task"
-            depth={renderItem.depth}
+            depth={group.parent.depth}
             manager={inlineTaskManager}
             taskState={inlineTaskState}
             onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
             on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
           />
+        {/if}
+
+        <!-- Animated subtask container -->
+        {#if group.subtasks.length > 0 && group.parent.isExpanded}
+          <div 
+            class="subtask-animation-container"
+            transition:slide|global={{ duration: 250, easing: quintOut }}
+            on:introstart={() => { isSlideAnimating = true; }}
+            on:introend={() => { isSlideAnimating = false; }}
+            on:outrostart={() => { isSlideAnimating = true; }}
+            on:outroend={() => { isSlideAnimating = false; }}
+          >
+            {#each group.subtasks as subtask (subtask.task.id)}
+              <TaskRow 
+                task={subtask.task}
+                depth={subtask.depth}
+                hasSubtasks={subtask.hasSubtasks}
+                isExpanded={subtask.isExpanded}
+                isSelected={taskSelection.selectedTaskIds.has(subtask.task.id)}
+                isEditing={editingTaskId === subtask.task.id}
+                isDeleting={deletingTaskIds.has(subtask.task.id)}
+                canEdit={canEditTasks}
+                jobId={jobId}
+                batchTaskDetails={batchTaskDetails}
+                currentTime={currentTime}
+                on:taskaction={handleTaskAction}
+              />
+              
+              <!-- Inline New Task Row for subtask -->
+              {#if canCreateTasks && insertNewTaskAfter === subtask.task.id && inlineTaskState.isShowing}
+                <NewTaskRow 
+                  mode="inline-after-task"
+                  depth={subtask.depth}
+                  manager={inlineTaskManager}
+                  taskState={inlineTaskState}
+                  onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
+                  on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
+                />
+              {/if}
+            {/each}
+          </div>
         {/if}
       {/each}
     {/if}
@@ -1785,6 +1862,19 @@
     text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75) !important;
     border-radius: 8px !important;
     transition: none !important;
+  }
+
+  /* Subtask animation container */
+  .subtask-animation-container {
+    overflow: hidden;
+    transform-origin: top;
+    /* Ensure proper height calculation for slide transition */
+    display: block;
+    /* Remove any margin collapse issues */
+    border-top: 0;
+    border-bottom: 0;
+    /* Ensure child elements don't affect container height calculation */
+    contain: layout;
   }
 
   /* Responsive adjustments */
