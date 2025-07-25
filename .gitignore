@@ -72,3 +72,4 @@ tmp/cache/bootsnap*
 
 # Zero.js schema backups
 frontend/src/lib/zero/generated-schema.ts.backup.*
+/claude.md

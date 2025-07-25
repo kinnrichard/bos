@@ -1,1 +1,0 @@
-/Users/claude/code/bos/dev-docs/1. Planning/3. Architecture/prd.md

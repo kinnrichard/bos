@@ -53,7 +53,9 @@ export function Counter() {
 - Enables use of latest web APIs without polyfills
 - Perfect CSS Grid/Flexbox support
 - Native ES modules
-- No IE11/legacy browser concerns
+- No IE11/legacy browser support
+- Happy to use features that only modern browers support
+- Will eventually support Chrome and Edge, but it's not a target while in beta
 
 ## Authentication Strategy
 
@@ -75,12 +77,7 @@ export function Counter() {
 
 ## State Management
 
-**Svelte Stores + TanStack Query**:
-- Svelte stores for UI state
-- TanStack Query for server state
-- Automatic cache invalidation
-- Optimistic updates with rollback
-- Background refetching
+**Svelte + Zero.js via custom ReactiveRecord layer
 
 ## Testing Strategy
 
@@ -89,7 +86,7 @@ export function Counter() {
 - Playwright for E2E tests
 - Contract testing for API boundaries
 - Visual regression with Playwright
-- 80% coverage minimum
+- 80% coverage target
 
 ## Performance Targets
 
@@ -100,7 +97,7 @@ export function Counter() {
 
 ## Development Principles
 
-1. **Apple-First Design**: Follow macOS HIG strictly
+1. **Apple-First Design**: Largely follow macOS HIG 
 2. **Offline-First**: Every feature must work offline
 3. **Type Safety**: TypeScript everywhere
 4. **Component-Driven**: Small, focused components
