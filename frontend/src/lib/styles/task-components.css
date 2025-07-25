@@ -19,7 +19,7 @@
 .task-item {
   display: flex;
   align-items: center;
-  padding: 4px 4px !important;
+  padding: 4px 6px 4px 4px !important;
   padding-left: calc(4px + (var(--depth, 0) * 26px)) !important;
   border: none !important;
   border-radius: 8px !important;
