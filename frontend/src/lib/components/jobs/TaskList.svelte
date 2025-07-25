@@ -1402,16 +1402,22 @@
         }
         
         // For multi-task operations: use sequential positioning to avoid circular references
-        // Sort tasks by their visual order in the hierarchy (not just position within parent)
-        const visualOrderMap = createVisualOrderMap(cleanedKeptTasks);
+        // Sort tasks by their actual visual order from flattenedTasks
         const sortedTaskIds = Array.from(taskSelection.selectedTaskIds);
         sortedTaskIds.sort((a, b) => {
-          const visualOrderA = visualOrderMap.get(a) || 0;
-          const visualOrderB = visualOrderMap.get(b) || 0;
-          return visualOrderA - visualOrderB;
+          const indexA = flattenedTasks.findIndex(item => item.task.id === a);
+          const indexB = flattenedTasks.findIndex(item => item.task.id === b);
+          return indexA - indexB;
+        });
+        
+        // Identify which selected tasks are roots (parent not in selection)
+        // This preserves parent-child relationships during multi-drag
+        const rootTaskIds = sortedTaskIds.filter(taskId => {
+          const task = cleanedKeptTasks.find(t => t.id === taskId);
+          return !task?.parent_id || !sortedTaskIds.includes(task.parent_id);
         });
                 
-        sortedTaskIds.forEach((taskId, index) => {
+        rootTaskIds.forEach((taskId, index) => {
           const currentTask = cleanedKeptTasks.find(t => t.id === taskId);
           if (!currentTask) return;
           
@@ -1421,7 +1427,7 @@
               // For nesting: find existing children (excluding tasks being moved)
               const existingChildren = cleanedKeptTasks.filter(t => 
                 t.parent_id === newParentId && 
-                !sortedTaskIds.includes(t.id)
+                !rootTaskIds.includes(t.id)
               );
               
               if (existingChildren.length > 0) {
@@ -1442,12 +1448,12 @@
               }
             } else {
               // For reordering: use the calculated drop position but exclude moving tasks from consideration
-              const firstTaskRelativePos = calculateRelativePosition(event.dropZone, newParentId ?? null, [taskId]);
+              const firstTaskRelativePos = calculateRelativePosition(event.dropZone, newParentId ?? null, rootTaskIds);
               relativeUpdates.push(firstTaskRelativePos);
             }
           } else {
             // Subsequent tasks: position after the previous task in the sequence
-            const previousTaskId = sortedTaskIds[index - 1];
+            const previousTaskId = rootTaskIds[index - 1];
             relativeUpdates.push({
               id: taskId,
               parent_id: newParentId,
