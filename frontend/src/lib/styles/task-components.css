@@ -156,6 +156,20 @@
   border-bottom-right-radius: 0 !important;
 }
 
+/* Handle selection continuity across animation containers */
+
+/* Remove top radius from first selected subtask when parent task is selected */
+.task-item.selected + .subtask-animation-container .task-item.selected:first-child {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+/* Remove bottom radius from selected task when followed by selected subtask */
+.task-item.selected:has(+ .subtask-animation-container .task-item.selected:first-child) {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
 /* Completion states */
 .task-item.completed .task-title,
 .task-item.completed .task-content {
