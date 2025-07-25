@@ -2,7 +2,7 @@ Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Mount Action Cable for WebSocket connections
-  mount ActionCable.server => "/cable"
+  # mount ActionCable.server => "/cable"
 
   # API v1 namespace
   namespace :api do
@@ -86,65 +86,6 @@ Rails.application.routes.draw do
   get "login", to: "sessions#new", as: :login
   post "login", to: "sessions#create"
   delete "logout", to: "sessions#destroy", as: :logout
-
-  # User settings route (accessible to all users)
-  get "settings", to: "users#settings", as: :settings
-  patch "settings", to: "users#update_settings", as: :update_settings
-
-  # User management routes (owner only)
-  resources :users
-
-  # Client routes
-  resources :clients do
-    collection do
-      get :search
-    end
-
-    resources :people
-    resources :devices
-    resources :jobs do
-      resources :tasks do
-        member do
-          patch :reorder
-          get :details
-          patch :assign
-          post :notes, action: :add_note
-        end
-        collection do
-          patch :reorder
-          get :search
-        end
-      end
-      resources :notes
-      resources :scheduled_date_times, only: [ :create, :update, :destroy ]
-    end
-    member do
-      get :schedule
-      get :logs
-    end
-    resources :invoices
-  end
-
-  # Job routes
-  get "/jobs", to: "all_jobs#index", as: :jobs
-
-  # Logs routes
-  resources :logs, only: [ :index ]
-
-  # Feedback routes
-  resource :feedback, only: [ :new, :create ], controller: "feedback"
-
-  # GitHub webhook routes
-  post "/github/webhook", to: "github_webhooks#issue_comment"
-
-  # Admin routes
-  namespace :admin do
-    # Turning off; this function is abstracted to a separate ruby script on a separate server
-    # resource :automation_dashboard, only: [ :show ] do
-    #   post :toggle_automation
-    #   post :toggle_notifications
-    # end
-  end
 
   # Defines the root path route ("/")
   root "home#show"
