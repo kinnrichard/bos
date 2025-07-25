@@ -292,36 +292,8 @@
     return hierarchyManager.flattenTasks(hierarchicalTasks);
   });
 
-  // Group consecutive subtasks by parent for animation
-  interface TaskGroup {
-    parent: RenderedTaskItem;
-    subtasks: RenderedTaskItem[];
-  }
-
-  const taskGroups = $derived.by((): TaskGroup[] => {
-    const groups: TaskGroup[] = [];
-    let currentGroup: TaskGroup | null = null;
-    
-    for (const renderItem of flattenedTasks) {
-      if (renderItem.depth === 0) {
-        // Root task - finalize previous group and start new one
-        if (currentGroup) {
-          groups.push(currentGroup);
-        }
-        currentGroup = { parent: renderItem, subtasks: [] };
-      } else if (renderItem.depth > 0 && currentGroup) {
-        // Subtask - add to current group
-        currentGroup.subtasks.push(renderItem);
-      }
-    }
-    
-    // Don't forget the last group
-    if (currentGroup) {
-      groups.push(currentGroup);
-    }
-    
-    return groups;
-  });
+  // Use hierarchical tasks directly for recursive rendering with unlimited nesting
+  // This allows slide animations at every level of the hierarchy
   
   // Flattened kept tasks for position calculations (includes all non-discarded tasks)
   const flattenedKeptTasks = $derived.by(() => {
@@ -329,7 +301,7 @@
   });
   
   // Check if task list is empty for positioning New Task button
-  const hasNoTasks = $derived(flattenedTasks.length === 0);
+  const hasNoTasks = $derived(hierarchicalTasks.length === 0);
   
   // Update flat task IDs for multi-select functionality
   const flatTaskIds = $derived(hierarchyManager.getFlatTaskIds(flattenedTasks));
@@ -1656,78 +1628,103 @@
       </div>
     {/if}
     
-    {#if taskGroups.length > 0}
-      {#each taskGroups as group (group.parent.task.id)}
-        <!-- Render parent task -->
-        <TaskRow 
-          task={group.parent.task}
-          depth={group.parent.depth}
-          hasSubtasks={group.parent.hasSubtasks}
-          isExpanded={group.parent.isExpanded}
-          isSelected={taskSelection.selectedTaskIds.has(group.parent.task.id)}
-          isEditing={editingTaskId === group.parent.task.id}
-          isDeleting={deletingTaskIds.has(group.parent.task.id)}
-          canEdit={canEditTasks}
-          jobId={jobId}
-          batchTaskDetails={batchTaskDetails}
-          currentTime={currentTime}
-          on:taskaction={handleTaskAction}
-        />
-        
-        <!-- Inline New Task Row for parent task -->
-        {#if canCreateTasks && insertNewTaskAfter === group.parent.task.id && inlineTaskState.isShowing}
-          <NewTaskRow 
-            mode="inline-after-task"
-            depth={group.parent.depth}
-            manager={inlineTaskManager}
-            taskState={inlineTaskState}
-            onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
-            on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
-          />
-        {/if}
-
-        <!-- Animated subtask container -->
-        {#if group.subtasks.length > 0 && group.parent.isExpanded}
-          <div 
-            class="subtask-animation-container"
-            transition:slide|global={{ duration: 250, easing: quintOut }}
-            on:introstart={() => { isSlideAnimating = true; }}
-            on:introend={() => { isSlideAnimating = false; }}
-            on:outrostart={() => { isSlideAnimating = true; }}
-            on:outroend={() => { isSlideAnimating = false; }}
-          >
-            {#each group.subtasks as subtask (subtask.task.id)}
-              <TaskRow 
-                task={subtask.task}
-                depth={subtask.depth}
-                hasSubtasks={subtask.hasSubtasks}
-                isExpanded={subtask.isExpanded}
-                isSelected={taskSelection.selectedTaskIds.has(subtask.task.id)}
-                isEditing={editingTaskId === subtask.task.id}
-                isDeleting={deletingTaskIds.has(subtask.task.id)}
-                canEdit={canEditTasks}
-                jobId={jobId}
-                batchTaskDetails={batchTaskDetails}
-                currentTime={currentTime}
-                on:taskaction={handleTaskAction}
-              />
-              
-              <!-- Inline New Task Row for subtask -->
-              {#if canCreateTasks && insertNewTaskAfter === subtask.task.id && inlineTaskState.isShowing}
-                <NewTaskRow 
-                  mode="inline-after-task"
-                  depth={subtask.depth}
-                  manager={inlineTaskManager}
-                  taskState={inlineTaskState}
-                  onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
-                  on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
-                />
-              {/if}
-            {/each}
-          </div>
-        {/if}
+    {#if hierarchicalTasks.length > 0}
+      {#each hierarchicalTasks as task (task.id)}
+        {@render renderTaskWithSubtasks(task)}
       {/each}
     {/if}
+
+    {#snippet renderTaskWithSubtasks(task)}
+      <!-- Render the task -->
+      <TaskRow 
+        task={task}
+        depth={0}
+        hasSubtasks={task.subtasks && task.subtasks.length > 0}
+        isExpanded={hierarchyManager.isTaskExpanded(task.id)}
+        isSelected={taskSelection.selectedTaskIds.has(task.id)}
+        isEditing={editingTaskId === task.id}
+        isDeleting={deletingTaskIds.has(task.id)}
+        canEdit={canEditTasks}
+        jobId={jobId}
+        batchTaskDetails={batchTaskDetails}
+        currentTime={currentTime}
+        on:taskaction={handleTaskAction}
+      />
+      
+      <!-- Inline New Task Row for this task -->
+      {#if canCreateTasks && insertNewTaskAfter === task.id && inlineTaskState.isShowing}
+        <NewTaskRow 
+          mode="inline-after-task"
+          depth={0}
+          manager={inlineTaskManager}
+          taskState={inlineTaskState}
+          onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
+          on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
+        />
+      {/if}
+
+      <!-- Animated subtask container with recursive rendering -->
+      {#if task.subtasks && task.subtasks.length > 0 && hierarchyManager.isTaskExpanded(task.id)}
+        <div 
+          class="subtask-animation-container"
+          transition:slide|global={{ duration: 250, easing: quintOut }}
+          on:introstart={() => { isSlideAnimating = true; }}
+          on:introend={() => { isSlideAnimating = false; }}
+          on:outrostart={() => { isSlideAnimating = true; }}
+          on:outroend={() => { isSlideAnimating = false; }}
+        >
+          {#each task.subtasks as subtask (subtask.id)}
+            {@render renderSubtask(subtask, 1)}
+          {/each}
+        </div>
+      {/if}
+    {/snippet}
+
+    {#snippet renderSubtask(task, depth)}
+      <!-- Render the subtask -->
+      <TaskRow 
+        task={task}
+        depth={depth}
+        hasSubtasks={task.subtasks && task.subtasks.length > 0}
+        isExpanded={hierarchyManager.isTaskExpanded(task.id)}
+        isSelected={taskSelection.selectedTaskIds.has(task.id)}
+        isEditing={editingTaskId === task.id}
+        isDeleting={deletingTaskIds.has(task.id)}
+        canEdit={canEditTasks}
+        jobId={jobId}
+        batchTaskDetails={batchTaskDetails}
+        currentTime={currentTime}
+        on:taskaction={handleTaskAction}
+      />
+      
+      <!-- Inline New Task Row for this subtask -->
+      {#if canCreateTasks && insertNewTaskAfter === task.id && inlineTaskState.isShowing}
+        <NewTaskRow 
+          mode="inline-after-task"
+          depth={depth}
+          manager={inlineTaskManager}
+          taskState={inlineTaskState}
+          onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
+          on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
+        />
+      {/if}
+
+      <!-- Animated nested subtask container (recursive!) -->
+      {#if task.subtasks && task.subtasks.length > 0 && hierarchyManager.isTaskExpanded(task.id)}
+        <div 
+          class="subtask-animation-container"
+          transition:slide|global={{ duration: 250, easing: quintOut }}
+          on:introstart={() => { isSlideAnimating = true; }}
+          on:introend={() => { isSlideAnimating = false; }}
+          on:outrostart={() => { isSlideAnimating = true; }}
+          on:outroend={() => { isSlideAnimating = false; }}
+        >
+          {#each task.subtasks as nestedSubtask (nestedSubtask.id)}
+            {@render renderSubtask(nestedSubtask, depth + 1)}
+          {/each}
+        </div>
+      {/if}
+    {/snippet}
       
     <!-- Add New Task Row at bottom when tasks exist -->
     {#if canCreateTasks && !hasNoTasks}
