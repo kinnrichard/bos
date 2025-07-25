@@ -25,9 +25,6 @@ gem "discard", "~> 1.3"
 # Pagination
 gem "kaminari"
 
-# Browser testing
-gem "playwright-ruby-client"
-
 gem "faraday-retry"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
