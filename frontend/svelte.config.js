@@ -7,6 +7,17 @@ const config = {
 	// for more information about preprocessors
 	preprocess: vitePreprocess(),
 
+	// Disable accessibility warnings during early development
+	// TODO: Re-enable these warnings before production deployment
+	onwarn: (warning, handler) => {
+		// Ignore all accessibility warnings for now
+		if (warning.code.startsWith('a11y-')) {
+			return;
+		}
+		// Handle all other warnings normally
+		handler(warning);
+	},
+
 	kit: {
 		// adapter-auto only supports some environments, see https://kit.svelte.dev/docs/adapter-auto for a list.
 		// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
