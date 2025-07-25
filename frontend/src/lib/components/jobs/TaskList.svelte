@@ -509,7 +509,7 @@
   });
 
   function toggleTaskExpansion(taskId: string) {
-    // Set animation context for user-initiated expansion
+    // Set animation context for user-initiated expansion/collapse
     setAnimationContext('user-expansion', taskId);
     hierarchyManager.toggleExpansion(taskId);
   }
@@ -1741,8 +1741,8 @@
           }}
           on:introstart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
           on:introend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
-          on:outrostart={() => { isSlideAnimating = true; }}
-          on:outroend={() => { isSlideAnimating = false; }}
+          on:outrostart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
+          on:outroend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
         >
           {#each task.subtasks as subtask (subtask.id)}
             {@render renderSubtask(subtask, 1)}
@@ -1789,8 +1789,8 @@
           }}
           on:introstart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
           on:introend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
-          on:outrostart={() => { isSlideAnimating = true; }}
-          on:outroend={() => { isSlideAnimating = false; }}
+          on:outrostart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
+          on:outroend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
         >
           {#each task.subtasks as nestedSubtask (nestedSubtask.id)}
             {@render renderSubtask(nestedSubtask, depth + 1)}
