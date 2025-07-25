@@ -9,7 +9,7 @@
  * import { ReactiveScheduledDateTimeUser as ScheduledDateTimeUser } from './reactive-scheduled-date-time-user';
  * ```
  * 
- * Generated: 2025-07-24 20:52:41 UTC
+ * Generated: 2025-07-25 22:50:45 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

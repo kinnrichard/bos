@@ -1,1 +1,0 @@
-../../components/modal/delete_confirmation_controller.js

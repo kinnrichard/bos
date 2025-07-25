@@ -1,1 +1,0 @@
-../../components/empty_state/empty_state_controller.js
