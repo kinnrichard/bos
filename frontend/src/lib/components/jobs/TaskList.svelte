@@ -2,6 +2,19 @@
   import { onDestroy, onMount, tick } from 'svelte';
   import { slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
+  
+  // Custom slide transition that can be conditionally disabled
+  function conditionalSlide(node: Element, params: { duration?: number; easing?: any; disabled?: boolean } = {}) {
+    if (params.disabled) {
+      // Return a no-op transition
+      return {
+        duration: 0,
+        css: () => ''
+      };
+    }
+    // Use standard slide transition
+    return slide(node, { duration: params.duration || 250, easing: params.easing || quintOut });
+  }
   import { SvelteSet } from 'svelte/reactivity';
   import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
   import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
@@ -278,12 +291,66 @@
   
   // Track if we've done initial auto-expansion
   let hasAutoExpanded = false;
+  let isAutoExpanding = false;
+  
+  // Animation context tracking system
+  type AnimationContext = 'user-expansion' | 'nested-reveal' | 'auto-expansion' | 'none';
+  let currentAnimationContext: AnimationContext = 'none';
+  let animationInitiatorTaskId: string | null = null;
+  let tasksBeingAnimated = new Set<string>();
+  
+  // Function to set animation context when user clicks disclosure buttons
+  function setAnimationContext(context: AnimationContext, initiatorTaskId?: string) {
+    currentAnimationContext = context;
+    animationInitiatorTaskId = initiatorTaskId || null;
+    tasksBeingAnimated.clear();
+    
+    // Auto-clear context after DOM updates to prevent interference
+    if (context !== 'none') {
+      tick().then(() => {
+        setTimeout(() => {
+          currentAnimationContext = 'none';
+          animationInitiatorTaskId = null;
+          tasksBeingAnimated.clear();
+        }, 50);
+      });
+    }
+  }
+  
+  // Function to check if a task should animate based on context
+  function shouldAnimateTask(taskId: string): boolean {
+    // Never animate during auto-expansion
+    if (isAutoExpanding || currentAnimationContext === 'auto-expansion') {
+      return false;
+    }
+    
+    // During initial load, don't animate anything
+    if (!hasAutoExpanded) {
+      return false;
+    }
+    
+    // Only animate for user-initiated expansions
+    if (currentAnimationContext === 'user-expansion') {
+      // Only animate the specific task the user clicked on
+      return taskId === animationInitiatorTaskId;
+    }
+    
+    // For nested reveals or any other case, don't animate
+    return false;
+  }
   
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
   $effect(() => {
     if (hierarchicalTasks.length > 0 && !hasAutoExpanded) {
+      isAutoExpanding = true;
+      setAnimationContext('auto-expansion');
       hierarchyManager.autoExpandAll(hierarchicalTasks);
       hasAutoExpanded = true;
+      // Disable auto-expanding flag after a brief delay to allow DOM updates
+      setTimeout(() => { 
+        isAutoExpanding = false; 
+        setAnimationContext('none');
+      }, 100);
     }
   });
   
@@ -442,6 +509,8 @@
   });
 
   function toggleTaskExpansion(taskId: string) {
+    // Set animation context for user-initiated expansion
+    setAnimationContext('user-expansion', taskId);
     hierarchyManager.toggleExpansion(taskId);
   }
 
@@ -1667,9 +1736,11 @@
       {#if task.subtasks && task.subtasks.length > 0 && hierarchyManager.isTaskExpanded(task.id)}
         <div 
           class="subtask-animation-container"
-          transition:slide|global={{ duration: 250, easing: quintOut }}
-          on:introstart={() => { isSlideAnimating = true; }}
-          on:introend={() => { isSlideAnimating = false; }}
+          transition:conditionalSlide|global={{ 
+            disabled: !shouldAnimateTask(task.id)
+          }}
+          on:introstart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
+          on:introend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
           on:outrostart={() => { isSlideAnimating = true; }}
           on:outroend={() => { isSlideAnimating = false; }}
         >
@@ -1713,9 +1784,11 @@
       {#if task.subtasks && task.subtasks.length > 0 && hierarchyManager.isTaskExpanded(task.id)}
         <div 
           class="subtask-animation-container"
-          transition:slide|global={{ duration: 250, easing: quintOut }}
-          on:introstart={() => { isSlideAnimating = true; }}
-          on:introend={() => { isSlideAnimating = false; }}
+          transition:conditionalSlide|global={{ 
+            disabled: !shouldAnimateTask(task.id)
+          }}
+          on:introstart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
+          on:introend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
           on:outrostart={() => { isSlideAnimating = true; }}
           on:outroend={() => { isSlideAnimating = false; }}
         >
