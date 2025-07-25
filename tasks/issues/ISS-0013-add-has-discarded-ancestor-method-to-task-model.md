@@ -1,22 +1,31 @@
 ---
-issue_id: ISS-0013
-title: Add has_discarded_ancestor method to Task model
-description: Implement calculated property method in Task model to determine if any ancestor in the hierarchy is discarded
-status: open
-priority: high
-assignee: unassigned
-created_date: 2025-07-21T18:30:00.000Z
-updated_date: 2025-07-21T18:30:00.000Z
-estimated_hours: 6
 actual_hours: 0
+assignees: []
+created_at: '2025-07-25T15:03:00.000000'
+dependencies: []
+description: Implement calculated property method in Task model to determine if any ancestor in the hierarchy is discarded
+due_date: null
+estimated_hours: 6
+id: ISS-0013
+labels:
+- backend
+- model
+- hierarchy
+- logic
+metadata:
+  goal: Add has_discarded_ancestor method to Task model for hierarchy deletion logic
+  owner: null
+  progress: 0
+  subtasks: []
+  type: issue
+parent: EP-0006
+priority: high
+status: blocked
 tags:
-  - backend
-  - model
-  - hierarchy
-  - logic
-epic_id: EP-0006
-sprint: null
-completion_percentage: 0
+- issue
+- backend
+title: Add has_discarded_ancestor method to Task model
+updated_at: '2025-07-25T15:03:00.000000'
 ---
 
 # Add has_discarded_ancestor Method to Task Model
@@ -256,3 +265,14 @@ This issue is part of EP-0006 and will be followed by:
 - ISS-0014: Update TaskSerializer to include calculated properties
 - ISS-0015: Update frontend shouldShowTask filtering logic
 - ISS-0016: Add comprehensive test coverage for hierarchy deletion
+
+## ⚠️ WORK BLOCKED - DO NOT BEGIN IMPLEMENTATION
+
+**This issue is BLOCKED pending database structure refinements. Do not begin work until EP-0006 is unblocked.**
+
+---
+
+## Notes
+- This implementation preserves all existing data and is fully backward compatible
+- No database migrations required beyond existing discarded_at column (subject to database structure review)
+- Solution can be implemented incrementally with feature flags if needed

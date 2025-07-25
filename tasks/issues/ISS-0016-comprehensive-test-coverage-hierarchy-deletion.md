@@ -1,23 +1,35 @@
 ---
-issue_id: ISS-0016
-title: Add comprehensive test coverage for task hierarchy deletion behavior
-description: Implement thorough test coverage for the complete task hierarchy deletion workflow from backend to frontend
-status: open
-priority: medium
-assignee: unassigned
-created_date: 2025-07-21T18:30:00.000Z
-updated_date: 2025-07-21T18:30:00.000Z
-estimated_hours: 8
 actual_hours: 0
+assignees: []
+created_at: '2025-07-25T15:03:00.000000'
+dependencies:
+- ISS-0013
+- ISS-0014
+- ISS-0015
+description: Implement thorough test coverage for the complete task hierarchy deletion workflow from backend to frontend
+due_date: null
+estimated_hours: 8
+id: ISS-0016
+labels:
+- testing
+- integration
+- e2e
+- hierarchy
+- workflow
+metadata:
+  goal: Add comprehensive test coverage for task hierarchy deletion behavior
+  owner: null
+  progress: 0
+  subtasks: []
+  type: issue
+parent: EP-0006
+priority: medium
+status: blocked
 tags:
-  - testing
-  - integration
-  - e2e
-  - hierarchy
-  - workflow
-epic_id: EP-0006
-sprint: null
-completion_percentage: 0
+- issue
+- testing
+title: Add comprehensive test coverage for task hierarchy deletion behavior
+updated_at: '2025-07-25T15:03:00.000000'
 ---
 
 # Add Comprehensive Test Coverage for Task Hierarchy Deletion
@@ -560,3 +572,14 @@ This issue completes EP-0006 testing requirements and validates:
 - ISS-0013: Backend model implementation
 - ISS-0014: API serialization functionality  
 - ISS-0015: Frontend filtering behavior
+
+## ⚠️ WORK BLOCKED - DO NOT BEGIN IMPLEMENTATION
+
+**This issue is BLOCKED pending database structure refinements. Do not begin work until EP-0006 is unblocked.**
+
+---
+
+## Notes
+- Test coverage should be comprehensive but not redundant
+- Focus on testing business logic rather than framework behavior
+- Ensure tests are maintainable and serve as documentation

@@ -1,22 +1,32 @@
 ---
-issue_id: ISS-0015
-title: Update frontend shouldShowTask filtering logic
-description: Modify frontend task filtering to use has_discarded_ancestor property to hide descendants of deleted tasks from normal views
-status: open
-priority: high
-assignee: unassigned
-created_date: 2025-07-21T18:30:00.000Z
-updated_date: 2025-07-21T18:30:00.000Z
-estimated_hours: 4
 actual_hours: 0
+assignees: []
+created_at: '2025-07-25T15:03:00.000000'
+dependencies:
+- ISS-0014
+description: Modify frontend task filtering to use has_discarded_ancestor property to hide descendants of deleted tasks from normal views
+due_date: null
+estimated_hours: 4
+id: ISS-0015
+labels:
+- frontend
+- filtering
+- logic
+- task-store
+metadata:
+  goal: Update frontend shouldShowTask filtering logic to use has_discarded_ancestor property
+  owner: null
+  progress: 0
+  subtasks: []
+  type: issue
+parent: EP-0006
+priority: high
+status: blocked
 tags:
-  - frontend
-  - filtering
-  - logic
-  - task-store
-epic_id: EP-0006
-sprint: null
-completion_percentage: 0
+- issue
+- frontend
+title: Update frontend shouldShowTask filtering logic
+updated_at: '2025-07-25T15:03:00.000000'
 ---
 
 # Update Frontend shouldShowTask Filtering Logic
@@ -385,3 +395,14 @@ This issue is part of EP-0006 and works with:
 - ISS-0013: Backend task model changes
 - ISS-0014: API serialization updates
 - ISS-0016: Comprehensive testing
+
+## ⚠️ WORK BLOCKED - DO NOT BEGIN IMPLEMENTATION
+
+**This issue is BLOCKED pending database structure refinements. Do not begin work until EP-0006 is unblocked.**
+
+---
+
+## Notes
+- Ensure smooth transitions when switching between normal and deleted views
+- Consider adding loading states if filtering becomes computationally expensive
+- Test with various hierarchy sizes and structures

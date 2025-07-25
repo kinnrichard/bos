@@ -1,22 +1,34 @@
 ---
-issue_id: ISS-0017
-title: Optimize TaskSortingService for hierarchy deletion performance
-description: Optional performance optimization for TaskSortingService when dealing with large task hierarchies and calculated ancestor properties
-status: open
-priority: low
-assignee: unassigned
-created_date: 2025-07-21T18:30:00.000Z
-updated_date: 2025-07-21T18:30:00.000Z
-estimated_hours: 6
 actual_hours: 0
+assignees: []
+created_at: '2025-07-25T15:03:00.000000'
+dependencies:
+- ISS-0013
+- ISS-0014
+- ISS-0015
+description: Optional performance optimization for TaskSortingService when dealing with large task hierarchies and calculated ancestor properties
+due_date: null
+estimated_hours: 6
+id: ISS-0017
+labels:
+- backend
+- performance
+- optimization
+- service
+metadata:
+  goal: Optional performance optimization for TaskSortingService hierarchy deletion performance
+  owner: null
+  progress: 0
+  subtasks: []
+  type: issue
+parent: EP-0006
+priority: low
+status: blocked
 tags:
-  - backend
-  - performance
-  - optimization
-  - service
-epic_id: EP-0006
-sprint: null
-completion_percentage: 0
+- issue
+- backend
+title: Optimize TaskSortingService for hierarchy deletion performance
+updated_at: '2025-07-25T15:03:00.000000'
 ---
 
 # Optimize TaskSortingService for Hierarchy Deletion Performance
@@ -376,3 +388,15 @@ end
 
 ## Related Issues
 This optional optimization supports EP-0006 but is not required for epic completion.
+
+## ⚠️ WORK BLOCKED - DO NOT BEGIN IMPLEMENTATION
+
+**This issue is BLOCKED pending database structure refinements. Do not begin work until EP-0006 is unblocked.**
+
+---
+
+## Notes
+- This is a performance optimization that may not be necessary
+- Only implement if benchmarking reveals actual performance issues
+- Document performance characteristics for future reference
+- Consider monitoring to detect performance degradation over time

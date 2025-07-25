@@ -1,22 +1,32 @@
 ---
-issue_id: ISS-0014
-title: Update TaskSerializer to include discarded_at and calculated properties
-description: Modify TaskSerializer to include discarded_at field and has_discarded_ancestor calculated property in API responses
-status: open
-priority: high
-assignee: unassigned
-created_date: 2025-07-21T18:30:00.000Z
-updated_date: 2025-07-21T18:30:00.000Z
-estimated_hours: 3
 actual_hours: 0
+assignees: []
+created_at: '2025-07-25T15:03:00.000000'
+dependencies:
+- ISS-0013
+description: Modify TaskSerializer to include discarded_at field and has_discarded_ancestor calculated property in API responses
+due_date: null
+estimated_hours: 3
+id: ISS-0014
+labels:
+- backend
+- serializer
+- api
+- calculated-property
+metadata:
+  goal: Update TaskSerializer to include discarded_at and has_discarded_ancestor properties
+  owner: null
+  progress: 0
+  subtasks: []
+  type: issue
+parent: EP-0006
+priority: high
+status: blocked
 tags:
-  - backend
-  - serializer
-  - api
-  - calculated-property
-epic_id: EP-0006
-sprint: null
-completion_percentage: 0
+- issue
+- backend
+title: Update TaskSerializer to include discarded_at and calculated properties
+updated_at: '2025-07-25T15:03:00.000000'
 ---
 
 # Update TaskSerializer to Include Calculated Properties
@@ -323,3 +333,14 @@ puts "Performance impact: #{((new_time.real - current_time.real) / current_time.
 This issue is part of EP-0006 and supports:
 - ISS-0015: Update frontend shouldShowTask filtering logic
 - ISS-0016: Add comprehensive test coverage for hierarchy deletion
+
+## ⚠️ WORK BLOCKED - DO NOT BEGIN IMPLEMENTATION
+
+**This issue is BLOCKED pending database structure refinements. Do not begin work until EP-0006 is unblocked.**
+
+---
+
+## Notes
+- Ensure proper date formatting for discarded_at field
+- Consider adding indexes if performance issues arise
+- Monitor API response times during implementation
