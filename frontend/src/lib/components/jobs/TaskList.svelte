@@ -408,7 +408,8 @@
   let dragActionInstance: any;
   
   // FLIP animation setup
-  const { animator: flipAnimator, animateDebounced } = createDebouncedAnimator(50);
+  // This debounced animator causes visual glitches; so I sent to 0ms
+  const { animator: flipAnimator, animateDebounced } = createDebouncedAnimator(0);
   let skipNextAnimation = false;
   let isBatchOperation = false;
   let lastTaskCount = 0;
