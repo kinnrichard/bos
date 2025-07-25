@@ -311,10 +311,9 @@
     const currentTaskOrder = currentTasks.map(item => item.task.id);
     
     // Skip animation if explicitly disabled, during batch operations, or if this is the first render
-    if (skipNextAnimation || isBatchOperation || previousTaskOrder.length === 0) {
+    if (skipNextAnimation || previousTaskOrder.length === 0) {
       console.log('[FLIP] Skipping reactive animation:', 
         skipNextAnimation ? 'explicitly disabled' : 
-        isBatchOperation ? 'batch operation in progress' : 
         'first render'
       );
       previousTaskOrder = currentTaskOrder;
@@ -411,7 +410,6 @@
   // This debounced animator causes visual glitches; so I sent to 0ms
   const { animator: flipAnimator, animateDebounced } = createDebouncedAnimator(0);
   let skipNextAnimation = false;
-  let isBatchOperation = false;
   let lastTaskCount = 0;
 
   // Store action instance for manual updates
@@ -1381,25 +1379,6 @@
         : [draggedTaskId];
       
       if (isMultiSelectDrag && taskIdsToMove.length > 1) {
-        // Set batch operation flag to prevent individual reactive animations
-        isBatchOperation = true;
-        console.log('[FLIP] Starting batch operation for', taskIdsToMove.length, 'tasks');
-        
-        // Capture positions BEFORE the update for FLIP animation
-        if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
-          const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
-          flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
-          console.log('[FLIP] Captured pre-update positions for', taskElements.length, 'elements');
-          
-          // Also capture specific positions for the tasks being moved
-          taskIdsToMove.forEach(taskId => {
-            const element = taskElements.find(el => el.dataset.taskId === taskId);
-            if (element) {
-              const rect = element.getBoundingClientRect();
-              console.log(`[FLIP] Pre-move position for ${taskId.substring(0, 8)}: x=${rect.left}, y=${rect.top}`);
-            }
-          });
-        }
         
         // For multi-task operations: use sequential positioning to avoid circular references
         // Sort tasks by their actual visual order from flattenedTasks
@@ -1473,51 +1452,8 @@
       // Execute position updates using our batch API - it handles UI updates automatically
       await applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
       
-      // For batch operations, manually trigger synchronized animation
-      if (isBatchOperation) {
-        console.log('[FLIP] Batch update complete, triggering manual animation');
-        
-        // Store the task IDs that were moved (before resetting the batch flag)
-        const movedTaskIds = isMultiSelectDrag ? Array.from(taskSelection.selectedTaskIds) : [draggedTaskId];
-        
-        // Reset batch flag first
-        isBatchOperation = false;
-        
-        // Wait for DOM to update then manually trigger animation
-        await tick();
-        
-        if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
-          const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
-          if (taskElements.length > 0) {
-            console.log('[FLIP] Manually animating', taskElements.length, 'elements after batch update');
-            
-            // Log post-move positions for the moved tasks
-            movedTaskIds.forEach(taskId => {
-              const element = taskElements.find(el => el.dataset.taskId === taskId);
-              if (element) {
-                const rect = element.getBoundingClientRect();
-                console.log(`[FLIP] Post-move position for ${taskId.substring(0, 8)}: x=${rect.left}, y=${rect.top}`);
-              }
-            });
-            
-            // Use direct animate method (not debounced) for immediate synchronized animation
-            flipAnimator.animate(taskElements, el => el.dataset.taskId || '', {
-              duration: 300,
-              easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-              stagger: 0 // No stagger for synchronized movement
-            });
-          }
-        }
-        
-        // Update previousTaskOrder to reflect new state
-        previousTaskOrder = flattenedTasks.map(item => item.task.id);
-      }
-      
     } catch (error: any) {
       debugWorkflow.error('Task reorder failed', { error, relativeUpdates });
-      
-      // Reset batch flag on error
-      isBatchOperation = false;
       
       // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();
