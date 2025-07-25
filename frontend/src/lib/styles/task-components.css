@@ -199,6 +199,11 @@
   transform: rotate(0deg);
 }
 
+/* Disable triangle transitions during auto-expansion */
+.no-triangle-transitions .chevron-icon {
+  transition: none !important;
+}
+
 .disclosure-button[aria-expanded="true"] .chevron-icon,
 .chevron-icon.expanded {
   transform: rotate(90deg);

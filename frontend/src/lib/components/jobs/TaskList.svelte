@@ -344,12 +344,22 @@
     if (hierarchicalTasks.length > 0 && !hasAutoExpanded) {
       isAutoExpanding = true;
       setAnimationContext('auto-expansion');
+      
+      // Disable triangle transitions during auto-expansion
+      if (tasksContainer) {
+        tasksContainer.classList.add('no-triangle-transitions');
+      }
+      
       hierarchyManager.autoExpandAll(hierarchicalTasks);
       hasAutoExpanded = true;
-      // Disable auto-expanding flag after a brief delay to allow DOM updates
+      
+      // Re-enable triangle transitions after a brief delay to allow DOM updates
       setTimeout(() => { 
         isAutoExpanding = false; 
         setAnimationContext('none');
+        if (tasksContainer) {
+          tasksContainer.classList.remove('no-triangle-transitions');
+        }
       }, 100);
     }
   });
