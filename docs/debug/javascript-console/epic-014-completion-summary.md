@@ -38,14 +38,17 @@
 
 ## 🏗️ Architecture Implementation
 
-### Debug System Structure
+### Enhanced Architecture Implementation
+
 ```
 src/lib/utils/debug/
-├── index.ts           # Main entry point and public API
-├── core.ts            # Core debug function creation
-├── namespaces.ts      # 19 namespace definitions and functions
-├── browser.ts         # Browser development helpers
-└── redactor.ts        # Security redaction system
+├── index.ts           # Main entry point with category exports
+├── core.ts            # Enhanced debug function creation with categories
+├── namespaces.ts      # 6 categories + 19 legacy function compatibility
+├── compatibility.ts   # Backward compatibility layer
+├── browser.ts         # Enhanced browser helpers with category support
+├── redactor.ts        # Enhanced security redaction system
+└── types.ts           # TypeScript definitions for categories
 ```
 
 ### Namespace Organization

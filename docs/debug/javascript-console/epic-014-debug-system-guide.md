@@ -1,27 +1,33 @@
-# Epic 014: Debug System Standardization - Complete Developer Guide
+# Debug System - 6-Category System Guide (Epic 016)
 
 ## Overview
 
-Epic 014 has successfully standardized the debug system across the entire application, expanding from 6 to 19 namespaces, migrating 306 console.log statements to secure debug functions, and removing the deprecated technician-assignment namespace. This guide provides comprehensive documentation for using the new debug system.
+The debug system has evolved into a powerful 6-category system (Epic 016) that provides organized, efficient debugging while maintaining 100% backward compatibility with the original 19 debug functions. This guide covers the new category-based approach and migration from the legacy system.
 
-## 🎯 Epic 014 Achievements
+## 🎯 Epic 016 Achievements
 
-- ✅ **19 Debug Namespaces** - Comprehensive coverage of all application areas
-- ✅ **306 Console.log Migrations** - All logging statements converted to secure debug functions
-- ✅ **Security Redaction** - Automatic sensitive data filtering
-- ✅ **Technician-Assignment Namespace Removed** - Deprecated namespace eliminated
-- ✅ **Browser Integration** - Development console helpers
-- ✅ **TypeScript Support** - Full type safety and IntelliSense
+- ✅ **6-Category Debug System** - Organized debugging with sub-namespace methods
+- ✅ **100% Backward Compatibility** - All 19 legacy functions continue to work unchanged
+- ✅ **Enhanced Browser Helpers** - Category exploration and migration tools
+- ✅ **Performance Optimizations** - Lazy loading and memory efficiency
+- ✅ **Security Redaction** - Enhanced automatic sensitive data filtering
+- ✅ **TypeScript Support** - Full type safety with improved IntelliSense
 
 ## 🚀 Quick Start
 
-### Enable All Debugging
+### Environment Configuration
 ```bash
-# During development
+# Enable all debugging (both categories and legacy)
 DEBUG=bos:* npm run dev
 
-# For specific components only
-DEBUG=bos:api,bos:auth npm run dev
+# Enable specific categories
+DEBUG=bos:network,bos:data npm run dev
+
+# Enable specific sub-namespaces
+DEBUG=bos:network:api,bos:data:database npm run dev
+
+# Enable all except specific namespaces
+DEBUG=bos:*,-bos:cache npm run dev
 ```
 
 ### Browser Console Control
@@ -29,51 +35,96 @@ DEBUG=bos:api,bos:auth npm run dev
 // Enable all debugging
 bosDebug.enable('bos:*')
 
-// Enable specific namespaces
-bosDebug.enable('bos:api,bos:auth')
+// Enable specific categories
+bosDebug.enable('bos:network,bos:data')
 
-// Disable debugging
+// Enable specific sub-namespaces
+bosDebug.enable('bos:network:api')
+
+// Category-specific helpers (NEW)
+bosDebug.categories()              // Explore 6-category system
+bosDebug.enableCategory('network') // Enable network category
+bosDebug.legacy()                  // Show all 19 legacy functions
+bosDebug.migration()               // Migration guide
+
+// Standard helpers
 bosDebug.disable()
-
-// Check status
 bosDebug.status()
-
-// List all namespaces
 bosDebug.list()
 ```
 
-## 📦 Debug Namespace Architecture
+## 📦 6-Category Debug System Architecture
 
-The debug system is organized into 5 categories with 19 total namespaces:
+The debug system is now organized into 6 main categories with sub-namespace methods:
 
-### Core System (7 namespaces)
-- `bos:api` - API requests and responses (secure)
-- `bos:auth` - Authentication operations (secure)
-- `bos:security` - Security-related operations (secure)
-- `bos:reactive` - Svelte reactive statements
-- `bos:state` - Component state changes
-- `bos:component` - General component debugging
-- `bos:cache` - Cache and data synchronization
+### 🌐 debugNetwork - Network & Communication
+**Sub-namespaces**: `api`, `auth`, `security`, `integration`, `websocket`
+```typescript
+import { debugNetwork } from '$lib/utils/debug';
 
-### Data & Persistence (3 namespaces)
-- `bos:database` - Database queries and transactions (secure)
-- `bos:websocket` - WebSocket communication (secure)
-- `bos:validation` - Form and data validation
+debugNetwork('General network activity', data);
+debugNetwork.api('API request', { url, method });
+debugNetwork.auth('User authentication', { userId });
+debugNetwork.security('Security check', { action });
+debugNetwork.integration('Third-party API', { service });
+debugNetwork.websocket('WebSocket event', { event, data });
+```
 
-### Performance & Monitoring (2 namespaces)
-- `bos:performance` - Performance metrics and timing
-- `bos:error` - Error handling and recovery
+### 💾 debugData - Data Management
+**Sub-namespaces**: `database`, `cache`, `validation`, `reactive`, `state`
+```typescript
+import { debugData } from '$lib/utils/debug';
 
-### User Interface (2 namespaces)
-- `bos:navigation` - Routing and page transitions
-- `bos:notification` - Alerts and messages
+debugData('General data operation', data);
+debugData.database('Database query', { sql, duration });
+debugData.cache('Cache operation', { key, action });
+debugData.validation('Data validation', { field, rule });
+debugData.reactive('Reactive update', { store, value });
+debugData.state('State change', { previous, current });
+```
 
-### Business Logic (5 namespaces)
-- `bos:workflow` - Business process flows
-- `bos:search` - Search operations
-- `bos:upload` - File upload operations (secure)
-- `bos:export` - Data export operations
-- `bos:integration` - Third-party integrations (secure)
+### 🎨 debugUI - User Interface
+**Sub-namespaces**: `component`, `navigation`, `notification`
+```typescript
+import { debugUI } from '$lib/utils/debug';
+
+debugUI('General UI operation', data);
+debugUI.component('Component lifecycle', { name, phase });
+debugUI.navigation('Navigation event', { from, to });
+debugUI.notification('Notification shown', { type, message });
+```
+
+### 🏢 debugBusiness - Business Logic
+**Sub-namespaces**: `workflow`, `search`, `upload`, `export`
+```typescript
+import { debugBusiness } from '$lib/utils/debug';
+
+debugBusiness('General business logic', data);
+debugBusiness.workflow('Process step', { step, status });
+debugBusiness.search('Search operation', { query, results });
+debugBusiness.upload('File upload', { filename, progress });
+debugBusiness.export('Data export', { format, records });
+```
+
+### 📊 debugMonitor - Monitoring & Performance
+**Sub-namespaces**: `performance`, `error`
+```typescript
+import { debugMonitor } from '$lib/utils/debug';
+
+debugMonitor('General monitoring', data);
+debugMonitor.performance('Performance metric', { operation, duration });
+debugMonitor.error('Error occurred', { error, context });
+```
+
+### ⚙️ debugSystem - System & Framework
+**Sub-namespaces**: `framework`, `development`
+```typescript
+import { debugSystem } from '$lib/utils/debug';
+
+debugSystem('General system operation', data);
+debugSystem.framework('Framework debug', { component, action });
+debugSystem.development('Development tool', { tool, operation });
+```
 
 ## 🛡️ Security Features
 
@@ -109,34 +160,48 @@ The security system automatically redacts:
 
 ## 🔧 Usage Examples
 
-### API Debugging
+### Category-Based Debugging (Recommended)
 ```typescript
-import { debugAPI } from '$lib/utils/debug';
+import { debugNetwork, debugData, debugUI } from '$lib/utils/debug';
 
+// Network operations
 async function fetchUser(id: number) {
-  debugAPI('Fetching user', { id, endpoint: '/api/users' });
+  debugNetwork.api('Fetching user', { id, endpoint: '/api/users' });
   
   try {
     const response = await fetch(`/api/users/${id}`);
     const user = await response.json();
     
-    debugAPI('User fetched successfully', { 
-      user: user,           // User data included
-      responseTime: '150ms' 
+    debugNetwork.api('User fetched successfully', { 
+      user: user,
+      responseTime: '150ms',
+      status: response.status
     });
     
     return user;
   } catch (error) {
-    debugAPI('User fetch failed', { id, error: error.message });
+    debugMonitor.error('User fetch failed', { id, error: error.message });
     throw error;
   }
 }
-```
 
-### Component State Debugging
-```typescript
-import { debugState, debugComponent } from '$lib/utils/debug';
+// Data management
+function updateUserData(userId: string, data: any) {
+  debugData.state('User data update started', { userId, changes: Object.keys(data) });
+  
+  // Update local state
+  const previousState = getUserState(userId);
+  updateUserState(userId, data);
+  
+  debugData.state('User data updated', {
+    userId,
+    previousState,
+    newState: getUserState(userId),
+    fieldsChanged: Object.keys(data)
+  });
+}
 
+// UI operations
 export class JobComponent {
   private state = $state({
     jobs: [],
@@ -145,42 +210,50 @@ export class JobComponent {
   });
   
   onMount() {
-    debugComponent('JobComponent mounted', { 
-      initialState: this.state 
+    debugUI.component('JobComponent mounted', { 
+      componentName: 'JobComponent',
+      initialState: this.state,
+      timestamp: Date.now()
     });
   }
   
-  async loadJobs() {
-    debugState('Loading jobs started', { 
-      previousCount: this.state.jobs.length 
+  handleNavigation(route: string) {
+    debugUI.navigation('Route change initiated', {
+      from: currentRoute,
+      to: route,
+      trigger: 'user_action'
     });
-    
-    this.state.loading = true;
-    
-    try {
-      const jobs = await fetchJobs();
-      this.state.jobs = jobs;
-      this.state.loading = false;
-      
-      debugState('Jobs loaded successfully', { 
-        jobCount: jobs.length,
-        loadTime: performance.now() - start
-      });
-    } catch (error) {
-      this.state.error = error;
-      this.state.loading = false;
-      
-      debugState('Job loading failed', { 
-        error: error.message 
-      });
-    }
   }
 }
 ```
 
+### Legacy Function Compatibility (Still Works)
+```typescript
+// Legacy approach continues to work unchanged
+import { debugAPI, debugState, debugComponent } from '$lib/utils/debug';
+
+// These calls work exactly as before
+debugAPI('API request', { url, method });
+debugState('State changed', { oldState, newState });
+debugComponent('Component mounted', { name });
+```
+
+### Mixed Usage Pattern (Gradual Migration)
+```typescript
+// You can mix both approaches during migration
+import { debugAPI, debugNetwork, debugData } from '$lib/utils/debug';
+
+// Existing code using legacy functions
+debugAPI('Legacy API call', { url });
+
+// New code using category system
+debugNetwork.api('New API call', { url, method });
+debugData.database('Query executed', { sql, duration });
+```
+
 ### Performance Monitoring
 ```typescript
-import { debugPerformance } from '$lib/utils/debug';
+import { debugMonitor } from '$lib/utils/debug';
 
 function measureRenderTime(componentName: string) {
   const start = performance.now();
@@ -188,10 +261,11 @@ function measureRenderTime(componentName: string) {
   return {
     end: () => {
       const duration = performance.now() - start;
-      debugPerformance('Component render completed', {
+      debugMonitor.performance('Component render completed', {
         component: componentName,
         duration: `${duration.toFixed(2)}ms`,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        memoryUsage: performance.memory?.usedJSHeapSize || 'unknown'
       });
     }
   };
@@ -205,24 +279,26 @@ timer.end();
 
 ### Error Handling
 ```typescript
-import { debugError } from '$lib/utils/debug';
+import { debugMonitor } from '$lib/utils/debug';
 
 function handleApiError(error: Error, context: string) {
-  debugError('API error occurred', {
+  debugMonitor.error('API error occurred', {
     error: error.message,
-    stack: error.stack,
+    stack: error.stack?.substring(0, 500), // Truncate for readability
     context: context,
     timestamp: new Date().toISOString(),
-    userAgent: navigator.userAgent
+    userAgent: navigator.userAgent.substring(0, 100),
+    url: window.location.href
   });
   
   // Error recovery logic
   const recovery = attemptRecovery(error);
   
-  debugError('Error recovery attempted', {
+  debugMonitor.error('Error recovery attempted', {
     originalError: error.message,
     recoveryAction: recovery.action,
-    success: recovery.success
+    success: recovery.success,
+    retryCount: recovery.attempts
   });
 }
 ```
@@ -256,58 +332,81 @@ console.log('Debug pattern:', status.current);
 
 ## 📋 Migration Patterns
 
-### Before Epic 014 (Deprecated)
-```typescript
-// OLD - Manual console.log (AVOID)
-console.log('User logged in:', user);
-console.log('API response:', response);
+### Legacy Functions → Category System Migration
 
-// OLD - Technician assignment namespace (REMOVED)
-import { debugTechAssignment } from '$lib/utils/debug';
-debugTechAssignment('Assignment created', data); // ❌ Removed
+#### Before (Legacy - Still Works)
+```typescript
+// Legacy approach (19 individual functions)
+import { debugAPI, debugAuth, debugComponent, debugState } from '$lib/utils/debug';
+
+debugAPI('API request', { url, method });
+debugAuth('User authenticated', { userId });
+debugComponent('Component mounted', { name });
+debugState('State updated', { oldState, newState });
 ```
 
-### After Epic 014 (Current)
+#### After (Category System - Recommended)
 ```typescript
-// NEW - Secure debug functions
-import { debugAuth, debugAPI } from '$lib/utils/debug';
+// Category approach (6 organized categories)
+import { debugNetwork, debugData, debugUI } from '$lib/utils/debug';
 
-debugAuth('User logged in', { user }); // ✅ Automatic redaction
-debugAPI('API response', { response }); // ✅ Secure logging
+// Network category replaces: debugAPI, debugAuth, debugSecurity, debugIntegration, debugWebSocket
+debugNetwork.api('API request', { url, method });
+debugNetwork.auth('User authenticated', { userId });
 
-// NEW - Use appropriate namespace
-import { debugWorkflow } from '$lib/utils/debug';
-debugWorkflow('Assignment created', data); // ✅ Correct namespace
+// Data category replaces: debugDatabase, debugCache, debugValidation, debugReactive, debugState
+debugData.state('State updated', { oldState, newState });
+debugData.cache('Cache operation', { key, action });
+
+// UI category replaces: debugComponent, debugNavigation, debugNotification
+debugUI.component('Component mounted', { name });
+debugUI.navigation('Route changed', { from, to });
+```
+
+#### Mixed Migration Strategy (Gradual Transition)
+```typescript
+// You can mix both approaches during migration
+import { debugAPI, debugNetwork, debugData } from '$lib/utils/debug';
+
+// Keep existing legacy calls during transition
+debugAPI('Existing API call', { url }); // Legacy - still works
+
+// Use categories for new code
+debugNetwork.api('New API call', { url, method }); // Category - recommended
+debugData.database('New query', { sql, duration }); // Category - recommended
 ```
 
 ## 🔍 Advanced Usage
 
 ### Category-Based Debugging
 ```typescript
-// Import by category
-import { debugFunctionsByCategory } from '$lib/utils/debug';
+// Import categories directly
+import { debugNetwork, debugData, debugMonitor, debugUI, debugBusiness } from '$lib/utils/debug';
 
-const { core, data, monitoring, ui, business } = debugFunctionsByCategory;
-
-// Use category functions
-core.debugAPI('API call', data);
-data.debugDatabase('Query executed', query);
-monitoring.debugPerformance('Render time', metrics);
+// Use category functions with sub-namespaces
+debugNetwork.api('API call', data);
+debugData.database('Query executed', query);
+debugMonitor.performance('Render time', metrics);
+debugUI.component('Component rendered', { name, props });
+debugBusiness.workflow('Process step completed', { step, result });
 ```
 
-### Custom Debug Patterns
+### Advanced Debug Patterns
 ```bash
-# Enable all core system debugging
-DEBUG=bos:api,bos:auth,bos:security,bos:reactive,bos:state,bos:component,bos:cache npm run dev
+# Enable all categories
+DEBUG=bos:network,bos:data,bos:ui,bos:business,bos:monitor,bos:system npm run dev
 
-# Enable all except cache
-DEBUG=bos:*,-bos:cache npm run dev
+# Enable specific category sub-namespaces
+DEBUG=bos:network:api,bos:data:database,bos:monitor:performance npm run dev
 
-# Enable only business logic
-DEBUG=bos:workflow,bos:search,bos:upload,bos:export,bos:integration npm run dev
+# Enable entire categories
+DEBUG=bos:network,bos:data npm run dev
 
-# Performance debugging only
-DEBUG=bos:performance,bos:error npm run dev
+# Enable all except specific sub-namespaces
+DEBUG=bos:*,-bos:data:cache,-bos:ui:notification npm run dev
+
+# Legacy pattern support (still works)
+DEBUG=bos:api,bos:auth,bos:component npm run dev
 ```
 
 ### Conditional Debugging
@@ -315,9 +414,15 @@ DEBUG=bos:performance,bos:error npm run dev
 import { isDebugEnabled } from '$lib/utils/debug';
 
 // Check if debugging is enabled before expensive operations
-if (isDebugEnabled('bos:performance')) {
+if (isDebugEnabled('bos:monitor:performance')) {
   const metrics = calculateExpensiveMetrics();
-  debugPerformance('Expensive calculation', metrics);
+  debugMonitor.performance('Expensive calculation', metrics);
+}
+
+// Check category-level enablement
+if (isDebugEnabled('bos:network')) {
+  const networkStats = gatherNetworkStatistics();
+  debugNetwork('Network statistics', networkStats);
 }
 ```
 
@@ -376,38 +481,39 @@ debugAPI('Sensitive operation', { apiKey: 'secret' });
 
 ## 📚 Reference
 
-### All Available Debug Functions
+### All Available Debug Categories
 ```typescript
-// Core system
-debugAPI, debugAuth, debugSecurity, debugReactive, 
-debugState, debugComponent, debugCache
+// 6 Main Categories
+debugNetwork    // api, auth, security, integration, websocket
+debugData       // database, cache, validation, reactive, state
+debugUI         // component, navigation, notification
+debugBusiness   // workflow, search, upload, export
+debugMonitor    // performance, error
+debugSystem     // framework, development
 
-// Data & persistence
-debugDatabase, debugWebSocket, debugValidation
-
-// Performance & monitoring
-debugPerformance, debugError
-
-// User interface
-debugNavigation, debugNotification
-
-// Business logic
-debugWorkflow, debugSearch, debugUpload, debugExport, debugIntegration
+// Legacy Functions (backward compatibility)
+debugAPI, debugAuth, debugSecurity, debugReactive, debugState, debugComponent, 
+debugCache, debugDatabase, debugWebSocket, debugValidation, debugPerformance, 
+debugError, debugNavigation, debugNotification, debugWorkflow, debugSearch, 
+debugUpload, debugExport, debugIntegration
 ```
 
 ### Import Patterns
 ```typescript
-// Individual imports (recommended)
+// Category imports (recommended)
+import { debugNetwork, debugData, debugUI } from '$lib/utils/debug';
+
+// Legacy individual imports (still supported)
 import { debugAPI, debugAuth } from '$lib/utils/debug';
 
-// Category imports
-import { debugFunctionsByCategory } from '$lib/utils/debug';
+// Mixed imports (during migration)
+import { debugAPI, debugNetwork, debugData } from '$lib/utils/debug';
 
-// All functions
-import { debugFunctions } from '$lib/utils/debug';
+// All categories
+import { categoryDebugFunctions } from '$lib/utils/debug';
 
 // Default export (convenience)
-import debug from '$lib/utils/debug'; // Returns debugAPI
+import debug from '$lib/utils/debug'; // Returns debugAPI for backward compatibility
 ```
 
 ---
@@ -417,13 +523,14 @@ import debug from '$lib/utils/debug'; // Returns debugAPI
 ### Epic Documentation
 - **[Epic-012: Secure Debug Architecture](../../docs/epics/completed/epic-012-secure-debug-architecture.md)** - Initial debug system implementation
 - **[Epic-013: Tasklist Refactoring](../../docs/epics/completed/epic-013-tasklist-architectural-refactoring.md)** - Architectural improvements
-- **[Epic-014: Debug System Standardization](../../docs/epics/completed/epic-014-debug-system-standardization.md)** - Debug system expansion
-- **[Epic-015: Debug System Completion](../../docs/epics/completed/epic-015-debug-system-completion.md)** - Final implementation
+- **[Epic-014: Debug System Standardization](../../docs/epics/completed/epic-014-debug-system-standardization.md)** - 19-namespace system expansion
+- **[Epic-015: Debug System Completion](../../docs/epics/completed/epic-015-debug-system-completion.md)** - Enhanced functionality
+- **[Epic-016: 6-Category System](../../docs/epics/completed/epic-016-category-debug-system.md)** - Current 6-category implementation
 
 ### Debug System Documentation
-- **[Debug Best Practices](./debug-best-practices.md)** - Development debugging patterns
-- **[Debug Migration Guide](./debug-migration-guide.md)** - Migration from console.log to debug system
-- **[Debug Quick Reference](./debug-quick-reference.md)** - Quick debug reference
+- **[Debug Best Practices](./best-practices.md)** - 6-category development patterns
+- **[Debug Migration Guide](./migration-guide.md)** - Migration from 19 functions to 6 categories
+- **[Debug Quick Reference](./quick-reference.md)** - Quick category and legacy reference
 
 ### Architecture & Implementation
 - **[Technical Decisions](../../docs/standards/technical-decisions.md)** - Architecture decision records
@@ -442,8 +549,10 @@ import debug from '$lib/utils/debug'; // Returns debugAPI
 
 ---
 
-**Epic 014 Status**: ✅ Complete
-**Debug Namespaces**: 19 implemented
+**Epic 016 Status**: ✅ Complete
+**Debug Categories**: 6 implemented with sub-namespace methods
+**Legacy Functions**: 19 functions with 100% backward compatibility
 **Console.log Migrations**: 306 completed
-**Security**: Automatic redaction active
+**Security**: Enhanced automatic redaction active
+**Performance**: Optimized with lazy loading and memory efficiency
 **Testing**: Integrated with Playwright and Vitest

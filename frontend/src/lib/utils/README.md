@@ -126,9 +126,16 @@ debugPerformance('Database query completed', {
 
 ## 📖 Learn More
 
-See the complete documentation in `/docs/` for:
-- Detailed usage examples
-- Migration patterns from console.log
-- Security and performance best practices
-- Testing integration strategies
-- Advanced debugging patterns
+See the complete documentation in `/docs/debug/javascript-console/` for:
+- **6-category system guide** with comprehensive examples
+- **Migration guide** from 19 functions to 6 categories
+- **Enhanced security and performance** best practices
+- **Browser helper usage** and category exploration
+- **Testing integration** for both category and legacy systems
+- **Quick reference** for all debug patterns
+
+### Quick Access
+- 📚 [Main Guide](../../../docs/debug/javascript-console/epic-014-debug-system-guide.md) - Complete 6-category system documentation
+- 🔄 [Migration Guide](../../../docs/debug/javascript-console/migration-guide.md) - Legacy to category migration
+- ⚡ [Quick Reference](../../../docs/debug/javascript-console/quick-reference.md) - Both systems at a glance
+- 🎯 [Best Practices](../../../docs/debug/javascript-console/best-practices.md) - Category-based patterns
