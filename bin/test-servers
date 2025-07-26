@@ -5,9 +5,15 @@
 
 set -e
 
-# Test server ports (offset +1000 from dev) - use env vars if set
+# Load test environment variables if .env.test exists
+if [ -f ".env.test" ]; then
+    export $(grep -v '^#' .env.test | xargs)
+    echo "✅ Loaded test environment variables"
+fi
+
+# Test server ports - use env vars if set, otherwise defaults
 RAILS_TEST_PORT=${RAILS_TEST_PORT:-4000}
-ZERO_TEST_PORT=${ZERO_TEST_PORT:-5848}  
+ZERO_TEST_PORT=${ZERO_TEST_PORT:-4850}  # Zero test port from config/zero.yml
 FRONTEND_TEST_PORT=${FRONTEND_TEST_PORT:-6173}
 
 # Color codes for output
@@ -26,49 +32,58 @@ check_port() {
     
     if lsof -ti tcp:$port >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️  Port $port already in use (${service}), reusing existing server${NC}"
-        return 1  # Port in use
+        echo "in_use"  # Return status via stdout
     else
         echo -e "${GREEN}✅ Port $port available for ${service}${NC}"
-        return 0  # Port available
+        echo "available"  # Return status via stdout
     fi
 }
 
 # Check all ports and decide strategy  
-check_port $RAILS_TEST_PORT "Rails Test"
-rails_available=$?
+echo "🔍 Checking Rails port..."
+rails_status=$(check_port $RAILS_TEST_PORT "Rails Test" | tail -1)
+echo "🔍 Rails check complete, status: $rails_status"
 
-check_port $ZERO_TEST_PORT "Zero Test" 
-zero_available=$?
+echo "🔍 Checking Zero port..."
+zero_status=$(check_port $ZERO_TEST_PORT "Zero Test" | tail -1)
+echo "🔍 Zero check complete, status: $zero_status"
 
-check_port $FRONTEND_TEST_PORT "Frontend Test"
-frontend_available=$?
+echo "🔍 Checking Frontend port..."
+frontend_status=$(check_port $FRONTEND_TEST_PORT "Frontend Test" | tail -1)
+echo "🔍 Frontend check complete, status: $frontend_status"
 
 # Build command array for concurrently
 commands=()
 names=()
 colors=()
 
-if [ $rails_available -eq 0 ]; then  # 0 means port available
+if [ "$rails_status" = "available" ]; then
     commands+=("RAILS_ENV=test bin/rails server -p $RAILS_TEST_PORT -b 0.0.0.0")
     names+=("rails-test")
     colors+=("red")
 fi
 
-# Skip Zero server for now if not configured properly
-if [ $zero_available -eq 0 ] && [ -n "$ZERO_UPSTREAM_DB" ]; then  # Only start if DB configured
-    # Zero server - use official zero-cache-dev with port configuration
-    commands+=("npx zero-cache-dev --port $ZERO_TEST_PORT")
+# Start Zero server (simplified for now)
+if [ "$zero_status" = "available" ] && [ -n "$ZERO_UPSTREAM_DB" ]; then  # Only start if configured
+    commands+=("ZERO_UPSTREAM_DB=$ZERO_UPSTREAM_DB npx zero-cache-dev --port $ZERO_TEST_PORT")
     names+=("zero-test") 
     colors+=("blue")
-elif [ $zero_available -eq 0 ]; then
+elif [ "$zero_status" = "available" ]; then
     echo -e "${YELLOW}⚠️  Skipping Zero server (ZERO_UPSTREAM_DB not configured)${NC}"
 fi
 
-if [ $frontend_available -eq 0 ]; then  # 0 means port available
-    commands+=("cd frontend && npm run preview:test -- --port $FRONTEND_TEST_PORT")
+if [ "$frontend_status" = "available" ]; then
+    commands+=("cd frontend && npm run dev -- --port $FRONTEND_TEST_PORT")
     names+=("frontend-test")
     colors+=("green")
 fi
+
+# Debug: Show what we detected
+echo "🔍 Server status check:"
+echo "   Rails (port $RAILS_TEST_PORT): $rails_status"
+echo "   Zero (port $ZERO_TEST_PORT): $zero_status"  
+echo "   Frontend (port $FRONTEND_TEST_PORT): $frontend_status"
+echo "   Commands to start: ${#commands[@]}"
 
 # Start servers if any need to be started
 if [ ${#commands[@]} -gt 0 ]; then
@@ -107,11 +122,36 @@ else
     echo ""
     echo "⏳ Monitoring test servers... (Press Ctrl+C to stop)"
     
+    # Build list of ports to monitor (only those that should be running)
+    monitor_ports=()
+    
+    # Add Rails port if it should be running
+    if lsof -ti tcp:$RAILS_TEST_PORT >/dev/null 2>&1; then
+        monitor_ports+=($RAILS_TEST_PORT)
+    fi
+    
+    # Add Zero port if it should be running
+    if lsof -ti tcp:$ZERO_TEST_PORT >/dev/null 2>&1; then
+        monitor_ports+=($ZERO_TEST_PORT)
+    fi
+    
+    # Add Frontend port if it should be running
+    if lsof -ti tcp:$FRONTEND_TEST_PORT >/dev/null 2>&1; then
+        monitor_ports+=($FRONTEND_TEST_PORT)
+    fi
+    
+    if [ ${#monitor_ports[@]} -eq 0 ]; then
+        echo "⚠️  No servers found to monitor!"
+        exit 1
+    fi
+    
+    echo "📡 Monitoring ports: ${monitor_ports[*]}"
+    
     # Keep the process alive by monitoring the servers
     while true; do
         sleep 30
-        # Check if any server died and restart if needed
-        for port in $RAILS_TEST_PORT $ZERO_TEST_PORT $FRONTEND_TEST_PORT; do
+        # Check if any monitored server died
+        for port in "${monitor_ports[@]}"; do
             if ! lsof -ti tcp:$port >/dev/null 2>&1; then
                 echo "⚠️  Server on port $port stopped, exiting..."
                 exit 1
