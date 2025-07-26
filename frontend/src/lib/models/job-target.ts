@@ -1,20 +1,23 @@
 /**
  * JobTarget - ActiveRecord model (non-reactive)
- * 
+ *
  * Promise-based Rails-compatible model for job_targets table.
  * Use this for server-side code, Node.js scripts, or non-reactive contexts.
- * 
+ *
  * For reactive Svelte components, use ReactiveJobTarget instead:
  * ```typescript
  * import { ReactiveJobTarget as JobTarget } from './reactive-job-target';
  * ```
- * 
- * Generated: 2025-07-25 22:50:45 UTC
+ *
+ * Generated: 2025-07-26 05:36:22 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { JobTargetData, CreateJobTargetData, UpdateJobTargetData } from './types/job-target-data';
-import { registerModelRelationships } from './base/scoped-query-base';
+import type {
+  JobTargetData,
+  CreateJobTargetData,
+  UpdateJobTargetData,
+} from './types/job-target-data';
 
 /**
  * ActiveRecord configuration for JobTarget
@@ -23,32 +26,32 @@ const JobTargetConfig = {
   tableName: 'job_targets',
   className: 'JobTarget',
   primaryKey: 'id',
-  supportsDiscard: false
+  supportsDiscard: false,
 };
 
 /**
  * JobTarget ActiveRecord instance
- * 
+ *
  * @example
  * ```typescript
  * // Find by ID (throws if not found)
  * const job_target = await JobTarget.find('123');
- * 
+ *
  * // Find by conditions (returns null if not found)
  * const job_target = await JobTarget.findBy({ title: 'Test' });
- * 
+ *
  * // Create new record
  * const newJobTarget = await JobTarget.create({ title: 'New Task' });
- * 
+ *
  * // Update existing record
  * const updatedJobTarget = await JobTarget.update('123', { title: 'Updated' });
- * 
+ *
  * // Soft delete (discard gem)
  * await JobTarget.discard('123');
- * 
+ *
  * // Restore discarded
  * await JobTarget.undiscard('123');
- * 
+ *
  * // Query with scopes
  * const allJobTargets = await JobTarget.all().all();
  * const activeJobTargets = await JobTarget.kept().all();

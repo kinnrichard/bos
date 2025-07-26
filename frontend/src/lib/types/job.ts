@@ -116,20 +116,21 @@ export interface PopulatedJob extends Omit<Job, 'relationships'> {
 }
 
 // Status and priority enums for type safety
-export type JobStatus = 
+export type JobStatus =
   | 'open'
-  | 'in_progress' 
+  | 'in_progress'
   | 'waiting_for_customer'
   | 'waiting_for_scheduled_appointment'
   | 'paused'
   | 'successfully_completed'
   | 'cancelled';
 
-export type JobPriority = 
-  | 'low'
-  | 'normal'
-  | 'high'
+export type JobPriority =
   | 'critical'
+  | 'very_high'
+  | 'high'
+  | 'normal'
+  | 'low'
   | 'proactive_followup';
 
 // Individual job API response (for job detail view)

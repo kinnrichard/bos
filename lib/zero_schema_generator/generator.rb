@@ -58,17 +58,15 @@ module ZeroSchemaGenerator
       FileUtils.mkdir_p(File.dirname(@output_path))
       FileUtils.mkdir_p(File.dirname(@types_path)) if @types_path != @output_path
 
-      # Backup existing file if it has customizations
+      # Check for existing customizations and warn user
       if File.exist?(@output_path)
         existing_content = File.read(@output_path)
         customizations = detect_customizations(existing_content)
 
         if customizations.any?
-          backup_path = "#{@output_path}.backup.#{Time.current.strftime('%Y%m%d_%H%M%S')}"
-          File.write(backup_path, existing_content)
-          puts "💾 Backed up existing schema with customizations to: #{backup_path}"
-          puts "🔧 Found customizations: #{customizations.join(', ')}"
+          puts "🔧 Found customizations in existing schema: #{customizations.join(', ')}"
           puts "📝 Consider moving customizations to a separate file or custom schema extension"
+          puts "💡 Existing customizations will be overwritten (restore from git if needed)"
         end
       end
 

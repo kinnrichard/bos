@@ -1,15 +1,15 @@
 /**
  * ReactiveDevice - ReactiveRecord model (Svelte 5 reactive)
- * 
+ *
  * Reactive Rails-compatible model for devices table.
  * Automatically updates Svelte components when data changes.
- * 
+ *
  * For non-reactive contexts, use Device instead:
  * ```typescript
  * import { Device } from './device';
  * ```
- * 
- * Generated: 2025-07-25 22:50:45 UTC
+ *
+ * Generated: 2025-07-26 05:03:11 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -23,27 +23,27 @@ const ReactiveDeviceConfig = {
   tableName: 'devices',
   className: 'ReactiveDevice',
   primaryKey: 'id',
-  supportsDiscard: false
+  supportsDiscard: false,
 };
 
 /**
  * ReactiveDevice ReactiveRecord instance
- * 
+ *
  * @example
  * ```svelte
  * <!-- In Svelte component -->
  * <script>
  *   import { ReactiveDevice } from '$lib/models/reactive-device';
- *   
+ *
  *   // Reactive query - automatically updates when data changes
  *   const deviceQuery = ReactiveDevice.find('123');
- *   
+ *
  *   // Access reactive data
  *   $: device = deviceQuery.data;
  *   $: isLoading = deviceQuery.isLoading;
  *   $: error = deviceQuery.error;
  * </script>
- * 
+ *
  * {#if isLoading}
  *   Loading...
  * {:else if error}
@@ -52,14 +52,14 @@ const ReactiveDeviceConfig = {
  *   <p>{device.title}</p>
  * {/if}
  * ```
- * 
+ *
  * @example
  * ```typescript
  * // Mutation operations (still async)
  * const newDevice = await ReactiveDevice.create({ title: 'New Task' });
  * await ReactiveDevice.update('123', { title: 'Updated' });
  * await ReactiveDevice.discard('123');
- * 
+ *
  * // Reactive queries
  * const allDevicesQuery = ReactiveDevice.all().all();
  * const activeDevicesQuery = ReactiveDevice.kept().all();
@@ -71,18 +71,17 @@ export const ReactiveDevice = createReactiveRecord<DeviceData>(ReactiveDeviceCon
 registerModelRelationships('devices', {
   client: { type: 'belongsTo', model: 'Client' },
   person: { type: 'belongsTo', model: 'Person' },
-  activityLogs: { type: 'hasMany', model: 'ActivityLog' }
+  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
 });
-
 
 /**
  * Import alias for easy switching between reactive/non-reactive
- * 
+ *
  * @example
  * ```typescript
  * // Use reactive model in Svelte components
  * import { ReactiveDevice as Device } from './reactive-device';
- * 
+ *
  * // Use like ActiveRecord but with reactive queries
  * const deviceQuery = Device.find('123');
  * ```

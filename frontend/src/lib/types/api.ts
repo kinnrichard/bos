@@ -131,7 +131,7 @@ export interface JobAttributes {
   title: string;
   description?: string;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: 'critical' | 'very_high' | 'high' | 'normal' | 'low' | 'proactive_followup';
   due_date?: string;
   start_date?: string;
   created_at: string;
@@ -146,7 +146,7 @@ export interface JobCreateRequest {
   title: string;
   description?: string;
   client_id: string;
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  priority?: 'critical' | 'very_high' | 'high' | 'normal' | 'low' | 'proactive_followup';
   due_date?: string;
   start_date?: string;
   technician_ids?: string[];
@@ -156,7 +156,7 @@ export interface JobUpdateRequest {
   title?: string;
   description?: string;
   status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-  priority?: 'low' | 'normal' | 'high' | 'critical' | 'proactive_followup';
+  priority?: 'critical' | 'very_high' | 'high' | 'normal' | 'low' | 'proactive_followup';
   due_on?: string | null;
   due_time?: string | null;
   start_on?: string | null;

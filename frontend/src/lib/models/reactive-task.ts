@@ -1,15 +1,15 @@
 /**
  * ReactiveTask - ReactiveRecord model (Svelte 5 reactive)
- * 
+ *
  * Reactive Rails-compatible model for tasks table.
  * Automatically updates Svelte components when data changes.
- * 
+ *
  * For non-reactive contexts, use Task instead:
  * ```typescript
  * import { Task } from './task';
  * ```
- * 
- * Generated: 2025-07-25 22:50:45 UTC
+ *
+ * Generated: 2025-07-26 04:59:03 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -23,27 +23,27 @@ const ReactiveTaskConfig = {
   tableName: 'tasks',
   className: 'ReactiveTask',
   primaryKey: 'id',
-  supportsDiscard: true
+  supportsDiscard: true,
 };
 
 /**
  * ReactiveTask ReactiveRecord instance
- * 
+ *
  * @example
  * ```svelte
  * <!-- In Svelte component -->
  * <script>
  *   import { ReactiveTask } from '$lib/models/reactive-task';
- *   
+ *
  *   // Reactive query - automatically updates when data changes
  *   const taskQuery = ReactiveTask.find('123');
- *   
+ *
  *   // Access reactive data
  *   $: task = taskQuery.data;
  *   $: isLoading = taskQuery.isLoading;
  *   $: error = taskQuery.error;
  * </script>
- * 
+ *
  * {#if isLoading}
  *   Loading...
  * {:else if error}
@@ -52,14 +52,14 @@ const ReactiveTaskConfig = {
  *   <p>{task.title}</p>
  * {/if}
  * ```
- * 
+ *
  * @example
  * ```typescript
  * // Mutation operations (still async)
  * const newTask = await ReactiveTask.create({ title: 'New Task' });
  * await ReactiveTask.update('123', { title: 'Updated' });
  * await ReactiveTask.discard('123');
- * 
+ *
  * // Reactive queries
  * const allTasksQuery = ReactiveTask.all().all();
  * const activeTasksQuery = ReactiveTask.kept().all();
@@ -78,18 +78,17 @@ registerModelRelationships('tasks', {
   activityLogs: { type: 'hasMany', model: 'ActivityLog' },
   subtasks: { type: 'hasMany', model: 'Task' },
   client: { type: 'hasOne', model: 'Client' },
-  nextRepositionedTask: { type: 'hasOne', model: 'Task' }
+  nextRepositionedTask: { type: 'hasOne', model: 'Task' },
 });
-
 
 /**
  * Import alias for easy switching between reactive/non-reactive
- * 
+ *
  * @example
  * ```typescript
  * // Use reactive model in Svelte components
  * import { ReactiveTask as Task } from './reactive-task';
- * 
+ *
  * // Use like ActiveRecord but with reactive queries
  * const taskQuery = Task.find('123');
  * ```

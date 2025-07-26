@@ -1,15 +1,15 @@
 /**
  * ReactiveUser - ReactiveRecord model (Svelte 5 reactive)
- * 
+ *
  * Reactive Rails-compatible model for users table.
  * Automatically updates Svelte components when data changes.
- * 
+ *
  * For non-reactive contexts, use User instead:
  * ```typescript
  * import { User } from './user';
  * ```
- * 
- * Generated: 2025-07-25 22:50:45 UTC
+ *
+ * Generated: 2025-07-26 05:03:11 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -23,27 +23,27 @@ const ReactiveUserConfig = {
   tableName: 'users',
   className: 'ReactiveUser',
   primaryKey: 'id',
-  supportsDiscard: false
+  supportsDiscard: false,
 };
 
 /**
  * ReactiveUser ReactiveRecord instance
- * 
+ *
  * @example
  * ```svelte
  * <!-- In Svelte component -->
  * <script>
  *   import { ReactiveUser } from '$lib/models/reactive-user';
- *   
+ *
  *   // Reactive query - automatically updates when data changes
  *   const userQuery = ReactiveUser.find('123');
- *   
+ *
  *   // Access reactive data
  *   $: user = userQuery.data;
  *   $: isLoading = userQuery.isLoading;
  *   $: error = userQuery.error;
  * </script>
- * 
+ *
  * {#if isLoading}
  *   Loading...
  * {:else if error}
@@ -52,14 +52,14 @@ const ReactiveUserConfig = {
  *   <p>{user.title}</p>
  * {/if}
  * ```
- * 
+ *
  * @example
  * ```typescript
  * // Mutation operations (still async)
  * const newUser = await ReactiveUser.create({ title: 'New Task' });
  * await ReactiveUser.update('123', { title: 'Updated' });
  * await ReactiveUser.discard('123');
- * 
+ *
  * // Reactive queries
  * const allUsersQuery = ReactiveUser.all().all();
  * const activeUsersQuery = ReactiveUser.kept().all();
@@ -79,18 +79,17 @@ registerModelRelationships('users', {
   notes: { type: 'hasMany', model: 'Note' },
   createdJobs: { type: 'hasMany', model: 'Job' },
   refreshTokens: { type: 'hasMany', model: 'RefreshToken' },
-  revokedTokens: { type: 'hasMany', model: 'RevokedToken' }
+  revokedTokens: { type: 'hasMany', model: 'RevokedToken' },
 });
-
 
 /**
  * Import alias for easy switching between reactive/non-reactive
- * 
+ *
  * @example
  * ```typescript
  * // Use reactive model in Svelte components
  * import { ReactiveUser as User } from './reactive-user';
- * 
+ *
  * // Use like ActiveRecord but with reactive queries
  * const userQuery = User.find('123');
  * ```

@@ -477,7 +477,7 @@ module Zero
 
           import { createActiveRecord } from './base/active-record';
           import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';
-          import { registerModelRelationships } from './base/scoped-query-base';
+          #{generate_relationship_import(relationships)}
 
           /**
            * ActiveRecord configuration for #{class_name}
@@ -554,7 +554,7 @@ module Zero
 
           import { createReactiveRecord } from './base/reactive-record';
           import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';
-          import { registerModelRelationships } from './base/scoped-query-base';
+          #{generate_relationship_import(relationships)}
 
           /**
            * ReactiveRecord configuration for #{class_name}
@@ -650,6 +650,21 @@ module Zero
           "true"
         else
           "false"
+        end
+      end
+
+      def generate_relationship_import(relationships)
+        # Only import registerModelRelationships if there are actual relationships
+        has_relationships = relationships && (
+          relationships[:belongs_to]&.any? ||
+          relationships[:has_many]&.any? ||
+          relationships[:has_one]&.any?
+        )
+
+        if has_relationships
+          "import { registerModelRelationships } from './base/scoped-query-base';"
+        else
+          ""
         end
       end
 

@@ -1,19 +1,23 @@
 /**
  * ReactiveJobAssignment - ReactiveRecord model (Svelte 5 reactive)
- * 
+ *
  * Reactive Rails-compatible model for job_assignments table.
  * Automatically updates Svelte components when data changes.
- * 
+ *
  * For non-reactive contexts, use JobAssignment instead:
  * ```typescript
  * import { JobAssignment } from './job-assignment';
  * ```
- * 
- * Generated: 2025-07-25 22:50:45 UTC
+ *
+ * Generated: 2025-07-26 05:03:11 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { JobAssignmentData, CreateJobAssignmentData, UpdateJobAssignmentData } from './types/job-assignment-data';
+import type {
+  JobAssignmentData,
+  CreateJobAssignmentData,
+  UpdateJobAssignmentData,
+} from './types/job-assignment-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -23,27 +27,27 @@ const ReactiveJobAssignmentConfig = {
   tableName: 'job_assignments',
   className: 'ReactiveJobAssignment',
   primaryKey: 'id',
-  supportsDiscard: false
+  supportsDiscard: false,
 };
 
 /**
  * ReactiveJobAssignment ReactiveRecord instance
- * 
+ *
  * @example
  * ```svelte
  * <!-- In Svelte component -->
  * <script>
  *   import { ReactiveJobAssignment } from '$lib/models/reactive-job-assignment';
- *   
+ *
  *   // Reactive query - automatically updates when data changes
  *   const job_assignmentQuery = ReactiveJobAssignment.find('123');
- *   
+ *
  *   // Access reactive data
  *   $: job_assignment = job_assignmentQuery.data;
  *   $: isLoading = job_assignmentQuery.isLoading;
  *   $: error = job_assignmentQuery.error;
  * </script>
- * 
+ *
  * {#if isLoading}
  *   Loading...
  * {:else if error}
@@ -52,36 +56,37 @@ const ReactiveJobAssignmentConfig = {
  *   <p>{job_assignment.title}</p>
  * {/if}
  * ```
- * 
+ *
  * @example
  * ```typescript
  * // Mutation operations (still async)
  * const newJobAssignment = await ReactiveJobAssignment.create({ title: 'New Task' });
  * await ReactiveJobAssignment.update('123', { title: 'Updated' });
  * await ReactiveJobAssignment.discard('123');
- * 
+ *
  * // Reactive queries
  * const allJobAssignmentsQuery = ReactiveJobAssignment.all().all();
  * const activeJobAssignmentsQuery = ReactiveJobAssignment.kept().all();
  * ```
  */
-export const ReactiveJobAssignment = createReactiveRecord<JobAssignmentData>(ReactiveJobAssignmentConfig);
+export const ReactiveJobAssignment = createReactiveRecord<JobAssignmentData>(
+  ReactiveJobAssignmentConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('job_assignments', {
   job: { type: 'belongsTo', model: 'Job' },
-  user: { type: 'belongsTo', model: 'User' }
+  user: { type: 'belongsTo', model: 'User' },
 });
-
 
 /**
  * Import alias for easy switching between reactive/non-reactive
- * 
+ *
  * @example
  * ```typescript
  * // Use reactive model in Svelte components
  * import { ReactiveJobAssignment as JobAssignment } from './reactive-job-assignment';
- * 
+ *
  * // Use like ActiveRecord but with reactive queries
  * const job_assignmentQuery = JobAssignment.find('123');
  * ```
