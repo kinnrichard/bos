@@ -1,7 +1,7 @@
 /**
  * JobPersonData - TypeScript interface for job_people table
  *
- * Generated from Rails schema: 2025-07-26 02:34:48 UTC
+ * Generated from Rails schema: 2025-07-26 05:23:33 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - person: belongs_to Person
@@ -23,7 +23,6 @@ export interface JobPersonData extends BaseRecord {
   id: string;
   job_id?: string;
   person_id?: string;
-
   job?: JobData; // belongs_to
   person?: PersonData; // belongs_to
 }
@@ -34,7 +33,11 @@ export interface JobPersonData extends BaseRecord {
  */
 export type CreateJobPersonData = Omit<
   JobPersonData,
-  'id' | 'created_at' | 'updated_at' | 'job' | 'person'
+  'id',
+  'created_at',
+  'updated_at',
+  'job',
+  'person'
 >;
 
 /**
@@ -42,5 +45,5 @@ export type CreateJobPersonData = Omit<
  * All fields optional except id, excludes relationships
  */
 export type UpdateJobPersonData = Partial<
-  Omit<JobPersonData, 'id' | 'created_at' | 'updated_at' | 'job' | 'person'>
+  Omit<JobPersonData, 'id', 'created_at', 'updated_at', 'job', 'person'>
 >;

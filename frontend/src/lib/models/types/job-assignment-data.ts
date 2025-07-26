@@ -1,7 +1,7 @@
 /**
  * JobAssignmentData - TypeScript interface for job_assignments table
  *
- * Generated from Rails schema: 2025-07-26 02:34:48 UTC
+ * Generated from Rails schema: 2025-07-26 05:23:33 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - user: belongs_to User
@@ -23,7 +23,6 @@ export interface JobAssignmentData extends BaseRecord {
   id: string;
   job_id?: string;
   user_id?: string;
-
   job?: JobData; // belongs_to
   user?: UserData; // belongs_to
 }
@@ -34,7 +33,11 @@ export interface JobAssignmentData extends BaseRecord {
  */
 export type CreateJobAssignmentData = Omit<
   JobAssignmentData,
-  'id' | 'created_at' | 'updated_at' | 'job' | 'user'
+  'id',
+  'created_at',
+  'updated_at',
+  'job',
+  'user'
 >;
 
 /**
@@ -42,5 +45,5 @@ export type CreateJobAssignmentData = Omit<
  * All fields optional except id, excludes relationships
  */
 export type UpdateJobAssignmentData = Partial<
-  Omit<JobAssignmentData, 'id' | 'created_at' | 'updated_at' | 'job' | 'user'>
+  Omit<JobAssignmentData, 'id', 'created_at', 'updated_at', 'job', 'user'>
 >;

@@ -1,7 +1,7 @@
 /**
  * ClientData - TypeScript interface for clients table
  *
- * Generated from Rails schema: 2025-07-26 02:34:48 UTC
+ * Generated from Rails schema: 2025-07-26 05:23:33 UTC
  * * Relationships (loaded via includes()):
  * - activityLogs: has_many ActivityLog
  * - people: has_many Person
@@ -28,7 +28,6 @@ export interface ClientData extends BaseRecord {
   name_normalized?: string;
   id: string;
   client_type: 'residential' | 'business';
-
   activityLogs?: ActivityLogData[]; // has_many
   people?: PersonData[]; // has_many
   jobs?: JobData[]; // has_many
@@ -41,7 +40,13 @@ export interface ClientData extends BaseRecord {
  */
 export type CreateClientData = Omit<
   ClientData,
-  'id' | 'created_at' | 'updated_at' | 'activityLogs' | 'people' | 'jobs' | 'devices'
+  'id',
+  'created_at',
+  'updated_at',
+  'activityLogs',
+  'people',
+  'jobs',
+  'devices'
 >;
 
 /**
@@ -49,8 +54,5 @@ export type CreateClientData = Omit<
  * All fields optional except id, excludes relationships
  */
 export type UpdateClientData = Partial<
-  Omit<
-    ClientData,
-    'id' | 'created_at' | 'updated_at' | 'activityLogs' | 'people' | 'jobs' | 'devices'
-  >
+  Omit<ClientData, 'id', 'created_at', 'updated_at', 'activityLogs', 'people', 'jobs', 'devices'>
 >;

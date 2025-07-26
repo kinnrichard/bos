@@ -1,7 +1,7 @@
 /**
  * PersonData - TypeScript interface for people table
  *
- * Generated from Rails schema: 2025-07-26 02:34:48 UTC
+ * Generated from Rails schema: 2025-07-26 05:23:33 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
  * - activityLogs: has_many ActivityLog
@@ -28,7 +28,6 @@ export interface PersonData extends BaseRecord {
   updated_at: string | number;
   id: string;
   client_id?: string;
-
   client?: ClientData; // belongs_to
   activityLogs?: ActivityLogData[]; // has_many
   contactMethods?: ContactMethodData[]; // has_many
@@ -41,7 +40,13 @@ export interface PersonData extends BaseRecord {
  */
 export type CreatePersonData = Omit<
   PersonData,
-  'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'contactMethods' | 'devices'
+  'id',
+  'created_at',
+  'updated_at',
+  'client',
+  'activityLogs',
+  'contactMethods',
+  'devices'
 >;
 
 /**
@@ -51,6 +56,12 @@ export type CreatePersonData = Omit<
 export type UpdatePersonData = Partial<
   Omit<
     PersonData,
-    'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'contactMethods' | 'devices'
+    'id',
+    'created_at',
+    'updated_at',
+    'client',
+    'activityLogs',
+    'contactMethods',
+    'devices'
   >
 >;

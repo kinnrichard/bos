@@ -1,7 +1,7 @@
 /**
  * TaskData - TypeScript interface for tasks table
  *
- * Generated from Rails schema: 2025-07-26 02:34:48 UTC
+ * Generated from Rails schema: 2025-07-26 05:23:33 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - assignedTo: belongs_to User
@@ -45,7 +45,6 @@ export interface TaskData extends BaseRecord {
   repositioned_after_id?: string;
   position_finalized: boolean;
   repositioned_to_top: boolean;
-
   job?: JobData; // belongs_to
   assignedTo?: UserData; // belongs_to
   parent?: TaskData; // belongs_to
@@ -63,18 +62,18 @@ export interface TaskData extends BaseRecord {
  */
 export type CreateTaskData = Omit<
   TaskData,
-  | 'id'
-  | 'created_at'
-  | 'updated_at'
-  | 'job'
-  | 'assignedTo'
-  | 'parent'
-  | 'repositionedAfter'
-  | 'client'
-  | 'nextRepositionedTask'
-  | 'notes'
-  | 'activityLogs'
-  | 'subtasks'
+  'id',
+  'created_at',
+  'updated_at',
+  'job',
+  'assignedTo',
+  'parent',
+  'repositionedAfter',
+  'client',
+  'nextRepositionedTask',
+  'notes',
+  'activityLogs',
+  'subtasks'
 >;
 
 /**
@@ -84,17 +83,17 @@ export type CreateTaskData = Omit<
 export type UpdateTaskData = Partial<
   Omit<
     TaskData,
-    | 'id'
-    | 'created_at'
-    | 'updated_at'
-    | 'job'
-    | 'assignedTo'
-    | 'parent'
-    | 'repositionedAfter'
-    | 'client'
-    | 'nextRepositionedTask'
-    | 'notes'
-    | 'activityLogs'
-    | 'subtasks'
+    'id',
+    'created_at',
+    'updated_at',
+    'job',
+    'assignedTo',
+    'parent',
+    'repositionedAfter',
+    'client',
+    'nextRepositionedTask',
+    'notes',
+    'activityLogs',
+    'subtasks'
   >
 >;

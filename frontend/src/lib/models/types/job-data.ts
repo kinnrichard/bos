@@ -1,7 +1,7 @@
 /**
  * JobData - TypeScript interface for jobs table
  *
- * Generated from Rails schema: 2025-07-26 02:34:48 UTC
+ * Generated from Rails schema: 2025-07-26 05:23:33 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
  * - activityLogs: has_many ActivityLog
@@ -52,8 +52,7 @@ export interface JobData extends BaseRecord {
     | 'waiting_for_scheduled_appointment'
     | 'successfully_completed'
     | 'cancelled';
-  priority: 'critical' | 'high' | 'normal' | 'low' | 'proactive_followup';
-
+  priority: 'critical' | 'very_high' | 'high' | 'normal' | 'low' | 'proactive_followup';
   client?: ClientData; // belongs_to
   activityLogs?: ActivityLogData[]; // has_many
   jobAssignments?: JobAssignmentData[]; // has_many
@@ -72,19 +71,19 @@ export interface JobData extends BaseRecord {
  */
 export type CreateJobData = Omit<
   JobData,
-  | 'id'
-  | 'created_at'
-  | 'updated_at'
-  | 'client'
-  | 'activityLogs'
-  | 'jobAssignments'
-  | 'technicians'
-  | 'jobPeople'
-  | 'people'
-  | 'tasks'
-  | 'allTasks'
-  | 'notes'
-  | 'scheduledDateTimes'
+  'id',
+  'created_at',
+  'updated_at',
+  'client',
+  'activityLogs',
+  'jobAssignments',
+  'technicians',
+  'jobPeople',
+  'people',
+  'tasks',
+  'allTasks',
+  'notes',
+  'scheduledDateTimes'
 >;
 
 /**
@@ -94,18 +93,18 @@ export type CreateJobData = Omit<
 export type UpdateJobData = Partial<
   Omit<
     JobData,
-    | 'id'
-    | 'created_at'
-    | 'updated_at'
-    | 'client'
-    | 'activityLogs'
-    | 'jobAssignments'
-    | 'technicians'
-    | 'jobPeople'
-    | 'people'
-    | 'tasks'
-    | 'allTasks'
-    | 'notes'
-    | 'scheduledDateTimes'
+    'id',
+    'created_at',
+    'updated_at',
+    'client',
+    'activityLogs',
+    'jobAssignments',
+    'technicians',
+    'jobPeople',
+    'people',
+    'tasks',
+    'allTasks',
+    'notes',
+    'scheduledDateTimes'
   >
 >;

@@ -1,7 +1,7 @@
 /**
  * ScheduledDateTimeData - TypeScript interface for scheduled_date_times table
  *
- * Generated from Rails schema: 2025-07-26 02:34:48 UTC
+ * Generated from Rails schema: 2025-07-26 05:23:33 UTC
  * * Relationships (loaded via includes()):
  * - activityLogs: has_many ActivityLog
  * - scheduledDateTimeUsers: has_many ScheduledDateTimeUser
@@ -29,7 +29,6 @@ export interface ScheduledDateTimeData extends BaseRecord {
   schedulable_id?: string;
   scheduled_at?: string | number;
   scheduled_time_set: boolean;
-
   activityLogs?: ActivityLogData[]; // has_many
   scheduledDateTimeUsers?: ScheduledDateTimeUserData[]; // has_many
   users?: UserData[]; // has_many
@@ -41,7 +40,12 @@ export interface ScheduledDateTimeData extends BaseRecord {
  */
 export type CreateScheduledDateTimeData = Omit<
   ScheduledDateTimeData,
-  'id' | 'created_at' | 'updated_at' | 'activityLogs' | 'scheduledDateTimeUsers' | 'users'
+  'id',
+  'created_at',
+  'updated_at',
+  'activityLogs',
+  'scheduledDateTimeUsers',
+  'users'
 >;
 
 /**
@@ -51,6 +55,11 @@ export type CreateScheduledDateTimeData = Omit<
 export type UpdateScheduledDateTimeData = Partial<
   Omit<
     ScheduledDateTimeData,
-    'id' | 'created_at' | 'updated_at' | 'activityLogs' | 'scheduledDateTimeUsers' | 'users'
+    'id',
+    'created_at',
+    'updated_at',
+    'activityLogs',
+    'scheduledDateTimeUsers',
+    'users'
   >
 >;
