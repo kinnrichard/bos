@@ -1,0 +1,41 @@
+{
+  "hooks": {
+    "post-save": {
+      "enabled": true,
+      "script": "./scripts/claude-lint-hook.sh",
+      "failOnError": true,
+      "blockOnFailure": true,
+      "timeout": 60000,
+      "filePatterns": [
+        "*.rb",
+        "*.js",
+        "*.ts", 
+        "*.jsx",
+        "*.tsx",
+        "*.svelte"
+      ],
+      "excludePatterns": [
+        "node_modules/**",
+        "vendor/**",
+        "*.min.js",
+        "*.min.css",
+        "coverage/**",
+        "dist/**",
+        "build/**"
+      ],
+      "description": "Run shared linting system on saved files to ensure code quality"
+    }
+  },
+  "linting": {
+    "enforceBeforeSave": true,
+    "stopOnFirstError": true,
+    "showInline": true,
+    "autoFixOnSave": false,
+    "context": "claude"
+  },
+  "notifications": {
+    "showSuccess": true,
+    "showErrors": true,
+    "showWarnings": true
+  }
+}

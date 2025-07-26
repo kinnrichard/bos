@@ -1,36 +1,65 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(*)",
-      "Read(*)",
-      "Write(*)",
-      "Edit(*)",
-      "MultiEdit(*)",
-      "Glob(*)",
-      "Grep(*)",
-      "LS(*)",
-      "NotebookEdit(*)",
-      "NotebookRead(*)",
-      "WebFetch(*)",
-      "WebSearch(*)",
-      "TodoRead",
-      "TodoWrite",
-      "Agent(*)"
-    ],
-    "deny": []
+  "projectName": "BOS (Business Operating System)",
+  "projectType": "fullstack",
+  "frameworks": ["rails", "svelte", "zero"],
+  
+  "hooks": {
+    "enabled": true,
+    "blockOnFailure": true,
+    "showOutput": true,
+    "timeout": 60000,
+    "contextIsolation": true
   },
-  "env": {
-    "BASH_DEFAULT_TIMEOUT_MS": "300000",
-    "BASH_MAX_TIMEOUT_MS": "600000",
-    "BASH_MAX_OUTPUT_LENGTH": "500000",
-    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "true",
-    "MAX_THINKING_TOKENS": "20000",
-    "MCP_TIMEOUT": "60000",
-    "MCP_TOOL_TIMEOUT": "120000",
-    "DISABLE_COST_WARNINGS": "1",
-    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "0",
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "8192"
+  
+  "linting": {
+    "enabled": true,
+    "enforceBeforeSave": true,
+    "stopOnFirstError": true,
+    "showInline": true,
+    "autoFixOnSave": false,
+    "sharedConfigPath": "./scripts/lint-config.sh",
+    "contexts": {
+      "backend": {
+        "workingDirectory": ".",
+        "linters": ["rubocop"],
+        "filePatterns": ["*.rb"]
+      },
+      "frontend": {
+        "workingDirectory": "./frontend",
+        "linters": ["eslint", "prettier"],
+        "filePatterns": ["*.js", "*.ts", "*.jsx", "*.tsx", "*.svelte"]
+      }
+    }
   },
-  "cleanupPeriodDays": 90,
-  "includeCoAuthoredBy": true
+  
+  "codeQuality": {
+    "enforceStandards": true,
+    "requireTests": false,
+    "requireDocumentation": false,
+    "maxComplexity": null
+  },
+  
+  "workflow": {
+    "pauseOnLintFailure": true,
+    "showProgressIndicators": true,
+    "logLevel": "info"
+  },
+  
+  "integration": {
+    "git": {
+      "useSharedHooks": true,
+      "hookPath": "./scripts/hooks/"
+    },
+    "npm": {
+      "lintCommand": "npm run lint",
+      "fixCommand": "npm run lint:fix"
+    }
+  },
+  
+  "debugging": {
+    "enableVerboseLogging": false,
+    "showConfigValidation": true,
+    "showHookExecution": true
+  }
 }
+EOF < /dev/null
