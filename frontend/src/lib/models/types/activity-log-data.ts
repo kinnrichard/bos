@@ -1,7 +1,7 @@
 /**
  * ActivityLogData - TypeScript interface for activity_logs table
  *
- * Generated from Rails schema: 2025-07-26 05:23:33 UTC
+ * Generated from Rails schema: 2025-07-26 08:46:07 UTC
  * * Relationships (loaded via includes()):
  * - user: belongs_to User
  * - client: belongs_to Client
