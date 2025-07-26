@@ -8,7 +8,8 @@
  */
 
 import { test as setup } from '@playwright/test';
-import { LoginPage, verifyAuthentication } from '../test-helpers';
+import { LoginPage, verifyAuthentication } from './helpers';
+import { debugAuth, debugError } from '$lib/utils/debug';
 
 // Constants
 const AUTH_FILE = 'playwright/.auth/user.json';
@@ -31,15 +32,15 @@ async function performAuthSetup(
   const { verbose = DEBUG_MODE, requireInitials = false, useFallback = true } = options;
 
   if (verbose) {
-    console.log('[AUTH SETUP] 🚀 Starting authentication process...');
-    console.log(`[AUTH SETUP] Authenticating as: ${LoginPage.DEFAULT_CREDENTIALS.email}`);
+    debugAuth('🚀 Starting authentication process...');
+    debugAuth(`Authenticating as: ${LoginPage.DEFAULT_CREDENTIALS.email}`);
   }
 
   // Perform login
   await loginPage.login(LoginPage.DEFAULT_CREDENTIALS);
 
   if (verbose) {
-    console.log('[AUTH SETUP] Verifying authentication state...');
+    debugAuth('Verifying authentication state...');
   }
 
   // Verify authentication success
@@ -58,15 +59,15 @@ async function performAuthSetup(
       `fallback=${authResult.fallbackVerified}`,
     ].join(', ');
 
-    console.error('[AUTH SETUP] ❌ Authentication verification failed');
-    console.error(`[AUTH SETUP] Details: ${details}`);
-    console.error('[AUTH SETUP] Try: DEBUG_AUTH_SETUP=true npm test for detailed logs');
+    debugError('❌ Authentication verification failed');
+    debugError(`Details: ${details}`);
+    debugError('Try: DEBUG_AUTH_SETUP=true npm test for detailed logs');
 
     // Still proceed - authentication might work differently
   } else if (verbose) {
-    console.log('[AUTH SETUP] ✅ Authentication verified successfully');
+    debugAuth('✅ Authentication verified successfully');
     if (authResult.initialsText) {
-      console.log(`[AUTH SETUP] User initials: ${authResult.initialsText}`);
+      debugAuth(`User initials: ${authResult.initialsText}`);
     }
   }
 }
@@ -76,13 +77,13 @@ async function performAuthSetup(
  */
 async function saveAuthState(loginPage: LoginPage): Promise<void> {
   if (DEBUG_MODE) {
-    console.log(`[AUTH SETUP] Saving authentication state to: ${AUTH_FILE}`);
+    debugAuth(`Saving authentication state to: ${AUTH_FILE}`);
   }
 
   await loginPage.getPage().context().storageState({ path: AUTH_FILE });
 
   if (DEBUG_MODE) {
-    console.log('[AUTH SETUP] ✅ Authentication setup complete');
+    debugAuth('✅ Authentication setup complete');
   }
 }
 
@@ -109,11 +110,11 @@ setup('authenticate', async ({ page }) => {
 
     // Show simple success message (unless in debug mode)
     if (!DEBUG_MODE) {
-      console.log('[AUTH SETUP] ✓ Ready');
+      debugAuth('✓ Ready');
     }
   } catch (error) {
-    console.error('[AUTH SETUP] ❌ Authentication failed:', error);
-    console.error('[AUTH SETUP] Try: DEBUG_AUTH_SETUP=true npm test for detailed logs');
+    debugError('❌ Authentication failed:', error);
+    debugError('Try: DEBUG_AUTH_SETUP=true npm test for detailed logs');
     throw error; // Re-throw to fail the setup
   }
 });

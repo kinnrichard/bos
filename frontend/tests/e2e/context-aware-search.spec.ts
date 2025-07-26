@@ -20,7 +20,7 @@ import {
   SEARCH_CONTEXTS,
   DataFactory,
   type SearchOptions,
-} from '../../test-helpers';
+} from '../helpers';
 import { debugComponent, debugState } from '$lib/utils/debug';
 
 // Constants for consistent behavior

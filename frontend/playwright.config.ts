@@ -1,5 +1,5 @@
-import { defineConfig, devices } from '@playwright/test';
-import { createHybridPlaywrightConfig } from './test-helpers/config';
+import { devices } from '@playwright/test';
+import { createHybridPlaywrightConfig } from './tests/helpers/config';
 
 const authFile = 'playwright/.auth/user.json';
 
@@ -7,12 +7,12 @@ const authFile = 'playwright/.auth/user.json';
 export default createHybridPlaywrightConfig({
   projects: [
     // Authentication setup - runs first
-    { 
-      name: 'setup', 
+    {
+      name: 'setup',
       testMatch: /.*\.setup\.ts/,
-      use: { ...devices['Desktop Chrome'] }
+      use: { ...devices['Desktop Chrome'] },
     },
-    
+
     // Unit tests - fast, mocked APIs (no auth needed)
     {
       name: 'unit-chromium',
@@ -21,75 +21,75 @@ export default createHybridPlaywrightConfig({
     },
     {
       name: 'unit-firefox',
-      testMatch: '**/*.unit.spec.ts', 
+      testMatch: '**/*.unit.spec.ts',
       use: { ...devices['Desktop Firefox'] },
     },
-    
+
     // Integration tests - real database (with auth)
     {
       name: 'integration-chromium',
       testMatch: '**/*.integration.spec.ts',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
-        storageState: authFile
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
     {
       name: 'integration-firefox',
       testMatch: '**/*.integration.spec.ts',
-      use: { 
+      use: {
         ...devices['Desktop Firefox'],
-        storageState: authFile
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
-    
+
     // E2E tests - full real database (with auth)
     {
       name: 'e2e-chromium',
       testMatch: '**/*.e2e.spec.ts',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
-        storageState: authFile
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
-    
+
     // API tests - backend testing (no browser auth needed)
     {
       name: 'api-tests',
       testMatch: '**/*.api.spec.ts',
       use: { ...devices['Desktop Chrome'] },
     },
-    
+
     // Default tests - hybrid strategy based on content (with auth)
     {
       name: 'hybrid-chromium',
       testMatch: /(?<!\.(unit|integration|e2e|api|setup))\.spec\.ts$/,
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
-        storageState: authFile
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
     {
       name: 'hybrid-firefox',
       testMatch: /(?<!\.(unit|integration|e2e|api|setup))\.spec\.ts$/,
-      use: { 
+      use: {
         ...devices['Desktop Firefox'],
-        storageState: authFile
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
     {
       name: 'hybrid-webkit',
       testMatch: /(?<!\.(unit|integration|e2e|api|setup))\.spec\.ts$/,
-      use: { 
+      use: {
         ...devices['Desktop Safari'],
-        storageState: authFile
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
-  ]
+  ],
 });

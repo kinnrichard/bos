@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { LoginPage } from '../test-helpers';
+import { LoginPage } from './helpers';
 
 test.describe('Login functionality', () => {
   let loginPage: LoginPage;
