@@ -175,7 +175,7 @@ class TaskTest < ActiveSupport::TestCase
 
   test "status emoji helpers" do
     # Disable resort for this test
-    @job.created_by.update!(resort_tasks_on_status_change: false)
+    @user.update!(resort_tasks_on_status_change: false)
 
     task = @job.tasks.create!(title: "Test", status: "new_task")
     assert_equal "⚫️", task.status_emoji
@@ -250,7 +250,7 @@ class TaskTest < ActiveSupport::TestCase
   end
 
   test "auto reorder on status change when enabled" do
-    @job.created_by.update!(resort_tasks_on_status_change: true)
+    @user.update!(resort_tasks_on_status_change: true)
 
     # Clear existing tasks for this job to ensure clean test
     @job.tasks.destroy_all
@@ -268,7 +268,7 @@ class TaskTest < ActiveSupport::TestCase
   end
 
   test "no auto reorder when disabled" do
-    @job.created_by.update!(resort_tasks_on_status_change: false)
+    @user.update!(resort_tasks_on_status_change: false)
 
     # Clear existing tasks for this job to ensure clean test
     @job.tasks.destroy_all

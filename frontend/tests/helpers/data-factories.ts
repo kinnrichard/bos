@@ -1,6 +1,6 @@
 /**
  * Test Data Factories
- * 
+ *
  * Utilities for creating and managing test data via Rails API
  */
 
@@ -11,12 +11,18 @@ export interface JobData {
   id?: string;
   title: string;
   description?: string;
-  status: 'open' | 'in_progress' | 'paused' | 'waiting_for_customer' | 'waiting_for_scheduled_appointment' | 'successfully_completed' | 'cancelled';
+  status:
+    | 'open'
+    | 'in_progress'
+    | 'paused'
+    | 'waiting_for_customer'
+    | 'waiting_for_scheduled_appointment'
+    | 'successfully_completed'
+    | 'cancelled';
   priority: 'critical' | 'high' | 'normal' | 'low' | 'proactive_followup';
   due_on?: string;
   due_time?: string;
   client_id?: string;
-  created_by_id?: string;
   technician_ids?: string[];
 }
 
@@ -70,7 +76,7 @@ export class DataFactory {
     }
 
     const csrfResponse = await this.page.request.get(`${this.baseUrl}/health`, {
-      headers: { 'Accept': 'application/json' }
+      headers: { Accept: 'application/json' },
     });
 
     if (!csrfResponse.ok()) {
@@ -100,7 +106,7 @@ export class DataFactory {
     // Import auth helper to set up authenticated session
     const { AuthHelper } = await import('./auth');
     const auth = new AuthHelper(this.page);
-    
+
     try {
       await auth.setupAuthenticatedSession('admin');
       this.isAuthenticated = true;
@@ -114,10 +120,10 @@ export class DataFactory {
    */
   async getTestClient(index: number = 0): Promise<ClientData> {
     await this.ensureAuthenticated();
-    
+
     // Use the real clients API to get existing clients
     const response = await this.page.request.get(`${this.baseUrl}/clients`, {
-      headers: { 'Accept': 'application/json' }
+      headers: { Accept: 'application/json' },
     });
 
     if (!response.ok()) {
@@ -126,19 +132,19 @@ export class DataFactory {
 
     const result = await response.json();
     const clients = result.data || [];
-    
+
     if (clients.length === 0) {
       throw new Error('No test clients available. Run database seed first.');
     }
 
     const client = clients[index] || clients[0]; // Use specified index or first client
-    
+
     return {
       id: client.id,
       name: client.attributes.name,
       client_type: client.attributes.client_type,
       created_at: client.attributes.created_at,
-      updated_at: client.attributes.updated_at
+      updated_at: client.attributes.updated_at,
     };
   }
 
@@ -151,17 +157,17 @@ export class DataFactory {
     const clientData = {
       name: `Test Client ${Date.now()}`,
       client_type: 'residential' as const,
-      ...data
+      ...data,
     };
 
     const csrfToken = await this.getCsrfToken();
     const response = await this.page.request.post(`${this.baseUrl}/clients`, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-CSRF-Token': csrfToken
+        Accept: 'application/json',
+        'X-CSRF-Token': csrfToken,
       },
-      data: { client: clientData }
+      data: { client: clientData },
     });
 
     if (!response.ok()) {
@@ -173,7 +179,7 @@ export class DataFactory {
     const result = await response.json();
     return {
       id: result.data.id,
-      ...result.data.attributes
+      ...result.data.attributes,
     };
   }
 
@@ -181,35 +187,37 @@ export class DataFactory {
    * Get an existing test user from the database setup
    * Since there's no user creation API, we use the pre-seeded test users
    */
-  async getTestUser(role: 'owner' | 'admin' | 'technician' | 'technician_lead' = 'technician'): Promise<UserData> {
+  async getTestUser(
+    role: 'owner' | 'admin' | 'technician' | 'technician_lead' = 'technician'
+  ): Promise<UserData> {
     await this.ensureAuthenticated();
-    
+
     // Return user data based on the test environment setup
     const testUsers = {
-      owner: { 
+      owner: {
         id: 'test-owner',
-        name: 'Test Owner', 
-        email: 'owner@bos-test.local', 
-        role: 'owner' as const 
+        name: 'Test Owner',
+        email: 'owner@bos-test.local',
+        role: 'owner' as const,
       },
-      admin: { 
-        id: 'test-admin', 
-        name: 'Test Admin', 
-        email: 'admin@bos-test.local', 
-        role: 'admin' as const 
+      admin: {
+        id: 'test-admin',
+        name: 'Test Admin',
+        email: 'admin@bos-test.local',
+        role: 'admin' as const,
       },
-      technician: { 
-        id: 'test-tech', 
-        name: 'Test Tech', 
-        email: 'tech@bos-test.local', 
-        role: 'technician' as const 
+      technician: {
+        id: 'test-tech',
+        name: 'Test Tech',
+        email: 'tech@bos-test.local',
+        role: 'technician' as const,
       },
-      technician_lead: { 
-        id: 'test-tech-lead', 
-        name: 'Test Tech Lead', 
-        email: 'techlead@bos-test.local', 
-        role: 'technician_lead' as const 
-      }
+      technician_lead: {
+        id: 'test-tech-lead',
+        name: 'Test Tech Lead',
+        email: 'techlead@bos-test.local',
+        role: 'technician_lead' as const,
+      },
     };
 
     return testUsers[role] || testUsers.technician;
@@ -246,26 +254,23 @@ export class DataFactory {
       clientId = await this.getTestClientId(0);
     }
 
-    // Note: created_by_id is set automatically by the API based on current_user
-    const { created_by_id, ...cleanData } = data; // Remove created_by_id if provided
-
     const jobData = {
       title: `Test Job ${Date.now()}`,
       description: 'Test job description',
       status: 'open' as const,
       priority: 'normal' as const,
       client_id: clientId,
-      ...cleanData
+      ...data,
     };
 
     const csrfToken = await this.getCsrfToken();
     const response = await this.page.request.post(`${this.baseUrl}/jobs`, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-CSRF-Token': csrfToken
+        Accept: 'application/json',
+        'X-CSRF-Token': csrfToken,
       },
-      data: { job: jobData }
+      data: { job: jobData },
     });
 
     if (!response.ok()) {
@@ -277,7 +282,7 @@ export class DataFactory {
     const result = await response.json();
     const jobResult = {
       id: result.data.id,
-      ...result.data.attributes
+      ...result.data.attributes,
     };
     return jobResult;
   }
@@ -287,28 +292,29 @@ export class DataFactory {
    */
   async createTask(data: Partial<TaskData>): Promise<TaskData> {
     await this.ensureAuthenticated();
-    
+
     if (!data.job_id) {
       throw new Error('job_id is required to create a task');
     }
 
     // Remove job_id and description from the data sent to API since they're not permitted
-    const { job_id, description, ...cleanData } = data;
-    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { job_id: _job_id, description: _description, ...cleanData } = data;
+
     const taskData = {
       title: `Test Task ${Date.now()}`,
       status: 'new_task',
-      ...cleanData
+      ...cleanData,
     };
 
     const csrfToken = await this.getCsrfToken();
     const response = await this.page.request.post(`${this.baseUrl}/jobs/${data.job_id}/tasks`, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-CSRF-Token': csrfToken
+        Accept: 'application/json',
+        'X-CSRF-Token': csrfToken,
       },
-      data: { task: taskData }
+      data: { task: taskData },
     });
 
     if (!response.ok()) {
@@ -318,20 +324,20 @@ export class DataFactory {
     }
 
     const result = await response.json();
-    
+
     // Handle different possible response structures
     if (result.data) {
       const taskResult = {
         id: result.data.id,
         ...result.data.attributes,
-        job_id: data.job_id // Add back the job_id for consistency
+        job_id: data.job_id, // Add back the job_id for consistency
       };
       return taskResult;
     } else {
       // Fallback for simpler response structure
       const taskResult = {
         ...result,
-        job_id: data.job_id
+        job_id: data.job_id,
       };
       return taskResult;
     }
@@ -340,19 +346,23 @@ export class DataFactory {
   /**
    * Create multiple tasks for a job
    */
-  async createTasks(jobId: string, count: number, taskData: Partial<TaskData> = {}): Promise<TaskData[]> {
+  async createTasks(
+    jobId: string,
+    count: number,
+    taskData: Partial<TaskData> = {}
+  ): Promise<TaskData[]> {
     const tasks: TaskData[] = [];
-    
+
     for (let i = 0; i < count; i++) {
       const task = await this.createTask({
         ...taskData,
         job_id: jobId,
         title: taskData.title || `Test Task ${i + 1}`,
-        position: (i + 1) * 10
+        position: (i + 1) * 10,
       });
       tasks.push(task);
     }
-    
+
     return tasks;
   }
 
@@ -364,7 +374,7 @@ export class DataFactory {
     const parent = await this.createTask({
       job_id: jobId,
       title: 'Parent Task',
-      description: 'Main task with subtasks'
+      description: 'Main task with subtasks',
     });
 
     // Create child tasks
@@ -374,7 +384,7 @@ export class DataFactory {
         job_id: jobId,
         title: `Subtask ${i + 1}`,
         parent_id: parent.id,
-        position: (i + 1) * 10
+        position: (i + 1) * 10,
       });
       children.push(child);
     }
@@ -385,13 +395,16 @@ export class DataFactory {
   /**
    * Create a complete job with tasks
    */
-  async createJobWithTasks(jobData: Partial<JobData> = {}, taskCount: number = 5): Promise<{
+  async createJobWithTasks(
+    jobData: Partial<JobData> = {},
+    taskCount: number = 5
+  ): Promise<{
     job: JobData;
     tasks: TaskData[];
   }> {
     const job = await this.createJob(jobData);
     const tasks = await this.createTasks(job.id!, taskCount);
-    
+
     return { job, tasks };
   }
 
@@ -401,36 +414,39 @@ export class DataFactory {
   async createMixedStatusTasks(jobId: string): Promise<TaskData[]> {
     const statuses: TaskData['status'][] = [
       'new_task',
-      'in_progress', 
+      'in_progress',
       'paused',
       'successfully_completed',
-      'failed'
+      'failed',
     ];
 
     const tasks: TaskData[] = [];
-    
+
     for (const status of statuses) {
       const task = await this.createTask({
         job_id: jobId,
         title: `Task - ${status.replace('_', ' ')}`,
-        status: status
+        status: status,
       });
       tasks.push(task);
     }
-    
+
     return tasks;
   }
 
   /**
    * Delete test entity by ID
    */
-  async deleteEntity(entityType: 'jobs' | 'tasks' | 'clients' | 'users', id: string): Promise<void> {
+  async deleteEntity(
+    entityType: 'jobs' | 'tasks' | 'clients' | 'users',
+    id: string
+  ): Promise<void> {
     const csrfToken = await this.getCsrfToken();
     const response = await this.page.request.delete(`${this.baseUrl}/${entityType}/${id}`, {
-      headers: { 
-        'Accept': 'application/json',
-        'X-CSRF-Token': csrfToken
-      }
+      headers: {
+        Accept: 'application/json',
+        'X-CSRF-Token': csrfToken,
+      },
     });
 
     if (!response.ok() && response.status() !== 404) {
@@ -441,7 +457,9 @@ export class DataFactory {
   /**
    * Cleanup created test data
    */
-  async cleanup(entities: Array<{ type: 'jobs' | 'tasks' | 'clients' | 'users'; id: string }>): Promise<void> {
+  async cleanup(
+    entities: Array<{ type: 'jobs' | 'tasks' | 'clients' | 'users'; id: string }>
+  ): Promise<void> {
     for (const entity of entities) {
       await this.deleteEntity(entity.type, entity.id);
     }
@@ -466,11 +484,14 @@ export class TestScenarios {
     tasks: TaskData[];
     cleanup: () => Promise<void>;
   }> {
-    const { job, tasks } = await this.factory.createJobWithTasks({
-      title: 'Simple Installation Job',
-      priority: 'normal',
-      status: 'open'
-    }, 3);
+    const { job, tasks } = await this.factory.createJobWithTasks(
+      {
+        title: 'Simple Installation Job',
+        priority: 'normal',
+        status: 'open',
+      },
+      3
+    );
 
     const cleanup = async () => {
       for (const task of tasks) {
@@ -494,7 +515,7 @@ export class TestScenarios {
     const job = await this.factory.createJob({
       title: 'Complex Network Installation',
       priority: 'high',
-      status: 'in_progress'
+      status: 'in_progress',
     });
 
     const tasks = await this.factory.createMixedStatusTasks(job.id!);
@@ -524,14 +545,17 @@ export class TestScenarios {
     const users = await Promise.all([
       this.factory.createUser({ role: 'technician', name: 'Tech User 1' }),
       this.factory.createUser({ role: 'technician', name: 'Tech User 2' }),
-      this.factory.createUser({ role: 'technician_lead', name: 'Lead Tech' })
+      this.factory.createUser({ role: 'technician_lead', name: 'Lead Tech' }),
     ]);
 
-    const { job, tasks } = await this.factory.createJobWithTasks({
-      title: 'Multi-Technician Project',
-      priority: 'high',
-      technician_ids: users.map(u => u.id!).slice(0, 2) // Assign first 2 techs
-    }, 6);
+    const { job, tasks } = await this.factory.createJobWithTasks(
+      {
+        title: 'Multi-Technician Project',
+        priority: 'high',
+        technician_ids: users.map((u) => u.id!).slice(0, 2), // Assign first 2 techs
+      },
+      6
+    );
 
     const cleanup = async () => {
       for (const task of tasks) {
@@ -555,7 +579,7 @@ export class TestScenarios {
   }> {
     const job = await this.factory.createJob({
       title: 'Empty Project Template',
-      status: 'open'
+      status: 'open',
     });
 
     const cleanup = async () => {
@@ -574,29 +598,29 @@ export class TestDataUtils {
    * Wait for entity to exist via API
    */
   static async waitForEntity(
-    page: Page, 
-    entityType: string, 
-    entityId: string, 
+    page: Page,
+    entityType: string,
+    entityId: string,
     timeoutMs: number = 5000
   ): Promise<boolean> {
     const startTime = Date.now();
-    
+
     while (Date.now() - startTime < timeoutMs) {
       try {
         const response = await page.request.get(`${testDb.getApiUrl()}/${entityType}/${entityId}`, {
-          headers: { 'Accept': 'application/json' }
+          headers: { Accept: 'application/json' },
         });
-        
+
         if (response.ok()) {
           return true;
         }
       } catch {
         // Continue waiting
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    
+
     return false;
   }
 
@@ -607,11 +631,11 @@ export class TestDataUtils {
     page: Page,
     entityType: string,
     entityId: string,
-    expectedData: Record<string, any>
+    expectedData: Record<string, unknown>
   ): Promise<boolean> {
     try {
       const response = await page.request.get(`${testDb.getApiUrl()}/${entityType}/${entityId}`, {
-        headers: { 'Accept': 'application/json' }
+        headers: { Accept: 'application/json' },
       });
 
       if (!response.ok()) {
@@ -641,7 +665,7 @@ export class TestDataUtils {
   static async getEntityCount(page: Page, entityType: string): Promise<number> {
     try {
       const response = await page.request.get(`${testDb.getApiUrl()}/${entityType}`, {
-        headers: { 'Accept': 'application/json' }
+        headers: { Accept: 'application/json' },
       });
 
       if (!response.ok()) {

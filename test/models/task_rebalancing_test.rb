@@ -164,7 +164,7 @@ class TaskRebalancingTest < ActiveSupport::TestCase
     # Updating other attributes should not trigger rebalancing
     assert_no_enqueued_jobs do
       task.update!(title: "Updated title")
-      # Skip status update since it triggers resort which needs created_by
+      # Skip status update since it triggers resort which needs user context
       # task.update!(status: "in_progress")
     end
   end

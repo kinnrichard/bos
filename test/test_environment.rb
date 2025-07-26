@@ -289,7 +289,6 @@ module TestEnvironment
       3.times do |i|
         jobs << Job.find_or_create_by(title: "Test Job #{i + 1}") do |j|
           j.client = clients[i]
-          j.created_by = users[0] # admin
           j.status = [ "open", "in_progress", "paused" ][i]
         end
       end
@@ -397,7 +396,6 @@ module TestEnvironment
       Job.create!(
         title: "Empty Test Job",
         client: Client.first || create_basic_test_data!,
-        created_by: get_test_user(:admin),
         status: "active"
       )
     else
