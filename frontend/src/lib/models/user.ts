@@ -9,7 +9,7 @@
  * import { ReactiveUser as User } from './reactive-user';
  * ```
  *
- * Generated: 2025-07-26 05:03:11 UTC
+ * Generated: 2025-07-26 11:37:59 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
@@ -66,7 +66,6 @@ registerModelRelationships('users', {
   scheduledDateTimeUsers: { type: 'hasMany', model: 'ScheduledDateTimeUser' },
   scheduledDateTimes: { type: 'hasMany', model: 'ScheduledDateTime' },
   notes: { type: 'hasMany', model: 'Note' },
-  createdJobs: { type: 'hasMany', model: 'Job' },
   refreshTokens: { type: 'hasMany', model: 'RefreshToken' },
   revokedTokens: { type: 'hasMany', model: 'RevokedToken' },
 });

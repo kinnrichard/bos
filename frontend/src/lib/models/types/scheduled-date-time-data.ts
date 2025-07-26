@@ -1,7 +1,7 @@
 /**
  * ScheduledDateTimeData - TypeScript interface for scheduled_date_times table
  *
- * Generated from Rails schema: 2025-07-26 08:46:07 UTC
+ * Generated from Rails schema: 2025-07-26 11:37:59 UTC
  * * Relationships (loaded via includes()):
  * - activityLogs: has_many ActivityLog
  * - scheduledDateTimeUsers: has_many ScheduledDateTimeUser

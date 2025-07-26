@@ -9,7 +9,7 @@
  * import { ReactiveActivityLog as ActivityLog } from './reactive-activity-log';
  * ```
  *
- * Generated: 2025-07-26 08:46:07 UTC
+ * Generated: 2025-07-26 11:37:59 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

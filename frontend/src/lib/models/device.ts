@@ -9,7 +9,7 @@
  * import { ReactiveDevice as Device } from './reactive-device';
  * ```
  *
- * Generated: 2025-07-26 05:03:11 UTC
+ * Generated: 2025-07-26 11:37:59 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

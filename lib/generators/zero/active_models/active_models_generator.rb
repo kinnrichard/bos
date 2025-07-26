@@ -238,8 +238,8 @@ module Zero
         relationship_exclusions = extract_relationship_names_for_exclusion(relationships)
         relationship_docs = generate_relationship_documentation(relationships)
 
-        # Combine all properties (ensure no extra blank lines)
-        all_properties = [ column_properties.strip, relationship_properties.strip ].reject(&:empty?).join("\n")
+        # Combine all properties (maintain proper indentation for all lines)
+        all_properties = [ column_properties, relationship_properties ].reject(&:empty?).join("\n")
 
         # Format long Omit types with proper line breaks for printWidth: 100
         base_exclusions = "'id', 'created_at', 'updated_at'"
@@ -704,9 +704,9 @@ module Zero
 
         if relationship_metadata.any?
           metadata_string = relationship_metadata.join(",\n")
-          <<~TYPESCRIPT
+          <<~TYPESCRIPT.strip
             registerModelRelationships('#{table_name}', {
-            #{metadata_string},
+            #{metadata_string}
             });
           TYPESCRIPT
         else
