@@ -1,6 +1,6 @@
 /**
  * Task model with permission guards
- * 
+ *
  * This is an enhanced version of the Task model that enforces permissions
  * at the model level, preventing unauthorized mutations.
  */
@@ -11,7 +11,7 @@ import { taskPermissions } from '../stores/taskPermissions.svelte';
 
 /**
  * Permission-aware Task model
- * 
+ *
  * Wraps the base Task model with permission checks to prevent
  * unauthorized operations on tasks, especially deleted tasks.
  */
@@ -25,7 +25,7 @@ class TaskWithPermissions {
       const reason = taskPermissions.getPermissionDenialReason('create');
       throw new Error(`Permission denied: ${reason}`);
     }
-    
+
     return BaseTask.create(data);
   }
 
@@ -35,13 +35,13 @@ class TaskWithPermissions {
   async update(id: string, data: UpdateTaskData): Promise<TaskData> {
     // First, get the task to check its state
     const task = await BaseTask.find(id);
-    
+
     // Check if task editing is allowed for this specific task
     if (!taskPermissions.hasPermission('edit', { task })) {
       const reason = taskPermissions.getPermissionDenialReason('edit', { task });
       throw new Error(`Permission denied: ${reason}`);
     }
-    
+
     return BaseTask.update(id, data);
   }
 
@@ -51,13 +51,13 @@ class TaskWithPermissions {
   async discard(id: string): Promise<TaskData> {
     // First, get the task to check its state
     const task = await BaseTask.find(id);
-    
+
     // Check if task deletion is allowed for this specific task
     if (!taskPermissions.hasPermission('delete', { task })) {
       const reason = taskPermissions.getPermissionDenialReason('delete', { task });
       throw new Error(`Permission denied: ${reason}`);
     }
-    
+
     return BaseTask.discard(id);
   }
 
@@ -73,16 +73,16 @@ class TaskWithPermissions {
    * Destroy a task permanently
    * This requires special permission and should rarely be used
    */
-  async destroy(id: string): Promise<any> {
+  async destroy(id: string): Promise<TaskData> {
     // First, get the task to check its state
     const task = await BaseTask.find(id);
-    
+
     // Check if permanent deletion is allowed
     if (!taskPermissions.hasPermission('delete', { task })) {
       const reason = taskPermissions.getPermissionDenialReason('delete', { task });
       throw new Error(`Permission denied: ${reason}`);
     }
-    
+
     return BaseTask.destroy(id);
   }
 
@@ -92,13 +92,13 @@ class TaskWithPermissions {
   async move(id: string, position: number): Promise<TaskData> {
     // First, get the task to check its state
     const task = await BaseTask.find(id);
-    
+
     // Check if task moving is allowed
     if (!taskPermissions.hasPermission('move', { task })) {
       const reason = taskPermissions.getPermissionDenialReason('move', { task });
       throw new Error(`Permission denied: ${reason}`);
     }
-    
+
     return BaseTask.update(id, { position });
   }
 
@@ -108,13 +108,13 @@ class TaskWithPermissions {
   async changeStatus(id: string, status: string): Promise<TaskData> {
     // First, get the task to check its state
     const task = await BaseTask.find(id);
-    
+
     // Check if status change is allowed
     if (!taskPermissions.hasPermission('changeStatus', { task })) {
       const reason = taskPermissions.getPermissionDenialReason('changeStatus', { task });
       throw new Error(`Permission denied: ${reason}`);
     }
-    
+
     return BaseTask.update(id, { status });
   }
 
@@ -124,13 +124,13 @@ class TaskWithPermissions {
   async assignUser(id: string, userId: string | null): Promise<TaskData> {
     // First, get the task to check its state
     const task = await BaseTask.find(id);
-    
+
     // Check if user assignment is allowed
     if (!taskPermissions.hasPermission('assignUser', { task })) {
       const reason = taskPermissions.getPermissionDenialReason('assignUser', { task });
       throw new Error(`Permission denied: ${reason}`);
     }
-    
+
     return BaseTask.update(id, { assigned_to_id: userId });
   }
 
@@ -138,7 +138,7 @@ class TaskWithPermissions {
    * All read operations are passed through without permission checks
    * as viewing is controlled by the filter system
    */
-  
+
   // Query methods - no permission checks needed
   all = BaseTask.all.bind(BaseTask);
   where = BaseTask.where.bind(BaseTask);
@@ -148,13 +148,13 @@ class TaskWithPermissions {
   kept = BaseTask.kept.bind(BaseTask);
   discarded = BaseTask.discarded.bind(BaseTask);
   withDiscarded = BaseTask.withDiscarded.bind(BaseTask);
-  
+
   // Find methods - no permission checks needed
   find = BaseTask.find.bind(BaseTask);
   findBy = BaseTask.findBy.bind(BaseTask);
   first = BaseTask.first.bind(BaseTask);
   last = BaseTask.last.bind(BaseTask);
-  
+
   // Utility methods
   exists = BaseTask.exists.bind(BaseTask);
   count = BaseTask.count.bind(BaseTask);

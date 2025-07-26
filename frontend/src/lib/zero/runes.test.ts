@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { fZero, fZeroOne } from './runes.svelte';
+import { getZero } from './zero-client';
 
 // Mock the Zero client
 const mockZeroClient = {
@@ -13,26 +14,26 @@ const mockZeroClient = {
       materialize: vi.fn(),
       where: vi.fn(),
       orderBy: vi.fn(),
-      one: vi.fn()
-    }
-  }
+      one: vi.fn(),
+    },
+  },
 };
 
 // Mock the zero-client module
 vi.mock('./zero-client', () => ({
-  getZero: vi.fn(() => mockZeroClient)
+  getZero: vi.fn(() => mockZeroClient),
 }));
 
 // Mock view object with addListener and destroy
-const createMockView = (initialData: any = []) => ({
+const createMockView = (initialData: unknown[] | null | undefined = []) => ({
   data: initialData,
   addListener: vi.fn(),
-  destroy: vi.fn()
+  destroy: vi.fn(),
 });
 
 // Mock query builder
 const createMockQueryBuilder = () => ({
-  materialize: vi.fn(() => createMockView())
+  materialize: vi.fn(() => createMockView()),
 });
 
 describe('fZero', () => {
@@ -100,13 +101,13 @@ describe('fZero', () => {
       const queryBuilder = createMockQueryBuilder();
       const mockView = createMockView([]);
       const mockRemoveListener = vi.fn();
-      let listenerCallback: Function;
-      
-      mockView.addListener.mockImplementation((callback: Function) => {
+      let listenerCallback: (data: unknown) => void;
+
+      mockView.addListener.mockImplementation((callback: (data: unknown) => void) => {
         listenerCallback = callback;
         return mockRemoveListener;
       });
-      
+
       queryBuilder.materialize.mockReturnValue(mockView);
 
       const query = fZero(() => queryBuilder, []);
@@ -124,13 +125,13 @@ describe('fZero', () => {
       const queryBuilder = createMockQueryBuilder();
       const mockView = createMockView([]);
       const mockRemoveListener = vi.fn();
-      let listenerCallback: Function;
-      
-      mockView.addListener.mockImplementation((callback: Function) => {
+      let listenerCallback: (data: unknown) => void;
+
+      mockView.addListener.mockImplementation((callback: (data: unknown) => void) => {
         listenerCallback = callback;
         return mockRemoveListener;
       });
-      
+
       queryBuilder.materialize.mockReturnValue(mockView);
 
       const defaultValue = [{ id: 'default', name: 'Default' }];
@@ -147,7 +148,7 @@ describe('fZero', () => {
 
   describe('error handling', () => {
     it('should handle Zero client not ready', () => {
-      const { getZero } = require('./zero-client');
+      // Use the already imported and mocked getZero
       getZero.mockReturnValue(null);
 
       const queryBuilder = createMockQueryBuilder();
@@ -195,7 +196,7 @@ describe('fZero', () => {
       mockView.addListener.mockReturnValue(mockRemoveListener);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(() => queryBuilder, []);
+      fZero(() => queryBuilder, []);
 
       // Simulate cleanup (would normally be called by Svelte's $effect cleanup)
       // In real usage, this would be handled by the $effect return function
@@ -210,7 +211,7 @@ describe('fZero', () => {
       mockView.addListener.mockReturnValue(mockRemoveListener);
       queryBuilder.materialize.mockReturnValue(mockView);
 
-      const query = fZero(() => queryBuilder, []);
+      fZero(() => queryBuilder, []);
 
       // Verify view has destroy method
       expect(mockView.destroy).toBeDefined();
@@ -318,13 +319,13 @@ describe('fZeroOne', () => {
       const queryBuilder = createMockQueryBuilder();
       const mockView = createMockView(null);
       const mockRemoveListener = vi.fn();
-      let listenerCallback: Function;
-      
-      mockView.addListener.mockImplementation((callback: Function) => {
+      let listenerCallback: (data: unknown) => void;
+
+      mockView.addListener.mockImplementation((callback: (data: unknown) => void) => {
         listenerCallback = callback;
         return mockRemoveListener;
       });
-      
+
       queryBuilder.materialize.mockReturnValue(mockView);
 
       const query = fZeroOne(() => queryBuilder, null);
@@ -342,13 +343,13 @@ describe('fZeroOne', () => {
       const queryBuilder = createMockQueryBuilder();
       const mockView = createMockView(null);
       const mockRemoveListener = vi.fn();
-      let listenerCallback: Function;
-      
-      mockView.addListener.mockImplementation((callback: Function) => {
+      let listenerCallback: (data: unknown) => void;
+
+      mockView.addListener.mockImplementation((callback: (data: unknown) => void) => {
         listenerCallback = callback;
         return mockRemoveListener;
       });
-      
+
       queryBuilder.materialize.mockReturnValue(mockView);
 
       const defaultValue = { id: 'default', name: 'Default' };
@@ -365,7 +366,7 @@ describe('fZeroOne', () => {
 
   describe('error handling', () => {
     it('should handle Zero client not ready', () => {
-      const { getZero } = require('./zero-client');
+      // Use the already imported and mocked getZero
       getZero.mockReturnValue(null);
 
       const queryBuilder = createMockQueryBuilder();
@@ -421,13 +422,13 @@ describe('Performance and Memory Management', () => {
   it('should handle rapid data changes efficiently', () => {
     const queryBuilder = createMockQueryBuilder();
     const mockView = createMockView([]);
-    let listenerCallback: Function;
-    
-    mockView.addListener.mockImplementation((callback: Function) => {
+    let listenerCallback: (data: unknown) => void;
+
+    mockView.addListener.mockImplementation((callback: (data: unknown) => void) => {
       listenerCallback = callback;
       return vi.fn();
     });
-    
+
     queryBuilder.materialize.mockReturnValue(mockView);
 
     const query = fZero(() => queryBuilder, []);
@@ -446,16 +447,16 @@ describe('Performance and Memory Management', () => {
     const queryBuilder = createMockQueryBuilder();
     const mockView = createMockView([]);
     const mockRemoveListener = vi.fn();
-    
+
     mockView.addListener.mockReturnValue(mockRemoveListener);
     queryBuilder.materialize.mockReturnValue(mockView);
 
-    const query = fZero(() => queryBuilder, []);
+    fZero(() => queryBuilder, []);
 
     // Verify setup
     expect(mockView.addListener).toHaveBeenCalled();
     expect(mockView.destroy).toBeDefined();
-    
+
     // In real usage, cleanup would be handled by $effect return function
     // Here we just verify the mocks are set up correctly
     expect(mockRemoveListener).toBeDefined();

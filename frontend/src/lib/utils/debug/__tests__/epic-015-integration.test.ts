@@ -1,7 +1,7 @@
 /**
  * Epic 015 Integration Tests
  * Tests the actual migrated console statements in their real contexts
- * 
+ *
  * Test Coverage:
  * - Authentication layer integration
  * - Zero.js system integration
@@ -10,43 +10,45 @@
  * - Real-world error scenarios
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthService } from '../../../api/auth';
-import { TaskHierarchyManager } from '../../../services/TaskHierarchyManager';
-import { getPopoverErrorMessage, handleZeroMutationError } from '../../../utils/popover-utils';
+import { handleZeroMutationError } from '../../../utils/popover-utils';
 import { validateZeroConfig } from '../../../zero/zero-config';
 import { ZeroClientWrapper } from '../../../zero/client';
 import { debugAuth, debugDatabase, debugWorkflow, debugComponent } from '../namespaces';
+import { api, type EnhancedApiClient } from '../../../api/client';
+import { csrfTokenManager } from '../../../api/csrf';
+import { getZero, getZeroAsync } from '../../../zero/zero-client';
 
 // Mock dependencies
 vi.mock('../../../api/client', () => ({
   api: {
     post: vi.fn(),
-    get: vi.fn()
-  }
+    get: vi.fn(),
+  },
 }));
 
 vi.mock('../../../api/csrf', () => ({
   csrfTokenManager: {
-    clearToken: vi.fn()
-  }
+    clearToken: vi.fn(),
+  },
 }));
 
 vi.mock('../../../zero/zero-client', () => ({
   getZero: vi.fn(),
-  getZeroAsync: vi.fn()
+  getZeroAsync: vi.fn(),
 }));
 
 vi.mock('../../../services/TaskHierarchyManager', () => ({
   TaskHierarchyManager: vi.fn().mockImplementation(() => ({
     processTaskHierarchy: vi.fn(),
     validateHierarchy: vi.fn(),
-    getTaskLevel: vi.fn()
-  }))
+    getTaskLevel: vi.fn(),
+  })),
 }));
 
 vi.mock('debug', () => ({
-  default: vi.fn(() => vi.fn())
+  default: vi.fn(() => vi.fn()),
 }));
 
 // Mock console for testing
@@ -54,27 +56,27 @@ const mockConsole = {
   log: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
-  info: vi.fn()
+  info: vi.fn(),
 };
 
 describe('Epic 015 Integration - Authentication Layer', () => {
   let authService: AuthService;
-  let mockApi: any;
+  let mockApi: ReturnType<typeof vi.mocked<EnhancedApiClient>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock the API client
     mockApi = {
       post: vi.fn(),
-      get: vi.fn()
+      get: vi.fn(),
     };
-    
-    // Import and setup mocks
-    const apiModule = require('../../../api/client');
-    apiModule.api = mockApi;
-    
+
+    // Setup mocks using the already imported and mocked api
+    vi.mocked(api.post).mockImplementation(mockApi.post);
+    vi.mocked(api.get).mockImplementation(mockApi.get);
+
     authService = new AuthService();
-    
+
     // Mock debug functions
     vi.mocked(debugAuth.error).mockImplementation(mockConsole.error);
   });
@@ -86,7 +88,7 @@ describe('Epic 015 Integration - Authentication Layer', () => {
 
     const credentials = {
       email: 'user@example.com',
-      password: 'secretPassword123'
+      password: 'secretPassword123',
     };
 
     // Attempt login
@@ -97,7 +99,7 @@ describe('Epic 015 Integration - Authentication Layer', () => {
       'Login failed',
       expect.objectContaining({
         error: authError,
-        credentials: credentials.email
+        credentials: credentials.email,
       })
     );
 
@@ -105,7 +107,7 @@ describe('Epic 015 Integration - Authentication Layer', () => {
     expect(debugAuth.error).not.toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        password: expect.anything()
+        password: expect.anything(),
       })
     );
   });
@@ -115,7 +117,7 @@ describe('Epic 015 Integration - Authentication Layer', () => {
     mockApi.post.mockRejectedValue(refreshError);
 
     const refreshData = {
-      refreshToken: 'refresh-token-abc123'
+      refreshToken: 'refresh-token-abc123',
     };
 
     await expect(authService.refresh(refreshData)).rejects.toThrow('Token expired');
@@ -124,7 +126,7 @@ describe('Epic 015 Integration - Authentication Layer', () => {
       'Token refresh failed',
       expect.objectContaining({
         error: refreshError,
-        refreshData
+        refreshData,
       })
     );
   });
@@ -133,15 +135,14 @@ describe('Epic 015 Integration - Authentication Layer', () => {
     const logoutError = new Error('Network error');
     mockApi.post.mockRejectedValue(logoutError);
 
-    const csrfModule = require('../../../api/csrf');
-    const clearTokenSpy = vi.spyOn(csrfModule.csrfTokenManager, 'clearToken');
+    const clearTokenSpy = vi.spyOn(csrfTokenManager, 'clearToken');
 
     await expect(authService.logout()).rejects.toThrow('Network error');
 
     expect(debugAuth.error).toHaveBeenCalledWith(
       'Logout failed',
       expect.objectContaining({
-        error: logoutError
+        error: logoutError,
       })
     );
 
@@ -151,15 +152,14 @@ describe('Epic 015 Integration - Authentication Layer', () => {
 });
 
 describe('Epic 015 Integration - Zero.js System', () => {
-  let mockGetZero: any;
-  let mockGetZeroAsync: any;
+  let mockGetZero: ReturnType<typeof vi.mocked<typeof getZero>>;
+  let mockGetZeroAsync: ReturnType<typeof vi.mocked<typeof getZeroAsync>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    const zeroModule = require('../../../zero/zero-client');
-    mockGetZero = vi.mocked(zeroModule.getZero);
-    mockGetZeroAsync = vi.mocked(zeroModule.getZeroAsync);
-    
+    mockGetZero = vi.mocked(getZero);
+    mockGetZeroAsync = vi.mocked(getZeroAsync);
+
     // Mock debug functions
     vi.mocked(debugDatabase.warn).mockImplementation(mockConsole.warn);
     vi.mocked(debugDatabase.error).mockImplementation(mockConsole.error);
@@ -168,10 +168,10 @@ describe('Epic 015 Integration - Zero.js System', () => {
   it('should warn about low connection timeout in configuration', () => {
     const config = {
       client: { CONNECTION_TIMEOUT: 500 },
-      query: { 
+      query: {
         MAX_RETRIES: 3,
-        DEBUG_LOGGING: false
-      }
+        DEBUG_LOGGING: false,
+      },
     };
 
     validateZeroConfig(config);
@@ -179,7 +179,7 @@ describe('Epic 015 Integration - Zero.js System', () => {
     expect(debugDatabase.warn).toHaveBeenCalledWith(
       'Connection timeout very low, may cause issues',
       expect.objectContaining({
-        timeout: 500
+        timeout: 500,
       })
     );
   });
@@ -190,10 +190,10 @@ describe('Epic 015 Integration - Zero.js System', () => {
 
     const config = {
       client: { CONNECTION_TIMEOUT: 5000 },
-      query: { 
+      query: {
         MAX_RETRIES: 3,
-        DEBUG_LOGGING: true
-      }
+        DEBUG_LOGGING: true,
+      },
     };
 
     validateZeroConfig(config);
@@ -202,7 +202,7 @@ describe('Epic 015 Integration - Zero.js System', () => {
       'Debug logging enabled in production environment',
       expect.objectContaining({
         nodeEnv: 'production',
-        debugLogging: true
+        debugLogging: true,
       })
     );
 
@@ -222,7 +222,7 @@ describe('Epic 015 Integration - Zero.js System', () => {
     expect(debugDatabase.warn).toHaveBeenCalledWith(
       'Failed to get Zero client',
       expect.objectContaining({
-        error: connectionError
+        error: connectionError,
       })
     );
   });
@@ -239,7 +239,7 @@ describe('Epic 015 Integration - Zero.js System', () => {
       'Zero client connection issue',
       expect.objectContaining({
         error: asyncError,
-        errorMsg: expect.stringContaining('Test operation')
+        errorMsg: expect.stringContaining('Test operation'),
       })
     );
   });
@@ -256,32 +256,32 @@ describe('Epic 015 Integration - Component Error Handling', () => {
   it('should handle popover mutation errors with context', () => {
     const mockError = {
       code: 'INVALID_CSRF_TOKEN',
-      message: 'CSRF token is invalid'
+      message: 'CSRF token is invalid',
     };
 
-    const errorMessage = handleZeroMutationError(mockError, 'TechnicianAssignment');
+    handleZeroMutationError(mockError, 'TechnicianAssignment');
 
     expect(debugComponent.error).toHaveBeenCalledWith(
       'Zero mutation error',
       expect.objectContaining({
         error: mockError,
         context: 'TechnicianAssignment',
-        errorMessage: expect.any(String)
+        errorMessage: expect.any(String),
       })
     );
   });
 
   it('should handle generic popover errors', () => {
     const genericError = new Error('Network timeout');
-    
-    const errorMessage = handleZeroMutationError(genericError);
+
+    handleZeroMutationError(genericError);
 
     expect(debugComponent.error).toHaveBeenCalledWith(
       'Zero mutation error',
       expect.objectContaining({
         error: genericError,
         context: undefined,
-        errorMessage: expect.any(String)
+        errorMessage: expect.any(String),
       })
     );
   });
@@ -294,15 +294,15 @@ describe('Epic 015 Integration - Component Error Handling', () => {
       authToken: 'bearer-token-123', // Should be redacted
       formData: {
         name: 'John Doe',
-        password: 'secret123' // Should be redacted
-      }
+        password: 'secret123', // Should be redacted
+      },
     };
 
     // Simulate component error logging
     debugComponent.error('Component state invalid', {
       state: componentState,
       componentName: 'TestComponent',
-      error: componentError
+      error: componentError,
     });
 
     expect(debugComponent.error).toHaveBeenCalledWith(
@@ -310,7 +310,7 @@ describe('Epic 015 Integration - Component Error Handling', () => {
       expect.objectContaining({
         state: componentState,
         componentName: 'TestComponent',
-        error: componentError
+        error: componentError,
       })
     );
   });
@@ -336,7 +336,7 @@ describe('Epic 015 Integration - Model Layer', () => {
       debugDatabase.error('Zero.js relationship error', {
         relationshipName,
         tableName,
-        error
+        error,
       });
     }
 
@@ -345,7 +345,7 @@ describe('Epic 015 Integration - Model Layer', () => {
       expect.objectContaining({
         relationshipName,
         tableName,
-        error: relationshipError
+        error: relationshipError,
       })
     );
   });
@@ -357,14 +357,14 @@ describe('Epic 015 Integration - Model Layer', () => {
     // Simulate validation warning
     debugDatabase.warn('Relationship validation failed', {
       tableName,
-      error: validationError
+      error: validationError,
     });
 
     expect(debugDatabase.warn).toHaveBeenCalledWith(
       'Relationship validation failed',
       expect.objectContaining({
         tableName,
-        error: validationError
+        error: validationError,
       })
     );
   });
@@ -386,21 +386,21 @@ describe('Epic 015 Integration - Real-world Error Scenarios', () => {
       apiKey: 'sk-secret-key-123', // Should be redacted
       metadata: {
         createdBy: 'admin@example.com',
-        token: 'creation-token-456' // Should be redacted
-      }
+        token: 'creation-token-456', // Should be redacted
+      },
     };
 
     // Simulate task creation error
     debugWorkflow.error('Task creation failed', {
       error: taskCreationError,
-      taskData
+      taskData,
     });
 
     expect(debugWorkflow.error).toHaveBeenCalledWith(
       'Task creation failed',
       expect.objectContaining({
         error: taskCreationError,
-        taskData
+        taskData,
       })
     );
   });
@@ -413,7 +413,7 @@ describe('Epic 015 Integration - Real-world Error Scenarios', () => {
     debugWorkflow.error('Task nesting failed', {
       error: dragError,
       draggedTaskId,
-      targetTaskId
+      targetTaskId,
     });
 
     expect(debugWorkflow.error).toHaveBeenCalledWith(
@@ -421,7 +421,7 @@ describe('Epic 015 Integration - Real-world Error Scenarios', () => {
       expect.objectContaining({
         error: dragError,
         draggedTaskId,
-        targetTaskId
+        targetTaskId,
       })
     );
   });
@@ -434,7 +434,7 @@ describe('Epic 015 Integration - Real-world Error Scenarios', () => {
     debugComponent.error('Job title update failed', {
       error: updateError,
       jobId,
-      newTitle
+      newTitle,
     });
 
     expect(debugComponent.error).toHaveBeenCalledWith(
@@ -442,7 +442,7 @@ describe('Epic 015 Integration - Real-world Error Scenarios', () => {
       expect.objectContaining({
         error: updateError,
         jobId,
-        newTitle
+        newTitle,
       })
     );
   });
@@ -453,7 +453,7 @@ describe('Epic 015 Integration - Real-world Error Scenarios', () => {
       operation: 'multi-step-process',
       steps: [
         { id: 'step-1', status: 'completed' },
-        { id: 'step-2', status: 'failed' }
+        { id: 'step-2', status: 'failed' },
       ],
       context: {
         userId: 'user-123',
@@ -461,21 +461,21 @@ describe('Epic 015 Integration - Real-world Error Scenarios', () => {
         permissions: ['read', 'write'],
         tokens: {
           access: 'access-token-789', // Should be redacted
-          refresh: 'refresh-token-012' // Should be redacted
-        }
-      }
+          refresh: 'refresh-token-012', // Should be redacted
+        },
+      },
     };
 
     debugWorkflow.error('Complex operation failed', {
       error: complexError,
-      data: complexData
+      data: complexData,
     });
 
     expect(debugWorkflow.error).toHaveBeenCalledWith(
       'Complex operation failed',
       expect.objectContaining({
         error: complexError,
-        data: complexData
+        data: complexData,
       })
     );
   });
@@ -492,7 +492,7 @@ describe('Epic 015 Integration - Edge Cases', () => {
     debugDatabase.error('Null error test', {
       error: null,
       data: undefined,
-      validField: 'should-appear'
+      validField: 'should-appear',
     });
 
     expect(debugDatabase.error).toHaveBeenCalledWith(
@@ -500,7 +500,7 @@ describe('Epic 015 Integration - Edge Cases', () => {
       expect.objectContaining({
         error: null,
         data: undefined,
-        validField: 'should-appear'
+        validField: 'should-appear',
       })
     );
   });
@@ -510,7 +510,7 @@ describe('Epic 015 Integration - Edge Cases', () => {
       emptyObject: {},
       emptyArray: [],
       nullValue: null,
-      undefinedValue: undefined
+      undefinedValue: undefined,
     });
 
     expect(debugComponent.warn).toHaveBeenCalledWith(
@@ -519,7 +519,7 @@ describe('Epic 015 Integration - Edge Cases', () => {
         emptyObject: {},
         emptyArray: [],
         nullValue: null,
-        undefinedValue: undefined
+        undefinedValue: undefined,
       })
     );
   });
@@ -530,14 +530,14 @@ describe('Epic 015 Integration - Edge Cases', () => {
 
     debugDatabase.error('Large string test', {
       error: largeError,
-      description: largeString
+      description: largeString,
     });
 
     expect(debugDatabase.error).toHaveBeenCalledWith(
       'Large string test',
       expect.objectContaining({
         error: largeError,
-        description: largeString
+        description: largeString,
       })
     );
   });
@@ -552,7 +552,7 @@ describe('Epic 015 Integration - Edge Cases', () => {
       function: () => 'test',
       symbol: Symbol('test'),
       bigint: BigInt(123),
-      password: 'should-be-redacted' // Should be redacted
+      password: 'should-be-redacted', // Should be redacted
     };
 
     debugComponent.warn('Mixed data types test', { data: mixedData });
@@ -560,7 +560,7 @@ describe('Epic 015 Integration - Edge Cases', () => {
     expect(debugComponent.warn).toHaveBeenCalledWith(
       'Mixed data types test',
       expect.objectContaining({
-        data: mixedData
+        data: mixedData,
       })
     );
   });

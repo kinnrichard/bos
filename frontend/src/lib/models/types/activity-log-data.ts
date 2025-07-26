@@ -1,7 +1,7 @@
 /**
  * ActivityLogData - TypeScript interface for activity_logs table
  *
- * Generated from Rails schema: 2025-07-26 11:37:59 UTC
+ * Generated from Rails schema: 2025-07-26 14:51:29 UTC
  * * Relationships (loaded via includes()):
  * - user: belongs_to User
  * - client: belongs_to Client
@@ -22,7 +22,7 @@ import type { JobData } from './job-data';
 export interface ActivityLogData extends BaseRecord {
   action?: string;
   loggable_type: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at: string | number;
   updated_at: string | number;
   id: string;

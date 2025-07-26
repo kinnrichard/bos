@@ -4,21 +4,56 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { calculatePositionFromTarget } from './position-calculator.js';
-import type { Task, DropZoneInfo } from './position-calculator.js';
-import { ClientActsAsList } from './client-acts-as-list.js';
+import { calculatePositionFromTarget } from './position-calculator';
+import type { Task, DropZoneInfo } from './position-calculator';
 
 // Test data from user logs
 const createTestTasks = (): Task[] => [
-  { id: 'aa199df2-ad07-4141-9ca3-24350ae10f66', position: 3, parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb' },
-  { id: '573af5c6-7cd6-41e2-9207-e4e4354b3a53', position: 4, parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb' },
-  { id: '0d6d43c1-90a3-4fc3-a9ae-7658f797f333', position: 5, parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb' },
-  { id: 'd4754ddf-471b-41a4-948a-01423c144469', position: 6, parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb' },
-  { id: 'c180c0ed-3a1b-46c4-b3cd-deb96de1e930', position: 7, parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb' },
-  { id: 'f6d7132a-6060-4c15-946e-b2701f21d1f9', position: 8, parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb' },
-  { id: '413d84d5-93e4-4daf-b648-eaee8c776d39', position: 9, parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb' },
-  { id: '0bd45386-d4ef-4531-9f45-1fce59b379e1', position: 10, parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb' },
-  { id: 'f07927d6-87f3-4cc0-ab0e-099cf4744fc2', position: 11, parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb' }
+  {
+    id: 'aa199df2-ad07-4141-9ca3-24350ae10f66',
+    position: 3,
+    parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb',
+  },
+  {
+    id: '573af5c6-7cd6-41e2-9207-e4e4354b3a53',
+    position: 4,
+    parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb',
+  },
+  {
+    id: '0d6d43c1-90a3-4fc3-a9ae-7658f797f333',
+    position: 5,
+    parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb',
+  },
+  {
+    id: 'd4754ddf-471b-41a4-948a-01423c144469',
+    position: 6,
+    parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb',
+  },
+  {
+    id: 'c180c0ed-3a1b-46c4-b3cd-deb96de1e930',
+    position: 7,
+    parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb',
+  },
+  {
+    id: 'f6d7132a-6060-4c15-946e-b2701f21d1f9',
+    position: 8,
+    parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb',
+  },
+  {
+    id: '413d84d5-93e4-4daf-b648-eaee8c776d39',
+    position: 9,
+    parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb',
+  },
+  {
+    id: '0bd45386-d4ef-4531-9f45-1fce59b379e1',
+    position: 10,
+    parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb',
+  },
+  {
+    id: 'f07927d6-87f3-4cc0-ab0e-099cf4744fc2',
+    position: 11,
+    parent_id: '0868e68c-0560-49e4-8023-8da58258a0fb',
+  },
 ];
 
 describe('calculatePositionFromTarget', () => {
@@ -30,7 +65,7 @@ describe('calculatePositionFromTarget', () => {
       const dropZone: DropZoneInfo = {
         mode: 'reorder',
         position: 'above',
-        targetTaskId: '413d84d5-93e4-4daf-b648-eaee8c776d39'
+        targetTaskId: '413d84d5-93e4-4daf-b648-eaee8c776d39',
       };
       const parentId = '0868e68c-0560-49e4-8023-8da58258a0fb';
       const draggedTaskIds = ['aa199df2-ad07-4141-9ca3-24350ae10f66'];
@@ -54,10 +89,13 @@ describe('calculatePositionFromTarget', () => {
       const dropZone: DropZoneInfo = {
         mode: 'reorder',
         position: 'above',
-        targetTaskId: '413d84d5-93e4-4daf-b648-eaee8c776d39'
+        targetTaskId: '413d84d5-93e4-4daf-b648-eaee8c776d39',
       };
       const parentId = '0868e68c-0560-49e4-8023-8da58258a0fb';
-      const draggedTaskIds = ['aa199df2-ad07-4141-9ca3-24350ae10f66', '573af5c6-7cd6-41e2-9207-e4e4354b3a53'];
+      const draggedTaskIds = [
+        'aa199df2-ad07-4141-9ca3-24350ae10f66',
+        '573af5c6-7cd6-41e2-9207-e4e4354b3a53',
+      ];
 
       const result = calculatePositionFromTarget(tasks, dropZone, parentId, draggedTaskIds);
 
@@ -74,13 +112,13 @@ describe('calculatePositionFromTarget', () => {
       const dropZone: DropZoneInfo = {
         mode: 'reorder',
         position: 'above',
-        targetTaskId: 'f6d7132a-6060-4c15-946e-b2701f21d1f9' // Position 8
+        targetTaskId: 'f6d7132a-6060-4c15-946e-b2701f21d1f9', // Position 8
       };
       const parentId = '0868e68c-0560-49e4-8023-8da58258a0fb';
       const draggedTaskIds = [
         'aa199df2-ad07-4141-9ca3-24350ae10f66', // Position 3
-        '573af5c6-7cd6-41e2-9207-e4e4354b3a53', // Position 4  
-        '0d6d43c1-90a3-4fc3-a9ae-7658f797f333'  // Position 5
+        '573af5c6-7cd6-41e2-9207-e4e4354b3a53', // Position 4
+        '0d6d43c1-90a3-4fc3-a9ae-7658f797f333', // Position 5
       ];
 
       const result = calculatePositionFromTarget(tasks, dropZone, parentId, draggedTaskIds);
@@ -98,7 +136,7 @@ describe('calculatePositionFromTarget', () => {
       const dropZone: DropZoneInfo = {
         mode: 'reorder',
         position: 'above',
-        targetTaskId: 'aa199df2-ad07-4141-9ca3-24350ae10f66' // First task
+        targetTaskId: 'aa199df2-ad07-4141-9ca3-24350ae10f66', // First task
       };
       const parentId = '0868e68c-0560-49e4-8023-8da58258a0fb';
       const draggedTaskIds = ['f07927d6-87f3-4cc0-ab0e-099cf4744fc2']; // Last task
@@ -114,7 +152,7 @@ describe('calculatePositionFromTarget', () => {
       const dropZone: DropZoneInfo = {
         mode: 'reorder',
         position: 'below',
-        targetTaskId: 'f07927d6-87f3-4cc0-ab0e-099cf4744fc2' // Last task
+        targetTaskId: 'f07927d6-87f3-4cc0-ab0e-099cf4744fc2', // Last task
       };
       const parentId = '0868e68c-0560-49e4-8023-8da58258a0fb';
       const draggedTaskIds = ['aa199df2-ad07-4141-9ca3-24350ae10f66']; // First task
@@ -131,12 +169,12 @@ describe('calculatePositionFromTarget', () => {
         { id: 'task1', position: 1, parent_id: 'parent1' },
         { id: 'task2', position: 2, parent_id: 'parent1' },
         { id: 'task3', position: 1, parent_id: 'parent2' },
-        { id: 'task4', position: 2, parent_id: 'parent2' }
+        { id: 'task4', position: 2, parent_id: 'parent2' },
       ];
       const dropZone: DropZoneInfo = {
         mode: 'reorder',
         position: 'above',
-        targetTaskId: 'task3' // In parent2
+        targetTaskId: 'task3', // In parent2
       };
       const parentId = 'parent1'; // Dropping into parent1
       const draggedTaskIds = ['task4']; // From parent2
@@ -151,7 +189,7 @@ describe('calculatePositionFromTarget', () => {
       const tasks = createTestTasks();
       const dropZone: DropZoneInfo = {
         mode: 'nest',
-        targetTaskId: '413d84d5-93e4-4daf-b648-eaee8c776d39'
+        targetTaskId: '413d84d5-93e4-4daf-b648-eaee8c776d39',
       };
       const parentId = '413d84d5-93e4-4daf-b648-eaee8c776d39'; // Nesting under target
       const draggedTaskIds = ['aa199df2-ad07-4141-9ca3-24350ae10f66'];
@@ -167,7 +205,7 @@ describe('calculatePositionFromTarget', () => {
       const dropZone: DropZoneInfo = {
         mode: 'reorder',
         position: 'above',
-        targetTaskId: 'non-existent-task'
+        targetTaskId: 'non-existent-task',
       };
       const parentId = '0868e68c-0560-49e4-8023-8da58258a0fb';
       const draggedTaskIds = ['aa199df2-ad07-4141-9ca3-24350ae10f66'];
@@ -197,7 +235,7 @@ describe('calculatePositionFromTarget', () => {
       const dropZone: DropZoneInfo = {
         mode: 'reorder',
         position: 'above',
-        targetTaskId: 'aa199df2-ad07-4141-9ca3-24350ae10f66' // Position 3
+        targetTaskId: 'aa199df2-ad07-4141-9ca3-24350ae10f66', // Position 3
       };
       const parentId = '0868e68c-0560-49e4-8023-8da58258a0fb';
       const draggedTaskIds = ['f07927d6-87f3-4cc0-ab0e-099cf4744fc2']; // Position 11, moving up
@@ -213,12 +251,12 @@ describe('calculatePositionFromTarget', () => {
       const dropZone: DropZoneInfo = {
         mode: 'reorder',
         position: 'above',
-        targetTaskId: 'f07927d6-87f3-4cc0-ab0e-099cf4744fc2' // Position 11
+        targetTaskId: 'f07927d6-87f3-4cc0-ab0e-099cf4744fc2', // Position 11
       };
       const parentId = '0868e68c-0560-49e4-8023-8da58258a0fb';
       const draggedTaskIds = [
         'aa199df2-ad07-4141-9ca3-24350ae10f66', // Position 3
-        '573af5c6-7cd6-41e2-9207-e4e4354b3a53'  // Position 4
+        '573af5c6-7cd6-41e2-9207-e4e4354b3a53', // Position 4
       ]; // Both moving down
 
       const result = calculatePositionFromTarget(tasks, dropZone, parentId, draggedTaskIds);

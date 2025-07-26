@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ClientActsAsList } from './client-acts-as-list.js';
-import type { Task, PositionUpdate, RelativePositionUpdate } from './position-calculator.js';
+import { ClientActsAsList } from './client-acts-as-list';
+import type { Task, PositionUpdate, RelativePositionUpdate } from './position-calculator';
 
 describe('ClientActsAsList', () => {
   describe('Single Task Operations', () => {
@@ -14,21 +14,21 @@ describe('ClientActsAsList', () => {
         { id: 'task2', position: 2, parent_id: 'parent1' },
         { id: 'task3', position: 3, parent_id: 'parent1' },
         { id: 'task4', position: 4, parent_id: 'parent1' },
-        { id: 'task5', position: 5, parent_id: 'parent1' }
+        { id: 'task5', position: 5, parent_id: 'parent1' },
       ];
 
       const positionUpdates: PositionUpdate[] = [
-        { id: 'task2', position: 4, parent_id: 'parent1' }
+        { id: 'task2', position: 4, parent_id: 'parent1' },
       ];
 
       const result = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
 
       // Expected result: task2 moves from 2 to 4
-      // Gap elimination: task3(3→2), task4(4→3), task5(5→4) 
+      // Gap elimination: task3(3→2), task4(4→3), task5(5→4)
       // Insertion: task2 at 4, task4(3→4), task5(4→5)
       // Final: task1:1, task3:2, task4:3, task2:4, task5:5
 
-      const finalPositions = new Map(result.updatedTasks.map(t => [t.id, t.position]));
+      const finalPositions = new Map(result.updatedTasks.map((t) => [t.id, t.position]));
       expect(finalPositions.get('task1')).toBe(1);
       expect(finalPositions.get('task3')).toBe(2);
       expect(finalPositions.get('task4')).toBe(3);
@@ -37,8 +37,8 @@ describe('ClientActsAsList', () => {
 
       // Verify operations were recorded
       expect(result.operations.length).toBeGreaterThan(0);
-      expect(result.operations.some(op => op.type === 'gap-elimination')).toBe(true);
-      expect(result.operations.some(op => op.type === 'insertion')).toBe(true);
+      expect(result.operations.some((op) => op.type === 'gap-elimination')).toBe(true);
+      expect(result.operations.some((op) => op.type === 'insertion')).toBe(true);
     });
 
     it('should handle cross-scope move', () => {
@@ -46,25 +46,25 @@ describe('ClientActsAsList', () => {
         { id: 'task1', position: 1, parent_id: 'parent1' },
         { id: 'task2', position: 2, parent_id: 'parent1' },
         { id: 'task3', position: 1, parent_id: 'parent2' },
-        { id: 'task4', position: 2, parent_id: 'parent2' }
+        { id: 'task4', position: 2, parent_id: 'parent2' },
       ];
 
       const positionUpdates: PositionUpdate[] = [
-        { id: 'task2', position: 2, parent_id: 'parent2' }
+        { id: 'task2', position: 2, parent_id: 'parent2' },
       ];
 
       const result = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
 
       // Parent1: task1:1 (task2 left gap at 2, but no other tasks to shift)
       // Parent2: task3:1, task4:2→3 (shift up), task2:2 (inserted)
-      const finalPositions = new Map(result.updatedTasks.map(t => [t.id, t.position]));
+      const finalPositions = new Map(result.updatedTasks.map((t) => [t.id, t.position]));
       expect(finalPositions.get('task1')).toBe(1);
       expect(finalPositions.get('task2')).toBe(2);
       expect(finalPositions.get('task3')).toBe(1);
       expect(finalPositions.get('task4')).toBe(3);
 
       // Check parent_id was updated
-      const task2 = result.updatedTasks.find(t => t.id === 'task2');
+      const task2 = result.updatedTasks.find((t) => t.id === 'task2');
       expect(task2?.parent_id).toBe('parent2');
     });
   });
@@ -81,21 +81,21 @@ describe('ClientActsAsList', () => {
         { id: 'task8', position: 8, parent_id: 'parent1' },
         { id: '413d84d5', position: 9, parent_id: 'parent1' },
         { id: 'task10', position: 10, parent_id: 'parent1' },
-        { id: 'task11', position: 11, parent_id: 'parent1' }
+        { id: 'task11', position: 11, parent_id: 'parent1' },
       ];
 
       // User dragged aa199df2 and 573af5c6 to positions 7 and 8
       const positionUpdates: PositionUpdate[] = [
         { id: 'aa199df2', position: 7, parent_id: 'parent1' },
-        { id: '573af5c6', position: 8, parent_id: 'parent1' }
+        { id: '573af5c6', position: 8, parent_id: 'parent1' },
       ];
 
       const result = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
 
       // Expected server behavior (from user logs):
       // aa199df2: position 7, 573af5c6: position 9, 413d84d5: position 8
-      const finalPositions = new Map(result.updatedTasks.map(t => [t.id, t.position]));
-      
+      const finalPositions = new Map(result.updatedTasks.map((t) => [t.id, t.position]));
+
       // With new randomized positioning, positions might differ but the test should still verify logical structure
       // The key thing is that tasks are positioned correctly relative to each other
       expect(finalPositions.get('aa199df2')).toBeDefined();
@@ -116,22 +116,22 @@ describe('ClientActsAsList', () => {
         { id: 'task5', position: 5, parent_id: 'parent1' },
         { id: 'task6', position: 6, parent_id: 'parent1' },
         { id: 'task7', position: 7, parent_id: 'parent1' },
-        { id: 'task8', position: 8, parent_id: 'parent1' }
+        { id: 'task8', position: 8, parent_id: 'parent1' },
       ];
 
       // Move first 3 tasks to positions 6, 7, 8
       const positionUpdates: PositionUpdate[] = [
         { id: 'task1', position: 6, parent_id: 'parent1' },
         { id: 'task2', position: 7, parent_id: 'parent1' },
-        { id: 'task3', position: 8, parent_id: 'parent1' }
+        { id: 'task3', position: 8, parent_id: 'parent1' },
       ];
 
       const result = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
 
       // Gap elimination should shift task4,5,6,7,8 down by 3 positions
       // Then insertion should place task1,2,3 at their target positions
-      const finalPositions = new Map(result.updatedTasks.map(t => [t.id, t.position]));
-      
+      const finalPositions = new Map(result.updatedTasks.map((t) => [t.id, t.position]));
+
       // With new randomized positioning, verify logical structure rather than exact positions
       // All tasks should have valid positions and no duplicates
       expect(finalPositions.get('task4')).toBeDefined();
@@ -158,21 +158,21 @@ describe('ClientActsAsList', () => {
         { id: 'task3', position: 3, parent_id: 'parent1' },
         { id: 'task4', position: 4, parent_id: 'parent1' },
         { id: 'task5', position: 5, parent_id: 'parent1' },
-        { id: 'task6', position: 6, parent_id: 'parent1' }
+        { id: 'task6', position: 6, parent_id: 'parent1' },
       ];
 
       // Remove tasks at positions 2 and 5 (non-consecutive gaps)
       const positionUpdates: PositionUpdate[] = [
         { id: 'task2', position: 1, parent_id: 'parent2' },
-        { id: 'task5', position: 2, parent_id: 'parent2' }
+        { id: 'task5', position: 2, parent_id: 'parent2' },
       ];
 
       const result = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
 
       // Parent1 should have: task1:1, task3:2, task4:3, task6:4
-      const parent1Tasks = result.updatedTasks.filter(t => t.parent_id === 'parent1');
-      const parent1Positions = new Map(parent1Tasks.map(t => [t.id, t.position]));
-      
+      const parent1Tasks = result.updatedTasks.filter((t) => t.parent_id === 'parent1');
+      const parent1Positions = new Map(parent1Tasks.map((t) => [t.id, t.position]));
+
       expect(parent1Positions.get('task1')).toBe(1);
       expect(parent1Positions.get('task3')).toBe(2); // 3 - 1 gap = 2
       expect(parent1Positions.get('task4')).toBe(3); // 4 - 1 gap = 3
@@ -187,22 +187,22 @@ describe('ClientActsAsList', () => {
         { id: 'task1', position: 1, parent_id: 'parent1' },
         { id: 'task2', position: 2, parent_id: 'parent1' },
         { id: 'task3', position: 3, parent_id: 'parent1' },
-        { id: 'task4', position: 4, parent_id: 'parent1' }
+        { id: 'task4', position: 4, parent_id: 'parent1' },
       ];
 
       // Two tasks leaving same scope - should deduplicate gap positions
       const positionUpdates: PositionUpdate[] = [
         { id: 'task2', position: 1, parent_id: 'parent2' },
-        { id: 'task3', position: 2, parent_id: 'parent2' }
+        { id: 'task3', position: 2, parent_id: 'parent2' },
       ];
 
       const result = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
 
       // Parent1: task1:1, task4:2 (shifted down by 2 unique gaps)
-      const parent1Tasks = result.updatedTasks.filter(t => t.parent_id === 'parent1');
+      const parent1Tasks = result.updatedTasks.filter((t) => t.parent_id === 'parent1');
       expect(parent1Tasks.length).toBe(2);
-      
-      const parent1Positions = new Map(parent1Tasks.map(t => [t.id, t.position]));
+
+      const parent1Positions = new Map(parent1Tasks.map((t) => [t.id, t.position]));
       expect(parent1Positions.get('task1')).toBe(1);
       expect(parent1Positions.get('task4')).toBe(2); // 4 - 2 gaps = 2
 
@@ -216,7 +216,7 @@ describe('ClientActsAsList', () => {
       const tasks: Task[] = [
         { id: 'task1', position: 1, parent_id: 'parent1' },
         { id: 'task2', position: 1, parent_id: 'parent1' }, // Duplicate!
-        { id: 'task3', position: 2, parent_id: 'parent1' }
+        { id: 'task3', position: 2, parent_id: 'parent1' },
       ];
 
       const validation = ClientActsAsList.validatePositions(tasks);
@@ -228,7 +228,7 @@ describe('ClientActsAsList', () => {
       const tasks: Task[] = [
         { id: 'task1', position: 1, parent_id: 'parent1' },
         { id: 'task2', position: 3, parent_id: 'parent1' }, // Gap at position 2
-        { id: 'task3', position: 4, parent_id: 'parent1' }
+        { id: 'task3', position: 4, parent_id: 'parent1' },
       ];
 
       const validation = ClientActsAsList.validatePositions(tasks);
@@ -239,11 +239,13 @@ describe('ClientActsAsList', () => {
     it('should validate positions start from 1', () => {
       const tasks: Task[] = [
         { id: 'task1', position: 2, parent_id: 'parent1' }, // Should start from 1
-        { id: 'task2', position: 3, parent_id: 'parent1' }
+        { id: 'task2', position: 3, parent_id: 'parent1' },
       ];
 
       const validation = ClientActsAsList.validatePositions(tasks);
-      expect(validation.warnings).toContain('Scope parent1: Positions don\'t start from 1 (first position: 2)');
+      expect(validation.warnings).toContain(
+        "Scope parent1: Positions don't start from 1 (first position: 2)"
+      );
     });
 
     it('should handle multiple scopes correctly', () => {
@@ -267,11 +269,11 @@ describe('ClientActsAsList', () => {
       const tasks: Task[] = [
         { id: 'task1', position: 1, parent_id: 'parent1' },
         { id: 'task2', position: 2, parent_id: 'parent1' },
-        { id: 'task3', position: 3, parent_id: 'parent1' }
+        { id: 'task3', position: 3, parent_id: 'parent1' },
       ];
 
       const positionUpdates: PositionUpdate[] = [
-        { id: 'task1', position: 3, parent_id: 'parent1' }
+        { id: 'task1', position: 3, parent_id: 'parent1' },
       ];
 
       const predictions = ClientActsAsList.predictServerPositions(tasks, positionUpdates);
@@ -287,15 +289,16 @@ describe('ClientActsAsList', () => {
       const tasks: Task[] = [
         { id: 'task1', position: 1, parent_id: null },
         { id: 'task2', position: 2, parent_id: null },
-        { id: 'task3', position: 3, parent_id: null }
+        { id: 'task3', position: 3, parent_id: null },
       ];
 
-      const relativeUpdates: RelativePositionUpdate[] = [
-        { id: 'task3', after_task_id: 'task1' }
-      ];
+      const relativeUpdates: RelativePositionUpdate[] = [{ id: 'task3', after_task_id: 'task1' }];
 
-      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
-      
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(
+        tasks,
+        relativeUpdates
+      );
+
       expect(positionUpdates[0].id).toBe('task3');
       expect(positionUpdates[0].parent_id).toBeNull();
       expect(positionUpdates[0].repositioned_after_id).toBe('task1');
@@ -308,15 +311,16 @@ describe('ClientActsAsList', () => {
       const tasks: Task[] = [
         { id: 'task1', position: 1, parent_id: null },
         { id: 'task2', position: 2, parent_id: null },
-        { id: 'task3', position: 3, parent_id: null }
+        { id: 'task3', position: 3, parent_id: null },
       ];
 
-      const relativeUpdates: RelativePositionUpdate[] = [
-        { id: 'task3', before_task_id: 'task2' }
-      ];
+      const relativeUpdates: RelativePositionUpdate[] = [{ id: 'task3', before_task_id: 'task2' }];
 
-      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
-      
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(
+        tasks,
+        relativeUpdates
+      );
+
       expect(positionUpdates[0].id).toBe('task3');
       expect(positionUpdates[0].parent_id).toBeNull();
       expect(positionUpdates[0].repositioned_after_id).toBe('task1'); // positioned after task1, before task2
@@ -329,15 +333,16 @@ describe('ClientActsAsList', () => {
       const tasks: Task[] = [
         { id: 'task1', position: 1, parent_id: null },
         { id: 'task2', position: 2, parent_id: null },
-        { id: 'task3', position: 3, parent_id: null }
+        { id: 'task3', position: 3, parent_id: null },
       ];
 
-      const relativeUpdates: RelativePositionUpdate[] = [
-        { id: 'task3', position: 'first' }
-      ];
+      const relativeUpdates: RelativePositionUpdate[] = [{ id: 'task3', position: 'first' }];
 
-      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
-      
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(
+        tasks,
+        relativeUpdates
+      );
+
       // Should use negative positioning for first position
       expect(positionUpdates[0].id).toBe('task3');
       expect(positionUpdates[0].position).toBeLessThan(0);
@@ -352,15 +357,16 @@ describe('ClientActsAsList', () => {
       const tasks: Task[] = [
         { id: 'task1', position: 1, parent_id: null },
         { id: 'task2', position: 2, parent_id: null },
-        { id: 'task3', position: 3, parent_id: null }
+        { id: 'task3', position: 3, parent_id: null },
       ];
 
-      const relativeUpdates: RelativePositionUpdate[] = [
-        { id: 'task1', position: 'last' }
-      ];
+      const relativeUpdates: RelativePositionUpdate[] = [{ id: 'task1', position: 'last' }];
 
-      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
-      
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(
+        tasks,
+        relativeUpdates
+      );
+
       expect(positionUpdates[0].id).toBe('task1');
       expect(positionUpdates[0].parent_id).toBeNull();
       expect(positionUpdates[0].repositioned_after_id).toBe('task3'); // positioned after the last task
@@ -373,15 +379,18 @@ describe('ClientActsAsList', () => {
         { id: 'task1', position: 1, parent_id: 'parent1' },
         { id: 'task2', position: 2, parent_id: 'parent1' },
         { id: 'task3', position: 1, parent_id: 'parent2' },
-        { id: 'task4', position: 2, parent_id: 'parent2' }
+        { id: 'task4', position: 2, parent_id: 'parent2' },
       ];
 
       const relativeUpdates: RelativePositionUpdate[] = [
-        { id: 'task2', parent_id: 'parent2', after_task_id: 'task3' }
+        { id: 'task2', parent_id: 'parent2', after_task_id: 'task3' },
       ];
 
-      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(tasks, relativeUpdates);
-      
+      const positionUpdates = ClientActsAsList.convertRelativeToPositionUpdates(
+        tasks,
+        relativeUpdates
+      );
+
       expect(positionUpdates[0].id).toBe('task2');
       expect(positionUpdates[0].parent_id).toBe('parent2');
       expect(positionUpdates[0].repositioned_after_id).toBe('task3');
@@ -393,17 +402,17 @@ describe('ClientActsAsList', () => {
     it('should propagate repositioned_after_id through PositionUpdateBatch', () => {
       const tasks: Task[] = [
         { id: 'task1', position: 1, parent_id: null },
-        { id: 'task2', position: 2, parent_id: null }
+        { id: 'task2', position: 2, parent_id: null },
       ];
 
       const positionUpdates: PositionUpdate[] = [
-        { id: 'task1', position: 2, repositioned_after_id: 'task2' }
+        { id: 'task1', position: 2, repositioned_after_id: 'task2' },
       ];
 
       const result = ClientActsAsList.applyPositionUpdates(tasks, positionUpdates);
-      
+
       // Find the position update batch for task1
-      const task1Update = result.positionUpdates.find(u => u.taskId === 'task1');
+      const task1Update = result.positionUpdates.find((u) => u.taskId === 'task1');
       expect(task1Update).toBeDefined();
       expect(task1Update?.repositioned_after_id).toBeUndefined(); // not set during applyPositionUpdates
     });
