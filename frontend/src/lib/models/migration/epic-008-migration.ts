@@ -1,9 +1,9 @@
 /**
  * Epic-008 Migration Utilities
- * 
+ *
  * Provides utilities and analysis tools to help with the big bang migration
  * from the old model system to Epic-008 ReactiveRecord architecture.
- * 
+ *
  * This includes:
  * - Current usage analysis
  * - Import pattern detection
@@ -53,7 +53,7 @@ export class Epic008Migration {
   private projectRoot: string;
   private sourceDir: string;
 
-  constructor(projectRoot = '/Users/claude/code/bos/frontend') {
+  constructor(projectRoot = '/Users/claude/Projects/bos/frontend') {
     this.projectRoot = projectRoot;
     this.sourceDir = join(projectRoot, 'src');
   }
@@ -67,7 +67,7 @@ export class Epic008Migration {
       filesToMigrate: 0,
       riskAssessment: { low: 0, medium: 0, high: 0 },
       oldPatterns: [],
-      recommendedOrder: []
+      recommendedOrder: [],
     };
 
     try {
@@ -75,7 +75,7 @@ export class Epic008Migration {
       analysis.totalFiles = files.length;
 
       const fileAnalyses: FileAnalysis[] = [];
-      
+
       for (const filePath of files) {
         const fileAnalysis = await this.analyzeFile(filePath);
         if (fileAnalysis.requiredChanges.length > 0) {
@@ -87,9 +87,9 @@ export class Epic008Migration {
 
       // Collect pattern statistics
       const patternCounts = new Map<string, { count: number; files: string[] }>();
-      
-      fileAnalyses.forEach(fa => {
-        fa.oldImports.forEach(imp => {
+
+      fileAnalyses.forEach((fa) => {
+        fa.oldImports.forEach((imp) => {
           const existing = patternCounts.get(imp) || { count: 0, files: [] };
           existing.count++;
           existing.files.push(fa.filePath);
@@ -100,7 +100,7 @@ export class Epic008Migration {
       analysis.oldPatterns = Array.from(patternCounts.entries()).map(([pattern, data]) => ({
         pattern,
         count: data.count,
-        files: data.files
+        files: data.files,
       }));
 
       // Generate recommended migration order (low risk first)
@@ -109,7 +109,7 @@ export class Epic008Migration {
           const riskOrder = { low: 1, medium: 2, high: 3 };
           return riskOrder[a.riskLevel] - riskOrder[b.riskLevel];
         })
-        .map(fa => fa.filePath);
+        .map((fa) => fa.filePath);
 
       return analysis;
     } catch (error) {
@@ -123,12 +123,12 @@ export class Epic008Migration {
    */
   private async findRelevantFiles(): Promise<string[]> {
     const files: string[] = [];
-    
+
     const searchDirs = [
       join(this.sourceDir, 'lib'),
       join(this.sourceDir, 'components'),
       join(this.sourceDir, 'routes'),
-      join(this.sourceDir, 'stores')
+      join(this.sourceDir, 'stores'),
     ];
 
     for (const dir of searchDirs) {
@@ -146,13 +146,17 @@ export class Epic008Migration {
   /**
    * Recursively find files with specific extensions
    */
-  private async findFilesRecursive(dir: string, files: string[], extensions: string[]): Promise<void> {
+  private async findFilesRecursive(
+    dir: string,
+    files: string[],
+    extensions: string[]
+  ): Promise<void> {
     try {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = join(dir, entry.name);
-        
+
         if (entry.isDirectory()) {
           await this.findFilesRecursive(fullPath, files, extensions);
         } else if (entry.isFile()) {
@@ -172,15 +176,16 @@ export class Epic008Migration {
    */
   private async analyzeFile(filePath: string): Promise<FileAnalysis> {
     const content = await fs.readFile(filePath, 'utf-8');
-    const isReactiveContext = filePath.endsWith('.svelte') || content.includes('$state') || content.includes('$derived');
-    
+    const isReactiveContext =
+      filePath.endsWith('.svelte') || content.includes('$state') || content.includes('$derived');
+
     const analysis: FileAnalysis = {
       filePath,
       oldImports: [],
       newImports: [],
       requiredChanges: [],
       riskLevel: 'low',
-      isReactiveContext
+      isReactiveContext,
     };
 
     // Detect old import patterns
@@ -189,10 +194,10 @@ export class Epic008Migration {
       /import.*Task.*from.*['"`].*task\.generated['"`]/g,
       /import.*TaskType.*from.*['"`].*generated\/task['"`]/g,
       /import.*ModelFactory.*from.*['"`].*model-factory['"`]/g,
-      /import.*RecordInstance.*from.*['"`].*record-instance['"`]/g
+      /import.*RecordInstance.*from.*['"`].*record-instance['"`]/g,
     ];
 
-    oldImportPatterns.forEach(pattern => {
+    oldImportPatterns.forEach((pattern) => {
       const matches = content.match(pattern);
       if (matches) {
         analysis.oldImports.push(...matches);
@@ -201,12 +206,15 @@ export class Epic008Migration {
 
     // Detect old usage patterns that need updating
     const oldUsagePatterns = [
-      { pattern: /Task\.find\([^)]+\)(?!\s*\.then)(?!\s*await)/g, issue: 'find() calls need await' },
+      {
+        pattern: /Task\.find\([^)]+\)(?!\s*\.then)(?!\s*await)/g,
+        issue: 'find() calls need await',
+      },
       { pattern: /TaskType\b/g, issue: 'TaskType should be TaskData' },
       { pattern: /ModelFactory\.create/g, issue: 'ModelFactory usage needs replacement' },
       { pattern: /RecordInstance/g, issue: 'RecordInstance pattern deprecated' },
       { pattern: /\.createActiveModel/g, issue: 'createActiveModel deprecated' },
-      { pattern: /\.createReactiveModel/g, issue: 'createReactiveModel deprecated' }
+      { pattern: /\.createReactiveModel/g, issue: 'createReactiveModel deprecated' },
     ];
 
     oldUsagePatterns.forEach(({ pattern, issue }) => {
@@ -245,7 +253,7 @@ export class Epic008Migration {
    */
   async generateMigrationScript(filePath: string): Promise<string> {
     const analysis = await this.analyzeFile(filePath);
-    
+
     const script = `
 // Epic-008 Migration Script for: ${filePath}
 // Generated on: ${new Date().toISOString()}
@@ -254,13 +262,13 @@ export class Epic008Migration {
 
 /*
 REQUIRED CHANGES:
-${analysis.requiredChanges.map(change => `- ${change}`).join('\n')}
+${analysis.requiredChanges.map((change) => `- ${change}`).join('\n')}
 
 OLD IMPORTS TO REPLACE:
-${analysis.oldImports.map(imp => `- ${imp}`).join('\n')}
+${analysis.oldImports.map((imp) => `- ${imp}`).join('\n')}
 
 NEW IMPORTS TO ADD:
-${analysis.newImports.map(imp => `+ ${imp}`).join('\n')}
+${analysis.newImports.map((imp) => `+ ${imp}`).join('\n')}
 
 MIGRATION STEPS:
 1. Replace old imports with new imports
@@ -283,7 +291,7 @@ ${this.generateExampleTransformations(analysis)}
   private generateExampleTransformations(analysis: FileAnalysis): string {
     const examples: string[] = [];
 
-    if (analysis.oldImports.some(imp => imp.includes('generated/task'))) {
+    if (analysis.oldImports.some((imp) => imp.includes('generated/task'))) {
       examples.push(`
 // BEFORE:
 import { Task, TaskType } from '$lib/models/generated/task';
@@ -295,7 +303,7 @@ const task = ${analysis.isReactiveContext ? 'Task.find(id)' : 'await Task.find(i
       `);
     }
 
-    if (analysis.requiredChanges.some(change => change.includes('ModelFactory'))) {
+    if (analysis.requiredChanges.some((change) => change.includes('ModelFactory'))) {
       examples.push(`
 // BEFORE:
 import { ModelFactory } from '$lib/record-factory/model-factory';
@@ -315,7 +323,7 @@ import { Task } from '$models';
    */
   async createMigrationReport(): Promise<string> {
     const analysis = await this.analyzeCurrentUsage();
-    
+
     const report = `
 # Epic-008 Migration Report
 Generated on: ${new Date().toISOString()}
@@ -334,7 +342,7 @@ Generated on: ${new Date().toISOString()}
 ${analysis.oldPatterns
   .sort((a, b) => b.count - a.count)
   .slice(0, 10)
-  .map(p => `- \`${p.pattern}\` (${p.count} files)`)
+  .map((p) => `- \`${p.pattern}\` (${p.count} files)`)
   .join('\n')}
 
 ## Recommended Migration Order
@@ -400,8 +408,8 @@ The old system will remain functional until explicit removal.
       // Check that foundation classes exist and are importable
       const foundationFiles = [
         'src/lib/models/base/types.ts',
-        'src/lib/models/base/active-record.ts', 
-        'src/lib/models/base/reactive-record.ts'
+        'src/lib/models/base/active-record.ts',
+        'src/lib/models/base/reactive-record.ts',
       ];
 
       for (const file of foundationFiles) {
@@ -418,7 +426,7 @@ The old system will remain functional until explicit removal.
         'src/lib/models/types/task-data.ts',
         'src/lib/models/task.ts',
         'src/lib/models/reactive-task.ts',
-        'src/lib/models/index.ts'
+        'src/lib/models/index.ts',
       ];
 
       for (const file of taskFiles) {
@@ -432,7 +440,10 @@ The old system will remain functional until explicit removal.
 
       // Check TypeScript imports (basic syntax check)
       try {
-        const indexContent = await fs.readFile(join(this.projectRoot, 'src/lib/models/index.ts'), 'utf-8');
+        const indexContent = await fs.readFile(
+          join(this.projectRoot, 'src/lib/models/index.ts'),
+          'utf-8'
+        );
         if (!indexContent.includes('export { Task }')) {
           errors.push('Task export missing from index.ts');
         }
@@ -442,14 +453,13 @@ The old system will remain functional until explicit removal.
       } catch (error) {
         errors.push(`Failed to validate index.ts: ${error}`);
       }
-
     } catch (error) {
       errors.push(`Validation failed: ${error}`);
     }
 
     return {
       success: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

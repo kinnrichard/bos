@@ -8,12 +8,12 @@
  * These tests run the actual Rails generator and validate the output.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { ESLint } from 'eslint';
-import { debugSystem } from '../../../src/lib/utils/debug';
+import { debugSystem } from '../../src/lib/utils/debug';
 
 // Paths
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
@@ -172,22 +172,25 @@ async function getAllModelFiles(): Promise<string[]> {
 describe('Rails Generator Integration Tests', () => {
   let generatedFiles: string[] = [];
 
-  beforeAll(async () => {
-    debugSystem.development('Running Rails generator for integration test', {
-      type: 'generator_test',
-      operation: 'rails_generate',
-    });
-    // Get the current list of files that could be generated
-    generatedFiles = await getAllModelFiles();
-  }, 60000); // 60 second timeout for generator
-
   describe('ESLint Compliance', () => {
     it('should generate ESLint-compliant code with no warnings or errors', async () => {
-      debugSystem.development('Linting generated files for ESLint compliance', {
+      debugSystem.development('Running Rails generator for ESLint validation test', {
+        type: 'generator_test',
+        operation: 'rails_generate_and_validate',
+      });
+
+      // First, run the Rails generator to create fresh files
+      const freshlyGeneratedFiles = await runRailsGenerator();
+
+      debugSystem.development('Rails generator completed, validating ESLint compliance', {
         type: 'generator_test',
         operation: 'eslint_validation',
-        fileCount: generatedFiles.length,
+        fileCount: freshlyGeneratedFiles.length,
+        generatedFiles: freshlyGeneratedFiles.map((f) => f.split('/').pop()),
       });
+
+      // Get all model files (including freshly generated ones)
+      generatedFiles = await getAllModelFiles();
 
       const lintResults = await lintGeneratedFiles(generatedFiles);
 
@@ -230,7 +233,7 @@ describe('Rails Generator Integration Tests', () => {
           result: 'success',
         });
       }
-    }, 30000);
+    }, 90000); // 90 second timeout to account for Rails generator + ESLint validation
   });
 
   describe('Generator Idempotency', () => {
@@ -239,6 +242,15 @@ describe('Rails Generator Integration Tests', () => {
         type: 'generator_test',
         operation: 'idempotency_validation',
       });
+
+      // Ensure we have files to test (in case this test runs independently)
+      if (generatedFiles.length === 0) {
+        debugSystem.development('No generated files found, getting current model files', {
+          type: 'generator_test',
+          operation: 'fallback_file_discovery',
+        });
+        generatedFiles = await getAllModelFiles();
+      }
 
       // Get initial file stats
       const initialStats = await getFileStats(generatedFiles);
