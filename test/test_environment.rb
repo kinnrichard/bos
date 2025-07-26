@@ -220,9 +220,9 @@ module TestEnvironment
   def load_test_seeds!
     puts "🌱 Loading comprehensive seed data..."
 
-    # Always use basic test data for now due to fixture issues
-    puts "📝 Using basic test data (fixtures have foreign key issues)"
-    create_basic_test_data!
+    # Load the actual test_seeds.rb file for complete test data
+    puts "📝 Loading comprehensive test_seeds.rb file"
+    load Rails.root.join("db", "test_seeds.rb")
   end
 
   def create_basic_test_data!
