@@ -16,6 +16,7 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import { debugComponent } from '$lib/utils/debug';
+import { withConsoleMonitoring, type ConsoleErrorFilter } from '../helpers/console-monitoring';
 
 // Constants for consistent behavior
 const SMOKE_TIMEOUT = 10000;
@@ -23,10 +24,38 @@ const DEBUG_MODE = process.env.DEBUG_SMOKE_TESTS === 'true';
 const TEST_FUTURE_FEATURES = process.env.TEST_FUTURE_FEATURES === 'true';
 const TEST_TIMEOUT = DEBUG_MODE ? 30000 : 15000;
 
+// Console error filters for smoke tests
+const SMOKE_TEST_CONSOLE_FILTERS: ConsoleErrorFilter[] = [
+  {
+    message: /favicon/,
+    type: 'error',
+    description: 'Favicon 404 errors are not critical for functionality',
+  },
+  {
+    message: /ResizeObserver loop limit exceeded/,
+    type: 'error',
+    description: 'ResizeObserver loop limit - common browser behavior during UI updates',
+  },
+  {
+    message: /Non-passive event listener/,
+    type: 'warning',
+    description: 'Passive event listener warnings - performance hints, not errors',
+  },
+  {
+    message: /404.*\.(png|jpg|jpeg|svg|ico)$/,
+    type: 'error',
+    description: 'Image 404 errors are typically not critical for smoke tests',
+  },
+  // 🚨 IMPORTANT: DO NOT filter Svelte warnings!
+  // Svelte warnings like [Warning] [svelte] indicate real code issues and should fail tests
+];
+
 interface SmokeTestOptions {
   verbose?: boolean;
   expectToFail?: boolean;
   description?: string;
+  skipConsoleMonitoring?: boolean;
+  customConsoleFilters?: ConsoleErrorFilter[];
 }
 
 /**
@@ -37,7 +66,13 @@ function createSmokeTest(
   testFn: (page: Page) => Promise<void>,
   options: SmokeTestOptions = {}
 ) {
-  const { verbose = DEBUG_MODE, expectToFail = false, description } = options;
+  const {
+    verbose = DEBUG_MODE,
+    expectToFail = false,
+    description,
+    skipConsoleMonitoring = false,
+    customConsoleFilters = [],
+  } = options;
 
   // Skip future feature tests by default using proper Playwright pattern
   if (expectToFail && !TEST_FUTURE_FEATURES) {
@@ -62,8 +97,28 @@ function createSmokeTest(
       // Authentication is already handled by auth.setup.ts dependency
       // Tests are pre-authenticated via storageState, no additional verification needed
 
-      // Execute test function
-      await testFn(page);
+      // Execute test function with console monitoring
+      if (skipConsoleMonitoring) {
+        // Run without console monitoring
+        await testFn(page);
+      } else {
+        // Run with Svelte-optimized console monitoring (default behavior)
+        const filters = [...SMOKE_TEST_CONSOLE_FILTERS, ...customConsoleFilters];
+
+        await withConsoleMonitoring(
+          page,
+          async (_monitor) => {
+            await testFn(page);
+          },
+          {
+            failOnError: true,
+            failOnWarning: true, // Critical: Svelte warnings must fail tests
+            filters: filters,
+            logFilteredErrors: DEBUG_MODE,
+            maxErrorsBeforeFailure: 1, // Fail immediately on critical warnings
+          }
+        );
+      }
 
       if (verbose) {
         debugComponent('Smoke test completed', {
@@ -110,6 +165,33 @@ function createSmokeTest(
 test.describe('Application Smoke Tests', () => {
   // Configure test timeout
   test.setTimeout(TEST_TIMEOUT);
+
+  /**
+   * 🧪 CONSOLE ERROR MONITORING ENABLED - SVELTE-OPTIMIZED
+   *
+   * All smoke tests now automatically monitor for console errors and will fail if:
+   * - Critical JavaScript errors occur
+   * - 🚨 SVELTE WARNINGS occur (e.g., [Warning] [svelte] ownership_invalid_binding)
+   * - Unhandled exceptions are thrown
+   * - Any warning that indicates real code issues
+   *
+   * Filtered errors (automatically ignored):
+   * - Favicon 404 errors
+   * - ResizeObserver loop limit exceeded
+   * - Non-passive event listener warnings (performance hints only)
+   * - Image 404 errors
+   *
+   * 🚨 CRITICAL: Svelte warnings are NOT filtered and WILL fail tests!
+   * This includes warnings like:
+   * - [Warning] [svelte] ownership_invalid_binding
+   * - [Warning] [svelte] any other Svelte warnings
+   *
+   * To disable console monitoring for a specific test, use:
+   * { skipConsoleMonitoring: true }
+   *
+   * To add custom filters for a specific test, use:
+   * { customConsoleFilters: [{ message: /pattern/, description: 'reason' }] }
+   */
 
   test.beforeEach(async ({ page: _page }) => {
     if (DEBUG_MODE) {
@@ -476,37 +558,125 @@ test.describe('Application Smoke Tests', () => {
     createSmokeTest(
       'should not show critical JavaScript errors',
       async (page) => {
-        const consoleErrors: string[] = [];
+        // Enhanced console error monitoring with detailed analysis
+        await withConsoleMonitoring(
+          page,
+          async (_monitor) => {
+            // Navigate through main pages
+            await page.goto('/');
+            await page.waitForLoadState('networkidle');
 
-        // Capture console errors
-        page.on('console', (msg) => {
-          if (msg.type() === 'error') {
-            consoleErrors.push(msg.text());
+            await page.goto('/jobs');
+            await page.waitForLoadState('networkidle');
+
+            await page.goto('/clients');
+            await page.waitForLoadState('networkidle');
+
+            // Additional navigation that might trigger errors
+            await page.goto('/');
+            await page.waitForLoadState('networkidle');
+
+            // The monitor will automatically check for console errors
+            // All errors are filtered through SMOKE_TEST_CONSOLE_FILTERS
+          },
+          {
+            failOnError: true,
+            failOnWarning: false, // Don't fail on warnings in smoke tests
+            filters: SMOKE_TEST_CONSOLE_FILTERS,
+            logFilteredErrors: DEBUG_MODE,
           }
-        });
+        );
+      },
+      {
+        description: 'Enhanced validation of JavaScript errors with intelligent filtering',
+        skipConsoleMonitoring: true, // Skip double monitoring since we're using withConsoleMonitoring
+      }
+    );
 
-        // Navigate through main pages
-        await page.goto('/');
-        await page.waitForLoadState('networkidle');
-
+    createSmokeTest(
+      'should handle complex user interactions without console errors',
+      async (page) => {
+        // Test more complex interactions that might generate console errors
         await page.goto('/jobs');
         await page.waitForLoadState('networkidle');
 
+        // Try to interact with search if available
+        const searchInput = page.locator('input[type="search"]').first();
+        if (await searchInput.isVisible()) {
+          await searchInput.fill('test search');
+          await searchInput.clear();
+        }
+
+        // Navigate to clients and try similar interactions
         await page.goto('/clients');
         await page.waitForLoadState('networkidle');
 
-        // Filter out known non-critical errors (adjust as needed)
-        const criticalErrors = consoleErrors.filter(
-          (error) =>
-            !error.includes('favicon') &&
-            !error.includes('404') &&
-            !error.toLowerCase().includes('warning')
-        );
+        const clientSearch = page.locator('input[type="search"]').first();
+        if (await clientSearch.isVisible()) {
+          await clientSearch.fill('client search');
+          await page.keyboard.press('Enter');
+        }
 
-        // Should not have critical JavaScript errors
-        expect(criticalErrors.length).toBe(0);
+        // Test back/forward navigation
+        await page.goBack();
+        await page.waitForLoadState('networkidle');
+        await page.goForward();
+        await page.waitForLoadState('networkidle');
+
+        // Console monitoring happens automatically via createSmokeTest wrapper
       },
-      { description: 'Validates absence of critical JavaScript errors' }
+      {
+        description: 'Validates complex user interactions do not generate console errors',
+        customConsoleFilters: [
+          {
+            message: /navigation.*timeout/,
+            type: 'warning',
+            description: 'Navigation timeout warnings during rapid navigation are acceptable',
+          },
+        ],
+      }
+    );
+
+    createSmokeTest(
+      'should catch and fail on Svelte warnings',
+      async (page) => {
+        // This test specifically validates that Svelte warnings cause test failures
+
+        // Navigate through pages that might trigger Svelte warnings
+        await page.goto('/jobs');
+        await page.waitForLoadState('networkidle');
+
+        // Look for interactive elements that might have binding issues
+        const interactiveElements = page.locator('button, input, select');
+        const elementCount = await interactiveElements.count();
+
+        if (elementCount > 0) {
+          // Try interacting with elements to potentially trigger binding warnings
+          const firstElement = interactiveElements.first();
+          const elementType = await firstElement.evaluate((el) => el.tagName.toLowerCase());
+
+          if (elementType === 'button') {
+            await firstElement.click();
+          } else if (elementType === 'input') {
+            await firstElement.focus();
+          }
+        }
+
+        // Navigate to clients page and repeat
+        await page.goto('/clients');
+        await page.waitForLoadState('networkidle');
+
+        // Any Svelte warnings (like [Warning] [svelte] ownership_invalid_binding)
+        // will be automatically caught and cause this test to fail
+
+        // This test serves as documentation that the monitoring system is working
+        await expect(page.locator('body')).toBeVisible();
+      },
+      {
+        description:
+          'Validates that Svelte warnings like ownership_invalid_binding cause test failures',
+        verbose: true, // Always log for this critical validation test
+      }
     );
   });
 

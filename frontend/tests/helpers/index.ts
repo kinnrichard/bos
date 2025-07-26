@@ -81,6 +81,20 @@ export {
   type SearchContext,
 } from './search-page';
 
+// Console error monitoring
+export {
+  ConsoleErrorMonitor,
+  ConsoleTestUtils,
+  consoleFixtures,
+  withConsoleMonitoring,
+  expectNoConsoleErrors,
+  DEFAULT_CONSOLE_FILTERS,
+  type ConsoleError,
+  type ConsoleErrorFilter,
+  type ConsoleMonitoringOptions,
+  type ConsoleMonitoringFixtures,
+} from './console-monitoring';
+
 /**
  * Quick setup utilities for common test patterns
  */

@@ -156,7 +156,7 @@ export function createHybridPlaywrightConfig(
     retries: config.performance.retries,
     workers: config.performance.parallelWorkers,
 
-    reporter: process.env.CI ? 'github' : 'html',
+    reporter: process.env.CI ? 'github' : 'list',
 
     use: {
       ...overrides.use,
@@ -231,7 +231,7 @@ export function createHybridPlaywrightConfig(
                 RAILS_ENV: 'test',
                 NODE_ENV: 'test',
                 RAILS_TEST_PORT: '4000', // Explicit test port
-                ZERO_TEST_PORT: '5848', // Explicit test port
+                ZERO_TEST_PORT: '4850', // Zero test port from config/zero.yml
                 FRONTEND_TEST_PORT: '6173', // Explicit test port
                 // FORCE test API URL
                 PUBLIC_API_URL: 'http://localhost:4000/api/v1',
