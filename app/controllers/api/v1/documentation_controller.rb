@@ -362,7 +362,7 @@ class Api::V1::DocumentationController < Api::V1::BaseController
               description: "Filter by priority",
               schema: {
                 type: "string",
-                enum: [ "critical", "high", "normal", "low" ]
+                enum: [ "critical", "very_high", "high", "normal", "low", "proactive_followup" ]
               }
             }
           ],

@@ -10,28 +10,34 @@ class JobPriority
       sort_order: 0,
       color: "red"
     },
+    very_high: {
+      emoji: "‼️",
+      label: "Very High",
+      sort_order: 1,
+      color: "red"
+    },
     high: {
       emoji: "❗",
       label: "High",
-      sort_order: 1,
+      sort_order: 2,
       color: "orange"
     },
     normal: {
-      emoji: "",
+      emoji: "➖",
       label: "Normal",
-      sort_order: 2,
+      sort_order: 3,
       color: "gray"
     },
     low: {
-      emoji: "➖",
+      emoji: "🐢",
       label: "Low",
-      sort_order: 3,
+      sort_order: 4,
       color: "blue"
     },
     proactive_followup: {
       emoji: "💬",
       label: "Proactive Follow-up",
-      sort_order: 4,
+      sort_order: 5,
       color: "purple"
     }
   }.freeze

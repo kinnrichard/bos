@@ -10,7 +10,7 @@
     size = 'medium',
     showLabel = true,
     hideNormal = true,
-    class: className = ''
+    class: className = '',
   }: {
     priority: JobPriority | TaskPriority;
     type?: 'job' | 'task';
@@ -27,7 +27,7 @@
 
   // Get the appropriate emoji based on type
   const emoji = $derived(
-    type === 'job' 
+    type === 'job'
       ? getJobPriorityEmoji(priority as JobPriority)
       : getTaskPriorityEmoji(priority as TaskPriority)
   );
@@ -35,12 +35,15 @@
   // Get priority label with proper formatting
   const label = $derived(() => {
     if (!showLabel) return '';
-    
+
     // Special case for job priorities
     if (type === 'job' && priority === 'proactive_followup') {
       return 'Proactive Follow-up';
     }
-    
+    if (type === 'job' && priority === 'very_high') {
+      return 'Very High';
+    }
+
     // Convert to Title Case
     return priority.charAt(0).toUpperCase() + priority.slice(1);
   });
@@ -49,6 +52,7 @@
   const priorityColorClass = $derived(() => {
     switch (priority) {
       case 'critical':
+      case 'very_high':
       case 'high':
         return 'priority-high';
       case 'normal':
@@ -64,14 +68,14 @@
   });
 
   const sizeClass = `priority-badge-${size}`;
-  const combinedClass = `priority-badge ${sizeClass} ${priorityColorClass()} ${className}`;
+  const combinedClass = $derived(`priority-badge ${sizeClass} ${priorityColorClass} ${className}`);
 </script>
 
 {#if !shouldHide}
   <span class={combinedClass} data-priority={priority}>
     <span class="priority-badge-emoji">{emoji}</span>
     {#if showLabel}
-      <span class="priority-badge-label">{label()}</span>
+      <span class="priority-badge-label">{label}</span>
     {/if}
   </span>
 {/if}

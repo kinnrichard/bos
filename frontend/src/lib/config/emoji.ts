@@ -1,69 +1,69 @@
 /**
  * Centralized emoji configuration for the bŏs Svelte PWA
- * 
+ *
  * This is the single source of truth for all emoji mappings throughout the application.
  * Based on the original Rails emoji configuration but adapted for the API + PWA architecture.
  */
 
-import { 
-  getJobStatusString, 
-  getJobPriorityString, 
-  getTaskStatusString 
+import {
+  getJobStatusString,
+  getJobPriorityString,
+  getTaskStatusString,
 } from '$lib/utils/enum-conversions';
-
 
 // Job Status Emoji Mappings
 const JOB_STATUS_EMOJIS: Record<string, string> = {
-  'open': '⚫',
-  'in_progress': '🟢',
-  'waiting_for_customer': '⏳',
-  'waiting_for_scheduled_appointment': '📅',
-  'paused': '⏸️',
-  'successfully_completed': '✅',
-  'cancelled': '❌'
+  open: '⚫',
+  in_progress: '🟢',
+  waiting_for_customer: '⏳',
+  waiting_for_scheduled_appointment: '📅',
+  paused: '⏸️',
+  successfully_completed: '✅',
+  cancelled: '❌',
 };
 
 // Job Priority Emoji Mappings
 const JOB_PRIORITY_EMOJIS: Record<string, string> = {
-  'low': '➖',
-  'normal': '',
-  'high': '❗',
-  'critical': '🔥',
-  'proactive_followup': '💬'
+  critical: '🔥',
+  very_high: '‼️',
+  high: '❗',
+  normal: '➖',
+  low: '🐢',
+  proactive_followup: '💬',
 };
 
 // Task Status Emoji Mappings
 const TASK_STATUS_EMOJIS: Record<string, string> = {
-  'new_task': '⚫️',
-  'in_progress': '🟢',
-  'paused': '⏸️',
-  'successfully_completed': '☑️',
-  'cancelled': '❌'
+  new_task: '⚫️',
+  in_progress: '🟢',
+  paused: '⏸️',
+  successfully_completed: '☑️',
+  cancelled: '❌',
 };
 
-// Task Priority Emoji Mappings  
+// Task Priority Emoji Mappings
 const TASK_PRIORITY_EMOJIS: Record<string, string> = {
-  'high': '🔴',
-  'medium': '🟡',
-  'low': '🟢'
+  high: '🔴',
+  medium: '🟡',
+  low: '🟢',
 };
 
 // Activity Type Emoji Mappings
 const ACTIVITY_TYPE_EMOJIS: Record<string, string> = {
-  'client': '👤',
-  'job': '💼',
+  client: '👤',
+  job: '💼',
   'cross-reference': '🔗',
-  'general': '⚙️'
+  general: '⚙️',
 };
 
 // Entity Type Emoji Mappings
 const ENTITY_TYPE_EMOJIS: Record<string, string> = {
-  'Client': '👤', // Default for client when type is unknown
-  'Job': '💼',
-  'Task': '☑️',
-  'Person': '👤',
-  'Device': '💻',
-  'Note': '📝'
+  Client: '👤', // Default for client when type is unknown
+  Job: '💼',
+  Task: '☑️',
+  Person: '👤',
+  Device: '💻',
+  Note: '📝',
 };
 
 // Utility Emojis
@@ -75,20 +75,20 @@ const UTILITY_EMOJIS = {
   unassigned: '❓',
   client_types: {
     business: '🏢',
-    residential: '🏠'
+    residential: '🏠',
   },
   contact_methods: {
     phone: '📱',
     primary_phone: '📱',
     email: '📧',
-    address: '📍'
+    address: '📍',
   },
   schedule_types: {
     scheduled_appointment: '📅',
     follow_up: '🔄',
     due_date: '⏰',
-    start_date: '▶️'
-  }
+    start_date: '▶️',
+  },
 } as const;
 
 /**
@@ -119,12 +119,15 @@ export function getTaskStatusEmoji(status: string | number | null | undefined): 
  * Get emoji for a task, considering both status and deleted state
  * @param task - The task object
  */
-export function getTaskEmoji(task: { status: string | number; discarded_at?: string | number | null }): string {
+export function getTaskEmoji(task: {
+  status: string | number;
+  discarded_at?: string | number | null;
+}): string {
   // If task is deleted, always return trash emoji
   if (task.discarded_at) {
     return '🗑️';
   }
-  
+
   return getTaskStatusEmoji(task.status);
 }
 
@@ -134,12 +137,18 @@ export function getTaskEmoji(task: { status: string | number; discarded_at?: str
 export function getTaskStatusLabel(status: string | number | null | undefined): string {
   const statusString = typeof status === 'number' ? getTaskStatusString(status) : status;
   switch (statusString) {
-    case 'new_task': return 'New Task';
-    case 'in_progress': return 'In Progress';
-    case 'paused': return 'Paused';
-    case 'successfully_completed': return 'Completed Successfully';
-    case 'cancelled': return 'Cancelled';
-    default: return statusString?.replace('_', ' ') || 'Unknown';
+    case 'new_task':
+      return 'New Task';
+    case 'in_progress':
+      return 'In Progress';
+    case 'paused':
+      return 'Paused';
+    case 'successfully_completed':
+      return 'Completed Successfully';
+    case 'cancelled':
+      return 'Cancelled';
+    default:
+      return statusString?.replace('_', ' ') || 'Unknown';
   }
 }
 
@@ -154,7 +163,7 @@ export function getTaskPriorityEmoji(priority: string): string {
  * Get utility emoji by type
  */
 export function getUtilityEmoji(type: keyof typeof UTILITY_EMOJIS): string {
-  return UTILITY_EMOJIS[type] as string || '';
+  return (UTILITY_EMOJIS[type] as string) || '';
 }
 
 /**
@@ -191,7 +200,7 @@ export function getActivityTypeEmoji(type: string): string {
  * @param entityData - Optional entity data for client type detection
  */
 export function getEntityTypeEmoji(
-  entityType: string, 
+  entityType: string,
   entityData?: { client_type?: string; business?: boolean }
 ): string {
   // Special handling for Client type
@@ -206,7 +215,7 @@ export function getEntityTypeEmoji(
       return '🏠';
     }
   }
-  
+
   return ENTITY_TYPE_EMOJIS[entityType] || '📄';
 }
 
@@ -217,7 +226,7 @@ export function getJobStatusWithEmoji(status: string | number | null | undefined
   if (status === null || status === undefined) return '📝 Unknown';
   const statusString = typeof status === 'number' ? getJobStatusString(status) : status;
   const emoji = getJobStatusEmoji(status);
-  const label = statusString.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const label = statusString.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   return `${emoji} ${label}`;
 }
 
@@ -228,7 +237,7 @@ export function getJobPriorityWithEmoji(priority: string | number | null | undef
   if (priority === null || priority === undefined) return 'Unknown';
   const priorityString = typeof priority === 'number' ? getJobPriorityString(priority) : priority;
   const emoji = getJobPriorityEmoji(priority);
-  const label = priorityString.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const label = priorityString.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   return emoji ? `${emoji} ${label}` : label;
 }
 
@@ -240,5 +249,5 @@ export const EMOJI_MAPPINGS = {
   taskPriorities: TASK_PRIORITY_EMOJIS,
   activityTypes: ACTIVITY_TYPE_EMOJIS,
   entityTypes: ENTITY_TYPE_EMOJIS,
-  utility: UTILITY_EMOJIS
+  utility: UTILITY_EMOJIS,
 } as const;

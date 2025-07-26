@@ -4,7 +4,7 @@
   let {
     status,
     priority,
-    isOverdue = false
+    isOverdue = false,
   }: {
     status: string;
     priority: string;
@@ -13,74 +13,86 @@
 
   function getStatusInfo(status: string) {
     const statusMap: Record<string, { label: string; color: string }> = {
-      'open': {
+      open: {
         label: 'Open',
-        color: 'var(--text-secondary)'
+        color: 'var(--text-secondary)',
       },
-      'in_progress': {
+      in_progress: {
         label: 'In Progress',
-        color: 'var(--accent-blue)'
+        color: 'var(--accent-blue)',
       },
-      'waiting_for_customer': {
+      waiting_for_customer: {
         label: 'Waiting for Customer',
-        color: 'var(--text-secondary)'
+        color: 'var(--text-secondary)',
       },
-      'waiting_for_scheduled_appointment': {
+      waiting_for_scheduled_appointment: {
         label: 'Waiting for Appointment',
-        color: 'var(--text-secondary)'
+        color: 'var(--text-secondary)',
       },
-      'paused': {
+      paused: {
         label: 'Paused',
-        color: 'var(--text-secondary)'
+        color: 'var(--text-secondary)',
       },
-      'successfully_completed': {
+      successfully_completed: {
         label: 'Completed',
-        color: 'var(--accent-green)'
+        color: 'var(--accent-green)',
       },
-      'cancelled': {
+      cancelled: {
         label: 'Cancelled',
-        color: 'var(--accent-red)'
-      }
+        color: 'var(--accent-red)',
+      },
     };
 
-    return statusMap[status] || {
-      label: (status && typeof status === 'string') ? status.replace('_', ' ') : 'Unknown',
-      color: 'var(--text-secondary)'
-    };
+    return (
+      statusMap[status] || {
+        label: status && typeof status === 'string' ? status.replace('_', ' ') : 'Unknown',
+        color: 'var(--text-secondary)',
+      }
+    );
   }
 
   function getPriorityInfo(priority: string) {
     const priorityMap: Record<string, { label: string; color: string }> = {
-      'low': {
-        label: 'Low Priority',
-        color: 'var(--text-secondary)'
-      },
-      'normal': {
-        label: 'Normal Priority',
-        color: 'var(--text-secondary)'
-      },
-      'high': {
-        label: 'High Priority',
-        color: 'var(--accent-red)'
-      },
-      'critical': {
+      critical: {
         label: 'Critical Priority',
-        color: 'var(--accent-red)'
+        color: 'var(--accent-red)',
       },
-      'proactive_followup': {
+      very_high: {
+        label: 'Very High Priority',
+        color: 'var(--accent-red)',
+      },
+      high: {
+        label: 'High Priority',
+        color: 'var(--accent-red)',
+      },
+      normal: {
+        label: 'Normal Priority',
+        color: 'var(--text-secondary)',
+      },
+      low: {
+        label: 'Low Priority',
+        color: 'var(--text-secondary)',
+      },
+      proactive_followup: {
         label: 'Proactive Follow-up',
-        color: 'var(--accent-blue)'
-      }
+        color: 'var(--accent-blue)',
+      },
     };
 
-    return priorityMap[priority] || {
-      label: (priority && typeof priority === 'string') ? priority.replace('_', ' ') : 'Unknown',
-      color: 'var(--text-secondary)'
-    };
+    return (
+      priorityMap[priority] || {
+        label: priority && typeof priority === 'string' ? priority.replace('_', ' ') : 'Unknown',
+        color: 'var(--text-secondary)',
+      }
+    );
   }
 
-  const statusInfo = $derived(status ? getStatusInfo(status) : { label: 'Unknown', color: 'var(--text-secondary)' });
-  const priorityInfo = $derived(priority ? getPriorityInfo(priority) : { label: 'Unknown', color: 'var(--text-secondary)' });
+  const statusInfo = $derived(
+    status ? getStatusInfo(status) : { label: 'Unknown', color: 'var(--text-secondary)' }
+  );
+  const priorityInfo = $derived(
+    priority ? getPriorityInfo(priority) : { label: 'Unknown', color: 'var(--text-secondary)' }
+  );
   const statusEmoji = $derived(status ? getJobStatusEmoji(status) : '📝');
   const priorityEmoji = $derived(priority ? getJobPriorityEmoji(priority) : '');
 </script>
@@ -167,7 +179,8 @@
 
   /* Subtle pulse animation for overdue items */
   @keyframes pulse-subtle {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -176,17 +189,17 @@
   }
 
   /* Status-specific styling based on status type */
-  .status-badge.primary[data-status="successfully_completed"] {
+  .status-badge.primary[data-status='successfully_completed'] {
     background-color: rgba(50, 215, 75, 0.1);
     border-color: rgba(50, 215, 75, 0.2);
   }
 
-  .status-badge.primary[data-status="in_progress"] {
+  .status-badge.primary[data-status='in_progress'] {
     background-color: rgba(0, 163, 255, 0.1);
     border-color: rgba(0, 163, 255, 0.2);
   }
 
-  .status-badge.primary[data-status="cancelled"] {
+  .status-badge.primary[data-status='cancelled'] {
     background-color: rgba(255, 69, 58, 0.1);
     border-color: rgba(255, 69, 58, 0.2);
   }

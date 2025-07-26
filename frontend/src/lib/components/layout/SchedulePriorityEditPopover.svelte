@@ -7,7 +7,7 @@
 
   let {
     jobId,
-    initialJob = null
+    initialJob = null,
   }: {
     jobId: string;
     initialJob?: PopulatedJob | null;
@@ -36,27 +36,28 @@
     }
   });
 
-  // Priority options
+  // Priority options (ordered by priority level - highest to lowest)
   const priorityOptions = [
-    { value: 'low', label: 'Low' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'high', label: 'High' },
     { value: 'critical', label: 'Critical' },
-    { value: 'proactive_followup', label: 'Proactive Followup' }
+    { value: 'very_high', label: 'Very High' },
+    { value: 'high', label: 'High' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'low', label: 'Low' },
+    { value: 'proactive_followup', label: 'Proactive Followup' },
   ];
 
   async function handleSave() {
     if (!job) return;
 
     // Collect all changes into single update object
-    const updates: any = {};
-    
+    const updates: Record<string, unknown> = {};
+
     if (localPriority !== job.priority) updates.priority = localPriority;
     if (localStartDate !== job.start_date) updates.start_date = localStartDate || null;
     if (localStartTime !== job.start_time) updates.start_time = localStartTime || null;
     if (localDueDate !== job.due_date) updates.due_date = localDueDate || null;
     if (localDueTime !== job.due_time) updates.due_time = localDueTime || null;
-    
+
     if (Object.keys(updates).length > 0) {
       try {
         // Use ActiveRecord pattern - Zero.js handles optimistic updates and server sync
@@ -67,7 +68,7 @@
         // TODO: Show error toast to user
       }
     }
-    
+
     // Popover will close automatically when clicking outside
   }
 
@@ -84,13 +85,9 @@
   }
 </script>
 
-<BasePopover
-  bind:popover={basePopover}
-  preferredPlacement="bottom"
-  panelWidth="280px"
->
+<BasePopover bind:popover={basePopover} preferredPlacement="bottom" panelWidth="280px">
   {#snippet trigger({ popover })}
-    <button 
+    <button
       class="popover-button"
       use:popover.button
       title="Schedule and Priority"
@@ -100,84 +97,69 @@
     </button>
   {/snippet}
 
-  {#snippet children({ close })}
+  {#snippet children({ close: _close })}
     <div style="padding: 20px;">
-    <h3 class="schedule-title">Schedule & Priority</h3>
+      <h3 class="schedule-title">Schedule & Priority</h3>
 
-    <form class="schedule-form" onsubmit={(e) => { e.preventDefault(); handleSave(); }}>
-      <!-- Priority Section -->
-      <div class="form-section">
-        <label class="form-label" for="priority-select-{jobId}">Priority</label>
-        <FormSelect
-          id="priority-select-{jobId}"
-          bind:value={localPriority}
-          options={priorityOptions}
-          size="small"
-        />
-      </div>
-
-      <!-- Schedule Section -->
-      <div class="form-section">
-        <h4 class="section-title">Schedule</h4>
-        
-        <div class="date-time-group">
-          <label class="form-label" for="start-date-{jobId}">Start Date</label>
-          <FormInput
-            id="start-date-{jobId}"
-            type="date"
-            bind:value={localStartDate}
+      <form
+        class="schedule-form"
+        onsubmit={(e) => {
+          e.preventDefault();
+          handleSave();
+        }}
+      >
+        <!-- Priority Section -->
+        <div class="form-section">
+          <label class="form-label" for="priority-select-{jobId}">Priority</label>
+          <FormSelect
+            id="priority-select-{jobId}"
+            bind:value={localPriority}
+            options={priorityOptions}
             size="small"
           />
         </div>
 
-        <div class="date-time-group">
-          <label class="form-label" for="start-time-{jobId}">Start Time</label>
-          <FormInput
-            id="start-time-{jobId}"
-            type="time"
-            bind:value={localStartTime}
-            size="small"
-          />
+        <!-- Schedule Section -->
+        <div class="form-section">
+          <h4 class="section-title">Schedule</h4>
+
+          <div class="date-time-group">
+            <label class="form-label" for="start-date-{jobId}">Start Date</label>
+            <FormInput
+              id="start-date-{jobId}"
+              type="date"
+              bind:value={localStartDate}
+              size="small"
+            />
+          </div>
+
+          <div class="date-time-group">
+            <label class="form-label" for="start-time-{jobId}">Start Time</label>
+            <FormInput
+              id="start-time-{jobId}"
+              type="time"
+              bind:value={localStartTime}
+              size="small"
+            />
+          </div>
+
+          <div class="date-time-group">
+            <label class="form-label" for="due-date-{jobId}">Due Date</label>
+            <FormInput id="due-date-{jobId}" type="date" bind:value={localDueDate} size="small" />
+          </div>
+
+          <div class="date-time-group">
+            <label class="form-label" for="due-time-{jobId}">Due Time</label>
+            <FormInput id="due-time-{jobId}" type="time" bind:value={localDueTime} size="small" />
+          </div>
         </div>
 
-        <div class="date-time-group">
-          <label class="form-label" for="due-date-{jobId}">Due Date</label>
-          <FormInput
-            id="due-date-{jobId}"
-            type="date"
-            bind:value={localDueDate}
-            size="small"
-          />
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button type="button" class="cancel-button" onclick={handleCancel}> Cancel </button>
+          <button type="submit" class="save-button"> Save </button>
         </div>
-
-        <div class="date-time-group">
-          <label class="form-label" for="due-time-{jobId}">Due Time</label>
-          <FormInput
-            id="due-time-{jobId}"
-            type="time"
-            bind:value={localDueTime}
-            size="small"
-          />
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="action-buttons">
-        <button 
-          type="button" 
-          class="cancel-button"
-          onclick={handleCancel}
-        >
-          Cancel
-        </button>
-        <button 
-          type="submit" 
-          class="save-button"
-        >
-          Save
-        </button>
-      </div>
-    </form>
+      </form>
     </div>
   {/snippet}
 </BasePopover>

@@ -24,6 +24,7 @@ class Job < ApplicationRecord
 
   enum :priority, {
     critical: "critical",
+    very_high: "very_high",
     high: "high",
     normal: "normal",
     low: "low",
