@@ -127,7 +127,7 @@
 </AppLayout>
 
 <style>
-  @import '$lib/styles/jobs-shared.css';
+  @import '$lib/styles/jobs-shared.scss';
   
   /* Header layout */
   .header-content {

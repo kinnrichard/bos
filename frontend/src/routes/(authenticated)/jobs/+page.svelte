@@ -112,7 +112,7 @@
 </AppLayout>
 
 <style>
-  @import '$lib/styles/jobs-shared.css';
+  @import '$lib/styles/jobs-shared.scss';
   
   /* Page-specific h1 override */
   h1 {

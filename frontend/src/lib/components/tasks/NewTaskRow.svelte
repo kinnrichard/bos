@@ -2,7 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import type { TaskInputManager } from '$lib/utils/task-input-manager';
   import type { TaskCreationState } from '$lib/stores/taskCreation.svelte';
-  import '../../styles/task-components.css';
+  import '../../styles/task-components.scss';
 
   // Props
   let {

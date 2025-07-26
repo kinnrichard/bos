@@ -6,8 +6,8 @@
   import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
   import EditableTitle from '../ui/EditableTitle.svelte';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
-  import '../../styles/task-components.css';
-  import '../../styles/focus-ring.css';
+  import '../../styles/task-components.scss';
+  import '../../styles/focus-ring.scss';
   
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';

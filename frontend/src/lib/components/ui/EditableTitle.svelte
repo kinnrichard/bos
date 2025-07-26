@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { focusActions } from '$lib/stores/focusManager.svelte';
-  import '../../styles/focus-ring.css';
+  import '../../styles/focus-ring.scss';
 
   // Props interface
   interface Props {
