@@ -27,7 +27,7 @@ class SidebarStatsService
             COUNT(CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.id IS NULL THEN 1 END) as unassigned,
             COUNT(DISTINCT CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.user_id IS NOT NULL AND job_assignments.user_id != ? THEN jobs.id END) as others,
             COUNT(CASE WHEN jobs.status IN (?, ?) THEN 1 END) as closed,
-            COUNT(CASE WHEN jobs.start_on IS NOT NULL THEN 1 END) as scheduled
+            COUNT(CASE WHEN jobs.starts_at IS NOT NULL THEN 1 END) as scheduled
           FROM jobs
           LEFT JOIN job_assignments ON job_assignments.job_id = jobs.id
           WHERE jobs.client_id = ?
@@ -46,7 +46,7 @@ class SidebarStatsService
             COUNT(CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.id IS NULL THEN 1 END) as unassigned,
             COUNT(DISTINCT CASE WHEN jobs.status NOT IN (?, ?) AND job_assignments.user_id IS NOT NULL AND job_assignments.user_id != ? THEN jobs.id END) as others,
             COUNT(CASE WHEN jobs.status IN (?, ?) THEN 1 END) as closed,
-            COUNT(CASE WHEN jobs.start_on IS NOT NULL THEN 1 END) as scheduled
+            COUNT(CASE WHEN jobs.starts_at IS NOT NULL THEN 1 END) as scheduled
           FROM jobs
           LEFT JOIN job_assignments ON job_assignments.job_id = jobs.id
         SQL
