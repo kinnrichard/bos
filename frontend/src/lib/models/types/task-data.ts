@@ -1,7 +1,7 @@
 /**
  * TaskData - TypeScript interface for tasks table
- * 
- * Generated from Rails schema: 2025-07-25 22:50:45 UTC
+ *
+ * Generated from Rails schema: 2025-07-26 02:34:48 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - assignedTo: belongs_to User
@@ -46,7 +46,6 @@ export interface TaskData extends BaseRecord {
   position_finalized: boolean;
   repositioned_to_top: boolean;
 
-  // Epic-011: Relationship properties (optional - loaded via includes())
   job?: JobData; // belongs_to
   assignedTo?: UserData; // belongs_to
   parent?: TaskData; // belongs_to
@@ -62,10 +61,40 @@ export interface TaskData extends BaseRecord {
  * Create Task data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateTaskData = Omit<TaskData, 'id' | 'created_at' | 'updated_at' | 'job' | 'assignedTo' | 'parent' | 'repositionedAfter' | 'client' | 'nextRepositionedTask' | 'notes' | 'activityLogs' | 'subtasks'>;
+export type CreateTaskData = Omit<
+  TaskData,
+  | 'id'
+  | 'created_at'
+  | 'updated_at'
+  | 'job'
+  | 'assignedTo'
+  | 'parent'
+  | 'repositionedAfter'
+  | 'client'
+  | 'nextRepositionedTask'
+  | 'notes'
+  | 'activityLogs'
+  | 'subtasks'
+>;
 
 /**
  * Update Task data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateTaskData = Partial<Omit<TaskData, 'id' | 'created_at' | 'updated_at' | 'job' | 'assignedTo' | 'parent' | 'repositionedAfter' | 'client' | 'nextRepositionedTask' | 'notes' | 'activityLogs' | 'subtasks'>>;
+export type UpdateTaskData = Partial<
+  Omit<
+    TaskData,
+    | 'id'
+    | 'created_at'
+    | 'updated_at'
+    | 'job'
+    | 'assignedTo'
+    | 'parent'
+    | 'repositionedAfter'
+    | 'client'
+    | 'nextRepositionedTask'
+    | 'notes'
+    | 'activityLogs'
+    | 'subtasks'
+  >
+>;

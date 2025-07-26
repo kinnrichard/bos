@@ -1,7 +1,7 @@
 /**
  * UserData - TypeScript interface for users table
- * 
- * Generated from Rails schema: 2025-07-25 22:50:45 UTC
+ *
+ * Generated from Rails schema: 2025-07-26 02:34:48 UTC
  * * Relationships (loaded via includes()):
  * - activityLogs: has_many ActivityLog
  * - assignedJobs: has_many Job
@@ -41,7 +41,6 @@ export interface UserData extends BaseRecord {
   id: string;
   role: 'admin' | 'technician' | 'customer_specialist' | 'owner';
 
-  // Epic-011: Relationship properties (optional - loaded via includes())
   activityLogs?: ActivityLogData[]; // has_many
   assignedJobs?: JobData[]; // has_many
   assignedTasks?: TaskData[]; // has_many
@@ -57,10 +56,40 @@ export interface UserData extends BaseRecord {
  * Create User data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateUserData = Omit<UserData, 'id' | 'created_at' | 'updated_at' | 'activityLogs' | 'assignedJobs' | 'assignedTasks' | 'jobAssignments' | 'technicianJobs' | 'scheduledDateTimeUsers' | 'scheduledDateTimes' | 'notes' | 'createdJobs'>;
+export type CreateUserData = Omit<
+  UserData,
+  | 'id'
+  | 'created_at'
+  | 'updated_at'
+  | 'activityLogs'
+  | 'assignedJobs'
+  | 'assignedTasks'
+  | 'jobAssignments'
+  | 'technicianJobs'
+  | 'scheduledDateTimeUsers'
+  | 'scheduledDateTimes'
+  | 'notes'
+  | 'createdJobs'
+>;
 
 /**
  * Update User data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateUserData = Partial<Omit<UserData, 'id' | 'created_at' | 'updated_at' | 'activityLogs' | 'assignedJobs' | 'assignedTasks' | 'jobAssignments' | 'technicianJobs' | 'scheduledDateTimeUsers' | 'scheduledDateTimes' | 'notes' | 'createdJobs'>>;
+export type UpdateUserData = Partial<
+  Omit<
+    UserData,
+    | 'id'
+    | 'created_at'
+    | 'updated_at'
+    | 'activityLogs'
+    | 'assignedJobs'
+    | 'assignedTasks'
+    | 'jobAssignments'
+    | 'technicianJobs'
+    | 'scheduledDateTimeUsers'
+    | 'scheduledDateTimes'
+    | 'notes'
+    | 'createdJobs'
+  >
+>;

@@ -6,8 +6,58 @@ require_relative "../../../zero_schema_generator/rails_schema_introspector"
 
 module Zero
   module Generators
+    # Content normalizer for semantic file comparison
+    class ContentNormalizer
+      TIMESTAMP_PATTERNS = [
+        /^.*Generated from Rails schema: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC.*$/i,
+        /^.*Generated: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC.*$/i,
+        /^.*Auto-generated: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC.*$/i,
+        /^\s*\*\s*Generated.*\d{4}-\d{2}-\d{2}.*$/i,
+        /^\s*\/\/.*generated.*\d{4}-\d{2}-\d{2}.*$/i
+      ].freeze
+
+      def normalize(content)
+        TIMESTAMP_PATTERNS.reduce(content) { |text, pattern| text.gsub(pattern, "") }
+                         .gsub(/^\s*$\n/, "")
+                         .strip
+      end
+    end
+
+    # Semantic content comparator
+    class SemanticContentComparator
+      def initialize(normalizer = ContentNormalizer.new)
+        @normalizer = normalizer
+      end
+
+      def identical?(file_path, new_content)
+        return false unless File.exist?(file_path)
+
+        existing_content = File.read(file_path)
+        @normalizer.normalize(existing_content) == @normalizer.normalize(new_content)
+      end
+    end
+
+    # Smart file creator with semantic comparison
+    class SmartFileCreator
+      def initialize(comparator = SemanticContentComparator.new, shell = nil)
+        @comparator = comparator
+        @shell = shell
+      end
+
+      def create_or_skip(destination, content)
+        if @comparator.identical?(destination, content)
+          @shell&.say_status(:identical, destination, :blue)
+          :identical
+        else
+          File.write(destination, content)
+          @shell&.say_status(:create, destination, :green)
+          :created
+        end
+      end
+    end
+
     class ActiveModelsGenerator < Rails::Generators::Base
-      desc "Generate TypeScript ActiveRecord/ReactiveRecord models from Rails schema (Epic-008 architecture)"
+      desc "Generate TypeScript ReactiveRecord and ActiveRecord models based on our Rails models"
 
       source_root File.expand_path("templates", __dir__)
 
@@ -24,7 +74,7 @@ module Zero
                    desc: "Custom output directory"
 
       def generate_active_models
-        say "🎯 Epic-008: Generating simplified ActiveRecord/ReactiveRecord models...", :green
+        say "Generating ReactiveRecord models in TypeScript based on Rails models...", :green
 
         # Ensure output directory exists
         ensure_output_directory_exists
@@ -114,8 +164,6 @@ module Zero
             class_name = model_name.camelize
             kebab_name = model_name.underscore.dasherize
 
-            say "  🔄 Processing #{table[:name]} -> #{class_name}...", :blue
-
             # Find relationships for this table
             relationships = find_relationships_for_table(table[:name], schema_data[:relationships])
             patterns = schema_data[:patterns][table[:name]] || {}
@@ -139,8 +187,6 @@ module Zero
               reactive_content = generate_reactive_model(table, class_name, kebab_name, relationships, patterns)
               reactive_file_path = write_file("reactive-#{kebab_name}.ts", reactive_content)
               result[:generated_files] << reactive_file_path
-
-              say "    ✅ Created: #{kebab_name}.ts, reactive-#{kebab_name}.ts, types/#{kebab_name}-data.ts", :green
             end
 
             result[:generated_models] << {
@@ -235,7 +281,7 @@ module Zero
 
         properties = []
         properties << ""
-        properties << "  // Epic-011: Relationship properties (optional - loaded via includes())"
+        properties << ""
 
         # belongs_to relationships
         if relationships[:belongs_to]&.any?
@@ -656,8 +702,19 @@ module Zero
         # Ensure directory exists
         FileUtils.mkdir_p(File.dirname(file_path))
 
-        File.write(file_path, content)
+        # Use smart file creator for semantic comparison
+        file_creator.create_or_skip(file_path, content)
+
         file_path
+      end
+
+      def file_creator
+        @file_creator ||= SmartFileCreator.new(SemanticContentComparator.new, shell)
+      end
+
+      # Override Thor's default behavior for non-interactive mode
+      def file_collision(destination)
+        options[:force] ? :force : super
       end
 
       def generate_index_file(generated_models)
@@ -763,29 +820,13 @@ module Zero
         TYPESCRIPT
 
         index_path = File.join(Rails.root, options[:output_dir], "index.ts")
-        File.write(index_path, index_content)
-
-        say "    ✅ Created index.ts", :green
+        file_creator.create_or_skip(index_path, index_content)
       end
 
       def output_generation_results(result)
         if options[:dry_run]
           say "\n🔍 DRY RUN COMPLETED", :yellow
           say "Run without --dry-run to actually generate files", :yellow
-        else
-          say "\n✅ EPIC-008 MODEL GENERATION COMPLETED", :green
-        end
-
-        if result[:generated_models].any?
-          say "\n📋 Generated models:", :green
-          result[:generated_models].each do |model|
-            say "  ✅ #{model[:class_name]} (#{model[:table_name]})", :green
-            unless options[:dry_run]
-              say "    📄 #{model[:active_file]} (ActiveRecord)", :blue
-              say "    📄 #{model[:reactive_file]} (ReactiveRecord)", :blue
-              say "    📄 #{model[:data_file]} (TypeScript interfaces)", :blue
-            end
-          end
         end
 
         if result[:errors].any?
@@ -796,33 +837,14 @@ module Zero
         end
 
         unless options[:dry_run]
-          say "\n🎉 Epic-008 models are ready!", :green
-          say "\n📖 Usage patterns:", :blue
 
           if result[:generated_models].any?
             example_model = result[:generated_models].first
             class_name = example_model[:class_name]
             kebab_name = example_model[:kebab_name]
             model_name = example_model[:model_name]
-
-            say <<~USAGE, :blue
-
-              # Non-reactive (Node.js, tests, utilities):
-              import { #{class_name} } from '$lib/models/#{kebab_name}';
-              const #{model_name} = await #{class_name}.find('123');
-
-              # Reactive (Svelte components):
-              import { Reactive#{class_name} as #{class_name} } from '$lib/models/reactive-#{kebab_name}';
-              const #{model_name}Query = #{class_name}.find('123');
-              // #{model_name}Query.data automatically updates UI
-
-              # Easy switching with import alias:
-              import { Reactive#{class_name} as #{class_name} } from '$lib/models/reactive-#{kebab_name}';
-              // Use #{class_name} like normal ActiveRecord but with reactive queries
-            USAGE
           end
 
-          say "\n🔄 To regenerate: bin/rails generate zero:active_models", :blue
         end
       end
 
@@ -883,9 +905,7 @@ module Zero
         TYPESCRIPT
 
         zero_index_path = File.join(Rails.root, "frontend/src/lib/zero", "index.ts")
-        File.write(zero_index_path, zero_index_content)
-
-        say "    ✅ Created zero/index.ts", :green
+        file_creator.create_or_skip(zero_index_path, zero_index_content)
       end
     end
   end

@@ -1,7 +1,7 @@
 /**
  * PersonData - TypeScript interface for people table
- * 
- * Generated from Rails schema: 2025-07-25 22:50:45 UTC
+ *
+ * Generated from Rails schema: 2025-07-26 02:34:48 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
  * - activityLogs: has_many ActivityLog
@@ -29,7 +29,6 @@ export interface PersonData extends BaseRecord {
   id: string;
   client_id?: string;
 
-  // Epic-011: Relationship properties (optional - loaded via includes())
   client?: ClientData; // belongs_to
   activityLogs?: ActivityLogData[]; // has_many
   contactMethods?: ContactMethodData[]; // has_many
@@ -40,10 +39,18 @@ export interface PersonData extends BaseRecord {
  * Create Person data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreatePersonData = Omit<PersonData, 'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'contactMethods' | 'devices'>;
+export type CreatePersonData = Omit<
+  PersonData,
+  'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'contactMethods' | 'devices'
+>;
 
 /**
  * Update Person data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdatePersonData = Partial<Omit<PersonData, 'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'contactMethods' | 'devices'>>;
+export type UpdatePersonData = Partial<
+  Omit<
+    PersonData,
+    'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'contactMethods' | 'devices'
+  >
+>;

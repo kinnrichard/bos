@@ -1,7 +1,7 @@
 /**
  * JobData - TypeScript interface for jobs table
- * 
- * Generated from Rails schema: 2025-07-25 22:50:45 UTC
+ *
+ * Generated from Rails schema: 2025-07-26 02:34:48 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
  * - activityLogs: has_many ActivityLog
@@ -44,10 +44,16 @@ export interface JobData extends BaseRecord {
   due_time_set: boolean;
   starts_at?: string | number;
   start_time_set: boolean;
-  status: 'open' | 'in_progress' | 'paused' | 'waiting_for_customer' | 'waiting_for_scheduled_appointment' | 'successfully_completed' | 'cancelled';
+  status:
+    | 'open'
+    | 'in_progress'
+    | 'paused'
+    | 'waiting_for_customer'
+    | 'waiting_for_scheduled_appointment'
+    | 'successfully_completed'
+    | 'cancelled';
   priority: 'critical' | 'high' | 'normal' | 'low' | 'proactive_followup';
 
-  // Epic-011: Relationship properties (optional - loaded via includes())
   client?: ClientData; // belongs_to
   activityLogs?: ActivityLogData[]; // has_many
   jobAssignments?: JobAssignmentData[]; // has_many
@@ -64,10 +70,42 @@ export interface JobData extends BaseRecord {
  * Create Job data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateJobData = Omit<JobData, 'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'jobAssignments' | 'technicians' | 'jobPeople' | 'people' | 'tasks' | 'allTasks' | 'notes' | 'scheduledDateTimes'>;
+export type CreateJobData = Omit<
+  JobData,
+  | 'id'
+  | 'created_at'
+  | 'updated_at'
+  | 'client'
+  | 'activityLogs'
+  | 'jobAssignments'
+  | 'technicians'
+  | 'jobPeople'
+  | 'people'
+  | 'tasks'
+  | 'allTasks'
+  | 'notes'
+  | 'scheduledDateTimes'
+>;
 
 /**
  * Update Job data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateJobData = Partial<Omit<JobData, 'id' | 'created_at' | 'updated_at' | 'client' | 'activityLogs' | 'jobAssignments' | 'technicians' | 'jobPeople' | 'people' | 'tasks' | 'allTasks' | 'notes' | 'scheduledDateTimes'>>;
+export type UpdateJobData = Partial<
+  Omit<
+    JobData,
+    | 'id'
+    | 'created_at'
+    | 'updated_at'
+    | 'client'
+    | 'activityLogs'
+    | 'jobAssignments'
+    | 'technicians'
+    | 'jobPeople'
+    | 'people'
+    | 'tasks'
+    | 'allTasks'
+    | 'notes'
+    | 'scheduledDateTimes'
+  >
+>;

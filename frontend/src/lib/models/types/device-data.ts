@@ -1,7 +1,7 @@
 /**
  * DeviceData - TypeScript interface for devices table
- * 
- * Generated from Rails schema: 2025-07-25 22:50:45 UTC
+ *
+ * Generated from Rails schema: 2025-07-26 02:34:48 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
  * - person: belongs_to Person
@@ -31,7 +31,6 @@ export interface DeviceData extends BaseRecord {
   client_id?: string;
   person_id?: string;
 
-  // Epic-011: Relationship properties (optional - loaded via includes())
   client?: ClientData; // belongs_to
   person?: PersonData; // belongs_to
   activityLogs?: ActivityLogData[]; // has_many
@@ -41,10 +40,15 @@ export interface DeviceData extends BaseRecord {
  * Create Device data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateDeviceData = Omit<DeviceData, 'id' | 'created_at' | 'updated_at' | 'client' | 'person' | 'activityLogs'>;
+export type CreateDeviceData = Omit<
+  DeviceData,
+  'id' | 'created_at' | 'updated_at' | 'client' | 'person' | 'activityLogs'
+>;
 
 /**
  * Update Device data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateDeviceData = Partial<Omit<DeviceData, 'id' | 'created_at' | 'updated_at' | 'client' | 'person' | 'activityLogs'>>;
+export type UpdateDeviceData = Partial<
+  Omit<DeviceData, 'id' | 'created_at' | 'updated_at' | 'client' | 'person' | 'activityLogs'>
+>;
