@@ -22,6 +22,8 @@
   "devDependencies": {
     "@playwright/test": "^1.53.2",
     "@types/node": "^24.0.3",
+    "sass": "^1.89.2",
+    "sass-embedded": "^1.89.2",
     "ws": "^8.18.3"
   }
 }
