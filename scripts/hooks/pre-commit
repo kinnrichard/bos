@@ -1,0 +1,89 @@
+#!/bin/sh
+# Auto-fix linting issues before commit
+
+# Function to ensure files end with newlines
+ensure_final_newlines() {
+  local files="$1"
+  local file_type="$2"
+  
+  if [ -n "$files" ]; then
+    echo "Ensuring final newlines for $file_type files..."
+    echo "$files" | while read -r file; do
+      if [ -f "$file" ] && [ -n "$(tail -c1 "$file" 2>/dev/null)" ]; then
+        echo "" >> "$file"
+        echo "Added final newline to: $file"
+      fi
+    done
+  fi
+}
+
+# Get changed files by type
+CHANGED_RUBY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.rb$')
+CHANGED_JS_TS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|ts|jsx|tsx|svelte)$' | grep '^frontend/')
+
+# Ruby linting with RuboCop
+if [ -n "$CHANGED_RUBY_FILES" ]; then
+  echo "Running RuboCop on $(echo "$CHANGED_RUBY_FILES" | wc -l) changed Ruby files..."
+  
+  if echo "$CHANGED_RUBY_FILES" | xargs bin/rubocop -a; then
+    # Only re-add files if RuboCop made changes
+    if ! git diff --quiet; then
+      echo "Re-staging auto-fixed Ruby files..."
+      echo "$CHANGED_RUBY_FILES" | xargs git add
+    fi
+    echo "✅ RuboCop passed!"
+  else
+    echo "❌ RuboCop found issues that couldn't be auto-fixed. Please fix them manually."
+    exit 1
+  fi
+fi
+
+# JavaScript/TypeScript/Svelte linting and formatting
+if [ -n "$CHANGED_JS_TS_FILES" ]; then
+  echo "Running ESLint and Prettier on $(echo "$CHANGED_JS_TS_FILES" | wc -l) changed JS/TS/Svelte files..."
+  
+  cd frontend
+  
+  # Run ESLint with auto-fix
+  if echo "$CHANGED_JS_TS_FILES" | sed 's|^frontend/||' | xargs npx eslint --fix; then
+    # Run Prettier formatting
+    echo "$CHANGED_JS_TS_FILES" | sed 's|^frontend/||' | xargs npx prettier --write
+    
+    cd ..
+    # Only re-add files if ESLint/Prettier made changes
+    if ! git diff --quiet; then
+      echo "Re-staging auto-fixed and formatted JS/TS files..."
+      echo "$CHANGED_JS_TS_FILES" | xargs git add
+    fi
+    echo "✅ ESLint and Prettier passed!"
+  else
+    cd ..
+    echo "❌ ESLint found issues that couldn't be auto-fixed. Please fix them manually."
+    exit 1
+  fi
+fi
+
+# Ensure final newlines for all changed files
+ensure_final_newlines "$CHANGED_RUBY_FILES" "Ruby"
+ensure_final_newlines "$CHANGED_JS_TS_FILES" "JS/TS/Svelte"
+
+# Re-stage files that had final newlines added
+if [ -n "$CHANGED_RUBY_FILES" ] || [ -n "$CHANGED_JS_TS_FILES" ]; then
+  # Check if any files were modified (final newlines added)
+  if ! git diff --quiet; then
+    echo "Re-staging files with added final newlines..."
+    if [ -n "$CHANGED_RUBY_FILES" ]; then
+      echo "$CHANGED_RUBY_FILES" | xargs git add
+    fi
+    if [ -n "$CHANGED_JS_TS_FILES" ]; then
+      echo "$CHANGED_JS_TS_FILES" | xargs git add
+    fi
+  fi
+fi
+
+# Check if any linting was actually performed
+if [ -z "$CHANGED_RUBY_FILES" ] && [ -z "$CHANGED_JS_TS_FILES" ]; then
+  echo "✅ No Ruby, JS, TS, or Svelte files changed - skipping linting"
+else
+  echo "✅ All linting checks and final newlines completed!"
+fi
