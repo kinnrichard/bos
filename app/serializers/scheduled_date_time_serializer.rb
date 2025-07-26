@@ -25,10 +25,6 @@ class ScheduledDateTimeSerializer < ApplicationSerializer
   # Polymorphic relationship
   belongs_to :schedulable, polymorphic: true
 
-  # Created by (placeholder for API compatibility)
-  belongs_to :created_by, serializer: PersonSerializer do |scheduled|
-    nil
-  end
 
   # Computed attributes from value object
   attribute :type_label do |scheduled|

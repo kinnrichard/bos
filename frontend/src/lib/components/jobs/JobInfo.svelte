@@ -3,7 +3,7 @@
   import SchedulePriorityEditPopover from '$lib/components/layout/SchedulePriorityEditPopover.svelte';
 
   let {
-    job
+    job,
   }: {
     job: PopulatedJob | null | undefined;
   } = $props();
@@ -14,7 +14,7 @@
       weekday: 'short',
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
@@ -26,19 +26,18 @@
   function formatStatusLabel(status?: string): string {
     if (!status) return 'Unknown';
     // Convert raw status to display label
-    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   }
 
   function formatPriorityLabel(priority?: string): string {
     if (!priority) return 'Normal';
-    // Convert raw priority to display label  
-    return priority.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    // Convert raw priority to display label
+    return priority.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   }
 
   // Computed labels from raw API data
   const statusLabel = $derived(formatStatusLabel(job?.attributes?.status));
   const priorityLabel = $derived(formatPriorityLabel(job?.attributes?.priority));
-
 </script>
 
 <div class="job-info-panel">
@@ -56,16 +55,17 @@
           </div>
           <div class="info-item">
             <span class="info-label">Priority</span>
-            <span class="info-value priority-value" data-priority={job.attributes.priority || 'normal'}>
+            <span
+              class="info-value priority-value"
+              data-priority={job.attributes.priority || 'normal'}
+            >
               {priorityLabel}
             </span>
           </div>
           {#if job.attributes.is_overdue}
             <div class="info-item">
               <span class="info-label">Status</span>
-              <span class="info-value overdue-indicator">
-                ⚠️ Overdue
-              </span>
+              <span class="info-value overdue-indicator"> ⚠️ Overdue </span>
             </div>
           {/if}
         </div>
@@ -104,24 +104,6 @@
         <h4>Team</h4>
         <div class="info-items">
           <div class="info-item">
-            <span class="info-label">Created By</span>
-            <span class="info-value">
-              {#if job.created_by?.name}
-                <div class="user-info">
-                  <span 
-                    class="user-avatar" 
-                    style={job.created_by.avatar_style || `background-color: var(--accent-blue);`}
-                  >
-                    {job.created_by.initials || '?'}
-                  </span>
-                  <span class="user-name">{job.created_by.name}</span>
-                </div>
-              {:else}
-                <span class="no-data">Unknown</span>
-              {/if}
-            </span>
-          </div>
-          <div class="info-item">
             <span class="info-label">Technicians</span>
             <span class="info-value">
               {#if job.technicians?.length > 0}
@@ -129,8 +111,8 @@
                   {#each job.technicians as technician}
                     {#if technician?.name}
                       <div class="user-info">
-                        <span 
-                          class="user-avatar" 
+                        <span
+                          class="user-avatar"
                           style={technician.avatar_style || `background-color: var(--accent-blue);`}
                         >
                           {technician.initials || '?'}
@@ -147,7 +129,6 @@
           </div>
         </div>
       </div>
-
     </div>
   {/if}
 </div>
@@ -159,7 +140,6 @@
     border-radius: 12px;
     padding: 24px;
   }
-
 
   .info-grid {
     display: flex;
@@ -217,27 +197,27 @@
     min-width: 0;
   }
 
-  .status-value[data-status="successfully_completed"] {
+  .status-value[data-status='successfully_completed'] {
     color: var(--accent-green);
     font-weight: 500;
   }
 
-  .status-value[data-status="in_progress"] {
+  .status-value[data-status='in_progress'] {
     color: var(--accent-blue);
     font-weight: 500;
   }
 
-  .status-value[data-status="cancelled"] {
+  .status-value[data-status='cancelled'] {
     color: var(--accent-red);
     font-weight: 500;
   }
 
-  .priority-value[data-priority="high"] {
+  .priority-value[data-priority='high'] {
     color: var(--accent-red);
     font-weight: 500;
   }
 
-  .priority-value[data-priority="critical"] {
+  .priority-value[data-priority='critical'] {
     color: var(--accent-red);
     font-weight: 600;
   }
@@ -288,7 +268,6 @@
     color: var(--text-tertiary);
     font-style: italic;
   }
-
 
   /* Responsive adjustments */
   @media (max-width: 768px) {

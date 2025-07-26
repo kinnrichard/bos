@@ -57,7 +57,6 @@ class Api::V1::JobsController < Api::V1::BaseController
   # POST /api/v1/jobs
   def create
     job = Job.new(job_params)
-    job.created_by = current_user
 
     if job.save
       # Add current user as technician if they are one

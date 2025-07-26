@@ -44,8 +44,7 @@ class JobChannel < ApplicationCable::Channel
       {
         type: "tasks_reordered",
         job_id: job.id,
-        task_ids: task_ids,
-        updated_by: current_user.id
+        task_ids: task_ids
       }
     )
   rescue ActiveRecord::RecordInvalid => e
@@ -65,7 +64,6 @@ class JobChannel < ApplicationCable::Channel
             type: "status_updated",
             job_id: job.id,
             status: job.status,
-            updated_by: current_user.id,
             updated_at: job.updated_at
           }
         )

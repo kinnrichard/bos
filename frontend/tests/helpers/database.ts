@@ -1,6 +1,6 @@
 /**
  * Frontend Test Database Utilities
- * 
+ *
  * Provides connection and management utilities for frontend tests
  * to interact with the Rails test database via API endpoints.
  */
@@ -13,10 +13,10 @@ export interface DatabaseConfig {
 }
 
 export const DEFAULT_DB_CONFIG: DatabaseConfig = {
-  railsPort: parseInt(process.env.RAILS_TEST_PORT || process.env.RAILS_PORT || '3000'),
+  railsPort: parseInt(process.env.RAILS_TEST_PORT || process.env.RAILS_PORT || '4000'),
   railsHost: process.env.RAILS_TEST_HOST || 'localhost',
   testDatabaseName: 'bos_test',
-  apiBasePath: '/api/v1'
+  apiBasePath: '/api/v1',
 };
 
 /**
@@ -38,7 +38,7 @@ export class TestDatabase {
     try {
       const response = await fetch(`${this.baseUrl}/health`, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' }
+        headers: { Accept: 'application/json' },
       });
       return response.ok;
     } catch (error) {
@@ -66,14 +66,14 @@ export class TestDatabase {
    */
   async waitForServer(timeoutMs: number = 30000): Promise<void> {
     const startTime = Date.now();
-    
+
     while (Date.now() - startTime < timeoutMs) {
       if (await this.isAvailable()) {
         return;
       }
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    
+
     throw new Error(`Rails test server not available after ${timeoutMs}ms`);
   }
 
@@ -85,8 +85,8 @@ export class TestDatabase {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
+        Accept: 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -102,8 +102,8 @@ export class TestDatabase {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
+        Accept: 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -126,7 +126,7 @@ export class TestDatabase {
     try {
       const response = await fetch(`${this.baseUrl}/test/verify_data`, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' }
+        headers: { Accept: 'application/json' },
       });
 
       if (!response.ok) {
@@ -134,13 +134,13 @@ export class TestDatabase {
       }
 
       const data = await response.json();
-      
+
       // Handle JSON:API format from Rails
       if (data.data && data.data.attributes) {
         const attrs = data.data.attributes;
         return { valid: attrs.valid || false, message: attrs.message || 'Unknown status' };
       }
-      
+
       // Handle direct format (fallback)
       return { valid: data.valid || false, message: data.message || 'Unknown status' };
     } catch (error) {
@@ -156,8 +156,8 @@ export class TestDatabase {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
+        Accept: 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -185,21 +185,21 @@ export class DatabaseLifecycle {
    * Setup database before test suite
    */
   async beforeSuite(): Promise<void> {
-    console.log('🔄 Setting up test database...');
-    
+    console.warn('🔄 Setting up test database...');
+
     // Wait for Rails server
     await this.db.waitForServer();
-    
+
     // Setup clean state
     await this.db.setupCleanState();
-    
+
     // Verify data
     const verification = await this.db.verifyTestData();
     if (!verification.valid) {
       throw new Error(`Test data verification failed: ${verification.message}`);
     }
-    
-    console.log('✅ Test database ready');
+
+    console.warn('✅ Test database ready');
   }
 
   /**
@@ -221,7 +221,7 @@ export class DatabaseLifecycle {
    * Cleanup after test suite
    */
   async afterSuite(): Promise<void> {
-    console.log('🧹 Test database cleanup complete');
+    console.warn('🧹 Test database cleanup complete');
   }
 }
 
@@ -244,8 +244,8 @@ export class DatabaseTransaction {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
+        Accept: 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -268,9 +268,9 @@ export class DatabaseTransaction {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Accept: 'application/json',
       },
-      body: JSON.stringify({ transaction_id: this.transactionId })
+      body: JSON.stringify({ transaction_id: this.transactionId }),
     });
 
     if (!response.ok) {
@@ -292,9 +292,9 @@ export class DatabaseTransaction {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Accept: 'application/json',
       },
-      body: JSON.stringify({ transaction_id: this.transactionId })
+      body: JSON.stringify({ transaction_id: this.transactionId }),
     });
 
     if (!response.ok) {
@@ -313,11 +313,11 @@ export function shouldUseRealDatabase(): boolean {
   // 1. Explicitly enabled via environment variable
   // 2. Running integration tests
   // 3. Not in CI environment (optional - can be overridden)
-  
+
   if (process.env.USE_REAL_DB === 'true') return true;
   if (process.env.TEST_TYPE === 'integration') return true;
   if (process.env.TEST_REAL_DB === 'true') return true;
-  
+
   // Default to mocked for speed unless specifically requested
   return false;
 }
@@ -329,6 +329,6 @@ export function getTestStrategy(): 'mocked' | 'real_db' | 'hybrid' {
   if (process.env.TEST_STRATEGY) {
     return process.env.TEST_STRATEGY as 'mocked' | 'real_db' | 'hybrid';
   }
-  
+
   return shouldUseRealDatabase() ? 'real_db' : 'mocked';
 }

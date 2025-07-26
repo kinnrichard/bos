@@ -1,6 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { DataFactory } from '../helpers/data-factories';
+import { AuthHelper } from '../helpers/auth';
 
 test.describe('Sidebar Client Context', () => {
+  let dataFactory: DataFactory;
+  let auth: AuthHelper;
+
+  test.beforeEach(async ({ page }) => {
+    auth = new AuthHelper(page);
+    dataFactory = new DataFactory(page);
+    await auth.setupAuthenticatedSession('admin');
+  });
   test('should not show client section on homepage', async ({ page }) => {
     // Navigate to homepage
     await page.goto('/');
@@ -17,9 +27,24 @@ test.describe('Sidebar Client Context', () => {
   });
 
   test('should show client section on job detail page', async ({ page }) => {
-    // Navigate directly to a test job - use the first job UUID from test data
-    // Note: This test relies on the test database having predictable data
-    await page.goto('/jobs/0684c4a2-7467-48db-b6d6-9378b03b0a77');
+    // Create test data with known values
+    const timestamp = Date.now();
+    const clientName = `Test Client ${timestamp}`;
+    const jobTitle = `Test Job ${timestamp}`;
+
+    const client = await dataFactory.createClient({
+      name: clientName,
+      client_type: 'business',
+    });
+
+    const job = await dataFactory.createJob({
+      title: jobTitle,
+      client_id: client.id,
+      status: 'in_progress',
+    });
+
+    // Navigate to the created job
+    await page.goto(`/jobs/${job.id}`);
 
     // Wait for the page to load completely and job data to be fetched
     await page.waitForTimeout(3000);
@@ -27,39 +52,54 @@ test.describe('Sidebar Client Context', () => {
     const sidebar = page.locator('.sidebar');
 
     // Wait for the client section to appear (it loads after job data is fetched)
-    const clientSection = sidebar.locator('.nav-item').filter({ hasText: 'Acme Corporation' });
+    const clientSection = sidebar.locator('.nav-item').filter({ hasText: clientName });
     await expect(clientSection).toBeVisible({ timeout: 10000 });
 
-    // Check that client name is displayed (should be "Acme Corporation" from test data)
-    await expect(clientSection).toContainText('Acme Corporation');
+    // Check that client name is displayed
+    await expect(clientSection).toContainText(clientName);
 
     // Check that footer shows client's logs
     const footerNav = sidebar.locator('.footer-nav');
     await expect(footerNav).toBeVisible();
     await expect(footerNav).toContainText('Logs'); // Footer just shows "Logs" when client is selected
+
+    // Cleanup
+    await dataFactory.deleteEntity('jobs', job.id!);
+    await dataFactory.deleteEntity('clients', client.id!);
   });
 
   test('should show client section on client detail page', async ({ page }) => {
-    // Navigate directly to a test client - use the first client UUID from test data
-    // Note: This test relies on the test database having predictable data
-    await page.goto('/clients/dd075772-460b-4964-9fad-7f6578b0122b');
+    // Create test data with known values
+    const timestamp = Date.now();
+    const clientName = `Test Client ${timestamp}`;
+
+    const client = await dataFactory.createClient({
+      name: clientName,
+      client_type: 'residential',
+    });
+
+    // Navigate to the created client
+    await page.goto(`/clients/${client.id}`);
 
     // Wait for the page to load completely
     await page.waitForTimeout(2000);
 
     const sidebar = page.locator('.sidebar');
 
-    // Check that client section is visible - target the client link that ends with just the client ID
-    const clientSection = sidebar.locator('.nav-item').filter({ hasText: 'Acme Corporation' });
+    // Check that client section is visible - target the client link
+    const clientSection = sidebar.locator('.nav-item').filter({ hasText: clientName });
     await expect(clientSection).toBeVisible();
 
-    // Check that client name is displayed (should be "Acme Corporation" from test data)
-    await expect(clientSection).toContainText('Acme Corporation');
+    // Check that client name is displayed
+    await expect(clientSection).toContainText(clientName);
 
     // Check that footer shows client's logs
     const footerNav = sidebar.locator('.footer-nav');
     await expect(footerNav).toBeVisible();
     await expect(footerNav).toContainText('Logs'); // Footer just shows "Logs" when client is selected
+
+    // Cleanup
+    await dataFactory.deleteEntity('clients', client.id!);
   });
 
   test('should not show client section on jobs listing page', async ({ page }) => {

@@ -69,12 +69,6 @@ export interface Job {
         type: 'clients';
       };
     };
-    created_by: {
-      data: {
-        id: string;
-        type: 'users';
-      };
-    };
     technicians: {
       data: Array<{
         id: string;
@@ -110,7 +104,6 @@ export interface JobsApiResponse {
 // Helper types for working with included data
 export interface PopulatedJob extends Omit<Job, 'relationships'> {
   client: Client['attributes'] & { id: string };
-  created_by: User['attributes'] & { id: string };
   technicians: Array<User['attributes'] & { id: string }>;
   tasks: Array<Task['attributes'] & { id: string }>;
 }
