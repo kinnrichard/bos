@@ -5,7 +5,7 @@ import type { ClientResource } from '$lib/types';
 
 export const load: PageLoad = async ({ params }) => {
   try {
-    const clientData = await api.get<{ data: ClientResource }>(`/clients/${params.uuid}`);
+    const clientData = await api.get<{ data: ClientResource }>(`/clients/${params.id}`);
     
     // Transform JsonApiResource to simple object for ClientInfo component
     const client = {
