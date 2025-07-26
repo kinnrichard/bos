@@ -8,7 +8,9 @@
     "test": "test"
   },
   "scripts": {
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:servers": "bin/test-servers",
+    "test:servers:kill": "lsof -ti tcp:4000,5848,6173 | xargs kill -9 2>/dev/null || echo 'No test servers running'"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +24,7 @@
   "devDependencies": {
     "@playwright/test": "^1.53.2",
     "@types/node": "^24.0.3",
+    "concurrently": "^9.2.0",
     "sass": "^1.89.2",
     "sass-embedded": "^1.89.2",
     "ws": "^8.18.3"
