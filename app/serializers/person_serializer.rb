@@ -48,7 +48,6 @@ class PersonSerializer < ApplicationSerializer
 
   # Relationships
   has_many :assigned_tasks, serializer: TaskSerializer
-  has_many :created_jobs, serializer: JobSerializer
   has_many :technician_jobs, serializer: JobSerializer
   has_many :notes, serializer: NoteSerializer
 end

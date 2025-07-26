@@ -61,11 +61,11 @@ class JobQueryService
     # Use database-level sorting with proper SQL CASE statement
     jobs.order(
       Arel.sql("CASE
-        WHEN status = #{Job.statuses['in_progress']} THEN 1
-        WHEN status = #{Job.statuses['paused']} THEN 2
-        WHEN status = #{Job.statuses['open']} THEN 3
-        WHEN status = #{Job.statuses['successfully_completed']} THEN 4
-        WHEN status = #{Job.statuses['cancelled']} THEN 5
+        WHEN status = '#{Job.statuses['in_progress']}' THEN 1
+        WHEN status = '#{Job.statuses['paused']}' THEN 2
+        WHEN status = '#{Job.statuses['open']}' THEN 3
+        WHEN status = '#{Job.statuses['successfully_completed']}' THEN 4
+        WHEN status = '#{Job.statuses['cancelled']}' THEN 5
         ELSE 6
       END"),
       :created_at

@@ -2,8 +2,8 @@ class ApplicationSerializer
   include JSONAPI::Serializer
 
   # Common configuration for all serializers
-  # Use snake_case for consistency with Rails conventions and frontend expectations
-  set_key_transform :underscore
+  # Use camelCase for consistency with frontend expectations
+  set_key_transform :camel_lower
 
   # Use UUID primary key as the ID for all serializers
   # Since we migrated to UUID-only, the :id field contains UUIDs
