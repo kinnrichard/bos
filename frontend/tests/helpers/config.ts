@@ -34,6 +34,15 @@ export interface HybridTestConfig {
     e2e: { strategy: 'real_db'; pattern: string };
   };
 
+  // Console error monitoring
+  consoleMonitoring: {
+    enabled: boolean;
+    failOnError: boolean;
+    failOnWarning: boolean;
+    logFilteredErrors: boolean;
+    maxErrorsBeforeFailure: number;
+  };
+
   // Performance settings
   performance: {
     parallelWorkers: number;
@@ -50,7 +59,7 @@ export const HYBRID_CONFIG: HybridTestConfig = {
 
   database: {
     host: process.env.RAILS_TEST_HOST || 'localhost',
-    port: parseInt(process.env.RAILS_TEST_PORT || '3000'),
+    port: parseInt(process.env.RAILS_TEST_PORT || '4000'), // Test port default
     resetBetweenTests: false,
     isolationStrategy: 'cleanup',
     seedData: true,
@@ -58,7 +67,7 @@ export const HYBRID_CONFIG: HybridTestConfig = {
 
   rails: {
     host: process.env.RAILS_TEST_HOST || 'localhost',
-    port: parseInt(process.env.RAILS_TEST_PORT || '3000'),
+    port: parseInt(process.env.RAILS_TEST_PORT || '4000'), // Test port default
     startCommand: process.env.RAILS_START_COMMAND,
     waitTimeout: 30000,
   },
@@ -76,6 +85,14 @@ export const HYBRID_CONFIG: HybridTestConfig = {
       strategy: 'real_db',
       pattern: '**/*.e2e.spec.ts',
     },
+  },
+
+  consoleMonitoring: {
+    enabled: process.env.CONSOLE_MONITORING !== 'false',
+    failOnError: process.env.CONSOLE_FAIL_ON_ERROR !== 'false',
+    failOnWarning: process.env.CONSOLE_FAIL_ON_WARNING === 'true',
+    logFilteredErrors: process.env.DEBUG === 'true',
+    maxErrorsBeforeFailure: parseInt(process.env.CONSOLE_MAX_ERRORS || '5'),
   },
 
   performance: {
@@ -143,7 +160,7 @@ export function createHybridPlaywrightConfig(
 
     use: {
       ...overrides.use,
-      baseURL: 'http://localhost:4173', // Svelte dev server
+      baseURL: 'http://localhost:6173', // Frontend test server
       trace: 'on-first-retry',
       screenshot: 'only-on-failure',
       video: 'retain-on-failure',
@@ -153,7 +170,7 @@ export function createHybridPlaywrightConfig(
 
     // Environment variables for test execution
     env: {
-      PUBLIC_API_URL: `http://${config.rails.host}:${config.rails.port}/api/v1`,
+      PUBLIC_API_URL: 'http://localhost:4000/api/v1', // FORCE test API URL
       ...process.env,
     },
 
@@ -199,62 +216,31 @@ export function createHybridPlaywrightConfig(
       process.env.SKIP_WEB_SERVER === 'true'
         ? []
         : [
-            // Svelte frontend server
+            // All test servers (Rails, Zero, Frontend) via bin/test-servers
             {
-              command: 'npm run build:test && npm run preview:test',
-              port: 4173,
+              command: 'bin/test-servers',
+              cwd: '..', // Run from project root directory
+              url: 'http://localhost:6173', // Frontend test port
               timeout: 120 * 1000,
-              reuseExistingServer: !process.env.CI, // Allow reuse for faster testing
-              stdout: 'ignore', // Suppress server output
-              stderr: 'pipe', // Only show errors
+              reuseExistingServer: !process.env.CI, // Gracefully handle existing servers
+              stdout: 'pipe', // Show startup logs
+              stderr: 'pipe', // Show errors
               env: {
-                // Test environment variables are now handled by vite.config.test.ts
                 ...process.env,
+                // Ensure test environment
+                RAILS_ENV: 'test',
+                NODE_ENV: 'test',
+                RAILS_TEST_PORT: '4000', // Explicit test port
+                ZERO_TEST_PORT: '5848', // Explicit test port
+                FRONTEND_TEST_PORT: '6173', // Explicit test port
+                // FORCE test API URL
+                PUBLIC_API_URL: 'http://localhost:4000/api/v1',
               },
             },
-
-            // Rails backend server (conditional)
-            ...(shouldStartRailsServer()
-              ? [
-                  {
-                    command:
-                      config.rails.startCommand ||
-                      `RAILS_ENV=test rails server -p ${config.rails.port}`,
-                    port: config.rails.port,
-                    timeout: config.rails.waitTimeout,
-                    reuseExistingServer: !process.env.CI,
-                  },
-                ]
-              : []),
           ],
 
     ...overrides,
   });
-}
-
-/**
- * Determine if Rails server should be started
- */
-function shouldStartRailsServer(): boolean {
-  // Start Rails server if:
-  // 1. Using real database strategy
-  // 2. Not explicitly disabled
-  // 3. Rails start command is provided or default is acceptable
-
-  if (process.env.SKIP_RAILS_SERVER === 'true') {
-    return false;
-  }
-
-  if (process.env.USE_REAL_DB === 'true') {
-    return true;
-  }
-
-  if (process.env.TEST_STRATEGY === 'real_db') {
-    return true;
-  }
-
-  // Default: don't start Rails server (assume external server)
-  return false;
 }
 
 /**
@@ -304,7 +290,10 @@ export class TestEnvironment {
    * Get current test strategy from environment
    */
   static getCurrentStrategy(): 'mocked' | 'real_db' | 'hybrid' {
-    return (process.env.TEST_STRATEGY as any) || HYBRID_CONFIG.defaultStrategy;
+    return (
+      (process.env.TEST_STRATEGY as 'mocked' | 'real_db' | 'hybrid') ||
+      HYBRID_CONFIG.defaultStrategy
+    );
   }
 
   /**

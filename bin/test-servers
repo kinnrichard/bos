@@ -54,11 +54,14 @@ if [ $rails_available -eq 0 ]; then  # 0 means port available
     colors+=("red")
 fi
 
-if [ $zero_available -eq 0 ]; then  # 0 means port available
+# Skip Zero server for now if not configured properly
+if [ $zero_available -eq 0 ] && [ -n "$ZERO_UPSTREAM_DB" ]; then  # Only start if DB configured
     # Zero server - use official zero-cache-dev with port configuration
     commands+=("npx zero-cache-dev --port $ZERO_TEST_PORT")
     names+=("zero-test") 
     colors+=("blue")
+elif [ $zero_available -eq 0 ]; then
+    echo -e "${YELLOW}⚠️  Skipping Zero server (ZERO_UPSTREAM_DB not configured)${NC}"
 fi
 
 if [ $frontend_available -eq 0 ]; then  # 0 means port available
