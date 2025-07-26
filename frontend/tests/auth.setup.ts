@@ -1,69 +1,119 @@
 /**
  * Authentication Setup for Playwright Tests
- * 
+ *
  * This setup runs once before all tests and saves the authenticated state
  * to be reused across test runs, following Playwright best practices.
+ *
+ * Uses the LoginPage object for consistent authentication flow.
  */
 
-import { test as setup, expect } from '@playwright/test';
+import { test as setup } from '@playwright/test';
+import { LoginPage, verifyAuthentication } from '../test-helpers';
 
-const authFile = 'playwright/.auth/user.json';
+// Constants
+const AUTH_FILE = 'playwright/.auth/user.json';
+const AUTH_TIMEOUT = 10000;
+const DEBUG_MODE = process.env.DEBUG_AUTH_SETUP === 'true';
 
-setup('authenticate', async ({ page }) => {
-  console.log('[AUTH SETUP] Starting authentication process...');
-  
-  // Navigate to login page
-  await page.goto('/login');
-  await page.waitForLoadState('networkidle');
-  
-  // Use environment variables for credentials
-  const email = process.env.TEST_USER_EMAIL || 'admin@bos-test.local';
-  const password = process.env.TEST_USER_PASSWORD || 'password123';
-  
-  console.log(`[AUTH SETUP] Logging in as ${email}`);
-  
-  // Fill login form using proper selectors
-  await page.getByLabel(/email/i).fill(email);
-  await page.getByLabel(/password/i).fill(password);
-  
-  // Submit form and wait for navigation
-  await Promise.all([
-    page.waitForURL(url => !url.pathname.includes('/login')),
-    page.getByRole('button', { name: /sign in|login/i }).click()
-  ]);
-  
-  // Verify successful authentication
-  await expect(page).not.toHaveURL(/.*\/login.*/);
-  
-  // Look for common authenticated state indicators
-  const authIndicators = [
-    page.getByRole('button', { name: /logout|sign out/i }),
-    page.getByText(/dashboard|welcome/i),
-    page.locator('[data-testid="user-menu"]'),
-    page.locator('.user-avatar')
-  ];
-  
-  // Check if at least one authentication indicator is visible
-  let authVerified = false;
-  for (const indicator of authIndicators) {
-    try {
-      await expect(indicator).toBeVisible({ timeout: 2000 });
-      authVerified = true;
-      break;
-    } catch {
-      // Continue checking other indicators
+interface AuthSetupOptions {
+  verbose?: boolean;
+  requireInitials?: boolean;
+  useFallback?: boolean;
+}
+
+/**
+ * Perform authentication setup with verification
+ */
+async function performAuthSetup(
+  loginPage: LoginPage,
+  options: AuthSetupOptions = {}
+): Promise<void> {
+  const { verbose = DEBUG_MODE, requireInitials = false, useFallback = true } = options;
+
+  if (verbose) {
+    console.log('[AUTH SETUP] 🚀 Starting authentication process...');
+    console.log(`[AUTH SETUP] Authenticating as: ${LoginPage.DEFAULT_CREDENTIALS.email}`);
+  }
+
+  // Perform login
+  await loginPage.login(LoginPage.DEFAULT_CREDENTIALS);
+
+  if (verbose) {
+    console.log('[AUTH SETUP] Verifying authentication state...');
+  }
+
+  // Verify authentication success
+  const authResult = await verifyAuthentication(loginPage.getPage(), {
+    timeout: AUTH_TIMEOUT,
+    requireInitials,
+    verbose: verbose, // Pass through verbose setting
+    useFallback,
+  });
+
+  // Handle verification results
+  if (!authResult.authVerified) {
+    const details = [
+      `menu=${authResult.userMenuFound}`,
+      `initials=${authResult.userInitialsFound}`,
+      `fallback=${authResult.fallbackVerified}`,
+    ].join(', ');
+
+    console.error('[AUTH SETUP] ❌ Authentication verification failed');
+    console.error(`[AUTH SETUP] Details: ${details}`);
+    console.error('[AUTH SETUP] Try: DEBUG_AUTH_SETUP=true npm test for detailed logs');
+
+    // Still proceed - authentication might work differently
+  } else if (verbose) {
+    console.log('[AUTH SETUP] ✅ Authentication verified successfully');
+    if (authResult.initialsText) {
+      console.log(`[AUTH SETUP] User initials: ${authResult.initialsText}`);
     }
   }
-  
-  if (!authVerified) {
-    console.warn('[AUTH SETUP] Warning: No clear authentication indicators found');
-    // Still proceed - authentication might work differently
+}
+
+/**
+ * Save authentication state for reuse in tests
+ */
+async function saveAuthState(loginPage: LoginPage): Promise<void> {
+  if (DEBUG_MODE) {
+    console.log(`[AUTH SETUP] Saving authentication state to: ${AUTH_FILE}`);
   }
-  
-  console.log(`[AUTH SETUP] Successfully authenticated, saving state to ${authFile}`);
-  
-  // Save authentication state
-  await page.context().storageState({ path: authFile });
-  
-  console.log('[AUTH SETUP] Authentication setup complete');
+
+  await loginPage.getPage().context().storageState({ path: AUTH_FILE });
+
+  if (DEBUG_MODE) {
+    console.log('[AUTH SETUP] ✅ Authentication setup complete');
+  }
+}
+
+/**
+ * Main authentication setup test
+ */
+setup('authenticate', async ({ page }) => {
+  try {
+    // Initialize login page
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+
+    // Wait for page to be ready
+    await page.waitForLoadState('networkidle');
+
+    // Perform authentication (verbose controlled by DEBUG_MODE)
+    await performAuthSetup(loginPage, {
+      requireInitials: false,
+      useFallback: true,
+    });
+
+    // Save authentication state
+    await saveAuthState(loginPage);
+
+    // Show simple success message (unless in debug mode)
+    if (!DEBUG_MODE) {
+      console.log('[AUTH SETUP] ✓ Ready');
+    }
+  } catch (error) {
+    console.error('[AUTH SETUP] ❌ Authentication failed:', error);
+    console.error('[AUTH SETUP] Try: DEBUG_AUTH_SETUP=true npm test for detailed logs');
+    throw error; // Re-throw to fail the setup
+  }
 });

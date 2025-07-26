@@ -1,6 +1,6 @@
 /**
  * Frontend Test Helpers
- * 
+ *
  * Central export for all test utilities supporting hybrid testing strategy
  */
 
@@ -12,7 +12,7 @@ export {
   DatabaseTransaction,
   shouldUseRealDatabase,
   getTestStrategy,
-  DEFAULT_DB_CONFIG
+  DEFAULT_DB_CONFIG,
 } from './database';
 
 // Authentication utilities
@@ -22,7 +22,7 @@ export {
   UserFactory,
   AuthTestUtils,
   type TestUser,
-  type AuthTokens
+  type AuthTokens,
 } from './auth';
 
 // Data factories
@@ -33,7 +33,7 @@ export {
   type JobData,
   type TaskData,
   type ClientData,
-  type UserData
+  type UserData,
 } from './data-factories';
 
 // Test isolation and lifecycle
@@ -44,18 +44,12 @@ export {
   testWithReset,
   testWithTransaction,
   testWithMocks,
-  TestIsolation,
-  TestConfig,
-  TestLifecycle,
-  TestDebug,
   skipIfMocked,
   skipIfRealDB,
   runOnlyWith,
-  isUsingRealDatabase,
-  isUsingMocks,
   type TestContext,
   type IsolationStrategy,
-  type TestOptions
+  type TestOptions,
 } from './isolation';
 
 // Configuration
@@ -64,8 +58,28 @@ export {
   createHybridPlaywrightConfig,
   getTestStrategyForFile,
   TestEnvironment,
-  type HybridTestConfig
+  type HybridTestConfig,
 } from './config';
+
+// User menu verification utilities
+export {
+  verifyUserMenu,
+  assertUserMenuVisible,
+  verifyAuthenticationFallback,
+  verifyAuthentication,
+  type UserMenuVerificationResult,
+} from './user-menu-verification';
+
+// Page Objects
+export { LoginPage, type LoginCredentials } from './login-page';
+
+export {
+  SearchPage,
+  SearchTestUtils,
+  SEARCH_CONTEXTS,
+  type SearchOptions,
+  type SearchContext,
+} from './search-page';
 
 /**
  * Quick setup utilities for common test patterns
@@ -81,33 +95,24 @@ export function setupTestEnvironment() {
   // This can be called in test files to automatically configure the environment
   // Currently just exports the configuration, but could be extended
   if (process.env.DEBUG === 'true') {
-    TestEnvironment.printConfig();
+    console.warn('[TEST ENV] Debug mode enabled');
   }
 }
 
 /**
  * Quick test creators for common patterns
+ * Note: Available patterns for test configuration
  */
 export const quickTests = {
   /**
-   * Create a test that uses real database with cleanup
+   * Basic test configuration
    */
-  withRealDB: testWithRealDB,
-  
+  basic: 'Use standard test() from @playwright/test',
+
   /**
-   * Create a test with authentication
+   * Search-specific test configuration
    */
-  withAuth: testWithAuth,
-  
-  /**
-   * Create a test using mocked APIs (fast)
-   */
-  withMocks: testWithMocks,
-  
-  /**
-   * Create a test with full database reset (slow but clean)
-   */
-  withReset: testWithReset
+  withSearchPage: 'Use SearchPage class for search testing',
 };
 
 /**
@@ -115,29 +120,14 @@ export const quickTests = {
  */
 export const assertions = {
   /**
-   * Assert that an entity exists in the database
+   * Basic search assertions - use SearchPage class methods
    */
-  async entityExists(page: any, entityType: string, entityId: string): Promise<void> {
-    const exists = await TestDataUtils.waitForEntity(page, entityType, entityId, 5000);
-    if (!exists) {
-      throw new Error(`Entity ${entityType}/${entityId} does not exist in database`);
-    }
-  },
-  
+  searchPage: 'Use SearchPage.verifyPlaceholder(), verifySearchValue(), etc.',
+
   /**
-   * Assert that entity has specific data
+   * Authentication assertions - use verifyAuthentication from user-menu-verification
    */
-  async entityHasData(
-    page: any, 
-    entityType: string, 
-    entityId: string, 
-    expectedData: Record<string, any>
-  ): Promise<void> {
-    const matches = await TestDataUtils.verifyEntityData(page, entityType, entityId, expectedData);
-    if (!matches) {
-      throw new Error(`Entity ${entityType}/${entityId} does not match expected data`);
-    }
-  }
+  authentication: 'Use verifyAuthentication() from user-menu-verification',
 };
 
 /**
@@ -145,27 +135,9 @@ export const assertions = {
  */
 export const testData = {
   /**
-   * Standard test users
+   * Test data creation guidance
    */
-  users: UserFactory.getTestUsers(),
-  
-  /**
-   * Create minimal job for testing
-   */
-  createMinimalJob: (factory: DataFactory) => factory.createJob({
-    title: 'Minimal Test Job',
-    status: 'active',
-    priority: 'medium'
-  }),
-  
-  /**
-   * Create job with tasks for testing
-   */
-  createJobWithTasks: (factory: DataFactory, taskCount = 3) => 
-    factory.createJobWithTasks({
-      title: 'Test Job with Tasks',
-      status: 'active'
-    }, taskCount)
+  guidance: 'Use DataFactory class when available, or create minimal test data inline',
 };
 
 /**
@@ -174,7 +146,5 @@ export const testData = {
 export const env = {
   isCI: !!process.env.CI,
   isDebug: process.env.DEBUG === 'true',
-  isUsingRealDB: isUsingRealDatabase,
-  isUsingMocks: isUsingMocks,
-  strategy: getTestStrategy()
+  isSearchDebug: process.env.DEBUG_SEARCH_TESTS === 'true',
 };
