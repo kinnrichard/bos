@@ -303,51 +303,54 @@ format_lint_errors() {
 }
 
 format_claude_errors() {
-    cat << 'EOF'
+    # For Claude context, output to stderr so Claude Code can see the errors
+    {
+        cat << 'EOF'
 ❌ LINTING FAILED - BLOCKING CLAUDE WORKFLOW
 
 🚫 REQUIRED ACTION: Fix linting errors before proceeding
 
 To fix these issues:
 EOF
-    
-    local backend_errors=()
-    local frontend_errors=()
-    
-    for error in "${LINT_ERRORS[@]}"; do
-        IFS='|' read -r context linter file mode <<< "$error"
-        case "$context" in
-            "backend")
-                backend_errors+=("$file ($linter)")
-                ;;
-            "frontend")
-                frontend_errors+=("$file ($linter)")
-                ;;
-        esac
-    done
-    
-    if [[ ${#backend_errors[@]} -gt 0 ]]; then
-        echo ""
-        echo "📝 Ruby files - Run from project root:"
-        for error in "${backend_errors[@]}"; do
-            echo "  bin/rubocop -a $error"
+        
+        local backend_errors=()
+        local frontend_errors=()
+        
+        for error in "${LINT_ERRORS[@]}"; do
+            IFS='|' read -r context linter file mode <<< "$error"
+            case "$context" in
+                "backend")
+                    backend_errors+=("$file ($linter)")
+                    ;;
+                "frontend")
+                    frontend_errors+=("$file ($linter)")
+                    ;;
+            esac
         done
-    fi
-    
-    if [[ ${#frontend_errors[@]} -gt 0 ]]; then
-        echo ""
-        echo "📝 JS/TS/Svelte files - Run from frontend/ directory:"
-        echo "  npm run lint"
-        for error in "${frontend_errors[@]}"; do
-            echo "  npx prettier --write $error"
-        done
-    fi
-    
-    cat << 'EOF'
+        
+        if [[ ${#backend_errors[@]} -gt 0 ]]; then
+            echo ""
+            echo "📝 Ruby files - Run from project root:"
+            for error in "${backend_errors[@]}"; do
+                echo "  bin/rubocop -a $error"
+            done
+        fi
+        
+        if [[ ${#frontend_errors[@]} -gt 0 ]]; then
+            echo ""
+            echo "📝 JS/TS/Svelte files - Run from frontend/ directory:"
+            echo "  npm run lint"
+            for error in "${frontend_errors[@]}"; do
+                echo "  npx prettier --write $error"
+            done
+        fi
+        
+        cat << 'EOF'
 
 ⏸️  ALL CLAUDE TASKS BLOCKED UNTIL LINTING PASSES
 ✅ Save files again after fixing to resume workflow
 EOF
+    } >&2
 }
 
 format_git_errors() {

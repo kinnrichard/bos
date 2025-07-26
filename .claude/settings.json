@@ -4,11 +4,17 @@
   "frameworks": ["rails", "svelte", "zero"],
   
   "hooks": {
-    "enabled": true,
-    "blockOnFailure": true,
-    "showOutput": true,
-    "timeout": 60000,
-    "contextIsolation": true
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/claude-lint-hook-posttool.sh"
+          }
+        ]
+      }
+    ]
   },
   
   "linting": {
@@ -62,4 +68,3 @@
     "showHookExecution": true
   }
 }
-EOF < /dev/null

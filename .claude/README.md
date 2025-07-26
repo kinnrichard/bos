@@ -24,29 +24,40 @@ Main Claude Code project settings with linting integration.
 
 ## How It Works
 
-1. **Claude saves a file** → Post-save hook triggers
-2. **Hook runs** → `./scripts/claude-lint-hook.sh <file>`
-3. **Shared linting** → Uses same logic as git hooks and CI
-4. **Result handling**:
-   - ✅ **Linting passes**: Claude continues with next task
-   - ❌ **Linting fails**: Claude workflow is blocked with clear error messages
+1. **Claude edits a file** → PostToolUse hook triggers automatically
+2. **Initial check** → `./scripts/claude-lint-hook-posttool.sh` runs linting check
+3. **Smart auto-fix** → If issues found, automatically attempts to fix them (formatting, etc.)
+4. **Final validation** → Checks for remaining unfixable issues
+5. **Result handling**:
+   - ✅ **All issues fixed**: Claude continues normally
+   - ⚠️ **Some issues auto-fixed**: Claude continues, clean code saved
+   - ❌ **Unfixable issues remain**: Claude workflow blocked with specific error details
+
+**Auto-fix Examples:**
+- ✅ **Prettier formatting** (spaces, quotes, indentation)
+- ✅ **RuboCop auto-corrections** (trailing whitespace, etc.)
+- ❌ **Logic errors** (unused variables, syntax errors) - requires manual fix
 
 ## Usage Examples
 
 ### Manual Testing
 ```bash
-# Test Claude hook on a file
-./scripts/claude-lint-hook.sh app/models/user.rb
+# Test PostToolUse hook directly
+CLAUDE_FILE_PATHS="app/models/user.rb" ./scripts/claude-lint-hook-posttool.sh
 
-# Test with auto-fix
-./scripts/claude-lint-hook.sh --auto-fix frontend/src/app.ts
+# Test with multiple files
+CLAUDE_FILE_PATHS="frontend/src/app.ts frontend/src/lib.ts" ./scripts/claude-lint-hook-posttool.sh
+
+# Debug mode
+./scripts/claude-lint-hook-posttool.sh --debug
 ```
 
 ### NPM Scripts Integration
 ```bash
 # Use shared linting commands
-npm run claude:lint <file>
-npm run claude:lint:fix <file>
+npm run lint:fix                    # Auto-fix all issues
+npm run lint:staged                # Fix staged files  
+npm run lint:frontend              # Fix frontend files only
 ```
 
 ## Configuration Customization
