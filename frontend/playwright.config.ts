@@ -6,11 +6,11 @@ const authFile = 'playwright/.auth/user.json';
 // Use the hybrid configuration with browser device overrides
 export default createHybridPlaywrightConfig({
   projects: [
-    // Authentication setup - runs first
+    // Authentication setup - runs first (WebKit for browser compatibility)
     {
       name: 'setup',
       testMatch: /.*\.setup\.ts/,
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Safari'] },
     },
 
     // Unit tests - fast, mocked APIs (no auth needed)
