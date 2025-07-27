@@ -983,8 +983,7 @@ module Zero
            */
         TYPESCRIPT
 
-        zero_index_path = File.join(Rails.root, "frontend/src/lib/zero", "index.ts")
-        file_creator.create_or_skip(zero_index_path, zero_index_content)
+        write_file("../zero/index.ts", zero_index_content)
       end
     end
   end
