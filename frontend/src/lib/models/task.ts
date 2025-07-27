@@ -9,7 +9,7 @@
  * import { ReactiveTask as Task } from './reactive-task';
  * ```
  *
- * Generated: 2025-07-27 01:07:26 UTC
+ * Generated: 2025-07-27 01:30:23 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
@@ -63,11 +63,11 @@ registerModelRelationships('tasks', {
   assignedTo: { type: 'belongsTo', model: 'User' },
   parent: { type: 'belongsTo', model: 'Task' },
   repositionedAfter: { type: 'belongsTo', model: 'Task' },
+  client: { type: 'hasOne', model: 'Client' },
+  nextRepositionedTask: { type: 'hasOne', model: 'Task' },
   notes: { type: 'hasMany', model: 'Note' },
   activityLogs: { type: 'hasMany', model: 'ActivityLog' },
   subtasks: { type: 'hasMany', model: 'Task' },
-  client: { type: 'hasOne', model: 'Client' },
-  nextRepositionedTask: { type: 'hasOne', model: 'Task' },
 });
 
 // Export types for convenience

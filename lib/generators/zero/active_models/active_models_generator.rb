@@ -3,66 +3,12 @@
 require "rails/generators"
 require "fileutils"
 require_relative "../../../zero_schema_generator/rails_schema_introspector"
+require_relative "relationship_processor"
+require_relative "type_mapper"
+require_relative "file_manager"
 
 module Zero
   module Generators
-    # Content normalizer for semantic file comparison
-    class ContentNormalizer
-      TIMESTAMP_PATTERNS = [
-        /^.*Generated from Rails schema: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC.*$/i,
-        /^.*Generated: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC.*$/i,
-        /^.*Auto-generated: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC.*$/i,
-        /^\s*\*\s*Generated.*\d{4}-\d{2}-\d{2}.*$/i,
-        /^\s*\/\/.*generated.*\d{4}-\d{2}-\d{2}.*$/i
-      ].freeze
-
-      def normalize(content)
-        # Only normalize timestamps and empty lines, preserve meaningful formatting
-        normalized = TIMESTAMP_PATTERNS.reduce(content) { |text, pattern| text.gsub(pattern, "") }
-
-        # Remove timestamp lines entirely but preserve other formatting
-        lines = normalized.split("\n")
-        filtered_lines = lines.reject do |line|
-          TIMESTAMP_PATTERNS.any? { |pattern| line.match?(pattern) }
-        end
-
-        filtered_lines.join("\n").strip
-      end
-    end
-
-    # Semantic content comparator
-    class SemanticContentComparator
-      def initialize(normalizer = ContentNormalizer.new)
-        @normalizer = normalizer
-      end
-
-      def identical?(file_path, new_content)
-        return false unless File.exist?(file_path)
-
-        existing_content = File.read(file_path)
-        @normalizer.normalize(existing_content) == @normalizer.normalize(new_content)
-      end
-    end
-
-    # Smart file creator with semantic comparison
-    class SmartFileCreator
-      def initialize(comparator = SemanticContentComparator.new, shell = nil)
-        @comparator = comparator
-        @shell = shell
-      end
-
-      def create_or_skip(destination, content)
-        if @comparator.identical?(destination, content)
-          @shell&.say_status(:identical, destination, :blue)
-          :identical
-        else
-          File.write(destination, content)
-          @shell&.say_status(:create, destination, :green)
-          :created
-        end
-      end
-    end
-
     class ActiveModelsGenerator < Rails::Generators::Base
       desc "Generate TypeScript ReactiveRecord and ActiveRecord models based on our Rails models"
 
@@ -85,8 +31,13 @@ module Zero
       def generate_active_models
         say "Generating ReactiveRecord models in TypeScript based on Rails models...", :green
 
+        # Initialize FileManager for all file operations
+        initialize_file_manager
+
         # Ensure output directory exists
-        ensure_output_directory_exists
+        file_manager.ensure_directory_exists(File.join(Rails.root, options[:output_dir]))
+        file_manager.ensure_directory_exists(File.join(Rails.root, options[:output_dir], "types"))
+        say "📁 Output directory: #{File.join(Rails.root, options[:output_dir])}", :blue
 
         # Extract schema data
         introspector = ZeroSchemaGenerator::RailsSchemaIntrospector.new
@@ -112,6 +63,9 @@ module Zero
         # Output results
         output_generation_results(result)
 
+        # Display file operation statistics
+        display_file_statistics
+
       rescue => e
         say "❌ Generation failed: #{e.message}", :red
         say e.backtrace.first(5).join("\n"), :red if Rails.env.development?
@@ -120,15 +74,16 @@ module Zero
 
       private
 
-      def ensure_output_directory_exists
-        output_path = File.join(Rails.root, options[:output_dir])
-        types_path = File.join(output_path, "types")
+      # Initialize FileManager with current generator options
+      def initialize_file_manager
+        @file_manager = FileManager.new(options, shell, options[:output_dir])
+      end
 
-        return if options[:dry_run]
-
-        FileUtils.mkdir_p(output_path) unless File.exist?(output_path)
-        FileUtils.mkdir_p(types_path) unless File.exist?(types_path)
-        say "📁 Output directory: #{output_path}", :blue
+      # Get or create FileManager instance
+      #
+      # @return [FileManager] Configured file manager instance
+      def file_manager
+        @file_manager ||= FileManager.new(options, shell, options[:output_dir])
       end
 
       def filter_tables_for_generation(tables)
@@ -184,17 +139,17 @@ module Zero
             else
               # Generate TypeScript data interface
               data_content = generate_data_interface(table, class_name, relationships)
-              data_file_path = write_file("types/#{kebab_name}-data.ts", data_content)
+              data_file_path = file_manager.write_with_formatting("types/#{kebab_name}-data.ts", data_content)
               result[:generated_files] << data_file_path
 
               # Generate ActiveRecord model
               active_content = generate_active_model(table, class_name, kebab_name, relationships, patterns)
-              active_file_path = write_file("#{kebab_name}.ts", active_content)
+              active_file_path = file_manager.write_with_formatting("#{kebab_name}.ts", active_content)
               result[:generated_files] << active_file_path
 
               # Generate ReactiveRecord model
               reactive_content = generate_reactive_model(table, class_name, kebab_name, relationships, patterns)
-              reactive_file_path = write_file("reactive-#{kebab_name}.ts", reactive_content)
+              reactive_file_path = file_manager.write_with_formatting("reactive-#{kebab_name}.ts", reactive_content)
               result[:generated_files] << reactive_file_path
             end
 
@@ -228,384 +183,31 @@ module Zero
       end
 
       def generate_data_interface(table, class_name, relationships = {})
-        # Store current table name for self-reference detection
-        @current_table_name = table[:name]
-        @current_class_name = class_name
+        # Build template context using helper method
+        context = build_data_interface_context(table, class_name, relationships)
 
-        # Generate database column properties
-        column_properties = table[:columns].map do |column|
-          ts_type = map_rails_type_to_typescript(column[:type], column)
-          nullable = column[:null] ? "?" : ""
-          comment = column[:comment] ? " // #{column[:comment]}" : ""
-
-          "  #{column[:name]}#{nullable}: #{ts_type};#{comment}"
-        end.join("\n")
-
-        # Generate relationship properties for Epic-011
-        relationship_properties = generate_relationship_properties(relationships)
-        relationship_imports = generate_relationship_imports(relationships)
-        relationship_exclusions = extract_relationship_names_for_exclusion(relationships)
-        relationship_docs = generate_relationship_documentation(relationships)
-
-        # Combine all properties (maintain proper indentation for all lines)
-        all_properties = [ column_properties, relationship_properties ].reject(&:empty?).join("\n")
-
-        # Generate type exclusions (Prettier will handle formatting)
-        base_exclusions = "'id', 'created_at', 'updated_at'"
-        create_exclusions = "Omit<#{class_name}Data, #{base_exclusions}#{relationship_exclusions}>"
-        update_exclusions = "Partial<Omit<#{class_name}Data, #{base_exclusions}#{relationship_exclusions}>>"
-
-        <<~TYPESCRIPT
-          /**
-           * #{class_name}Data - TypeScript interface for #{table[:name]} table
-           *
-           * Generated from Rails schema: #{Time.current.strftime("%Y-%m-%d %H:%M:%S UTC")}
-           *#{relationship_docs}
-           * ⚠️  Do not edit this file manually - it will be regenerated
-           * To customize: Modify Rails model or run: rails generate zero:active_models
-           */
-
-          import type { BaseRecord } from '../base/types';#{relationship_imports}
-
-          /**
-           * Complete #{class_name} record interface
-           * Matches the database schema exactly with optional relationships
-           */
-          export interface #{class_name}Data extends BaseRecord {
-          #{all_properties}
-          }
-
-          /**
-           * Create #{class_name} data interface
-           * Excludes auto-generated fields and relationships
-           */
-          export type Create#{class_name}Data = #{create_exclusions};
-
-          /**
-           * Update #{class_name} data interface
-           * All fields optional except id, excludes relationships
-           */
-          export type Update#{class_name}Data = #{update_exclusions};
-        TYPESCRIPT
+        # Render ERB template with context
+        render_template("data_interface.ts.erb", context)
       end
 
 
-      # Epic-011: Helper methods for relationship property generation
-
-      def generate_relationship_properties(relationships)
-        return "" unless relationships && (relationships[:belongs_to]&.any? || relationships[:has_many]&.any? || relationships[:has_one]&.any?)
-
-        properties = []
-
-        # belongs_to relationships
-        if relationships[:belongs_to]&.any?
-          relationships[:belongs_to].each do |rel|
-            next unless rel[:target_table] && rel[:name]
-            # Skip relationships to excluded tables
-            next if ZeroSchemaGenerator::RailsSchemaIntrospector::EXCLUDED_TABLES.include?(rel[:target_table])
-            target_class = rel[:target_table].singularize.camelize
-            property_name = rel[:name].to_s.camelize(:lower)
-            properties << "  #{property_name}?: #{target_class}Data; // belongs_to"
-          end
-        end
-
-        # has_one relationships
-        if relationships[:has_one]&.any?
-          relationships[:has_one].each do |rel|
-            next unless rel[:target_table] && rel[:name]
-            # Skip relationships to excluded tables
-            next if ZeroSchemaGenerator::RailsSchemaIntrospector::EXCLUDED_TABLES.include?(rel[:target_table])
-            target_class = rel[:target_table].singularize.camelize
-            property_name = rel[:name].to_s.camelize(:lower)
-            properties << "  #{property_name}?: #{target_class}Data; // has_one"
-          end
-        end
-
-        # has_many relationships
-        if relationships[:has_many]&.any?
-          relationships[:has_many].each do |rel|
-            next unless rel[:target_table] && rel[:name]
-            # Skip relationships to excluded tables
-            next if ZeroSchemaGenerator::RailsSchemaIntrospector::EXCLUDED_TABLES.include?(rel[:target_table])
-            target_class = rel[:target_table].singularize.camelize
-            property_name = rel[:name].to_s.camelize(:lower)
-            properties << "  #{property_name}?: #{target_class}Data[]; // has_many"
-          end
-        end
-
-        properties.join("\n")
-      end
-
-      def generate_relationship_imports(relationships)
-        return "" unless relationships && (relationships[:belongs_to]&.any? || relationships[:has_many]&.any? || relationships[:has_one]&.any?)
-
-        import_classes = Set.new
-        current_table_name = @current_table_name # Store current table for self-reference detection
-
-        # Collect all target classes that need imports
-        [ relationships[:belongs_to], relationships[:has_one], relationships[:has_many] ].compact.each do |relation_list|
-          relation_list.each do |rel|
-            if rel[:target_table] && rel[:name]
-              target_class = rel[:target_table].singularize.camelize
-              # Skip self-referencing imports to avoid circular dependencies
-              # Skip imports for excluded tables (like refresh_tokens, revoked_tokens)
-              unless rel[:target_table] == current_table_name ||
-                     ZeroSchemaGenerator::RailsSchemaIntrospector::EXCLUDED_TABLES.include?(rel[:target_table])
-                import_classes << target_class
-              end
-            end
-          end
-        end
-
-        return "" if import_classes.empty?
-
-        imports = import_classes.map do |class_name|
-          kebab_name = class_name.underscore.dasherize
-          "\nimport type { #{class_name}Data } from './#{kebab_name}-data';"
-        end
-
-        imports.join("")
-      end
-
-      def extract_relationship_names_for_exclusion(relationships)
-        return "" unless relationships && (relationships[:belongs_to]&.any? || relationships[:has_many]&.any? || relationships[:has_one]&.any?)
-
-        names = []
-
-        # Collect all relationship property names
-        [ relationships[:belongs_to], relationships[:has_one], relationships[:has_many] ].compact.each do |relation_list|
-          relation_list.each do |rel|
-            if rel[:name] && rel[:target_table]
-              # Skip relationships to excluded tables
-              next if ZeroSchemaGenerator::RailsSchemaIntrospector::EXCLUDED_TABLES.include?(rel[:target_table])
-              property_name = rel[:name].to_s.camelize(:lower)
-              names << property_name
-            end
-          end
-        end
-
-        return "" if names.empty?
-        ", '#{names.join("', '")}'"
-      end
-
-      def generate_relationship_documentation(relationships)
-        return "" unless relationships && (relationships[:belongs_to]&.any? || relationships[:has_many]&.any? || relationships[:has_one]&.any?)
-
-        docs = []
-        docs << " * Relationships (loaded via includes()):"
-
-        # Document belongs_to relationships
-        if relationships[:belongs_to]&.any?
-          relationships[:belongs_to].each do |rel|
-            next unless rel[:target_table] && rel[:name]
-            target_class = rel[:target_table].singularize.camelize
-            property_name = rel[:name].to_s.camelize(:lower)
-            docs << " * - #{property_name}: belongs_to #{target_class}"
-          end
-        end
-
-        # Document has_one relationships
-        if relationships[:has_one]&.any?
-          relationships[:has_one].each do |rel|
-            next unless rel[:target_table] && rel[:name]
-            target_class = rel[:target_table].singularize.camelize
-            property_name = rel[:name].to_s.camelize(:lower)
-            docs << " * - #{property_name}: has_one #{target_class}"
-          end
-        end
-
-        # Document has_many relationships
-        if relationships[:has_many]&.any?
-          relationships[:has_many].each do |rel|
-            next unless rel[:target_table] && rel[:name]
-            target_class = rel[:target_table].singularize.camelize
-            property_name = rel[:name].to_s.camelize(:lower)
-            if rel[:through]
-              docs << " * - #{property_name}: has_many #{target_class}, through: #{rel[:through]}"
-            else
-              docs << " * - #{property_name}: has_many #{target_class}"
-            end
-          end
-        end
-
-        docs.join("\n")
-      end
+      # Epic-011: Relationship processing using RelationshipProcessor service
+      # (Duplicated logic extracted to eliminate DRY violations)
 
       def generate_active_model(table, class_name, kebab_name, relationships, patterns)
-        table_name = table[:name]
-        model_name = table_name.singularize
+        # Build template context using helper method
+        context = build_active_model_context(table, class_name, kebab_name, relationships, patterns)
 
-        # Build discard gem scopes if present
-        discard_scopes = build_discard_scopes(patterns, class_name)
-
-        <<~TYPESCRIPT
-          /**
-           * #{class_name} - ActiveRecord model (non-reactive)
-           *
-           * Promise-based Rails-compatible model for #{table_name} table.
-           * Use this for server-side code, Node.js scripts, or non-reactive contexts.
-           *
-           * For reactive Svelte components, use Reactive#{class_name} instead:
-           * ```typescript
-           * import { Reactive#{class_name} as #{class_name} } from './reactive-#{kebab_name}';
-           * ```
-           *
-           * Generated: #{Time.current.strftime("%Y-%m-%d %H:%M:%S UTC")}
-           */
-
-          import { createActiveRecord } from './base/active-record';
-          import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';#{generate_relationship_import(relationships).empty? ? "" : "\n#{generate_relationship_import(relationships)}"}
-
-          /**
-           * ActiveRecord configuration for #{class_name}
-           */
-          const #{class_name}Config = {
-            tableName: '#{table_name}',
-            className: '#{class_name}',
-            primaryKey: 'id',
-            supportsDiscard: #{supports_discard?(patterns)},
-          };
-
-          /**
-           * #{class_name} ActiveRecord instance
-           *
-           * @example
-           * ```typescript
-           * // Find by ID (throws if not found)
-           * const #{model_name} = await #{class_name}.find('123');
-           *
-           * // Find by conditions (returns null if not found)
-           * const #{model_name} = await #{class_name}.findBy({ title: 'Test' });
-           *
-           * // Create new record
-           * const new#{class_name} = await #{class_name}.create({ title: 'New Task' });
-           *
-           * // Update existing record
-           * const updated#{class_name} = await #{class_name}.update('123', { title: 'Updated' });
-           *
-           * // Soft delete (discard gem)
-           * await #{class_name}.discard('123');
-           *
-           * // Restore discarded
-           * await #{class_name}.undiscard('123');
-           *
-           * // Query with scopes
-           * const all#{class_name}s = await #{class_name}.all().all();
-           * const active#{class_name}s = await #{class_name}.kept().all();#{discard_scopes}
-           * ```
-           */
-          export const #{class_name} = createActiveRecord<#{class_name}Data>(#{class_name}Config);
-
-          // Epic-009: Register model relationships for includes() functionality
-          #{generate_relationship_registration(table_name, relationships)}
-
-          // Export types for convenience
-          export type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data };
-
-          // Default export
-          export default #{class_name};
-        TYPESCRIPT
+        # Render ERB template with context
+        render_template("active_model.ts.erb", context)
       end
 
       def generate_reactive_model(table, class_name, kebab_name, relationships, patterns)
-        table_name = table[:name]
-        model_name = table_name.singularize
+        # Build template context using helper method
+        context = build_reactive_model_context(table, class_name, kebab_name, relationships, patterns)
 
-        # Build discard gem scopes if present
-        discard_scopes = build_discard_scopes(patterns, class_name)
-
-        <<~TYPESCRIPT
-          /**
-           * Reactive#{class_name} - ReactiveRecord model (Svelte 5 reactive)
-           *
-           * Reactive Rails-compatible model for #{table_name} table.
-           * Automatically updates Svelte components when data changes.
-           *
-           * For non-reactive contexts, use #{class_name} instead:
-           * ```typescript
-           * import { #{class_name} } from './#{kebab_name}';
-           * ```
-           *
-           * Generated: #{Time.current.strftime("%Y-%m-%d %H:%M:%S UTC")}
-           */
-
-          import { createReactiveRecord } from './base/reactive-record';
-          import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';#{generate_relationship_import(relationships).empty? ? "" : "\n#{generate_relationship_import(relationships)}"}
-
-          /**
-           * ReactiveRecord configuration for #{class_name}
-           */
-          const Reactive#{class_name}Config = {
-            tableName: '#{table_name}',
-            className: 'Reactive#{class_name}',
-            primaryKey: 'id',
-            supportsDiscard: #{supports_discard?(patterns)},
-          };
-
-          /**
-           * Reactive#{class_name} ReactiveRecord instance
-           *
-           * @example
-           * ```svelte
-           * <!-- In Svelte component -->
-           * <script>
-           *   import { Reactive#{class_name} } from '$lib/models/reactive-#{kebab_name}';
-           *
-           *   // Reactive query - automatically updates when data changes
-           *   const #{model_name}Query = Reactive#{class_name}.find('123');
-           *
-           *   // Access reactive data
-           *   $: #{model_name} = #{model_name}Query.data;
-           *   $: isLoading = #{model_name}Query.isLoading;
-           *   $: error = #{model_name}Query.error;
-           * </script>
-           *
-           * {#if isLoading}
-           *   Loading...
-           * {:else if error}
-           *   Error: {error.message}
-           * {:else if #{model_name}}
-           *   <p>{#{model_name}.title}</p>
-           * {/if}
-           * ```
-           *
-           * @example
-           * ```typescript
-           * // Mutation operations (still async)
-           * const new#{class_name} = await Reactive#{class_name}.create({ title: 'New Task' });
-           * await Reactive#{class_name}.update('123', { title: 'Updated' });
-           * await Reactive#{class_name}.discard('123');
-           *
-           * // Reactive queries
-           * const all#{class_name}sQuery = Reactive#{class_name}.all().all();
-           * const active#{class_name}sQuery = Reactive#{class_name}.kept().all();#{discard_scopes}
-           * ```
-           */
-          export const Reactive#{class_name} = createReactiveRecord<#{class_name}Data>(Reactive#{class_name}Config);
-
-          // Epic-009: Register model relationships for includes() functionality
-          #{generate_relationship_registration(table_name, relationships)}
-
-          /**
-           * Import alias for easy switching between reactive/non-reactive
-           *
-           * @example
-           * ```typescript
-           * // Use reactive model in Svelte components
-           * import { Reactive#{class_name} as #{class_name} } from './reactive-#{kebab_name}';
-           *
-           * // Use like ActiveRecord but with reactive queries
-           * const #{model_name}Query = #{class_name}.find('123');
-           * ```
-           */
-          export { Reactive#{class_name} as #{class_name} };
-
-          // Export types for convenience
-          export type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data };
-
-          // Default export
-          export default Reactive#{class_name};
-        TYPESCRIPT
+        # Render ERB template with context
+        render_template("reactive_model.ts.erb", context)
       end
 
       def build_discard_scopes(patterns, class_name)
@@ -645,149 +247,180 @@ module Zero
         end
       end
 
-      def generate_relationship_registration(table_name, relationships)
-        # Build relationship metadata for Epic-009
-        relationship_metadata = []
-
-        # belongs_to relationships
-        if relationships[:belongs_to] && relationships[:belongs_to].any?
-          relationships[:belongs_to].each do |rel|
-            next unless rel[:target_table] && rel[:name]
-            model_name = rel[:target_table].singularize.camelize
-            relationship_name = rel[:name].to_s.camelize(:lower)
-            relationship_metadata << "  #{relationship_name}: { type: 'belongsTo', model: '#{model_name}' }"
-          end
-        end
-
-        # has_many relationships
-        if relationships[:has_many] && relationships[:has_many].any?
-          relationships[:has_many].each do |rel|
-            next unless rel[:target_table] && rel[:name]
-            model_name = rel[:target_table].singularize.camelize
-            relationship_name = rel[:name].to_s.camelize(:lower)
-            relationship_metadata << "  #{relationship_name}: { type: 'hasMany', model: '#{model_name}' }"
-          end
-        end
-
-        # has_one relationships
-        if relationships[:has_one] && relationships[:has_one].any?
-          relationships[:has_one].each do |rel|
-            next unless rel[:target_table] && rel[:name]
-            model_name = rel[:target_table].singularize.camelize
-            relationship_name = rel[:name].to_s.camelize(:lower)
-            relationship_metadata << "  #{relationship_name}: { type: 'hasOne', model: '#{model_name}' }"
-          end
-        end
-
-        if relationship_metadata.any?
-          metadata_string = relationship_metadata.join(",\n")
-          <<~TYPESCRIPT.strip
-            registerModelRelationships('#{table_name}', {
-            #{metadata_string},
-            });
-          TYPESCRIPT
-        else
-          "// No relationships defined for this model"
-        end
-      end
+      # Relationship registration now handled by RelationshipProcessor service
 
       def map_rails_type_to_typescript(rails_type, column)
-        # Check for enum first
-        if column[:enum] && column[:enum_values]&.any?
-          return column[:enum_values].map { |v| "'#{v}'" }.join(" | ")
-        end
-
-        case rails_type.to_s
-        when "string", "text"
-          "string"
-        when "integer", "bigint"
-          "number"
-        when "decimal", "float"
-          "number"
-        when "boolean"
-          "boolean"
-        when "datetime", "timestamp", "timestamptz"
-          "string | number" # Support both ISO strings and timestamps
-        when "date"
-          "string"
-        when "time"
-          "string"
-        when "json", "jsonb"
-          "Record<string, unknown>"
-        when "uuid"
-          "string"
-        when "binary"
-          "Uint8Array"
-        else
-          "unknown"
-        end
+        type_mapper.map_rails_type_to_typescript(rails_type, column)
       end
 
-      def write_file(relative_path, content)
-        output_path = File.join(Rails.root, options[:output_dir])
-        file_path = File.join(output_path, relative_path)
+      # Get or create TypeMapper instance for type conversions
+      #
+      # @return [TypeMapper] Configured type mapper instance
+      def type_mapper
+        @type_mapper ||= TypeMapper.new
+      end
 
-        # Ensure directory exists
-        FileUtils.mkdir_p(File.dirname(file_path))
+      # ===============================================
+      # ERB TEMPLATE RENDERING SYSTEM
+      # ===============================================
 
-        # For TypeScript files, format the content with Prettier before writing
-        # This ensures idempotency by comparing formatted content
-        if file_path.end_with?(".ts") && !options[:dry_run] && !options[:skip_prettier]
-          content = format_content_with_prettier(content, relative_path)
+      # Render an ERB template with the provided context
+      #
+      # @param template_name [String] Name of the template file (e.g., 'data_interface.ts.erb')
+      # @param context [Hash] Variables to make available in the template
+      # @return [String] Rendered template content
+      def render_template(template_name, context = {})
+        require "erb"
+
+        template_path = File.join(self.class.source_root, template_name)
+
+        unless File.exist?(template_path)
+          raise "Template not found: #{template_path}"
         end
 
-        # Use smart file creator for semantic comparison
-        result = file_creator.create_or_skip(file_path, content)
+        template_content = File.read(template_path)
 
-        file_path
+        # Create binding with context variables
+        template_binding = create_template_binding(context)
+
+        # Render ERB template
+        erb = ERB.new(template_content, trim_mode: "-")
+        erb.result(template_binding)
       end
 
-      def file_creator
-        @file_creator ||= SmartFileCreator.new(SemanticContentComparator.new, shell)
-      end
+      # Create a binding object with template context variables
+      #
+      # @param context [Hash] Variables to make available in template
+      # @return [Binding] Binding object for ERB rendering
+      def create_template_binding(context)
+        # Create a new object to avoid polluting self
+        template_object = Object.new
 
-      # Format TypeScript content with Prettier for perfect compliance
-      def format_content_with_prettier(content, relative_path)
-        return content if options[:skip_prettier]
-
-        frontend_root = File.join(Rails.root, "frontend")
-        return content unless File.exist?(File.join(frontend_root, "package.json"))
-
-        # Create a temporary file within the frontend directory to ensure correct config detection
-        require "tempfile"
-        temp_dir = File.join(frontend_root, "tmp")
-        FileUtils.mkdir_p(temp_dir) unless File.exist?(temp_dir)
-
-        temp_file = Tempfile.new([ "generator", ".ts" ], temp_dir)
-
-        begin
-          temp_file.write(content)
-          temp_file.close
-
-          # Get relative path from frontend root for prettier command
-          temp_relative_path = Pathname.new(temp_file.path).relative_path_from(Pathname.new(frontend_root))
-
-          # Run prettier from frontend directory to use project config
-          Dir.chdir(frontend_root) do
-            success = system("npx prettier --write #{temp_relative_path}",
-                            out: File::NULL, err: File::NULL)
-            if success
-              # Read back the formatted content
-              formatted_content = File.read(temp_file.path)
-              return formatted_content
-            else
-              say "⚠️  Warning: Could not format #{relative_path} with Prettier", :yellow
-              return content
-            end
-          end
-        rescue => e
-          say "⚠️  Warning: Prettier formatting failed for #{relative_path}: #{e.message}", :yellow
-          content
-        ensure
-          temp_file.unlink if temp_file
+        # Define each context variable as a method on the template object
+        context.each do |key, value|
+          template_object.define_singleton_method(key) { value }
         end
+
+        template_object.instance_eval { binding }
       end
 
+      # ===============================================
+      # TEMPLATE CONTEXT BUILDERS
+      # ===============================================
+
+      # Build context for data interface template
+      #
+      # @param table [Hash] Table schema information
+      # @param class_name [String] TypeScript class name
+      # @param relationships [Hash] Relationship information
+      # @return [Hash] Template context variables
+      def build_data_interface_context(table, class_name, relationships = {})
+        # Store current table name for self-reference detection
+        @current_table_name = table[:name]
+        @current_class_name = class_name
+
+        # Generate database column properties
+        column_properties = table[:columns].map do |column|
+          ts_type = map_rails_type_to_typescript(column[:type], column)
+          nullable = column[:null] ? "?" : ""
+          comment = column[:comment] ? " // #{column[:comment]}" : ""
+
+          "  #{column[:name]}#{nullable}: #{ts_type};#{comment}"
+        end.join("\n")
+
+        # Generate relationship properties for Epic-011 using RelationshipProcessor
+        processor = RelationshipProcessor.new(relationships, @current_table_name)
+        relationship_data = processor.process_all
+
+        # Combine all properties (maintain proper indentation for all lines)
+        all_properties = [ column_properties, relationship_data[:properties] ].reject(&:empty?).join("\n")
+
+        # Generate type exclusions (Prettier will handle formatting)
+        base_exclusions = "'id', 'created_at', 'updated_at'"
+        create_exclusions = "Omit<#{class_name}Data, #{base_exclusions}#{relationship_data[:exclusions]}>"
+        update_exclusions = "Partial<Omit<#{class_name}Data, #{base_exclusions}#{relationship_data[:exclusions]}>>"
+
+        {
+          class_name: class_name,
+          table: table,
+          timestamp: Time.current.strftime("%Y-%m-%d %H:%M:%S UTC"),
+          relationship_docs: relationship_data[:documentation],
+          relationship_imports: relationship_data[:imports],
+          all_properties: all_properties,
+          create_exclusions: create_exclusions,
+          update_exclusions: update_exclusions
+        }
+      end
+
+      # Build context for active model template
+      #
+      # @param table [Hash] Table schema information
+      # @param class_name [String] TypeScript class name
+      # @param kebab_name [String] Kebab-case file name
+      # @param relationships [Hash] Relationship information
+      # @param patterns [Hash] Model patterns (soft deletion, etc.)
+      # @return [Hash] Template context variables
+      def build_active_model_context(table, class_name, kebab_name, relationships, patterns)
+        table_name = table[:name]
+        model_name = table_name.singularize
+
+        # Build discard gem scopes if present
+        discard_scopes = build_discard_scopes(patterns, class_name)
+
+        # Generate relationship import section
+        relationship_import = generate_relationship_import(relationships)
+        relationship_import_section = relationship_import.empty? ? "" : "\n#{relationship_import}"
+
+        # Generate relationship registration
+        relationship_registration = RelationshipProcessor.new(relationships, table_name).process_all[:registration]
+
+        {
+          class_name: class_name,
+          table_name: table_name,
+          kebab_name: kebab_name,
+          model_name: model_name,
+          timestamp: Time.current.strftime("%Y-%m-%d %H:%M:%S UTC"),
+          relationship_import_section: relationship_import_section,
+          supports_discard: supports_discard?(patterns),
+          discard_scopes: discard_scopes,
+          relationship_registration: relationship_registration
+        }
+      end
+
+      # Build context for reactive model template
+      #
+      # @param table [Hash] Table schema information
+      # @param class_name [String] TypeScript class name
+      # @param kebab_name [String] Kebab-case file name
+      # @param relationships [Hash] Relationship information
+      # @param patterns [Hash] Model patterns (soft deletion, etc.)
+      # @return [Hash] Template context variables
+      def build_reactive_model_context(table, class_name, kebab_name, relationships, patterns)
+        table_name = table[:name]
+        model_name = table_name.singularize
+
+        # Build discard gem scopes if present
+        discard_scopes = build_discard_scopes(patterns, class_name)
+
+        # Generate relationship import section
+        relationship_import = generate_relationship_import(relationships)
+        relationship_import_section = relationship_import.empty? ? "" : "\n#{relationship_import}"
+
+        # Generate relationship registration
+        relationship_registration = RelationshipProcessor.new(relationships, table_name).process_all[:registration]
+
+        {
+          class_name: class_name,
+          table_name: table_name,
+          kebab_name: kebab_name,
+          model_name: model_name,
+          timestamp: Time.current.strftime("%Y-%m-%d %H:%M:%S UTC"),
+          relationship_import_section: relationship_import_section,
+          supports_discard: supports_discard?(patterns),
+          discard_scopes: discard_scopes,
+          relationship_registration: relationship_registration
+        }
+      end
 
       # Override Thor's default behavior for non-interactive mode
       def file_collision(destination)
@@ -817,6 +450,23 @@ module Zero
             model_name = example_model[:model_name]
           end
 
+        end
+      end
+
+      # Display file operation statistics from FileManager
+      def display_file_statistics
+        return if options[:dry_run]
+
+        stats = file_manager.statistics
+        total_operations = stats[:created] + stats[:identical]
+
+        if total_operations > 0
+          say "\n📊 File Operations Summary:", :blue
+          say "  ✅ Created: #{stats[:created]} files", :green if stats[:created] > 0
+          say "  🔄 Identical (skipped): #{stats[:identical]} files", :blue if stats[:identical] > 0
+          say "  🎨 Formatted with Prettier: #{stats[:formatted]} files", :magenta if stats[:formatted] > 0
+          say "  📁 Directories created: #{stats[:directories_created]}", :cyan if stats[:directories_created] > 0
+          say "  ❌ Errors: #{stats[:errors]}", :red if stats[:errors] > 0
         end
       end
 
@@ -876,7 +526,7 @@ module Zero
            */
         TYPESCRIPT
 
-        write_file("../zero/index.ts", zero_index_content)
+        file_manager.write_with_formatting("../zero/index.ts", zero_index_content)
       end
     end
   end

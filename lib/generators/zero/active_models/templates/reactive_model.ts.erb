@@ -1,0 +1,90 @@
+/**
+ * Reactive<%= class_name %> - ReactiveRecord model (Svelte 5 reactive)
+ *
+ * Reactive Rails-compatible model for <%= table_name %> table.
+ * Automatically updates Svelte components when data changes.
+ *
+ * For non-reactive contexts, use <%= class_name %> instead:
+ * ```typescript
+ * import { <%= class_name %> } from './<%= kebab_name %>';
+ * ```
+ *
+ * Generated: <%= timestamp %>
+ */
+
+import { createReactiveRecord } from './base/reactive-record';
+import type { <%= class_name %>Data, Create<%= class_name %>Data, Update<%= class_name %>Data } from './types/<%= kebab_name %>-data';<%= relationship_import_section %>
+
+/**
+ * ReactiveRecord configuration for <%= class_name %>
+ */
+const Reactive<%= class_name %>Config = {
+  tableName: '<%= table_name %>',
+  className: 'Reactive<%= class_name %>',
+  primaryKey: 'id',
+  supportsDiscard: <%= supports_discard %>,
+};
+
+/**
+ * Reactive<%= class_name %> ReactiveRecord instance
+ *
+ * @example
+ * ```svelte
+ * <!-- In Svelte component -->
+ * <script>
+ *   import { Reactive<%= class_name %> } from '$lib/models/reactive-<%= kebab_name %>';
+ *
+ *   // Reactive query - automatically updates when data changes
+ *   const <%= model_name %>Query = Reactive<%= class_name %>.find('123');
+ *
+ *   // Access reactive data
+ *   $: <%= model_name %> = <%= model_name %>Query.data;
+ *   $: isLoading = <%= model_name %>Query.isLoading;
+ *   $: error = <%= model_name %>Query.error;
+ * </script>
+ *
+ * {#if isLoading}
+ *   Loading...
+ * {:else if error}
+ *   Error: {error.message}
+ * {:else if <%= model_name %>}
+ *   <p>{<%= model_name %>.title}</p>
+ * {/if}
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Mutation operations (still async)
+ * const new<%= class_name %> = await Reactive<%= class_name %>.create({ title: 'New Task' });
+ * await Reactive<%= class_name %>.update('123', { title: 'Updated' });
+ * await Reactive<%= class_name %>.discard('123');
+ *
+ * // Reactive queries
+ * const all<%= class_name %>sQuery = Reactive<%= class_name %>.all().all();
+ * const active<%= class_name %>sQuery = Reactive<%= class_name %>.kept().all();<%= discard_scopes %>
+ * ```
+ */
+export const Reactive<%= class_name %> = createReactiveRecord<<%= class_name %>Data>(Reactive<%= class_name %>Config);
+
+// Epic-009: Register model relationships for includes() functionality
+<%= relationship_registration %>
+
+/**
+ * Import alias for easy switching between reactive/non-reactive
+ *
+ * @example
+ * ```typescript
+ * // Use reactive model in Svelte components
+ * import { Reactive<%= class_name %> as <%= class_name %> } from './reactive-<%= kebab_name %>';
+ *
+ * // Use like ActiveRecord but with reactive queries
+ * const <%= model_name %>Query = <%= class_name %>.find('123');
+ * ```
+ */
+export { Reactive<%= class_name %> as <%= class_name %> };
+
+// Export types for convenience
+export type { <%= class_name %>Data, Create<%= class_name %>Data, Update<%= class_name %>Data };
+
+// Default export
+export default Reactive<%= class_name %>;
