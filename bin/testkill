@@ -8,9 +8,10 @@ set -e
 # Define the ports used by the development servers
 RAILS_PORT=4000
 ZERO_PORT=4850
+ZERO_WS_PORT=4851
 FRONTEND_PORT=6173
 
-PORTS=("$RAILS_PORT" "$ZERO_PORT" "$FRONTEND_PORT")
+PORTS=("$RAILS_PORT" "$ZERO_PORT" "$ZERO_WS_PORT" "$FRONTEND_PORT")
 PORT_NAMES=("Rails" "Zero" "Frontend")
 
 echo "🔍 Checking for development servers..."
@@ -53,4 +54,5 @@ echo ""
 echo "📋 Development server ports:"
 echo "   Rails:    http://localhost:$RAILS_PORT"
 echo "   Zero:     http://localhost:$ZERO_PORT"  
+echo "   Zero WS:  http://localhost:$ZERO_WS_PORT"  
 echo "   Frontend: http://localhost:$FRONTEND_PORT"
