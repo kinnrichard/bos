@@ -5,12 +5,23 @@ const authFile = 'playwright/.auth/user.json';
 
 // Use the hybrid configuration with browser device overrides
 export default createHybridPlaywrightConfig({
+  // Global setup - runs once before all tests
+  globalSetup: './tests/global.setup.ts',
+
   projects: [
-    // Authentication setup - runs first (WebKit for browser compatibility)
+    // Global setup tasks - run first in sequence
     {
-      name: 'setup',
-      testMatch: /.*\.setup\.ts/,
+      name: 'global-setup',
+      testMatch: /global\.setup\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+
+    // Legacy auth setup (will be deprecated after global setup is verified)
+    {
+      name: 'auth-setup-legacy',
+      testMatch: /auth\.setup\.ts/,
       use: { ...devices['Desktop Safari'] },
+      dependencies: ['global-setup'],
     },
 
     // Unit tests - fast, mocked APIs (no auth needed)
@@ -33,7 +44,7 @@ export default createHybridPlaywrightConfig({
         ...devices['Desktop Chrome'],
         storageState: authFile,
       },
-      dependencies: ['setup'],
+      dependencies: ['global-setup'],
     },
     {
       name: 'integration-firefox',
@@ -42,7 +53,7 @@ export default createHybridPlaywrightConfig({
         ...devices['Desktop Firefox'],
         storageState: authFile,
       },
-      dependencies: ['setup'],
+      dependencies: ['global-setup'],
     },
 
     // E2E tests - full real database (with auth)
@@ -53,7 +64,7 @@ export default createHybridPlaywrightConfig({
         ...devices['Desktop Chrome'],
         storageState: authFile,
       },
-      dependencies: ['setup'],
+      dependencies: ['global-setup'],
     },
 
     // API tests - backend testing (no browser auth needed)
@@ -71,7 +82,7 @@ export default createHybridPlaywrightConfig({
         ...devices['Desktop Chrome'],
         storageState: authFile,
       },
-      dependencies: ['setup'],
+      dependencies: ['global-setup'],
     },
     {
       name: 'hybrid-firefox',
@@ -80,7 +91,7 @@ export default createHybridPlaywrightConfig({
         ...devices['Desktop Firefox'],
         storageState: authFile,
       },
-      dependencies: ['setup'],
+      dependencies: ['global-setup'],
     },
     {
       name: 'hybrid-webkit',
@@ -89,7 +100,7 @@ export default createHybridPlaywrightConfig({
         ...devices['Desktop Safari'],
         storageState: authFile,
       },
-      dependencies: ['setup'],
+      dependencies: ['global-setup'],
     },
   ],
 });

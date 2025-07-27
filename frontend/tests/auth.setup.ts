@@ -1,10 +1,11 @@
 /**
- * Authentication Setup for Playwright Tests
+ * Legacy Authentication Setup for Playwright Tests
  *
- * This setup runs once before all tests and saves the authenticated state
- * to be reused across test runs, following Playwright best practices.
+ * ⚠️ DEPRECATED: This file is being phased out in favor of global.setup.ts
+ * which handles both database seeding and authentication in proper order.
  *
- * Uses the LoginPage object for consistent authentication flow.
+ * This setup is kept temporarily for compatibility during the transition.
+ * Database seeding is now handled in global.setup.ts before this runs.
  */
 
 import { test as setup } from '@playwright/test';
@@ -12,85 +13,16 @@ import { LoginPage, verifyAuthentication } from './helpers';
 import { debugAuth, debugError } from '$lib/utils/debug';
 
 // Constants
-const AUTH_FILE = 'playwright/.auth/user.json';
-const AUTH_TIMEOUT = 10000;
 const DEBUG_MODE = process.env.DEBUG_AUTH_SETUP === 'true';
 
-interface AuthSetupOptions {
-  verbose?: boolean;
-  requireInitials?: boolean;
-  useFallback?: boolean;
-}
-
 /**
- * Perform authentication setup with verification
+ * Legacy authentication setup - simplified since DB seeding is handled globally
  */
-async function performAuthSetup(
-  loginPage: LoginPage,
-  options: AuthSetupOptions = {}
-): Promise<void> {
-  const { verbose = DEBUG_MODE, requireInitials = false, useFallback = true } = options;
-
-  if (verbose) {
-    debugAuth('🚀 Starting authentication process...');
-    debugAuth(`Authenticating as: ${LoginPage.DEFAULT_CREDENTIALS.email}`);
-  }
-
-  // Perform login
-  await loginPage.login(LoginPage.DEFAULT_CREDENTIALS);
-
-  if (verbose) {
-    debugAuth('Verifying authentication state...');
-  }
-
-  // Verify authentication success
-  const authResult = await verifyAuthentication(loginPage.getPage(), {
-    timeout: AUTH_TIMEOUT,
-    requireInitials,
-    verbose: verbose, // Pass through verbose setting
-    useFallback,
-  });
-
-  // Handle verification results
-  if (!authResult.authVerified) {
-    const details = [
-      `menu=${authResult.userMenuFound}`,
-      `initials=${authResult.userInitialsFound}`,
-      `fallback=${authResult.fallbackVerified}`,
-    ].join(', ');
-
-    debugError('❌ Authentication verification failed');
-    debugError(`Details: ${details}`);
-    debugError('Try: DEBUG_AUTH_SETUP=true npm test for detailed logs');
-
-    // Still proceed - authentication might work differently
-  } else if (verbose) {
-    debugAuth('✅ Authentication verified successfully');
-    if (authResult.initialsText) {
-      debugAuth(`User initials: ${authResult.initialsText}`);
-    }
-  }
-}
-
-/**
- * Save authentication state for reuse in tests
- */
-async function saveAuthState(loginPage: LoginPage): Promise<void> {
+setup('authenticate legacy', async ({ page }) => {
   if (DEBUG_MODE) {
-    debugAuth(`Saving authentication state to: ${AUTH_FILE}`);
+    debugAuth('🔐 Running legacy auth setup (database should already be seeded)');
   }
 
-  await loginPage.getPage().context().storageState({ path: AUTH_FILE });
-
-  if (DEBUG_MODE) {
-    debugAuth('✅ Authentication setup complete');
-  }
-}
-
-/**
- * Main authentication setup test
- */
-setup('authenticate', async ({ page }) => {
   try {
     // Initialize login page
     const loginPage = new LoginPage(page);
@@ -99,22 +31,30 @@ setup('authenticate', async ({ page }) => {
     // Wait for page to be ready
     await page.waitForLoadState('networkidle');
 
-    // Perform authentication (verbose controlled by DEBUG_MODE)
-    await performAuthSetup(loginPage, {
+    // Perform authentication - database should already be seeded by global setup
+    await loginPage.login(LoginPage.DEFAULT_CREDENTIALS);
+
+    // Verify authentication
+    const authResult = await verifyAuthentication(page, {
+      timeout: 10000,
       requireInitials: false,
+      verbose: DEBUG_MODE,
       useFallback: true,
     });
 
-    // Save authentication state
-    await saveAuthState(loginPage);
+    if (!authResult.authVerified) {
+      console.warn('⚠️ Legacy auth verification had issues but proceeding');
+    }
 
-    // Show simple success message (unless in debug mode)
-    if (!DEBUG_MODE) {
-      debugAuth('✓ Ready');
+    // Save authentication state for legacy tests that might still depend on this
+    await page.context().storageState({ path: 'playwright/.auth/user-legacy.json' });
+
+    if (DEBUG_MODE) {
+      debugAuth('✅ Legacy authentication setup complete');
     }
   } catch (error) {
-    debugError('❌ Authentication failed:', error);
-    debugError('Try: DEBUG_AUTH_SETUP=true npm test for detailed logs');
-    throw error; // Re-throw to fail the setup
+    debugError('❌ Legacy authentication failed:', error);
+    console.warn('⚠️ Legacy auth failed - tests should use global.setup.ts auth instead');
+    // Don't throw - let tests that depend on global setup continue
   }
 });
