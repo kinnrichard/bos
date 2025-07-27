@@ -1,13 +1,14 @@
 # Job-person associations
+# Updated to reference existing jobs from jobs.yml
 
-simple_website_alice:
-  job: simple_website_job
+network_infrastructure_alice:
+  job: network_infrastructure
   person: alice_johnson
 
-enterprise_john:
-  job: enterprise_deployment
+home_wifi_john:
+  job: home_wifi
   person: john_doe
 
-mobile_bob:
-  job: mobile_app_project
+server_migration_bob:
+  job: server_migration
   person: bob_wilson

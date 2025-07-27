@@ -39,8 +39,8 @@ echo "📋 Testing Zero YAML configuration..."
 
 if [ -f "config/zero.yml" ]; then
     # Check test environment configuration
-    TEST_PORT_CONFIG=$(grep -A 10 "^test:" config/zero.yml | grep "port.*4850" | wc -l)
-    TEST_AUTH_CONFIG=$(grep -A 20 "^test:" config/zero.yml | grep "dev-secret-change-in-production" | wc -l)
+    TEST_PORT_CONFIG=$(grep -A 30 "^test:" config/zero.yml | grep "port: 4850" | wc -l)
+    TEST_AUTH_CONFIG=$(grep -A 30 "^test:" config/zero.yml | grep "dev-secret-change-in-production" | wc -l)
     
     if [ "$TEST_PORT_CONFIG" -eq "0" ]; then
         echo -e "${RED}❌ config/zero.yml test section missing port 4850${NC}"
