@@ -250,10 +250,10 @@ module Zero
         # Combine all properties (maintain proper indentation for all lines)
         all_properties = [ column_properties, relationship_properties ].reject(&:empty?).join("\n")
 
-        # Format long Omit types with proper line breaks for printWidth: 100
+        # Generate type exclusions (Prettier will handle formatting)
         base_exclusions = "'id', 'created_at', 'updated_at'"
-        create_exclusions = format_omit_exclusions(base_exclusions, relationship_exclusions, class_name)
-        update_exclusions = format_partial_omit_exclusions(base_exclusions, relationship_exclusions, class_name)
+        create_exclusions = "Omit<#{class_name}Data, #{base_exclusions}#{relationship_exclusions}>"
+        update_exclusions = "Partial<Omit<#{class_name}Data, #{base_exclusions}#{relationship_exclusions}>>"
 
         <<~TYPESCRIPT
           /**
@@ -289,43 +289,6 @@ module Zero
         TYPESCRIPT
       end
 
-      # Helper method to format long Omit types with proper line breaks
-      def format_omit_exclusions(base_exclusions, relationship_exclusions, class_name)
-        full_exclusions = "#{base_exclusions}#{relationship_exclusions}"
-        type_part = "Omit<#{class_name}Data, #{full_exclusions}>"
-
-        # Check the full export statement length (including "export type Create#{class_name}Data = ")
-        full_export = "export type Create#{class_name}Data = #{type_part};"
-
-        # If the full export statement fits within printWidth: 100, format as single line
-        if full_export.length <= 100
-          type_part
-        else
-          # Format as multi-line with Prettier-compatible indentation
-          exclusions_array = full_exclusions.split(", ").map(&:strip)
-          formatted_exclusions = exclusions_array.join(",\n  ")
-          "Omit<\n  #{class_name}Data,\n  #{formatted_exclusions}\n>"
-        end
-      end
-
-      # Helper method to format Partial<Omit<>> types with proper line breaks
-      def format_partial_omit_exclusions(base_exclusions, relationship_exclusions, class_name)
-        full_exclusions = "#{base_exclusions}#{relationship_exclusions}"
-        type_part = "Partial<Omit<#{class_name}Data, #{full_exclusions}>>"
-
-        # Check the full export statement length (including "export type Update#{class_name}Data = ")
-        full_export = "export type Update#{class_name}Data = #{type_part};"
-
-        # If the full export statement fits within printWidth: 100, format as single line
-        if full_export.length <= 100
-          type_part
-        else
-          # For lines over 100 chars, Prettier formats with Partial< on its own line
-          # and Omit<...> on the next line (single line if it fits)
-          omit_part = "Omit<#{class_name}Data, #{full_exclusions}>"
-          "Partial<\n  #{omit_part}\n>"
-        end
-      end
 
       # Epic-011: Helper methods for relationship property generation
 
@@ -491,7 +454,7 @@ module Zero
            */
 
           import { createActiveRecord } from './base/active-record';
-          #{format_import_statement(class_name, kebab_name)}#{generate_relationship_import(relationships).empty? ? "" : "\n#{generate_relationship_import(relationships)}"}
+          import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';#{generate_relationship_import(relationships).empty? ? "" : "\n#{generate_relationship_import(relationships)}"}
 
           /**
            * ActiveRecord configuration for #{class_name}
@@ -531,13 +494,13 @@ module Zero
            * const active#{class_name}s = await #{class_name}.kept().all();#{discard_scopes}
            * ```
            */
-          export const #{class_name} = #{format_function_call("createActiveRecord", "#{class_name}Data", "#{class_name}Config", class_name)};
+          export const #{class_name} = createActiveRecord<#{class_name}Data>(#{class_name}Config);
 
           // Epic-009: Register model relationships for includes() functionality
           #{generate_relationship_registration(table_name, relationships)}
 
           // Export types for convenience
-          #{format_type_export(class_name)}
+          export type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data };
 
           // Default export
           export default #{class_name};
@@ -567,7 +530,7 @@ module Zero
            */
 
           import { createReactiveRecord } from './base/reactive-record';
-          #{format_import_statement(class_name, kebab_name)}#{generate_relationship_import(relationships).empty? ? "" : "\n#{generate_relationship_import(relationships)}"}
+          import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';#{generate_relationship_import(relationships).empty? ? "" : "\n#{generate_relationship_import(relationships)}"}
 
           /**
            * ReactiveRecord configuration for #{class_name}
@@ -618,7 +581,7 @@ module Zero
            * const active#{class_name}sQuery = Reactive#{class_name}.kept().all();#{discard_scopes}
            * ```
            */
-          export const Reactive#{class_name} = #{format_function_call("createReactiveRecord", "#{class_name}Data", "Reactive#{class_name}Config", "Reactive#{class_name}")};
+          export const Reactive#{class_name} = createReactiveRecord<#{class_name}Data>(Reactive#{class_name}Config);
 
           // Epic-009: Register model relationships for includes() functionality
           #{generate_relationship_registration(table_name, relationships)}
@@ -638,7 +601,7 @@ module Zero
           export { Reactive#{class_name} as #{class_name} };
 
           // Export types for convenience
-          #{format_type_export(class_name)}
+          export type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data };
 
           // Default export
           export default Reactive#{class_name};
@@ -666,54 +629,6 @@ module Zero
         end
       end
 
-      # Helper method to format type export statements according to Prettier's printWidth: 100
-      def format_type_export(class_name)
-        single_line = "export type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data };"
-
-        # If export statement exceeds Prettier's printWidth: 100, format as multi-line
-        if single_line.length > 100
-          <<~TYPESCRIPT.strip
-            export type {
-              #{class_name}Data,
-              Create#{class_name}Data,
-              Update#{class_name}Data,
-            };
-          TYPESCRIPT
-        else
-          single_line
-        end
-      end
-
-      # Helper method to format import statements according to Prettier's printWidth: 100
-      def format_import_statement(class_name, kebab_name)
-        single_line = "import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';"
-
-        # If import statement exceeds Prettier's printWidth: 100, format as multi-line
-        if single_line.length > 100
-          <<~TYPESCRIPT.strip
-            import type {
-              #{class_name}Data,
-              Create#{class_name}Data,
-              Update#{class_name}Data,
-            } from './types/#{kebab_name}-data';
-          TYPESCRIPT
-        else
-          single_line
-        end
-      end
-
-      # Helper method to format function calls according to Prettier's printWidth: 100
-      def format_function_call(function_name, type_param, config_param, variable_name)
-        single_line = "#{function_name}<#{type_param}>(#{config_param})"
-        full_statement = "export const #{variable_name} = #{single_line};"
-
-        # If full statement exceeds Prettier's printWidth: 100, format as multi-line
-        if full_statement.length > 100
-          "#{function_name}<#{type_param}>(\n  #{config_param}\n)"
-        else
-          single_line
-        end
-      end
 
       def generate_relationship_import(relationships)
         # Only import registerModelRelationships if there are actual relationships
@@ -873,28 +788,6 @@ module Zero
         end
       end
 
-      # Format TypeScript files with Prettier for perfect compliance (deprecated - use format_content_with_prettier instead)
-      def format_with_prettier(file_path)
-        return unless file_path.end_with?(".ts") && File.exist?(file_path)
-        return if options[:dry_run] || options[:skip_prettier]
-
-        frontend_root = File.join(Rails.root, "frontend")
-        return unless File.exist?(File.join(frontend_root, "package.json"))
-
-        # Get relative path from frontend root for prettier command
-        relative_path = Pathname.new(file_path).relative_path_from(Pathname.new(frontend_root))
-
-        # Run prettier from frontend directory to use project config
-        Dir.chdir(frontend_root) do
-          success = system("npx prettier --write #{relative_path}",
-                          out: File::NULL, err: File::NULL)
-          unless success
-            say "⚠️  Warning: Could not format #{relative_path} with Prettier", :yellow
-          end
-        end
-      rescue => e
-        say "⚠️  Warning: Prettier formatting failed for #{file_path}: #{e.message}", :yellow
-      end
 
       # Override Thor's default behavior for non-interactive mode
       def file_collision(destination)
