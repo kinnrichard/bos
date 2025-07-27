@@ -55,7 +55,8 @@ module Zero
       #
       # @param options [Hash] Generator options (dry_run, force, table, etc.)
       # @param shell [Thor::Shell] Shell instance for progress reporting
-      def initialize(options, shell)
+      # @param service_registry [ServiceRegistry] Optional pre-initialized service registry for testing
+      def initialize(options, shell = nil, service_registry = nil)
         @options = options || {}
         @shell = shell
         @statistics = {
@@ -67,7 +68,12 @@ module Zero
           services_initialized: 0
         }
 
-        initialize_service_registry
+        if service_registry
+          @service_registry = service_registry
+          @statistics[:services_initialized] = @service_registry.initialized_services.count
+        else
+          initialize_service_registry
+        end
       end
 
       # Execute the complete model generation workflow
@@ -179,6 +185,69 @@ module Zero
       rescue => e
         @statistics[:errors_encountered] += 1
         raise ModelGenerationError, "Failed to generate model for #{table[:name]}: #{e.message}"
+      end
+
+      # Alternative interface for direct model generation (primarily for testing)
+      #
+      # @param tables [Array<String>] Table names to generate models for
+      # @param output_directory [String] Directory to output generated files
+      # @return [Hash] Generation results with detailed statistics
+      def generate_models(tables: [], output_directory: nil)
+        execution_start_time = Time.current
+
+        begin
+          @options[:table] = tables.first if tables.length == 1
+          @options[:output_dir] = output_directory if output_directory
+
+          # Mock shell if not provided for testing
+          @shell ||= create_mock_shell
+
+          # Setup and execute generation
+          setup_output_directories if output_directory
+          schema_data = extract_and_filter_schema
+          generation_result = generate_models_for_all_tables(schema_data)
+
+          # Compile results
+          {
+            success: generation_result[:errors].empty?,
+            generated_files: generation_result[:generated_files],
+            generated_models: generation_result[:generated_models],
+            errors: generation_result[:errors],
+            execution_time: (Time.current - execution_start_time).round(4),
+            service_statistics: collect_service_statistics
+          }
+
+        rescue => e
+          @statistics[:errors_encountered] += 1
+          {
+            success: false,
+            generated_files: [],
+            generated_models: [],
+            errors: [ e.message ],
+            execution_time: (Time.current - execution_start_time).round(4),
+            service_statistics: collect_service_statistics
+          }
+        end
+      end
+
+      # Collect comprehensive statistics from all services
+      #
+      # @return [Hash] Aggregated statistics from registry and individual services
+      def collect_service_statistics
+        {
+          registry_stats: service_registry.statistics,
+          service_stats: aggregate_service_statistics,
+          generation_stats: @statistics
+        }
+      end
+
+      # Ensure all required services are initialized
+      #
+      # @return [Hash] Initialization results
+      def ensure_services_initialized
+        result = service_registry.initialize_all_services
+        @statistics[:services_initialized] = service_registry.initialized_services.count
+        result
       end
 
       # Compile final execution results with comprehensive statistics
@@ -673,6 +742,22 @@ module Zero
         return true if defined?(Rails) && Rails.env.development?
         return true if defined?(Rails) && Rails.env.production?
         false # Disable for test environment
+      end
+
+      # Create a mock shell for testing purposes
+      #
+      # @return [Object] Mock shell that responds to shell methods
+      #
+      def create_mock_shell
+        Class.new do
+          def say(message, color = nil)
+            # Silent for testing
+          end
+
+          def say_status(status, message, color = nil)
+            # Silent for testing
+          end
+        end.new
       end
     end
   end

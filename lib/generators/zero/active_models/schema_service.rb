@@ -79,11 +79,11 @@ module Zero
           # Extract raw schema data
           raw_schema = @introspector.extract_schema
 
+          # Validate raw schema integrity unless skipped (before filtering)
+          validate_schema_integrity(raw_schema) unless skip_validation
+
           # Apply filtering logic
           filtered_schema = apply_filtering(raw_schema, exclude_tables, include_only)
-
-          # Validate schema integrity unless skipped
-          validate_schema_integrity(filtered_schema) unless skip_validation
 
           # Cache the results
           @schema_cache[cache_key] = filtered_schema if @cache_enabled

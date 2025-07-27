@@ -418,7 +418,7 @@ module Zero
       #
       def add_type_override(rails_type, typescript_type)
         current_overrides = type_overrides.dup
-        current_overrides[rails_type] = typescript_type
+        current_overrides[rails_type.to_sym] = typescript_type
         update_config(:type_overrides, current_overrides)
       end
 
@@ -455,7 +455,6 @@ module Zero
       def reload_configuration!(validate: true)
         load_configuration!
         validate_configuration! if validate
-        @statistics[:loads] += 1
       end
 
       # Validate current configuration
@@ -556,8 +555,11 @@ module Zero
           file_config = YAML.load_file(@config_file_path)
           generator_config = file_config["zero_generator"] || {}
 
+          # Symbolize keys recursively to match default configuration
+          symbolized_config = symbolize_keys_recursively(generator_config)
+
           # Deep merge file configuration with defaults
-          @configuration = deep_merge(@configuration, generator_config)
+          @configuration = deep_merge(@configuration, symbolized_config)
         rescue => e
           raise ConfigurationError, "Failed to load configuration from #{@config_file_path}: #{e.message}"
         end
@@ -646,6 +648,22 @@ module Zero
           obj.map { |item| deep_dup(item) }
         else
           obj.respond_to?(:dup) ? obj.dup : obj
+        end
+      end
+
+      # Symbolize keys recursively in a hash
+      #
+      # @param obj [Object] Object to symbolize
+      # @return [Object] Object with symbolized keys
+      #
+      def symbolize_keys_recursively(obj)
+        case obj
+        when Hash
+          obj.transform_keys(&:to_sym).transform_values { |value| symbolize_keys_recursively(value) }
+        when Array
+          obj.map { |item| symbolize_keys_recursively(item) }
+        else
+          obj
         end
       end
 
