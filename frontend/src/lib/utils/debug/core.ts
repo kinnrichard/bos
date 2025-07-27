@@ -221,6 +221,7 @@ export const DEBUG_NAMESPACES = {
   // User interface namespaces
   NAVIGATION: 'bos:navigation',
   NOTIFICATION: 'bos:notification',
+  ANIMATION: 'bos:animation',
 
   // Business logic namespaces
   WORKFLOW: 'bos:workflow',
@@ -291,6 +292,7 @@ export interface UIDebugFunction extends CategoryDebugFunction {
   component: EnhancedDebugFunction;
   navigation: EnhancedDebugFunction;
   notification: EnhancedDebugFunction;
+  animation: EnhancedDebugFunction;
 }
 
 /**
@@ -349,6 +351,7 @@ export const CATEGORY_CONFIG = {
       component: DEBUG_NAMESPACES.COMPONENT,
       navigation: DEBUG_NAMESPACES.NAVIGATION,
       notification: DEBUG_NAMESPACES.NOTIFICATION,
+      animation: DEBUG_NAMESPACES.ANIMATION,
     },
   },
   business: {
