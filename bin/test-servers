@@ -16,6 +16,12 @@ RAILS_TEST_PORT=${RAILS_TEST_PORT:-4000}
 ZERO_TEST_PORT=${ZERO_TEST_PORT:-4850}  # Zero test port from config/zero.yml
 FRONTEND_TEST_PORT=${FRONTEND_TEST_PORT:-6173}
 
+# Set Zero upstream database for test environment
+ZERO_UPSTREAM_DB=${ZERO_UPSTREAM_DB:-"postgresql://claude@localhost:5432/bos_test"}
+
+# Set Zero auth secret to match config/zero.yml
+ZERO_AUTH_SECRET=${ZERO_AUTH_SECRET:-"dev-secret-change-in-production"}
+
 # Color codes for output
 RED='\033[0;31m'
 BLUE='\033[0;34m'  
@@ -58,18 +64,21 @@ names=()
 colors=()
 
 if [ "$rails_status" = "available" ]; then
-    commands+=("RAILS_ENV=test bin/rails server -p $RAILS_TEST_PORT -b 0.0.0.0")
+    commands+=("RAILS_ENV=test ZERO_AUTH_SECRET=$ZERO_AUTH_SECRET bin/rails server -p $RAILS_TEST_PORT -b 0.0.0.0")
     names+=("rails-test")
     colors+=("red")
 fi
 
-# Start Zero server (simplified for now)
-if [ "$zero_status" = "available" ] && [ -n "$ZERO_UPSTREAM_DB" ]; then  # Only start if configured
-    commands+=("ZERO_UPSTREAM_DB=$ZERO_UPSTREAM_DB npx zero-cache-dev --port $ZERO_TEST_PORT")
+# Start Zero server - REQUIRED for tests
+if [ "$zero_status" = "available" ]; then
+    if [ -z "$ZERO_UPSTREAM_DB" ]; then
+        echo -e "${RED}❌ ZERO_UPSTREAM_DB not configured - tests cannot run without Zero server${NC}"
+        echo "   Set ZERO_UPSTREAM_DB or check .env.test file"
+        exit 1
+    fi
+    commands+=("ZERO_UPSTREAM_DB=$ZERO_UPSTREAM_DB ZERO_AUTH_SECRET=$ZERO_AUTH_SECRET npx zero-cache-dev --port $ZERO_TEST_PORT")
     names+=("zero-test") 
     colors+=("blue")
-elif [ "$zero_status" = "available" ]; then
-    echo -e "${YELLOW}⚠️  Skipping Zero server (ZERO_UPSTREAM_DB not configured)${NC}"
 fi
 
 if [ "$frontend_status" = "available" ]; then

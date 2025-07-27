@@ -1,6 +1,7 @@
 import { Zero } from '@rocicorp/zero';
 import { schema, type ZeroClient } from './generated-schema';
 import { debugDatabase, debugAuth, debugError } from '$lib/utils/debug';
+import { ZERO_SERVER_CONFIG } from './zero-config';
 
 // Conditional import to handle test environments without SvelteKit
 function getBrowserState(): boolean {
@@ -244,9 +245,7 @@ async function createZeroConfig(userId: string) {
 
   return {
     schema,
-    server: browser
-      ? `${window.location.protocol}//${window.location.hostname}:4848`
-      : 'http://localhost:4848',
+    server: ZERO_SERVER_CONFIG.getServerUrl(),
     userID: userId, // Must match JWT 'sub' field
     auth: authFunction, // Cached async function
     // For development, we'll use memory store first

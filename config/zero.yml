@@ -60,7 +60,7 @@ test:
     user: <%= ENV['USER'] || ENV['USERNAME'] %>
     password: ""
   
-  auth_secret: "test-secret"
+  auth_secret: <%= ENV.fetch("ZERO_AUTH_SECRET", "dev-secret-change-in-production") %>
   
   cache:
     log_level: "warn"

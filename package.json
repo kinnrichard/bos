@@ -10,7 +10,7 @@
   "scripts": {
     "test:e2e": "playwright test",
     "test:servers": "bin/test-servers",
-    "test:servers:kill": "lsof -ti tcp:4000,5848,6173 | xargs kill -9 2>/dev/null || echo 'No test servers running'",
+    "test:servers:kill": "lsof -ti tcp:4000,4850,6173 | xargs kill -9 2>/dev/null || echo 'No test servers running'",
     "lint": "LINT_CONTEXT=manual scripts/shared-lint.sh",
     "lint:check": "LINT_CONTEXT=manual LINT_MODE=check scripts/shared-lint.sh",
     "lint:fix": "scripts/lint-fix.sh",
