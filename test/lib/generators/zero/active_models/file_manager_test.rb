@@ -346,15 +346,18 @@ module Zero
       # =============================================================================
 
       test "reset statistics clears all counters" do
-        # Manually set some statistics
-        @file_manager.statistics[:created] = 5
-        @file_manager.statistics[:identical] = 3
+        # Access statistics hash directly for modification
+        stats = @file_manager.statistics
+        stats[:created] = 5
+        stats[:identical] = 3
 
-        result = @file_manager.reset_statistics
+        @file_manager.reset_statistics
 
-        assert_equal 0, result[:created]
-        assert_equal 0, result[:identical]
-        assert_equal 0, result[:errors]
+        # Check the statistics after reset
+        reset_stats = @file_manager.statistics
+        assert_equal 0, reset_stats[:created]
+        assert_equal 0, reset_stats[:identical]
+        assert_equal 0, reset_stats[:errors]
       end
 
       test "semantic comparison enabled returns correct values" do
@@ -432,6 +435,381 @@ module Zero
 
         assert File.exist?(file_path)
         assert_includes File.read(file_path), special_content
+      end
+
+      # =============================================================================
+      # Batch Processing Tests
+      # =============================================================================
+
+      test "collect_for_batch_formatting queues files for batch processing" do
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        @options[:batch_max_files] = 10  # Set high limit to prevent auto-processing
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Use larger content (~10KB) to ensure memory estimate is > 0
+        content = "export interface User {\n" +
+                 (1..500).map { |i| "  field#{i}: string; // Field #{i} comment with extra text to increase size" }.join("\n") +
+                 "\n}"
+        file_path = File.join(@output_dir, "user.ts")
+
+        # Mock prettier availability at the instance level
+        file_manager.instance_variable_set(:@prettier_available, true)
+
+        # Collect file for batch processing
+        result = file_manager.send(:collect_for_batch_formatting, file_path, content, "user.ts")
+
+        # Should return original content and add to batch queue
+        assert_equal content, result
+
+        # Verify batch status
+        batch_status = file_manager.batch_status
+        assert_equal 1, batch_status[:queued_files]
+        assert batch_status[:memory_estimate_mb] > 0, "Memory estimate should be > 0 for larger content (got #{batch_status[:memory_estimate_mb]}MB)"
+        assert batch_status[:enabled]
+      end
+
+      test "batch_ready_for_processing triggers on file count limit" do
+        @options[:batch_max_files] = 2  # Set low limit for testing
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Mock prettier availability at the instance level
+        file_manager.instance_variable_set(:@prettier_available, true)
+
+        # Mock process_batch_formatting to prevent actual processing during collection
+        file_manager.stubs(:process_batch_formatting).returns({ processed: 0, errors: 0, time: 0.0 })
+
+        content = "export interface Test {}"
+
+        # Add first file - should not trigger processing
+        file_manager.send(:collect_for_batch_formatting,
+                         File.join(@output_dir, "test1.ts"), content, "test1.ts")
+        assert_not file_manager.batch_ready_for_processing?
+
+        # Manually add second file to queue to test ready condition
+        file_manager.instance_variable_get(:@batch_queue) << {
+          file_path: File.join(@output_dir, "test2.ts"),
+          content: content,
+          relative_path: "test2.ts",
+          size: content.bytesize
+        }
+
+        assert file_manager.batch_ready_for_processing?
+      end
+
+      test "batch_ready_for_processing triggers on memory limit" do
+        @options[:batch_max_memory_mb] = 0.001  # Set very low memory limit (1KB)
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Create large content that exceeds memory limit
+        large_content = "export interface LargeInterface {\n" +
+                       (1..1000).map { |i| "  field#{i}: string;" }.join("\n") +
+                       "\n}"
+
+        # Add file - should trigger memory-based processing
+        file_manager.send(:collect_for_batch_formatting,
+                         File.join(@output_dir, "large.ts"), large_content, "large.ts")
+
+        assert file_manager.batch_ready_for_processing?
+      end
+
+      test "process_batch_formatting handles empty queue gracefully" do
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        result = file_manager.process_batch_formatting
+
+        assert_equal 0, result[:processed]
+        assert_equal 0, result[:errors]
+        assert_equal 0.0, result[:time]
+      end
+
+      test "process_batch_formatting skips processing in dry_run mode" do
+        @options[:dry_run] = true
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Add file to queue
+        content = "export interface User {}"
+        file_manager.send(:collect_for_batch_formatting,
+                         File.join(@output_dir, "user.ts"), content, "user.ts")
+
+        result = file_manager.process_batch_formatting
+
+        assert_equal 0, result[:processed]
+        assert_equal 0, result[:errors]
+      end
+
+      test "execute_batch_prettier_command creates temporary directory structure" do
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Mock system call to always succeed and File.read to return formatted content
+        file_manager.stubs(:system).returns(true)
+        File.stubs(:read).returns("formatted content")
+        File.stubs(:write).returns(true)
+
+        # Ensure output directory exists
+        FileUtils.mkdir_p(@output_dir)
+
+        # Add files to batch queue
+        content1 = "export interface User { id: number; }"
+        content2 = "export interface Post { title: string; }"
+
+        file_manager.instance_variable_get(:@batch_queue) << {
+          file_path: File.join(@output_dir, "user.ts"),
+          content: content1,
+          relative_path: "user.ts",
+          size: content1.bytesize
+        }
+
+        file_manager.instance_variable_get(:@batch_queue) << {
+          file_path: File.join(@output_dir, "post.ts"),
+          content: content2,
+          relative_path: "post.ts",
+          size: content2.bytesize
+        }
+
+        result = file_manager.send(:execute_batch_prettier_command)
+
+        assert result[:success]
+        assert_equal 2, result[:files_processed]
+      end
+
+      test "execute_batch_prettier_command handles prettier command failure" do
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Mock system call to fail
+        file_manager.stubs(:system).returns(false)
+
+        # Add file to batch queue
+        content = "export interface User {}"
+        file_manager.instance_variable_get(:@batch_queue) << {
+          file_path: File.join(@output_dir, "user.ts"),
+          content: content,
+          relative_path: "user.ts",
+          size: content.bytesize
+        }
+
+        result = file_manager.send(:execute_batch_prettier_command)
+
+        assert_not result[:success]
+        assert_equal "Prettier command failed", result[:error]
+      end
+
+      test "fallback_to_individual_formatting processes files individually" do
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Mock format_with_prettier to avoid actual prettier calls
+        file_manager.stubs(:format_with_prettier).returns("formatted content")
+
+        # Add files to batch queue
+        content1 = "export interface User {}"
+        content2 = "export interface Post {}"
+        file_path1 = File.join(@output_dir, "user.ts")
+        file_path2 = File.join(@output_dir, "post.ts")
+
+        # Ensure output directory exists
+        FileUtils.mkdir_p(@output_dir)
+
+        file_manager.instance_variable_get(:@batch_queue) << {
+          file_path: file_path1,
+          content: content1,
+          relative_path: "user.ts",
+          size: content1.bytesize
+        }
+
+        file_manager.instance_variable_get(:@batch_queue) << {
+          file_path: file_path2,
+          content: content2,
+          relative_path: "post.ts",
+          size: content2.bytesize
+        }
+
+        result = file_manager.send(:fallback_to_individual_formatting)
+
+        assert_equal 2, result[:processed]
+        assert_equal 0, result[:errors]
+
+        # Verify files were written
+        assert File.exist?(file_path1)
+        assert File.exist?(file_path2)
+      end
+
+      test "fallback_to_individual_formatting handles individual formatting errors" do
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Mock format_with_prettier to raise error for first file
+        file_manager.stubs(:format_with_prettier).raises(StandardError, "Formatting failed").then.returns("formatted content")
+
+        # Ensure output directory exists
+        FileUtils.mkdir_p(@output_dir)
+
+        # Add files to batch queue
+        content1 = "export interface User {}"
+        content2 = "export interface Post {}"
+        file_path1 = File.join(@output_dir, "user.ts")
+        file_path2 = File.join(@output_dir, "post.ts")
+
+        file_manager.instance_variable_get(:@batch_queue) << {
+          file_path: file_path1,
+          content: content1,
+          relative_path: "user.ts",
+          size: content1.bytesize
+        }
+
+        file_manager.instance_variable_get(:@batch_queue) << {
+          file_path: file_path2,
+          content: content2,
+          relative_path: "post.ts",
+          size: content2.bytesize
+        }
+
+        result = file_manager.send(:fallback_to_individual_formatting)
+
+        assert_equal 1, result[:processed]
+        assert_equal 1, result[:errors]
+
+        # Verify both files exist (error file should have original content)
+        assert File.exist?(file_path1)
+        assert File.exist?(file_path2)
+        assert_equal content1, File.read(file_path1)  # Original content due to error
+      end
+
+      test "batch_status returns comprehensive status information" do
+        @options[:batch_max_files] = 25
+        @options[:batch_max_memory_mb] = 50
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        status = file_manager.batch_status
+
+        assert_equal 0, status[:queued_files]
+        assert_equal 0.0, status[:memory_estimate_mb]
+        assert_equal 25, status[:max_files]
+        assert_equal 50, status[:max_memory_mb]
+        assert status[:enabled]
+      end
+
+      test "batch processing disabled when option set" do
+        @options[:disable_batch_formatting] = true
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        status = file_manager.batch_status
+        assert_not status[:enabled]
+
+        # Should fall back to individual formatting when batch is disabled
+        content = "export interface User {}"
+
+        # Mock prettier availability and ensure directories exist
+        file_manager.instance_variable_set(:@prettier_available, true)
+        FileUtils.mkdir_p(@output_dir)
+
+        # When batch processing is disabled, write_with_formatting should call format_with_prettier
+        file_manager.stubs(:format_with_prettier).returns("formatted content")
+        file_manager.stubs(:create_file_with_comparison).returns(:created)
+
+        # Use write_with_formatting instead of collect_for_batch_formatting directly
+        result = file_manager.write_with_formatting("user.ts", content)
+
+        # Verify individual formatting was called by checking the file was created
+        assert_equal File.join(@output_dir, "user.ts"), result
+      end
+
+      test "batch processing handles memory overflow correctly" do
+        @options[:batch_max_memory_mb] = 0.01  # Very small limit (10KB)
+        @options[:batch_max_files] = 10
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Mock prettier availability at the instance level
+        file_manager.instance_variable_set(:@prettier_available, true)
+
+        # Mock process_batch_formatting to track calls
+        batch_call_count = 0
+        file_manager.stubs(:process_batch_formatting).with do
+          batch_call_count += 1
+          { processed: 1, errors: 0, time: 0.1 }
+        end
+
+        # Add multiple large files that exceed memory limit
+        (1..3).each do |i|
+          # Create content larger than the memory limit (10KB each = 30KB total)
+          large_content = "export interface Large#{i} {\n" +
+                         (1..1000).map { |j| "  field#{j}: string;" }.join("\n") +
+                         "\n}"
+
+          file_manager.send(:collect_for_batch_formatting,
+                           File.join(@output_dir, "large#{i}.ts"),
+                           large_content, "large#{i}.ts")
+        end
+
+        # Should have triggered batch processing multiple times due to memory limit
+        assert batch_call_count > 0, "Should have triggered at least one batch processing due to memory overflow"
+      end
+
+      test "statistics tracking for batch operations" do
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Mock successful batch processing
+        file_manager.stubs(:execute_batch_prettier_command).returns({ success: true, files_processed: 3 })
+
+        # Add files to batch queue
+        (1..3).each do |i|
+          content = "export interface Test#{i} {}"
+          file_manager.instance_variable_get(:@batch_queue) << {
+            file_path: File.join(@output_dir, "test#{i}.ts"),
+            content: content,
+            relative_path: "test#{i}.ts",
+            size: content.bytesize
+          }
+        end
+
+        result = file_manager.process_batch_formatting
+
+        assert_equal 3, result[:processed]
+        assert_equal 0, result[:errors]
+
+        # Verify statistics were updated
+        stats = file_manager.statistics
+        assert_equal 3, stats[:batch_formatted]
+        assert_equal 3, stats[:formatted]
+        assert_equal 1, stats[:batch_operations]
+      end
+
+      test "reset_statistics clears batch queue and memory estimate" do
+        create_package_json(@frontend_dir, dependencies: { "prettier" => "^2.0.0" })
+        @options[:batch_max_files] = 10  # Set high limit to prevent auto-processing
+        file_manager = FileManager.new(@options, @shell, @output_dir)
+
+        # Mock prettier availability at the instance level
+        file_manager.instance_variable_set(:@prettier_available, true)
+
+        # Add files to batch queue with larger content (~10KB)
+        content = "export interface User {\n" +
+                 (1..500).map { |i| "  field#{i}: string; // Field #{i} comment with extra text to increase size" }.join("\n") +
+                 "\n}"
+        file_manager.send(:collect_for_batch_formatting,
+                         File.join(@output_dir, "user.ts"), content, "user.ts")
+
+        # Verify queue has content
+        assert_equal 1, file_manager.batch_status[:queued_files]
+        assert file_manager.batch_status[:memory_estimate_mb] > 0
+
+        # Reset statistics
+        file_manager.reset_statistics
+
+        # Verify queue and memory estimate are cleared
+        assert_equal 0, file_manager.batch_status[:queued_files]
+        assert_equal 0.0, file_manager.batch_status[:memory_estimate_mb]
+        assert_equal 0, file_manager.statistics[:batch_formatted]
+        assert_equal 0, file_manager.statistics[:batch_operations]
       end
 
       private

@@ -57,10 +57,21 @@ module Zero
           identical: 0,
           errors: 0,
           formatted: 0,
-          directories_created: 0
+          directories_created: 0,
+          batch_formatted: 0,
+          batch_operations: 0
         }
         @frontend_root = detect_frontend_root
         @prettier_available = prettier_available?
+
+        # Batch formatting configuration
+        @batch_config = {
+          max_files: options[:batch_max_files] || 50,
+          max_memory_mb: options[:batch_max_memory_mb] || 100,
+          enabled: !options[:disable_batch_formatting]
+        }
+        @batch_queue = []
+        @batch_memory_estimate = 0
       end
 
       # Write file with optional formatting and semantic comparison
@@ -79,13 +90,20 @@ module Zero
         # Ensure directory exists
         ensure_directory_exists(File.dirname(file_path))
 
-        # Format TypeScript content with Prettier if requested
-        if format && should_format?(file_path) && !options[:dry_run]
+        # Handle formatting: batch collection or immediate processing
+        if format && should_format?(file_path) && !options[:dry_run] && @batch_config[:enabled]
+          # Collect for batch formatting - file will be written during batch processing
+          formatted_content = collect_for_batch_formatting(file_path, content, relative_path)
+          result = create_file_with_comparison(file_path, formatted_content)
+        elsif format && should_format?(file_path) && !options[:dry_run]
+          # Immediate formatting
           content = format_with_prettier(content, relative_path)
+          result = create_file_with_comparison(file_path, content)
+        else
+          # No formatting required
+          result = create_file_with_comparison(file_path, content)
         end
 
-        # Use smart file creator for semantic comparison
-        result = create_file_with_comparison(file_path, content)
         update_statistics(result)
 
         file_path
@@ -132,6 +150,59 @@ module Zero
         @prettier_available
       end
 
+      # Process all queued files for batch formatting
+      #
+      # @return [Hash] Batch processing results
+      def process_batch_formatting
+        return { processed: 0, errors: 0, time: 0.0 } if @batch_queue.empty? || options[:dry_run]
+
+        start_time = Time.current
+        processed_count = 0
+        error_count = 0
+
+        begin
+          shell&.say_status(:batch_format, "Processing #{@batch_queue.size} files with Prettier", :blue)
+
+          # Process batch with error resilience
+          result = execute_batch_prettier_command
+
+          if result[:success]
+            processed_count = @batch_queue.size
+            @statistics[:batch_formatted] += processed_count
+            @statistics[:formatted] += processed_count
+            @statistics[:batch_operations] += 1
+
+            shell&.say_status(:batch_success, "Formatted #{processed_count} files in batch", :green)
+          else
+            # Fallback to individual processing with error handling
+            shell&.say_status(:batch_fallback, "Batch failed, falling back to individual formatting", :yellow)
+            individual_result = fallback_to_individual_formatting
+            processed_count = individual_result[:processed]
+            error_count = individual_result[:errors]
+          end
+
+        rescue => e
+          shell&.say_status(:batch_error, "Batch formatting error: #{e.message}", :red)
+          # Attempt individual fallback
+          individual_result = fallback_to_individual_formatting
+          processed_count = individual_result[:processed]
+          error_count = individual_result[:errors]
+        ensure
+          # Clear batch queue and reset memory estimate
+          @batch_queue.clear
+          @batch_memory_estimate = 0
+        end
+
+        execution_time = (Time.current - start_time).round(4)
+
+        {
+          processed: processed_count,
+          errors: error_count,
+          time: execution_time,
+          memory_used_mb: (@batch_memory_estimate / 1024.0 / 1024.0).round(2)
+        }
+      end
+
       # Reset statistics counters
       #
       # @return [Hash] Reset statistics hash
@@ -141,7 +212,36 @@ module Zero
           identical: 0,
           errors: 0,
           formatted: 0,
-          directories_created: 0
+          directories_created: 0,
+          batch_formatted: 0,
+          batch_operations: 0
+        }
+        @batch_queue.clear
+        @batch_memory_estimate = 0
+      end
+
+      # Check if batch queue needs processing (memory or file count threshold)
+      #
+      # @return [Boolean] True if batch should be processed now
+      def batch_ready_for_processing?
+        return false unless @batch_config[:enabled]
+
+        file_count_ready = @batch_queue.size >= @batch_config[:max_files]
+        memory_ready = (@batch_memory_estimate / 1024.0 / 1024.0) >= @batch_config[:max_memory_mb]
+
+        file_count_ready || memory_ready
+      end
+
+      # Get current batch queue status for monitoring
+      #
+      # @return [Hash] Current batch status
+      def batch_status
+        {
+          queued_files: @batch_queue.size,
+          memory_estimate_mb: (@batch_memory_estimate / 1024.0 / 1024.0).round(2),
+          max_files: @batch_config[:max_files],
+          max_memory_mb: @batch_config[:max_memory_mb],
+          enabled: @batch_config[:enabled]
         }
       end
 
@@ -367,6 +467,123 @@ module Zero
       # Update operation statistics
       #
       # @param result [Symbol] Operation result
+      # Collect file for batch formatting with memory management
+      #
+      # @param file_path [String] Absolute file path
+      # @param content [String] File content
+      # @param relative_path [String] Relative path for error reporting
+      # @return [String] Original content (formatting happens later in batch)
+      def collect_for_batch_formatting(file_path, content, relative_path)
+        return format_with_prettier(content, relative_path) unless @prettier_available
+
+        # Estimate memory usage (content size + overhead)
+        content_size = content.bytesize
+        estimated_overhead = content_size * 0.5  # 50% overhead estimate for processing
+        total_estimate = content_size + estimated_overhead
+
+        # Check if adding this file would exceed memory limits
+        if (@batch_memory_estimate + total_estimate) > (@batch_config[:max_memory_mb] * 1024 * 1024)
+          # Process current batch first, then add this file
+          process_batch_formatting if @batch_queue.any?
+        end
+
+        # Add to batch queue (file will be written during batch processing)
+        @batch_queue << {
+          file_path: file_path,
+          content: content,
+          relative_path: relative_path,
+          size: content_size
+        }
+
+        @batch_memory_estimate += total_estimate
+
+        # Process batch if we've hit the file count limit
+        if @batch_queue.size >= @batch_config[:max_files]
+          process_batch_formatting
+        end
+
+        # Return original content - file will be formatted and re-written during batch processing
+        content
+      end
+
+      # Execute batch prettier command with optimized approach
+      #
+      # @return [Hash] Execution result
+      def execute_batch_prettier_command
+        return { success: false, error: "No frontend root" } unless @frontend_root
+        return { success: false, error: "No files to process" } if @batch_queue.empty?
+
+        temp_dir = File.join(@frontend_root, "tmp", "batch_format_#{Time.current.to_i}")
+
+        begin
+          # Create temporary directory for batch processing
+          ensure_directory_exists(temp_dir)
+
+          # Write all files to temporary directory
+          temp_files = @batch_queue.map.with_index do |item, index|
+            temp_file_path = File.join(temp_dir, "file_#{index}.ts")
+            File.write(temp_file_path, item[:content])
+            {
+              temp_path: temp_file_path,
+              original_item: item
+            }
+          end
+
+          # Run prettier on all files in one command
+          prettier_cmd = "npx prettier --write --config-precedence prefer-file #{temp_dir}/*.ts"
+
+          Dir.chdir(@frontend_root) do
+            success = system(prettier_cmd, out: File::NULL, err: File::NULL)
+
+            if success
+              # Read back formatted content and update original files
+              temp_files.each do |temp_file_info|
+                formatted_content = File.read(temp_file_info[:temp_path])
+                original_item = temp_file_info[:original_item]
+
+                # Overwrite the already-written file with formatted content
+                File.write(original_item[:file_path], formatted_content)
+              end
+
+              { success: true, files_processed: temp_files.size }
+            else
+              { success: false, error: "Prettier command failed" }
+            end
+          end
+
+        rescue => e
+          { success: false, error: e.message }
+        ensure
+          # Cleanup temporary directory
+          FileUtils.rm_rf(temp_dir) if File.exist?(temp_dir)
+        end
+      end
+
+      # Fallback to individual formatting with error handling
+      #
+      # @return [Hash] Processing results
+      def fallback_to_individual_formatting
+        processed = 0
+        errors = 0
+
+        @batch_queue.each do |item|
+          begin
+            formatted_content = format_with_prettier(item[:content], item[:relative_path])
+            File.write(item[:file_path], formatted_content)
+            processed += 1
+          rescue => e
+            shell&.say_status(:warning, "Failed to format #{item[:relative_path]}: #{e.message}", :yellow)
+            # Write original content if formatting fails
+            File.write(item[:file_path], item[:content])
+            errors += 1
+          end
+        end
+
+        @statistics[:formatted] += processed
+
+        { processed: processed, errors: errors }
+      end
+
       def update_statistics(result)
         case result
         when OPERATION_RESULTS[:created]

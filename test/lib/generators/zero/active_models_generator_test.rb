@@ -429,17 +429,19 @@ class Zero::ActiveModelsGeneratorTest < Rails::Generators::TestCase
     registry = ServiceRegistry.new(validate_services: false)
 
     begin
-      # Mock template renderer to fail initially
+      # Mock template renderer to fail initially with sequence
       call_count = 0
-      registry.stubs(:create_template_renderer_service).tap do |stub|
-        stub.callback do
-          call_count += 1
-          if call_count == 1
-            raise StandardError.new("Initial failure")
-          else
-            Object.new # Return a mock service on retry
-          end
+      failure_proc = proc do
+        call_count += 1
+        if call_count == 1
+          raise StandardError.new("Initial failure")
+        else
+          Object.new # Return a mock service on retry
         end
+      end
+
+      registry.expects(:create_template_renderer_service).twice.returns do
+        failure_proc.call
       end
 
       coordinator = GenerationCoordinator.new({}, nil, registry)

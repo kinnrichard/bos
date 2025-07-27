@@ -437,6 +437,27 @@ module Zero
         file_manager.write_with_formatting("../zero/index.ts", zero_index_content)
       end
 
+      # Process batch formatting for all collected files
+      #
+      # @return [Hash] Batch processing results
+      def process_batch_formatting
+        file_manager = service_registry.get_service(:file_manager)
+        batch_result = file_manager.process_batch_formatting
+
+        if batch_result[:processed] > 0
+          shell&.say "\n🎨 Batch Formatting Results:", :blue
+          shell&.say "  ✅ Formatted: #{batch_result[:processed]} files", :green
+          shell&.say "  ⏱️  Time: #{batch_result[:time]}s", :cyan
+          shell&.say "  💾 Memory used: #{batch_result[:memory_used_mb]}MB", :magenta
+
+          if batch_result[:errors] > 0
+            shell&.say "  ❌ Errors: #{batch_result[:errors]} files", :red
+          end
+        end
+
+        batch_result
+      end
+
       # Compile final results with comprehensive error handling
       def compile_final_results(generation_result, start_time)
         final_result = compile_results(generation_result, start_time)
@@ -689,6 +710,13 @@ module Zero
           shell&.say "  ✅ Created: #{file_stats[:created]} files", :green if file_stats[:created] > 0
           shell&.say "  🔄 Identical (skipped): #{file_stats[:identical]} files", :blue if file_stats[:identical] > 0
           shell&.say "  🎨 Formatted with Prettier: #{file_stats[:formatted]} files", :magenta if file_stats[:formatted] > 0
+
+          # Display batch formatting statistics if available
+          if file_stats[:batch_operations] && file_stats[:batch_operations] > 0
+            shell&.say "  📦 Batch operations: #{file_stats[:batch_operations]}", :blue
+            shell&.say "  ⚡ Batch formatted: #{file_stats[:batch_formatted]} files", :green
+          end
+
           shell&.say "  📁 Directories created: #{file_stats[:directories_created]}", :cyan if file_stats[:directories_created] > 0
           shell&.say "  ❌ Errors: #{file_stats[:errors]}", :red if file_stats[:errors] > 0
         end
