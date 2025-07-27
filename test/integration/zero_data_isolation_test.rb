@@ -91,8 +91,10 @@ class ZeroDataIsolationTest < ActionDispatch::IntegrationTest
     end
 
     # Check for test-specific data patterns
-    assert User.exists?(email: "test@bos-test.local"),
-      "Should have standard test user"
+    # We have test-owner@bos-test.local and test-user@bos-test.local
+    test_users_exist = User.exists?(email: "test-owner@bos-test.local") ||
+                      User.exists?(email: "test-user@bos-test.local")
+    assert test_users_exist, "Should have test users with @bos-test.local domain"
   end
 
   test "database connections are properly isolated" do
@@ -177,7 +179,7 @@ class ZeroDataIsolationTest < ActionDispatch::IntegrationTest
     # Should have some variation in job statuses if status field exists
     if Job.column_names.include?("status")
       unique_statuses = Job.distinct.pluck(:status).compact
-      assert unique_statuses.length >= 1, "Should have variation in job statuses"
+      assert unique_statuses.length >= 3, "Should have variation in job statuses"
     end
   end
 
@@ -195,7 +197,10 @@ class ZeroDataIsolationTest < ActionDispatch::IntegrationTest
     )
 
     # Create job based on schema
-    job_params = { title: "Cleanup Test Job" }
+    job_params = {
+      title: "Cleanup Test Job",
+      client: clients(:acme)  # Use existing test client
+    }
     if Job.column_names.include?("user_id")
       job_params[:user_id] = new_user.id
     end
