@@ -32,4 +32,30 @@ class Api::V1::BaseController < ActionController::API
     cookies.signed[:user_id].present? ||
     (current_user.present? rescue false)
   end
+
+  # Override current_user to resolve from HTTP request cookies only
+  def current_user
+    # If @current_user is already set (by authenticate_request), use it
+    return @current_user if defined?(@current_user)
+
+    # Only get user from signed cookies in the HTTP request
+    user_id = cookies.signed[:user_id]
+    token = cookies.signed[:auth_token]
+
+    # Debug logging for Zero token endpoint
+    if Rails.env.test? && request.path.include?("zero/token")
+      Rails.logger.info "ZERO AUTH DEBUG: user_id cookie: #{user_id}"
+      Rails.logger.info "ZERO AUTH DEBUG: auth_token present: #{token.present?}"
+    end
+
+    if user_id.present? && token.present?
+      @current_user = User.find_by(id: user_id)
+      Rails.logger.info "ZERO AUTH DEBUG: Found user: #{@current_user&.name}" if Rails.env.test? && request.path.include?("zero/token")
+    else
+      @current_user = nil
+      Rails.logger.info "ZERO AUTH DEBUG: No user found - missing cookies" if Rails.env.test? && request.path.include?("zero/token")
+    end
+
+    @current_user
+  end
 end
