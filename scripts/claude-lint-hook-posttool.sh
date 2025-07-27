@@ -24,7 +24,7 @@ claude_posttool_header() {
 
 claude_extract_files_from_stdin() {
     # Claude Code hooks receive JSON input via stdin
-    # Extract file paths from the tool input
+    # Extract file paths from the tool input for different tool types
     local files=()
     
     # Try to get files from CLAUDE_FILE_PATHS environment variable first
@@ -36,16 +36,50 @@ claude_extract_files_from_stdin() {
         # Read stdin and extract file_path from tool_input
         local stdin_content
         if stdin_content=$(timeout 1 cat 2>/dev/null); then
-            # Parse JSON to extract file paths
+            # Try different JSON structures for different tools
+            
+            # Standard file_path (Edit, Write)
             local file_path
             file_path=$(echo "$stdin_content" | jq -r '.tool_input.file_path // empty' 2>/dev/null || echo "")
             if [[ -n "$file_path" && "$file_path" != "null" ]]; then
                 files+=("$file_path")
             fi
+            
+            # NotebookEdit: notebook_path
+            local notebook_path
+            notebook_path=$(echo "$stdin_content" | jq -r '.tool_input.notebook_path // empty' 2>/dev/null || echo "")
+            if [[ -n "$notebook_path" && "$notebook_path" != "null" ]]; then
+                files+=("$notebook_path")
+            fi
+            
+            # MultiEdit: file_path at root level
+            local multi_file_path
+            multi_file_path=$(echo "$stdin_content" | jq -r '.tool_input.file_path // empty' 2>/dev/null || echo "")
+            if [[ -n "$multi_file_path" && "$multi_file_path" != "null" && "$multi_file_path" != "$file_path" ]]; then
+                files+=("$multi_file_path")
+            fi
+            
+            # Extract from edits array if present (MultiEdit alternative structure)
+            local edit_files
+            if edit_files=$(echo "$stdin_content" | jq -r '.tool_input.edits[]?.file_path // empty' 2>/dev/null); then
+                while IFS= read -r edit_file; do
+                    if [[ -n "$edit_file" && "$edit_file" != "null" ]]; then
+                        files+=("$edit_file")
+                    fi
+                done <<< "$edit_files"
+            fi
         fi
     fi
     
-    printf '%s\n' "${files[@]}"
+    # Remove duplicates and print
+    local unique_files=()
+    for file in "${files[@]}"; do
+        if [[ ! " ${unique_files[@]} " =~ " ${file} " ]]; then
+            unique_files+=("$file")
+        fi
+    done
+    
+    printf '%s\n' "${unique_files[@]}"
 }
 
 claude_success_message() {
@@ -209,7 +243,41 @@ case "${1:-}" in
         echo "  CLAUDE_FILE_PATHS: ${CLAUDE_FILE_PATHS:-<not set>}"
         echo "  CLAUDE_TOOL_OUTPUT: ${CLAUDE_TOOL_OUTPUT:-<not set>}"
         echo ""
-        echo "Detected files:"
+        
+        # Show raw JSON input if available
+        echo "Checking for JSON input on stdin..."
+        local stdin_content
+        if stdin_content=$(timeout 1 cat 2>/dev/null); then
+            echo "Raw JSON input received:"
+            echo "$stdin_content" | jq . 2>/dev/null || echo "$stdin_content"
+            echo ""
+            
+            # Show what we extract from it
+            echo "Extracted file paths:"
+            echo "$stdin_content" | {
+                files=()
+                
+                # Test all extraction methods
+                file_path=$(jq -r '.tool_input.file_path // empty' 2>/dev/null || echo "")
+                notebook_path=$(jq -r '.tool_input.notebook_path // empty' 2>/dev/null || echo "")
+                
+                [[ -n "$file_path" && "$file_path" != "null" ]] && echo "  file_path: $file_path"
+                [[ -n "$notebook_path" && "$notebook_path" != "null" ]] && echo "  notebook_path: $notebook_path"
+                
+                # Test edits array
+                if jq -e '.tool_input.edits' >/dev/null 2>&1; then
+                    echo "  edits array found:"
+                    jq -r '.tool_input.edits[]?.file_path // empty' 2>/dev/null | while read -r edit_file; do
+                        [[ -n "$edit_file" && "$edit_file" != "null" ]] && echo "    - $edit_file"
+                    done
+                fi
+            }
+        else
+            echo "No JSON input on stdin"
+        fi
+        echo ""
+        
+        echo "Final detected files:"
         claude_extract_files_from_stdin
         exit 0
         ;;
