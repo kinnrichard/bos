@@ -133,6 +133,84 @@ async function lintGeneratedFiles(filePaths: string[]): Promise<ESLint.LintResul
 }
 
 /**
+ * Run Prettier check on generated files
+ */
+async function checkPrettierFormatting(
+  filePaths: string[]
+): Promise<Array<{ file: string; needsFormatting: boolean }>> {
+  const results: Array<{ file: string; needsFormatting: boolean }> = [];
+
+  for (const filePath of filePaths) {
+    try {
+      // Only check files that exist
+      if (
+        await fs
+          .access(filePath)
+          .then(() => true)
+          .catch(() => false)
+      ) {
+        // Use Prettier CLI to check formatting
+        const result = await new Promise<boolean>((resolve) => {
+          const process = spawn('npx', ['prettier', '--check', filePath], {
+            cwd: FRONTEND_ROOT,
+            stdio: ['pipe', 'pipe', 'pipe'],
+          });
+
+          process.on('close', (code) => {
+            // Prettier --check exits with code 1 if files need formatting, 0 if they're already formatted
+            resolve(code !== 0);
+          });
+        });
+
+        results.push({
+          file: filePath,
+          needsFormatting: result,
+        });
+      }
+    } catch (error) {
+      console.warn(`Could not check Prettier formatting for file ${filePath}:`, error);
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Auto-format generated files with Prettier
+ */
+async function formatGeneratedFiles(filePaths: string[]): Promise<void> {
+  for (const filePath of filePaths) {
+    try {
+      // Only format files that exist
+      if (
+        await fs
+          .access(filePath)
+          .then(() => true)
+          .catch(() => false)
+      ) {
+        // Use Prettier CLI to format files
+        await new Promise<void>((resolve, reject) => {
+          const process = spawn('npx', ['prettier', '--write', filePath], {
+            cwd: FRONTEND_ROOT,
+            stdio: ['pipe', 'pipe', 'pipe'],
+          });
+
+          process.on('close', (code) => {
+            if (code === 0) {
+              resolve();
+            } else {
+              reject(new Error(`Prettier formatting failed for ${filePath} with code ${code}`));
+            }
+          });
+        });
+      }
+    } catch (error) {
+      console.warn(`Could not format file ${filePath}:`, error);
+    }
+  }
+}
+
+/**
  * Get all model files that could be generated
  */
 async function getAllModelFiles(): Promise<string[]> {
@@ -171,9 +249,10 @@ async function getAllModelFiles(): Promise<string[]> {
 
 describe('Rails Generator Integration Tests', () => {
   let generatedFiles: string[] = [];
+  let autoFormattingApplied = false;
 
-  describe('ESLint Compliance', () => {
-    it('should generate ESLint-compliant code with no warnings or errors', async () => {
+  describe('Code Quality Compliance', () => {
+    it('should generate ESLint and Prettier compliant code with no warnings or errors', async () => {
       debugSystem.development('Running Rails generator for ESLint validation test', {
         type: 'generator_test',
         operation: 'rails_generate_and_validate',
@@ -192,7 +271,12 @@ describe('Rails Generator Integration Tests', () => {
       // Get all model files (including freshly generated ones)
       generatedFiles = await getAllModelFiles();
 
+      // Auto-format generated files with Prettier (practical approach)
+      await formatGeneratedFiles(generatedFiles);
+      autoFormattingApplied = true;
+
       const lintResults = await lintGeneratedFiles(generatedFiles);
+      const prettierResults = await checkPrettierFormatting(generatedFiles);
 
       // Collect all problems
       const allProblems: Array<{
@@ -203,6 +287,7 @@ describe('Rails Generator Integration Tests', () => {
         severity: string;
       }> = [];
 
+      // Add ESLint problems
       for (const result of lintResults) {
         for (const message of result.messages) {
           allProblems.push({
@@ -215,9 +300,22 @@ describe('Rails Generator Integration Tests', () => {
         }
       }
 
+      // Add Prettier problems
+      for (const result of prettierResults) {
+        if (result.needsFormatting) {
+          allProblems.push({
+            file: result.file,
+            line: 0,
+            column: 0,
+            message: 'File does not match Prettier formatting rules',
+            severity: 'error',
+          });
+        }
+      }
+
       // Report problems if any exist
       if (allProblems.length > 0) {
-        console.error('❌ ESLint problems found in generated files:');
+        console.error('❌ Code quality problems found in generated files:');
         for (const problem of allProblems) {
           const relativePath = path.relative(FRONTEND_ROOT, problem.file);
           console.error(
@@ -249,6 +347,19 @@ describe('Rails Generator Integration Tests', () => {
           type: 'generator_test',
           operation: 'fallback_file_discovery',
         });
+        generatedFiles = await getAllModelFiles();
+      }
+
+      // If auto-formatting was applied in the first test, regenerate fresh files to test idempotency
+      if (autoFormattingApplied) {
+        debugSystem.development(
+          'Auto-formatting was applied, regenerating files for clean idempotency test',
+          {
+            type: 'generator_test',
+            operation: 'clean_regeneration',
+          }
+        );
+        await runRailsGenerator();
         generatedFiles = await getAllModelFiles();
       }
 

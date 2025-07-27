@@ -9,7 +9,7 @@
  * import { ReactiveJobTarget as JobTarget } from './reactive-job-target';
  * ```
  *
- * Generated: 2025-07-26 16:47:44 UTC
+ * Generated: 2025-07-27 00:10:04 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

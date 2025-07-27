@@ -476,7 +476,11 @@ module Zero
            */
 
           import { createActiveRecord } from './base/active-record';
-          import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';
+          import type {
+            #{class_name}Data,
+            Create#{class_name}Data,
+            Update#{class_name}Data,
+          } from './types/#{kebab_name}-data';
           #{generate_relationship_import(relationships)}
 
           /**
@@ -553,7 +557,11 @@ module Zero
            */
 
           import { createReactiveRecord } from './base/reactive-record';
-          import type { #{class_name}Data, Create#{class_name}Data, Update#{class_name}Data } from './types/#{kebab_name}-data';
+          import type {
+            #{class_name}Data,
+            Create#{class_name}Data,
+            Update#{class_name}Data,
+          } from './types/#{kebab_name}-data';
           #{generate_relationship_import(relationships)}
 
           /**
@@ -706,7 +714,7 @@ module Zero
           metadata_string = relationship_metadata.join(",\n")
           <<~TYPESCRIPT.strip
             registerModelRelationships('#{table_name}', {
-            #{metadata_string}
+            #{metadata_string},
             });
           TYPESCRIPT
         else

@@ -1,9 +1,9 @@
 /**
  * Model Relationships - TypeScript interfaces for all model relationships
- * 
+ *
  * Defines the shape of loaded relationship data when using includes().
  * These interfaces are used for type safety when accessing relationship data.
- * 
+ *
  * Generated: 2025-07-14 Epic-009 Phase 2
  */
 
@@ -176,23 +176,37 @@ export interface TaskCompletionRelationships {
  * Utility type to get relationship interface for a model
  * Used internally by the includes() implementation
  */
-export type ModelRelationships<T> = 
-  T extends JobData ? JobRelationships :
-  T extends ClientData ? ClientRelationships :
-  T extends TaskData ? TaskRelationships :
-  T extends UserData ? UserRelationships :
-  T extends PersonData ? PersonRelationships :
-  T extends DeviceData ? DeviceRelationships :
-  T extends ContactMethodData ? ContactMethodRelationships :
-  T extends ActivityLogData ? ActivityLogRelationships :
-  T extends JobAssignmentData ? JobAssignmentRelationships :
-  T extends JobPersonData ? JobPersonRelationships :
-  T extends JobTargetData ? JobTargetRelationships :
-  T extends NoteData ? NoteRelationships :
-  T extends ScheduledDateTimeData ? ScheduledDateTimeRelationships :
-  T extends ScheduledDateTimeUserData ? ScheduledDateTimeUserRelationships :
-  T extends TaskCompletionData ? TaskCompletionRelationships :
-  Record<string, never>;
+export type ModelRelationships<T> = T extends JobData
+  ? JobRelationships
+  : T extends ClientData
+    ? ClientRelationships
+    : T extends TaskData
+      ? TaskRelationships
+      : T extends UserData
+        ? UserRelationships
+        : T extends PersonData
+          ? PersonRelationships
+          : T extends DeviceData
+            ? DeviceRelationships
+            : T extends ContactMethodData
+              ? ContactMethodRelationships
+              : T extends ActivityLogData
+                ? ActivityLogRelationships
+                : T extends JobAssignmentData
+                  ? JobAssignmentRelationships
+                  : T extends JobPersonData
+                    ? JobPersonRelationships
+                    : T extends JobTargetData
+                      ? JobTargetRelationships
+                      : T extends NoteData
+                        ? NoteRelationships
+                        : T extends ScheduledDateTimeData
+                          ? ScheduledDateTimeRelationships
+                          : T extends ScheduledDateTimeUserData
+                            ? ScheduledDateTimeUserRelationships
+                            : T extends TaskCompletionData
+                              ? TaskCompletionRelationships
+                              : Record<string, never>;
 
 /**
  * Type-safe includes helper - constrains relationship names to valid ones
@@ -204,5 +218,5 @@ export type ValidRelationshipNames<T> = keyof ModelRelationships<T>;
  * Type-safe result type when includes() is used
  * Merges the base model data with selected relationship data
  */
-export type WithRelationships<T, K extends ValidRelationshipNames<T>> = 
-  T & Pick<ModelRelationships<T>, K>;
+export type WithRelationships<T, K extends ValidRelationshipNames<T>> = T &
+  Pick<ModelRelationships<T>, K>;
