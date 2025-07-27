@@ -5,22 +5,22 @@ acme:
   client_type: business
   name_normalized: acmecorporation
 
+smith_family:
+  name: Smith Family Residence
+  client_type: residential
+  name_normalized: smithfamilyresidence
+
+office_complex:
+  name: Downtown Office Complex
+  client_type: business
+  name_normalized: downtownofficecomplex
+
+johnson_home:
+  name: Johnson Home
+  client_type: residential
+  name_normalized: johnsonhome
+
 techstartup:
-  name: TechStartup Inc
+  name: Tech Startup Inc
   client_type: business
   name_normalized: techstartupinc
-
-individual_client:
-  name: John Doe Consulting
-  client_type: residential
-  name_normalized: johndoeconsulting
-
-inactive_client:
-  name: Old Client Co
-  client_type: business
-  name_normalized: oldclientco
-
-enterprise_client:
-  name: Global Enterprises Ltd
-  client_type: business
-  name_normalized: globalenterprisesltd

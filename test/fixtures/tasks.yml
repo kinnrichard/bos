@@ -1,323 +1,232 @@
 # Test tasks with comprehensive scenarios for TaskList testing
 
 # =============================================
-# SIMPLE WEBSITE JOB TASKS - Linear workflow for basic testing
+# NETWORK INFRASTRUCTURE TASKS - Linear workflow for basic testing
 # =============================================
 
-simple_consultation:
-  job: simple_website_job
-  title: Initial consultation
+network_survey:
+  job: network_infrastructure
+  title: Site Survey and Planning
   status: 3  # successfully_completed
   position: 10
   assigned_to: technician
 
-simple_domain:
-  job: simple_website_job
-  title: Domain setup
-  status: 3  # successfully_completed  
+network_equipment:
+  job: network_infrastructure
+  title: Install Network Equipment
+  status: 1  # in_progress
   position: 20
   assigned_to: technician
 
-simple_install:
-  job: simple_website_job
-  title: Install WordPress
-  status: 1  # in_progress
+network_config:
+  job: network_infrastructure
+  title: Configure Network Settings
+  status: 0  # new_task
   position: 30
-  assigned_to: technician
 
-simple_theme:
-  job: simple_website_job
-  title: Theme customization
+network_testing:
+  job: network_infrastructure
+  title: Test and Document
   status: 0  # new_task
   position: 40
-
-simple_content:
-  job: simple_website_job
-  title: Content migration
-  status: 0  # new_task
-  position: 50
-
-simple_launch:
-  job: simple_website_job
-  title: Testing and launch
-  status: 0  # new_task
-  position: 60
 
 # =============================================
 # ENTERPRISE DEPLOYMENT - Complex hierarchical structure
 # =============================================
 
 # Phase 1: Planning (Parent task with subtasks)
-enterprise_planning:
-  job: enterprise_deployment
-  title: Planning Phase
+# WiFi Installation Tasks
+wifi_router:
+  job: home_wifi
+  title: Install WiFi Router
   status: 3  # successfully_completed
   position: 10
-
-enterprise_requirements:
-  job: enterprise_deployment
-  title: Requirements gathering
-  status: 3  # successfully_completed
-  position: 10
-
-enterprise_architecture:
-  job: enterprise_deployment
-  title: Architecture design
-  status: 3  # successfully_completed
-  position: 20
-
-enterprise_timeline:
-  job: enterprise_deployment
-  title: Timeline planning
-  status: 3  # successfully_completed
-  position: 30
-
-# Phase 2: Development (Parent task with subtasks)
-enterprise_development:
-  job: enterprise_deployment
-  title: Development Phase
-  status: 1  # in_progress
-  position: 20
-  assigned_to: admin
-
-enterprise_database:
-  job: enterprise_deployment
-  title: Database setup
-  status: 3  # successfully_completed
-  position: 100
   assigned_to: technician
 
-enterprise_api:
-  job: enterprise_deployment
-  title: API development
+wifi_config:
+  job: home_wifi
+  title: Configure WiFi Network
   status: 1  # in_progress
-  position: 110
-  assigned_to: admin
+  position: 20
+  assigned_to: technician
 
-enterprise_frontend:
-  job: enterprise_deployment
-  title: Frontend integration
-  status: 0  # new_task
-  position: 120
-
-enterprise_security:
-  job: enterprise_deployment
-  title: Security implementation
-  status: 0  # new_task
-  position: 130
-
-# Phase 3: Testing (Parent task with subtasks)
-enterprise_testing:
-  job: enterprise_deployment
-  title: Testing & Deployment
+wifi_coverage:
+  job: home_wifi
+  title: Test Coverage Areas
   status: 0  # new_task
   position: 30
 
-enterprise_unit_tests:
-  job: enterprise_deployment
-  title: Unit testing
-  status: 0  # new_task
-  position: 140
-
-enterprise_integration_tests:
-  job: enterprise_deployment
-  title: Integration testing
-  status: 0  # new_task
-  position: 150
-
-enterprise_uat:
-  job: enterprise_deployment
-  title: User acceptance testing
-  status: 0  # new_task
-  position: 160
-
-enterprise_deploy:
-  job: enterprise_deployment
-  title: Production deployment
-  status: 0  # new_task
-  position: 170
-
-# =============================================
-# MOBILE APP PROJECT - Mixed statuses for filtering tests
-# =============================================
-
-mobile_kickoff:
-  job: mobile_app_project
-  title: Project kickoff
+# Security System Tasks (completed job)
+security_cameras:
+  job: security_upgrade
+  title: Install Security Cameras
   status: 3  # successfully_completed
   position: 10
-  assigned_to: admin
+  assigned_to: technician
 
-mobile_design:
-  job: mobile_app_project
-  title: UI/UX design
+security_monitoring:
+  job: security_upgrade
+  title: Configure Monitoring System
   status: 3  # successfully_completed
   position: 20
 
-mobile_ios:
-  job: mobile_app_project
-  title: iOS development
-  status: 1  # in_progress
+security_training:
+  job: security_upgrade
+  title: Train Homeowner
+  status: 3  # successfully_completed
   position: 30
-  assigned_to: technician
 
-mobile_android:
-  job: mobile_app_project
-  title: Android development
-  status: 1  # in_progress
+# Server Migration Tasks
+migration_backup:
+  job: server_migration
+  title: Backup Current Systems
+  status: 0  # new_task
+  position: 10
+
+migration_cloud:
+  job: server_migration
+  title: Provision Cloud Infrastructure
+  status: 0  # new_task
+  position: 20
+
+migration_apps:
+  job: server_migration
+  title: Migrate Applications
+  status: 0  # new_task
+  position: 30
+
+migration_testing:
+  job: server_migration
+  title: Testing and Validation
+  status: 0  # new_task
   position: 40
-  assigned_to: technician_two
 
-mobile_backend:
-  job: mobile_app_project
-  title: Backend API
-  status: 2  # paused
+migration_golive:
+  job: server_migration
+  title: Go-Live and Monitoring
+  status: 0  # new_task
   position: 50
-
-mobile_database:
-  job: mobile_app_project
-  title: Database optimization
-  status: 4  # cancelled
-  position: 60
-
-mobile_testing:
-  job: mobile_app_project
-  title: Testing framework
-  status: 4  # cancelled
-  position: 70
-
-mobile_store:
-  job: mobile_app_project
-  title: App store submission
-  status: 0  # new_task
-  position: 80
-
-mobile_marketing:
-  job: mobile_app_project
-  title: Marketing materials
-  status: 0  # new_task
-  position: 90
 
 # =============================================
 # SYSTEM MIGRATION - Large job for drag & drop testing (20 tasks)
 # =============================================
 
 migration_task_01:
-  job: system_migration
+  job: server_migration
   title: Migration Task 1
   status: 3  # successfully_completed
   position: 10
 
 migration_task_02:
-  job: system_migration
+  job: server_migration
   title: Migration Task 2
   status: 3  # successfully_completed
   position: 20
 
 migration_task_03:
-  job: system_migration
+  job: server_migration
   title: Migration Task 3
   status: 1  # in_progress
   position: 30
 
 migration_task_04:
-  job: system_migration
+  job: server_migration
   title: Migration Task 4
   status: 1  # in_progress
   position: 40
 
 migration_task_05:
-  job: system_migration
+  job: server_migration
   title: Migration Task 5
   status: 0  # new_task
   position: 50
 
 migration_task_06:
-  job: system_migration
+  job: server_migration
   title: Migration Task 6
   status: 0  # new_task
   position: 60
 
 migration_task_07:
-  job: system_migration
+  job: server_migration
   title: Migration Task 7
   status: 0  # new_task
   position: 70
 
 migration_task_08:
-  job: system_migration
+  job: server_migration
   title: Migration Task 8
   status: 0  # new_task
   position: 80
 
 migration_task_09:
-  job: system_migration
+  job: server_migration
   title: Migration Task 9
   status: 0  # new_task
   position: 90
 
 migration_task_10:
-  job: system_migration
+  job: server_migration
   title: Migration Task 10
   status: 0  # new_task
   position: 100
 
 migration_task_11:
-  job: system_migration
+  job: server_migration
   title: Migration Task 11
   status: 0  # new_task
   position: 110
 
 migration_task_12:
-  job: system_migration
+  job: server_migration
   title: Migration Task 12
   status: 0  # new_task
   position: 120
 
 migration_task_13:
-  job: system_migration
+  job: server_migration
   title: Migration Task 13
   status: 0  # new_task
   position: 130
 
 migration_task_14:
-  job: system_migration
+  job: server_migration
   title: Migration Task 14
   status: 0  # new_task
   position: 140
 
 migration_task_15:
-  job: system_migration
+  job: server_migration
   title: Migration Task 15
   status: 0  # new_task
   position: 150
 
 migration_task_16:
-  job: system_migration
+  job: server_migration
   title: Migration Task 16
   status: 0  # new_task
   position: 160
 
 migration_task_17:
-  job: system_migration
+  job: server_migration
   title: Migration Task 17
   status: 0  # new_task
   position: 170
 
 migration_task_18:
-  job: system_migration
+  job: server_migration
   title: Migration Task 18
   status: 0  # new_task
   position: 180
 
 migration_task_19:
-  job: system_migration
+  job: server_migration
   title: Migration Task 19
   status: 0  # new_task
   position: 190
 
 migration_task_20:
-  job: system_migration
+  job: server_migration
   title: Migration Task 20
   status: 0  # new_task
   position: 200
