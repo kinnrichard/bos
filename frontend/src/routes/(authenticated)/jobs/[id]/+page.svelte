@@ -4,41 +4,75 @@
   import { onDestroy } from 'svelte';
   // Epic-009: Import ReactiveJob for Rails-style includes()
   import { ReactiveJob } from '$lib/models/reactive-job';
-  import type { JobData } from '$lib/models/types/job-data';
+  import { ReactiveClient } from '$lib/models/reactive-client';
+  import { Job } from '$lib/models/job';
   import { taskFilterActions, shouldShowTask } from '$lib/stores/taskFilter.svelte';
+  import { toastStore } from '$lib/stores/toast.svelte';
 
   // ✨ NEW: Use ReactiveQuery for automatic Svelte reactivity
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobDetailView from '$lib/components/jobs/JobDetailView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
 
-  // ✨ USE $derived FOR URL PARAMETER EXTRACTION (NOT REACTIVE STATEMENTS)
-  const jobId = $derived($page.params.id);
-  
-  
-  // ✨ Epic-009: Use ReactiveJob with Rails-style includes() - proper chained pattern
-  // Filter tasks to exclude deleted ones (discarded_at IS NULL)
-  const jobQuery = $derived(jobId ? ReactiveJob
-    .includes('client')
-    .includes('tasks', { orderBy: ['position', 'created_at'] })
-    .includes('jobAssignments')
-    .find(jobId) : null);
-  // TODO: Add notes query when NotesReactive model is ready
-  // const notesQuery = $derived(NotesReactive.where({ notable_id: jobId }));
-  
-  // ✨ USE $derived FOR DYNAMIC TITLE
-  const pageTitle = $derived(job ? `${job.title || 'Job'} - bŏs` : 'Job Details - bŏs');
+  // ✨ Route Detection Logic: Detect if this is "new" job creation mode
+  const isNewJobMode = $derived($page.params.id === 'new');
+  const jobId = $derived(!isNewJobMode ? $page.params.id : null);
+  const clientId = $derived(isNewJobMode ? $page.url.searchParams.get('clientId') : null);
 
-  // ✨ USE ReactiveQuery GETTERS FOR PROPER SVELTE 5 REACTIVITY
-  const job = $derived(jobQuery?.data);
-  const isLoading = $derived(jobQuery?.isLoading ?? true);
-  const error = $derived(jobQuery?.error);
-  const resultType = $derived(jobQuery?.resultType ?? 'loading');
-  
+  // ✨ Conditional Data Loading: Job query for regular jobs
+  const jobQuery = $derived(
+    !isNewJobMode && jobId
+      ? ReactiveJob.includes('client')
+          .includes('tasks', { orderBy: ['position', 'created_at'] })
+          .includes('jobAssignments')
+          .find(jobId)
+      : null
+  );
+
+  // ✨ Conditional Data Loading: Client query for new job creation
+  const clientQuery = $derived(isNewJobMode && clientId ? ReactiveClient.find(clientId) : null);
+
+  // ✨ Create mock job object for new job creation mode
+  const newJobMock = $derived(
+    isNewJobMode && clientQuery?.data
+      ? {
+          id: null, // Indicates this is a new job
+          title: '',
+          status: 'active',
+          priority: 'medium',
+          client_id: clientId,
+          client: clientQuery.data,
+          tasks: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      : null
+  );
+
+  // ✨ Unified job object: use mock for creation mode, real data for regular jobs
+  const job = $derived(isNewJobMode ? newJobMock : jobQuery?.data);
+  const isLoading = $derived(
+    isNewJobMode ? (clientQuery?.isLoading ?? true) : (jobQuery?.isLoading ?? true)
+  );
+  const error = $derived(isNewJobMode ? clientQuery?.error : jobQuery?.error);
+  const resultType = $derived(
+    isNewJobMode ? (clientQuery?.resultType ?? 'loading') : (jobQuery?.resultType ?? 'loading')
+  );
+
+  // ✨ Page Title Logic: Different titles for creation vs viewing
+  const pageTitle = $derived(
+    isNewJobMode
+      ? clientQuery?.data
+        ? `New Job for ${clientQuery.data.name} - bŏs`
+        : 'New Job - bŏs'
+      : job
+        ? `${job.title || 'Job'} - bŏs`
+        : 'Job Details - bŏs'
+  );
+
   // ✨ Pass job to AppLayout once loaded (for client display in sidebar)
   const currentJobForLayout = $derived(job);
 
-  
   // ✨ NOTES: Will be loaded via job associations for now
   // TODO: Implement separate NotesReactive query when needed
   const notes = $derived(job?.notes || []);
@@ -46,20 +80,24 @@
 
   // ✨ DUAL QUERY PATTERN:
   // keptTasks: All non-discarded tasks (for positioning calculations)
-  const keptTasks = $derived(job?.tasks?.filter(t => !t.discarded_at) || []);
-  
+  const keptTasks = $derived(job?.tasks?.filter((t) => !t.discarded_at) || []);
+
   // displayedTasks: Tasks matching current filters (for UI rendering)
   const displayedTasks = $derived(job?.tasks?.filter(shouldShowTask) || []);
-  
+
   // ✨ TASK BATCH DETAILS: Based on displayed tasks (what user sees)
-  const taskBatchDetails = $derived(displayedTasks.length > 0 ? {
-    total: displayedTasks.length,
-    completed: displayedTasks.filter((task: any) => task.status === 'completed').length,
-    pending: displayedTasks.filter((task: any) => task.status === 'pending').length,
-    in_progress: displayedTasks.filter((task: any) => task.status === 'in_progress').length
-  } : undefined);
-  
-  // ✨ USE $effect FOR SIDE EFFECTS (NOT REACTIVE STATEMENTS)  
+  const taskBatchDetails = $derived(
+    displayedTasks.length > 0
+      ? {
+          total: displayedTasks.length,
+          completed: displayedTasks.filter((task) => task.status === 'completed').length,
+          pending: displayedTasks.filter((task) => task.status === 'pending').length,
+          in_progress: displayedTasks.filter((task) => task.status === 'in_progress').length,
+        }
+      : undefined
+  );
+
+  // ✨ USE $effect FOR SIDE EFFECTS (NOT REACTIVE STATEMENTS)
   $effect(() => {
     if (error) {
       console.error('[JobPage] Job loading error:', error.message);
@@ -67,6 +105,38 @@
   });
 
   // Note: No need to clear layout store since we're not using it anymore
+
+  // ✨ Creation Handler: Handle job title save (creation)
+  async function handleJobTitleSave(newTitle: string) {
+    const trimmedTitle = newTitle.trim();
+
+    if (!trimmedTitle) {
+      toastStore.error('Please give this job a name');
+      return Promise.reject(new Error('Job title is required'));
+    }
+
+    try {
+      const createdJob = await Job.create({
+        title: trimmedTitle,
+        client_id: clientId,
+        status: 'active',
+        priority: 'medium',
+      });
+
+      // Navigate to the newly created job
+      goto(`/jobs/${createdJob.id}`);
+      return createdJob;
+    } catch (error) {
+      console.error('Failed to create job:', error);
+      toastStore.error('Failed to create job. Please try again.');
+      throw error;
+    }
+  }
+
+  // ✨ Cancel Handler: Handle cancel action in creation mode
+  function handleCancel() {
+    goto(`/clients/${clientId}/jobs`);
+  }
 
   // Handle back navigation
   function handleBack() {
@@ -96,69 +166,80 @@
   <title>{pageTitle}</title>
 </svelte:head>
 
-<AppLayout currentJob={currentJobForLayout}>
-<div class="job-detail-container">
+<AppLayout
+  currentJob={currentJobForLayout}
+  currentClient={isNewJobMode ? clientQuery?.data : undefined}
+  toolbarDisabled={isNewJobMode}
+>
+  <div class="job-detail-container">
+    <!-- Loading State -->
+    {#if isLoading}
+      <div class="job-detail-loading">
+        <LoadingSkeleton type="job-detail" />
+      </div>
 
-  <!-- Loading State -->
-  {#if isLoading}
-    <div class="job-detail-loading">
-      <LoadingSkeleton type="job-detail" />
-    </div>
-
-  <!-- Error State -->
-  {:else if error}
-    <div class="error-state">
-      <div class="error-content">
-        <h2>Unable to load job</h2>
-        <p>There was a problem loading this job. Please try again.</p>
-        {#if error.message}
-          <div class="error-details">
-            <code>{error.message}</code>
+      <!-- Error State -->
+    {:else if error}
+      <div class="error-state">
+        <div class="error-content">
+          <h2>{isNewJobMode ? 'Client not found' : 'Unable to load job'}</h2>
+          <p>
+            {isNewJobMode
+              ? 'The specified client could not be found.'
+              : 'There was a problem loading this job. Please try again.'}
+          </p>
+          {#if error.message}
+            <div class="error-details">
+              <code>{error.message}</code>
+            </div>
+          {/if}
+          <div class="error-actions">
+            {#if !isNewJobMode}
+              <button class="button button--primary" onclick={handleRetry}> Try Again </button>
+            {/if}
+            <button
+              class="button button--{isNewJobMode ? 'primary' : 'secondary'}"
+              onclick={isNewJobMode ? () => goto('/clients') : handleBack}
+            >
+              {isNewJobMode ? 'Back to Clients' : 'Back to Jobs'}
+            </button>
           </div>
-        {/if}
-        <div class="error-actions">
-          <button 
+        </div>
+      </div>
+
+      <!-- Job Detail Content -->
+    {:else if job}
+      <JobDetailView
+        job={isNewJobMode ? job : { ...job, tasks: displayedTasks }}
+        keptTasks={isNewJobMode ? [] : keptTasks}
+        batchTaskDetails={isNewJobMode ? undefined : taskBatchDetails}
+        notes={isNewJobMode ? [] : notes}
+        notesLoading={isNewJobMode ? false : notesLoading}
+        {isNewJobMode}
+        onJobTitleSave={isNewJobMode ? handleJobTitleSave : undefined}
+        onCancel={isNewJobMode ? handleCancel : undefined}
+      />
+
+      <!-- Not Found State - Zero.js pattern: Only show when complete with no job -->
+    {:else if !job && resultType === 'complete'}
+      <div class="error-state">
+        <div class="error-content">
+          <h2>{isNewJobMode ? 'Client not found' : 'Job not found'}</h2>
+          <p>
+            {isNewJobMode
+              ? 'The specified client could not be found.'
+              : 'The requested job could not be found.'}
+          </p>
+          <button
             class="button button--primary"
-            onclick={handleRetry}
+            onclick={isNewJobMode ? () => goto('/clients') : handleBack}
           >
-            Try Again
-          </button>
-          <button 
-            class="button button--secondary"
-            onclick={handleBack}
-          >
-            Back to Jobs
+            {isNewJobMode ? 'Back to Clients' : 'Back to Jobs'}
           </button>
         </div>
       </div>
-    </div>
-
-  <!-- Job Detail Content -->
-  {:else if job}
-    <JobDetailView 
-      job={{...job, tasks: displayedTasks}} 
-      keptTasks={keptTasks}
-      batchTaskDetails={taskBatchDetails} 
-      {notes} 
-      notesLoading={notesLoading} 
-    />
-
-  <!-- Not Found State - Zero.js pattern: Only show when complete with no job -->
-  {:else if !job && resultType === 'complete'}
-    <div class="error-state">
-      <div class="error-content">
-        <h2>Job not found</h2>
-        <p>The requested job could not be found.</p>
-        <button 
-          class="button button--primary"
-          onclick={handleBack}
-        >
-          Back to Jobs
-        </button>
-      </div>
-    </div>
-  {/if}
-</div>
+    {/if}
+  </div>
 </AppLayout>
 
 <style>
@@ -170,7 +251,6 @@
     display: flex;
     flex-direction: column;
   }
-
 
   .job-detail-loading {
     padding: 20px 0;
@@ -256,7 +336,6 @@
     .job-detail-container {
       padding: 16px;
     }
-
 
     .error-actions {
       flex-direction: column;
