@@ -175,40 +175,6 @@ async function checkPrettierFormatting(
   return results;
 }
 
-/**
- * Auto-format generated files with Prettier
- */
-async function formatGeneratedFiles(filePaths: string[]): Promise<void> {
-  for (const filePath of filePaths) {
-    try {
-      // Only format files that exist
-      if (
-        await fs
-          .access(filePath)
-          .then(() => true)
-          .catch(() => false)
-      ) {
-        // Use Prettier CLI to format files
-        await new Promise<void>((resolve, reject) => {
-          const process = spawn('npx', ['prettier', '--write', filePath], {
-            cwd: FRONTEND_ROOT,
-            stdio: ['pipe', 'pipe', 'pipe'],
-          });
-
-          process.on('close', (code) => {
-            if (code === 0) {
-              resolve();
-            } else {
-              reject(new Error(`Prettier formatting failed for ${filePath} with code ${code}`));
-            }
-          });
-        });
-      }
-    } catch (error) {
-      console.warn(`Could not format file ${filePath}:`, error);
-    }
-  }
-}
 
 /**
  * Get all model files that could be generated
@@ -249,7 +215,6 @@ async function getAllModelFiles(): Promise<string[]> {
 
 describe('Rails Generator Integration Tests', () => {
   let generatedFiles: string[] = [];
-  let autoFormattingApplied = false;
 
   describe('Code Quality Compliance', () => {
     it('should generate ESLint and Prettier compliant code with no warnings or errors', async () => {
@@ -270,10 +235,6 @@ describe('Rails Generator Integration Tests', () => {
 
       // Get all model files (including freshly generated ones)
       generatedFiles = await getAllModelFiles();
-
-      // Auto-format generated files with Prettier (practical approach)
-      await formatGeneratedFiles(generatedFiles);
-      autoFormattingApplied = true;
 
       const lintResults = await lintGeneratedFiles(generatedFiles);
       const prettierResults = await checkPrettierFormatting(generatedFiles);
@@ -350,18 +311,8 @@ describe('Rails Generator Integration Tests', () => {
         generatedFiles = await getAllModelFiles();
       }
 
-      // If auto-formatting was applied in the first test, regenerate fresh files to test idempotency
-      if (autoFormattingApplied) {
-        debugSystem.development(
-          'Auto-formatting was applied, regenerating files for clean idempotency test',
-          {
-            type: 'generator_test',
-            operation: 'clean_regeneration',
-          }
-        );
-        await runRailsGenerator();
-        generatedFiles = await getAllModelFiles();
-      }
+      // The generator should now produce Prettier-compliant code directly
+      // No need for special regeneration since auto-formatting is no longer applied
 
       // Get initial file stats
       const initialStats = await getFileStats(generatedFiles);

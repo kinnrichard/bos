@@ -18,7 +18,7 @@
 		"test:vitest:run": "vitest run",
 		"test:vitest:ui": "vitest --ui",
 		"test:vitest:coverage": "vitest --coverage",
-		"test:generator": "vitest run tests/generator/generator-integration.test.ts",
+		"test:generator": "vitest run tests/generator/generator-integration.spec.ts",
 		"test:debug": "DEBUG=true playwright test --debug",
 		"test:headed": "playwright test --headed",
 		"test:report": "playwright show-report",
