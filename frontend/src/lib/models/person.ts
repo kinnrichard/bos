@@ -9,7 +9,7 @@
  * import { ReactivePerson as Person } from './reactive-person';
  * ```
  *
- * Generated: 2025-07-27 00:41:43 UTC
+ * Generated: 2025-07-27 01:47:06 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
