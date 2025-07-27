@@ -9,7 +9,7 @@
  * import { ReactiveUser as User } from './reactive-user';
  * ```
  *
- * Generated: 2025-07-27 01:53:09 UTC
+ * Generated: 2025-07-27 18:15:08 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
