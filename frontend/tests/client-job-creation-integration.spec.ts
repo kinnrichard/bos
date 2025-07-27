@@ -33,12 +33,12 @@ test.describe('Client Job Creation - Integration Tests', () => {
       await expect(page.locator('h1')).toContainText(`Jobs for ${client.name}`, { timeout: 10000 });
 
       // Click the new job button
-      const newJobButton = page.locator('a[href="/clients/' + client.id + '/jobs/new"]').first();
+      const newJobButton = page.locator('a[href="/jobs/new?clientId=' + client.id + '"]').first();
       await expect(newJobButton).toBeVisible();
       await newJobButton.click();
 
       // Should navigate to creation page
-      await expect(page).toHaveURL(`/clients/${client.id}/jobs/new`);
+      await expect(page).toHaveURL(`/jobs/new?clientId=${client.id}`);
 
       // Page should load without error
       await page.waitForLoadState('domcontentloaded');
@@ -52,7 +52,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
     test('should show client not found error for invalid client ID', async ({ page }) => {
       const invalidClientId = 'definitely-not-a-real-client-id-12345';
 
-      await page.goto(`/clients/${invalidClientId}/jobs/new`);
+      await page.goto(`/jobs/new?clientId=${invalidClientId}`);
       await page.waitForLoadState('domcontentloaded');
 
       // Should show error state
@@ -74,7 +74,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
         client_type: 'business',
       });
 
-      await page.goto(`/clients/${client.id}/jobs/new`);
+      await page.goto(`/jobs/new?clientId=${client.id}`);
       await page.waitForLoadState('domcontentloaded');
 
       // Wait for client data to load and error to not appear
@@ -98,7 +98,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
         client_type: 'residential',
       });
 
-      await page.goto(`/clients/${client.id}/jobs/new`);
+      await page.goto(`/jobs/new?clientId=${client.id}`);
       await page.waitForLoadState('domcontentloaded');
 
       // Wait for the page to fully load
@@ -154,7 +154,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
         client_type: 'business',
       });
 
-      await page.goto(`/clients/${client.id}/jobs/new`);
+      await page.goto(`/jobs/new?clientId=${client.id}`);
       await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('.job-detail-view')).toBeVisible({ timeout: 10000 });
@@ -172,7 +172,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
         await page.waitForTimeout(2000); // Give time for any validation to appear
 
         // Should not navigate away (still on creation page)
-        await expect(page).toHaveURL(`/clients/${client.id}/jobs/new`);
+        await expect(page).toHaveURL(`/jobs/new?clientId=${client.id}`);
 
         // Look for error message or toast
         const hasErrorToast =
@@ -192,7 +192,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
         client_type: 'residential',
       });
 
-      await page.goto(`/clients/${client.id}/jobs/new`);
+      await page.goto(`/jobs/new?clientId=${client.id}`);
       await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('.job-detail-view')).toBeVisible({ timeout: 10000 });
@@ -209,7 +209,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
         client_type: 'business',
       });
 
-      await page.goto(`/clients/${client.id}/jobs/new`);
+      await page.goto(`/jobs/new?clientId=${client.id}`);
       await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('.job-detail-view')).toBeVisible({ timeout: 10000 });
@@ -229,7 +229,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
         client_type: 'residential',
       });
 
-      await page.goto(`/clients/${client.id}/jobs/new`);
+      await page.goto(`/jobs/new?clientId=${client.id}`);
       await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('.job-detail-view')).toBeVisible({ timeout: 10000 });
@@ -271,7 +271,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
         client_type: 'residential',
       });
 
-      await page.goto(`/clients/${client.id}/jobs/new`);
+      await page.goto(`/jobs/new?clientId=${client.id}`);
       await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('.job-detail-view')).toBeVisible({ timeout: 10000 });
@@ -299,7 +299,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
         client_type: 'business',
       });
 
-      await page.goto(`/clients/${client.id}/jobs/new`);
+      await page.goto(`/jobs/new?clientId=${client.id}`);
       await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('.job-detail-view')).toBeVisible({ timeout: 10000 });
@@ -362,7 +362,7 @@ test.describe('Client Job Creation - Integration Tests', () => {
       await expect(page.locator('.breadcrumb')).toContainText(client.name);
 
       // Should have new job button
-      const newJobButton = page.locator('a[href="/clients/' + client.id + '/jobs/new"]');
+      const newJobButton = page.locator('a[href="/jobs/new?clientId=' + client.id + '"]');
       await expect(newJobButton).toBeVisible();
       await expect(newJobButton).toContainText('New Job');
     });

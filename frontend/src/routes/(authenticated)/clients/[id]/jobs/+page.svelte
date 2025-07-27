@@ -10,7 +10,7 @@
   import { ReactiveJob } from '$lib/models/reactive-job';
   import { ReactiveClient } from '$lib/models/reactive-client';
   import type { JobData } from '$lib/models/types/job-data';
-  import { jobsSearch, shouldShowJob } from '$lib/stores/jobsSearch.svelte';
+  import { shouldShowJob } from '$lib/stores/jobsSearch.svelte';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobsLayout from '$lib/components/jobs/JobsLayout.svelte';
   import JobsList from '$lib/components/jobs/JobsList.svelte';
@@ -18,30 +18,33 @@
 
   // Get client ID from URL
   const clientId = $derived($page.params.id);
-  
+
   // Query for the client
   const clientQuery = $derived(clientId ? ReactiveClient.find(clientId) : null);
   const client = $derived(clientQuery?.data);
   const clientLoading = $derived(clientQuery?.isLoading ?? true);
   const clientError = $derived(clientQuery?.error);
-  
+
   // Query for jobs filtered by client
-  const jobsQuery = ReactiveJob
-    .includes('client')
-    .where({ client_id: clientId })
-    .orderBy('created_at', 'desc')
-    .all();
-  
+  const jobsQuery = $derived(
+    clientId
+      ? ReactiveJob.includes('client')
+          .where({ client_id: clientId })
+          .orderBy('created_at', 'desc')
+          .all()
+      : null
+  );
+
   // Get jobs data
-  const jobs = $derived(jobsQuery.data || []);
-  const isLoading = $derived(jobsQuery.isLoading);
-  const error = $derived(jobsQuery.error);
-  
+  const jobs = $derived(jobsQuery?.data || []);
+  const isLoading = $derived(jobsQuery?.isLoading ?? false);
+  const error = $derived(jobsQuery?.error);
+
   // Get query parameters for filtering (similar to main jobs page)
   const url = $derived($page.url);
   const status = $derived(url.searchParams.get('status') as JobStatus | undefined);
   const priority = $derived(url.searchParams.get('priority') as JobPriority | undefined);
-  
+
   // Filter jobs by status/priority/search if specified
   const filteredJobs = $derived(
     jobs.filter((job: JobData) => {
@@ -49,29 +52,31 @@
       if (!shouldShowJob(job)) {
         return false;
       }
-      
+
       // Filter by status if specified
       if (status && job.status !== status) {
         return false;
       }
-      
+
       // Filter by priority if specified
       if (priority && job.priority !== priority) {
         return false;
       }
-      
+
       return true;
     })
   );
-  
+
   // Page title
   const pageTitle = $derived(
     client ? `${client.name}'s Jobs - Faultless` : 'Client Jobs - Faultless'
   );
-  
+
   // Handle retry
   function handleRetry() {
-    jobsQuery.refresh();
+    if (jobsQuery) {
+      jobsQuery.refresh();
+    }
   }
 </script>
 
@@ -102,22 +107,24 @@
           {/if}
         </h1>
       </div>
-      <a href="/jobs/new?client_id={clientId}" class="action-button action-button--small">
+      <a href="/jobs/new?clientId={clientId}" class="action-button action-button--small">
         <span class="button-icon">➕</span>
         New Job
       </a>
     {/snippet}
 
-    <JobsList 
+    <JobsList
       jobs={filteredJobs}
       isLoading={isLoading || clientLoading}
       error={error || clientError}
       showClient={false}
-      emptyMessage={jobs.length === 0 ? "No jobs yet for this client" : "No jobs match your filters"}
+      emptyMessage={jobs.length === 0
+        ? 'No jobs yet for this client'
+        : 'No jobs match your filters'}
       onRetry={handleRetry}
     >
       {#snippet emptyAction()}
-        <a href="/jobs/new?client_id={clientId}" class="action-button">
+        <a href="/jobs/new?clientId={clientId}" class="action-button">
           <span class="button-icon">➕</span>
           Create First Job
         </a>
@@ -128,7 +135,7 @@
 
 <style>
   @import '$lib/styles/jobs-shared.scss';
-  
+
   /* Header layout */
   .header-content {
     flex: 1;
@@ -136,7 +143,7 @@
     flex-direction: column;
     justify-content: space-between;
   }
-  
+
   /* Page header styling */
   h1 {
     font-size: 28px;

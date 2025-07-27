@@ -17,7 +17,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
   test.describe('Core Functionality', () => {
     test('should have working client job creation routes', async ({ page }) => {
       // Test that routes exist and respond (not 404)
-      const testRoutes = ['/clients/test-client-123/jobs', '/clients/test-client-123/jobs/new'];
+      const testRoutes = ['/clients/test-client-123/jobs', '/jobs/new?clientId=test-client-123'];
 
       for (const route of testRoutes) {
         const response = await page.goto(route);
@@ -45,7 +45,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
         await page.locator('a[href*="/jobs/new"]').first().click();
 
         // Should navigate to creation page
-        await expect(page).toHaveURL(/\/clients\/.*\/jobs\/new$/);
+        await expect(page).toHaveURL(/\/jobs\/new\?clientId=/);
       } else {
         // If no new job link found, just verify the page loads
         console.log('No new job link found on client jobs page');
@@ -55,7 +55,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
 
     test('should show different content for job creation vs regular job view', async ({ page }) => {
       // Test creation page
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       const creationPageContent = await page.textContent('body');
@@ -77,7 +77,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
     });
 
     test('should have proper page structure for job creation', async ({ page }) => {
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       // Should have basic page structure
@@ -93,7 +93,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
 
   test.describe('UI Components', () => {
     test('should render job creation interface', async ({ page }) => {
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       // Look for job creation UI elements
@@ -117,7 +117,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
     });
 
     test('should show different UI states for creation mode', async ({ page }) => {
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       // Check for creation-specific UI
@@ -134,7 +134,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
     });
 
     test('should handle invalid client IDs appropriately', async ({ page }) => {
-      await page.goto('/clients/definitely-invalid-client-id-12345/jobs/new');
+      await page.goto('/jobs/new?clientId=definitely-invalid-client-id-12345');
       await page.waitForLoadState('domcontentloaded');
 
       // Should either show error or load gracefully
@@ -158,7 +158,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
     test('should work on mobile viewport', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
 
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       // Should not cause horizontal scroll
@@ -173,7 +173,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
     test('should work on desktop viewport', async ({ page }) => {
       await page.setViewportSize({ width: 1200, height: 800 });
 
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       // Should utilize desktop space
@@ -188,7 +188,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
 
   test.describe('Accessibility', () => {
     test('should have descriptive page titles', async ({ page }) => {
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       const title = await page.title();
@@ -199,7 +199,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
     });
 
     test('should support basic keyboard navigation', async ({ page }) => {
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       // Should be able to tab through page
@@ -212,7 +212,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
     });
 
     test('should have proper heading structure', async ({ page }) => {
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       // Should have at least one heading
@@ -224,9 +224,9 @@ test.describe('Client Job Creation - Functional Tests', () => {
   test.describe('Error Handling', () => {
     test('should handle malformed URLs gracefully', async ({ page }) => {
       const malformedUrls = [
-        '/clients//jobs/new',
-        '/clients/test%20client/jobs/new',
-        '/clients/test/jobs/new/',
+        '/jobs/new?clientId=',
+        '/jobs/new?clientId=test%20client',
+        '/jobs/new?clientId=test/',
       ];
 
       for (const url of malformedUrls) {
@@ -248,7 +248,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
         errors.push(error.message);
       });
 
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       // Should not have critical JavaScript errors
@@ -295,7 +295,7 @@ test.describe('Client Job Creation - Functional Tests', () => {
       const jobsPageContent = await page.textContent('body');
 
       // Then test job creation page
-      await page.goto('/clients/test-client/jobs/new');
+      await page.goto('/jobs/new?clientId=test-client');
       await page.waitForLoadState('domcontentloaded');
 
       const creationPageContent = await page.textContent('body');

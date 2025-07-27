@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Client Job Creation - Simple Validation', () => {
   test('client job creation routes should exist', async ({ page }) => {
     // Test that the route exists (not 404)
-    const response = await page.goto('/clients/test/jobs/new');
+    const response = await page.goto('/jobs/new?clientId=test');
     expect(response?.status()).not.toBe(404);
   });
 
@@ -30,7 +30,7 @@ test.describe('Client Job Creation - Simple Validation', () => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
 
-    await page.goto('/clients/test/jobs/new');
+    await page.goto('/jobs/new?clientId=test');
     await page.waitForLoadState('domcontentloaded');
 
     // Should not have critical errors
@@ -46,7 +46,7 @@ test.describe('Client Job Creation - Simple Validation', () => {
 
   test('job creation should show different content than regular jobs', async ({ page }) => {
     // Get creation page content
-    await page.goto('/clients/test/jobs/new');
+    await page.goto('/jobs/new?clientId=test');
     await page.waitForLoadState('domcontentloaded');
     const creationContent = await page.textContent('body');
 
@@ -61,7 +61,7 @@ test.describe('Client Job Creation - Simple Validation', () => {
   });
 
   test('invalid client should show appropriate response', async ({ page }) => {
-    await page.goto('/clients/invalid-client-12345/jobs/new');
+    await page.goto('/jobs/new?clientId=invalid-client-12345');
     await page.waitForLoadState('domcontentloaded');
 
     // Should either show error or load gracefully
@@ -74,7 +74,7 @@ test.describe('Client Job Creation - Simple Validation', () => {
   });
 
   test('page should have proper title', async ({ page }) => {
-    await page.goto('/clients/test-client/jobs/new');
+    await page.goto('/jobs/new?clientId=test-client');
     await page.waitForLoadState('domcontentloaded');
 
     const title = await page.title();
@@ -85,7 +85,7 @@ test.describe('Client Job Creation - Simple Validation', () => {
   test('page should be responsive', async ({ page }) => {
     // Test mobile
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/clients/test/jobs/new');
+    await page.goto('/jobs/new?clientId=test');
     await page.waitForLoadState('domcontentloaded');
 
     const mobileScrollWidth = await page.evaluate(() => document.body.scrollWidth);
@@ -101,7 +101,7 @@ test.describe('Client Job Creation - Simple Validation', () => {
   });
 
   test('keyboard navigation should work', async ({ page }) => {
-    await page.goto('/clients/test/jobs/new');
+    await page.goto('/jobs/new?clientId=test');
     await page.waitForLoadState('domcontentloaded');
 
     // Test basic keyboard navigation
@@ -113,7 +113,7 @@ test.describe('Client Job Creation - Simple Validation', () => {
   });
 
   test('should have job-related UI elements', async ({ page }) => {
-    await page.goto('/clients/test/jobs/new');
+    await page.goto('/jobs/new?clientId=test');
     await page.waitForLoadState('domcontentloaded');
 
     // Should have job-related content
