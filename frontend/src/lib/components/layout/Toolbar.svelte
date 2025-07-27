@@ -12,8 +12,14 @@
   import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import type { PopulatedJob } from '$lib/types/job';
 
-  // Props - accept job directly instead of using layout.currentJob
-  let { currentJob }: { currentJob?: PopulatedJob | null } = $props();
+  // Props - accept job and disabled state
+  let { 
+    currentJob,
+    disabled = false 
+  }: { 
+    currentJob?: PopulatedJob | null;
+    disabled?: boolean;
+  } = $props();
 
   // Search context detection
   function getSearchContext() {
@@ -72,7 +78,7 @@
   });
   
   let searchFocused = $state(false);
-  let filterPopover = $state<any>(null);
+  let filterPopover = $state<{ open: boolean } | null>(null);
 
   function handleSearch() {
     if (searchQuery.trim()) {
@@ -201,24 +207,27 @@
       <CircularButton
         variant="default"
         size="normal"
-        onclick={layoutActions.toggleSidebar}
-        title="Show sidebar"
+        onclick={disabled ? undefined : layoutActions.toggleSidebar}
+        title={disabled ? "Disabled" : "Show sidebar"}
+        {disabled}
       >
         <img src="/icons/sidebar.svg" alt="Menu" />
       </CircularButton>
     {/if}
 
-    <!-- Job status button (only show on job detail page) -->
-    {#if currentPage === 'job-detail' && $page.params.id}
+    <!-- Job status button (show on job detail page or when currentJob is provided) -->
+    {#if (currentPage === 'job-detail' && $page.params.id) || (currentJob && $page.route.id?.includes('/jobs/new'))}
       <JobStatusButton 
-        jobId={$page.params.id}
+        jobId={$page.params.id || currentJob?.id || 'new'}
         initialStatus={currentJob?.status}
+        {disabled}
       />
       <TechnicianAssignmentButton 
-        jobId={$page.params.id}
+        jobId={$page.params.id || currentJob?.id || 'new'}
         initialTechnicians={currentJob?.technicians || []}
+        {disabled}
       />
-      <SchedulePriorityEditPopover jobId={$page.params.id} bind:initialJob={currentJob} />  
+      <SchedulePriorityEditPopover jobId={$page.params.id || currentJob?.id || 'new'} bind:initialJob={currentJob} {disabled} />  
     {/if}
   </div>
 
@@ -226,8 +235,8 @@
   <div class="toolbar-right">
     <!-- Search -->
     <!-- Job detail page controls -->
-    {#if currentPage === 'job-detail' && $page.params.id}
-      <FilterPopover onFilterChange={handleTaskStatusFilter} onDeletedToggle={handleDeletedToggle} bind:popover={filterPopover} />
+    {#if (currentPage === 'job-detail' && $page.params.id) || (currentJob && $page.route.id?.includes('/jobs/new'))}
+      <FilterPopover onFilterChange={handleTaskStatusFilter} onDeletedToggle={handleDeletedToggle} bind:popover={filterPopover} {disabled} />
     {/if}
 
     <!-- Page-specific actions -->
@@ -237,9 +246,10 @@
           <CircularButton
             variant="default"
             size="normal"
-            onclick={action.action}
-            title={action.label}
+            onclick={disabled ? undefined : action.action}
+            title={disabled ? "Disabled" : action.label}
             data-testid={action.label === 'New Job' ? 'create-job-button' : undefined}
+            {disabled}
           >
             {#if action.iconType === 'svg'}
               <img src={action.icon} alt="" class="action-icon-svg" />
@@ -252,20 +262,22 @@
     {/if}
 	
 	{#if showSearch}
-	  <div class="search-container" class:focused={searchFocused}>
+	  <div class="search-container" class:focused={searchFocused && !disabled} class:disabled>
 	    <div class="search-input-wrapper">
 	      <img src="/icons/magnifyingglass.svg" alt="Search" class="search-icon" />
 	      <input
 	        type="text"
-	        placeholder={searchPlaceholder}
+	        placeholder={disabled ? "Search disabled" : searchPlaceholder}
 	        value={searchQuery}
-	        oninput={handleSearchInput}
-	        onfocus={() => searchFocused = true}
-	        onblur={() => searchFocused = false}
-	        onkeydown={handleSearchKeydown}
+	        oninput={disabled ? undefined : handleSearchInput}
+	        onfocus={disabled ? undefined : (() => searchFocused = true)}
+	        onblur={disabled ? undefined : (() => searchFocused = false)}
+	        onkeydown={disabled ? undefined : handleSearchKeydown}
 	        class="search-input"
+	        {disabled}
+	        readonly={disabled}
 	      />
-	      {#if searchQuery}
+	      {#if searchQuery && !disabled}
 	        <button 
 	          class="search-clear"
 	          onclick={handleSearchClear}
@@ -283,7 +295,8 @@
       <CircularButton
         variant="avatar"
         size="normal"
-        title="User menu"
+        title={disabled ? "Disabled" : "User menu"}
+        {disabled}
       >
         <span class="user-initials">OL</span>
       </CircularButton>
@@ -341,6 +354,22 @@
   .search-container:has(.search-input:not(:placeholder-shown)) .search-input-wrapper {
     border-color: var(--accent-blue);
     background-color: rgba(0, 163, 255, 0.05);
+  }
+
+  /* Disabled search container */
+  .search-container.disabled .search-input-wrapper {
+    opacity: 0.5;
+    background-color: var(--bg-secondary);
+    border-color: var(--border-primary);
+  }
+
+  .search-container.disabled .search-input {
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+  }
+
+  .search-container.disabled .search-icon {
+    opacity: 0.3;
   }
 
   .search-icon {
