@@ -243,6 +243,93 @@ export class DataFactory {
   }
 
   /**
+   * Get existing jobs from the seeded database
+   */
+  async getJobs(limit: number = 10): Promise<JobData[]> {
+    await this.ensureAuthenticated();
+
+    const response = await this.page.request.get(`${this.baseUrl}/jobs?limit=${limit}`, {
+      headers: {
+        Accept: 'application/json',
+        'X-CSRF-Token': await this.getCsrfToken(),
+      },
+    });
+
+    if (!response.ok()) {
+      throw new Error(`Failed to get jobs: ${response.status()} ${response.statusText()}`);
+    }
+
+    const result = await response.json();
+
+    // Handle JSON:API format
+    if (result.data && Array.isArray(result.data)) {
+      return result.data.map((item: { id: string; attributes: unknown }) => ({
+        id: item.id,
+        ...item.attributes,
+      }));
+    }
+
+    // Handle direct array format
+    return result.jobs || result.data || result;
+  }
+
+  /**
+   * Get a specific job with its tasks
+   */
+  async getJobWithTasks(jobId: string): Promise<{ job: JobData; tasks: TaskData[] }> {
+    await this.ensureAuthenticated();
+
+    const jobResponse = await this.page.request.get(`${this.baseUrl}/jobs/${jobId}`, {
+      headers: {
+        Accept: 'application/json',
+        'X-CSRF-Token': await this.getCsrfToken(),
+      },
+    });
+
+    if (!jobResponse.ok()) {
+      throw new Error(`Failed to get job: ${jobResponse.status()} ${jobResponse.statusText()}`);
+    }
+
+    const jobResult = await jobResponse.json();
+    let job: JobData;
+
+    // Handle JSON:API format
+    if (jobResult.data && jobResult.data.attributes) {
+      job = {
+        id: jobResult.data.id,
+        ...jobResult.data.attributes,
+      };
+    } else {
+      job = jobResult.job || jobResult.data || jobResult;
+    }
+
+    // Get tasks for this job
+    const tasksResponse = await this.page.request.get(`${this.baseUrl}/jobs/${jobId}/tasks`, {
+      headers: {
+        Accept: 'application/json',
+        'X-CSRF-Token': await this.getCsrfToken(),
+      },
+    });
+
+    let tasks: TaskData[] = [];
+    if (tasksResponse.ok()) {
+      const tasksResult = await tasksResponse.json();
+
+      // Handle JSON:API format
+      if (tasksResult.data && Array.isArray(tasksResult.data)) {
+        tasks = tasksResult.data.map((item: { id: string; attributes: unknown }) => ({
+          id: item.id,
+          ...item.attributes,
+        }));
+      } else {
+        tasks = tasksResult.tasks || tasksResult.data || tasksResult || [];
+      }
+    }
+
+    return { job, tasks };
+  }
+
+  /**
    * Create a job via API using real production endpoint
    */
   async createJob(data: Partial<JobData> = {}): Promise<JobData> {

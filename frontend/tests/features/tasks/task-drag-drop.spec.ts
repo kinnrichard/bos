@@ -1,52 +1,136 @@
 import { test, expect } from '@playwright/test';
 import { AuthHelper } from '../../helpers/auth';
-import { DataFactory } from '../../helpers/data-factories';
 
 test.describe('Task Drag & Drop Operations', () => {
   let auth: AuthHelper;
-  let dataFactory: DataFactory;
   let jobId: string;
 
   test.beforeEach(async ({ page }) => {
     // Initialize helpers
     auth = new AuthHelper(page);
-    dataFactory = new DataFactory(page);
 
     // Authenticate as admin user
     await auth.setupAuthenticatedSession('admin');
 
-    // Create test data (job with client and multiple tasks for drag/drop)
-    const client = await dataFactory.createClient({
-      name: `Test Client ${Date.now()}-${Math.random().toString(36).substring(7)}`,
-    });
-    const job = await dataFactory.createJob({
-      title: `Test Job ${Date.now()}`,
-      status: 'in_progress',
-      priority: 'high',
-      client_id: client.id,
-    });
+    try {
+      // Navigate to jobs list page first
+      await page.goto('/jobs');
+      await page.waitForLoadState('networkidle');
 
-    jobId = job.id;
+      // Wait for jobs to load via ReactiveRecord
+      await page.waitForTimeout(2000);
 
-    // Create multiple tasks for drag/drop testing
-    await dataFactory.createTask({
-      title: `Draggable Task 1 ${Date.now()}`,
-      job_id: job.id,
-      status: 'new_task',
-    });
-    await dataFactory.createTask({
-      title: `Draggable Task 2 ${Date.now()}`,
-      job_id: job.id,
-      status: 'in_progress',
-    });
-    await dataFactory.createTask({
-      title: `Draggable Task 3 ${Date.now()}`,
-      job_id: job.id,
-      status: 'successfully_completed',
-    });
+      // Check for job links/elements
+      const jobSelectors = [
+        '[data-job-id]',
+        '.job-item',
+        '.job-card',
+        '[href*="/jobs/"]',
+        'a[href^="/jobs/"]',
+      ];
+
+      let jobLinks: string[] = [];
+
+      for (const selector of jobSelectors) {
+        const count = await page.locator(selector).count();
+
+        if (count > 0) {
+          // Get hrefs or data attributes
+          const elements = await page.locator(selector).all();
+          for (let i = 0; i < Math.min(5, elements.length); i++) {
+            const href = await elements[i].getAttribute('href').catch(() => null);
+            const jobId = await elements[i].getAttribute('data-job-id').catch(() => null);
+
+            if (href && href.includes('/jobs/')) {
+              jobLinks.push(href);
+            } else if (jobId) {
+              jobLinks.push(`/jobs/${jobId}`);
+            }
+          }
+        }
+      }
+
+      // Look for any links that contain /jobs/
+      const allLinks = await page.locator('a[href*="/jobs/"]').all();
+
+      for (let i = 0; i < Math.min(3, allLinks.length); i++) {
+        const href = await allLinks[i].getAttribute('href');
+        if (href) jobLinks.push(href);
+      }
+
+      // Take screenshot of jobs page
+      await page.screenshot({ path: `test-results/debug-jobs-page.png`, fullPage: true });
+
+      if (jobLinks.length === 0) {
+        // Try some common test/demo job IDs
+        const testJobIds = ['test-job-1', '1', 'demo-job', 'sample-job'];
+
+        for (const testId of testJobIds) {
+          jobLinks.push(`/jobs/${testId}`);
+        }
+      }
+
+      // Use the first available job link
+      const selectedJobPath = jobLinks[0];
+      if (!selectedJobPath) {
+        throw new Error('No job links found on /jobs page and no test job IDs worked');
+      }
+
+      // Extract job ID from path
+      const jobIdMatch = selectedJobPath.match(/\/jobs\/(.+)$/);
+      jobId = jobIdMatch ? jobIdMatch[1] : 'unknown';
+    } catch (error) {
+      console.error(`❌ Failed to find jobs on /jobs page:`, error);
+      throw new Error(`Cannot run drag/drop tests without finding jobs: ${error}`);
+    }
 
     // Navigate to the specific job detail page
     await page.goto(`/jobs/${jobId}`);
+
+    await page.waitForLoadState('networkidle');
+
+    const currentUrl = page.url();
+
+    const pageTitle = await page
+      .locator('h1, .job-title, .page-title')
+      .first()
+      .textContent()
+      .catch(() => 'No title found');
+
+    // Check various possible selectors
+    const taskSelectors = [
+      '[data-task-id]',
+      '.task-item',
+      '.task',
+      '.draggable-task',
+      '[data-testid*="task"]',
+    ];
+
+    // Wait a bit more for any async loading
+    await page.waitForTimeout(3000);
+
+    // Re-check task count after waiting
+    const finalTaskCount = await page.locator('[data-task-id]').count();
+
+    // Take a screenshot for visual debugging
+    await page.screenshot({ path: `test-results/debug-job-${jobId}-tasks.png`, fullPage: true });
+
+    // If no tasks found, fail with detailed info
+    if (finalTaskCount === 0) {
+      throw new Error(`
+        No tasks found on job page for drag/drop testing!
+        - Job ID: ${jobId}
+        - Page URL: ${currentUrl}
+        - Page title: "${pageTitle}"
+        - Task selectors checked: ${taskSelectors.join(', ')}
+        - Screenshot saved for visual inspection
+        
+        This suggests either:
+        1. The seeded job has no tasks
+        2. The frontend is not loading/displaying tasks
+        3. The task HTML structure uses different selectors
+      `);
+    }
 
     // Wait for task list to load
     await expect(page.locator('[data-task-id]').first()).toBeVisible({ timeout: 10000 });

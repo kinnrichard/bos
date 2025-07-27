@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import { test, expect } from '@playwright/test';
-import { DataFactory } from '../test-helpers/data-factories';
+import { DataFactory } from './helpers/data-factories';
 
 test.describe('Jobs List Page - fZero Rune Migration (Epic-006-Story-002)', () => {
   let dataFactory: DataFactory;
