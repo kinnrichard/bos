@@ -2,87 +2,105 @@
   import { onDestroy, onMount, tick } from 'svelte';
   import { slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  
+
   // Custom slide transition that can be conditionally disabled
-  function conditionalSlide(node: Element, params: { duration?: number; easing?: any; disabled?: boolean } = {}) {
+  function conditionalSlide(
+    node: Element,
+    params: { duration?: number; easing?: (t: number) => number; disabled?: boolean } = {}
+  ) {
     if (params.disabled) {
       // Return a no-op transition
       return {
         duration: 0,
-        css: () => ''
+        css: () => '',
       };
     }
     // Use standard slide transition
     return slide(node, { duration: params.duration || 250, easing: params.easing || quintOut });
   }
-  import { SvelteSet } from 'svelte/reactivity';
   import { taskFilter, shouldShowTask } from '$lib/stores/taskFilter.svelte';
   import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
   import { TaskHierarchyManager } from '$lib/services/TaskHierarchyManager';
-  import type { HierarchicalTask, RenderedTaskItem, BaseTask } from '$lib/services/TaskHierarchyManager';
-  import { taskSelection, taskSelectionActions, getSelectionOrder } from '$lib/stores/taskSelection.svelte';
+  import type { BaseTask } from '$lib/services/TaskHierarchyManager';
+  import {
+    taskSelection,
+    taskSelectionActions,
+    getSelectionOrder,
+  } from '$lib/stores/taskSelection.svelte';
   import { focusActions } from '$lib/stores/focusManager.svelte';
-  import { ReactiveTask } from '$lib/models/reactive-task';
   import { Task as TaskModel } from '$lib/models/task';
   import { nativeDrag, clearAllVisualFeedback } from '$lib/utils/native-drag-action';
-  import type { DragSortEvent, DragMoveEvent } from '$lib/utils/native-drag-action';
+  import type { DragSortEvent, DragMoveEvent, DragStartEvent } from '$lib/utils/native-drag-action';
   import { calculateRelativePositionFromTarget } from '$lib/utils/position-calculator';
   // Direct position calculation imports (replacing client-acts-as-list.ts)
   import type { Task, DropZoneInfo } from '$lib/utils/position-calculator';
-  import { 
-    calculatePosition, 
+  import {
+    calculatePosition,
     convertRelativeToPositionUpdates,
-    type PositionUpdate, 
-    type RelativePositionUpdate 
+    type PositionUpdate,
+    type RelativePositionUpdate,
   } from '$lib/shared/utils/positioning-v2';
-  import { getDatabaseTimestamp } from '$lib/shared/utils/utc-timestamp';
-  import { sortTasks } from '$lib/shared/utils/task-sorting';
+  // NOTE: getDatabaseTimestamp import removed as it was unused
   import TaskRow from '../tasks/TaskRow.svelte';
   import NewTaskRow from '../tasks/NewTaskRow.svelte';
   import DeletionModal from '../ui/DeletionModal.svelte';
   import { FlipAnimator, createDebouncedAnimator } from '$lib/utils/flip-animation';
-  
+
   // Import new DRY utilities
   import { createTaskInputManager } from '$lib/utils/task-input-manager';
-  import { debugWorkflow, debugComponent } from '$lib/utils/debug';
+  import { debugBusiness, debugComponent, debugUI } from '$lib/utils/debug';
   import { KeyboardHandler } from '$lib/utils/keyboard-handler';
   import { taskCreationManager } from '$lib/stores/taskCreation.svelte';
 
   // ✨ SVELTE 5 RUNES
-  let { tasks = [], keptTasks = [], jobId = 'test', batchTaskDetails = null }: {
+  let {
+    tasks = [],
+    keptTasks = [],
+    jobId = 'test',
+    batchTaskDetails = null,
+    isNewJobMode = false,
+    onCancel = null,
+  }: {
     tasks?: Array<Task>;
     keptTasks?: Array<Task>;
     jobId?: string;
-    batchTaskDetails?: any;
+    batchTaskDetails?: unknown;
+    isNewJobMode?: boolean; // NEW: Hide certain UI in creation mode
+    onCancel?: Function; // NEW: Cancel handler for creation mode
   } = $props();
-  
+
   // Clean up any self-references in the data (for offline resilience)
   function cleanupSelfReferences<T extends Task>(taskList: T[]): T[] {
-    return taskList.map(task => {
+    return taskList.map((task) => {
       if (task.parent_id === task.id) {
-        debugWorkflow.warn(`[TaskList] Cleaning self-reference for task ${task.id} "${task.title}"`);
+        debugBusiness.workflow.warn(
+          `[TaskList] Cleaning self-reference for task ${task.id} "${task.title}"`
+        );
         return { ...task, parent_id: null };
       }
       return task;
     });
   }
-  
+
   // Apply cleanup to both task arrays using $derived
   const cleanedTasks = $derived(cleanupSelfReferences(tasks));
   const cleanedKeptTasks = $derived(cleanupSelfReferences(keptTasks));
-  
+
   // Task hierarchy management
   const hierarchyManager = new TaskHierarchyManager();
-  
+
   // Derived state for UI capabilities using new permission system
   const canCreateTasks = $derived(taskPermissionHelpers.canCreateTasks);
   const canEditTasks = $derived(taskPermissionHelpers.canEditTasks);
-  
-  // Drag & drop state
-  let isDragging = false;
+
+  // Conditionally show new task row - search should show but be disabled in new job mode
+  const showNewTaskRow = $derived(!isNewJobMode);
+  // Always show search, but it can be disabled via toolbar
+  // NOTE: showSearch removed as it was unused
+
+  // NOTE: isDragging variable removed as it was assigned but never read
   let dragFeedback = $state('');
-  
-    
+
   // Outside click and keyboard handling for task deselection
   let taskListContainer: HTMLElement;
 
@@ -91,8 +109,7 @@
     // - No tasks are selected
     // - Modifier keys are held (for multi-select)
     // - Clicking within task elements
-    if (!taskSelection.selectedTaskIds.size ||
-        event.metaKey || event.ctrlKey || event.shiftKey) {
+    if (!taskSelection.selectedTaskIds.size || event.metaKey || event.ctrlKey || event.shiftKey) {
       return;
     }
 
@@ -119,22 +136,22 @@
   // Arrow key navigation for single task selection (used by keyboard handler)
   function handleArrowNavigation(direction: 'up' | 'down') {
     if (taskSelection.selectedTaskIds.size !== 1) return;
-    
+
     const currentTaskId = Array.from(taskSelection.selectedTaskIds)[0];
     const currentIndex = flatTaskIds.indexOf(currentTaskId);
-    
+
     if (currentIndex === -1) return;
-    
+
     let nextIndex;
     if (direction === 'up') {
       nextIndex = currentIndex > 0 ? currentIndex - 1 : flatTaskIds.length - 1; // Wrap to bottom
     } else {
       nextIndex = currentIndex < flatTaskIds.length - 1 ? currentIndex + 1 : 0; // Wrap to top
     }
-    
+
     const nextTaskId = flatTaskIds[nextIndex];
     taskSelectionActions.selectTask(nextTaskId);
-    
+
     // Scroll new selection into view
     scrollTaskIntoView(nextTaskId);
   }
@@ -143,12 +160,13 @@
     // Add event listeners for outside click and keyboard
     document.addEventListener('click', handleOutsideClick);
     document.addEventListener('keydown', keyboardHandler.handleKeydown);
-    
+
     // Capture initial positions for animations
     if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
-      const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
-      flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
-      lastTaskCount = taskElements.length;
+      const taskElements = Array.from(
+        tasksContainer.querySelectorAll('.task-item')
+      ) as HTMLElement[];
+      flipAnimator.capturePositions(taskElements, (el) => el.dataset.taskId || '');
     }
   });
 
@@ -163,70 +181,49 @@
     // Cleanup animator
     flipAnimator.clear();
   });
-  
+
   // Direct position calculation helpers (using positioning-v2.ts utilities)
-  
+
   // Execute position updates using Task.updatePositions batch API
   async function executePositionUpdates(positionUpdates: PositionUpdate[]): Promise<void> {
     if (positionUpdates.length === 0) return;
-    
-    const reorderedAt = getDatabaseTimestamp();
-    const batchUpdates = positionUpdates.map(update => ({
+
+    // NOTE: reorderedAt removed as it was unused
+    // const reorderedAt = getDatabaseTimestamp();
+    const batchUpdates = positionUpdates.map((update) => ({
       taskId: update.id,
       position: update.position,
       parent_id: update.parent_id !== undefined ? update.parent_id : undefined,
       repositioned_after_id: update.repositioned_after_id,
       position_finalized: false,
       repositioned_to_top: update.repositioned_after_id === null && update.parent_id === null,
-      reason: `Direct position calculation (${update.position})`
+      reason: `Direct position calculation (${update.position})`,
     }));
-    
+
     await TaskModel.updatePositions(batchUpdates);
   }
-  
-  // Apply and execute position updates in one operation  
+
+  // Apply and execute position updates in one operation
   async function applyAndExecutePositionUpdates(
-    tasks: Task[], 
+    tasks: Task[],
     positionUpdates: PositionUpdate[]
   ): Promise<void> {
     await executePositionUpdates(positionUpdates);
   }
-  
-  // Legacy compatibility class (simplified for client-side predictions)
-  class ClientActsAsList {
-    static applyPositionUpdates(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): any[] {
-      const taskMap = new Map(tasks.map(t => [t.id, {...t}]));
-      
-      positionUpdates.forEach(update => {
-        const task = taskMap.get(update.id);
-        if (task) {
-          task.position = update.position;
-          if (update.parent_id !== undefined) {
-            task.parent_id = update.parent_id;
-          }
-        }
-      });
-      
-      return Array.from(taskMap.values());
-    }
-    
-    static predictServerPositions(tasks: any[], positionUpdates: Array<{id: string, position: number, parent_id?: string}>): Map<string, number> {
-      const updatedTasks = this.applyPositionUpdates(tasks, positionUpdates);
-      return new Map(updatedTasks.map(t => [t.id, t.position]));
-    }
-  }
-  
+
+  // NOTE: Legacy ClientActsAsList class removed as it was unused
+
   // Initialize task creation states safely before using in derived contexts
   taskCreationManager.ensureState('bottom');
   taskCreationManager.ensureState('inline');
-  
+
   // Unified task creation state - now safe to use in $derived()
   const bottomTaskState = $derived(taskCreationManager.getState('bottom'));
   const inlineTaskState = $derived(taskCreationManager.getState('inline'));
-  
+
   // Task title editing state
   let editingTaskId = $state<string | null>(null);
-  
+
   // Inline new task state (for Return key with selection)
   let insertNewTaskAfter = $state<string | null>(null);
 
@@ -234,11 +231,11 @@
   let isShowingDeleteConfirmation = $state(false);
   let tasksToDelete = $state<string[]>([]);
   let isDeletingTasks = $state(false);
-  
+
   // Computed deletion title for the modal
   const deletionTitle = $derived.by(() => {
     if (tasksToDelete.length === 1) {
-      const taskToDelete = cleanedTasks.find(t => t.id === tasksToDelete[0]);
+      const taskToDelete = cleanedTasks.find((t) => t.id === tasksToDelete[0]);
       const taskName = taskToDelete ? `"${taskToDelete.title}"` : '"this task"';
       return `Are you sure you want to delete the task ${taskName}?`;
     } else {
@@ -247,64 +244,78 @@
   });
   let deletingTaskIds = $state(new Set<string>());
   const animationDuration = 300; // ms for height collapse animation
-  
+
   // ✨ DRY Input Managers with unified state
   const newTaskManager = createTaskInputManager(
     {
-      title: { get: () => bottomTaskState.title, set: (v) => taskCreationManager.setTitle('bottom', v) },
+      title: {
+        get: () => bottomTaskState.title,
+        set: (value) => taskCreationManager.setTitle('bottom', value),
+      },
       inputElement: { get: () => undefined }, // DOM handled locally in component
-      isCreating: { get: () => false, set: (v) => {} }, // No loading state needed
-      isShowing: { get: () => bottomTaskState.isShowing, set: (v) => v ? taskCreationManager.show('bottom') : taskCreationManager.hide('bottom') }
+      isCreating: { get: () => false, set: (_v) => {} }, // No loading state needed
+      isShowing: {
+        get: () => bottomTaskState.isShowing,
+        set: (value) =>
+          value ? taskCreationManager.show('bottom') : taskCreationManager.hide('bottom'),
+      },
     },
     {
       create: (shouldSelect) => createTask('bottom', shouldSelect),
-      cancel: () => taskCreationManager.hide('bottom')
+      cancel: () => taskCreationManager.hide('bottom'),
     }
   );
-  
+
   const inlineTaskManager = createTaskInputManager(
     {
-      title: { get: () => inlineTaskState.title, set: (v) => taskCreationManager.setTitle('inline', v) },
+      title: {
+        get: () => inlineTaskState.title,
+        set: (value) => taskCreationManager.setTitle('inline', value),
+      },
       inputElement: { get: () => undefined }, // DOM handled locally in component
-      isCreating: { get: () => false, set: (v) => {} }, // No loading state needed
-      isShowing: { get: () => inlineTaskState.isShowing, set: (v) => v ? taskCreationManager.show('inline') : taskCreationManager.hide('inline') }
+      isCreating: { get: () => false, set: (_v) => {} }, // No loading state needed
+      isShowing: {
+        get: () => inlineTaskState.isShowing,
+        set: (value) =>
+          value ? taskCreationManager.show('inline') : taskCreationManager.hide('inline'),
+      },
     },
     {
       create: (shouldSelect) => createTask('inline', shouldSelect),
-      cancel: () => taskCreationManager.hide('inline')
+      cancel: () => taskCreationManager.hide('inline'),
     }
   );
 
   // Use pure reactive filtering with TaskHierarchyManager
-  const hierarchicalTasks = $derived(hierarchyManager.organizeTasksHierarchicallyWithFilter(
-    cleanedTasks as BaseTask[], 
-    shouldShowTask
-  ));
-  
+  const hierarchicalTasks = $derived(
+    hierarchyManager.organizeTasksHierarchicallyWithFilter(
+      cleanedTasks as BaseTask[],
+      shouldShowTask
+    )
+  );
+
   // Create a separate hierarchy from cleanedKeptTasks for position calculations
   // This includes ALL non-discarded tasks, regardless of filters
-  const cleanedKeptTasksHierarchy = $derived(hierarchyManager.organizeTasksSimple(
-    cleanedKeptTasks as BaseTask[]
-  ));
-  
+  const cleanedKeptTasksHierarchy = $derived(
+    hierarchyManager.organizeTasksSimple(cleanedKeptTasks as BaseTask[])
+  );
 
-  
   // Track if we've done initial auto-expansion
   let hasAutoExpanded = false;
   let isAutoExpanding = false;
-  
+
   // Animation context tracking system
   type AnimationContext = 'user-expansion' | 'nested-reveal' | 'auto-expansion' | 'none';
   let currentAnimationContext: AnimationContext = 'none';
   let animationInitiatorTaskId: string | null = null;
   let tasksBeingAnimated = new Set<string>();
-  
+
   // Function to set animation context when user clicks disclosure buttons
   function setAnimationContext(context: AnimationContext, initiatorTaskId?: string) {
     currentAnimationContext = context;
     animationInitiatorTaskId = initiatorTaskId || null;
     tasksBeingAnimated.clear();
-    
+
     // Auto-clear context after DOM updates to prevent interference
     if (context !== 'none') {
       tick().then(() => {
@@ -316,46 +327,46 @@
       });
     }
   }
-  
+
   // Function to check if a task should animate based on context
   function shouldAnimateTask(taskId: string): boolean {
     // Never animate during auto-expansion
     if (isAutoExpanding || currentAnimationContext === 'auto-expansion') {
       return false;
     }
-    
+
     // During initial load, don't animate anything
     if (!hasAutoExpanded) {
       return false;
     }
-    
+
     // Only animate for user-initiated expansions
     if (currentAnimationContext === 'user-expansion') {
       // Only animate the specific task the user clicked on
       return taskId === animationInitiatorTaskId;
     }
-    
+
     // For nested reveals or any other case, don't animate
     return false;
   }
-  
+
   // Auto-expand ALL tasks that have subtasks by default (only once on initial load)
   $effect(() => {
     if (hierarchicalTasks.length > 0 && !hasAutoExpanded) {
       isAutoExpanding = true;
       setAnimationContext('auto-expansion');
-      
+
       // Disable triangle transitions during auto-expansion
       if (tasksContainer) {
         tasksContainer.classList.add('no-triangle-transitions');
       }
-      
+
       hierarchyManager.autoExpandAll(hierarchicalTasks);
       hasAutoExpanded = true;
-      
+
       // Re-enable triangle transitions after a brief delay to allow DOM updates
-      setTimeout(() => { 
-        isAutoExpanding = false; 
+      setTimeout(() => {
+        isAutoExpanding = false;
         setAnimationContext('none');
         if (tasksContainer) {
           tasksContainer.classList.remove('no-triangle-transitions');
@@ -363,7 +374,7 @@
       }, 100);
     }
   });
-  
+
   // Make rendering reactive to expansion state changes
   const flattenedTasks = $derived.by(() => {
     return hierarchyManager.flattenTasks(hierarchicalTasks);
@@ -371,67 +382,75 @@
 
   // Use hierarchical tasks directly for recursive rendering with unlimited nesting
   // This allows slide animations at every level of the hierarchy
-  
+
   // Flattened kept tasks for position calculations (includes all non-discarded tasks)
   const flattenedKeptTasks = $derived.by(() => {
     return hierarchyManager.flattenTasks(cleanedKeptTasksHierarchy);
   });
-  
+
   // Check if task list is empty for positioning New Task button
   const hasNoTasks = $derived(hierarchicalTasks.length === 0);
-  
+
   // Update flat task IDs for multi-select functionality
   const flatTaskIds = $derived(hierarchyManager.getFlatTaskIds(flattenedTasks));
-  
+
   // Track previous task order for animation detection
   let previousTaskOrder: string[] = [];
-  
+
   // Watch for task position changes and animate them (reactive animations)
   $effect(() => {
     // Access reactive dependencies
     const currentTasks = flattenedTasks;
-    const currentTaskOrder = currentTasks.map(item => item.task.id);
-    
+    const currentTaskOrder = currentTasks.map((item) => item.task.id);
+
     // Skip animation if explicitly disabled, during slide transitions, or if this is the first render
     if (skipNextAnimation || isSlideAnimating || previousTaskOrder.length === 0) {
-      console.log('[FLIP] Skipping reactive animation:', 
-        skipNextAnimation ? 'explicitly disabled' : 
-        isSlideAnimating ? 'slide animation in progress' :
-        'first render'
+      debugUI.animation(
+        'FLIP: Skipping reactive animation:',
+        skipNextAnimation
+          ? 'explicitly disabled'
+          : isSlideAnimating
+            ? 'slide animation in progress'
+            : 'first render'
       );
       previousTaskOrder = currentTaskOrder;
-      
+
       // Still capture positions for future animations
       if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
         tick().then(() => {
-          const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+          const taskElements = Array.from(
+            tasksContainer.querySelectorAll('.task-item')
+          ) as HTMLElement[];
           if (taskElements.length > 0) {
-            flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
+            flipAnimator.capturePositions(taskElements, (el) => el.dataset.taskId || '');
           }
         });
       }
       return;
     }
-    
+
     // Check if the order actually changed
-    const orderChanged = currentTaskOrder.length !== previousTaskOrder.length ||
+    const orderChanged =
+      currentTaskOrder.length !== previousTaskOrder.length ||
       currentTaskOrder.some((id, index) => id !== previousTaskOrder[index]);
-    
+
     if (orderChanged && tasksContainer && !FlipAnimator.prefersReducedMotion()) {
-      console.log('[FLIP] Task order changed, triggering reactive animation');
-      
+      debugUI.animation('FLIP: Task order changed, triggering reactive animation');
+
       tick().then(() => {
-        const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
+        const taskElements = Array.from(
+          tasksContainer.querySelectorAll('.task-item')
+        ) as HTMLElement[];
         if (taskElements.length > 0) {
-          animateDebounced(taskElements, el => el.dataset.taskId || '', {
+          animateDebounced(taskElements, (el) => el.dataset.taskId || '', {
             duration: 300,
             easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-            stagger: 15
+            stagger: 15,
           });
         }
       });
     }
-    
+
     previousTaskOrder = currentTaskOrder;
   });
 
@@ -440,7 +459,7 @@
     items: () => flatTaskIds,
     selection: () => taskSelection.selectedTaskIds,
     isEditing: () => editingTaskId !== null || inlineTaskState.isShowing,
-    
+
     actions: {
       navigate: handleArrowNavigation,
       select: (id) => taskSelectionActions.selectTask(id),
@@ -450,7 +469,7 @@
         insertNewTaskAfter = afterId;
         taskCreationManager.show('inline');
         taskSelectionActions.clearSelection();
-        
+
         // Focus is now handled automatically by the NewTaskRow component
         // No need to manage DOM references here
       },
@@ -472,29 +491,29 @@
           stopPropagation: () => {},
           shiftKey: event.shiftKey,
           ctrlKey: event.ctrlKey,
-          metaKey: event.metaKey
+          metaKey: event.metaKey,
         } as MouseEvent;
-        
+
         handleTaskClick(mockEvent, taskId);
-      }
+      },
     },
-    
+
     behavior: {
       wrapNavigation: true,
-      preventDefault: ['ArrowUp', 'ArrowDown']
-    }
+      preventDefault: ['ArrowUp', 'ArrowDown'],
+    },
   });
 
   // Reference to the tasks container element for drag action updates
   let tasksContainer: HTMLElement;
   let dragActionInstance: any;
-  
+
   // FLIP animation setup
   // This debounced animator causes visual glitches; so I sent to 0ms
   const { animator: flipAnimator, animateDebounced } = createDebouncedAnimator(0);
   let skipNextAnimation = false;
   let isSlideAnimating = false; // Track slide transition state to prevent FLIP conflicts
-  let lastTaskCount = 0;
+  // NOTE: lastTaskCount removed as it was unused
 
   // Store action instance for manual updates
   function storeDragAction(node: HTMLElement, options: any) {
@@ -512,7 +531,7 @@
           onStart: handleSortStart,
           onEnd: handleSortEnd,
           onSort: handleTaskReorder,
-          onMove: handleMoveDetection
+          onMove: handleMoveDetection,
         });
       });
     }
@@ -524,35 +543,16 @@
     hierarchyManager.toggleExpansion(taskId);
   }
 
-  function isTaskExpanded(taskId: string): boolean {
-    return hierarchyManager.isTaskExpanded(taskId);
-  }
+  // NOTE: isTaskExpanded wrapper function removed - template uses hierarchyManager.isTaskExpanded directly
 
-  function getStatusLabel(status: string): string {
-    const labelMap: Record<string, string> = {
-      'new_task': 'New',
-      'in_progress': 'In Progress',
-      'paused': 'Paused',
-      'successfully_completed': 'Completed',
-      'cancelled': 'Cancelled',
-      'failed': 'Failed'
-    };
-    return labelMap[status] || status.replace('_', ' ');
-  }
+  // NOTE: getStatusLabel function removed as it was unused
 
-  function formatDateTime(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    });
-  }
+  // NOTE: formatDateTime function removed as it was unused
 
   // Time tracking utilities
   // Update time tracking display every second for in-progress tasks
   // TODO: This is broken and may need to be re-imagined. It shoud only show on the task-info popover.
-  
+
   let timeTrackingInterval: any;
   let currentTime = $state(Date.now());
 
@@ -575,19 +575,19 @@
   async function autoSaveCurrentEdit() {
     const currentEditingTaskId = focusActions.getCurrentEditingTaskId();
     if (!currentEditingTaskId) return;
-    
+
     // Set transition state to prevent race conditions
     focusActions.setTransitioning(true);
-    
+
     // Set flag to prevent blur handler from also saving
     isManualSave = true;
-    
+
     // Get the current editing element from focus manager
     const titleElement = focusActions.getCurrentEditingElement();
     if (titleElement) {
       const currentTitle = titleElement.textContent || '';
-      const originalTitle = cleanedTasks.find(t => t.id === currentEditingTaskId)?.title || '';
-      
+      const originalTitle = cleanedTasks.find((t) => t.id === currentEditingTaskId)?.title || '';
+
       // Only save if content has changed and is not empty
       if (currentTitle.trim() !== '' && currentTitle.trim() !== originalTitle) {
         await saveTitle(currentEditingTaskId, currentTitle);
@@ -599,10 +599,10 @@
         cancelEdit();
       }
     }
-    
+
     // Clear focus through centralized manager
     focusActions.clearFocus();
-    
+
     // Reset flags after a short delay
     setTimeout(() => {
       isManualSave = false;
@@ -613,23 +613,27 @@
   // Capture positions immediately after selection changes for better drag animation timing
   function capturePositionsAfterSelection() {
     if (!tasksContainer) return;
-    
+
     // Always capture current positions for all tasks
     const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
-    flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
-    
+    flipAnimator.capturePositions(taskElements, (el) => el.dataset.taskId || '');
+
     // If there are multiple selected tasks, also capture their pre-drag positions now
     // This ensures we get clean positions before any drag operations begin
-    const selectedElements = taskElements.filter(el => 
-      el.dataset.taskId && taskSelection.selectedTaskIds.has(el.dataset.taskId)
+    const selectedElements = taskElements.filter(
+      (el) => el.dataset.taskId && taskSelection.selectedTaskIds.has(el.dataset.taskId)
     );
-    
+
     if (selectedElements.length > 1) {
       const selectionOrder = getSelectionOrder();
-      flipAnimator.capturePreDragPositions(selectedElements, el => el.dataset.taskId || '', selectionOrder);
-      console.log('[Selection] Captured pre-drag positions for multi-select:', {
+      flipAnimator.capturePreDragPositions(
+        selectedElements,
+        (el) => el.dataset.taskId || '',
+        selectionOrder
+      );
+      debugUI.component('Selection: Captured pre-drag positions for multi-select:', {
         count: selectedElements.length,
-        selectionOrder: selectionOrder.map(id => id.substring(0, 8))
+        selectionOrder: selectionOrder.map((id) => id.substring(0, 8)),
       });
     }
   }
@@ -637,18 +641,18 @@
   // Multi-select click handler
   async function handleTaskClick(event: MouseEvent, taskId: string) {
     event.stopPropagation();
-    
+
     // Check if this is a click on the title of the currently editing task
     const currentEditingId = focusActions.getCurrentEditingTaskId();
-    const isClickOnEditingTitle = currentEditingId === taskId && 
-      (event.target as HTMLElement).closest('.editable-title');
-    
+    const isClickOnEditingTitle =
+      currentEditingId === taskId && (event.target as HTMLElement).closest('.editable-title');
+
     // Auto-save any existing edit before changing selection, UNLESS
     // we're clicking on the title of the task that's currently being edited
     if (currentEditingId !== null && !isClickOnEditingTitle) {
       await autoSaveCurrentEdit();
     }
-    
+
     if (event.shiftKey) {
       taskSelectionActions.handleRangeSelect(taskId, flatTaskIds);
     } else if (event.ctrlKey || event.metaKey) {
@@ -656,7 +660,7 @@
     } else {
       taskSelectionActions.selectTask(taskId);
     }
-    
+
     // Capture positions immediately after selection changes
     // This happens when elements are in their natural positions, before any drag styling
     capturePositionsAfterSelection();
@@ -665,7 +669,7 @@
   // Consolidated event handler for TaskRow components
   function handleTaskAction(event: CustomEvent) {
     const { type, taskId, data } = event.detail;
-    
+
     switch (type) {
       case 'click':
         handleTaskClick(data.event, taskId);
@@ -688,7 +692,9 @@
         // Title editing now handled by contenteditable element
         // Focus will be handled by TaskRow component
         tick().then(() => {
-          const titleInput = document.querySelector(`[data-task-id="${taskId}"] .task-title-input`) as HTMLInputElement;
+          const titleInput = document.querySelector(
+            `[data-task-id="${taskId}"] .task-title-input`
+          ) as HTMLInputElement;
           if (titleInput) {
             titleInput.focus();
             titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
@@ -716,26 +722,28 @@
   async function createTask(type: 'bottom' | 'inline', shouldSelectAfterCreate: boolean = false) {
     const state = taskCreationManager.getState(type);
     if (!state.title.trim()) return;
-    
+
     const title = state.title.trim();
     let position: number;
     let parentId: string | undefined;
     let lastRootTask: Task | null = null;
-    
+
     // Clear the form immediately to prevent visual glitch
     taskCreationManager.hide(type);
-    
+
     // Calculate position based on creation type
     if (type === 'inline' && insertNewTaskAfter) {
-      const afterTask = cleanedKeptTasks.find(t => t.id === insertNewTaskAfter);
+      const afterTask = cleanedKeptTasks.find((t) => t.id === insertNewTaskAfter);
       if (afterTask) {
         parentId = afterTask.parent_id || undefined;
-        
+
         // Get tasks in the same scope (sibling tasks with same parent)
-        const scopeTasks = cleanedKeptTasks.filter(t => (t.parent_id || null) === (parentId || null));
-        
+        const scopeTasks = cleanedKeptTasks.filter(
+          (t) => (t.parent_id || null) === (parentId || null)
+        );
+
         // Find position after the target task
-        const afterIndex = scopeTasks.findIndex(t => t.id === insertNewTaskAfter);
+        const afterIndex = scopeTasks.findIndex((t) => t.id === insertNewTaskAfter);
         if (afterIndex !== -1 && afterIndex < scopeTasks.length - 1) {
           // Use integer positioning utility for conflict-free insertion
           const nextTask = scopeTasks[afterIndex + 1];
@@ -750,16 +758,18 @@
         // After task not found - fall back to bottom creation
         console.error('[TaskList] After task not found:', insertNewTaskAfter);
         // Calculate position as if adding at bottom
-        const rootTasks = cleanedKeptTasks.filter(t => !t.parent_id);
+        const rootTasks = cleanedKeptTasks.filter((t) => !t.parent_id);
         lastRootTask = rootTasks.length > 0 ? rootTasks[rootTasks.length - 1] : null;
-        position = lastRootTask ? calculatePosition(lastRootTask.position ?? 0, null) : calculatePosition(null, null);
+        position = lastRootTask
+          ? calculatePosition(lastRootTask.position ?? 0, null)
+          : calculatePosition(null, null);
       }
     } else {
       // Bottom task creation - add at the end of root level tasks
       // Get the last root task from the existing tasks array
-      const rootTasks = cleanedKeptTasks.filter(t => !t.parent_id);
+      const rootTasks = cleanedKeptTasks.filter((t) => !t.parent_id);
       lastRootTask = rootTasks.length > 0 ? rootTasks[rootTasks.length - 1] : null;
-      
+
       if (lastRootTask) {
         position = calculatePosition(lastRootTask.position ?? 0, null);
       } else {
@@ -767,7 +777,7 @@
         position = calculatePosition(null, null);
       }
     }
-    
+
     // Determine which task this is being positioned after
     let repositionedAfterId: string | number | null = null;
     if (type === 'inline' && insertNewTaskAfter) {
@@ -781,10 +791,10 @@
         repositionedAfterId = null;
       }
     }
-    
+
     // Determine if this is a top-of-list insertion
     const isTopOfList = repositionedAfterId === null && parentId === null && type === 'bottom';
-    
+
     // Log the data being sent to create
     const createData = {
       title,
@@ -795,32 +805,32 @@
       parent_id: parentId,
       lock_version: 0,
       applies_to_all_targets: false,
-      position_finalized: false,  // Client-side positioning
-      repositioned_to_top: isTopOfList
+      position_finalized: false, // Client-side positioning
+      repositioned_to_top: isTopOfList,
     };
-    
-    console.log('[TaskList] Creating task with data:', createData);
-    console.log('[TaskList] Position:', position, 'Type:', typeof position);
-    console.log('[TaskList] RepositionedAfterId:', repositionedAfterId);
-    console.log('[TaskList] ParentId:', parentId);
-    
+
+    debugBusiness.workflow('TaskList: Creating task with data:', createData);
+    debugBusiness.workflow('TaskList: Position:', position, 'Type:', typeof position);
+    debugBusiness.workflow('TaskList: RepositionedAfterId:', repositionedAfterId);
+    debugBusiness.workflow('TaskList: ParentId:', parentId);
+
     try {
       const newTask = await TaskModel.create(createData);
-      console.log('[TaskList] Task created successfully:', newTask);
-      
+      debugBusiness.workflow('TaskList: Task created successfully:', newTask);
+
       // Add the new task to our local tasks array
       if (type === 'inline' && insertNewTaskAfter) {
         // Insert new task at correct position based on visual hierarchy
         const visualIndex = flatTaskIds.indexOf(insertNewTaskAfter);
         if (visualIndex !== -1 && visualIndex < flatTaskIds.length - 1) {
           const nextTaskId = flatTaskIds[visualIndex + 1];
-          const nextTaskIndex = cleanedTasks.findIndex(t => t.id === nextTaskId);
-          
+          const nextTaskIndex = cleanedTasks.findIndex((t) => t.id === nextTaskId);
+
           if (nextTaskIndex !== -1) {
             tasks = [
               ...cleanedTasks.slice(0, nextTaskIndex),
               newTask,
-              ...cleanedTasks.slice(nextTaskIndex)
+              ...cleanedTasks.slice(nextTaskIndex),
             ];
           } else {
             tasks = [...cleanedTasks, newTask];
@@ -828,58 +838,52 @@
         } else {
           tasks = [...cleanedTasks, newTask];
         }
-        
+
         // Update insertNewTaskAfter to point to the newly created task
         insertNewTaskAfter = newTask.id;
       } else {
         tasks = [...cleanedTasks, newTask];
       }
-      
+
       // Select the newly created task only if requested (Return key, not blur)
       if (shouldSelectAfterCreate) {
         taskSelectionActions.selectTask(newTask.id);
       }
-      
+
       // Skip animation for the next update since this is an addition
       skipNextAnimation = true;
       tick().then(() => {
         skipNextAnimation = false;
       });
-      
+
       dragFeedback = 'Task created successfully!';
-      setTimeout(() => dragFeedback = '', 2000);
+      setTimeout(() => (dragFeedback = ''), 2000);
     } catch (error: any) {
       console.error('[TaskList] Task creation failed:', error);
       console.error('[TaskList] Error details:', {
         message: error?.message,
         stack: error?.stack,
         error,
-        taskData: createData
+        taskData: createData,
       });
-      debugWorkflow.error('Task creation failed', { error, taskData: state });
-      
+      debugBusiness.workflow.error('Task creation failed', { error, taskData: state });
+
       // Restore the input state on error
       taskCreationManager.show(type);
       taskCreationManager.setTitle(type, title);
-      
+
       dragFeedback = 'Failed to create task - please try again';
-      setTimeout(() => dragFeedback = '', 3000);
+      setTimeout(() => (dragFeedback = ''), 3000);
     }
   }
 
-  function handleNewTaskRowClick(event: MouseEvent) {
-    // Only activate if not already in input mode
-    if (!bottomTaskState.isShowing) {
-      event.stopPropagation();
-      newTaskManager.show();
-    }
-  }
+  // NOTE: handleNewTaskRowClick function removed as it was unused
 
   function handleTaskUpdated(event: CustomEvent) {
     const updatedTask = event.detail.task;
-    
+
     // Update the task in our tasks array
-    const taskIndex = cleanedTasks.findIndex(t => t.id === updatedTask.id);
+    const taskIndex = cleanedTasks.findIndex((t) => t.id === updatedTask.id);
     if (taskIndex !== -1) {
       tasks[taskIndex] = { ...cleanedTasks[taskIndex], ...updatedTask };
       tasks = [...cleanedTasks]; // Trigger reactivity
@@ -893,30 +897,32 @@
       const { Task } = await import('$lib/models/task');
       await Task.update(taskId, { status: newStatus });
     } catch (error: any) {
-      debugWorkflow.error('Task status update failed', { error, taskId, newStatus });
-      
+      debugBusiness.workflow.error('Task status update failed', { error, taskId, newStatus });
+
       if (error.code === 'INVALID_CSRF_TOKEN') {
         dragFeedback = 'Session expired - please try again';
       } else {
         dragFeedback = 'Failed to update task status - please try again';
       }
-      setTimeout(() => dragFeedback = '', 3000);
+      setTimeout(() => (dragFeedback = ''), 3000);
     }
   }
 
   // Task title editing functions - using DRY cursor positioning
   function handleTitleClick(event: MouseEvent, taskId: string) {
     if (!canEditTasks) return; // Elegant guard clause
-    
+
     event.stopPropagation(); // Prevent task selection
     taskSelectionActions.clearSelection(); // Clear any existing selection when editing
-    
+
     // Enter edit mode
     editingTaskId = taskId;
-    
+
     // Find the contenteditable element and register with focus manager
     tick().then(() => {
-      const titleElement = document.querySelector(`[data-task-id="${taskId}"] .task-title`) as HTMLElement;
+      const titleElement = document.querySelector(
+        `[data-task-id="${taskId}"] .task-title`
+      ) as HTMLElement;
       if (titleElement) {
         focusActions.setEditingElement(titleElement, taskId);
       }
@@ -931,23 +937,22 @@
 
     try {
       // Find the task data and create an ActiveRecord-style instance
-      const taskData = cleanedTasks.find(t => t.id === taskId);
+      const taskData = cleanedTasks.find((t) => t.id === taskId);
       if (!taskData) {
         throw new Error('Task not found');
       }
 
       const { Task } = await import('$lib/models/task');
-      
+
       await Task.update(taskData.id, { title: newTitle.trim() });
-      
+
       // UI cleanup - Zero.js reactive updates will handle the data changes
       editingTaskId = null;
-      
     } catch (error) {
-      debugWorkflow.error('Task title update failed', { error, taskId, newTitle });
+      debugBusiness.workflow.error('Task title update failed', { error, taskId, newTitle });
       dragFeedback = 'Failed to update task title - please try again';
-      setTimeout(() => dragFeedback = '', 3000);
-      
+      setTimeout(() => (dragFeedback = ''), 3000);
+
       // Reverts to original title
     }
   }
@@ -957,7 +962,6 @@
     focusActions.clearFocus();
     editingTaskId = null;
   }
-
 
   function cancelInlineNewTask() {
     insertNewTaskAfter = null;
@@ -980,7 +984,7 @@
 
     // Close modal immediately
     isShowingDeleteConfirmation = false;
-    
+
     isDeletingTasks = true;
     const tasksToDeleteCopy = [...tasksToDelete]; // Copy for async operations
     tasksToDelete = []; // Clear the original array
@@ -992,17 +996,17 @@
       taskSelectionActions.clearSelection();
 
       // Start deletion animation by marking tasks as deleting
-      tasksToDeleteCopy.forEach(taskId => {
+      tasksToDeleteCopy.forEach((taskId) => {
         deletingTaskIds.add(taskId);
       });
-      
+
       // Trigger reactivity
-      deletingTaskIds = deletingTaskIds;
+      deletingTaskIds = new Set(deletingTaskIds);
 
       // Delete tasks in parallel while animation is running using ActiveRecord-style API
-      deletePromises = tasksToDeleteCopy.map(async taskId => {
+      deletePromises = tasksToDeleteCopy.map(async (taskId) => {
         // Find the task data and create an ActiveRecord-style instance
-        const taskData = cleanedTasks.find(t => t.id === taskId);
+        const taskData = cleanedTasks.find((t) => t.id === taskId);
         if (!taskData) {
           throw new Error(`Task with ID ${taskId} not found`);
         }
@@ -1013,17 +1017,17 @@
       });
 
       // Wait for both API calls and animation to complete
-      const [, ] = await Promise.all([
+      const [,] = await Promise.all([
         Promise.all(deletePromises),
-        new Promise(resolve => setTimeout(resolve, animationDuration))
+        new Promise((resolve) => setTimeout(resolve, animationDuration)),
       ]);
 
       // Clear deletion animation state
-      tasksToDeleteCopy.forEach(taskId => {
+      tasksToDeleteCopy.forEach((taskId) => {
         deletingTaskIds.delete(taskId);
       });
-      deletingTaskIds = deletingTaskIds;
-      
+      deletingTaskIds = new Set(deletingTaskIds);
+
       // Skip animation for the next update since this is a deletion
       skipNextAnimation = true;
       tick().then(() => {
@@ -1032,19 +1036,21 @@
 
       // Show success dragFeedback
       dragFeedback = `Successfully discarded ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
-      setTimeout(() => dragFeedback = '', 3000);
-
+      setTimeout(() => (dragFeedback = ''), 3000);
     } catch (error: any) {
-      debugWorkflow.error('Task discard failed', { error, taskCount: tasksToDeleteCopy.length });
-      
+      debugBusiness.workflow.error('Task discard failed', {
+        error,
+        taskCount: tasksToDeleteCopy.length,
+      });
+
       // Clear animation state on error
-      tasksToDeleteCopy.forEach(taskId => {
+      tasksToDeleteCopy.forEach((taskId) => {
         deletingTaskIds.delete(taskId);
       });
-      deletingTaskIds = deletingTaskIds;
-      
+      deletingTaskIds = new Set(deletingTaskIds);
+
       dragFeedback = `Failed to discard tasks: ${error.message || 'Unknown error'}`;
-      setTimeout(() => dragFeedback = '', 5000);
+      setTimeout(() => (dragFeedback = ''), 5000);
     } finally {
       isDeletingTasks = false;
     }
@@ -1053,124 +1059,111 @@
   // Position capture function that runs BEFORE native drag modifies elements
   function capturePreDragPositions(draggedTaskId: string) {
     if (!tasksContainer || FlipAnimator.prefersReducedMotion()) return;
-    
-    const isMultiSelectDrag = draggedTaskId && taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
+
+    const isMultiSelectDrag =
+      draggedTaskId &&
+      taskSelection.selectedTaskIds.has(draggedTaskId) &&
+      taskSelection.selectedTaskIds.size > 1;
     const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
-    
+
     if (isMultiSelectDrag) {
       // Debug: Check if DOM order matches expected order
-      console.log('[DEBUG] DOM Order vs Flattened Order:');
-      taskElements.forEach((el, index) => {
-        const taskId = el.dataset.taskId;
-        const flattenedIndex = flattenedTasks.findIndex(t => t.task.id === taskId);
-        const rect = el.getBoundingClientRect();
-        const isSelected = taskId && taskSelection.selectedTaskIds.has(taskId);
-        console.log(`DOM[${index}]: ${taskId?.substring(0, 8)} at y:${rect.y.toFixed(1)} | Flattened[${flattenedIndex}] | Selected: ${isSelected}`);
-      });
+      // debugUI.layout('DEBUG: DOM Order vs Flattened Order:');
+      // taskElements.forEach((el, index) => {
+      //   const taskId = el.dataset.taskId;
+      //   const flattenedIndex = flattenedTasks.findIndex((t) => t.task.id === taskId);
+      //   const rect = el.getBoundingClientRect();
+      //   const isSelected = taskId && taskSelection.selectedTaskIds.has(taskId);
+      //   debugUI.layout(
+      //     `DOM[${index}]: ${taskId?.substring(0, 8)} at y:${rect.y.toFixed(1)} | Flattened[${flattenedIndex}] | Selected: ${isSelected}`
+      //   );
+      // });
 
       // For multi-drag, capture positions of all selected tasks as pre-drag positions
-      const selectedElements = taskElements.filter(el => 
-        el.dataset.taskId && taskSelection.selectedTaskIds.has(el.dataset.taskId)
+      const selectedElements = taskElements.filter(
+        (el) => el.dataset.taskId && taskSelection.selectedTaskIds.has(el.dataset.taskId)
       );
-      console.log('[Multi-Drag] Capturing pre-drag positions for', selectedElements.length, 'selected tasks BEFORE native drag styling');
-      
+      debugUI.component(
+        'Multi-Drag: Capturing pre-drag positions for',
+        selectedElements.length,
+        'selected tasks BEFORE native drag styling'
+      );
+
       // Debug selected elements order
-      console.log('[DEBUG] Selected elements in query order:');
-      selectedElements.forEach((el, index) => {
-        const taskId = el.dataset.taskId;
-        const rect = el.getBoundingClientRect();
-        console.log(`Selected[${index}]: ${taskId?.substring(0, 8)} at y:${rect.y.toFixed(1)}`);
-      });
-      
+      // debugUI.layout('DEBUG: Selected elements in query order:');
+      // selectedElements.forEach((el, index) => {
+      //   const taskId = el.dataset.taskId;
+      //   const rect = el.getBoundingClientRect();
+      //   debugUI.layout(`Selected[${index}]: ${taskId?.substring(0, 8)} at y:${rect.y.toFixed(1)}`);
+      // });
+
       // Get container bounds for debugging
       const containerRect = tasksContainer.getBoundingClientRect();
-      console.log('[Multi-Drag] Container bounds:', {
+      debugUI.component('Multi-Drag: Container bounds:', {
         top: containerRect.top,
         left: containerRect.left,
         width: containerRect.width,
-        height: containerRect.height
+        height: containerRect.height,
       });
-      
+
       // Ensure elements are visible and properly positioned before capturing
-      const visibleSelectedElements = selectedElements.filter((el, index) => {
+      const visibleSelectedElements = selectedElements.filter((el, _index) => {
         const rect = el.getBoundingClientRect();
-        const taskId = el.dataset.taskId;
+        // NOTE: _taskId variable removed from debug code as it was unused
         const isVisible = rect.width > 0 && rect.height > 0 && rect.x >= -50 && rect.y >= -50;
-        
-        // Enhanced debug logging for first task specifically
-        if (index === 0) {
-          console.log(`[Multi-Drag] FIRST TASK DEBUG (PRE-NATIVE-DRAG):`, {
-            taskId: taskId?.substring(0, 8),
-            elementIndex: index,
-            rect: {
-              x: rect.x,
-              y: rect.y,
-              top: rect.top,
-              left: rect.left,
-              width: rect.width,
-              height: rect.height
-            },
-            containerRelative: {
-              x: rect.x - containerRect.x,
-              y: rect.y - containerRect.y,
-              top: rect.top - containerRect.top,
-              left: rect.left - containerRect.left
-            },
-            isVisible,
-            domOrder: Array.from(taskElements).indexOf(el),
-            selectionOrder: Array.from(taskSelection.selectedTaskIds).indexOf(taskId || ''),
-            hasTaskDraggingClass: el.classList.contains('task-dragging'),
-            note: 'Captured BEFORE native drag applies styling'
-          });
-        } else {
-          console.log(`[Multi-Drag] Task ${index + 1} (PRE-NATIVE-DRAG):`, {
-            taskId: taskId?.substring(0, 8),
-            rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-            isVisible,
-            hasTaskDraggingClass: el.classList.contains('task-dragging')
-          });
-        }
-        
+
+        // NOTE: Enhanced debug logging removed
+
         return isVisible;
       });
-      
+
       if (visibleSelectedElements.length > 0) {
         const selectionOrder = getSelectionOrder();
-        flipAnimator.capturePreDragPositions(visibleSelectedElements, el => el.dataset.taskId || '', selectionOrder);
-        console.log('[Multi-Drag] Using selection order:', selectionOrder.map(id => id.substring(0, 8)));
+        flipAnimator.capturePreDragPositions(
+          visibleSelectedElements,
+          (el) => el.dataset.taskId || '',
+          selectionOrder
+        );
+        // debugUI.interaction(
+        //   'Multi-Drag: Using selection order:',
+        //   selectionOrder.map((id) => id.substring(0, 8))
+        // );
       } else {
         console.warn('[Multi-Drag] No visible selected elements found for pre-drag capture');
       }
     }
-    
+
     // Always capture normal positions for all tasks (for non-selected task animations)
-    flipAnimator.capturePositions(taskElements, el => el.dataset.taskId || '');
+    flipAnimator.capturePositions(taskElements, (el) => el.dataset.taskId || '');
   }
 
   // Called BEFORE native drag applies styling - positions should already be captured at selection time
   function handleBeforeSortStart(event: DragStartEvent) {
     const draggedTaskId = event.item.dataset.taskId;
     if (draggedTaskId) {
-      console.log('[Drag] Starting drag operation for task:', draggedTaskId.substring(0, 8));
-      
+      // console.log('[Drag] Starting drag operation for task:', draggedTaskId.substring(0, 8));
+
       // For single drag operations (not multi-select), we still need to capture positions
-      if (!taskSelection.selectedTaskIds.has(draggedTaskId) || taskSelection.selectedTaskIds.size === 1) {
+      if (
+        !taskSelection.selectedTaskIds.has(draggedTaskId) ||
+        taskSelection.selectedTaskIds.size === 1
+      ) {
         capturePreDragPositions(draggedTaskId);
       } else {
-        console.log('[Drag] Using pre-captured positions from selection time for multi-drag');
+        // console.log('[Drag] Using pre-captured positions from selection time for multi-drag');
       }
     }
   }
 
   // Native drag event handlers
   function handleSortStart(event: DragSortEvent) {
-    isDragging = true;
-    
+    // NOTE: isDragging assignment removed as variable was unused
+
     const draggedTaskId = event.item.dataset.taskId;
-    
+
     // Check for multi-select drag for badge
     const selectedCount = taskSelection.selectedTaskIds.size;
-    
+
     if (draggedTaskId && taskSelection.selectedTaskIds.has(draggedTaskId) && selectedCount > 1) {
       // Show multi-drag badge
       const badge = document.createElement('div');
@@ -1193,15 +1186,19 @@
   }
 
   function handleSortEnd(event: DragSortEvent) {
-    isDragging = false;
-    
+    // NOTE: isDragging assignment removed as variable was unused
+
     // IMMEDIATELY capture current DOM positions before any cleanup or processing
     // This captures the actual destination positions while elements are transitioning
-    let capturedCurrentPositions: Map<string, { x: number; y: number; width: number; height: number }> | undefined;
+    let capturedCurrentPositions:
+      | Map<string, { x: number; y: number; width: number; height: number }>
+      | undefined;
     if (tasksContainer && !FlipAnimator.prefersReducedMotion()) {
       capturedCurrentPositions = new Map();
-      const taskElements = Array.from(tasksContainer.querySelectorAll('.task-item')) as HTMLElement[];
-      taskElements.forEach(element => {
+      const taskElements = Array.from(
+        tasksContainer.querySelectorAll('.task-item')
+      ) as HTMLElement[];
+      taskElements.forEach((element) => {
         const rect = element.getBoundingClientRect();
         const key = element.dataset.taskId || '';
         if (key) {
@@ -1209,31 +1206,37 @@
             x: rect.left,
             y: rect.top,
             width: rect.width,
-            height: rect.height
+            height: rect.height,
           });
         }
       });
-      console.log('[FLIP] Captured current positions immediately at drag end for', capturedCurrentPositions.size, 'elements');
+      // debugUI.animation(
+      //   'FLIP: Captured current positions immediately at drag end for',
+      //   capturedCurrentPositions.size,
+      //   'elements'
+      // );
     }
-    
+
     // Clear all visual dragFeedback
     clearAllVisualFeedback();
-    
+
     // Remove multi-drag badge if it exists
     const badge = event.item.querySelector('.multi-drag-badge');
     if (badge) {
       badge.remove();
     }
-    
+
     // Clean up pre-drag positions (manual animations disabled - using reactive animations instead)
     flipAnimator.clearPreDragPositions();
-    console.log('[FLIP] Manual drag animations disabled - relying on reactive animations after Zero.js updates');
+    // debugUI.animation(
+    //   'FLIP: Manual drag animations disabled - relying on reactive animations after Zero.js updates'
+    // );
   }
 
   // Handle move detection during drag operations
   function handleMoveDetection(event: DragMoveEvent) {
     const { dropZone, related: targetElement } = event;
-    
+
     if (!dropZone || !targetElement) {
       return true;
     }
@@ -1241,29 +1244,30 @@
     // Get all tasks being dragged (single or multi-select)
     const draggedElement = event.dragged;
     const draggedTaskId = draggedElement?.getAttribute('data-task-id');
-    
+
     if (draggedTaskId) {
       // Check if this is a multi-select drag
-      const draggedTaskIds = taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1
-        ? Array.from(taskSelection.selectedTaskIds)
-        : [draggedTaskId];
-      
+      const draggedTaskIds =
+        taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1
+          ? Array.from(taskSelection.selectedTaskIds)
+          : [draggedTaskId];
+
       // For nesting operations, validate all dragged tasks
       if (dropZone.mode === 'nest' && dropZone.targetTaskId) {
         // Prevent self-nesting
         if (draggedTaskIds.includes(dropZone.targetTaskId)) {
           return false; // This prevents the drop zone from being highlighted
         }
-        
+
         // Prevent circular references (can't drop parent onto descendant)
-        const wouldCreateCircular = draggedTaskIds.some(taskId => 
+        const wouldCreateCircular = draggedTaskIds.some((taskId) =>
           isDescendantOf(dropZone.targetTaskId, taskId)
         );
-        
+
         if (wouldCreateCircular) {
           return false; // This prevents the drop zone from being highlighted
         }
-        
+
         // For single-task operations, use existing validation
         if (draggedTaskIds.length === 1) {
           const validation = isValidNesting(draggedTaskId, dropZone.targetTaskId);
@@ -1273,34 +1277,40 @@
         }
       }
     }
-    
+
     return true; // Allow the move
   }
 
   // Validation functions for nesting
-  function isValidNesting(draggedTaskId: string, targetTaskId: string): {valid: boolean, reason?: string} {
+  function isValidNesting(
+    draggedTaskId: string,
+    targetTaskId: string
+  ): { valid: boolean; reason?: string } {
     // Rule 1: Can't nest task under itself
     if (draggedTaskId === targetTaskId) {
-      return {valid: false, reason: 'Task cannot be nested under itself'};
+      return { valid: false, reason: 'Task cannot be nested under itself' };
     }
 
-    const draggedTask = cleanedKeptTasks.find(t => t.id === draggedTaskId);
-    const targetTask = cleanedKeptTasks.find(t => t.id === targetTaskId);
-    
+    const draggedTask = cleanedKeptTasks.find((t) => t.id === draggedTaskId);
+    const targetTask = cleanedKeptTasks.find((t) => t.id === targetTaskId);
+
     if (!draggedTask || !targetTask) {
-      return {valid: false, reason: 'Task not found'};
+      return { valid: false, reason: 'Task not found' };
     }
 
     // Rule 2: Can't nest task under its own descendant (circular reference)
     if (isDescendantOf(targetTaskId, draggedTaskId)) {
-      return {valid: false, reason: 'Cannot create circular reference - target is a descendant of the dragged task'};
+      return {
+        valid: false,
+        reason: 'Cannot create circular reference - target is a descendant of the dragged task',
+      };
     }
 
-    return {valid: true};
+    return { valid: true };
   }
 
   function isDescendantOf(potentialDescendantId: string, ancestorId: string): boolean {
-    const potentialDescendant = cleanedKeptTasks.find(t => t.id === potentialDescendantId);
+    const potentialDescendant = cleanedKeptTasks.find((t) => t.id === potentialDescendantId);
     if (!potentialDescendant || !potentialDescendant.parent_id) {
       return false;
     }
@@ -1312,59 +1322,29 @@
     return isDescendantOf(potentialDescendant.parent_id, ancestorId);
   }
 
-  function getTaskDepth(taskId: string): number {
-    const task = cleanedKeptTasks.find(t => t.id === taskId);
-    if (!task || !task.parent_id) {
-      return 0;
-    }
-    return 1 + getTaskDepth(task.parent_id);
-  }
+  // NOTE: getTaskDepth function removed as it was unused
 
-  // Calculate visual order mapping for hierarchical tasks
-  function createVisualOrderMap(tasks: Array<{ id: string; parent_id?: string; position?: number }>): Map<string, number> {
-    const visualOrderMap = new Map<string, number>();
-    let visualIndex = 0;
-
-    // Recursive function to traverse hierarchy and assign visual indices
-    function traverseAndIndex(parentId: string | null, depth: number = 0) {
-      // Get tasks for this parent (already sorted by database)
-      const childTasks = cleanedKeptTasks
-        .filter(t => (t.parent_id || null) === parentId);
-
-      // Assign visual index to each task and recurse into children
-      childTasks.forEach(task => {
-        visualOrderMap.set(task.id, visualIndex++);
-        // Recursively process children
-        traverseAndIndex(task.id, depth + 1);
-      });
-    }
-
-    // Start with top-level tasks (parent_id = null)
-    traverseAndIndex(null);
-    
-    return visualOrderMap;
-  }
+  // NOTE: createVisualOrderMap function removed as it was unused
 
   // Handle nesting a task under another task
   async function handleTaskNesting(draggedTaskId: string, targetTaskId: string) {
-    
     // Validate nesting operation
     const validation = isValidNesting(draggedTaskId, targetTaskId);
-    
+
     if (!validation.valid) {
       dragFeedback = validation.reason || 'Invalid nesting operation';
-      setTimeout(() => dragFeedback = '', 3000);
+      setTimeout(() => (dragFeedback = ''), 3000);
       return;
     }
 
-    const draggedTask = cleanedKeptTasks.find(t => t.id === draggedTaskId);
-    const targetTask = cleanedKeptTasks.find(t => t.id === targetTaskId);
-    
+    const draggedTask = cleanedKeptTasks.find((t) => t.id === draggedTaskId);
+    const targetTask = cleanedKeptTasks.find((t) => t.id === targetTaskId);
+
     if (!draggedTask || !targetTask) {
-      debugWorkflow.error('Could not find dragged or target task', { 
-        draggedTaskId, 
-        targetTaskId, 
-        availableTaskIds: cleanedKeptTasks.map(t => t.id) 
+      debugBusiness.workflow.error('Could not find dragged or target task', {
+        draggedTaskId,
+        targetTaskId,
+        availableTaskIds: cleanedKeptTasks.map((t) => t.id),
       });
       return;
     }
@@ -1375,19 +1355,20 @@
 
       // Calculate relative position for nesting
       const relativePosition = calculateRelativePosition(null, targetTaskId, [draggedTaskId]);
-      
+
       // Convert relative position to position updates and execute via positioning-v2.ts utilities
-      const positionUpdates = convertRelativeToPositionUpdates(cleanedKeptTasks, [relativePosition]);
+      const positionUpdates = convertRelativeToPositionUpdates(cleanedKeptTasks, [
+        relativePosition,
+      ]);
       await applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
-      
     } catch (error: any) {
-      debugWorkflow.error('Task nesting failed', { error, draggedTaskId, targetTaskId });
-      
+      debugBusiness.workflow.error('Task nesting failed', { error, draggedTaskId, targetTaskId });
+
       // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();
-      
+
       dragFeedback = 'Failed to nest task - please try again';
-      setTimeout(() => dragFeedback = '', 3000);
+      setTimeout(() => (dragFeedback = ''), 3000);
     }
   }
 
@@ -1401,9 +1382,9 @@
 
     // Check if this is a nesting operation
     if (event.dropZone && event.dropZone.mode === 'nest' && event.dropZone.targetTaskId) {
-      
       // For single-task nesting, delegate to existing function
-      const isMultiSelectNest = taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
+      const isMultiSelectNest =
+        taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
       if (!isMultiSelectNest) {
         await handleTaskNesting(draggedTaskId, event.dropZone.targetTaskId);
         return;
@@ -1411,12 +1392,13 @@
     }
 
     // Determine if this is a multi-select drag
-    const isMultiSelectDrag = taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
-    
+    const isMultiSelectDrag =
+      taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
+
     // Calculate newParentId for both single and multi-select operations
     let newParentId: string | undefined;
     const dropIndex = event.newIndex!;
-    
+
     if (event.dropZone?.mode === 'nest' && event.dropZone.targetTaskId) {
       // For nesting: all tasks become children of the target task
       newParentId = event.dropZone.targetTaskId;
@@ -1425,95 +1407,97 @@
       // This properly handles root-level drops, depth-based parent assignment, etc.
       newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
     }
-    
+
     // Safety validation before proceeding
     if (newParentId) {
       // Get the task IDs that are being moved
-      const taskIdsToMove = isMultiSelectDrag 
+      const taskIdsToMove = isMultiSelectDrag
         ? Array.from(taskSelection.selectedTaskIds)
         : [draggedTaskId];
-      
+
       // Safety check: ensure no self-references
       if (taskIdsToMove.includes(newParentId)) {
         clearAllVisualFeedback();
         return; // Silently abort - this should never happen due to handleMoveDetection
       }
-      
+
       // Safety check: prevent circular references
-      const wouldCreateCircular = taskIdsToMove.some(taskId => 
+      const wouldCreateCircular = taskIdsToMove.some((taskId) =>
         isDescendantOf(newParentId, taskId)
       );
-      
+
       if (wouldCreateCircular) {
         clearAllVisualFeedback();
         return; // Silently abort - this should never happen due to handleMoveDetection
       }
     }
-    
+
     // Auto-expand target task for nesting operations
     if (event.dropZone?.mode === 'nest' && newParentId) {
       hierarchyManager.expandTask(newParentId);
     }
-    
+
     // Declare relativeUpdates outside try block so it's accessible in catch
     const relativeUpdates: RelativePositionUpdate[] = [];
-    
+
     try {
       // Get the task IDs that are being moved (again, for the rest of the function)
-      const taskIdsToMove = isMultiSelectDrag 
+      const taskIdsToMove = isMultiSelectDrag
         ? Array.from(taskSelection.selectedTaskIds)
         : [draggedTaskId];
-      
+
       if (isMultiSelectDrag && taskIdsToMove.length > 1) {
-        
         // For multi-task operations: use sequential positioning to avoid circular references
         // Sort tasks by their actual visual order from flattenedTasks
         const sortedTaskIds = Array.from(taskSelection.selectedTaskIds);
         sortedTaskIds.sort((a, b) => {
-          const indexA = flattenedTasks.findIndex(item => item.task.id === a);
-          const indexB = flattenedTasks.findIndex(item => item.task.id === b);
+          const indexA = flattenedTasks.findIndex((item) => item.task.id === a);
+          const indexB = flattenedTasks.findIndex((item) => item.task.id === b);
           return indexA - indexB;
         });
-        
+
         // Identify which selected tasks are roots (parent not in selection)
         // This preserves parent-child relationships during multi-drag
-        const rootTaskIds = sortedTaskIds.filter(taskId => {
-          const task = cleanedKeptTasks.find(t => t.id === taskId);
+        const rootTaskIds = sortedTaskIds.filter((taskId) => {
+          const task = cleanedKeptTasks.find((t) => t.id === taskId);
           return !task?.parent_id || !sortedTaskIds.includes(task.parent_id);
         });
-                
+
         rootTaskIds.forEach((taskId, index) => {
-          const currentTask = cleanedKeptTasks.find(t => t.id === taskId);
+          const currentTask = cleanedKeptTasks.find((t) => t.id === taskId);
           if (!currentTask) return;
-          
+
           if (index === 0) {
             // First task: position appropriately without considering other moving tasks
             if (event.dropZone?.mode === 'nest') {
               // For nesting: find existing children (excluding tasks being moved)
-              const existingChildren = cleanedKeptTasks.filter(t => 
-                t.parent_id === newParentId && 
-                !rootTaskIds.includes(t.id)
+              const existingChildren = cleanedKeptTasks.filter(
+                (t) => t.parent_id === newParentId && !rootTaskIds.includes(t.id)
               );
-              
+
               if (existingChildren.length > 0) {
                 // Position after the last existing child
                 const lastChild = existingChildren[existingChildren.length - 1];
                 relativeUpdates.push({
                   id: taskId,
                   parent_id: newParentId,
-                  after_task_id: lastChild.id
+                  after_task_id: lastChild.id,
                 });
               } else {
                 // No existing children, place at first position
                 relativeUpdates.push({
                   id: taskId,
                   parent_id: newParentId,
-                  position: 'first'
+                  position: 'first',
                 });
               }
             } else {
               // For reordering: use the calculated drop position but exclude moving tasks from consideration
-              const firstTaskRelativePos = calculateRelativePosition(event.dropZone, newParentId ?? null, rootTaskIds);
+              const firstTaskRelativePos = calculateRelativePosition(
+                event.dropZone,
+                newParentId ?? null,
+                rootTaskIds
+              );
               relativeUpdates.push(firstTaskRelativePos);
             }
           } else {
@@ -1522,155 +1506,155 @@
             relativeUpdates.push({
               id: taskId,
               parent_id: newParentId,
-              after_task_id: previousTaskId
+              after_task_id: previousTaskId,
             });
           }
         });
       } else {
         // Single task operation: use standard relative positioning
-        const singleTaskUpdate = calculateRelativePosition(event.dropZone, newParentId ?? null, taskIdsToMove);
+        const singleTaskUpdate = calculateRelativePosition(
+          event.dropZone,
+          newParentId ?? null,
+          taskIdsToMove
+        );
         relativeUpdates.push(singleTaskUpdate);
       }
-      
+
       // Convert relative updates to position updates using positioning-v2.ts utilities
       const positionUpdates = convertRelativeToPositionUpdates(cleanedKeptTasks, relativeUpdates);
-      
+
       // Execute position updates using our batch API - it handles UI updates automatically
       await applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
-      
     } catch (error: any) {
-      debugWorkflow.error('Task reorder failed', { error, relativeUpdates });
-      
+      debugBusiness.workflow.error('Task reorder failed', { error, relativeUpdates });
+
       // Clear any lingering visual dragFeedback including badges
       clearAllVisualFeedback();
-      
+
       // ReactiveRecord will revert UI automatically on server error
       dragFeedback = 'Failed to reorder tasks - please try again';
-      setTimeout(() => dragFeedback = '', 3000);
+      setTimeout(() => (dragFeedback = ''), 3000);
     }
   }
 
   // Task tree rendering is now handled by TaskHierarchyManager
 
   // Calculate parent task based on drop position in flattened list
-  function calculateParentFromPosition(dropIndex: number, dropMode: 'reorder' | 'nest'): string | undefined {
+  function calculateParentFromPosition(
+    dropIndex: number,
+    dropMode: 'reorder' | 'nest'
+  ): string | undefined {
     // Use flattenedKeptTasks for position calculations (all non-discarded tasks)
     // If explicitly nesting, the target becomes the parent
     if (dropMode === 'nest') {
       const targetItem = flattenedKeptTasks[dropIndex];
       return targetItem?.task.id;
     }
-    
+
     // For reordering, determine parent based on the depth we're inserting at.
     // If dropping at the very beginning, it's root level
     if (dropIndex === 0) {
       return undefined;
     }
-    
+
     // Look at the task immediately before the drop position
     const previousItem = flattenedKeptTasks[dropIndex - 1];
     if (!previousItem) {
       return undefined; // Root level
     }
-    
+
     // Also look at the task at the drop position (if it exists)
     const targetItem = flattenedKeptTasks[dropIndex];
-    
+
     // Special case: dropping between a parent and its first child
     // If the target item is a child of the previous item, we should become a child too
     if (targetItem && targetItem.task.parent_id === previousItem.task.id) {
       return previousItem.task.id; // Become child of the parent
     }
-    
+
     // Enhanced root level detection: if previous item is at depth 0 and we're not inserting as its child
     if (previousItem.depth === 0 && (!targetItem || targetItem.depth === 0)) {
       return undefined;
     }
-    
+
     // If there's a target item and previous item at the same depth,
     // we're inserting at that same depth with the same parent
     if (targetItem && previousItem.depth === targetItem.depth) {
       return targetItem.task.parent_id || undefined;
     }
-    
+
     // If target item is deeper than previous, we're inserting at previous item's depth
     // which means previous item's parent becomes our parent
     if (targetItem && previousItem.depth < targetItem.depth) {
       return previousItem.task.parent_id || undefined;
     }
-    
+
     // If no target item, we're appending after the last item
     // Insert at the same level as the previous item
     if (!targetItem) {
       return previousItem.task.parent_id || undefined;
     }
-    
+
     // If target is at same/shallower depth than previous, we're inserting at the same level as the previous item
     return previousItem.task.parent_id || undefined;
   }
-  
+
   // Handle edge case ambiguity between parent and first child
   function resolveParentChildBoundary(dropZone: DropZoneInfo | null): DropZoneInfo | null {
     if (!dropZone?.targetTaskId) return dropZone;
-    
-    const targetTask = cleanedKeptTasks.find(t => t.id === dropZone.targetTaskId);
+
+    const targetTask = cleanedKeptTasks.find((t) => t.id === dropZone.targetTaskId);
     if (!targetTask) return dropZone;
-    
+
     // If dropping below a task that has children, and the first child is immediately after it
     if (dropZone.position === 'below') {
-      const hasChildren = cleanedKeptTasks.some(t => t.parent_id === targetTask.id);
+      const hasChildren = cleanedKeptTasks.some((t) => t.parent_id === targetTask.id);
       if (hasChildren) {
         // For "below parent with children", prefer staying at parent level
         // rather than becoming first child (user can drag to middle of task to nest)
       }
     }
-    
+
     return dropZone; // Return as-is for now, let parent calculation handle it
   }
 
   // Calculate relative position using the new simplified API
-  function calculateRelativePosition(dropZone: DropZoneInfo | null, parentId: string | null, draggedTaskIds: string[]): RelativePositionUpdate {
+  function calculateRelativePosition(
+    dropZone: DropZoneInfo | null,
+    parentId: string | null,
+    draggedTaskIds: string[]
+  ): RelativePositionUpdate {
     // Resolve any boundary ambiguity
     const resolvedDropZone = resolveParentChildBoundary(dropZone);
-    
+
     // Convert Svelte tasks to Rails task format and sort by position
     // Important: Sort to use ReactiveRecord's true positions, not DOM order during drag
     const railsTasks: Task[] = cleanedKeptTasks
-      .map(t => ({
+      .map((t) => ({
         id: t.id,
         position: t.position || 0,
         parent_id: t.parent_id,
-        title: t.title
+        title: t.title,
       }))
       .sort((a, b) => (a.position || 0) - (b.position || 0));
-    
+
     // Use the new relative position calculator
-    const result = calculateRelativePositionFromTarget(railsTasks, resolvedDropZone, parentId, draggedTaskIds);
-    
+    const result = calculateRelativePositionFromTarget(
+      railsTasks,
+      resolvedDropZone,
+      parentId,
+      draggedTaskIds
+    );
+
     return result.relativePosition;
   }
 
-  // Legacy position calculation for client-side prediction (backward compatibility)
-  // TODO: This needs to go
-  function calculatePositionFromTarget(dropZone: DropZoneInfo | null, parentId: string | null, draggedTaskIds: string[]): number {
-    // Use relative positioning and convert to integer for client prediction
-    const relativePosition = calculateRelativePosition(dropZone, parentId, draggedTaskIds);
-    
-    // Convert to integer position for optimistic updates using positioning-v2.ts utilities
-    const positionUpdates = convertRelativeToPositionUpdates(
-      cleanedKeptTasks.map(t => ({ id: t.id, position: t.position || 0, parent_id: t.parent_id })),
-      [relativePosition]
-    );
-    
-    return positionUpdates[0]?.position || 1;
-  }
-  
+  // NOTE: Legacy calculatePositionFromTarget function removed as per TODO comment
 </script>
 
 <div class="task-list" bind:this={taskListContainer}>
-
   <!-- Tasks container - always show to include new task row -->
-  <div 
+  <div
     class="tasks-container"
     data-testid="task-list"
     use:storeDragAction={{
@@ -1678,35 +1662,49 @@
       onStart: handleSortStart,
       onEnd: handleSortEnd,
       onSort: handleTaskReorder,
-      onMove: handleMoveDetection
+      onMove: handleMoveDetection,
     }}
     bind:this={tasksContainer}
   >
     <!-- Add New Task Row at top when list is empty -->
-    {#if canCreateTasks && hasNoTasks}
-      <NewTaskRow 
+    {#if canCreateTasks && hasNoTasks && showNewTaskRow}
+      <NewTaskRow
         mode="bottom-row"
         depth={0}
         manager={newTaskManager}
         taskState={bottomTaskState}
         isEmptyList={true}
         onStateChange={(changes) => taskCreationManager.updateState('bottom', changes)}
-        on:titlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
+        ontitlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
       />
     {/if}
-    
+
     {#if cleanedTasks.length === 0}
-      <div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <h4>{taskFilter.showDeleted ? 'No deleted tasks' : 'No tasks yet'}</h4>
-        {#if canCreateTasks}
-          <p>Click "New Task" above to get started.</p>
-        {:else}
-          <p>Clear the deleted filter to view active tasks.</p>
-        {/if}
-      </div>
+      {#if isNewJobMode}
+        <!-- NEW: New job empty state -->
+        <div class="empty-state empty-state--new-job">
+          <div class="empty-content">
+            <h3>Creating New Job</h3>
+            <p>Give your job a name to get started. You can add tasks once the job is created.</p>
+            {#if onCancel}
+              <button class="cancel-link" onclick={onCancel}> Cancel </button>
+            {/if}
+          </div>
+        </div>
+      {:else}
+        <!-- Existing "No tasks" empty state -->
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <h4>{taskFilter.showDeleted ? 'No deleted tasks' : 'No tasks yet'}</h4>
+          {#if canCreateTasks}
+            <p>Click "New Task" above to get started.</p>
+          {:else}
+            <p>Clear the deleted filter to view active tasks.</p>
+          {/if}
+        </div>
+      {/if}
     {/if}
-    
+
     {#if hierarchicalTasks.length > 0}
       {#each hierarchicalTasks as task (task.id)}
         {@render renderTaskWithSubtasks(task)}
@@ -1715,8 +1713,8 @@
 
     {#snippet renderTaskWithSubtasks(task)}
       <!-- Render the task -->
-      <TaskRow 
-        task={task}
+      <TaskRow
+        {task}
         depth={0}
         hasSubtasks={task.subtasks && task.subtasks.length > 0}
         isExpanded={hierarchyManager.isTaskExpanded(task.id)}
@@ -1724,35 +1722,43 @@
         isEditing={editingTaskId === task.id}
         isDeleting={deletingTaskIds.has(task.id)}
         canEdit={canEditTasks}
-        jobId={jobId}
-        batchTaskDetails={batchTaskDetails}
-        currentTime={currentTime}
-        on:taskaction={handleTaskAction}
+        {jobId}
+        {batchTaskDetails}
+        {currentTime}
+        ontaskaction={handleTaskAction}
       />
-      
+
       <!-- Inline New Task Row for this task -->
-      {#if canCreateTasks && insertNewTaskAfter === task.id && inlineTaskState.isShowing}
-        <NewTaskRow 
+      {#if canCreateTasks && insertNewTaskAfter === task.id && inlineTaskState.isShowing && showNewTaskRow}
+        <NewTaskRow
           mode="inline-after-task"
           depth={0}
           manager={inlineTaskManager}
           taskState={inlineTaskState}
           onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
-          on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
+          ontitlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
         />
       {/if}
 
       <!-- Animated subtask container with recursive rendering -->
       {#if task.subtasks && task.subtasks.length > 0 && hierarchyManager.isTaskExpanded(task.id)}
-        <div 
+        <div
           class="subtask-animation-container"
-          transition:conditionalSlide|global={{ 
-            disabled: !shouldAnimateTask(task.id)
+          transition:conditionalSlide|global={{
+            disabled: !shouldAnimateTask(task.id),
           }}
-          on:introstart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
-          on:introend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
-          on:outrostart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
-          on:outroend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
+          onintrostart={() => {
+            if (shouldAnimateTask(task.id)) isSlideAnimating = true;
+          }}
+          onintroend={() => {
+            if (shouldAnimateTask(task.id)) isSlideAnimating = false;
+          }}
+          onoutrostart={() => {
+            if (shouldAnimateTask(task.id)) isSlideAnimating = true;
+          }}
+          onoutroend={() => {
+            if (shouldAnimateTask(task.id)) isSlideAnimating = false;
+          }}
         >
           {#each task.subtasks as subtask (subtask.id)}
             {@render renderSubtask(subtask, 1)}
@@ -1763,44 +1769,52 @@
 
     {#snippet renderSubtask(task, depth)}
       <!-- Render the subtask -->
-      <TaskRow 
-        task={task}
-        depth={depth}
+      <TaskRow
+        {task}
+        {depth}
         hasSubtasks={task.subtasks && task.subtasks.length > 0}
         isExpanded={hierarchyManager.isTaskExpanded(task.id)}
         isSelected={taskSelection.selectedTaskIds.has(task.id)}
         isEditing={editingTaskId === task.id}
         isDeleting={deletingTaskIds.has(task.id)}
         canEdit={canEditTasks}
-        jobId={jobId}
-        batchTaskDetails={batchTaskDetails}
-        currentTime={currentTime}
-        on:taskaction={handleTaskAction}
+        {jobId}
+        {batchTaskDetails}
+        {currentTime}
+        ontaskaction={handleTaskAction}
       />
-      
+
       <!-- Inline New Task Row for this subtask -->
-      {#if canCreateTasks && insertNewTaskAfter === task.id && inlineTaskState.isShowing}
-        <NewTaskRow 
+      {#if canCreateTasks && insertNewTaskAfter === task.id && inlineTaskState.isShowing && showNewTaskRow}
+        <NewTaskRow
           mode="inline-after-task"
-          depth={depth}
+          {depth}
           manager={inlineTaskManager}
           taskState={inlineTaskState}
           onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
-          on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
+          ontitlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
         />
       {/if}
 
       <!-- Animated nested subtask container (recursive!) -->
       {#if task.subtasks && task.subtasks.length > 0 && hierarchyManager.isTaskExpanded(task.id)}
-        <div 
+        <div
           class="subtask-animation-container"
-          transition:conditionalSlide|global={{ 
-            disabled: !shouldAnimateTask(task.id)
+          transition:conditionalSlide|global={{
+            disabled: !shouldAnimateTask(task.id),
           }}
-          on:introstart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
-          on:introend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
-          on:outrostart={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = true; }}
-          on:outroend={() => { if (shouldAnimateTask(task.id)) isSlideAnimating = false; }}
+          onintrostart={() => {
+            if (shouldAnimateTask(task.id)) isSlideAnimating = true;
+          }}
+          onintroend={() => {
+            if (shouldAnimateTask(task.id)) isSlideAnimating = false;
+          }}
+          onoutrostart={() => {
+            if (shouldAnimateTask(task.id)) isSlideAnimating = true;
+          }}
+          onoutroend={() => {
+            if (shouldAnimateTask(task.id)) isSlideAnimating = false;
+          }}
         >
           {#each task.subtasks as nestedSubtask (nestedSubtask.id)}
             {@render renderSubtask(nestedSubtask, depth + 1)}
@@ -1808,17 +1822,17 @@
         </div>
       {/if}
     {/snippet}
-      
+
     <!-- Add New Task Row at bottom when tasks exist -->
-    {#if canCreateTasks && !hasNoTasks}
-      <NewTaskRow 
+    {#if canCreateTasks && !hasNoTasks && showNewTaskRow}
+      <NewTaskRow
         mode="bottom-row"
         depth={0}
         manager={newTaskManager}
         taskState={bottomTaskState}
         isEmptyList={false}
         onStateChange={(changes) => taskCreationManager.updateState('bottom', changes)}
-        on:titlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
+        ontitlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
       />
     {/if}
   </div>
@@ -1832,7 +1846,6 @@
     </div>
   {/if}
 </div>
-
 
 <DeletionModal
   open={isShowingDeleteConfirmation}
@@ -1882,6 +1895,38 @@
     margin: 0;
   }
 
+  .empty-state--new-job {
+    padding: 40px 20px;
+  }
+
+  .empty-state--new-job .empty-content h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+  }
+
+  .empty-state--new-job .empty-content p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+  }
+
+  .cancel-link {
+    background: none;
+    border: none;
+    color: var(--accent-blue);
+    font-size: 14px;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .cancel-link:hover {
+    color: var(--accent-blue-hover);
+  }
+
   .tasks-container {
     display: flex;
     flex-direction: column;
@@ -1900,7 +1945,7 @@
 
   .dragFeedback-message {
     background-color: rgba(50, 215, 75, 0.2);
-    color: var(--accent-green, #32D74B);
+    color: var(--accent-green, #32d74b);
     padding: 8px 12px;
     border-radius: 6px;
     font-size: 12px;
@@ -1910,7 +1955,7 @@
 
   .dragFeedback-message.error {
     background-color: rgba(255, 69, 58, 0.2);
-    color: var(--accent-red, #FF453A);
+    color: var(--accent-red, #ff453a);
     border-color: rgba(255, 69, 58, 0.3);
   }
 
@@ -1929,14 +1974,14 @@
   :global(.drag-drop-indicator) {
     position: absolute;
     height: 3px;
-    background: linear-gradient(90deg, #007AFF, #0099FF);
+    background: linear-gradient(90deg, #007aff, #0099ff);
     border-radius: 2px;
     box-shadow: 0 1px 4px rgba(0, 122, 255, 0.4);
     pointer-events: none;
     z-index: 1000;
   }
 
-  :global([role="button"][data-task-id].drag-nest-target) {
+  :global([role='button'][data-task-id].drag-nest-target) {
     background-color: var(--accent-blue) !important;
     color: white !important;
     text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75) !important;
@@ -1968,5 +2013,4 @@
       margin-bottom: 12px;
     }
   }
-
 </style>

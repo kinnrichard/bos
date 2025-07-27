@@ -13,10 +13,10 @@
   import type { PopulatedJob } from '$lib/types/job';
 
   // Props - accept job and disabled state
-  let { 
+  let {
     currentJob,
-    disabled = false 
-  }: { 
+    disabled = false,
+  }: {
     currentJob?: PopulatedJob | null;
     disabled?: boolean;
   } = $props();
@@ -24,19 +24,20 @@
   // Search context detection
   function getSearchContext() {
     if (!$page?.route?.id) return null;
-    
+
     // Jobs listing page
     if ($page.route.id === '/(authenticated)/jobs') return 'jobs';
-    
+
     // Client jobs page - search client-specific jobs
     if ($page.route.id === '/(authenticated)/clients/[id]/jobs') return 'client-jobs';
-    
+
     // Clients listing page (but not search results)
-    if ($page.route.id === '/(authenticated)/clients' && !$page.url.pathname.includes('/search')) return 'clients';
-    
+    if ($page.route.id === '/(authenticated)/clients' && !$page.url.pathname.includes('/search'))
+      return 'clients';
+
     // Job detail page - search tasks
     if ($page.route.id === '/(authenticated)/jobs/[id]') return 'tasks';
-    
+
     return null;
   }
 
@@ -60,7 +61,7 @@
   const searchContext = $derived(getSearchContext());
   const searchPlaceholder = $derived(getSearchPlaceholder(searchContext));
   const showSearch = $derived(searchContext !== null);
-  
+
   // Get the appropriate search query based on context
   const searchQuery = $derived.by(() => {
     switch (searchContext) {
@@ -76,7 +77,7 @@
         return '';
     }
   });
-  
+
   let searchFocused = $state(false);
   let filterPopover = $state<{ open: boolean } | null>(null);
 
@@ -90,7 +91,7 @@
   function handleSearchInput(event: Event) {
     const target = event.target as HTMLInputElement;
     const value = target.value;
-    
+
     switch (searchContext) {
       case 'jobs':
         jobsSearchActions.setSearchQuery(value);
@@ -148,7 +149,7 @@
   // Get current page from route
   function getCurrentPage() {
     if (!$page?.route?.id) return 'home';
-    
+
     // Extract page type from route
     if ($page.route.id === '/(authenticated)/jobs/[id]') return 'job-detail';
     if ($page.route.id.includes('/jobs')) return 'jobs';
@@ -166,19 +167,39 @@
     switch (page) {
       case 'jobs':
         return [
-          { label: 'New Job', icon: '/icons/plus.svg', iconType: 'svg', action: () => debugComponent('New job action triggered') }
+          {
+            label: 'New Job',
+            icon: '/icons/plus.svg',
+            iconType: 'svg',
+            action: () => debugComponent('New job action triggered'),
+          },
         ];
       case 'clients':
         return [
-          { label: 'New Client', icon: '➕', iconType: 'emoji', action: () => debugComponent('New client action triggered') }
+          {
+            label: 'New Client',
+            icon: '➕',
+            iconType: 'emoji',
+            action: () => debugComponent('New client action triggered'),
+          },
         ];
       case 'people':
         return [
-          { label: 'Add Person', icon: '➕', iconType: 'emoji', action: () => debugComponent('Add person action triggered') }
+          {
+            label: 'Add Person',
+            icon: '➕',
+            iconType: 'emoji',
+            action: () => debugComponent('Add person action triggered'),
+          },
         ];
       case 'devices':
         return [
-          { label: 'Add Device', icon: '➕', iconType: 'emoji', action: () => debugComponent('Add device action triggered') }
+          {
+            label: 'Add Device',
+            icon: '➕',
+            iconType: 'emoji',
+            action: () => debugComponent('Add device action triggered'),
+          },
         ];
       default:
         return [];
@@ -201,14 +222,13 @@
 <div class="toolbar">
   <!-- Left section: Logo + Mobile sidebar toggle + Job status -->
   <div class="toolbar-left">
-
     <!-- Sidebar toggle (only show when sidebar is hidden) -->
     {#if !layout.sidebarVisible}
       <CircularButton
         variant="default"
         size="normal"
         onclick={disabled ? undefined : layoutActions.toggleSidebar}
-        title={disabled ? "Disabled" : "Show sidebar"}
+        title={disabled ? 'Disabled' : 'Show sidebar'}
         {disabled}
       >
         <img src="/icons/sidebar.svg" alt="Menu" />
@@ -217,17 +237,21 @@
 
     <!-- Job status button (show on job detail page or when currentJob is provided) -->
     {#if (currentPage === 'job-detail' && $page.params.id) || (currentJob && $page.route.id?.includes('/jobs/new'))}
-      <JobStatusButton 
+      <JobStatusButton
         jobId={$page.params.id || currentJob?.id || 'new'}
         initialStatus={currentJob?.status}
         {disabled}
       />
-      <TechnicianAssignmentButton 
+      <TechnicianAssignmentButton
         jobId={$page.params.id || currentJob?.id || 'new'}
         initialTechnicians={currentJob?.technicians || []}
         {disabled}
       />
-      <SchedulePriorityEditPopover jobId={$page.params.id || currentJob?.id || 'new'} bind:initialJob={currentJob} {disabled} />  
+      <SchedulePriorityEditPopover
+        jobId={$page.params.id || currentJob?.id || 'new'}
+        bind:initialJob={currentJob}
+        {disabled}
+      />
     {/if}
   </div>
 
@@ -236,7 +260,12 @@
     <!-- Search -->
     <!-- Job detail page controls -->
     {#if (currentPage === 'job-detail' && $page.params.id) || (currentJob && $page.route.id?.includes('/jobs/new'))}
-      <FilterPopover onFilterChange={handleTaskStatusFilter} onDeletedToggle={handleDeletedToggle} bind:popover={filterPopover} {disabled} />
+      <FilterPopover
+        onFilterChange={handleTaskStatusFilter}
+        onDeletedToggle={handleDeletedToggle}
+        bind:popover={filterPopover}
+        {disabled}
+      />
     {/if}
 
     <!-- Page-specific actions -->
@@ -247,7 +276,7 @@
             variant="default"
             size="normal"
             onclick={disabled ? undefined : action.action}
-            title={disabled ? "Disabled" : action.label}
+            title={disabled ? 'Disabled' : action.label}
             data-testid={action.label === 'New Job' ? 'create-job-button' : undefined}
             {disabled}
           >
@@ -260,42 +289,38 @@
         {/each}
       </div>
     {/if}
-	
-	{#if showSearch}
-	  <div class="search-container" class:focused={searchFocused && !disabled} class:disabled>
-	    <div class="search-input-wrapper">
-	      <img src="/icons/magnifyingglass.svg" alt="Search" class="search-icon" />
-	      <input
-	        type="text"
-	        placeholder={disabled ? "Search disabled" : searchPlaceholder}
-	        value={searchQuery}
-	        oninput={disabled ? undefined : handleSearchInput}
-	        onfocus={disabled ? undefined : (() => searchFocused = true)}
-	        onblur={disabled ? undefined : (() => searchFocused = false)}
-	        onkeydown={disabled ? undefined : handleSearchKeydown}
-	        class="search-input"
-	        {disabled}
-	        readonly={disabled}
-	      />
-	      {#if searchQuery && !disabled}
-	        <button 
-	          class="search-clear"
-	          onclick={handleSearchClear}
-	          aria-label="Clear search"
-	        >
-	          <img src="/icons/close.svg" alt="Clear" />
-	        </button>
-	      {/if}
-	    </div>
-	  </div>
-	{/if}
+
+    {#if showSearch}
+      <div class="search-container" class:focused={searchFocused && !disabled} class:disabled>
+        <div class="search-input-wrapper">
+          <img src="/icons/magnifyingglass.svg" alt="Search" class="search-icon" />
+          <input
+            type="text"
+            placeholder={disabled ? '' : searchPlaceholder}
+            value={searchQuery}
+            oninput={disabled ? undefined : handleSearchInput}
+            onfocus={disabled ? undefined : () => (searchFocused = true)}
+            onblur={disabled ? undefined : () => (searchFocused = false)}
+            onkeydown={disabled ? undefined : handleSearchKeydown}
+            class="search-input"
+            {disabled}
+            readonly={disabled}
+          />
+          {#if searchQuery && !disabled}
+            <button class="search-clear" onclick={handleSearchClear} aria-label="Clear search">
+              <img src="/icons/close.svg" alt="Clear" />
+            </button>
+          {/if}
+        </div>
+      </div>
+    {/if}
 
     <!-- User menu -->
     <div class="user-menu">
       <CircularButton
         variant="avatar"
         size="normal"
-        title={disabled ? "Disabled" : "User menu"}
+        title={disabled ? 'Disabled' : 'User menu'}
         {disabled}
       >
         <span class="user-initials">OL</span>
@@ -324,7 +349,6 @@
     align-items: center;
     gap: 12px;
   }
-
 
   /* Icon styling for CircularButton content */
 
@@ -427,7 +451,6 @@
     gap: 8px;
   }
 
-
   .action-icon {
     font-size: 16px;
   }
@@ -437,7 +460,6 @@
     height: 20px;
     opacity: 0.7;
   }
-
 
   /* User menu */
 
@@ -453,7 +475,6 @@
     .search-container {
       width: 220px;
     }
-
   }
 
   @media (max-width: 768px) {
@@ -480,12 +501,10 @@
       width: 150px;
     }
 
-
     .action-icon-svg {
       width: 16px;
       height: 16px;
     }
-
 
     .user-initials {
       font-size: 12px;

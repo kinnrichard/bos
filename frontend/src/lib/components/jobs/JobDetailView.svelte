@@ -1,27 +1,26 @@
 <script lang="ts">
   import type { PopulatedJob } from '$lib/types/job';
-  import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
   import EditableTitle from '../ui/EditableTitle.svelte';
-  import JobInfo from './JobInfo.svelte';
   import TaskList from './TaskList.svelte';
-  import StatusIndicator from './StatusIndicator.svelte';
   import { debugComponent } from '$lib/utils/debug';
 
   // ✨ USE $props() FOR SVELTE 5 RUNES MODE
-  let { 
-    job, 
-    keptTasks = [], 
-    batchTaskDetails = null 
-  }: { 
-    job: PopulatedJob; 
-    keptTasks?: any[];
-    batchTaskDetails?: any 
+  let {
+    job,
+    keptTasks = [],
+    batchTaskDetails = null,
+    isNewJobMode = false, // NEW: Indicates creation mode
+    onJobTitleSave = null, // NEW: Custom save handler for creation
+    onCancel = null, // NEW: Cancel handler for creation
+  }: {
+    job: PopulatedJob;
+    keptTasks?: unknown[];
+    batchTaskDetails?: unknown;
+    isNewJobMode?: boolean; // NEW
+    onJobTitleSave?: ((title: string) => Promise<unknown>) | null; // NEW
+    onCancel?: (() => void) | null; // NEW
   } = $props();
 
-  // ✨ USE $derived FOR COMPUTED VALUES (NOT REACTIVE STATEMENTS)
-  const statusEmoji = $derived(getJobStatusEmoji(job?.status));
-  const priorityEmoji = $derived(getJobPriorityEmoji(job?.priority));
-  
   // ✨ USE $inspect FOR DEBUGGING REACTIVE STATE IN SVELTE 5
   $effect(() => {
     if (job) {
@@ -31,27 +30,33 @@
         client: job?.client?.name || 'Using Zero.js flat structure',
         status: job?.status,
         tasksType: typeof job?.tasks,
-        tasksLength: job?.tasks?.length
+        tasksLength: job?.tasks?.length,
       });
       if (job?.tasks && job.tasks.length > 0) {
         $inspect('[JobDetailView] First task:', job.tasks[0]);
         debugComponent('[JobDetailView] First task data', {
           taskId: job.tasks[0]?.id,
-          taskTitle: job.tasks[0]?.title
+          taskTitle: job.tasks[0]?.title,
         });
       }
     }
   });
-  
+
   // ✨ USE $derived FOR COMPUTED VALUES (NOT REACTIVE STATEMENTS)
   const jobTitle = $derived(job?.title || '');
-  const jobClient = $derived(job?.client?.name || 'Unknown Client'); // Zero.js flat structure
-  const jobStatus = $derived(job?.status);
   const jobId = $derived(job?.id || '');
   const isUntitledJob = $derived(jobTitle === 'Untitled Job' || jobTitle === '');
 
-  // Handle job title save
+  // Determine auto-focus behavior
+  const shouldAutoFocus = $derived(isNewJobMode || isUntitledJob);
+
+  // Handle job title save - use custom handler in new job mode
   async function handleJobTitleSave(newTitle: string) {
+    if (isNewJobMode && onJobTitleSave) {
+      return await onJobTitleSave(newTitle);
+    }
+
+    // Existing logic for updating existing jobs
     try {
       // Use the Job ActiveRecord model to update
       const { Job } = await import('$lib/models/job');
@@ -70,20 +75,21 @@
     tag="h1"
     className="job-title"
     placeholder="Untitled Job"
-    autoFocus={isUntitledJob}
+    autoFocus={shouldAutoFocus}
     onSave={handleJobTitleSave}
   />
-  
+
   <!-- Tasks Section -->
   <div class="tasks-section">
-    <TaskList 
-      tasks={job?.tasks || []} 
-      keptTasks={keptTasks} 
-      jobId={job?.id} 
-      {batchTaskDetails} 
+    <TaskList
+      tasks={job?.tasks || []}
+      {keptTasks}
+      jobId={job?.id}
+      {batchTaskDetails}
+      {isNewJobMode}
+      {onCancel}
     />
   </div>
-  
 </div>
 
 <style>

@@ -8,9 +8,11 @@
   let {
     jobId,
     initialJob = null,
+    disabled = false,
   }: {
     jobId: string;
     initialJob?: PopulatedJob | null;
+    disabled?: boolean;
   } = $props();
 
   let basePopover = $state();
@@ -85,13 +87,15 @@
   }
 </script>
 
-<BasePopover bind:popover={basePopover} preferredPlacement="bottom" panelWidth="280px">
+<BasePopover bind:popover={basePopover} preferredPlacement="bottom" panelWidth="280px" {disabled}>
   {#snippet trigger({ popover })}
     <button
       class="popover-button"
+      class:disabled
       use:popover.button
-      title="Schedule and Priority"
-      onclick={(e) => e.stopPropagation()}
+      title={disabled ? 'Disabled' : 'Schedule and Priority'}
+      {disabled}
+      onclick={disabled ? undefined : (e) => e.stopPropagation()}
     >
       <img src="/icons/calendar-add.svg" alt="Schedule" class="calendar-icon" />
     </button>
@@ -181,9 +185,16 @@
     z-index: 10;
   }
 
-  .popover-button:hover {
+  .popover-button:hover:not(:disabled) {
     background-color: var(--bg-tertiary);
     border-color: var(--accent-blue);
+  }
+
+  .popover-button:disabled,
+  .popover-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
   }
 
   .calendar-icon {

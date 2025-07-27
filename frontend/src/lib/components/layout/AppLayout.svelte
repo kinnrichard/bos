@@ -8,17 +8,19 @@
   let {
     showSidebar = true,
     showToolbar = true,
+    toolbarDisabled = false,
     currentJob = null,
     currentClient = null,
-    children
+    children,
   }: {
     showSidebar?: boolean;
     showToolbar?: boolean;
+    toolbarDisabled?: boolean;
     currentJob?: PopulatedJob | null;
     currentClient?: any | null;
     children?: import('svelte').Snippet;
   } = $props();
-  
+
   // Update current client based on the job or direct client prop
   $effect(() => {
     if (currentClient) {
@@ -30,8 +32,8 @@
         attributes: {
           name: currentClient.name || 'Unnamed Client',
           created_at: currentClient.created_at || new Date().toISOString(),
-          updated_at: currentClient.updated_at || new Date().toISOString()
-        }
+          updated_at: currentClient.updated_at || new Date().toISOString(),
+        },
       });
     } else if (currentJob && currentJob.client) {
       // Fall back to job's client
@@ -42,8 +44,8 @@
         attributes: {
           name: currentJob.client.name || 'Unnamed Client',
           created_at: currentJob.client.created_at || new Date().toISOString(),
-          updated_at: currentJob.client.updated_at || new Date().toISOString()
-        }
+          updated_at: currentJob.client.updated_at || new Date().toISOString(),
+        },
       });
     } else {
       // Clear current client when there's no job or client
@@ -62,7 +64,7 @@
 
   <!-- Mobile backdrop -->
   {#if layout.isMobile && layout.sidebarVisible && showSidebar}
-    <div 
+    <div
       class="mobile-backdrop"
       onclick={layoutActions.hideSidebar}
       onkeydown={(e) => e.key === 'Escape' && layoutActions.hideSidebar()}
@@ -76,7 +78,7 @@
     <!-- Toolbar -->
     {#if showToolbar}
       <div class="toolbar-container">
-        <Toolbar {currentJob} />
+        <Toolbar {currentJob} disabled={toolbarDisabled} />
       </div>
     {/if}
 
@@ -153,7 +155,6 @@
     position: relative;
   }
 
-
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .sidebar-container:not(.mobile) {
@@ -167,10 +168,9 @@
     .sidebar-container {
       border-right-width: 2px;
     }
-    
+
     .toolbar-container {
       border-bottom-width: 2px;
     }
   }
-
 </style>

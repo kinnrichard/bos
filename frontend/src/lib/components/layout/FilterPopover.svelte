@@ -1,14 +1,15 @@
 <script lang="ts">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
-  import PopoverMenuSeparator from '$lib/components/ui/PopoverMenuSeparator.svelte';
+  // NOTE: PopoverMenuSeparator import removed as unused
 
   interface Props {
     onFilterChange?: (statuses: string[]) => void;
     onDeletedToggle?: (showDeleted: boolean) => void;
+    disabled?: boolean;
   }
 
-  let { onFilterChange = () => {}, onDeletedToggle = () => {} }: Props = $props();
+  let { onFilterChange = () => {}, onDeletedToggle = () => {}, disabled = false }: Props = $props();
 
   let basePopover: any = $state();
 
@@ -21,7 +22,7 @@
     { id: 'in_progress', value: 'in_progress', label: 'In Progress' },
     { id: 'paused', value: 'paused', label: 'Paused' },
     { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed' },
-    { id: 'cancelled', value: 'cancelled', label: 'Cancelled' }
+    { id: 'cancelled', value: 'cancelled', label: 'Cancelled' },
   ];
 
   // Build menu options with title and separator
@@ -29,11 +30,11 @@
     { id: 'title', value: 'title', label: 'Filter Tasks', header: true },
     ...statusOptions,
     { id: 'separator', divider: true },
-    { id: 'deleted', value: 'deleted', label: 'Deleted' }
+    { id: 'deleted', value: 'deleted', label: 'Deleted' },
   ]);
 
   // Start with all statuses selected (default behavior)
-  let selectedStatuses: string[] = $state(statusOptions.map(option => option.value));
+  let selectedStatuses: string[] = $state(statusOptions.map((option) => option.value));
 
   // Handle status toggle with "prevent all unchecked" logic
   function handleStatusToggle(option: { value: string; label: string }, event?: MouseEvent) {
@@ -41,23 +42,23 @@
     if (event?.altKey) {
       // Check if already exclusively selected - if so, select all
       if (selectedStatuses.length === 1 && selectedStatuses.includes(option.value)) {
-        selectedStatuses = statusOptions.map(opt => opt.value);
+        selectedStatuses = statusOptions.map((opt) => opt.value);
       } else {
         // Otherwise, select only this option
         selectedStatuses = [option.value];
       }
       return;
     }
-    
+
     const isCurrentlySelected = selectedStatuses.includes(option.value);
-    
+
     if (isCurrentlySelected) {
       // User wants to uncheck - check if this would make all unchecked
-      const newSelected = selectedStatuses.filter(status => status !== option.value);
-      
+      const newSelected = selectedStatuses.filter((status) => status !== option.value);
+
       if (newSelected.length === 0) {
         // Would make all unchecked - select all instead
-        selectedStatuses = statusOptions.map(opt => opt.value);
+        selectedStatuses = statusOptions.map((opt) => opt.value);
       } else {
         // Safe to uncheck this item
         selectedStatuses = newSelected;
@@ -69,21 +70,19 @@
   }
 
   // Use $derived for computed values in Svelte 5
-  let hasActiveFilters = $derived(selectedStatuses.length > 0 && selectedStatuses.length < statusOptions.length || showDeleted);
-  
-  // Compute selected values for PopoverMenu
-  let selectedValues = $derived(
-    showDeleted 
-      ? [...selectedStatuses, 'deleted']
-      : selectedStatuses
+  let hasActiveFilters = $derived(
+    (selectedStatuses.length > 0 && selectedStatuses.length < statusOptions.length) || showDeleted
   );
+
+  // Compute selected values for PopoverMenu
+  let selectedValues = $derived(showDeleted ? [...selectedStatuses, 'deleted'] : selectedStatuses);
 
   // Use $effect to notify parent when filters change
   $effect(() => {
     onFilterChange(selectedStatuses);
   });
-  
-  // Use $effect to notify parent when deleted toggle changes  
+
+  // Use $effect to notify parent when deleted toggle changes
   $effect(() => {
     onDeletedToggle(showDeleted);
   });
@@ -93,29 +92,29 @@
     showDeleted = !showDeleted;
   }
 
-  // Handle deleted option click
-  function handleDeletedClick(option: any, event?: MouseEvent) {
-    toggleDeleted();
-  }
+  // NOTE: handleDeletedClick function removed as unused
 </script>
 
-<BasePopover 
+<BasePopover
   bind:popover={basePopover}
   preferredPlacement="bottom"
   panelWidth="max-content"
+  {disabled}
 >
   {#snippet trigger({ popover })}
-    <button 
+    <button
       class="popover-button"
+      class:disabled
       use:popover.button
-      title="Filter tasks"
-      onclick={(e) => e.stopPropagation()}
+      title={disabled ? 'Disabled' : 'Filter tasks'}
+      {disabled}
+      onclick={disabled ? undefined : (e) => e.stopPropagation()}
     >
-      <img 
-        src={hasActiveFilters ? "/icons/filter-active.svg" : "/icons/filter-inactive.svg"} 
-        alt="" 
-        class="filter-icon" 
-        class:active={hasActiveFilters} 
+      <img
+        src={hasActiveFilters ? '/icons/filter-active.svg' : '/icons/filter-inactive.svg'}
+        alt=""
+        class="filter-icon"
+        class:active={hasActiveFilters}
       />
     </button>
   {/snippet}
@@ -157,9 +156,16 @@
     z-index: 10;
   }
 
-  .popover-button:hover {
+  .popover-button:hover:not(:disabled) {
     background-color: var(--bg-tertiary);
     border-color: var(--accent-blue);
+  }
+
+  .popover-button:disabled,
+  .popover-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
   }
 
   .filter-icon {
@@ -171,7 +177,6 @@
   .filter-icon.active {
     opacity: 1;
   }
-
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
