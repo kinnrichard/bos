@@ -478,6 +478,24 @@ module Zero
         end
       end
 
+      # Validate configuration (alias for compatibility with tests)
+      #
+      # @return [Boolean] True if configuration is valid
+      # @raise [ValidationError] If validation fails
+      #
+      def validate_configuration(config = nil)
+        # If config is provided, temporarily use it for validation
+        if config
+          original_config = @configuration
+          @configuration = config
+          result = validate_configuration!
+          @configuration = original_config
+          result
+        else
+          validate_configuration!
+        end
+      end
+
       # Get configuration health status
       #
       # @return [Hash] Health status and diagnostics

@@ -121,6 +121,16 @@ module Zero
         }
       end
 
+      # Extract schema for a specific table (alias for compatibility with tests)
+      #
+      # @param table_name [String] Name of the table
+      # @return [Hash] Table schema data including columns, relationships, and patterns
+      # @raise [TableNotFoundError] If table is not found
+      #
+      def extract_table_schema(table_name)
+        schema_for_table(table_name)
+      end
+
       # Detect patterns for a specific table
       #
       # @param table_name [String] Name of the table
