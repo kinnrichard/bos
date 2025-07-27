@@ -70,7 +70,11 @@ module Zero
       # @param format [Boolean] Whether to format with Prettier (default: true)
       # @return [String] Absolute file path
       def write_with_formatting(relative_path, content, format: true)
-        file_path = File.join(Rails.root, output_dir, relative_path)
+        file_path = if Pathname.new(output_dir).absolute?
+                      File.join(output_dir, relative_path)
+        else
+                      File.join(Rails.root, output_dir, relative_path)
+        end
 
         # Ensure directory exists
         ensure_directory_exists(File.dirname(file_path))

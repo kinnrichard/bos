@@ -92,6 +92,16 @@ module Zero
         @effective_mappings[normalized_type] || handle_unknown_type(normalized_type)
       end
 
+      # Alias for map_rails_type_to_typescript for compatibility
+      #
+      # @param rails_type [String, Symbol] The Rails column type
+      # @param column [Hash] Column metadata including enum information
+      # @return [String] The corresponding TypeScript type
+      #
+      def map_type(rails_type, column = {})
+        map_rails_type_to_typescript(rails_type, column)
+      end
+
       # Generate TypeScript enum type from column enum values
       #
       # @param column [Hash] Column metadata with enum information

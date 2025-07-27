@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "pathname"
 require_relative "../../../zero_schema_generator/rails_schema_introspector"
 require_relative "relationship_processor"
 require_relative "type_mapper"
@@ -300,8 +301,14 @@ module Zero
             validate_services: true
           )
 
-          # Pre-initialize core services for better performance
-          @service_registry.get_service(:configuration)
+          # Pre-initialize configuration service and update with generator options
+          config_service = @service_registry.get_service(:configuration)
+          config_service.update_from_generator_options(@options)
+
+          # Clear FileManager so it gets recreated with updated configuration
+          @service_registry.clear_service_cache(:file_manager)
+
+          # Initialize other services after configuration is updated
           @service_registry.get_service(:schema)
           @service_registry.get_service(:file_manager)
           @service_registry.get_service(:template_renderer)
@@ -328,9 +335,9 @@ module Zero
         config_service = service_registry.get_service(:configuration)
         file_manager = service_registry.get_service(:file_manager)
 
-        output_dir = options[:output_dir] || config_service.base_output_dir
-        base_path = File.join(Rails.root, output_dir)
-        types_path = File.join(base_path, "types")
+        # Use the updated configuration values (already processed by update_from_generator_options)
+        base_path = config_service.base_output_dir
+        types_path = config_service.types_dir
 
         file_manager.ensure_directory_exists(base_path)
         file_manager.ensure_directory_exists(types_path)

@@ -121,7 +121,7 @@ module Zero
           }
 
           # Test template rendering with coordinator-provided context
-          rendered_content = template_renderer.render_template(
+          rendered_content = template_renderer.render(
             "active_model.ts.erb",
             template_context
           )
@@ -158,7 +158,7 @@ module Zero
             type_mapper: type_mapper
           }
 
-          rendered_content = template_renderer.render_template(
+          rendered_content = template_renderer.render(
             "active_model.ts.erb",
             template_context
           )
@@ -301,7 +301,7 @@ module Zero
           columns_with_types: columns_with_types
         }
 
-        rendered_content = template_renderer.render_template(
+        rendered_content = template_renderer.render(
           "active_model.ts.erb",
           template_context
         )
@@ -332,11 +332,11 @@ module Zero
           schema_data = schema_service.extract_table_schema("users")
 
           # Mock template rendering to fail
-          template_renderer.expects(:render_template).raises(StandardError.new("Template error"))
+          template_renderer.expects(:render).raises(StandardError.new("Template error"))
 
           # Error should be catchable and not crash the registry
           assert_raises StandardError do
-            template_renderer.render_template("active_model.ts.erb", { schema: schema_data })
+            template_renderer.render("active_model.ts.erb", { schema: schema_data })
           end
 
           # Registry should remain stable

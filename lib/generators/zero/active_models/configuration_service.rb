@@ -530,6 +530,49 @@ module Zero
         }
       end
 
+      # Update configuration with generator options
+      #
+      # @param generator_options [Hash] Options from Rails generator
+      #
+      def update_from_generator_options(generator_options)
+        return unless generator_options
+
+        # Track if we're using generator options (allows absolute paths)
+        @using_generator_options = true
+
+        # Update output directory if provided
+        if generator_options[:output_dir]
+          output_dir = generator_options[:output_dir]
+
+          # Handle absolute paths correctly
+          base_dir = if Pathname.new(output_dir).absolute?
+                       output_dir
+          else
+                       output_dir
+          end
+
+          # Update output configuration
+          update_config([ :output, :base_dir ], base_dir, validate: false)
+          update_config([ :output, :types_dir ], File.join(base_dir, "types"), validate: false)
+        end
+
+        # Update other generator options
+        if generator_options.key?(:force)
+          update_config([ :file_operations, :force_overwrite ], generator_options[:force], validate: false)
+        end
+
+        if generator_options.key?(:skip_prettier)
+          update_config([ :file_operations, :enable_prettier ], !generator_options[:skip_prettier], validate: false)
+        end
+
+        if generator_options.key?(:dry_run)
+          update_config([ :generator_options, :dry_run ], generator_options[:dry_run], validate: false)
+        end
+
+        # Validate after all updates
+        validate_configuration!
+      end
+
       private
 
       # Load configuration from file and apply defaults
@@ -728,8 +771,8 @@ module Zero
             raise ValidationError, "Output path #{key} cannot be empty"
           end
 
-          # Validate path is relative (for security)
-          if Pathname.new(path).absolute?
+          # Validate path is relative (for security), unless using generator options
+          if Pathname.new(path).absolute? && !@using_generator_options
             raise ValidationError, "Output path #{key} should be relative, got: #{path}"
           end
         end
@@ -755,6 +798,17 @@ module Zero
 
         unless performance[:max_cache_entries].is_a?(Integer) && performance[:max_cache_entries] > 0
           raise ValidationError, "performance.max_cache_entries must be a positive integer"
+        end
+      end
+
+      # Merge multiple configuration hashes
+      #
+      # @param configs [Array<Hash>] Configuration hashes to merge
+      # @return [Hash] Merged configuration hash
+      #
+      def merge_configurations(*configs)
+        configs.reduce({}) do |merged, config|
+          deep_merge(merged, config || {})
         end
       end
     end

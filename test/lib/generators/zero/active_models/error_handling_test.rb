@@ -197,12 +197,12 @@ module Zero
 
         # Mock template rendering to fail
         template_context = { table_name: "users", class_name: "User" }
-        template_renderer.expects(:render_template).with("active_model.ts.erb", template_context)
+        template_renderer.expects(:render).with("active_model.ts.erb", template_context)
           .raises(StandardError.new("Template rendering failed"))
 
         # Test error is properly raised and handled
         error = assert_raises StandardError do
-          template_renderer.render_template("active_model.ts.erb", template_context)
+          template_renderer.render("active_model.ts.erb", template_context)
         end
 
         assert_match(/Template rendering failed/, error.message)

@@ -296,7 +296,7 @@ module Zero
           }
         }
 
-        rendered_content = template_renderer.render_template("complex.ts.erb", context)
+        rendered_content = template_renderer.render("complex.ts.erb", context)
 
         assert_instance_of String, rendered_content
         assert_match(/export class ComplexModel/, rendered_content)
@@ -332,7 +332,7 @@ module Zero
 
         # Should raise NameError for undefined variables
         assert_raises NameError do
-          template_renderer.render_template("missing_vars.ts.erb", context)
+          template_renderer.render("missing_vars.ts.erb", context)
         end
 
         # Service should remain functional
@@ -362,7 +362,7 @@ module Zero
         context = { class_name: "LargeModel" }
 
         start_time = Time.current
-        rendered_content = template_renderer.render_template("large.ts.erb", context)
+        rendered_content = template_renderer.render("large.ts.erb", context)
         rendering_time = Time.current - start_time
 
         # Should handle large templates efficiently
@@ -411,7 +411,7 @@ module Zero
           }
         }
 
-        rendered_content = template_renderer.render_template("special_chars.ts.erb", context)
+        rendered_content = template_renderer.render("special_chars.ts.erb", context)
 
         assert_instance_of String, rendered_content
         assert_match(/export class SpecialModel/, rendered_content)
@@ -449,7 +449,7 @@ module Zero
 
         # Should raise ERB syntax error
         assert_raises StandardError do
-          template_renderer.render_template("malformed.ts.erb", context)
+          template_renderer.render("malformed.ts.erb", context)
         end
 
         # Service should remain functional
