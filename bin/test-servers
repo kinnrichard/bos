@@ -14,6 +14,7 @@ fi
 # Test server ports - use env vars if set, otherwise defaults
 RAILS_TEST_PORT=${RAILS_TEST_PORT:-4000}
 ZERO_TEST_PORT=${ZERO_TEST_PORT:-4850}  # Zero test port from config/zero.yml
+ZERO_WS_PORT=${ZERO_WS_PORT:-4851}      # Zero WebSocket port (can conflict)
 FRONTEND_TEST_PORT=${FRONTEND_TEST_PORT:-6173}
 
 # Set Zero upstream database for test environment
@@ -30,6 +31,37 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "🧪 Starting BOS test servers..."
+
+# Clean up potential zombie processes that could cause port conflicts
+echo "🧹 Cleaning up any zombie processes on test server ports..."
+CLEANUP_PORTS=($RAILS_TEST_PORT $ZERO_TEST_PORT $ZERO_WS_PORT $FRONTEND_TEST_PORT)
+killed_any=false
+
+for port in "${CLEANUP_PORTS[@]}"; do
+    # Find processes listening on the port
+    pids=$(lsof -ti tcp:$port 2>/dev/null || true)
+    
+    if [ -n "$pids" ]; then
+        echo "🎯 Found processes on port $port (PIDs: $pids)"
+        
+        # Kill each process
+        for pid in $pids; do
+            if kill -0 "$pid" 2>/dev/null; then
+                echo "   ⚡ Killing zombie process $pid..."
+                kill -9 "$pid" 2>/dev/null && echo "   ✅ Process $pid killed" || echo "   ❌ Failed to kill process $pid"
+                killed_any=true
+            fi
+        done
+    fi
+done
+
+if [ "$killed_any" = true ]; then
+    echo "💀 Zombie processes cleaned up, proceeding with server startup..."
+    # Give processes time to fully terminate
+    sleep 2
+else
+    echo "✨ No zombie processes found, proceeding with server startup..."
+fi
 
 # Function to check if port is available
 check_port() {
@@ -53,6 +85,10 @@ echo "🔍 Rails check complete, status: $rails_status"
 echo "🔍 Checking Zero port..."
 zero_status=$(check_port $ZERO_TEST_PORT "Zero Test" | tail -1)
 echo "🔍 Zero check complete, status: $zero_status"
+
+echo "🔍 Checking Zero WebSocket port..."
+zero_ws_status=$(check_port $ZERO_WS_PORT "Zero WebSocket" | tail -1)
+echo "🔍 Zero WebSocket check complete, status: $zero_ws_status"
 
 echo "🔍 Checking Frontend port..."
 frontend_status=$(check_port $FRONTEND_TEST_PORT "Frontend Test" | tail -1)
@@ -90,7 +126,8 @@ fi
 # Debug: Show what we detected
 echo "🔍 Server status check:"
 echo "   Rails (port $RAILS_TEST_PORT): $rails_status"
-echo "   Zero (port $ZERO_TEST_PORT): $zero_status"  
+echo "   Zero (port $ZERO_TEST_PORT): $zero_status"
+echo "   Zero WebSocket (port $ZERO_WS_PORT): $zero_ws_status"  
 echo "   Frontend (port $FRONTEND_TEST_PORT): $frontend_status"
 echo "   Commands to start: ${#commands[@]}"
 
@@ -125,9 +162,10 @@ else
     echo -e "${GREEN}🎉 All test servers already running, ready for tests!${NC}"
     echo ""
     echo "📋 Test server endpoints:"
-    echo "   Rails:    http://localhost:$RAILS_TEST_PORT"
-    echo "   Zero:     http://localhost:$ZERO_TEST_PORT" 
-    echo "   Frontend: http://localhost:$FRONTEND_TEST_PORT"
+    echo "   Rails:        http://localhost:$RAILS_TEST_PORT"
+    echo "   Zero:         http://localhost:$ZERO_TEST_PORT"
+    echo "   Zero WS:      http://localhost:$ZERO_WS_PORT" 
+    echo "   Frontend:     http://localhost:$FRONTEND_TEST_PORT"
     echo ""
     echo "⏳ Monitoring test servers... (Press Ctrl+C to stop)"
     
@@ -142,6 +180,11 @@ else
     # Add Zero port if it should be running
     if lsof -ti tcp:$ZERO_TEST_PORT >/dev/null 2>&1; then
         monitor_ports+=($ZERO_TEST_PORT)
+    fi
+    
+    # Add Zero WebSocket port if it should be running
+    if lsof -ti tcp:$ZERO_WS_PORT >/dev/null 2>&1; then
+        monitor_ports+=($ZERO_WS_PORT)
     fi
     
     # Add Frontend port if it should be running

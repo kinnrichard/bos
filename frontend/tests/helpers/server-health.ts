@@ -28,6 +28,11 @@ const TEST_SERVERS: ServerConfig[] = [
     expectedResponse: /zero|cache|ok/i, // Zero.js returns "OK" from dispatcher
   },
   {
+    name: 'Zero.js WebSocket',
+    port: 4851,
+    // No health endpoint - just check if port is open
+  },
+  {
     name: 'Frontend Dev Server',
     port: 6173,
     healthEndpoint: '/',
@@ -42,6 +47,7 @@ export class ServerHealthMonitor {
   static async validateAllServers(): Promise<{ healthy: boolean; issues: string[] }> {
     const issues: string[] = [];
 
+    // eslint-disable-next-line no-console
     console.log('🔍 Validating test server health...');
 
     for (const server of TEST_SERVERS) {
@@ -50,6 +56,7 @@ export class ServerHealthMonitor {
         if (!isHealthy) {
           issues.push(`${server.name} (port ${server.port}) is not responding correctly`);
         } else {
+          // eslint-disable-next-line no-console
           console.log(`✅ ${server.name} (port ${server.port}) is healthy`);
         }
       } catch (error) {
@@ -194,7 +201,7 @@ export class ServerHealthMonitor {
   }
 
   /**
-   * Kill zombie server processes (but not fresh ones)
+   * Kill all processes on test server ports (simple, effective approach like bin/testkill)
    */
   static async killZombieServers(): Promise<void> {
     // Skip cleanup if explicitly disabled
@@ -205,116 +212,58 @@ export class ServerHealthMonitor {
     }
 
     // eslint-disable-next-line no-console
-    console.log('🧹 Cleaning up zombie test servers (preserving fresh processes)...');
+    console.log('🧹 Cleaning up all test server processes...');
+
+    let killedAny = false;
 
     for (const server of TEST_SERVERS) {
       try {
-        // Get detailed process information
-        const psOutput = execSync(
-          `lsof -ti:${server.port} | xargs -I {} ps -o pid,etime,comm -p {} 2>/dev/null || true`,
-          { encoding: 'utf8' }
-        ).trim();
+        // Find ALL processes listening on this port (like bin/testkill does)
+        const pids = execSync(`lsof -ti tcp:${server.port} 2>/dev/null || true`, {
+          encoding: 'utf8',
+        }).trim();
 
-        if (!psOutput || psOutput.includes('PID')) {
-          continue; // No processes or just header
-        }
+        if (pids) {
+          const pidList = pids.split('\n').filter((pid) => pid.trim());
+          // eslint-disable-next-line no-console
+          console.log(
+            `🎯 Found ${server.name} on port ${server.port} (PIDs: ${pidList.join(', ')})`
+          );
 
-        const processLines = psOutput.split('\n').filter((line) => line.trim());
-
-        for (const line of processLines) {
-          const parts = line.trim().split(/\s+/);
-          if (parts.length >= 3) {
-            const pid = parts[0];
-            const etime = parts[1]; // elapsed time like "00:05" or "01:23:45"
-            const command = parts[2];
-
-            // Skip if process is very young (less than 30 seconds)
-            if (!this.isProcessOldEnough(etime)) {
-              console.log(`⏭️ Skipping fresh process ${pid} (${etime}) on port ${server.port}`);
-              continue;
-            }
-
-            // Skip if it's not a server process
-            if (!this.isServerProcess(command)) {
-              console.log(
-                `⏭️ Skipping non-server process ${pid} (${command}) on port ${server.port}`
-              );
-              continue;
-            }
-
-            console.log(
-              `🔥 Killing zombie process ${pid} (${command}, age: ${etime}) on port ${server.port}`
-            );
-
-            // Try graceful termination first
+          // Kill each process immediately with SIGKILL (like bin/testkill)
+          for (const pid of pidList) {
             try {
-              execSync(`kill -TERM ${pid}`);
-              await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2s
-
               // Check if process still exists
-              try {
-                execSync(`kill -0 ${pid}`); // Check if process exists
-                console.log(`💀 Force killing stubborn process ${pid}`);
-                execSync(`kill -9 ${pid}`);
-              } catch {
-                // Process already terminated, good
-              }
-            } catch (error) {
-              console.log(`⚠️ Could not kill process ${pid}: ${error.message}`);
+              execSync(`kill -0 ${pid} 2>/dev/null`);
+              // eslint-disable-next-line no-console
+              console.log(`   ⚡ Killing process ${pid}...`);
+              execSync(`kill -9 ${pid} 2>/dev/null`);
+              // eslint-disable-next-line no-console
+              console.log(`   ✅ Process ${pid} killed`);
+              killedAny = true;
+            } catch {
+              // Process already gone or couldn't kill - that's fine
+              // eslint-disable-next-line no-console
+              console.log(`   ❌ Process ${pid} already gone or protected`);
             }
           }
+        } else {
+          // eslint-disable-next-line no-console
+          console.log(`   ✨ No ${server.name} found on port ${server.port}`);
         }
-      } catch (error) {
-        // No processes found on this port or other error
-        if (!error.message.includes('No such process')) {
-          console.log(`⚠️ Error checking port ${server.port}: ${error.message}`);
-        }
+      } catch {
+        // No processes found on this port - that's fine
+        // eslint-disable-next-line no-console
+        console.log(`   ✨ No processes found on port ${server.port}`);
       }
     }
 
-    console.log('✅ Zombie server cleanup complete');
-  }
-
-  /**
-   * Check if process has been running long enough to be considered a zombie
-   */
-  private static isProcessOldEnough(etime: string): boolean {
-    // Parse elapsed time formats: "MM:SS", "HH:MM:SS", or "DD-HH:MM:SS"
-    const parts = etime.split(/[-:]/);
-
-    if (parts.length === 2) {
-      // MM:SS format
-      const minutes = parseInt(parts[0]);
-      const seconds = parseInt(parts[1]);
-      return minutes > 0 || seconds > 30; // > 30 seconds
-    } else if (parts.length === 3) {
-      // HH:MM:SS format
-      const hours = parseInt(parts[0]);
-      return hours > 0 || parseInt(parts[1]) > 0 || parseInt(parts[2]) > 30;
-    } else if (parts.length === 4) {
-      // DD-HH:MM:SS format
-      return true; // Any process running for days is definitely old
+    if (killedAny) {
+      // eslint-disable-next-line no-console
+      console.log('💀 Test server processes killed successfully!');
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('🎉 No test server processes were running');
     }
-
-    return false; // Default to not killing if we can't parse
-  }
-
-  /**
-   * Check if this looks like a server process we should kill
-   */
-  private static isServerProcess(command: string): boolean {
-    const serverProcesses = [
-      'ruby',
-      'rails',
-      'puma', // Rails server
-      'node',
-      'npm', // Node.js processes
-      'vite',
-      'dev', // Vite dev server
-      'zero-cache', // Zero.js cache
-      'python', // Python processes
-    ];
-
-    return serverProcesses.some((proc) => command.toLowerCase().includes(proc.toLowerCase()));
   }
 }

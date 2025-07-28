@@ -30,16 +30,16 @@ const DEBUG_MODE = process.env.DEBUG_AUTH_SETUP === 'true';
 async function globalSetup(_config: FullConfig) {
   console.log('🚀 Starting global test setup...');
 
-  // Step 0: Server Health Validation (Skip zombie cleanup during test runs)
+  // Step 0: Server Health Validation (Clean up zombies then validate)
   console.log('🏥 Validating test server health...');
 
   try {
-    // Skip zombie cleanup during test runs since Playwright manages servers
-    // Zombie cleanup can be done manually via: SKIP_ZOMBIE_CLEANUP=false npm test
-    console.log('⏭️ Skipping zombie cleanup (servers managed by Playwright webServer)');
+    // Servers should already be started by Playwright webServer configuration
+    // Give webServer time to start servers before checking (Zero.js takes ~3 seconds to fully initialize)
+    console.log('📋 Giving webServer time to start all test servers...');
+    await new Promise((resolve) => setTimeout(resolve, 8000)); // Initial wait for webServer startup
 
-    // Set environment variable to ensure any other cleanup calls are skipped
-    process.env.SKIP_ZOMBIE_CLEANUP = 'true';
+    console.log('📋 Validating servers started by Playwright webServer...');
 
     // Validate all servers are healthy (they should be started by webServer)
     const healthCheck = await ServerHealthMonitor.validateAllServers();
@@ -51,13 +51,14 @@ async function globalSetup(_config: FullConfig) {
       console.error('   cd /Users/claude/Projects/bos');
       console.error('   bin/testkill');
       console.error('   bin/test-servers');
-      console.error('\n🔄 Attempting automatic server restart...');
+      console.error('\n🔄 Attempting to restart servers via webServer...');
 
-      // Try to restart servers (but don't kill them - let Playwright handle it)
-      console.log('🔄 Servers should be managed by Playwright webServer configuration');
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      // The webServer should have already handled server startup
+      // If servers are unhealthy, it's likely a deeper configuration issue
+      console.log('🔄 Waiting for servers to stabilize...');
+      await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for servers to fully start (Zero.js needs ~3s)
 
-      // Re-check after cleanup
+      // Re-check after waiting
       const recheckHealth = await ServerHealthMonitor.validateAllServers();
       if (!recheckHealth.healthy) {
         throw new Error(
