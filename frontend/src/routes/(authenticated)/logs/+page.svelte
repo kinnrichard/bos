@@ -1,25 +1,29 @@
 <script lang="ts">
   import { ActivityLogList, LogsLayout } from '$lib/components/logs';
-  import { ReactiveActivityLog } from '$lib/models/reactive-activity-log';
+  import { ReactiveActivityLogV2 } from '$lib/models/reactive-activity-log-v2';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
 
-  // ReactiveRecord handles subscriptions internally
-  const logsQuery = ReactiveActivityLog.includes(['user', 'client', 'job'])
+  // Use ReactiveActivityLogV2 with flash prevention and progressive loading
+  const logsQuery = ReactiveActivityLogV2.kept()
+    .includes(['user', 'client', 'job'])
     .orderBy('created_at', 'asc')
     .limit(500)
     .all();
 
   // Zero.js handles all retries and refreshes automatically
-  // No manual retry logic needed - trust Zero's built-in resilience
+  // ReactiveView provides flash prevention and enhanced state management
 </script>
+
+<svelte:head>
+  <title>System Activity Logs - bŏs</title>
+</svelte:head>
 
 <AppLayout>
   <LogsLayout title="System Activity Logs">
     <ActivityLogList
-      logs={logsQuery.data || []}
+      {logsQuery}
       context="system"
-      isLoading={logsQuery.isLoading}
-      error={logsQuery.error}
+      strategy="progressive"
     />
   </LogsLayout>
 </AppLayout>
