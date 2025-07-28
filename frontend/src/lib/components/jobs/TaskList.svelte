@@ -1659,7 +1659,7 @@
         {jobId}
         {batchTaskDetails}
         {currentTime}
-        ontaskaction={handleTaskAction}
+        on:taskaction={handleTaskAction}
       />
 
       <!-- Inline New Task Row for this task -->
@@ -1715,7 +1715,7 @@
         {jobId}
         {batchTaskDetails}
         {currentTime}
-        ontaskaction={handleTaskAction}
+        on:taskaction={handleTaskAction}
       />
 
       <!-- Inline New Task Row for this subtask -->

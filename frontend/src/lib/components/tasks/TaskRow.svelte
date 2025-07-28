@@ -6,6 +6,7 @@
   import EditableTitle from '../ui/EditableTitle.svelte';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
   import type { Task } from '$lib/api/tasks';
+  import { debugUI } from '$lib/utils/debug';
   import '../../styles/task-components.scss';
   import '../../styles/focus-ring.scss';
 
@@ -44,6 +45,20 @@
   // Derive task-specific permissions
   const taskCanEdit = $derived(canEdit && taskPermissionHelpers.canEditTask(task));
   const taskCanChangeStatus = $derived(canEdit && taskPermissionHelpers.canChangeStatus(task));
+
+  // Debug permissions using proper debug system
+  $effect(() => {
+    debugUI.component('TaskRow permissions:', {
+      taskId: task.id.substring(0, 8),
+      canEdit,
+      taskCanEdit,
+      taskCanChangeStatus,
+      taskStatus: task.status,
+      taskDiscardedAt: task.discarded_at,
+      canEditTasksGlobal: taskPermissionHelpers.canEditTasks,
+      canChangeStatusHelper: taskPermissionHelpers.canChangeStatus(task),
+    });
+  });
 
   // Dispatch helper for editing events
   function handleEditingChange(editing: boolean) {
@@ -110,8 +125,6 @@
   }
 
   function handleStatusChange(event: MouseEvent) {
-    event.stopPropagation();
-
     // Check if status change is allowed
     if (!taskCanChangeStatus) {
       return;
@@ -126,6 +139,9 @@
       taskId: task.id,
       data: { newStatus: nextStatus },
     });
+
+    // Prevent this click from bubbling up to trigger row selection
+    event.stopPropagation();
   }
 
   // Handle editing state changes from EditableTitle
