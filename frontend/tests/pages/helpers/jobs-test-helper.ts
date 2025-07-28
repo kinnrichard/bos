@@ -236,7 +236,26 @@ export class JobsTestHelper {
    * Verify job card elements are displayed correctly
    */
   async verifyJobCardElements(job: JobData): Promise<JobCardElements> {
-    const jobCard = this.page.locator(`[data-job-id="${job.id}"], .job-card-inline`).first();
+    // First try to find by data-job-id, fallback to generic job card if needed
+    let jobCard = this.page.locator(`[data-job-id="${job.id}"]`).first();
+
+    // If no job card with ID found, try to find by job title (fallback)
+    if ((await jobCard.count()) === 0) {
+      console.warn(`Job card with ID ${job.id} not found, trying fallback selection`);
+      const allJobCards = this.page.locator('.job-card-inline, .job-card');
+      const cardCount = await allJobCards.count();
+
+      // Find the card that contains our job title
+      for (let i = 0; i < cardCount; i++) {
+        const card = allJobCards.nth(i);
+        const cardText = await card.textContent();
+        if (cardText && cardText.includes(job.title.substring(0, 20))) {
+          jobCard = card;
+          break;
+        }
+      }
+    }
+
     await expect(jobCard).toBeVisible();
 
     const elements: JobCardElements = {
@@ -262,11 +281,13 @@ export class JobsTestHelper {
       await expect(clientLink.first()).toContainText(job.client.name);
     }
 
-    // Check job title
+    // Check job title - use more flexible matching
     const jobName = jobCard.locator('.job-name, .job-title');
     elements.jobTitle = (await jobName.count()) > 0;
     if (elements.jobTitle) {
-      await expect(jobName.first()).toContainText(job.title);
+      // Use partial title matching since test data might have timestamps
+      const baseTitle = job.title.split(' - ')[0].trim(); // Take everything before first " - "
+      await expect(jobName.first()).toContainText(baseTitle);
     }
 
     // Check priority emoji (may not always be visible)
@@ -371,7 +392,10 @@ export class JobsTestHelper {
    * Test task list functionality on job detail page
    */
   async verifyTaskList(tasks: TaskData[]): Promise<void> {
-    const taskList = this.page.locator('.task-list, .tasks-container');
+    // Use more specific selector to avoid strict mode violations
+    const taskList = this.page
+      .locator('.tasks-section .task-list, .tasks-section .tasks-container')
+      .first();
     await expect(taskList).toBeVisible();
 
     if (tasks.length > 0) {

@@ -4,7 +4,7 @@
 
   let {
     job,
-    showClient = true
+    showClient = true,
   }: {
     job: JobData;
     showClient?: boolean;
@@ -13,24 +13,31 @@
   // Use centralized enum conversion functions
 
   // Extract technicians from job assignments
-  const technicians = $derived(job.jobAssignments?.map((assignment: any) => ({
-    id: assignment.user?.id,
-    name: assignment.user?.name,
-    initials: assignment.user?.name?.split(' ').map((n: string) => n[0]).join('') || '?',
-    avatar_style: `background-color: var(--accent-blue);` // TODO: Get actual avatar style
-  })) || []);
+  const technicians = $derived(
+    job.jobAssignments?.map((assignment: any) => ({
+      id: assignment.user?.id,
+      name: assignment.user?.name,
+      initials:
+        assignment.user?.name
+          ?.split(' ')
+          .map((n: string) => n[0])
+          .join('') || '?',
+      avatar_style: `background-color: var(--accent-blue);`, // TODO: Get actual avatar style
+    })) || []
+  );
 
   const statusEmoji = $derived(getJobStatusEmoji(job.status));
   const priorityEmoji = $derived(getJobPriorityEmoji(job.priority));
 
-  function getJobPath(job: Job): string {
+  function getJobPath(job: JobData): string {
     return `/jobs/${job.id}`;
   }
 </script>
 
-<a 
+<a
   href={getJobPath(job)}
   class="job-card-inline"
+  data-job-id={job.id}
   data-sveltekit-preload-data="hover"
 >
   <!-- Status emoji -->
@@ -39,7 +46,7 @@
   <!-- Client and job name section -->
   <span class="job-name-section">
     {#if showClient}
-      <button 
+      <button
         class="client-name-prefix client-link"
         onclick={(e) => {
           e.stopPropagation();
@@ -63,8 +70,8 @@
     {#if technicians?.length > 0}
       <span class="technician-avatars">
         {#each technicians as technician}
-          <span 
-            class="technician-avatar" 
+          <span
+            class="technician-avatar"
             style={technician.avatar_style || `background-color: var(--accent-blue);`}
           >
             {technician.initials}
@@ -160,7 +167,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;  /* Increased from 11px */
+    font-size: 16px; /* Increased from 11px */
     font-weight: 600;
     color: white;
     text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
@@ -175,11 +182,21 @@
   }
 
   /* Ensure each avatar stacks properly */
-  .technician-avatar:nth-child(1) { z-index: 5; }
-  .technician-avatar:nth-child(2) { z-index: 4; }
-  .technician-avatar:nth-child(3) { z-index: 3; }
-  .technician-avatar:nth-child(4) { z-index: 2; }
-  .technician-avatar:nth-child(5) { z-index: 1; }
+  .technician-avatar:nth-child(1) {
+    z-index: 5;
+  }
+  .technician-avatar:nth-child(2) {
+    z-index: 4;
+  }
+  .technician-avatar:nth-child(3) {
+    z-index: 3;
+  }
+  .technician-avatar:nth-child(4) {
+    z-index: 2;
+  }
+  .technician-avatar:nth-child(5) {
+    z-index: 1;
+  }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
@@ -187,12 +204,12 @@
       padding: 10px 12px;
       gap: 10px;
     }
-    
+
     .client-name-prefix {
       font-size: 12px;
       padding-right: 10px;
     }
-    
+
     .job-name {
       font-size: 13px;
     }
