@@ -55,10 +55,10 @@
   // Automatically detect if this is a collection by checking if displayData is an array
   const isCollection = $derived(Array.isArray(displayData));
 
-  // Conservative empty state logic - only when Zero.js explicitly confirms completion
+  // Conservative empty state logic - only when display data is definitively empty
   const isEmpty = $derived(
     query.resultType === 'complete' &&
-      (isCollection ? Array.isArray(query.data) && query.data.length === 0 : query.data === null)
+      (isCollection ? Array.isArray(displayData) && displayData.length === 0 : displayData === null)
   );
 
   // Filtered empty state - raw data exists but display data is empty after filtering
@@ -76,31 +76,6 @@
     query.resultType === 'complete' &&
       (isCollection ? Array.isArray(displayData) && displayData.length > 0 : displayData !== null)
   );
-
-  // Temporary debugging - will be removed after loading issue is resolved
-  $effect(() => {
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.log('🧪 [ZeroDataView] Conservative state:', {
-        resultType: query.resultType,
-        isLoading,
-        hasError,
-        isEmpty,
-        isFilteredEmpty,
-        hasData,
-        isCollection,
-        rawDataLength: Array.isArray(query.data) ? query.data.length : 'not array',
-        displayDataLength: Array.isArray(displayData) ? displayData.length : 'not array',
-        renderDecision: {
-          willShowLoading: isLoading,
-          willShowError: hasError,
-          willShowEmpty: isEmpty,
-          willShowFilteredEmpty: isFilteredEmpty,
-          willShowContent: hasData,
-        },
-      });
-    }
-  });
 </script>
 
 <!-- Loading State - Only when Zero says we're loading -->

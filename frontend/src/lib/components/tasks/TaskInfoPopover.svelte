@@ -81,10 +81,10 @@
   let popoverOpen = $state(false);
   let popoverContentElement = $state(null);
 
-  // Initialize ReactiveRecord queries when component mounts and task is available
+  // Lazy load ReactiveRecord queries only when popover opens
   $effect(() => {
-    if (task && !activityLogQuery && !noteQuery) {
-      debugComponent('Setting up ReactiveRecord queries on mount', { taskId: task.id });
+    if (popoverOpen && task && !activityLogQuery && !noteQuery) {
+      debugComponent('Setting up ReactiveRecord queries on popover open', { taskId: task.id });
 
       // Set up reactive queries - they execute automatically
       activityLogQuery = ReactiveActivityLog.where({

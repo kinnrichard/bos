@@ -89,6 +89,7 @@
       {batchTaskDetails}
       {isNewJobMode}
       {onCancel}
+      jobLoaded={!!job}
     />
   </div>
 </div>

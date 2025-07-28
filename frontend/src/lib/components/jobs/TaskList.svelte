@@ -60,6 +60,7 @@
     batchTaskDetails = null,
     isNewJobMode = false,
     onCancel = null,
+    jobLoaded = false, // NEW: Indicates whether job data has actually loaded
   }: {
     tasks?: Array<Task>;
     keptTasks?: Array<Task>;
@@ -67,6 +68,7 @@
     batchTaskDetails?: unknown;
     isNewJobMode?: boolean; // NEW: Hide certain UI in creation mode
     onCancel?: Function; // NEW: Cancel handler for creation mode
+    jobLoaded?: boolean; // NEW: Prevents empty state flash during initial load
   } = $props();
 
   // Clean up any self-references in the data (for offline resilience)
@@ -1613,7 +1615,8 @@
       />
     {/if}
 
-    {#if cleanedTasks.length === 0}
+    <!-- Only show empty state when job has actually loaded AND tasks are truly empty -->
+    {#if cleanedTasks.length === 0 && jobLoaded}
       {#if isNewJobMode}
         <!-- NEW: New job empty state -->
         <div class="empty-state empty-state--new-job">
