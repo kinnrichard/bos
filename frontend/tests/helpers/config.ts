@@ -223,8 +223,8 @@ export function createHybridPlaywrightConfig(
               url: 'http://localhost:6173', // Frontend test port
               timeout: 120 * 1000,
               reuseExistingServer: !process.env.CI, // Gracefully handle existing servers
-              stdout: 'pipe', // Show startup logs
-              stderr: 'pipe', // Show errors
+              stdout: 'frontend/test-results/test-servers.log', // Redirect verbose server logs to file
+              stderr: 'frontend/test-results/test-servers-errors.log', // Redirect server errors to file
               env: {
                 ...process.env,
                 // Ensure test environment
