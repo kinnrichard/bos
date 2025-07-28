@@ -19,7 +19,7 @@
   interface Props<T> {
     query: {
       data: T | T[] | null; // Raw data from ReactiveQuery
-      resultType: 'loading' | 'complete' | 'error';
+      resultType: 'loading' | 'complete' | 'error' | 'unknown';
       error: Error | null;
       isLoading?: boolean; // Optional fallback
     };
@@ -43,9 +43,11 @@
     filteredEmptyMessage = 'No items match your filters',
   }: Props<unknown> = $props();
 
-  // Conservative state management - only show states when Zero.js is definitively complete
+  // Conservative state management - show loading for any loading indicator
   const isLoading = $derived(
-    query.resultType === 'loading' || (query.isLoading ?? false) // Fallback for backward compatibility
+    (query.isLoading ?? false) || // Internal loading flag
+      query.resultType === 'loading' || // State machine loading
+      query.resultType === 'unknown' // Initial state
   );
 
   const hasError = $derived(query.resultType === 'error' && query.error);

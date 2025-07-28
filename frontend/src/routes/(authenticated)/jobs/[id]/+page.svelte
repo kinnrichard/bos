@@ -52,7 +52,13 @@
   // ✨ Unified job object: use mock for creation mode, real data for regular jobs
   const job = $derived(isNewJobMode ? newJobMock : jobQuery?.data);
   const isLoading = $derived(
-    isNewJobMode ? (clientQuery?.isLoading ?? true) : (jobQuery?.isLoading ?? true)
+    isNewJobMode
+      ? (clientQuery?.isLoading ?? true) ||
+          clientQuery?.resultType === 'loading' ||
+          clientQuery?.resultType === 'unknown'
+      : (jobQuery?.isLoading ?? true) ||
+          jobQuery?.resultType === 'loading' ||
+          jobQuery?.resultType === 'unknown'
   );
   const error = $derived(isNewJobMode ? clientQuery?.error : jobQuery?.error);
   const resultType = $derived(
@@ -101,6 +107,70 @@
   $effect(() => {
     if (error) {
       console.error('[JobPage] Job loading error:', error.message);
+    }
+  });
+
+  // 🔍 DEBUG: Track loading state transitions to identify flash cause
+  let loadingStartTime = Date.now();
+  $effect(() => {
+    const now = Date.now();
+    const elapsed = now - loadingStartTime;
+
+    // eslint-disable-next-line no-console
+    console.log(`🔍 [JobView Debug] Loading state change:`, {
+      timestamp: new Date().toISOString(),
+      elapsed: `${elapsed}ms`,
+      isLoading,
+      hasJob: !!job,
+      jobId: job?.id || 'null',
+      resultType,
+      isNewJobMode,
+
+      // ReactiveQuery states
+      jobQueryLoading: jobQuery?.isLoading,
+      jobQueryResultType: jobQuery?.resultType,
+      jobQueryHasData: !!jobQuery?.data,
+
+      clientQueryLoading: clientQuery?.isLoading,
+      clientQueryResultType: clientQuery?.resultType,
+      clientQueryHasData: !!clientQuery?.data,
+    });
+  });
+
+  // 🔍 DEBUG: Track job data changes specifically
+  $effect(() => {
+    if (job) {
+      // eslint-disable-next-line no-console
+      console.log(`🔍 [JobView Debug] Job data populated:`, {
+        timestamp: new Date().toISOString(),
+        jobId: job.id,
+        title: job.title,
+        hasClient: !!job.client,
+        clientName: job.client?.name,
+        tasksCount: job.tasks?.length || 0,
+        resultType,
+      });
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`🔍 [JobView Debug] Job data is null:`, {
+        timestamp: new Date().toISOString(),
+        isLoading,
+        resultType,
+        isNewJobMode,
+      });
+    }
+  });
+
+  // 🔍 DEBUG: Track specific transitions that might cause flash
+  $effect(() => {
+    if (!isLoading && !job && resultType !== 'complete') {
+      console.warn(`🚨 [JobView Debug] POTENTIAL FLASH STATE:`, {
+        timestamp: new Date().toISOString(),
+        isLoading: false,
+        hasJob: false,
+        resultType,
+        message: 'Not loading but no job data - this might cause empty flash!',
+      });
     }
   });
 
@@ -164,9 +234,20 @@
   toolbarDisabled={isNewJobMode}
 >
   <div class="job-detail-container">
+    <!-- 🔍 DEBUG: Visual indicators for state tracking -->
+    {#if import.meta.env.DEV}
+      <div class="debug-indicator">
+        🔍 Debug: isLoading={isLoading}, hasJob={!!job}, resultType={resultType}
+      </div>
+    {/if}
+
     <!-- Loading State -->
     {#if isLoading}
       <div class="job-detail-loading">
+        {#if import.meta.env.DEV}
+          <!-- eslint-disable-next-line no-console -->
+          {console.log('🔍 [JobView Debug] RENDERING: Loading skeleton')}
+        {/if}
         <LoadingSkeleton type="job-detail" />
       </div>
 
@@ -201,6 +282,13 @@
 
       <!-- Job Detail Content -->
     {:else if job}
+      {#if import.meta.env.DEV}
+        <!-- eslint-disable-next-line no-console -->
+        {console.log('🔍 [JobView Debug] RENDERING: Job content', {
+          jobId: job.id,
+          title: job.title,
+        })}
+      {/if}
       <JobDetailView
         job={isNewJobMode ? job : { ...job, tasks: displayedTasks }}
         keptTasks={isNewJobMode ? [] : keptTasks}
@@ -214,6 +302,10 @@
 
       <!-- Not Found State - Zero.js pattern: Only show when complete with no job -->
     {:else if !job && resultType === 'complete'}
+      {#if import.meta.env.DEV}
+        <!-- eslint-disable-next-line no-console -->
+        {console.log('🔍 [JobView Debug] RENDERING: Not found state')}
+      {/if}
       <div class="error-state">
         <div class="error-content">
           <h2>{isNewJobMode ? 'Client not found' : 'Job not found'}</h2>
@@ -230,6 +322,23 @@
           </button>
         </div>
       </div>
+
+      <!-- 🔍 DEBUG: Catch-all state to identify unexpected conditions -->
+    {:else if import.meta.env.DEV}
+      <!-- eslint-disable-next-line no-console -->
+      {console.warn('🚨 [JobView Debug] RENDERING: Unexpected state (potential flash!)', {
+        isLoading,
+        hasJob: !!job,
+        resultType,
+        jobQueryState: jobQuery
+          ? {
+              isLoading: jobQuery.isLoading,
+              resultType: jobQuery.resultType,
+              hasData: !!jobQuery.data,
+            }
+          : 'null',
+      })}
+      <div class="debug-unexpected-state">🚨 Unexpected state - check console for details</div>
     {/if}
   </div>
 </AppLayout>
@@ -246,6 +355,31 @@
 
   .job-detail-loading {
     padding: 20px 0;
+  }
+
+  /* 🔍 DEBUG: Visual indicators styling */
+  .debug-indicator {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 0, 0.9);
+    color: black;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+    z-index: 9999;
+    border: 2px solid orange;
+  }
+
+  .debug-unexpected-state {
+    background: rgba(255, 0, 0, 0.9);
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-weight: bold;
+    border: 3px solid red;
+    margin: 20px;
   }
 
   .error-state {
