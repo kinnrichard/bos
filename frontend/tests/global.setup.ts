@@ -30,38 +30,41 @@ const DEBUG_MODE = process.env.DEBUG_AUTH_SETUP === 'true';
 async function globalSetup(_config: FullConfig) {
   console.log('🚀 Starting global test setup...');
 
-  // Step 0: Server Health Validation & Zombie Cleanup
+  // Step 0: Server Health Validation (Skip zombie cleanup during test runs)
   console.log('🏥 Validating test server health...');
-  
+
   try {
-    // First, clean up any zombie servers from previous runs
-    await ServerHealthMonitor.killZombieServers();
-    
-    // Wait a moment for cleanup to complete
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Validate all servers are healthy
+    // Skip zombie cleanup during test runs since Playwright manages servers
+    // Zombie cleanup can be done manually via: SKIP_ZOMBIE_CLEANUP=false npm test
+    console.log('⏭️ Skipping zombie cleanup (servers managed by Playwright webServer)');
+
+    // Set environment variable to ensure any other cleanup calls are skipped
+    process.env.SKIP_ZOMBIE_CLEANUP = 'true';
+
+    // Validate all servers are healthy (they should be started by webServer)
     const healthCheck = await ServerHealthMonitor.validateAllServers();
-    
+
     if (!healthCheck.healthy) {
       console.error('❌ Test servers are not healthy:');
-      healthCheck.issues.forEach(issue => console.error(`  - ${issue}`));
+      healthCheck.issues.forEach((issue) => console.error(`  - ${issue}`));
       console.error('\n💡 Run these commands to fix:');
       console.error('   cd /Users/claude/Projects/bos');
       console.error('   bin/testkill');
       console.error('   bin/test-servers');
       console.error('\n🔄 Attempting automatic server restart...');
-      
-      // Try to start servers automatically
-      await ServerHealthMonitor.killZombieServers();
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
+      // Try to restart servers (but don't kill them - let Playwright handle it)
+      console.log('🔄 Servers should be managed by Playwright webServer configuration');
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       // Re-check after cleanup
       const recheckHealth = await ServerHealthMonitor.validateAllServers();
       if (!recheckHealth.healthy) {
-        throw new Error(`Test servers are still unhealthy after cleanup. Please run manual server restart: bin/testkill && bin/test-servers`);
+        throw new Error(
+          `Test servers are still unhealthy after cleanup. Please run manual server restart: bin/testkill && bin/test-servers`
+        );
       }
-      
+
       console.log('✅ Automatic server restart successful');
     } else {
       console.log('✅ All test servers are healthy');

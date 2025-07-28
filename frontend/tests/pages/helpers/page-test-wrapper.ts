@@ -1,6 +1,6 @@
 /**
  * Professional Page Test Wrapper
- * 
+ *
  * Based on the excellent patterns from smoke.e2e.spec.ts, this provides:
  * - Console monitoring with Svelte warning detection
  * - Environment-aware debugging
@@ -9,13 +9,12 @@
  * - Real API integration with error handling
  */
 
-import type { Page, TestFixture } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { test, expect } from '@playwright/test';
 import { debugComponent } from '$lib/utils/debug';
 import { withConsoleMonitoring, type ConsoleErrorFilter } from '../../helpers/console-monitoring';
 import { AuthHelper } from '../../helpers/auth';
 import { DataFactory } from '../../helpers/data-factories';
-import { ServerHealthMonitor } from '../../helpers/server-health';
 
 // Environment configuration
 const PAGE_TEST_TIMEOUT = process.env.DEBUG_PAGE_TESTS === 'true' ? 30000 : 15000;
@@ -31,7 +30,7 @@ const PAGE_TEST_CONSOLE_FILTERS: ConsoleErrorFilter[] = [
   },
   {
     message: /ResizeObserver loop limit exceeded/,
-    type: 'error', 
+    type: 'error',
     description: 'ResizeObserver loop limit - common during UI updates',
   },
   {
@@ -114,20 +113,21 @@ export function createPageTest(
       });
     }
 
-    // Quick server health check before proceeding with test
-    try {
-      const healthCheck = await ServerHealthMonitor.validateAllServers();
-      if (!healthCheck.healthy) {
-        console.warn('⚠️ Server health issues detected during test execution:');
-        healthCheck.issues.forEach(issue => console.warn(`  - ${issue}`));
-        console.warn('💡 Consider running: bin/test-reset');
-        
-        // Don't fail the test immediately, but log the issues
-        // The test might still pass if the specific functionality works
+    // Skip server health check during normal test runs to avoid interference
+    // Health checks are done in global setup - individual tests shouldn't check again
+    if (process.env.ENABLE_PAGE_HEALTH_CHECKS === 'true') {
+      try {
+        // Lazy load ServerHealthMonitor to avoid configuration-time execution
+        const { ServerHealthMonitor } = await import('../../helpers/server-health');
+        const healthCheck = await ServerHealthMonitor.validateAllServers();
+        if (!healthCheck.healthy) {
+          console.warn('⚠️ Server health issues detected during test execution:');
+          healthCheck.issues.forEach((issue) => console.warn(`  - ${issue}`));
+          console.warn('💡 Consider running: bin/test-reset');
+        }
+      } catch (healthError) {
+        console.warn('⚠️ Server health check failed:', healthError.message);
       }
-    } catch (healthError) {
-      console.warn('⚠️ Server health check failed:', healthError.message);
-      // Continue with test execution - health check failure shouldn't break the test
     }
 
     // Initialize helpers
@@ -155,7 +155,7 @@ export function createPageTest(
         await testFn(page, helpers);
       } else {
         const filters = [...PAGE_TEST_CONSOLE_FILTERS, ...customConsoleFilters];
-        
+
         await withConsoleMonitoring(
           page,
           async (_monitor) => {
@@ -235,7 +235,7 @@ export function createPageTest(
  */
 export class PageAssertions {
   private page: Page;
-  
+
   constructor(page: Page) {
     this.page = page;
   }
@@ -255,7 +255,7 @@ export class PageAssertions {
   async assertAuthenticated() {
     // Should not be redirected to login
     await expect(this.page).not.toHaveURL(/\/login/);
-    
+
     // Should have authenticated page elements
     await expect(this.page.locator('body')).not.toContainText('Sign In');
   }
@@ -266,14 +266,14 @@ export class PageAssertions {
   async assertErrorState(expectedMessage?: string | RegExp) {
     const errorState = this.page.locator('.error-state, [role="alert"], .error-message');
     await expect(errorState.first()).toBeVisible();
-    
+
     if (expectedMessage) {
       await expect(errorState.first()).toContainText(expectedMessage);
     }
   }
 
   /**
-   * Assert loading state displays properly  
+   * Assert loading state displays properly
    */
   async assertLoadingState() {
     const loadingIndicators = this.page.locator(
@@ -288,7 +288,7 @@ export class PageAssertions {
   async assertEmptyState(expectedMessage?: string | RegExp) {
     const emptyState = this.page.locator('.empty-state, .no-data, [data-testid="empty-state"]');
     await expect(emptyState.first()).toBeVisible();
-    
+
     if (expectedMessage) {
       await expect(emptyState.first()).toContainText(expectedMessage);
     }
@@ -300,17 +300,17 @@ export class PageAssertions {
   async assertMobileResponsive() {
     // Set mobile viewport
     await this.page.setViewportSize({ width: 375, height: 667 });
-    
+
     // Wait for layout adjustment
     await this.page.waitForTimeout(500);
-    
+
     // Verify page still functional
     await expect(this.page.locator('body')).toBeVisible();
-    
+
     // Check for mobile-friendly elements (adjust based on your design system)
     const mobileElements = this.page.locator('.mobile-menu, .hamburger, [data-mobile]');
     const count = await mobileElements.count();
-    
+
     // At least some mobile-specific elements should exist or layout should adapt
     expect(count >= 0).toBeTruthy(); // This allows for responsive CSS instead of mobile-specific elements
   }
@@ -326,7 +326,7 @@ export class PageTestUtils {
   static async waitForPageReady(page: Page, timeout = 10000) {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle', { timeout });
-    
+
     // Wait for any lazy-loaded content
     await page.waitForTimeout(500);
   }
@@ -348,14 +348,17 @@ export class PageTestUtils {
   static async logPerformanceMetrics(page: Page, testName: string) {
     if (VERBOSE_LOGGING) {
       const performance = await page.evaluate(() => {
-        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+        const navigation = performance.getEntriesByType(
+          'navigation'
+        )[0] as PerformanceNavigationTiming;
         return {
-          domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+          domContentLoaded:
+            navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
           loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
           totalTime: navigation.loadEventEnd - navigation.fetchStart,
         };
       });
-      
+
       console.log(`Performance metrics for ${testName}:`, performance);
     }
   }
@@ -366,11 +369,12 @@ export class PageTestUtils {
   static async verifyNoMemoryLeaks(page: Page) {
     if (DEBUG_MODE) {
       const jsHeapSize = await page.evaluate(() => {
-        // @ts-ignore - performance.memory is available in Chrome
+        // @ts-expect-error - performance.memory is available in Chrome
         return performance.memory ? performance.memory.usedJSHeapSize : 0;
       });
-      
-      if (jsHeapSize > 50 * 1024 * 1024) { // 50MB threshold
+
+      if (jsHeapSize > 50 * 1024 * 1024) {
+        // 50MB threshold
         console.warn(`High memory usage detected: ${Math.round(jsHeapSize / 1024 / 1024)}MB`);
       }
     }
