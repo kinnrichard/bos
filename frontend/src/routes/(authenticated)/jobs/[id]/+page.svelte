@@ -150,16 +150,8 @@
     taskFilterActions.clearSearch();
   });
 
-  // Handle retry - ReactiveQuery automatically syncs, manual refresh available
-  function handleRetry() {
-    if (jobQuery) {
-      try {
-        jobQuery.refresh();
-      } catch (error) {
-        console.error('[JobPage] Error during jobQuery refresh:', error);
-      }
-    }
-  }
+  // Zero.js handles all retries and refreshes automatically
+  // No manual retry logic needed - trust Zero's built-in resilience
 </script>
 
 <svelte:head>
@@ -195,7 +187,7 @@
           {/if}
           <div class="error-actions">
             {#if !isNewJobMode}
-              <button class="button button--primary" onclick={handleRetry}> Try Again </button>
+              <p>Zero.js will automatically retry the connection.</p>
             {/if}
             <button
               class="button button--{isNewJobMode ? 'primary' : 'secondary'}"

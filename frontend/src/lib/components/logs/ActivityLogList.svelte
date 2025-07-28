@@ -2,15 +2,11 @@
   import type { ActivityLogData } from '$lib/models/types/activity-log-data';
   import type { ClientData } from '$lib/models/types/client-data';
   import type { JobData } from '$lib/models/types/job-data';
-  import ActivityLogGroup from './ActivityLogGroup.svelte';
   import ActivityLogEmpty from './ActivityLogEmpty.svelte';
-  import ActivityLogDateHeader from './ActivityLogDateHeader.svelte';
-  import ActivityLogRow from './ActivityLogRow.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
-  import EntityEmoji from '$lib/components/ui/EntityEmoji.svelte';
   import ActivityTypeEmoji from '$lib/components/ui/ActivityTypeEmoji.svelte';
   import { getTaskStatusEmoji, getJobStatusEmoji, getTaskPriorityEmoji } from '$lib/config/emoji';
-  import { slide, fade } from 'svelte/transition';
+  import { slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
   interface Props {
@@ -18,7 +14,6 @@
     context?: 'system' | 'client';
     isLoading?: boolean;
     error?: Error | null;
-    onRetry?: () => void;
   }
 
   interface LogGroup {
@@ -31,15 +26,9 @@
     lastActivity: Date; // For recency sorting
   }
 
-  let { 
-    logs, 
-    context = 'system',
-    isLoading = false,
-    error = null,
-    onRetry
-  }: Props = $props();
-  
-  let tableContainer: HTMLElement;
+  let { logs, context = 'system', isLoading = false, error = null }: Props = $props();
+
+  let tableContainer = $state<HTMLElement>();
   let groupStates = $state<Record<string, boolean>>({});
   let autoScrolled = $state<boolean>(false);
 
@@ -68,7 +57,7 @@
   // Helper function to render group title (now returns object for component use)
   function getGroupTitleData(group: LogGroup): { type: LogGroup['type']; text: string } {
     let text: string;
-    
+
     switch (group.type) {
       case 'client':
         text = `${group.client?.name || 'Unknown Client'}`;
@@ -85,24 +74,24 @@
       default:
         text = 'Activity';
     }
-    
+
     return { type: group.type, text };
   }
 
   // Helper function to group logs by date
   function getLogsByDate(logs: ActivityLogData[]): [string, ActivityLogData[]][] {
     const dateGroups = new Map<string, ActivityLogData[]>();
-    
-    logs.forEach(log => {
+
+    logs.forEach((log) => {
       const date = new Date(log.created_at);
       const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-      
+
       if (!dateGroups.has(dateKey)) {
         dateGroups.set(dateKey, []);
       }
       dateGroups.get(dateKey)!.push(log);
     });
-    
+
     // Sort by date ascending (oldest first, recent at bottom)
     return Array.from(dateGroups.entries()).sort(([a], [b]) => a.localeCompare(b));
   }
@@ -113,17 +102,17 @@
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (dateKey === today.toISOString().split('T')[0]) {
       return 'Today';
     } else if (dateKey === yesterday.toISOString().split('T')[0]) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       });
     }
   }
@@ -133,43 +122,45 @@
     const loggableTypeEmoji = getLoggableTypeEmoji(log.loggable_type);
     const loggableName = getLoggableName(log);
     const metadata = log.metadata || {};
-    
+
     switch (log.action) {
       case 'created':
         return `created ${loggableTypeEmoji} ${loggableName}`;
-        
+
       case 'viewed':
         return `viewed ${loggableTypeEmoji} ${loggableName}`;
-        
-      case 'renamed':
+
+      case 'renamed': {
         const oldName = metadata.old_name || 'Unknown';
         const newName = metadata.name || loggableName;
         return `renamed ${loggableTypeEmoji} ${oldName} to ${loggableTypeEmoji} ${newName}`;
-        
-      case 'updated':
+      }
+
+      case 'updated': {
         if (metadata.changes) {
           // Filter out unimportant attributes
           const filteredChanges = Object.fromEntries(
-            Object.entries(metadata.changes).filter(([field]) => 
-              !['position', 'lock_version', 'reordered_at', 'parent_id'].includes(field)
+            Object.entries(metadata.changes).filter(
+              ([field]) =>
+                !['position', 'lock_version', 'reordered_at', 'parent_id'].includes(field)
             )
           );
-          
+
           const changeKeys = Object.keys(filteredChanges);
-          
+
           if (changeKeys.length === 0) {
             return null; // Hide unimportant updates
           }
-          
+
           // Handle special field changes
           if (changeKeys.length === 1 && changeKeys[0] === 'priority') {
             const [, newPriority] = filteredChanges.priority;
             const priorityEmoji = getTaskPriorityEmoji(newPriority);
             return `marked ${loggableTypeEmoji} ${loggableName} as ${priorityEmoji} ${newPriority?.charAt(0)?.toUpperCase() + newPriority?.slice(1)} Priority`;
           }
-          
+
           if (changeKeys.length === 1 && changeKeys[0] === 'assigned_to_id') {
-            const [oldId, newId] = filteredChanges.assigned_to_id;
+            const [, newId] = filteredChanges.assigned_to_id;
             if (!newId) {
               return `unassigned ${loggableTypeEmoji} ${loggableName}`;
             } else {
@@ -178,49 +169,56 @@
               return `assigned ${loggableTypeEmoji} ${loggableName} to ${assignedToName}`;
             }
           }
-          
+
           // Format other changes
-          const changesText = changeKeys.map(field => {
-            const [oldValue, newValue] = filteredChanges[field];
-            return `${field}: ${oldValue} → ${newValue}`;
-          }).join(', ');
-          
+          const changesText = changeKeys
+            .map((field) => {
+              const [oldValue, newValue] = filteredChanges[field];
+              return `${field}: ${oldValue} → ${newValue}`;
+            })
+            .join(', ');
+
           return `updated ${loggableName}: ${changesText}`;
         }
         return `updated ${loggableTypeEmoji} ${loggableName}`;
-        
+      }
+
       case 'deleted':
         return `deleted ${loggableTypeEmoji} ${loggableName}`;
-        
-      case 'assigned':
+
+      case 'assigned': {
         const assignedTo = metadata.assigned_to || 'someone';
         return `assigned ${loggableTypeEmoji} ${loggableName} to ${assignedTo}`;
-        
-      case 'unassigned':
+      }
+
+      case 'unassigned': {
         const unassignedFrom = metadata.unassigned_from || 'someone';
         return `unassigned ${unassignedFrom} from ${loggableTypeEmoji} ${loggableName}`;
-        
-      case 'status_changed':
+      }
+
+      case 'status_changed': {
         const newStatusLabel = metadata.new_status_label || metadata.new_status || 'Unknown';
         const statusEmoji = getStatusEmoji(metadata.new_status, log.loggable_type);
         return `set ${loggableTypeEmoji} ${loggableName} to ${statusEmoji} ${newStatusLabel}`;
-        
-      case 'added':
+      }
+
+      case 'added': {
         const parentType = metadata.parent_type || 'container';
         const parentName = metadata.parent_name || 'Unknown';
         return `added ${loggableTypeEmoji} ${loggableName} to ${parentType} ${parentName}`;
-        
+      }
+
       case 'logged_in':
         return 'signed into bŏs';
-        
+
       case 'logged_out':
         return 'signed out of bŏs';
-        
+
       default:
         return `${log.action} ${loggableName}`;
     }
   }
-  
+
   // Helper function to get emoji for loggable types
   function getLoggableTypeEmoji(loggableType: string): string {
     // Use EntityEmoji's logic but return string for now
@@ -237,15 +235,15 @@
         return '';
     }
   }
-  
+
   // Helper function to get loggable name
   function getLoggableName(log: ActivityLogData): string {
     const metadata = log.metadata || {};
-    
+
     if (metadata.name) {
       return metadata.name;
     }
-    
+
     // Try to get name from the related objects
     switch (log.loggable_type) {
       case 'Client':
@@ -254,16 +252,17 @@
         return log.job?.title || 'Unknown Job';
       case 'Task':
         return metadata.title || 'Unknown Task';
-      case 'Person':
+      case 'Person': {
         const personName = metadata.person_name || 'Unknown Person';
         const clientName = log.client?.name || 'Unknown Client';
         const clientEmoji = log.client?.business ? '🏢' : '🏠';
         return `${personName} with ${clientEmoji} ${clientName}`;
+      }
       default:
         return log.loggable_type || 'Unknown';
     }
   }
-  
+
   // Helper function to get status emoji based on entity type
   function getStatusEmoji(status: string, loggableType?: string): string {
     if (loggableType === 'Task') {
@@ -271,7 +270,7 @@
     } else if (loggableType === 'Job') {
       return getJobStatusEmoji(status);
     }
-    
+
     // Fallback for other types
     switch (status?.toLowerCase()) {
       case 'completed':
@@ -306,13 +305,12 @@
   // Helper function to format timestamps
   function formatTimestamp(createdAt: string): string {
     const date = new Date(createdAt);
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
     });
   }
-
 
   // Auto-scroll to bottom on mount and when new logs arrive
   $effect(() => {
@@ -330,11 +328,11 @@
   const groupedLogs = $derived(() => {
     // Step 1: Detect and group duplicate actions
     const processedLogs = detectDuplicateActions(logs);
-    
+
     // Step 2: Create context groups
     const groups = new Map<string, LogGroup>();
 
-    processedLogs.forEach(log => {
+    processedLogs.forEach((log) => {
       const { groupKey, groupType, priority } = determineLogGroup(log);
 
       if (!groups.has(groupKey)) {
@@ -345,13 +343,13 @@
           job: log.job,
           logs: [],
           priority,
-          lastActivity: new Date(log.created_at)
+          lastActivity: new Date(log.created_at),
         });
       }
 
       const group = groups.get(groupKey)!;
       group.logs.push(log);
-      
+
       // Update last activity time for recency sorting
       const logDate = new Date(log.created_at);
       if (logDate > group.lastActivity) {
@@ -365,7 +363,7 @@
       if (a.priority !== b.priority) {
         return a.priority - b.priority;
       }
-      
+
       // Then by oldest activity first (most recent last)
       return a.lastActivity.getTime() - b.lastActivity.getTime();
     });
@@ -384,12 +382,12 @@
   function detectDuplicateActions(logs: ActivityLogData[]): ActivityLogData[] {
     const duplicateWindow = 5 * 60 * 1000; // 5 minutes in milliseconds
     const duplicateGroups = new Map<string, ActivityLogData[]>();
-    
+
     // Group potentially duplicate actions
-    logs.forEach(log => {
+    logs.forEach((log) => {
       const actionKey = `${log.action}-${log.loggable_type}-${log.loggable_id}-${log.user_id}`;
       const logTime = new Date(log.created_at).getTime();
-      
+
       // Find existing group within time window
       let foundGroup = false;
       for (const [key, group] of duplicateGroups) {
@@ -402,83 +400,86 @@
           }
         }
       }
-      
+
       if (!foundGroup) {
         duplicateGroups.set(`${actionKey}-${logTime}`, [log]);
       }
     });
-    
+
     // Process groups to mark duplicates
     const processedLogs: ActivityLogData[] = [];
     for (const group of duplicateGroups.values()) {
       if (group.length > 1) {
         // Keep the most recent log and mark it with duplicate count
-        const sortedGroup = group.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        const sortedGroup = group.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
         const primaryLog = { ...sortedGroup[0] };
-        
+
         // Add duplicate metadata
         primaryLog.metadata = {
           ...primaryLog.metadata,
           duplicateCount: group.length,
           duplicateTimespan: {
             start: sortedGroup[sortedGroup.length - 1].created_at,
-            end: sortedGroup[0].created_at
-          }
+            end: sortedGroup[0].created_at,
+          },
         };
-        
+
         processedLogs.push(primaryLog);
       } else {
         processedLogs.push(group[0]);
       }
     }
-    
-    return processedLogs.sort((a, b) => 
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+
+    return processedLogs.sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   }
 
   // Helper function to determine group classification and priority
-  function determineLogGroup(log: ActivityLogData): { groupKey: string; groupType: LogGroup['type']; priority: number } {
+  function determineLogGroup(log: ActivityLogData): {
+    groupKey: string;
+    groupType: LogGroup['type'];
+    priority: number;
+  } {
     // True cross-reference detection: only for explicitly marked cross-references
     // or operations that genuinely span multiple unrelated contexts
-    const isCrossReference = log.metadata?.cross_reference || 
-      (log.metadata?.is_cross_reference === true);
-    
+    const isCrossReference =
+      log.metadata?.cross_reference || log.metadata?.is_cross_reference === true;
+
     if (isCrossReference) {
       return {
         groupKey: `cross-ref-${log.client_id}-${log.job_id}`,
         groupType: 'cross-reference',
-        priority: 2 // Medium priority
+        priority: 2, // Medium priority
       };
     }
-    
+
     // If we have both client_id and job_id, this is job-specific activity
     // (tasks within jobs, job updates, etc.)
     if (log.client_id && log.job_id) {
       return {
         groupKey: `job-${log.job_id}`,
         groupType: 'job',
-        priority: 1 // High priority - most specific context
+        priority: 1, // High priority - most specific context
       };
     }
-    
+
     if (log.client_id && !log.job_id) {
       return {
         groupKey: `client-${log.client_id}`,
         groupType: 'client',
-        priority: 3 // Lower priority - broader context
+        priority: 3, // Lower priority - broader context
       };
     }
-    
+
     return {
       groupKey: 'general',
       groupType: 'general',
-      priority: 4 // Lowest priority - system-wide actions
+      priority: 4, // Lowest priority - system-wide actions
     };
   }
-
 </script>
 
 <div class="logs-container">
@@ -488,18 +489,10 @@
     <div class="error-state">
       <div class="error-content">
         <h2>Unable to load activity logs</h2>
-        <p>There was a problem loading the activity logs. Please try again.</p>
+        <p>Zero.js will automatically retry. Please check your connection.</p>
         <div class="error-details">
           <code>{error.message}</code>
         </div>
-        {#if onRetry}
-          <button 
-            class="button button--primary"
-            onclick={onRetry}
-          >
-            Try Again
-          </button>
-        {/if}
       </div>
     </div>
   {:else if logs.length === 0}
@@ -511,26 +504,32 @@
           <table class="logs-table">
             <tbody>
               <!-- Group header row -->
-              <tr class="logs-group-header {getGroupHeaderClass(group.type)} {isGroupCollapsed(group.key) ? 'logs-group--collapsed' : ''}"
-                  onclick={() => toggleGroup(group)}>
+              <tr
+                class="logs-group-header {getGroupHeaderClass(group.type)} {isGroupCollapsed(
+                  group.key
+                )
+                  ? 'logs-group--collapsed'
+                  : ''}"
+                onclick={() => toggleGroup(group)}
+              >
                 <td colspan="3">
                   <div class="logs-group-header-content">
                     <span class="logs-group-toggle">
-                      <img 
-                        src="/icons/chevron-right.svg" 
-                        alt={group.isCollapsed ? "Expand" : "Collapse"}
+                      <img
+                        src="/icons/chevron-right.svg"
+                        alt={group.isCollapsed ? 'Expand' : 'Collapse'}
                         class="chevron-icon"
                         class:expanded={!isGroupCollapsed(group.key)}
-                        width="8" 
-                        height="12" 
+                        width="8"
+                        height="12"
                       />
                     </span>
-                    
+
                     <span class="logs-group-title">
                       <ActivityTypeEmoji type={group.type} size="small" />
                       <span>{getGroupTitleData(group).text}</span>
                     </span>
-                    
+
                     <span class="logs-group-count">{group.logs.length}</span>
                   </div>
                 </td>
@@ -539,7 +538,10 @@
               {#if !isGroupCollapsed(group.key)}
                 <tr class="group-content-wrapper">
                   <td colspan="3" class="group-wrapper-cell">
-                    <div class="group-content-container" transition:slide|global={{ duration: 250, easing: quintOut }}>
+                    <div
+                      class="group-content-container"
+                      transition:slide|global={{ duration: 250, easing: quintOut }}
+                    >
                       <table class="nested-logs-table">
                         <tbody>
                           {#each getLogsByDate(group.logs) as [dateKey, dateLogs]}
@@ -555,20 +557,28 @@
                                 </div>
                               </th>
                             </tr>
-                            
+
                             <!-- Log entry rows -->
                             {#each dateLogs as log, index (log.id)}
                               {@const currentUserId = log.user?.id || 'system'}
-                              {@const previousUserId = index > 0 ? (dateLogs[index - 1].user?.id || 'system') : null}
-                              {@const shouldShowUser = index === 0 || currentUserId !== previousUserId}
-                              <tr class="logs-table__row logs-group-content" 
-                                  class:logs-table__row--alt={index % 2 === 1}>
+                              {@const previousUserId =
+                                index > 0 ? dateLogs[index - 1].user?.id || 'system' : null}
+                              {@const shouldShowUser =
+                                index === 0 || currentUserId !== previousUserId}
+                              <tr
+                                class="logs-table__row logs-group-content"
+                                class:logs-table__row--alt={index % 2 === 1}
+                              >
                                 <!-- User cell -->
                                 <td class="logs-table__user-cell">
                                   {#if shouldShowUser}
                                     <div class="user-info">
                                       {#if log.user}
-                                        <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
+                                        <div
+                                          class="user-avatar"
+                                          style={log.user.avatar_style ||
+                                            'background-color: var(--accent-blue);'}
+                                        >
                                           {log.user.initials || log.user.name?.charAt(0) || 'U'}
                                         </div>
                                         <span class="user-name">{log.user.name}</span>
@@ -584,7 +594,7 @@
                                     <div class="user-info user-info--hidden"></div>
                                   {/if}
                                 </td>
-                                
+
                                 <!-- Action cell -->
                                 <td class="logs-table__action-cell" colspan="2">
                                   <div class="action-time-container">
@@ -592,12 +602,19 @@
                                     {#if shouldShowUser}
                                       <div class="mobile-user-info">
                                         {#if log.user}
-                                          <div class="user-avatar" style={log.user.avatar_style || 'background-color: var(--accent-blue);'}>
+                                          <div
+                                            class="user-avatar"
+                                            style={log.user.avatar_style ||
+                                              'background-color: var(--accent-blue);'}
+                                          >
                                             {log.user.initials || log.user.name?.charAt(0) || 'U'}
                                           </div>
                                           <span class="user-name">{log.user.name}</span>
                                         {:else}
-                                          <div class="user-avatar" style="background-color: #8E8E93;">
+                                          <div
+                                            class="user-avatar"
+                                            style="background-color: #8E8E93;"
+                                          >
                                             S
                                           </div>
                                           <span class="user-name">System</span>
@@ -607,16 +624,22 @@
                                     <div class="action-time-row">
                                       <div class="action-content">
                                         {#if formatLogMessage(log)}
-                                          {@html formatLogMessage(log)}
+                                          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                          {formatLogMessage(log)}
                                           {#if hasDuplicates(log)}
-                                            <span class="log-count-badge">{getDuplicateCount(log)}×</span>
+                                            <span class="log-count-badge"
+                                              >{getDuplicateCount(log)}×</span
+                                            >
                                           {/if}
                                         {:else}
                                           <em class="log-hidden">Update with minor changes</em>
                                         {/if}
                                       </div>
                                       <div class="time-content">
-                                        <time datetime={log.created_at} title={new Date(log.created_at).toString()}>
+                                        <time
+                                          datetime={log.created_at}
+                                          title={new Date(log.created_at).toString()}
+                                        >
                                           {formatTimestamp(log.created_at)}
                                         </time>
                                       </div>
@@ -729,7 +752,6 @@
     margin-top: 0;
   }
 
-
   .logs-table :global(tr.logs-group-header.logs-group-header--general) {
     background-color: #1a2f3f; /* Solid blue-tinted background */
   }
@@ -840,7 +862,6 @@
   .logs-table :global(tr.logs-table__row--alt) {
     background-color: rgba(255, 255, 255, 0.02);
   }
-
 
   .logs-table :global(td) {
     padding: 8px 16px 6px 16px;
@@ -985,7 +1006,9 @@
 
   .error-details code {
     color: var(--accent-red);
-    font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-family:
+      ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono',
+      monospace;
     font-size: 0.875rem;
   }
 
@@ -1004,7 +1027,7 @@
   }
 
   .button--primary:hover {
-    background-color: var(--accent-blue-hover, #0089E0);
+    background-color: var(--accent-blue-hover, #0089e0);
   }
 
   /* Mobile Responsive Styles */

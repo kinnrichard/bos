@@ -251,6 +251,12 @@ async function createZeroConfig(userId: string) {
     // For development, we'll use memory store first
     kvStore: 'mem' as const,
     logLevel: 'info' as const,
+    onUpdateNeeded: () => {
+      logZero('Schema update needed - reloading application');
+      if (browser && typeof window !== 'undefined') {
+        window.location.reload();
+      }
+    },
   };
 }
 

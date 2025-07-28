@@ -10,7 +10,7 @@
   import JobCard from './JobCard.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import type { Snippet } from 'svelte';
-  
+
   interface Props {
     jobs: JobData[];
     isLoading?: boolean;
@@ -19,18 +19,16 @@
     emptyMessage?: string;
     emptyAction?: Snippet;
     showCount?: boolean;
-    onRetry?: () => void;
   }
-  
-  let { 
-    jobs = [], 
-    isLoading = false, 
+
+  let {
+    jobs = [],
+    isLoading = false,
     error = null,
     showClient = false,
     emptyMessage = 'No jobs found',
     emptyAction,
     showCount = false,
-    onRetry
   }: Props = $props();
 </script>
 
@@ -42,18 +40,10 @@
   <div class="error-state">
     <div class="error-content">
       <h2>Unable to load jobs</h2>
-      <p>There was a problem loading the jobs. Please try again.</p>
+      <p>Zero.js will automatically retry. Please check your connection.</p>
       <div class="error-details">
         <code>{error.message}</code>
       </div>
-      {#if onRetry}
-        <button 
-          class="button button--primary"
-          onclick={onRetry}
-        >
-          Try Again
-        </button>
-      {/if}
     </div>
   </div>
 {:else if jobs.length === 0}
@@ -72,7 +62,7 @@
       <JobCard {job} {showClient} />
     {/each}
   </div>
-  
+
   {#if showCount}
     <div class="jobs-info">
       <p>Showing {jobs.length} jobs</p>
@@ -177,26 +167,6 @@
     .error-content p {
       font-size: 14px;
     }
-  }
-
-  /* Button styles */
-  .button {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.15s ease;
-    margin-top: 16px;
-  }
-
-  .button--primary {
-    background: var(--accent-blue);
-    color: white;
-  }
-
-  .button--primary:hover {
-    background: var(--accent-blue-hover);
   }
 
   /* High contrast mode support */

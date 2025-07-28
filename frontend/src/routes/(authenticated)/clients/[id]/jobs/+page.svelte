@@ -13,7 +13,8 @@
   import { shouldShowJob } from '$lib/stores/jobsSearch.svelte';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobsLayout from '$lib/components/jobs/JobsLayout.svelte';
-  import JobsList from '$lib/components/jobs/JobsList.svelte';
+  import ZeroDataView from '$lib/components/data/ZeroDataView.svelte';
+  import JobCard from '$lib/components/jobs/JobCard.svelte';
   import type { JobStatus, JobPriority } from '$lib/types/job';
 
   // Get client ID from URL
@@ -22,7 +23,7 @@
   // Query for the client
   const clientQuery = $derived(clientId ? ReactiveClient.find(clientId) : null);
   const client = $derived(clientQuery?.data);
-  const clientLoading = $derived(clientQuery?.isLoading ?? true);
+  // const clientLoading = $derived(clientQuery?.isLoading ?? true);
   const clientError = $derived(clientQuery?.error);
 
   // Query for jobs filtered by client
@@ -37,7 +38,7 @@
 
   // Get jobs data
   const jobs = $derived(jobsQuery?.data || []);
-  const isLoading = $derived(jobsQuery?.isLoading ?? false);
+  // const isLoading = $derived(jobsQuery?.isLoading ?? false);
   const error = $derived(jobsQuery?.error);
 
   // Get query parameters for filtering (similar to main jobs page)
@@ -72,12 +73,8 @@
     client ? `${client.name}'s Jobs - Faultless` : 'Client Jobs - Faultless'
   );
 
-  // Handle retry
-  function handleRetry() {
-    if (jobsQuery) {
-      jobsQuery.refresh();
-    }
-  }
+  // Zero.js handles all retries and refreshes automatically
+  // No manual retry logic needed - trust Zero's built-in resilience
 </script>
 
 <svelte:head>
@@ -113,23 +110,39 @@
       </a>
     {/snippet}
 
-    <JobsList
-      jobs={filteredJobs}
-      isLoading={isLoading || clientLoading}
-      error={error || clientError}
-      showClient={false}
+    <ZeroDataView
+      query={{
+        data: filteredJobs,
+        resultType: jobsQuery?.resultType ?? 'loading',
+        error: error || clientError,
+        isCollection: true,
+      }}
       emptyMessage={jobs.length === 0
         ? 'No jobs yet for this client'
         : 'No jobs match your filters'}
-      onRetry={handleRetry}
     >
-      {#snippet emptyAction()}
-        <a href="/jobs/new?clientId={clientId}" class="action-button">
-          <span class="button-icon">➕</span>
-          Create First Job
-        </a>
+      {#snippet content(jobsData)}
+        <div class="jobs-list">
+          {#each jobsData as job (job.id)}
+            <JobCard {job} showClient={false} />
+          {/each}
+        </div>
       {/snippet}
-    </JobsList>
+      {#snippet empty()}
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <h2>
+            {jobs.length === 0 ? 'No jobs yet for this client' : 'No jobs match your filters'}
+          </h2>
+          {#if jobs.length === 0}
+            <a href="/jobs/new?clientId={clientId}" class="action-button">
+              <span class="button-icon">➕</span>
+              Create First Job
+            </a>
+          {/if}
+        </div>
+      {/snippet}
+    </ZeroDataView>
   </JobsLayout>
 </AppLayout>
 
@@ -150,5 +163,34 @@
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
+  }
+
+  .jobs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    padding: 32px;
+    text-align: center;
+  }
+
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+  }
+
+  .empty-state h2 {
+    color: var(--text-secondary, #86868b);
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0 0 16px 0;
   }
 </style>

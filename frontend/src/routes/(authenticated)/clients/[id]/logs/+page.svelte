@@ -4,37 +4,35 @@
   import { ReactiveActivityLog } from '$lib/models/reactive-activity-log';
   import { ReactiveClient } from '$lib/models/reactive-client';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
-  
+
   $: clientId = $page.params.id;
-  
+
   // Get client
   $: clientQuery = ReactiveClient.find(clientId);
-  
+
   // Get client-specific logs
-  $: logsQuery = ReactiveActivityLog
-    .includes(['user', 'client', 'job'])
+  $: logsQuery = ReactiveActivityLog.includes(['user', 'client', 'job'])
     .where({ client_id: clientId })
     .orderBy('created_at', 'asc')
     .limit(500)
     .all();
 
-  function handleRetry() {
-    logsQuery.refresh();
-  }
+  // Zero.js handles all retries and refreshes automatically
+  // No manual retry logic needed - trust Zero's built-in resilience
 </script>
 
 <AppLayout currentClient={clientQuery.data}>
-  <LogsLayout 
+  <LogsLayout
     title="Activity Log for {clientQuery.data?.name || 'Client'}"
-    subtitle={clientQuery.data?.client_code ? `Client Code: ${clientQuery.data.client_code}` : undefined}
+    subtitle={clientQuery.data?.client_code
+      ? `Client Code: ${clientQuery.data.client_code}`
+      : undefined}
   >
-    <ActivityLogList 
-      logs={logsQuery.data || []} 
-      context="client" 
+    <ActivityLogList
+      logs={logsQuery.data || []}
+      context="client"
       isLoading={logsQuery.isLoading}
       error={logsQuery.error}
-      onRetry={handleRetry}
     />
   </LogsLayout>
 </AppLayout>
-
