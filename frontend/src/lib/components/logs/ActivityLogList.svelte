@@ -575,20 +575,6 @@
 
       {#snippet content({ data, isLoading, isFresh })}
         <div class="logs-table-container" bind:this={tableContainer}>
-          <!-- Debug information -->
-          <div
-            class="debug-info"
-            style="background: #f0f0f0; padding: 8px; margin-bottom: 16px; font-size: 12px;"
-          >
-            <strong>Debug Info:</strong>
-            <br />Data length: {data?.length || 'null'}
-            <br />Data type: {typeof data}
-            <br />Is Array: {Array.isArray(data)}
-            <br />Grouped logs count: {groupLogsByContext(data || []).length}
-            {#if data && data.length > 0}
-              <br />First item: {JSON.stringify(Object.keys(data[0] || {})).slice(0, 100)}
-            {/if}
-          </div>
 
           <!-- Show refresh indicator when data is being updated -->
           {#if isLoading && data.length > 0}
