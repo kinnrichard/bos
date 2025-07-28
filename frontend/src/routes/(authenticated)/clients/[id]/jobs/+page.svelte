@@ -112,34 +112,19 @@
 
     <ZeroDataView
       query={{
-        data: filteredJobs,
+        data: jobsQuery?.data || null,
         resultType: jobsQuery?.resultType ?? 'loading',
         error: error || clientError,
-        isCollection: true,
       }}
-      emptyMessage={jobs.length === 0
-        ? 'No jobs yet for this client'
-        : 'No jobs match your filters'}
+      displayData={filteredJobs}
+      emptyMessage="No jobs yet for this client"
+      filteredEmptyMessage="No jobs match your filters"
     >
       {#snippet content(jobsData)}
         <div class="jobs-list">
           {#each jobsData as job (job.id)}
             <JobCard {job} showClient={false} />
           {/each}
-        </div>
-      {/snippet}
-      {#snippet empty()}
-        <div class="empty-state">
-          <div class="empty-state-icon">📋</div>
-          <h2>
-            {jobs.length === 0 ? 'No jobs yet for this client' : 'No jobs match your filters'}
-          </h2>
-          {#if jobs.length === 0}
-            <a href="/jobs/new?clientId={clientId}" class="action-button">
-              <span class="button-icon">➕</span>
-              Create First Job
-            </a>
-          {/if}
         </div>
       {/snippet}
     </ZeroDataView>
@@ -169,28 +154,5 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-  }
-
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 200px;
-    padding: 32px;
-    text-align: center;
-  }
-
-  .empty-state-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-    opacity: 0.6;
-  }
-
-  .empty-state h2 {
-    color: var(--text-secondary, #86868b);
-    font-size: 18px;
-    font-weight: 500;
-    margin: 0 0 16px 0;
   }
 </style>
