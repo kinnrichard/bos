@@ -8,12 +8,12 @@
  */
 export function getStatusLabel(status: string): string {
   const labelMap: Record<string, string> = {
-    'new_task': 'New',
-    'in_progress': 'In Progress',
-    'paused': 'Paused',
-    'successfully_completed': 'Completed',
-    'cancelled': 'Cancelled',
-    'failed': 'Failed'
+    new_task: 'New',
+    in_progress: 'In Progress',
+    paused: 'Paused',
+    successfully_completed: 'Completed',
+    cancelled: 'Cancelled',
+    failed: 'Failed',
   };
   return labelMap[status] || status.replace('_', ' ');
 }
@@ -26,7 +26,7 @@ export function formatDateTime(dateString: string): string {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 }
 
@@ -35,10 +35,10 @@ export function formatDateTime(dateString: string): string {
  */
 export function formatTimeDuration(seconds: number): string {
   if (!seconds || seconds === 0) return '';
-  
+
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   if (hours >= 1) {
     return `${hours.toFixed(1)}h`;
   } else {
@@ -50,9 +50,9 @@ export function formatTimeDuration(seconds: number): string {
  * Calculate task depth for indentation
  */
 export function getTaskDepth(tasks: any[], taskId: string): number {
-  const task = tasks.find(t => t.id === taskId);
+  const task = tasks.find((t) => t.id === taskId);
   if (!task || !task.parent_id) return 0;
-  
+
   return 1 + getTaskDepth(tasks, task.parent_id);
 }
 
@@ -60,14 +60,14 @@ export function getTaskDepth(tasks: any[], taskId: string): number {
  * Calculate current duration for time tracking
  * Includes accumulated time plus current session if in progress
  */
-export function calculateCurrentDuration(task: any): number {
+export function calculateCurrentDuration(task: any, currentTime?: number): number {
   if (task.status !== 'in_progress' || !task.in_progress_since) {
     return task.accumulated_seconds || 0;
   }
-  
+
   const startTime = new Date(task.in_progress_since).getTime();
-  const currentTime = Date.now();
-  const currentSessionSeconds = Math.floor((currentTime - startTime) / 1000);
-  
+  const now = currentTime ?? Date.now();
+  const currentSessionSeconds = Math.floor((now - startTime) / 1000);
+
   return (task.accumulated_seconds || 0) + currentSessionSeconds;
 }

@@ -2,29 +2,28 @@
   import { createEventDispatcher } from 'svelte';
   import { getTaskEmoji } from '$lib/config/emoji';
   import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
-  import { focusActions } from '$lib/stores/focusManager.svelte';
   import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
   import EditableTitle from '../ui/EditableTitle.svelte';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
   import '../../styles/task-components.scss';
   import '../../styles/focus-ring.scss';
-  
+
   // Use static SVG URLs for better compatibility
   const chevronRight = '/icons/chevron-right.svg';
 
   // Props
-  let { 
-    task, 
-    depth = 0, 
-    hasSubtasks = false, 
-    isExpanded = false, 
-    isSelected = false, 
-    isEditing = false, 
+  let {
+    task,
+    depth = 0,
+    hasSubtasks = false,
+    isExpanded = false,
+    isSelected = false,
+    isEditing = false,
     isDeleting = false,
     canEdit = true,
     jobId = '',
     batchTaskDetails = null,
-    currentTime = Date.now()
+    currentTime = Date.now(),
   }: {
     task: any;
     depth?: number;
@@ -40,7 +39,7 @@
   } = $props();
 
   const dispatch = createEventDispatcher();
-  
+
   // Derive task-specific permissions
   const taskCanEdit = $derived(canEdit && taskPermissionHelpers.canEditTask(task));
   const taskCanChangeStatus = $derived(canEdit && taskPermissionHelpers.canChangeStatus(task));
@@ -48,32 +47,34 @@
   // Dispatch helper for editing events
   function handleEditingChange(editing: boolean) {
     if (!canEdit && editing) return; // Prevent entering edit mode if not allowed
-    
+
     if (editing) {
       // When entering edit mode, dispatch titleClick to notify parent
       dispatch('taskaction', {
         type: 'titleClick',
         taskId: task.id,
-        data: { 
-          event: new MouseEvent('click'), 
-          originalTitle: task.title 
-        }
+        data: {
+          event: new MouseEvent('click'),
+          originalTitle: task.title,
+        },
       });
     } else {
       // When exiting edit mode, dispatch cancelEdit
       dispatch('taskaction', {
         type: 'cancelEdit',
-        taskId: task.id
+        taskId: task.id,
       });
     }
   }
 
   async function handleSaveTitle(newTitle: string) {
-    dispatch('taskaction', {
-      type: 'saveEdit',
-      taskId: task.id,
-      data: { newTitle }
-    });
+    try {
+      const { Task } = await import('$lib/models/task');
+      await Task.update(task.id, { title: newTitle });
+    } catch (error) {
+      console.error('Failed to update task title:', error);
+      throw error; // Re-throw so EditableTitle can handle the error
+    }
   }
 
   function handleTaskClick(event: MouseEvent) {
@@ -82,7 +83,7 @@
     dispatch('taskaction', {
       type: 'click',
       taskId: task.id,
-      data: { event }
+      data: { event },
     });
   }
 
@@ -91,11 +92,11 @@
     if (isEditing) {
       return;
     }
-    
+
     dispatch('taskaction', {
       type: 'keydown',
       taskId: task.id,
-      data: { event }
+      data: { event },
     });
   }
 
@@ -103,26 +104,26 @@
     event.stopPropagation();
     dispatch('taskaction', {
       type: 'toggleExpansion',
-      taskId: task.id
+      taskId: task.id,
     });
   }
 
   function handleStatusChange(event: MouseEvent) {
     event.stopPropagation();
-    
+
     // Check if status change is allowed
     if (!taskCanChangeStatus) {
       return;
     }
-    
+
     const statusCycle = ['new_task', 'in_progress', 'successfully_completed'];
     const currentIndex = statusCycle.indexOf(task.status);
     const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
-    
+
     dispatch('taskaction', {
       type: 'statusChange',
       taskId: task.id,
-      data: { newStatus: nextStatus }
+      data: { newStatus: nextStatus },
     });
   }
 
@@ -133,7 +134,7 @@
     dispatch('taskaction', {
       type: 'taskUpdated',
       taskId: task.id,
-      data: event.detail
+      data: event.detail,
     });
   }
 
@@ -141,7 +142,7 @@
   // The focus store coordinates all focus operations to prevent race conditions
 </script>
 
-<div 
+<div
   class="task-item focus-ring"
   class:completed={task.status === 'successfully_completed'}
   class:in-progress={task.status === 'in_progress'}
@@ -155,20 +156,22 @@
   data-task-id={task.id}
   role="button"
   tabindex="0"
-  aria-label="Task: {task.title}. {isSelected ? 'Selected' : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
+  aria-label="Task: {task.title}. {isSelected
+    ? 'Selected'
+    : 'Not selected'}. Click to select, Shift+click for range selection, Ctrl/Cmd+click to toggle."
   onclick={handleTaskClick}
   onkeydown={handleTaskKeydown}
 >
   <!-- Disclosure Triangle (if has subtasks) -->
   {#if hasSubtasks}
-    <button 
+    <button
       class="disclosure-button"
       onclick={handleToggleExpansion}
       aria-expanded={isExpanded}
       aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
     >
-      <img 
-        src={chevronRight} 
+      <img
+        src={chevronRight}
         alt={isExpanded ? 'Expanded' : 'Collapsed'}
         class="chevron-icon"
         class:expanded={isExpanded}
@@ -180,17 +183,17 @@
 
   <!-- Task Status Button -->
   <div class="task-status">
-    <button 
+    <button
       class="status-emoji"
       class:disabled={!taskCanChangeStatus}
       onclick={handleStatusChange}
-      title={taskCanChangeStatus ? "Click to change status" : "Status cannot be changed"}
+      title={taskCanChangeStatus ? 'Click to change status' : 'Status cannot be changed'}
       disabled={!taskCanChangeStatus}
     >
       {getTaskEmoji(task)}
     </button>
   </div>
-  
+
   <!-- Task Content -->
   <div class="task-content">
     <EditableTitle
@@ -198,17 +201,16 @@
       tag="h5"
       className="task-title"
       placeholder="Untitled Task"
-      isEditing={isEditing}
+      {isEditing}
       onEditingChange={handleEditingChange}
       onSave={handleSaveTitle}
       onClick={handleTaskClick}
       editable={taskCanEdit}
     />
-    
+
     <!-- Time Tracking Display -->
     {#if task.status === 'in_progress' || (task.accumulated_seconds && task.accumulated_seconds > 0)}
-      {@const _ = currentTime} <!-- Force reactivity on time changes -->
-      {@const duration = calculateCurrentDuration(task)}
+      {@const duration = calculateCurrentDuration(task, currentTime)}
       {@const formattedTime = formatTimeDuration(duration)}
       {#if formattedTime}
         <div class="time-tracking">
@@ -230,22 +232,16 @@
       </div>
     {/if}
 
-    <!-- Notes Indicator -->
-    {#if task.notes_count && task.notes_count > 0}
-      <div class="notes-indicator" title="{task.notes_count} note{task.notes_count > 1 ? 's' : ''}">
-        <span class="notes-icon">📝</span>
-        <span class="notes-count">{task.notes_count}</span>
-      </div>
-    {/if}
+    <!-- Notes Indicator removed - notes_count column doesn't exist in database -->
   </div>
 
   <!-- Task Actions -->
   <div class="task-actions">
-    <TaskInfoPopover 
+    <TaskInfoPopover
       {task}
       {jobId}
       {batchTaskDetails}
-      isSelected={isSelected}
+      {isSelected}
       on:task-updated={handleTaskUpdated}
     />
   </div>

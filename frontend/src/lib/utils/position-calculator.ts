@@ -14,7 +14,6 @@ export interface Task {
   status?: string;
   created_at?: string;
   updated_at?: string;
-  notes_count?: number;
   assigned_to?: {
     id: string;
     name: string;
@@ -81,82 +80,78 @@ export function calculateRelativePositionFromTarget(
       relativePosition: {
         id: draggedTaskIds[0],
         parent_id: parentId ?? undefined,
-        position: 'first'
+        position: 'first',
       },
       reasoning: {
         dropMode: 'unknown',
         insertionType: 'default',
         adjacentTask: null,
-        relation: 'first'
-      }
+        relation: 'first',
+      },
     };
   }
 
   // Find the target task
-  const targetTask = tasks.find(t => t.id === dropZone.targetTaskId);
+  const targetTask = tasks.find((t) => t.id === dropZone.targetTaskId);
   if (!targetTask) {
     return {
       relativePosition: {
         id: draggedTaskIds[0],
         parent_id: parentId ?? undefined,
-        position: 'first'
+        position: 'first',
       },
       reasoning: {
         dropMode: dropZone.mode,
         insertionType: 'target-not-found',
         adjacentTask: null,
-        relation: 'first'
-      }
+        relation: 'first',
+      },
     };
   }
 
   // Handle nesting mode
   if (dropZone.mode === 'nest') {
     // Get existing children of the target task, sorted by position
-    const existingChildren = tasks.filter(t => 
-      t.parent_id === dropZone.targetTaskId && 
-      !draggedTaskIds.includes(t.id)
+    const existingChildren = tasks.filter(
+      (t) => t.parent_id === dropZone.targetTaskId && !draggedTaskIds.includes(t.id)
     );
-    
+
     // Position after the last child, or at first position if no children exist
     const lastChild = existingChildren[existingChildren.length - 1];
-    
+
     return {
       relativePosition: {
         id: draggedTaskIds[0],
         parent_id: dropZone.targetTaskId,
-        ...(lastChild ? { after_task_id: lastChild.id } : { position: 'first' })
+        ...(lastChild ? { after_task_id: lastChild.id } : { position: 'first' }),
       },
       reasoning: {
         dropMode: dropZone.mode,
         insertionType: 'nest-end',
         adjacentTask: lastChild?.id || null,
-        relation: lastChild ? 'after' : 'first'
-      }
+        relation: lastChild ? 'after' : 'first',
+      },
     };
   }
 
   // Handle reorder mode
   if (dropZone.mode === 'reorder') {
     // Get all siblings in the destination parent scope (including target task for position calculations)
-    const allSiblings = tasks.filter(t => 
-      (t.parent_id || null) === parentId
-    );
-    
+    const allSiblings = tasks.filter((t) => (t.parent_id || null) === parentId);
+
     // allSiblings already sorted by database
-    
+
     // Get siblings excluding dragged tasks (for finding next/previous tasks)
-    const destinationSiblings = tasks.filter(t => 
-      (t.parent_id || null) === parentId &&
-      !draggedTaskIds.includes(t.id)
+    const destinationSiblings = tasks.filter(
+      (t) => (t.parent_id || null) === parentId && !draggedTaskIds.includes(t.id)
     );
-    
+
     // destinationSiblings already sorted by database
-    
+
     // Get the dragged task to check if this is a cross-parent move
-    const draggedTask = tasks.find(t => t.id === draggedTaskIds[0]);
+    const draggedTask = tasks.find((t) => t.id === draggedTaskIds[0]);
     const isCrossParentMove = draggedTask && (draggedTask.parent_id || null) !== parentId;
-    
+
     // Handle cross-parent drag
     if (isCrossParentMove) {
       // For cross-parent drops, use the target task as visual reference
@@ -165,28 +160,28 @@ export function calculateRelativePositionFromTarget(
           relativePosition: {
             id: draggedTaskIds[0],
             parent_id: parentId ?? undefined,
-            before_task_id: targetTask.id
+            before_task_id: targetTask.id,
           },
           reasoning: {
             dropMode: dropZone.mode,
             insertionType: 'cross-parent-above',
             adjacentTask: targetTask.id,
-            relation: 'before'
-          }
+            relation: 'before',
+          },
         };
       } else {
         return {
           relativePosition: {
             id: draggedTaskIds[0],
             parent_id: parentId ?? undefined,
-            after_task_id: targetTask.id
+            after_task_id: targetTask.id,
           },
           reasoning: {
             dropMode: dropZone.mode,
             insertionType: 'cross-parent-below',
             adjacentTask: targetTask.id,
-            relation: 'after'
-          }
+            relation: 'after',
+          },
         };
       }
     }
@@ -198,55 +193,59 @@ export function calculateRelativePositionFromTarget(
         relativePosition: {
           id: draggedTaskIds[0],
           parent_id: parentId ?? undefined,
-          position: 'last'
+          position: 'last',
         },
         reasoning: {
           dropMode: dropZone.mode,
           insertionType: 'target-is-dragged',
           adjacentTask: null,
-          relation: 'last'
-        }
+          relation: 'last',
+        },
       };
     }
 
     // Use allSiblings for position calculations (includes target task)
     const siblings = allSiblings;
-    const targetIndex = siblings.findIndex(t => t.id === targetTask.id);
-    
+    const targetIndex = siblings.findIndex((t) => t.id === targetTask.id);
+
     debugPerformance('Sibling analysis for same-parent drag', {
-      targetTask: { id: targetTask.id.substring(0, 8), title: targetTask.title, position: targetTask.position || 0 },
-      allSiblings: allSiblings.map((s, idx) => ({ 
+      targetTask: {
+        id: targetTask.id.substring(0, 8),
+        title: targetTask.title,
+        position: targetTask.position || 0,
+      },
+      allSiblings: allSiblings.map((s, idx) => ({
         index: idx,
-        id: s.id.substring(0, 8), 
-        title: s.title, 
+        id: s.id.substring(0, 8),
+        title: s.title,
         position: s.position || 0,
-        isTarget: s.id === targetTask.id
+        isTarget: s.id === targetTask.id,
       })),
-      destinationSiblings: destinationSiblings.map((s, idx) => ({ 
+      destinationSiblings: destinationSiblings.map((s, idx) => ({
         index: idx,
-        id: s.id.substring(0, 8), 
-        title: s.title, 
-        position: s.position
+        id: s.id.substring(0, 8),
+        title: s.title,
+        position: s.position,
       })),
       targetIndex,
       dropZone: { mode: dropZone.mode, position: dropZone.position },
-      isLastSibling: targetIndex === siblings.length - 1
+      isLastSibling: targetIndex === siblings.length - 1,
     });
-    
+
     if (dropZone.position === 'above') {
       // Place before target task
       return {
         relativePosition: {
           id: draggedTaskIds[0],
           parent_id: parentId ?? undefined,
-          before_task_id: targetTask.id
+          before_task_id: targetTask.id,
         },
         reasoning: {
           dropMode: dropZone.mode,
           insertionType: 'before-target',
           adjacentTask: targetTask.id,
-          relation: 'before'
-        }
+          relation: 'before',
+        },
       };
     } else {
       // Place after target task - simple and direct
@@ -254,14 +253,14 @@ export function calculateRelativePositionFromTarget(
         relativePosition: {
           id: draggedTaskIds[0],
           parent_id: parentId ?? undefined,
-          after_task_id: targetTask.id
+          after_task_id: targetTask.id,
         },
         reasoning: {
           dropMode: dropZone.mode,
           insertionType: 'after-target',
           adjacentTask: targetTask.id,
-          relation: 'after'
-        }
+          relation: 'after',
+        },
       };
     }
   }
@@ -271,14 +270,14 @@ export function calculateRelativePositionFromTarget(
     relativePosition: {
       id: draggedTaskIds[0],
       parent_id: parentId ?? undefined,
-      position: 'first'
+      position: 'first',
     },
     reasoning: {
       dropMode: dropZone.mode || 'unknown',
       insertionType: 'fallback',
       adjacentTask: null,
-      relation: 'first'
-    }
+      relation: 'first',
+    },
   };
 }
 
@@ -293,22 +292,31 @@ export function calculatePositionFromTarget(
   draggedTaskIds: string[]
 ): PositionCalculationResult {
   // For backward compatibility, convert relative positioning to integer position
-  const relativeResult = calculateRelativePositionFromTarget(tasks, dropZone, parentId, draggedTaskIds);
-  
+  const relativeResult = calculateRelativePositionFromTarget(
+    tasks,
+    dropZone,
+    parentId,
+    draggedTaskIds
+  );
+
   // Use ClientActsAsList to convert to integer position for legacy callers
   // This is a circular dependency workaround - import dynamically
-  const positionUpdates = [{ id: draggedTaskIds[0], position: 1, parent_id: parentId ?? undefined }];
+  const positionUpdates = [
+    { id: draggedTaskIds[0], position: 1, parent_id: parentId ?? undefined },
+  ];
   const calculatedPosition = positionUpdates[0]?.position || 1;
-  
+
   return {
     calculatedPosition,
     reasoning: {
       dropMode: relativeResult.reasoning.dropMode,
       insertionType: relativeResult.reasoning.insertionType,
       beforeTask: relativeResult.reasoning.adjacentTask,
-      isWithinScopeMove: relativeResult.reasoning.relation === 'before' || relativeResult.reasoning.relation === 'after',
+      isWithinScopeMove:
+        relativeResult.reasoning.relation === 'before' ||
+        relativeResult.reasoning.relation === 'after',
       gapsBeforeTarget: 0,
-      adjustmentApplied: false
-    }
+      adjustmentApplied: false,
+    },
   };
 }

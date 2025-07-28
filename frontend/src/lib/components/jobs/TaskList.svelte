@@ -568,46 +568,14 @@
     }
   });
 
-  // Flag to prevent double-save when clicking another task
-  let isManualSave = false;
-
-  // Auto-save current edit before changing selection
-  async function autoSaveCurrentEdit() {
+  // Cancel current edit when switching to another task
+  function cancelCurrentEdit() {
     const currentEditingTaskId = focusActions.getCurrentEditingTaskId();
     if (!currentEditingTaskId) return;
 
-    // Set transition state to prevent race conditions
-    focusActions.setTransitioning(true);
-
-    // Set flag to prevent blur handler from also saving
-    isManualSave = true;
-
-    // Get the current editing element from focus manager
-    const titleElement = focusActions.getCurrentEditingElement();
-    if (titleElement) {
-      const currentTitle = titleElement.textContent || '';
-      const originalTitle = cleanedTasks.find((t) => t.id === currentEditingTaskId)?.title || '';
-
-      // Only save if content has changed and is not empty
-      if (currentTitle.trim() !== '' && currentTitle.trim() !== originalTitle) {
-        await saveTitle(currentEditingTaskId, currentTitle);
-      } else if (currentTitle.trim() === '') {
-        // If empty, just cancel the edit
-        cancelEdit();
-      } else {
-        // No change, just exit edit mode
-        cancelEdit();
-      }
-    }
-
     // Clear focus through centralized manager
     focusActions.clearFocus();
-
-    // Reset flags after a short delay
-    setTimeout(() => {
-      isManualSave = false;
-      focusActions.setTransitioning(false);
-    }, 50);
+    cancelEdit();
   }
 
   // Capture positions immediately after selection changes for better drag animation timing
@@ -639,7 +607,7 @@
   }
 
   // Multi-select click handler
-  async function handleTaskClick(event: MouseEvent, taskId: string) {
+  function handleTaskClick(event: MouseEvent, taskId: string) {
     event.stopPropagation();
 
     // Check if this is a click on the title of the currently editing task
@@ -647,10 +615,10 @@
     const isClickOnEditingTitle =
       currentEditingId === taskId && (event.target as HTMLElement).closest('.editable-title');
 
-    // Auto-save any existing edit before changing selection, UNLESS
+    // Cancel any existing edit before changing selection, UNLESS
     // we're clicking on the title of the task that's currently being edited
     if (currentEditingId !== null && !isClickOnEditingTitle) {
-      await autoSaveCurrentEdit();
+      cancelCurrentEdit();
     }
 
     if (event.shiftKey) {
@@ -700,12 +668,6 @@
             titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
           }
         });
-        break;
-      case 'saveEdit':
-        // Only save if not already saved manually by autoSaveCurrentEdit
-        if (!isManualSave) {
-          saveTitle(taskId, data.newTitle);
-        }
         break;
       case 'cancelEdit':
         cancelEdit();
@@ -927,34 +889,6 @@
         focusActions.setEditingElement(titleElement, taskId);
       }
     });
-  }
-
-  async function saveTitle(taskId: string, newTitle: string) {
-    if (newTitle.trim() === '') {
-      cancelEdit();
-      return;
-    }
-
-    try {
-      // Find the task data and create an ActiveRecord-style instance
-      const taskData = cleanedTasks.find((t) => t.id === taskId);
-      if (!taskData) {
-        throw new Error('Task not found');
-      }
-
-      const { Task } = await import('$lib/models/task');
-
-      await Task.update(taskData.id, { title: newTitle.trim() });
-
-      // UI cleanup - Zero.js reactive updates will handle the data changes
-      editingTaskId = null;
-    } catch (error) {
-      debugBusiness.workflow.error('Task title update failed', { error, taskId, newTitle });
-      dragFeedback = 'Failed to update task title - please try again';
-      setTimeout(() => (dragFeedback = ''), 3000);
-
-      // Reverts to original title
-    }
   }
 
   function cancelEdit() {

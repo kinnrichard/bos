@@ -1,80 +1,75 @@
 <script lang="ts">
   import { createEventDispatcher, onDestroy } from 'svelte';
-  import { tasksService, type Task } from '$lib/api/tasks';
-  import { getContext } from 'svelte';
-  import { formatDateTime } from '$lib/utils/date';
   import { getTaskStatusEmoji, getTaskStatusLabel } from '$lib/config/emoji';
+  import { formatTimeDuration, calculateCurrentDuration } from '$lib/utils/taskRowHelpers';
   import BasePopover from '../ui/BasePopover.svelte';
   import { debugComponent } from '$lib/utils/debug/namespaces';
   import { ReactiveActivityLog } from '$lib/models/reactive-activity-log';
   import { ReactiveNote } from '$lib/models/reactive-note';
-  import { ReactiveTask } from '$lib/models/reactive-task';
   import { getCurrentUser } from '$lib/auth/current-user';
   import { getZero } from '$lib/zero/zero-client';
-  
+
   let {
     task,
-    jobId,
-    batchTaskDetails = null, // Optional batch details data
-    isSelected = false // Whether this task is selected
+    isSelected = false, // Whether this task is selected
   } = $props();
-  
+
   const dispatch = createEventDispatcher();
-  
-  let taskDetails = $state(null);
   let error = $state('');
   let noteText = $state('');
   let addingNote = $state(false);
   let timelineContainer = $state();
   let currentTime = $state(Date.now());
   let timer: any;
-  
+
   // ReactiveRecord queries
   let activityLogQuery = $state(null);
   let noteQuery = $state(null);
-  
+
   // Helper function to generate user initials with proper typing
   function getUserInitials(name: string): string {
-    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+    return name
+      .split(' ')
+      .map((n: string) => n[0])
+      .join('')
+      .toUpperCase();
   }
-  
+
   // Store popover open state directly
   let popoverOpen = $state(false);
   let popoverContentElement = $state(null);
-  
+
   // Initialize ReactiveRecord queries when component mounts and task is available
   $effect(() => {
     if (task && !activityLogQuery && !noteQuery) {
       debugComponent('Setting up ReactiveRecord queries on mount', { taskId: task.id });
-      
+
       // Set up reactive queries - they execute automatically
-      activityLogQuery = ReactiveActivityLog
-        .where({
-          loggable_type: 'Task',
-          loggable_id: task.id
-        })
+      activityLogQuery = ReactiveActivityLog.where({
+        loggable_type: 'Task',
+        loggable_id: task.id,
+      })
         .includes('user')
         .orderBy('created_at', 'asc')
         .all();
-        
-      noteQuery = ReactiveNote
-        .where({
-          notable_type: 'Task',
-          notable_id: task.id
-        })
+
+      noteQuery = ReactiveNote.where({
+        notable_type: 'Task',
+        notable_id: task.id,
+      })
         .includes('user')
         .orderBy('created_at', 'asc')
         .all();
-        
-      debugComponent('Queries created', { 
-        activityLogQuery: !!activityLogQuery, 
+
+      debugComponent('Queries created', {
+        activityLogQuery: !!activityLogQuery,
         noteQuery: !!noteQuery,
         activityLogIsLoading: activityLogQuery?.isLoading,
-        noteIsLoading: noteQuery?.isLoading
+        noteIsLoading: noteQuery?.isLoading,
       });
     }
   });
-  
+
   // Update timer every second for in-progress tasks when popover is open
   $effect(() => {
     if (popoverOpen && task?.status === 'in_progress') {
@@ -86,11 +81,11 @@
       timer = null;
     }
   });
-  
+
   // Clean up timer and queries when component is destroyed
   onDestroy(() => {
     if (timer) clearInterval(timer);
-    
+
     // Clean up queries
     if (activityLogQuery?.destroy) {
       activityLogQuery.destroy();
@@ -99,7 +94,7 @@
       noteQuery.destroy();
     }
   });
-  
+
   // Track when popover content element exists to know when popover is open
   $effect(() => {
     if (popoverContentElement) {
@@ -118,26 +113,26 @@
           hasData: !!activityLogQuery?.data,
           dataLength: activityLogQuery?.data?.length ?? 0,
           error: activityLogQuery?.error,
-          resultType: activityLogQuery?.resultType
+          resultType: activityLogQuery?.resultType,
         },
         noteQuery: {
           isLoading: noteQuery?.isLoading,
           hasData: !!noteQuery?.data,
           dataLength: noteQuery?.data?.length ?? 0,
           error: noteQuery?.error,
-          resultType: noteQuery?.resultType
-        }
+          resultType: noteQuery?.resultType,
+        },
       });
     }
-    
+
     if (activityLogQuery?.data || noteQuery?.data) {
       debugComponent('Query data received', {
         activityLogs: activityLogQuery?.data?.length ?? 0,
         notes: noteQuery?.data?.length ?? 0,
         activityLogData: activityLogQuery?.data,
-        noteData: noteQuery?.data
+        noteData: noteQuery?.data,
       });
-      
+
       // Auto-scroll to bottom after content loads
       setTimeout(() => {
         if (timelineContainer) {
@@ -146,23 +141,23 @@
       }, 0);
     }
   });
-  
+
   // Reset state when task changes
   $effect(() => {
     if (task) {
       error = '';
     }
   });
-  
+
   // Derived state for loading and error
   let isLoading = $derived((activityLogQuery?.isLoading || noteQuery?.isLoading) ?? false);
   let queryError = $derived(activityLogQuery?.error || noteQuery?.error);
   let hasData = $derived(
-    (activityLogQuery?.data !== undefined && activityLogQuery?.data !== null) || 
-    (noteQuery?.data !== undefined && noteQuery?.data !== null)
+    (activityLogQuery?.data !== undefined && activityLogQuery?.data !== null) ||
+      (noteQuery?.data !== undefined && noteQuery?.data !== null)
   );
   let queriesInitialized = $derived(!!activityLogQuery && !!noteQuery);
-  
+
   // Handle query errors
   $effect(() => {
     if (queryError) {
@@ -173,25 +168,25 @@
       error = '';
     }
   });
-  
+
   async function addNote() {
     if (!noteText.trim() || addingNote) return;
-    
+
     const currentUser = getCurrentUser();
     if (!currentUser) {
       error = 'You must be logged in to add notes';
       return;
     }
-    
+
     addingNote = true;
-    
+
     try {
       // Get Zero client instance
       const zero = getZero();
       if (!zero) {
         throw new Error('Zero client not initialized');
       }
-      
+
       // Create note using Zero.js mutation
       const noteId = crypto.randomUUID();
       await zero.mutate.notes.insert({
@@ -201,35 +196,26 @@
         notable_id: task.id,
         user_id: currentUser.id,
         created_at: Date.now(),
-        updated_at: Date.now()
+        updated_at: Date.now(),
       });
-      
-      // Update task notes count
-      const currentNotesCount = task.notes_count || 0;
-      await zero.mutate.tasks.update({
-        id: task.id,
-        notes_count: currentNotesCount + 1,
-        updated_at: Date.now()
-      });
-      
+
       noteText = '';
-      
+
       // The ReactiveRecord queries should automatically update
       // but we can force a refresh if needed
       if (noteQuery && typeof noteQuery.refresh === 'function') {
         noteQuery.refresh();
       }
-      
+
       // Auto-scroll to bottom to show new note
       setTimeout(() => {
         if (timelineContainer) {
           timelineContainer.scrollTop = timelineContainer.scrollHeight;
         }
       }, 100);
-      
+
       // Notify parent component of the update
       dispatch('task-updated', { task });
-      
     } catch (err: any) {
       error = 'Failed to add note';
       debugComponent.error('Note addition failed', { error: err, taskId: task.id, noteText });
@@ -237,49 +223,22 @@
       addingNote = false;
     }
   }
-  
+
   function handleNoteKeydown(event: KeyboardEvent) {
-    if ((event.key === 'Enter' && (event.metaKey || event.ctrlKey))) {
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       addNote();
     }
   }
-  
-  // Timeline and formatting functions
-  function formatTimeDuration(seconds: number): string {
-    if (!seconds || seconds === 0) return '0 min';
-    
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (hours >= 1) {
-      if (minutes > 0) {
-        return `${hours}h ${minutes}m`;
-      } else {
-        return `${hours}h`;
-      }
-    } else {
-      return `${Math.max(minutes, 1)}m`;
-    }
-  }
 
-  function calculateCurrentDuration(task: any): number {
-    if (task.status !== 'in_progress' || !task.in_progress_since) {
-      return task.accumulated_seconds || 0;
-    }
-    
-    const startTime = new Date(task.in_progress_since).getTime();
-    const currentSessionSeconds = Math.floor((currentTime - startTime) / 1000);
-    
-    return (task.accumulated_seconds || 0) + currentSessionSeconds;
-  }
+  // Timeline and formatting functions
 
   function formatTimeOnly(timestamp: string): string {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
     });
   }
 
@@ -288,7 +247,7 @@
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
     } else if (date.toDateString() === yesterday.toDateString()) {
@@ -300,18 +259,17 @@
     }
   }
 
-
   // Build timeline items from ReactiveRecord data
   function getTimelineItems(activityLogs: any[], notes: any[]): any[] {
-    debugComponent('Building timeline items', { 
+    debugComponent('Building timeline items', {
       activityLogsCount: activityLogs?.length ?? 0,
       notesCount: notes?.length ?? 0,
       activityLogs,
-      notes
+      notes,
     });
-    
+
     let items: any[] = [];
-    
+
     // Add activity logs (created, status changes, etc.)
     if (activityLogs && activityLogs.length > 0) {
       activityLogs.forEach((log: any) => {
@@ -320,7 +278,7 @@
             type: 'created',
             timestamp: log.created_at,
             user: log.user,
-            log: log
+            log: log,
           });
         } else if (log.action === 'status_changed') {
           items.push({
@@ -328,23 +286,23 @@
             timestamp: log.created_at,
             user: log.user,
             status: log.metadata?.new_status,
-            log: log
+            log: log,
           });
         }
       });
     }
-    
+
     // If no created log exists, add a fallback created item
-    const hasCreatedLog = items.some(item => item.type === 'created');
+    const hasCreatedLog = items.some((item) => item.type === 'created');
     if (!hasCreatedLog && task) {
       debugComponent('Adding fallback created item', { taskCreatedAt: task.created_at });
       items.push({
         type: 'created',
         timestamp: task.created_at,
-        user: null
+        user: null,
       });
     }
-    
+
     // Add notes
     if (notes && notes.length > 0) {
       notes.forEach((note: any) => {
@@ -353,13 +311,15 @@
           timestamp: note.created_at,
           user: note.user,
           content: note.content,
-          note: note
+          note: note,
         });
       });
     }
-    
+
     // Sort by timestamp
-    const sortedItems = items.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const sortedItems = items.sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
     debugComponent('Timeline items built', { itemCount: sortedItems.length, items: sortedItems });
     return sortedItems;
   }
@@ -369,36 +329,33 @@
     const grouped: any[] = [];
     let currentUser: string | null = null;
     let currentDate: string | null = null;
-    
-    items.forEach(item => {
+
+    items.forEach((item) => {
       const itemDate = new Date(item.timestamp).toDateString();
       const itemUser = item.user?.name || 'System';
-      
+
       if (currentUser !== itemUser || currentDate !== itemDate) {
         grouped.push({
           type: 'header',
           user: item.user,
-          timestamp: item.timestamp
+          timestamp: item.timestamp,
         });
         currentUser = itemUser;
         currentDate = itemDate;
       }
-      
+
       grouped.push(item);
     });
-    
+
     return grouped;
   }
 </script>
 
 <div class="task-info-popover-container">
   <!-- Task Info Button (Trigger) -->
-  <BasePopover 
-    preferredPlacement="left"
-    panelWidth="380px"
-  >
+  <BasePopover preferredPlacement="left" panelWidth="380px">
     {#snippet trigger({ popover })}
-      <button 
+      <button
         class="task-action-button"
         title="Task details"
         use:popover.button
@@ -410,179 +367,183 @@
       </button>
     {/snippet}
 
-    {#snippet children({ close })}
+    {#snippet children({ close: _close })}
       <!-- Popover content with scrolling -->
       <div class="popover-content-scrollable" bind:this={popoverContentElement}>
-      <!-- Header -->
-      <div class="popover-header">
-        <h3>Task Info</h3>
-        {#if task.status === 'in_progress' || (task.accumulated_seconds && task.accumulated_seconds > 0)}
-          {@const _ = currentTime} <!-- Force reactivity -->
-          {@const duration = calculateCurrentDuration(task)}
-          <div class="header-duration">
-            <span class="timer-icon">⏱️</span>
-            <span class="timer-display" class:active={task.status === 'in_progress'}>
-              {formatTimeDuration(duration)}
-            </span>
+        <!-- Header -->
+        <div class="popover-header">
+          <h3>Task Info</h3>
+          {#if task.status === 'in_progress' || (task.accumulated_seconds && task.accumulated_seconds > 0)}
+            {@const duration = calculateCurrentDuration(task, currentTime)}
+            <div class="header-duration">
+              <span class="timer-icon">⏱️</span>
+              <span class="timer-display" class:active={task.status === 'in_progress'}>
+                {formatTimeDuration(duration)}
+              </span>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Debug info -->
+        {#if false}
+          <div style="padding: 8px; background: #333; font-size: 11px; font-family: monospace;">
+            <div>Popover open: {popoverOpen}</div>
+            <div>Task ID: {task?.id ?? 'null'}</div>
+            <div>Queries initialized: {queriesInitialized}</div>
+            <div>Is loading: {isLoading}</div>
+            <div>Has data: {hasData}</div>
+            <div>Error: {error || 'none'}</div>
+            <div>Activity logs: {activityLogQuery?.data?.length ?? 'null'}</div>
+            <div>Notes: {noteQuery?.data?.length ?? 'null'}</div>
           </div>
         {/if}
-      </div>
 
-      <!-- Debug info -->
-      {#if false}
-        <div style="padding: 8px; background: #333; font-size: 11px; font-family: monospace;">
-          <div>Popover open: {popoverOpen}</div>
-          <div>Task ID: {task?.id ?? 'null'}</div>
-          <div>Queries initialized: {queriesInitialized}</div>
-          <div>Is loading: {isLoading}</div>
-          <div>Has data: {hasData}</div>
-          <div>Error: {error || 'none'}</div>
-          <div>Activity logs: {activityLogQuery?.data?.length ?? 'null'}</div>
-          <div>Notes: {noteQuery?.data?.length ?? 'null'}</div>
-        </div>
-      {/if}
-      
-      {#if !queriesInitialized}
-        <div class="timeline-section">
-          <div class="loading-state">
-            <span class="spinner">⏳</span>
-            <span>Initializing...</span>
+        {#if !queriesInitialized}
+          <div class="timeline-section">
+            <div class="loading-state">
+              <span class="spinner">⏳</span>
+              <span>Initializing...</span>
+            </div>
           </div>
-        </div>
-      {:else if isLoading}
-        <div class="timeline-section">
-          <div class="loading-state">
-            <span class="spinner">⏳</span>
-            <span>Loading task details...</span>
+        {:else if isLoading}
+          <div class="timeline-section">
+            <div class="loading-state">
+              <span class="spinner">⏳</span>
+              <span>Loading task details...</span>
+            </div>
           </div>
-        </div>
-      {:else if error}
-        <div class="timeline-section">
-          <div class="error-state">
-            <span>❌</span>
-            <span>{error}</span>
-            <button onclick={() => { 
-              activityLogQuery?.refresh?.(); 
-              noteQuery?.refresh?.();
-              error = '';
-            }}>Retry</button>
+        {:else if error}
+          <div class="timeline-section">
+            <div class="error-state">
+              <span>❌</span>
+              <span>{error}</span>
+              <button
+                onclick={() => {
+                  activityLogQuery?.refresh?.();
+                  noteQuery?.refresh?.();
+                  error = '';
+                }}>Retry</button
+              >
+            </div>
           </div>
-        </div>
-      {:else if hasData}
-        <!-- Timeline section -->
-        <div class="timeline-section">
-          <div class="timeline-container" bind:this={timelineContainer}>
-            {#if getTimelineItems(activityLogQuery?.data || [], noteQuery?.data || []).length === 0}
-              <div class="empty-state">
-                <span class="empty-icon">📋</span>
-                <span class="empty-message">No activity yet</span>
-              </div>
-            {:else}
-              {#each groupTimelineItems(getTimelineItems(activityLogQuery?.data || [], noteQuery?.data || [])) as item}
-              {#if item.type === 'header'}
-                <div class="timeline-header">
-                  <div class="timeline-header-left">
-                    {#if item.user}
-                      <span class="timeline-header-icon user-avatar" style="background-color: #4A90E2; color: white;">
-                        {getUserInitials(item.user.name)}
-                      </span>
-                    {/if}
-                    <span class="timeline-header-user">{item.user?.name || 'System'}</span>
-                  </div>
-                  <span class="timeline-header-date">{formatHeaderDate(item.timestamp)}</span>
+        {:else if hasData}
+          <!-- Timeline section -->
+          <div class="timeline-section">
+            <div class="timeline-container" bind:this={timelineContainer}>
+              {#if getTimelineItems(activityLogQuery?.data || [], noteQuery?.data || []).length === 0}
+                <div class="empty-state">
+                  <span class="empty-icon">📋</span>
+                  <span class="empty-message">No activity yet</span>
                 </div>
-              {:else if item.type === 'created'}
-                <div class="timeline-item">
-                  <div class="timeline-row">
-                    <div class="timeline-content">
-                      <span class="timeline-emoji">⚫</span>
-                      <span class="timeline-label">Created</span>
+              {:else}
+                {#each groupTimelineItems(getTimelineItems(activityLogQuery?.data || [], noteQuery?.data || [])) as item}
+                  {#if item.type === 'header'}
+                    <div class="timeline-header">
+                      <div class="timeline-header-left">
+                        {#if item.user}
+                          <span
+                            class="timeline-header-icon user-avatar"
+                            style="background-color: #4A90E2; color: white;"
+                          >
+                            {getUserInitials(item.user.name)}
+                          </span>
+                        {/if}
+                        <span class="timeline-header-user">{item.user?.name || 'System'}</span>
+                      </div>
+                      <span class="timeline-header-date">{formatHeaderDate(item.timestamp)}</span>
                     </div>
-                    <div class="timeline-time">
-                      <span>{formatTimeOnly(item.timestamp)}</span>
+                  {:else if item.type === 'created'}
+                    <div class="timeline-item">
+                      <div class="timeline-row">
+                        <div class="timeline-content">
+                          <span class="timeline-emoji">⚫</span>
+                          <span class="timeline-label">Created</span>
+                        </div>
+                        <div class="timeline-time">
+                          <span>{formatTimeOnly(item.timestamp)}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              {:else if item.type === 'status_change'}
-                <div class="timeline-item">
-                  <div class="timeline-row">
-                    <div class="timeline-content">
-                      <span class="timeline-emoji">{getTaskStatusEmoji(item.status)}</span>
-                      <span class="timeline-label">{getTaskStatusLabel(item.status)}</span>
+                  {:else if item.type === 'status_change'}
+                    <div class="timeline-item">
+                      <div class="timeline-row">
+                        <div class="timeline-content">
+                          <span class="timeline-emoji">{getTaskStatusEmoji(item.status)}</span>
+                          <span class="timeline-label">{getTaskStatusLabel(item.status)}</span>
+                        </div>
+                        <div class="timeline-time">
+                          <span>{formatTimeOnly(item.timestamp)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div class="timeline-time">
-                      <span>{formatTimeOnly(item.timestamp)}</span>
+                  {:else if item.type === 'note'}
+                    <div class="timeline-item timeline-item--note" data-note-id={item.note?.id}>
+                      <div class="timeline-row">
+                        <div class="timeline-content">
+                          <span class="timeline-emoji">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 19.8242 17.998"
+                              width="18"
+                              height="18"
+                              style="display: block;"
+                            >
+                              <path
+                                d="M3.06641 17.998L16.4062 17.998C18.4473 17.998 19.4629 16.9824 19.4629 14.9707L19.4629 3.04688C19.4629 1.03516 18.4473 0.0195312 16.4062 0.0195312L3.06641 0.0195312C1.02539 0.0195312 0 1.02539 0 3.04688L0 14.9707C0 16.9922 1.02539 17.998 3.06641 17.998ZM2.91992 16.4258C2.05078 16.4258 1.57227 15.9668 1.57227 15.0586L1.57227 5.84961C1.57227 4.95117 2.05078 4.48242 2.91992 4.48242L16.5332 4.48242C17.4023 4.48242 17.8906 4.95117 17.8906 5.84961L17.8906 15.0586C17.8906 15.9668 17.4023 16.4258 16.5332 16.4258Z"
+                                fill="currentColor"
+                                fill-opacity="0.85"
+                              />
+                              <path
+                                d="M4.61914 8.11523L14.873 8.11523C15.2148 8.11523 15.4785 7.8418 15.4785 7.5C15.4785 7.16797 15.2148 6.91406 14.873 6.91406L4.61914 6.91406C4.25781 6.91406 4.00391 7.16797 4.00391 7.5C4.00391 7.8418 4.25781 8.11523 4.61914 8.11523Z"
+                                fill="currentColor"
+                                fill-opacity="0.85"
+                              />
+                              <path
+                                d="M4.61914 11.0547L14.873 11.0547C15.2148 11.0547 15.4785 10.8008 15.4785 10.4688C15.4785 10.1172 15.2148 9.85352 14.873 9.85352L4.61914 9.85352C4.25781 9.85352 4.00391 10.1172 4.00391 10.4688C4.00391 10.8008 4.25781 11.0547 4.61914 11.0547Z"
+                                fill="currentColor"
+                                fill-opacity="0.85"
+                              />
+                              <path
+                                d="M4.61914 13.9941L11.1328 13.9941C11.4746 13.9941 11.7383 13.7402 11.7383 13.4082C11.7383 13.0664 11.4746 12.793 11.1328 12.793L4.61914 12.793C4.25781 12.793 4.00391 13.0664 4.00391 13.4082C4.00391 13.7402 4.25781 13.9941 4.61914 13.9941Z"
+                                fill="currentColor"
+                                fill-opacity="0.85"
+                              />
+                            </svg>
+                          </span>
+                          <span class="timeline-note">{item.content}</span>
+                        </div>
+                        <div class="timeline-time">
+                          <span>{formatTimeOnly(item.timestamp)}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              {:else if item.type === 'note'}
-                <div class="timeline-item timeline-item--note" data-note-id={item.note?.id}>
-                  <div class="timeline-row">
-                    <div class="timeline-content">
-                      <span class="timeline-emoji">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 19.8242 17.998"
-                          width="18"
-                          height="18"
-                          style="display: block;"
-                        >
-                          <path
-                            d="M3.06641 17.998L16.4062 17.998C18.4473 17.998 19.4629 16.9824 19.4629 14.9707L19.4629 3.04688C19.4629 1.03516 18.4473 0.0195312 16.4062 0.0195312L3.06641 0.0195312C1.02539 0.0195312 0 1.02539 0 3.04688L0 14.9707C0 16.9922 1.02539 17.998 3.06641 17.998ZM2.91992 16.4258C2.05078 16.4258 1.57227 15.9668 1.57227 15.0586L1.57227 5.84961C1.57227 4.95117 2.05078 4.48242 2.91992 4.48242L16.5332 4.48242C17.4023 4.48242 17.8906 4.95117 17.8906 5.84961L17.8906 15.0586C17.8906 15.9668 17.4023 16.4258 16.5332 16.4258Z"
-                            fill="currentColor"
-                            fill-opacity="0.85"
-                          />
-                          <path
-                            d="M4.61914 8.11523L14.873 8.11523C15.2148 8.11523 15.4785 7.8418 15.4785 7.5C15.4785 7.16797 15.2148 6.91406 14.873 6.91406L4.61914 6.91406C4.25781 6.91406 4.00391 7.16797 4.00391 7.5C4.00391 7.8418 4.25781 8.11523 4.61914 8.11523Z"
-                            fill="currentColor"
-                            fill-opacity="0.85"
-                          />
-                          <path
-                            d="M4.61914 11.0547L14.873 11.0547C15.2148 11.0547 15.4785 10.8008 15.4785 10.4688C15.4785 10.1172 15.2148 9.85352 14.873 9.85352L4.61914 9.85352C4.25781 9.85352 4.00391 10.1172 4.00391 10.4688C4.00391 10.8008 4.25781 11.0547 4.61914 11.0547Z"
-                            fill="currentColor"
-                            fill-opacity="0.85"
-                          />
-                          <path
-                            d="M4.61914 13.9941L11.1328 13.9941C11.4746 13.9941 11.7383 13.7402 11.7383 13.4082C11.7383 13.0664 11.4746 12.793 11.1328 12.793L4.61914 12.793C4.25781 12.793 4.00391 13.0664 4.00391 13.4082C4.00391 13.7402 4.25781 13.9941 4.61914 13.9941Z"
-                            fill="currentColor"
-                            fill-opacity="0.85"
-                          />
-                        </svg>
-                      </span>
-                      <span class="timeline-note">{item.content}</span>
-                    </div>
-                    <div class="timeline-time">
-                      <span>{formatTimeOnly(item.timestamp)}</span>
-                    </div>
-                  </div>
-                </div>
+                  {/if}
+                {/each}
               {/if}
-            {/each}
-            {/if}
+            </div>
           </div>
-        </div>
 
-        <!-- Add note section -->
-        <div class="add-note-section">
-          <textarea
-            class="note-input"
-            bind:value={noteText}
-            onkeydown={handleNoteKeydown}
-            placeholder="Add a note..."
-            rows="2"
-            disabled={addingNote}
-          ></textarea>
-          <div class="note-actions">
-            <button
-              class="button button--primary"
-              onclick={addNote}
-              disabled={!noteText.trim() || addingNote}
-            >
-              {addingNote ? 'Adding...' : 'Add Note'}
-            </button>
+          <!-- Add note section -->
+          <div class="add-note-section">
+            <textarea
+              class="note-input"
+              bind:value={noteText}
+              onkeydown={handleNoteKeydown}
+              placeholder="Add a note..."
+              rows="2"
+              disabled={addingNote}
+            ></textarea>
+            <div class="note-actions">
+              <button
+                class="button button--primary"
+                onclick={addNote}
+                disabled={!noteText.trim() || addingNote}
+              >
+                {addingNote ? 'Adding...' : 'Add Note'}
+              </button>
+            </div>
           </div>
-        </div>
-      {/if}
+        {/if}
       </div>
     {/snippet}
   </BasePopover>
@@ -591,7 +552,7 @@
 <style>
   /* Note color variable to match Rails */
   :root {
-    --note-color: #FBB827;
+    --note-color: #fbb827;
   }
 
   .task-info-popover-container {
@@ -605,7 +566,6 @@
     position: relative;
     z-index: 10;
     vertical-align: middle; /* If inline-flex */
-    
   }
 
   /* Action icon (SVG) styling */
@@ -656,7 +616,7 @@
   .timer-display {
     font-variant-numeric: tabular-nums;
   }
-  
+
   .timer-display.active {
     color: var(--status-in-progress-text);
   }
@@ -676,7 +636,7 @@
   .timeline-item {
     margin-left: 26px; /* Indent to align with user name (20px icon + 6px gap) */
   }
-  
+
   .timeline-item--note .timeline-content {
     flex: 1;
   }
@@ -713,7 +673,7 @@
     align-items: center;
     justify-content: center;
   }
-  
+
   .timeline-emoji svg {
     width: 18px;
     height: 18px;
@@ -745,26 +705,26 @@
     justify-content: space-between; /* Space between left and right content */
     gap: 6px;
   }
-  
+
   .timeline-header:first-child {
     margin-top: 0;
   }
-  
+
   .timeline-header-left {
     display: flex;
     align-items: center;
     gap: 6px;
   }
-  
+
   .timeline-header-user {
     font-weight: 600; /* Bold technician name */
   }
-  
+
   .timeline-header-date {
     margin-left: auto; /* Push date to the right */
     font-weight: 600; /* Bold date */
   }
-  
+
   .timeline-header-icon {
     /* User avatar styling is handled by .user-avatar class */
     /* Just ensure proper size for timeline context */
@@ -785,7 +745,7 @@
     gap: 12px;
     flex-wrap: nowrap; /* Prevent wrapping by default */
   }
-  
+
   .timeline-item--note .timeline-content {
     flex: 1 1 auto;
     min-width: 0; /* Allow content to shrink */
@@ -793,13 +753,13 @@
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .timeline-note {
     word-break: break-word;
     white-space: pre-wrap;
     color: var(--text-primary); /* Ensure consistent offwhite color */
   }
-  
+
   .timeline-item--note .timeline-time {
     flex-shrink: 0; /* Never shrink the time */
     margin-left: 12px; /* Ensure consistent spacing */
@@ -876,18 +836,18 @@
     color: var(--text-secondary);
     justify-content: center;
   }
-  
+
   .empty-state {
     flex-direction: column;
     padding: 40px 20px;
   }
-  
+
   .empty-icon {
     font-size: 32px;
     opacity: 0.5;
     margin-bottom: 8px;
   }
-  
+
   .empty-message {
     font-size: 14px;
     color: var(--text-muted);
@@ -896,10 +856,14 @@
   .spinner {
     animation: spin 1s linear infinite;
   }
-  
+
   @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   /* Responsive behavior is handled automatically by the positioning utilities */
