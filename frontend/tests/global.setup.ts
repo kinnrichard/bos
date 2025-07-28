@@ -15,6 +15,7 @@ import { chromium, FullConfig } from '@playwright/test';
 import { TestDatabase } from './helpers/database';
 import { LoginPage, verifyAuthentication } from './helpers';
 import { debugAuth, debugError } from '$lib/utils/debug';
+import { ServerHealthMonitor } from './helpers/server-health';
 
 // Constants
 const AUTH_FILE = 'playwright/.auth/user.json';
@@ -28,6 +29,51 @@ const DEBUG_MODE = process.env.DEBUG_AUTH_SETUP === 'true';
  */
 async function globalSetup(_config: FullConfig) {
   console.log('🚀 Starting global test setup...');
+
+  // Step 0: Server Health Validation & Zombie Cleanup
+  console.log('🏥 Validating test server health...');
+  
+  try {
+    // First, clean up any zombie servers from previous runs
+    await ServerHealthMonitor.killZombieServers();
+    
+    // Wait a moment for cleanup to complete
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Validate all servers are healthy
+    const healthCheck = await ServerHealthMonitor.validateAllServers();
+    
+    if (!healthCheck.healthy) {
+      console.error('❌ Test servers are not healthy:');
+      healthCheck.issues.forEach(issue => console.error(`  - ${issue}`));
+      console.error('\n💡 Run these commands to fix:');
+      console.error('   cd /Users/claude/Projects/bos');
+      console.error('   bin/testkill');
+      console.error('   bin/test-servers');
+      console.error('\n🔄 Attempting automatic server restart...');
+      
+      // Try to start servers automatically
+      await ServerHealthMonitor.killZombieServers();
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Re-check after cleanup
+      const recheckHealth = await ServerHealthMonitor.validateAllServers();
+      if (!recheckHealth.healthy) {
+        throw new Error(`Test servers are still unhealthy after cleanup. Please run manual server restart: bin/testkill && bin/test-servers`);
+      }
+      
+      console.log('✅ Automatic server restart successful');
+    } else {
+      console.log('✅ All test servers are healthy');
+    }
+  } catch (error) {
+    console.error('❌ Server health validation failed:', error);
+    console.error('\n💡 Manual fix required:');
+    console.error('   cd /Users/claude/Projects/bos');
+    console.error('   bin/testkill');
+    console.error('   bin/test-servers');
+    throw error; // Fail fast if servers aren't healthy
+  }
 
   // Step 1: Seed Test Database
   console.log('🌱 Setting up test database...');

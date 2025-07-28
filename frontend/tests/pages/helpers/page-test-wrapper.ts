@@ -15,6 +15,7 @@ import { debugComponent } from '$lib/utils/debug';
 import { withConsoleMonitoring, type ConsoleErrorFilter } from '../../helpers/console-monitoring';
 import { AuthHelper } from '../../helpers/auth';
 import { DataFactory } from '../../helpers/data-factories';
+import { ServerHealthMonitor } from '../../helpers/server-health';
 
 // Environment configuration
 const PAGE_TEST_TIMEOUT = process.env.DEBUG_PAGE_TESTS === 'true' ? 30000 : 15000;
@@ -111,6 +112,22 @@ export function createPageTest(
         description,
         timestamp: Date.now(),
       });
+    }
+
+    // Quick server health check before proceeding with test
+    try {
+      const healthCheck = await ServerHealthMonitor.validateAllServers();
+      if (!healthCheck.healthy) {
+        console.warn('⚠️ Server health issues detected during test execution:');
+        healthCheck.issues.forEach(issue => console.warn(`  - ${issue}`));
+        console.warn('💡 Consider running: bin/test-reset');
+        
+        // Don't fail the test immediately, but log the issues
+        // The test might still pass if the specific functionality works
+      }
+    } catch (healthError) {
+      console.warn('⚠️ Server health check failed:', healthError.message);
+      // Continue with test execution - health check failure shouldn't break the test
     }
 
     // Initialize helpers
