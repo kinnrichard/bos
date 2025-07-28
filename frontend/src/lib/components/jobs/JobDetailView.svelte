@@ -77,6 +77,7 @@
     placeholder="Untitled Job"
     autoFocus={shouldAutoFocus}
     onSave={handleJobTitleSave}
+    isCreationMode={isNewJobMode}
   />
 
   <!-- Tasks Section -->

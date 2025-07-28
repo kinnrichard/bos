@@ -37,7 +37,7 @@
     isNewJobMode && clientQuery?.data
       ? {
           id: null, // Indicates this is a new job
-          title: '',
+          title: '', // Start empty, EditableTitle will handle in creation mode
           status: 'active',
           priority: 'medium',
           client_id: clientId,
