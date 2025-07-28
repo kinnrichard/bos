@@ -18,57 +18,84 @@
 
   interface Props<T> {
     query: {
-      data: T | T[] | null;
+      data: T | T[] | null; // Raw data from ReactiveQuery
       resultType: 'loading' | 'complete' | 'error';
       error: Error | null;
-      isCollection?: boolean;
+      isLoading?: boolean; // Optional fallback
     };
+    displayData: T | T[] | null; // Filtered/processed data to actually display
     content: Snippet<[T | T[]]>;
     loading?: Snippet;
     error?: Snippet<[Error]>;
     empty?: Snippet;
     emptyMessage?: string;
+    filteredEmptyMessage?: string;
   }
 
   let {
     query,
+    displayData,
     content,
     loading,
     error: errorSnippet,
     empty,
     emptyMessage = 'No items found',
+    filteredEmptyMessage = 'No items match your filters',
   }: Props<unknown> = $props();
 
-  // Derived states based on Zero.js resultType
-  const isLoading = $derived(query.resultType === 'loading');
-  const hasError = $derived(query.resultType === 'error' && query.error);
-  const isComplete = $derived(query.resultType === 'complete');
-  const isEmpty = $derived(
-    isComplete &&
-      (query.isCollection
-        ? Array.isArray(query.data) && query.data.length === 0
-        : query.data === null)
+  // Conservative state management - only show states when Zero.js is definitively complete
+  const isLoading = $derived(
+    query.resultType === 'loading' || (query.isLoading ?? false) // Fallback for backward compatibility
   );
+
+  const hasError = $derived(query.resultType === 'error' && query.error);
+
+  // Automatically detect if this is a collection by checking if displayData is an array
+  const isCollection = $derived(Array.isArray(displayData));
+
+  // Conservative empty state logic - only when Zero.js explicitly confirms completion
+  const isEmpty = $derived(
+    query.resultType === 'complete' &&
+      (isCollection ? Array.isArray(query.data) && query.data.length === 0 : query.data === null)
+  );
+
+  // Filtered empty state - raw data exists but display data is empty after filtering
+  const isFilteredEmpty = $derived(
+    query.resultType === 'complete' &&
+      isCollection &&
+      Array.isArray(query.data) &&
+      query.data.length > 0 &&
+      Array.isArray(displayData) &&
+      displayData.length === 0
+  );
+
+  // Has data to display - only show content when we definitely have display data
   const hasData = $derived(
-    isComplete &&
-      (query.isCollection
-        ? Array.isArray(query.data) && query.data.length > 0
-        : query.data !== null)
+    query.resultType === 'complete' &&
+      (isCollection ? Array.isArray(displayData) && displayData.length > 0 : displayData !== null)
   );
 
   // Temporary debugging - will be removed after loading issue is resolved
   $effect(() => {
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
-      console.log('ZeroDataView state:', {
+      console.log('🧪 [ZeroDataView] Conservative state:', {
         resultType: query.resultType,
         isLoading,
         hasError,
-        isComplete,
         isEmpty,
+        isFilteredEmpty,
         hasData,
-        dataLength: Array.isArray(query.data) ? query.data.length : 'not array',
-        data: query.data,
+        isCollection,
+        rawDataLength: Array.isArray(query.data) ? query.data.length : 'not array',
+        displayDataLength: Array.isArray(displayData) ? displayData.length : 'not array',
+        renderDecision: {
+          willShowLoading: isLoading,
+          willShowError: hasError,
+          willShowEmpty: isEmpty,
+          willShowFilteredEmpty: isFilteredEmpty,
+          willShowContent: hasData,
+        },
       });
     }
   });
@@ -100,7 +127,7 @@
     </div>
   {/if}
 
-  <!-- Empty State - Only when Zero confirms data is complete but empty -->
+  <!-- True Empty State - Only when Zero confirms no raw data exists -->
 {:else if isEmpty}
   {#if empty}
     {@render empty()}
@@ -111,9 +138,17 @@
     </div>
   {/if}
 
+  <!-- Filtered Empty State - Raw data exists but no matches after filtering -->
+{:else if isFilteredEmpty}
+  <div class="empty-state filtered-empty">
+    <div class="empty-state-icon">🔍</div>
+    <h2>{filteredEmptyMessage}</h2>
+    <p>Try adjusting your filters or search criteria.</p>
+  </div>
+
   <!-- Success State - Data is available -->
 {:else if hasData}
-  {@render content(query.data)}
+  {@render content(displayData)}
 
   <!-- Fallback - Should rarely happen with Zero.js -->
 {:else}
@@ -186,6 +221,21 @@
     color: var(--text-secondary, #86868b);
     font-size: 18px;
     font-weight: 500;
+    margin: 0;
+  }
+
+  .empty-state.filtered-empty {
+    /* Slightly different styling for filtered empty state */
+  }
+
+  .empty-state.filtered-empty h2 {
+    color: var(--text-secondary, #86868b);
+    margin-bottom: 8px;
+  }
+
+  .empty-state.filtered-empty p {
+    color: var(--text-tertiary, #98989d);
+    font-size: 14px;
     margin: 0;
   }
 

@@ -89,12 +89,13 @@
 
     <ZeroDataView
       query={{
-        data: jobs,
+        data: jobsQuery.data,
         resultType: jobsQuery.resultType,
         error: jobsQuery.error,
-        isCollection: true,
       }}
+      displayData={jobs}
       emptyMessage="No jobs found"
+      filteredEmptyMessage="No jobs match your filters"
     >
       {#snippet content(jobsData)}
         <div class="jobs-list">
