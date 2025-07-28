@@ -3,6 +3,8 @@
  * Extracted from TaskList.svelte to eliminate duplication
  */
 
+import type { Task } from '$lib/api/tasks';
+
 /**
  * Convert task status to human-readable label
  */
@@ -49,7 +51,7 @@ export function formatTimeDuration(seconds: number): string {
 /**
  * Calculate task depth for indentation
  */
-export function getTaskDepth(tasks: any[], taskId: string): number {
+export function getTaskDepth(tasks: Task[], taskId: string): number {
   const task = tasks.find((t) => t.id === taskId);
   if (!task || !task.parent_id) return 0;
 
@@ -60,7 +62,7 @@ export function getTaskDepth(tasks: any[], taskId: string): number {
  * Calculate current duration for time tracking
  * Includes accumulated time plus current session if in progress
  */
-export function calculateCurrentDuration(task: any, currentTime?: number): number {
+export function calculateCurrentDuration(task: Task, currentTime?: number): number {
   if (task.status !== 'in_progress' || !task.in_progress_since) {
     return task.accumulated_seconds || 0;
   }

@@ -506,7 +506,7 @@
 
   // Reference to the tasks container element for drag action updates
   let tasksContainer: HTMLElement;
-  let dragActionInstance: any;
+  let dragActionInstance: { destroy(): void } | null = null;
 
   // FLIP animation setup
   // This debounced animator causes visual glitches; so I sent to 0ms
@@ -516,7 +516,7 @@
   // NOTE: lastTaskCount removed as it was unused
 
   // Store action instance for manual updates
-  function storeDragAction(node: HTMLElement, options: any) {
+  function storeDragAction(node: HTMLElement, options: Record<string, unknown>) {
     dragActionInstance = nativeDrag(node, options);
     return dragActionInstance;
   }
@@ -553,7 +553,7 @@
   // Update time tracking display every second for in-progress tasks
   // TODO: This is broken and may need to be re-imagined. It shoud only show on the task-info popover.
 
-  let timeTrackingInterval: any;
+  let timeTrackingInterval: ReturnType<typeof setInterval> | null = null;
   let currentTime = $state(Date.now());
 
   onMount(() => {
@@ -820,7 +820,7 @@
 
       dragFeedback = 'Task created successfully!';
       setTimeout(() => (dragFeedback = ''), 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[TaskList] Task creation failed:', error);
       console.error('[TaskList] Error details:', {
         message: error?.message,
@@ -858,7 +858,7 @@
       // Use ActiveRecord pattern - Zero.js handles optimistic updates and server sync
       const { Task } = await import('$lib/models/task');
       await Task.update(taskId, { status: newStatus });
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugBusiness.workflow.error('Task status update failed', { error, taskId, newStatus });
 
       if (error.code === 'INVALID_CSRF_TOKEN') {
@@ -923,7 +923,7 @@
     const tasksToDeleteCopy = [...tasksToDelete]; // Copy for async operations
     tasksToDelete = []; // Clear the original array
 
-    let deletePromises: Promise<any>[] = []; // Declare outside try block
+    let deletePromises: Promise<unknown>[] = []; // Declare outside try block
 
     try {
       // Clear selection
@@ -971,7 +971,7 @@
       // Show success dragFeedback
       dragFeedback = `Successfully discarded ${deletePromises.length} task${deletePromises.length === 1 ? '' : 's'}`;
       setTimeout(() => (dragFeedback = ''), 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugBusiness.workflow.error('Task discard failed', {
         error,
         taskCount: tasksToDeleteCopy.length,
@@ -1295,7 +1295,7 @@
         relativePosition,
       ]);
       await applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugBusiness.workflow.error('Task nesting failed', { error, draggedTaskId, targetTaskId });
 
       // Clear any lingering visual dragFeedback including badges
@@ -1459,7 +1459,7 @@
 
       // Execute position updates using our batch API - it handles UI updates automatically
       await applyAndExecutePositionUpdates(cleanedKeptTasks, positionUpdates);
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugBusiness.workflow.error('Task reorder failed', { error, relativeUpdates });
 
       // Clear any lingering visual dragFeedback including badges

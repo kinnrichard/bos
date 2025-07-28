@@ -8,10 +8,52 @@
   import { ReactiveNote } from '$lib/models/reactive-note';
   import { getCurrentUser } from '$lib/auth/current-user';
   import { getZero } from '$lib/zero/zero-client';
+  import type { Task } from '$lib/api/tasks';
+
+  interface ActivityLog {
+    id: string;
+    action: string;
+    created_at: string;
+    user?: {
+      id: string;
+      name: string;
+    };
+    metadata?: {
+      new_status?: string;
+      old_status?: string;
+      [key: string]: unknown;
+    };
+  }
+
+  interface Note {
+    id: string;
+    content: string;
+    created_at: string;
+    user?: {
+      id: string;
+      name: string;
+    };
+  }
+
+  interface TimelineItem {
+    type: 'created' | 'status_change' | 'note' | 'header';
+    timestamp: string;
+    user?: {
+      id: string;
+      name: string;
+    } | null;
+    content?: string;
+    status?: string;
+    log?: ActivityLog;
+    note?: Note;
+  }
 
   let {
     task,
     isSelected = false, // Whether this task is selected
+  }: {
+    task: Task;
+    isSelected?: boolean;
   } = $props();
 
   const dispatch = createEventDispatcher();
@@ -20,7 +62,7 @@
   let addingNote = $state(false);
   let timelineContainer = $state();
   let currentTime = $state(Date.now());
-  let timer: any;
+  let timer: ReturnType<typeof setInterval> | null = null;
 
   // ReactiveRecord queries
   let activityLogQuery = $state(null);
@@ -216,7 +258,7 @@
 
       // Notify parent component of the update
       dispatch('task-updated', { task });
-    } catch (err: any) {
+    } catch (err: unknown) {
       error = 'Failed to add note';
       debugComponent.error('Note addition failed', { error: err, taskId: task.id, noteText });
     } finally {
@@ -260,7 +302,7 @@
   }
 
   // Build timeline items from ReactiveRecord data
-  function getTimelineItems(activityLogs: any[], notes: any[]): any[] {
+  function getTimelineItems(activityLogs: ActivityLog[], notes: Note[]): TimelineItem[] {
     debugComponent('Building timeline items', {
       activityLogsCount: activityLogs?.length ?? 0,
       notesCount: notes?.length ?? 0,
@@ -268,11 +310,11 @@
       notes,
     });
 
-    let items: any[] = [];
+    let items: TimelineItem[] = [];
 
     // Add activity logs (created, status changes, etc.)
     if (activityLogs && activityLogs.length > 0) {
-      activityLogs.forEach((log: any) => {
+      activityLogs.forEach((log: ActivityLog) => {
         if (log.action === 'created') {
           items.push({
             type: 'created',
@@ -305,7 +347,7 @@
 
     // Add notes
     if (notes && notes.length > 0) {
-      notes.forEach((note: any) => {
+      notes.forEach((note: Note) => {
         items.push({
           type: 'note',
           timestamp: note.created_at,
@@ -325,8 +367,8 @@
   }
 
   // Group timeline items by user and date
-  function groupTimelineItems(items: any[]): any[] {
-    const grouped: any[] = [];
+  function groupTimelineItems(items: TimelineItem[]): TimelineItem[] {
+    const grouped: TimelineItem[] = [];
     let currentUser: string | null = null;
     let currentDate: string | null = null;
 

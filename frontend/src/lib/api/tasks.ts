@@ -146,7 +146,12 @@ export class TasksService {
       position?: 'first' | 'last';
     } = {}
   ): Promise<{ status: string; task: Task; timestamp: string }> {
-    const taskData: any = { parent_id: parentId };
+    const taskData: {
+      parent_id: string;
+      before_task_id?: string;
+      after_task_id?: string;
+      position?: 'first' | 'last';
+    } = { parent_id: parentId };
 
     if (options.before_task_id) {
       taskData.before_task_id = options.before_task_id;
@@ -230,7 +235,7 @@ export class TasksService {
   /**
    * Get task details
    */
-  async getTaskDetails(jobId: string, taskId: string): Promise<any> {
+  async getTaskDetails(jobId: string, taskId: string): Promise<Record<string, unknown>> {
     // For demo purposes, return mock data
     if (jobId === 'test') {
       return {
@@ -273,7 +278,7 @@ export class TasksService {
       };
     }
 
-    return api.get<any>(`/jobs/${jobId}/tasks/${taskId}/details`);
+    return api.get<Record<string, unknown>>(`/jobs/${jobId}/tasks/${taskId}/details`);
   }
 
   /**
@@ -302,7 +307,7 @@ export class TasksService {
           action: string;
           user_name?: string;
           created_at: string;
-          metadata: any;
+          metadata: Record<string, unknown>;
         }>;
       };
       relationships: {

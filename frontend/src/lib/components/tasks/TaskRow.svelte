@@ -5,6 +5,7 @@
   import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
   import EditableTitle from '../ui/EditableTitle.svelte';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
+  import type { Task } from '$lib/api/tasks';
   import '../../styles/task-components.scss';
   import '../../styles/focus-ring.scss';
 
@@ -25,7 +26,7 @@
     batchTaskDetails = null,
     currentTime = Date.now(),
   }: {
-    task: any;
+    task: Task;
     depth?: number;
     hasSubtasks?: boolean;
     isExpanded?: boolean;
@@ -34,7 +35,7 @@
     isDeleting?: boolean;
     canEdit?: boolean;
     jobId?: string;
-    batchTaskDetails?: any;
+    batchTaskDetails?: unknown;
     currentTime?: number;
   } = $props();
 
