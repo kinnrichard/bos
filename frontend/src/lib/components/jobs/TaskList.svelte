@@ -1609,7 +1609,7 @@
         taskState={bottomTaskState}
         isEmptyList={true}
         onStateChange={(changes) => taskCreationManager.updateState('bottom', changes)}
-        ontitlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
+        on:titlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
       />
     {/if}
 
@@ -1670,7 +1670,7 @@
           manager={inlineTaskManager}
           taskState={inlineTaskState}
           onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
-          ontitlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
+          on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
         />
       {/if}
 
@@ -1726,7 +1726,7 @@
           manager={inlineTaskManager}
           taskState={inlineTaskState}
           onStateChange={(changes) => taskCreationManager.updateState('inline', changes)}
-          ontitlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
+          on:titlechange={(e) => taskCreationManager.setTitle('inline', e.detail.value)}
         />
       {/if}
 
@@ -1766,7 +1766,7 @@
         taskState={bottomTaskState}
         isEmptyList={false}
         onStateChange={(changes) => taskCreationManager.updateState('bottom', changes)}
-        ontitlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
+        on:titlechange={(e) => taskCreationManager.setTitle('bottom', e.detail.value)}
       />
     {/if}
   </div>
