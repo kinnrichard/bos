@@ -1,6 +1,6 @@
 /**
  * Logs Test Helper
- * 
+ *
  * Specialized helper for testing activity logs functionality
  * Supports both system logs (/logs) and client logs (/clients/[id]/logs)
  */
@@ -42,18 +42,15 @@ export class LogsTestHelper {
   /**
    * Create a comprehensive log scenario with different activity types
    */
-  async createLogScenario(options: {
-    clientId?: string;
-    jobId?: string;
-    logCount?: number;
-    includeSystemLogs?: boolean;
-  } = {}): Promise<LogTestScenario> {
-    const {
-      clientId,
-      jobId,
-      logCount = 10,
-      includeSystemLogs = true,
-    } = options;
+  async createLogScenario(
+    options: {
+      clientId?: string;
+      jobId?: string;
+      logCount?: number;
+      includeSystemLogs?: boolean;
+    } = {}
+  ): Promise<LogTestScenario> {
+    const { clientId, jobId, logCount = 10, includeSystemLogs = true } = options;
 
     debugComponent('Creating log test scenario', {
       component: 'LogsTestHelper',
@@ -89,7 +86,7 @@ export class LogsTestHelper {
 
     // Create various types of activity logs
     const logs: ActivityLogData[] = [];
-    
+
     // System-level logs (if enabled)
     if (includeSystemLogs) {
       const systemLog = await this.createActivityLog({
@@ -196,7 +193,7 @@ export class LogsTestHelper {
     });
 
     // Wait for logs to appear or empty state
-    const logItems = this.page.locator('.activity-log-item, .log-entry');
+    const logItems = this.page.locator('.logs-table__row, .activity-log-item, .log-entry');
     const emptyState = this.page.locator('.activity-log-empty, .empty-state');
 
     // Either logs should load or empty state should show
@@ -219,31 +216,32 @@ export class LogsTestHelper {
    * Verify log display elements are correct
    */
   async verifyLogDisplay(logs: ActivityLogData[]): Promise<void> {
-    for (const log of logs.slice(0, 5)) { // Check first 5 logs
+    for (const log of logs.slice(0, 5)) {
+      // Check first 5 logs
       const logElement = this.page.locator(`[data-log-id="${log.id}"]`);
-      
+
       // Verify log is visible
       await expect(logElement).toBeVisible();
-      
+
       // Verify activity type emoji/icon is present
       await expect(logElement.locator('.activity-type-emoji, .activity-icon')).toBeVisible();
-      
+
       // Verify description is shown
       await expect(logElement).toContainText(log.description);
-      
+
       // Verify timestamp is shown
       await expect(logElement.locator('.activity-timestamp, .log-time')).toBeVisible();
-      
+
       // Verify user information if present
       if (log.user) {
         await expect(logElement).toContainText(log.user.name);
       }
-      
+
       // Verify client context if present
       if (log.client) {
         await expect(logElement).toContainText(log.client.name);
       }
-      
+
       // Verify job context if present
       if (log.job) {
         await expect(logElement).toContainText(log.job.title);
@@ -256,29 +254,29 @@ export class LogsTestHelper {
    */
   async verifyLogGrouping(): Promise<LogGroupInfo[]> {
     const groups: LogGroupInfo[] = [];
-    
+
     // Look for group headers
     const groupHeaders = this.page.locator('.log-group-header, .activity-group-header');
     const groupCount = await groupHeaders.count();
-    
+
     for (let i = 0; i < groupCount; i++) {
       const header = groupHeaders.nth(i);
       const headerText = await header.textContent();
-      
+
       // Count logs in this group
       const groupContainer = header.locator('xpath=following-sibling::*[1]');
       const logsInGroup = await groupContainer.locator('.activity-log-item, .log-entry').count();
-      
+
       // Check if group is collapsed
-      const isCollapsed = await header.locator('.collapsed, [aria-expanded="false"]').count() > 0;
-      
+      const isCollapsed = (await header.locator('.collapsed, [aria-expanded="false"]').count()) > 0;
+
       groups.push({
         groupHeader: headerText || 'Unknown Group',
         logCount: logsInGroup,
         collapsed: isCollapsed,
       });
     }
-    
+
     return groups;
   }
 
@@ -288,7 +286,7 @@ export class LogsTestHelper {
   async testAutoScroll(): Promise<void> {
     // Get initial scroll position
     const initialScrollTop = await this.page.evaluate(() => window.scrollY);
-    
+
     // Mock new log arrival (this would normally come from Zero.js)
     await this.page.evaluate(() => {
       // Simulate new log being added to the UI
@@ -298,19 +296,19 @@ export class LogsTestHelper {
         newLog.className = 'activity-log-item new-log';
         newLog.textContent = 'New activity log entry';
         logsList.appendChild(newLog);
-        
+
         // Trigger auto-scroll event
         const event = new CustomEvent('newLogAdded');
         document.dispatchEvent(event);
       }
     });
-    
+
     // Wait for auto-scroll to complete
     await this.page.waitForTimeout(1000);
-    
+
     // Verify scroll position changed (page should scroll to show new log)
     const finalScrollTop = await this.page.evaluate(() => window.scrollY);
-    
+
     // Either scrolled down to show new content, or stayed at bottom
     expect(finalScrollTop >= initialScrollTop).toBeTruthy();
   }
@@ -321,14 +319,14 @@ export class LogsTestHelper {
   async testProgressiveLoading(): Promise<void> {
     // Look for progressive loading indicators
     const progressiveLoader = this.page.locator('.progressive-loader, .load-more');
-    
+
     if (await progressiveLoader.isVisible()) {
       // Test clicking load more
       await progressiveLoader.click();
-      
+
       // Wait for additional logs to load
       await this.page.waitForTimeout(2000);
-      
+
       // Verify more logs appeared
       const logCount = await this.page.locator('.activity-log-item, .log-entry').count();
       expect(logCount).toBeGreaterThan(0);
@@ -346,7 +344,7 @@ export class LogsTestHelper {
         updateMessages.push(msg.text());
       }
     });
-    
+
     // Create new log (this should trigger Zero.js update)
     const newLog = await this.createActivityLog({
       activity_type: 'real_time_test',
@@ -354,13 +352,13 @@ export class LogsTestHelper {
       client_id: null,
       job_id: null,
     });
-    
+
     // Wait for real-time update to be processed
     await this.page.waitForTimeout(3000);
-    
+
     // Verify the update was detected
     expect(updateMessages.length).toBeGreaterThan(0);
-    
+
     debugComponent('Real-time update test completed', {
       component: 'LogsTestHelper',
       updateMessages: updateMessages.length,
@@ -374,10 +372,10 @@ export class LogsTestHelper {
   async verifyEmptyState(): Promise<void> {
     const emptyState = this.page.locator('.activity-log-empty, .empty-state');
     await expect(emptyState).toBeVisible();
-    
+
     // Verify empty state content
     await expect(emptyState).toContainText(/no.*activity|no.*logs|empty/i);
-    
+
     // Verify empty state icon/illustration
     await expect(emptyState.locator('.empty-icon, .illustration')).toBeVisible();
   }
@@ -390,21 +388,21 @@ export class LogsTestHelper {
     await this.page.route('**/api/v1/activity_logs*', (route) => {
       route.fulfill({
         status: 500,
-        contentType: 'application/json', 
+        contentType: 'application/json',
         body: JSON.stringify({ error: 'Internal server error' }),
       });
     });
-    
+
     // Reload page to trigger error
     await this.page.reload();
-    
+
     // Verify error state displays
     const errorState = this.page.locator('.error-state, .activity-log-error');
     await expect(errorState).toBeVisible();
-    
+
     // Verify error message
     await expect(errorState).toContainText(/error|failed|unable/i);
-    
+
     // Clear route mock
     await this.page.unroute('**/api/v1/activity_logs*');
   }
@@ -420,7 +418,10 @@ export class LogsTestHelper {
 
     for (const entity of this.createdEntities) {
       try {
-        await this.factory.deleteEntity(entity.type as any, entity.id);
+        await this.factory.deleteEntity(
+          entity.type as 'clients' | 'jobs' | 'activity_logs',
+          entity.id
+        );
       } catch (error) {
         console.warn(`Failed to cleanup ${entity.type}/${entity.id}:`, error);
       }

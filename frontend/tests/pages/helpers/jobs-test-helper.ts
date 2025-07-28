@@ -1,6 +1,6 @@
 /**
  * Jobs Test Helper
- * 
+ *
  * Specialized helper for testing jobs functionality
  * Supports both jobs list (/jobs) and job detail (/jobs/[id]) pages
  */
@@ -45,19 +45,20 @@ export class JobsTestHelper {
   /**
    * Create a comprehensive job test scenario with different job types
    */
-  async createJobsScenario(options: {
-    jobCount?: number;
-    tasksPerJob?: number;
-    includeVariousStatuses?: boolean;
-    includeVariousPriorities?: boolean;
-    includeTechnicians?: boolean;
-  } = {}): Promise<JobTestScenario> {
+  async createJobsScenario(
+    options: {
+      jobCount?: number;
+      tasksPerJob?: number;
+      includeVariousStatuses?: boolean;
+      includeVariousPriorities?: boolean;
+      includeTechnicians?: boolean;
+    } = {}
+  ): Promise<JobTestScenario> {
     const {
       jobCount = 5,
       tasksPerJob = 3,
       includeVariousStatuses = true,
       includeVariousPriorities = true,
-      includeTechnicians = true,
     } = options;
 
     debugComponent('Creating jobs test scenario', {
@@ -83,7 +84,7 @@ export class JobsTestHelper {
     }
 
     // Job statuses and priorities for variety
-    const statuses = includeVariousStatuses 
+    const statuses = includeVariousStatuses
       ? ['open', 'in_progress', 'paused', 'waiting_for_customer', 'successfully_completed']
       : ['open'];
     const priorities = includeVariousPriorities
@@ -114,7 +115,7 @@ export class JobsTestHelper {
           status: 'new_task',
         });
         tasks.push(...jobTasks);
-        jobTasks.forEach(task => {
+        jobTasks.forEach((task) => {
           this.createdEntities.push({ type: 'tasks', id: task.id! });
         });
       }
@@ -136,44 +137,52 @@ export class JobsTestHelper {
   async waitForJobsListToLoad(expectedJobCount?: number): Promise<void> {
     // Wait for basic page load
     await this.page.waitForLoadState('networkidle');
-    
+
     // Give time for Svelte components to initialize
     await this.page.waitForTimeout(1000);
-    
+
     // If we expect jobs, wait longer for Zero.js data synchronization
     if (expectedJobCount && expectedJobCount > 0) {
-      console.log(`🔄 Waiting for ${expectedJobCount} jobs to sync from Rails API to Zero.js...`);
-      
+      console.warn(`🔄 Waiting for ${expectedJobCount} jobs to sync from Rails API to Zero.js...`);
+
       // Wait up to 15 seconds for jobs to appear via Zero.js
       let retryCount = 0;
       const maxRetries = 15; // 15 seconds total
-      
+
       while (retryCount < maxRetries) {
-        const jobCards = this.page.locator('.job-card-inline, .job-card, [data-testid="job-card"], [data-job-id]');
+        const jobCards = this.page.locator(
+          '.job-card-inline, .job-card, [data-testid="job-card"], [data-job-id]'
+        );
         const cardCount = await jobCards.count();
-        
+
         if (cardCount >= expectedJobCount) {
-          console.log(`✅ Found ${cardCount} jobs after ${retryCount} seconds`);
+          console.warn(`✅ Found ${cardCount} jobs after ${retryCount} seconds`);
           break;
         }
-        
+
         if (retryCount % 3 === 0) {
-          console.log(`🔄 Still waiting for jobs (found ${cardCount}/${expectedJobCount}) - retry ${retryCount}/${maxRetries}`);
+          console.warn(
+            `🔄 Still waiting for jobs (found ${cardCount}/${expectedJobCount}) - retry ${retryCount}/${maxRetries}`
+          );
         }
-        
+
         await this.page.waitForTimeout(1000);
         retryCount++;
       }
-      
+
       // Final check
-      const finalJobCards = this.page.locator('.job-card-inline, .job-card, [data-testid="job-card"], [data-job-id]');
+      const finalJobCards = this.page.locator(
+        '.job-card-inline, .job-card, [data-testid="job-card"], [data-job-id]'
+      );
       const finalCardCount = await finalJobCards.count();
-      
+
       if (finalCardCount < expectedJobCount) {
-        console.warn(`⚠️  Expected ${expectedJobCount} jobs but only found ${finalCardCount} after ${maxRetries} seconds. This suggests Zero.js sync issues.`);
+        console.warn(
+          `⚠️  Expected ${expectedJobCount} jobs but only found ${finalCardCount} after ${maxRetries} seconds. This suggests Zero.js sync issues.`
+        );
       }
     }
-    
+
     // Try to wait for any jobs-related content to appear
     try {
       // Try multiple approaches to detect a loaded jobs page
@@ -185,32 +194,37 @@ export class JobsTestHelper {
         // Option 3: Error state
         this.page.waitForSelector('.error-state', { state: 'visible', timeout: 8000 }),
         // Option 4: Just look for the main app layout
-        this.page.waitForSelector('.app-layout, [data-testid="app-layout"]', { state: 'visible', timeout: 8000 }),
+        this.page.waitForSelector('.app-layout, [data-testid="app-layout"]', {
+          state: 'visible',
+          timeout: 8000,
+        }),
         // Option 5: Wait for Jobs header
-        this.page.waitForSelector('h1:has-text("Jobs")', { state: 'visible', timeout: 8000 })
+        this.page.waitForSelector('h1:has-text("Jobs")', { state: 'visible', timeout: 8000 }),
       ]);
-      
+
       // Additional time for any final rendering
       await this.page.waitForTimeout(500);
-    } catch (error) {
-      console.warn('Could not find expected jobs page elements, checking what is actually on the page');
-      
+    } catch {
+      console.warn(
+        'Could not find expected jobs page elements, checking what is actually on the page'
+      );
+
       // Debug information
       const title = await this.page.title();
       const url = this.page.url();
       const h1Text = await this.page.textContent('h1').catch(() => 'No h1 found');
-      
-      console.log('🔍 Debug info:');
-      console.log('  Page title:', title);
-      console.log('  Page URL:', url);
-      console.log('  H1 text:', h1Text);
-      
+
+      console.warn('🔍 Debug info:');
+      console.warn('  Page title:', title);
+      console.warn('  Page URL:', url);
+      console.warn('  H1 text:', h1Text);
+
       // Try to find ANY sign that the page loaded correctly
-      const pageHasJobs = await this.page.locator(':text("Jobs")').count() > 0;
-      const pageHasLayout = await this.page.locator('.app-layout, main, body').count() > 0;
-      
+      const pageHasJobs = (await this.page.locator(':text("Jobs")').count()) > 0;
+      const pageHasLayout = (await this.page.locator('.app-layout, main, body').count()) > 0;
+
       if (pageHasJobs || pageHasLayout) {
-        console.log('✅ Page appears to have loaded (found Jobs text or layout), continuing test');
+        console.warn('✅ Page appears to have loaded (found Jobs text or layout), continuing test');
         // Page seems to have loaded, just continue
       } else {
         throw new Error(`Jobs page failed to load properly. Title: "${title}", URL: "${url}"`);
@@ -236,32 +250,32 @@ export class JobsTestHelper {
 
     // Check status emoji
     const statusEmoji = jobCard.locator('.job-status-emoji, .status-emoji');
-    elements.statusEmoji = await statusEmoji.count() > 0;
+    elements.statusEmoji = (await statusEmoji.count()) > 0;
     if (elements.statusEmoji) {
       await expect(statusEmoji.first()).toBeVisible();
     }
 
     // Check client name
     const clientLink = jobCard.locator('.client-link, .client-name');
-    elements.clientName = await clientLink.count() > 0;
+    elements.clientName = (await clientLink.count()) > 0;
     if (elements.clientName && job.client?.name) {
       await expect(clientLink.first()).toContainText(job.client.name);
     }
 
     // Check job title
     const jobName = jobCard.locator('.job-name, .job-title');
-    elements.jobTitle = await jobName.count() > 0;
+    elements.jobTitle = (await jobName.count()) > 0;
     if (elements.jobTitle) {
       await expect(jobName.first()).toContainText(job.title);
     }
 
     // Check priority emoji (may not always be visible)
     const priorityEmoji = jobCard.locator('.job-priority-emoji, .priority-emoji');
-    elements.priorityEmoji = await priorityEmoji.count() > 0;
+    elements.priorityEmoji = (await priorityEmoji.count()) > 0;
 
     // Check technicians display
     const technicians = jobCard.locator('.technician-avatar, .assignee');
-    elements.technicians = await technicians.count() > 0;
+    elements.technicians = (await technicians.count()) > 0;
 
     // Check if card is clickable
     const href = await jobCard.getAttribute('href');
@@ -339,12 +353,12 @@ export class JobsTestHelper {
 
     // Verify job metadata section
     const metadataSection = this.page.locator('.job-metadata, .job-info');
-    if (await metadataSection.count() > 0) {
+    if ((await metadataSection.count()) > 0) {
       await expect(metadataSection.first()).toBeVisible();
     }
 
-    // Verify tasks section
-    const tasksSection = this.page.locator('.task-list, .tasks-section');
+    // Verify tasks section - target the main container, not the nested task-list
+    const tasksSection = this.page.locator('.tasks-section');
     await expect(tasksSection).toBeVisible();
 
     // Verify client information
@@ -362,7 +376,8 @@ export class JobsTestHelper {
 
     if (tasks.length > 0) {
       // Verify tasks are displayed
-      for (const task of tasks.slice(0, 3)) { // Check first 3 tasks
+      for (const task of tasks.slice(0, 3)) {
+        // Check first 3 tasks
         const taskElement = this.page.locator(`[data-task-id="${task.id}"]`);
         await expect(taskElement).toBeVisible();
         await expect(taskElement).toContainText(task.title);
@@ -370,7 +385,7 @@ export class JobsTestHelper {
 
       // Verify task interaction elements
       const firstTask = this.page.locator('[data-task-id]').first();
-      
+
       // Check for status emoji/button
       const statusButton = firstTask.locator('.status-emoji, .task-status');
       await expect(statusButton).toBeVisible();
@@ -433,30 +448,29 @@ export class JobsTestHelper {
   async testJobFiltering(): Promise<void> {
     // Test scope filtering
     const currentUrl = new URL(this.page.url());
-    
+
     // Test "mine" scope
     currentUrl.searchParams.set('scope', 'mine');
     await this.page.goto(currentUrl.toString());
-    
+
     // Wait for filter to apply
     await this.page.waitForTimeout(1000);
-    
+
     // Verify filter is applied (jobs should still show or filter info should display)
-    const filterInfo = this.page.locator('.filter-info, .active-filters');
     // Filter info may or may not be visible depending on implementation
-    
+
     // Test technician filtering
     currentUrl.searchParams.set('technician_id', 'test-tech-1');
     await this.page.goto(currentUrl.toString());
-    
+
     await this.page.waitForTimeout(1000);
-    
+
     // Should show filter information
     const technicianFilter = this.page.locator('.filter-info');
-    if (await technicianFilter.count() > 0) {
+    if ((await technicianFilter.count()) > 0) {
       await expect(technicianFilter.first()).toBeVisible();
     }
-    
+
     // Clear filters
     currentUrl.searchParams.delete('scope');
     currentUrl.searchParams.delete('technician_id');
@@ -469,24 +483,24 @@ export class JobsTestHelper {
   async testJobSearch(searchTerm: string): Promise<void> {
     // Look for search input
     const searchInput = this.page.locator('input[type="search"], .search-input');
-    
-    if (await searchInput.count() > 0) {
+
+    if ((await searchInput.count()) > 0) {
       // Enter search term
       await searchInput.first().fill(searchTerm);
-      
+
       // Wait for search to apply
       await this.page.waitForTimeout(1000);
-      
+
       // Verify search results
       const jobCards = this.page.locator('.job-card-inline, .job-card');
       const cardCount = await jobCards.count();
-      
+
       if (cardCount > 0) {
         // At least one job should contain the search term
         const firstCard = jobCards.first();
         await expect(firstCard).toContainText(new RegExp(searchTerm, 'i'));
       }
-      
+
       // Clear search
       await searchInput.first().clear();
       await this.page.waitForTimeout(500);
@@ -515,9 +529,9 @@ export class JobsTestHelper {
 
     // Verify error message and retry button
     await expect(errorState).toContainText(/error|failed|unable/i);
-    
+
     const retryButton = this.page.locator('button:has-text("Try Again"), .retry-button');
-    if (await retryButton.count() > 0) {
+    if ((await retryButton.count()) > 0) {
       await expect(retryButton.first()).toBeVisible();
     }
 
@@ -546,34 +560,34 @@ export class JobsTestHelper {
   async testMobileJobs(): Promise<void> {
     // Set mobile viewport
     await this.page.setViewportSize({ width: 375, height: 667 });
-    
+
     // Wait for layout adjustment
     await this.page.waitForTimeout(500);
-    
+
     // Verify jobs list is still functional
     const jobCards = this.page.locator('.job-card-inline, .job-card');
     const cardCount = await jobCards.count();
-    
+
     if (cardCount > 0) {
       const firstCard = jobCards.first();
       await expect(firstCard).toBeVisible();
-      
+
       // Verify card adapts to mobile width
       const cardBox = await firstCard.boundingBox();
       expect(cardBox?.width).toBeGreaterThan(300); // Should use most of mobile width
     }
-    
+
     // Test job detail page on mobile
     if (cardCount > 0) {
       await jobCards.first().click();
-      
+
       // Wait for navigation
       await this.page.waitForURL(/\/jobs\/[^/]+$/);
-      
+
       // Verify job detail is mobile-friendly
       const jobDetail = this.page.locator('.job-detail-container');
       await expect(jobDetail).toBeVisible();
-      
+
       // Verify content fits in mobile viewport
       const detailBox = await jobDetail.boundingBox();
       expect(detailBox?.width).toBeLessThanOrEqual(375);
@@ -590,31 +604,31 @@ export class JobsTestHelper {
     });
 
     // Clean up in reverse order (tasks, then jobs, then clients)
-    const tasks = this.createdEntities.filter(e => e.type === 'tasks');
-    const jobs = this.createdEntities.filter(e => e.type === 'jobs');
-    const clients = this.createdEntities.filter(e => e.type === 'clients');
+    const tasks = this.createdEntities.filter((e) => e.type === 'tasks');
+    const jobs = this.createdEntities.filter((e) => e.type === 'jobs');
+    const clients = this.createdEntities.filter((e) => e.type === 'clients');
 
     for (const task of tasks) {
       try {
         await this.factory.deleteEntity('tasks', task.id);
-      } catch (error) {
-        console.warn(`Failed to cleanup task ${task.id}:`, error);
+      } catch {
+        console.warn(`Failed to cleanup task ${task.id}`);
       }
     }
 
     for (const job of jobs) {
       try {
         await this.factory.deleteEntity('jobs', job.id);
-      } catch (error) {
-        console.warn(`Failed to cleanup job ${job.id}:`, error);
+      } catch {
+        console.warn(`Failed to cleanup job ${job.id}`);
       }
     }
 
     for (const client of clients) {
       try {
         await this.factory.deleteEntity('clients', client.id);
-      } catch (error) {
-        console.warn(`Failed to cleanup client ${client.id}:`, error);
+      } catch {
+        console.warn(`Failed to cleanup client ${client.id}`);
       }
     }
 

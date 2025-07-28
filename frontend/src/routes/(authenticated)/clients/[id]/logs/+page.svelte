@@ -7,11 +7,22 @@
 
   $: clientId = $page.params.id;
 
-  // Get client
+  // Get client with proper reactive handling
   $: clientQuery = ReactiveClient.find(clientId);
 
+  // Reactive title that updates when client loads
+  $: pageTitle = clientQuery.data?.name
+    ? `Activity Log for ${clientQuery.data.name} - bŏs`
+    : 'Activity Log for Client - bŏs';
+
+  // Reactive h1 title
+  $: h1Title = clientQuery.data?.name
+    ? `Activity Log for ${clientQuery.data.name}`
+    : 'Activity Log for Client';
+
   // Get client-specific logs with navigation-optimized model for better transitions
-  $: logsQuery = ActivityLogModels.navigation.kept()
+  $: logsQuery = ActivityLogModels.navigation
+    .kept()
     .includes(['user', 'client', 'job'])
     .where({ client_id: clientId })
     .orderBy('created_at', 'asc')
@@ -23,20 +34,16 @@
 </script>
 
 <svelte:head>
-  <title>Activity Log for {clientQuery.data?.name || 'Client'} - bŏs</title>
+  <title>{pageTitle}</title>
 </svelte:head>
 
 <AppLayout currentClient={clientQuery.data}>
   <LogsLayout
-    title="Activity Log for {clientQuery.data?.name || 'Client'}"
+    title={h1Title}
     subtitle={clientQuery.data?.client_code
       ? `Client Code: ${clientQuery.data.client_code}`
       : undefined}
   >
-    <ActivityLogList
-      {logsQuery}
-      context="client"
-      strategy="progressive"
-    />
+    <ActivityLogList {logsQuery} context="client" strategy="progressive" />
   </LogsLayout>
 </AppLayout>
