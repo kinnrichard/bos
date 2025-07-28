@@ -11,7 +11,7 @@
   // NOTE: JobData type import removed as it was unused
   import { JobAssignment } from '$lib/models/job-assignment';
   import { debugWorkflow } from '$lib/utils/debug';
-  import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
+  // NOTE: POPOVER_CONSTANTS import removed as unused
   import { getPopoverErrorMessage } from '$lib/utils/popover-utils';
   // NOTE: createIdSet import removed as it was unused
   // NOTE: tick import removed as it was unused
@@ -48,7 +48,8 @@
   // Use populated technicians from job.jobAssignments relationship
   // Note: TypeScript doesn't know about includes() relationship data, but runtime has it
   const assignedTechnicians = $derived(
-    (job as any)?.jobAssignments?.map((a: any) => a.user) || initialTechnicians
+    (job as { jobAssignments?: Array<{ user: UserData }> })?.jobAssignments?.map((a) => a.user) ||
+      initialTechnicians
   );
   const assignedTechniciansForDisplay = $derived(assignedTechnicians);
 
@@ -61,17 +62,24 @@
       value: user.id,
       label: user.name,
       user: user, // Include full user object for avatar rendering
-      selected: (job as any)?.jobAssignments?.some((a: any) => a.user_id === user.id) || false,
+      selected:
+        (job as { jobAssignments?: Array<{ user_id: string }> })?.jobAssignments?.some(
+          (a) => a.user_id === user.id
+        ) || false,
     }))
   );
 
   // Get currently selected user IDs
-  const selectedUserIds = $derived((job as any)?.jobAssignments?.map((a: any) => a.user_id) || []);
+  const selectedUserIds = $derived(
+    (job as { jobAssignments?: Array<{ user_id: string }> })?.jobAssignments?.map(
+      (a) => a.user_id
+    ) || []
+  );
 
   // Reactive state derived directly from job assignments - no local state needed
 
   // Handle checkbox changes - reactive mutations with automatic UI updates
-  async function handleUserToggle(userId: string, option: any) {
+  async function handleUserToggle(userId: string, option: { user: UserData }) {
     // Remove loading guard to allow optimistic updates
 
     const user = option.user as UserData;
@@ -108,9 +116,9 @@
         debugWorkflow('Created assignment', { userName: user.name, jobId });
       } else {
         // Find and delete existing job assignment
-        const existingAssignment = (job as any)?.jobAssignments?.find(
-          (a: any) => a.user_id === userId
-        );
+        const existingAssignment = (
+          job as { jobAssignments?: Array<{ id: string; user_id: string }> }
+        )?.jobAssignments?.find((a) => a.user_id === userId);
         if (existingAssignment?.id) {
           await JobAssignment.destroy(existingAssignment.id);
           debugWorkflow('Deleted assignment', { userName: user.name, jobId });
@@ -167,22 +175,18 @@
         </div>
       {:else}
         <!-- Show add-person icon when no assignments -->
-        <img
-          src={POPOVER_CONSTANTS.ADD_PERSON_ICON}
-          alt="Assign technicians"
-          class="add-person-icon"
-        />
+        <img src="/icons/add-person.svg" alt="Assign technicians" class="add-person-icon" />
       {/if}
     </button>
   {/snippet}
 
   {#snippet children({ close })}
     {#if errorMessage}
-      <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
+      <div style="padding: 12px;">
         <div class="popover-error-message">{errorMessage}</div>
       </div>
     {:else if usersQuery.isLoading}
-      <div style="padding: {POPOVER_CONSTANTS.COMPACT_CONTENT_PADDING};">
+      <div style="padding: 12px;">
         <div class="popover-loading-indicator">Loading users...</div>
       </div>
     {:else}

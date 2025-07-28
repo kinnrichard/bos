@@ -17,7 +17,13 @@
     showToolbar?: boolean;
     toolbarDisabled?: boolean;
     currentJob?: PopulatedJob | null;
-    currentClient?: any | null;
+    currentClient?: {
+      id: string;
+      name: string;
+      client_type: string;
+      created_at?: string;
+      updated_at?: string;
+    } | null;
     children?: import('svelte').Snippet;
   } = $props();
 

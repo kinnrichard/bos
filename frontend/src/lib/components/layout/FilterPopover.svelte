@@ -11,7 +11,7 @@
 
   let { onFilterChange = () => {}, onDeletedToggle = () => {}, disabled = false }: Props = $props();
 
-  let basePopover: any = $state();
+  let basePopover: { open: boolean } | null = $state(null);
 
   // Reactive state for showing deleted tasks using Svelte 5 $state
   let showDeleted = $state(false);
@@ -37,9 +37,9 @@
   let selectedStatuses: string[] = $state(statusOptions.map((option) => option.value));
 
   // Handle status toggle with "prevent all unchecked" logic
-  function handleStatusToggle(option: { value: string; label: string }, event?: MouseEvent) {
+  function handleStatusToggle(option: { value: string; label: string }, _event?: MouseEvent) {
     // Easter egg: Option-click for exclusive selection or toggle to all
-    if (event?.altKey) {
+    if (_event?.altKey) {
       // Check if already exclusively selected - if so, select all
       if (selectedStatuses.length === 1 && selectedStatuses.includes(option.value)) {
         selectedStatuses = statusOptions.map((opt) => opt.value);

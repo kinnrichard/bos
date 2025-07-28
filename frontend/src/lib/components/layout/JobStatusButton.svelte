@@ -2,7 +2,7 @@
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
   import { getJobStatusEmoji, EMOJI_MAPPINGS } from '$lib/config/emoji';
-  // import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
+  // NOTE: POPOVER_CONSTANTS import removed as unused
   import '$lib/styles/popover-common.css';
   import { Job } from '$lib/models/job';
   import { ReactiveJob } from '$lib/models/reactive-job';
@@ -69,7 +69,7 @@
   );
 
   // Handle status change using ActiveRecord pattern (Zero.js handles optimistic updates)
-  async function handleStatusChange(newStatus: string, _option: any) {
+  async function handleStatusChange(newStatus: string, _option: unknown) {
     // Use jobId directly - always available in self-sufficient pattern
     if (!jobId) {
       debugMonitor.error(

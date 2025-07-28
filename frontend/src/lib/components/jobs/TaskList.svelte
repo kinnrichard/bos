@@ -100,7 +100,8 @@
   // Always show search, but it can be disabled via toolbar
   // NOTE: showSearch removed as it was unused
 
-  // NOTE: isDragging variable removed as it was assigned but never read
+  // NOTE: isDragging tracking disabled for performance
+  // let _isDragging = $state(false);
   let dragFeedback = $state('');
 
   // Outside click and keyboard handling for task deselection
@@ -190,8 +191,8 @@
   async function executePositionUpdates(positionUpdates: PositionUpdate[]): Promise<void> {
     if (positionUpdates.length === 0) return;
 
-    // NOTE: reorderedAt removed as it was unused
-    // const reorderedAt = getDatabaseTimestamp();
+    // NOTE: reorderedAt timestamp not currently used for position tracking
+    // const _reorderedAt = Date.now();
     const batchUpdates = positionUpdates.map((update) => ({
       taskId: update.id,
       position: update.position,
@@ -213,7 +214,7 @@
     await executePositionUpdates(positionUpdates);
   }
 
-  // NOTE: Legacy ClientActsAsList class removed as it was unused
+  // NOTE: _ClientActsAsList was unused - comment preserved for context
 
   // Initialize task creation states safely before using in derived contexts
   taskCreationManager.ensureState('bottom');
