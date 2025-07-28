@@ -624,7 +624,6 @@
                                     <div class="action-time-row">
                                       <div class="action-content">
                                         {#if formatLogMessage(log)}
-                                          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                                           {formatLogMessage(log)}
                                           {#if hasDuplicates(log)}
                                             <span class="log-count-badge"
