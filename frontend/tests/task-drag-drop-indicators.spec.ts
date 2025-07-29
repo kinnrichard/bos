@@ -1,17 +1,17 @@
 import { test, expect } from '@playwright/test';
-import { AuthHelper } from '../test-helpers/auth';
-import { TestDatabase } from '../test-helpers/database';
-import { DataFactory } from '../test-helpers/data-factories';
+import { AuthHelper } from './helpers/auth';
+import { TestDatabase } from './helpers/database';
+import { DataFactory } from './helpers/data-factories';
 
 test.describe('Task Drag & Drop Indicators', () => {
-  let db: TestDatabase;
+  let _db: TestDatabase;
   let auth: AuthHelper;
   let dataFactory: DataFactory;
   let jobId: string;
 
   test.beforeEach(async ({ page }) => {
     // Initialize helpers
-    db = new TestDatabase();
+    _db = new TestDatabase();
     auth = new AuthHelper(page);
     dataFactory = new DataFactory(page);
     

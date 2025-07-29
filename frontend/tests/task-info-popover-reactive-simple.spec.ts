@@ -6,7 +6,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { DataFactory } from '../test-helpers/data-factories';
+import { DataFactory } from './helpers/data-factories';
 
 test.describe('TaskInfoPopover ReactiveRecord Integration', () => {
   let factory: DataFactory;

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { AuthHelper } from '../test-helpers/auth';
-import { DataFactory } from '../test-helpers/data-factories';
+import { AuthHelper } from './helpers/auth';
+import { DataFactory } from './helpers/data-factories';
 
 test.describe('Popover Keyboard Isolation', () => {
   let auth: AuthHelper;

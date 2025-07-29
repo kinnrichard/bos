@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { DataFactory } from '../test-helpers/data-factories';
-import { AuthHelper } from '../test-helpers/auth';
+import { DataFactory } from './helpers/data-factories';
+import { AuthHelper } from './helpers/auth';
 
 test.describe('DataFactory Client API Integration', () => {
   let dataFactory: DataFactory;

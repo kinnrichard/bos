@@ -6,9 +6,9 @@
  */
 
 import { expect } from '@playwright/test';
-import { testWithAuth, testWithRealDB, TestLifecycle } from '../test-helpers/isolation';
-import { AuthTestUtils } from '../test-helpers/auth';
-import { TestDataUtils } from '../test-helpers/data-factories';
+import { testWithRealDB, TestLifecycle } from './helpers/isolation';
+import { AuthTestUtils } from './helpers/auth';
+import { TestDataUtils } from './helpers/data-factories';
 
 // Setup and teardown for the entire test suite
 testWithRealDB.beforeAll(async () => {

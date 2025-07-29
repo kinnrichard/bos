@@ -11,7 +11,7 @@ import {
   withConsoleMonitoring,
   type ConsoleErrorMonitor,
   type ConsoleErrorFilter,
-} from '../helpers';
+} from './helpers';
 
 // Custom filters for task positioning tests
 const TASK_POSITIONING_FILTERS: ConsoleErrorFilter[] = [

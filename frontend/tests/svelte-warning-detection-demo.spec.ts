@@ -11,7 +11,7 @@ import {
   ConsoleTestUtils,
   expectNoConsoleErrors,
   type ConsoleErrorFilter,
-} from '../helpers/console-monitoring';
+} from './helpers/console-monitoring';
 
 test.describe('Svelte Warning Detection System', () => {
   test('should demonstrate Svelte warning detection configuration', async ({ page }) => {

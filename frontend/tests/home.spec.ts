@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { DataFactory } from '../test-helpers/data-factories';
+import { DataFactory } from './helpers/data-factories';
 
 test.describe('Home Page', () => {
   let dataFactory: DataFactory;
