@@ -224,6 +224,79 @@ class Api::V1::TestController < Api::V1::BaseController
     end
   end
 
+  # DELETE /api/v1/test/cleanup_entity
+  def cleanup_entity
+    entity_type = params[:entity_type]
+    entity_id = params[:entity_id]
+
+    unless entity_type && entity_id
+      return render json: {
+        errors: [ {
+          status: "400",
+          code: "MISSING_PARAMETERS",
+          title: "Bad Request",
+          detail: "entity_type and entity_id parameters are required"
+        } ]
+      }, status: :bad_request
+    end
+
+    begin
+      case entity_type
+      when "jobs"
+        Job.where(id: entity_id).destroy_all
+      when "tasks"
+        Task.where(id: entity_id).destroy_all
+      when "clients"
+        Client.where(id: entity_id).destroy_all
+      when "users"
+        User.where(id: entity_id).destroy_all
+      else
+        return render json: {
+          errors: [ {
+            status: "400",
+            code: "INVALID_ENTITY_TYPE",
+            title: "Bad Request",
+            detail: "entity_type must be one of: jobs, tasks, clients, users"
+          } ]
+        }, status: :bad_request
+      end
+
+      render json: {
+        data: {
+          type: "test_operation",
+          attributes: {
+            message: "Entity cleanup completed",
+            entity_type: entity_type,
+            entity_id: entity_id,
+            timestamp: Time.current.iso8601
+          }
+        }
+      }
+    rescue ActiveRecord::RecordNotFound
+      # Silently succeed for missing records (already deleted)
+      render json: {
+        data: {
+          type: "test_operation",
+          attributes: {
+            message: "Entity not found (may already be deleted)",
+            entity_type: entity_type,
+            entity_id: entity_id,
+            timestamp: Time.current.iso8601
+          }
+        }
+      }
+    rescue => e
+      render json: {
+        errors: [ {
+          status: "500",
+          code: "CLEANUP_ENTITY_FAILED",
+          title: "Entity Cleanup Failed",
+          detail: e.message
+        } ]
+      }, status: :internal_server_error
+    end
+  end
+
   private
 
   def ensure_test_environment!

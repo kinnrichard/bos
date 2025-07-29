@@ -37,21 +37,40 @@ module TestEnvironment
   def reset_database!
     ensure_test_environment!
 
-    puts "🔄 Resetting test database..."
+    # Completely silence everything during database operations
+    ActiveSupport::Notifications.unsubscribe("sql.active_record")
 
-    # Clear all data in dependency order
-    clear_all_data!
+    original_stdout = $stdout
+    original_stderr = $stderr
+    original_logger = Rails.logger
+    original_ar_logger = ActiveRecord::Base.logger
 
-    # Reset auto-increment sequences
-    reset_sequences!
+    begin
+      devnull = File.open(File::NULL, "w")
+      $stdout = devnull
+      $stderr = devnull
+      Rails.logger = Logger.new(devnull)
+      ActiveRecord::Base.logger = Logger.new(devnull)
 
-    puts "✅ Database reset complete"
+      # Clear all data in dependency order
+      clear_all_data!
+
+      # Reset auto-increment sequences
+      reset_sequences!
+
+    ensure
+      $stdout = original_stdout
+      $stderr = original_stderr
+      Rails.logger = original_logger
+      ActiveRecord::Base.logger = original_ar_logger
+      devnull&.close
+    end
   end
 
   def setup_test_data!
     ensure_test_environment!
 
-    puts "🌱 Setting up comprehensive test data..."
+    Rails.logger.info "🌱 Setting up comprehensive test data..."
 
     # Load either fixtures or seeds based on preference
     if use_fixtures?
@@ -60,7 +79,7 @@ module TestEnvironment
       load_test_seeds!
     end
 
-    puts "✅ Test data setup complete"
+    Rails.logger.info "✅ Test data setup complete"
   end
 
   def clear_all_data!
@@ -97,9 +116,9 @@ module TestEnvironment
       models_in_dependency_order.each do |model|
         begin
           model.delete_all
-          puts "  ✅ Cleared #{model.name.pluralize}" if debug_mode?
+          Rails.logger.debug "  ✅ Cleared #{model.name.pluralize}" if debug_mode?
         rescue => e
-          puts "  ⚠️  Error clearing #{model.name}: #{e.message}" if debug_mode?
+          Rails.logger.warn "  ⚠️  Error clearing #{model.name}: #{e.message}" if debug_mode?
           # Continue with other models
         end
       end
@@ -110,7 +129,7 @@ module TestEnvironment
       end
     end
   rescue => e
-    puts "🚨 Error during data cleanup: #{e.message}"
+    Rails.logger.error "🚨 Error during data cleanup: #{e.message}"
     # Fallback: try to clear tables individually with foreign key checks disabled
     clear_all_data_fallback!
   ensure
@@ -121,7 +140,7 @@ module TestEnvironment
   def clear_all_data_fallback!
     ensure_test_environment!
 
-    puts "🔄 Using fallback cleanup method..."
+    Rails.logger.info "🔄 Using fallback cleanup method..."
 
     # Try truncating tables directly (PostgreSQL specific)
     if ActiveRecord::Base.connection.adapter_name.downcase.include?("postgresql")
@@ -133,9 +152,9 @@ module TestEnvironment
       table_names.each do |table|
         begin
           ActiveRecord::Base.connection.execute("TRUNCATE TABLE #{table} RESTART IDENTITY CASCADE;")
-          puts "  ✅ Truncated #{table}" if debug_mode?
+          Rails.logger.debug "  ✅ Truncated #{table}" if debug_mode?
         rescue => e
-          puts "  ⚠️  Could not truncate #{table}: #{e.message}" if debug_mode?
+          Rails.logger.warn "  ⚠️  Could not truncate #{table}: #{e.message}" if debug_mode?
         end
       end
     else
@@ -145,7 +164,7 @@ module TestEnvironment
         begin
           model.delete_all
         rescue => e
-          puts "  ⚠️  Could not clear #{model.name}: #{e.message}" if debug_mode?
+          Rails.logger.warn "  ⚠️  Could not clear #{model.name}: #{e.message}" if debug_mode?
         end
       end
     end
@@ -175,9 +194,9 @@ module TestEnvironment
     requirements.each do |model, req|
       count = model.count
       if count >= req[:min]
-        puts "  ✅ #{count} #{req[:description]}"
+        Rails.logger.info "  ✅ #{count} #{req[:description]}"
       else
-        puts "  ❌ Only #{count} #{req[:description]} (need #{req[:min]})"
+        Rails.logger.warn "  ❌ Only #{count} #{req[:description]} (need #{req[:min]})"
         all_valid = false
       end
     end
@@ -186,7 +205,7 @@ module TestEnvironment
       raise "Test data verification failed! Run TestEnvironment.setup_test_data!"
     end
 
-    puts "🎉 Test data verification passed!"
+    Rails.logger.info "🎉 Test data verification passed!"
   end
 
   # =============================================
@@ -199,7 +218,7 @@ module TestEnvironment
   end
 
   def load_fixtures!
-    puts "📦 Loading fixture data..."
+    Rails.logger.info "📦 Loading fixture data..."
 
     # Temporarily enable fixtures
     fixtures_enabled = ENV["SKIP_FIXTURES"]
@@ -214,19 +233,19 @@ module TestEnvironment
     # Restore fixture setting
     ENV["SKIP_FIXTURES"] = fixtures_enabled
 
-    puts "✅ Fixtures loaded"
+    Rails.logger.info "✅ Fixtures loaded"
   end
 
   def load_test_seeds!
-    puts "🌱 Loading comprehensive seed data..."
+    Rails.logger.info "🌱 Loading comprehensive seed data..."
 
     # Load the actual test_seeds.rb file for complete test data
-    puts "📝 Loading comprehensive test_seeds.rb file"
+    Rails.logger.info "📝 Loading comprehensive test_seeds.rb file"
     load Rails.root.join("db", "test_seeds.rb")
   end
 
   def create_basic_test_data!
-    puts "🔧 Creating comprehensive basic test data..."
+    Rails.logger.info "🔧 Creating comprehensive basic test data..."
 
     # Disable activity logging during test data creation to prevent foreign key issues
     ENV["DISABLE_ACTIVITY_LOGGING"] = "true"
@@ -241,9 +260,9 @@ module TestEnvironment
       # First ensure ActivityLog table is completely clean
       begin
         ActiveRecord::Base.connection.execute("DELETE FROM activity_logs;")
-        puts "  🧹 Force-cleared activity logs table" if debug_mode?
+        Rails.logger.debug "  🧹 Force-cleared activity logs table" if debug_mode?
       rescue => e
-        puts "  ⚠️  Could not clear activity logs: #{e.message}" if debug_mode?
+        Rails.logger.warn "  ⚠️  Could not clear activity logs: #{e.message}" if debug_mode?
       end
 
       # Create 4 test users with different roles (using frontend test expected emails)
@@ -324,7 +343,7 @@ module TestEnvironment
     # Re-enable activity logging after test data creation
     ENV["DISABLE_ACTIVITY_LOGGING"] = nil
 
-    puts "✅ Comprehensive basic test data created (#{User.count} users, #{Client.count} clients, #{Job.count} jobs, #{Task.count} tasks, #{Device.count} devices)"
+    Rails.logger.info "✅ Comprehensive basic test data created (#{User.count} users, #{Client.count} clients, #{Job.count} jobs, #{Task.count} tasks, #{Device.count} devices)"
   end
 
   # =============================================
@@ -475,50 +494,54 @@ module TestEnvironment
     path = screenshot_dir.join("#{name}.png")
     page.screenshot(path: path.to_s) if page.respond_to?(:screenshot)
 
-    puts "📸 Debug screenshot: #{path}"
+    Rails.logger.debug "📸 Debug screenshot: #{path}"
     path
   end
 
   def pause_for_debug
     return unless debug_mode?
 
-    puts "\n⏸️  DEBUG MODE: Test paused"
-    puts "   Press Enter to continue..."
-    gets
+    Rails.logger.debug "\n⏸️  DEBUG MODE: Test paused"
+    Rails.logger.debug "   Press Enter to continue..."
+    begin
+      gets if $stdin.tty?
+    rescue => e
+      Rails.logger.debug "Could not read from stdin: #{e.message}"
+    end
   end
 
   def log_test_info(message)
     timestamp = Time.current.strftime("%H:%M:%S.%L")
-    puts "[#{timestamp}] 🧪 #{message}"
+    Rails.logger.info "[#{timestamp}] 🧪 #{message}"
   end
 
   def print_environment_status
-    puts "\n" + "=" * 60
-    puts "🧪 TEST ENVIRONMENT STATUS"
-    puts "=" * 60
-    puts "Rails Environment: #{Rails.env}"
-    puts "Debug Mode: #{debug_mode?}"
-    puts "Headless Mode: #{headless_mode?}"
-    puts "CI Environment: #{ci_environment?}"
-    puts "Server Running: #{server_running?}"
-    puts "Server URL: #{test_server_url}"
-    puts "Database: #{ActiveRecord::Base.connection.current_database}"
+    Rails.logger.info "\n" + "=" * 60
+    Rails.logger.info "🧪 TEST ENVIRONMENT STATUS"
+    Rails.logger.info "=" * 60
+    Rails.logger.info "Rails Environment: #{Rails.env}"
+    Rails.logger.info "Debug Mode: #{debug_mode?}"
+    Rails.logger.info "Headless Mode: #{headless_mode?}"
+    Rails.logger.info "CI Environment: #{ci_environment?}"
+    Rails.logger.info "Server Running: #{server_running?}"
+    Rails.logger.info "Server URL: #{test_server_url}"
+    Rails.logger.info "Database: #{ActiveRecord::Base.connection.current_database}"
 
     if test_environment?
-      puts "\n📊 Test Data Counts:"
+      Rails.logger.info "\n📊 Test Data Counts:"
       [ User, Client, Job, Task, Device ].each do |model|
-        puts "  #{model.name}: #{model.count}"
+        Rails.logger.info "  #{model.name}: #{model.count}"
       end
 
       if User.exists?
-        puts "\n🔑 Available Test Users:"
+        Rails.logger.info "\n🔑 Available Test Users:"
         User.limit(5).each do |user|
-          puts "  #{user.role.capitalize}: #{user.email}"
+          Rails.logger.info "  #{user.role.capitalize}: #{user.email}"
         end
       end
     end
 
-    puts "=" * 60
+    Rails.logger.info "=" * 60
   end
 
   # =============================================
@@ -558,6 +581,8 @@ module TestEnvironment
   def after_suite
     log_test_info("Test suite completed")
   end
+
+  private
 end
 
 # Auto-setup for test environment

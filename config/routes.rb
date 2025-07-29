@@ -42,6 +42,7 @@ Rails.application.routes.draw do
           post :rollback_transaction
           post :commit_transaction
           delete :cleanup
+          delete :cleanup_entity
         end
       end
 

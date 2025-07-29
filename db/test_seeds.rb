@@ -3,15 +3,15 @@
 
 return unless Rails.env.test?
 
-puts "🌱 Creating comprehensive test data..."
+Rails.logger.info "🌱 Creating comprehensive test data..."
 
 # Clear existing data safely using our improved cleanup method
-puts "🧹 Cleaning existing test data..."
+Rails.logger.info "🧹 Cleaning existing test data..."
 if defined?(TestEnvironment)
   TestEnvironment.clear_all_data!
 else
   # Fallback if TestEnvironment is not loaded
-  puts "🔄 Using manual cleanup fallback..."
+  Rails.logger.info "🔄 Using manual cleanup fallback..."
 
   # Disable foreign key checks for PostgreSQL
   if ActiveRecord::Base.connection.adapter_name.downcase.include?('postgresql')
@@ -24,7 +24,7 @@ else
     begin
       model.delete_all
     rescue => e
-      puts "  ⚠️  Could not clear #{model.name}: #{e.message}"
+      Rails.logger.warn "  ⚠️  Could not clear #{model.name}: #{e.message}"
     end
   end
 
@@ -33,13 +33,13 @@ else
     ActiveRecord::Base.connection.execute('SET session_replication_role = DEFAULT;')
   end
 end
-puts "✅ Test data cleared"
+Rails.logger.info "✅ Test data cleared"
 
 # =============================================
 # USERS - Test accounts with different roles
 # =============================================
 
-puts "👥 Creating test users..."
+Rails.logger.info "👥 Creating test users..."
 
 test_users = {
   owner: {
@@ -84,14 +84,14 @@ test_users.each do |key, attrs|
     u.password_confirmation = attrs[:password]
   end
   created_users[key] = user
-  puts "  ✓ #{user.name} (#{user.role})"
+  Rails.logger.info "  ✓ #{user.name} (#{user.role})"
 end
 
 # =============================================
 # CLIENTS - Test companies and individuals
 # =============================================
 
-puts "🏢 Creating test clients..."
+Rails.logger.info "🏢 Creating test clients..."
 
 test_clients = [
   { name: "Acme Corporation", client_type: "business" },
@@ -108,14 +108,14 @@ test_clients.each_with_index do |client_attrs, index|
     c.client_type = client_attrs[:client_type]
   end
   created_clients["client_#{index + 1}".to_sym] = client
-  puts "  ✓ #{client.name}"
+  Rails.logger.info "  ✓ #{client.name}"
 end
 
 # =============================================
 # DEVICES - Test hardware
 # =============================================
 
-puts "📱 Creating test devices..."
+Rails.logger.info "📱 Creating test devices..."
 
 test_devices = [
   { name: "Primary Test iPhone", model: "iPhone 14 Pro", serial_number: "ABC123456", client: created_clients[:client_1] },
@@ -132,14 +132,14 @@ test_devices.each_with_index do |device_attrs, index|
     d.client = device_attrs[:client]
   end
   created_devices["device_#{index + 1}".to_sym] = device
-  puts "  ✓ #{device.name}"
+  Rails.logger.info "  ✓ #{device.name}"
 end
 
 # =============================================
 # PEOPLE - Client contacts
 # =============================================
 
-puts "👤 Creating test people..."
+Rails.logger.info "👤 Creating test people..."
 
 test_people = [
   { name: "John Acme", client: created_clients[:client_1] },
@@ -154,14 +154,14 @@ test_people.each_with_index do |person_attrs, index|
     p.client = person_attrs[:client]
   end
   created_people["person_#{index + 1}".to_sym] = person
-  puts "  ✓ #{person.name}"
+  Rails.logger.info "  ✓ #{person.name}"
 end
 
 # =============================================
 # JOBS - Various complexity scenarios
 # =============================================
 
-puts "💼 Creating test jobs..."
+Rails.logger.info "💼 Creating test jobs..."
 
 # Simple job for basic testing
 simple_job = Job.find_or_create_by(title: "Simple Website Setup") do |j|
@@ -171,7 +171,7 @@ simple_job = Job.find_or_create_by(title: "Simple Website Setup") do |j|
   j.description = "Basic website setup and configuration"
 end
 
-puts "  ✓ #{simple_job.title}"
+Rails.logger.info "  ✓ #{simple_job.title}"
 
 # Complex job for hierarchical testing
 complex_job = Job.find_or_create_by(title: "Enterprise Software Deployment") do |j|
@@ -181,7 +181,7 @@ complex_job = Job.find_or_create_by(title: "Enterprise Software Deployment") do 
   j.description = "Large scale enterprise software deployment with multiple phases"
 end
 
-puts "  ✓ #{complex_job.title}"
+Rails.logger.info "  ✓ #{complex_job.title}"
 
 # Mixed status job for status testing
 mixed_job = Job.find_or_create_by(title: "Mobile App Development") do |j|
@@ -191,7 +191,7 @@ mixed_job = Job.find_or_create_by(title: "Mobile App Development") do |j|
   j.description = "Mobile app development with mixed task statuses"
 end
 
-puts "  ✓ #{mixed_job.title}"
+Rails.logger.info "  ✓ #{mixed_job.title}"
 
 # Large job for performance testing
 large_job = Job.find_or_create_by(title: "System Migration Project") do |j|
@@ -201,7 +201,7 @@ large_job = Job.find_or_create_by(title: "System Migration Project") do |j|
   j.description = "Large system migration with many tasks"
 end
 
-puts "  ✓ #{large_job.title}"
+Rails.logger.info "  ✓ #{large_job.title}"
 
 # Empty job for creation testing
 empty_job = Job.find_or_create_by(title: "Empty Project Template") do |j|
@@ -211,13 +211,13 @@ empty_job = Job.find_or_create_by(title: "Empty Project Template") do |j|
   j.description = "Empty project for testing task creation"
 end
 
-puts "  ✓ #{empty_job.title}"
+Rails.logger.info "  ✓ #{empty_job.title}"
 
 # =============================================
 # TASKS - Comprehensive task scenarios
 # =============================================
 
-puts "📋 Creating test tasks..."
+Rails.logger.info "📋 Creating test tasks..."
 
 # Simple job tasks
 simple_tasks = [
@@ -234,7 +234,7 @@ simple_tasks.each do |task_attrs|
     t.position = task_attrs[:position]
     t.assigned_to = created_users[:technician]
   end
-  puts "    ✓ #{task.title}"
+  Rails.logger.info "    ✓ #{task.title}"
 end
 
 # Complex job with hierarchical tasks
@@ -258,7 +258,7 @@ planning_subtasks.each do |subtask_attrs|
     t.parent_id = planning_task.id
     t.assigned_to = created_users[:admin]
   end
-  puts "      → #{task.title}"
+  Rails.logger.info "      → #{task.title}"
 end
 
 development_task = Task.find_or_create_by(title: "Development Phase", job: complex_job) do |t|
@@ -282,7 +282,7 @@ dev_subtasks.each do |subtask_attrs|
     t.parent_id = development_task.id
     t.assigned_to = created_users[:technician]
   end
-  puts "      → #{task.title}"
+  Rails.logger.info "      → #{task.title}"
 end
 
 testing_task = Task.find_or_create_by(title: "Testing Phase", job: complex_job) do |t|
@@ -305,10 +305,10 @@ test_subtasks.each do |subtask_attrs|
     t.parent_id = testing_task.id
     t.assigned_to = created_users[:technician2]
   end
-  puts "      → #{task.title}"
+  Rails.logger.info "      → #{task.title}"
 end
 
-puts "    ✓ #{complex_job.title} (#{complex_job.tasks.count} tasks)"
+Rails.logger.info "    ✓ #{complex_job.title} (#{complex_job.tasks.count} tasks)"
 
 # Mixed status job tasks
 mixed_statuses = [ "new_task", "in_progress", "paused", "successfully_completed", "cancelled" ]
@@ -329,7 +329,7 @@ mixed_tasks.each do |task_attrs|
     t.position = task_attrs[:position]
     t.assigned_to = [ created_users[:technician], created_users[:technician2] ].sample
   end
-  puts "    ✓ #{task.title} (#{task.status})"
+  Rails.logger.info "    ✓ #{task.title} (#{task.status})"
 end
 
 # Large job with many tasks for performance testing
@@ -354,7 +354,7 @@ end
   end
 end
 
-puts "    ✓ #{large_job.title} (#{large_job.tasks.count} tasks)"
+Rails.logger.info "    ✓ #{large_job.title} (#{large_job.tasks.count} tasks)"
 
 # Note: empty_job has no tasks by design
 
@@ -362,25 +362,25 @@ puts "    ✓ #{large_job.title} (#{large_job.tasks.count} tasks)"
 # VERIFICATION
 # =============================================
 
-puts "\n✅ Test data creation complete!"
-puts "\n📊 Summary:"
-puts "  Users: #{User.count}"
-puts "  Clients: #{Client.count}"
-puts "  Jobs: #{Job.count}"
-puts "  Tasks: #{Task.count}"
-puts "  Devices: #{Device.count}"
-puts "  People: #{Person.count}"
+Rails.logger.info "\n✅ Test data creation complete!"
+Rails.logger.info "\n📊 Summary:"
+Rails.logger.info "  Users: #{User.count}"
+Rails.logger.info "  Clients: #{Client.count}"
+Rails.logger.info "  Jobs: #{Job.count}"
+Rails.logger.info "  Tasks: #{Task.count}"
+Rails.logger.info "  Devices: #{Device.count}"
+Rails.logger.info "  People: #{Person.count}"
 
-puts "\n🎯 Test Scenarios Created:"
-puts "  • Simple Website Setup (#{simple_job.tasks.count} tasks)"
-puts "  • Enterprise Software Deployment (#{complex_job.tasks.count} tasks with hierarchy)"
-puts "  • Mobile App Development (#{mixed_job.tasks.count} tasks with mixed statuses)"
-puts "  • System Migration Project (#{large_job.tasks.count} tasks for performance testing)"
-puts "  • Empty Project Template (#{empty_job.tasks.count} tasks for creation testing)"
+Rails.logger.info "\n🎯 Test Scenarios Created:"
+Rails.logger.info "  • Simple Website Setup (#{simple_job.tasks.count} tasks)"
+Rails.logger.info "  • Enterprise Software Deployment (#{complex_job.tasks.count} tasks with hierarchy)"
+Rails.logger.info "  • Mobile App Development (#{mixed_job.tasks.count} tasks with mixed statuses)"
+Rails.logger.info "  • System Migration Project (#{large_job.tasks.count} tasks for performance testing)"
+Rails.logger.info "  • Empty Project Template (#{empty_job.tasks.count} tasks for creation testing)"
 
-puts "\n🔑 Test User Login Credentials:"
+Rails.logger.info "\n🔑 Test User Login Credentials:"
 test_users.each do |role, attrs|
-  puts "  #{attrs[:name]} (#{attrs[:role]}): #{attrs[:email]} / password123"
+  Rails.logger.info "  #{attrs[:name]} (#{attrs[:role]}): #{attrs[:email]} / password123"
 end
 
-puts "\n🚀 Ready for comprehensive TaskList testing!"
+Rails.logger.info "\n🚀 Ready for comprehensive TaskList testing!"

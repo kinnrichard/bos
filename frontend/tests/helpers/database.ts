@@ -164,6 +164,40 @@ export class TestDatabase {
       throw new Error(`Failed to cleanup test data: ${response.status} ${response.statusText}`);
     }
   }
+
+  /**
+   * Clean up specific entity by ID (for targeted test cleanup)
+   */
+  async cleanupEntity(
+    entityType: 'jobs' | 'tasks' | 'clients' | 'users',
+    entityId: string
+  ): Promise<void> {
+    // Skip if invalid ID
+    if (!entityId || entityId === 'undefined') {
+      console.warn(`Skipping cleanup of ${entityType} with invalid ID: ${entityId}`);
+      return;
+    }
+
+    const response = await fetch(`${this.baseUrl}/test/cleanup_entity`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        entity_type: entityType,
+        entity_id: entityId,
+      }),
+    });
+
+    if (!response.ok && response.status !== 404) {
+      // 404 is fine (already deleted), but warn on other errors
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.warn(
+        `Failed to cleanup ${entityType}/${entityId}: ${response.status} - ${errorText}`
+      );
+    }
+  }
 }
 
 /**

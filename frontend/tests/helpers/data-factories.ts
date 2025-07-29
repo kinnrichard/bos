@@ -522,23 +522,14 @@ export class DataFactory {
   }
 
   /**
-   * Delete test entity by ID
+   * Delete test entity by ID using Rails test cleanup endpoint
    */
   async deleteEntity(
     entityType: 'jobs' | 'tasks' | 'clients' | 'users',
     id: string
   ): Promise<void> {
-    const csrfToken = await this.getCsrfToken();
-    const response = await this.page.request.delete(`${this.baseUrl}/${entityType}/${id}`, {
-      headers: {
-        Accept: 'application/json',
-        'X-CSRF-Token': csrfToken,
-      },
-    });
-
-    if (!response.ok() && response.status() !== 404) {
-      console.warn(`Failed to delete ${entityType}/${id}: ${response.status()}`);
-    }
+    // Use the database helper for consistent cleanup
+    await testDb.cleanupEntity(entityType, id);
   }
 
   /**
