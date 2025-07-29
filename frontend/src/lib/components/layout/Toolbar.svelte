@@ -9,6 +9,7 @@
   import JobStatusButton from './JobStatusButton.svelte';
   import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
   import SchedulePriorityEditPopover from './SchedulePriorityEditPopover.svelte';
+  import JobPriorityButton from './JobPriorityButton.svelte';
   import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import type { PopulatedJob } from '$lib/types/job';
 
@@ -250,6 +251,11 @@
       <SchedulePriorityEditPopover
         jobId={$page.params.id || currentJob?.id || 'new'}
         bind:initialJob={currentJob}
+        {disabled}
+      />
+      <JobPriorityButton
+        jobId={$page.params.id || currentJob?.id || 'new'}
+        initialPriority={currentJob?.priority}
         {disabled}
       />
     {/if}
