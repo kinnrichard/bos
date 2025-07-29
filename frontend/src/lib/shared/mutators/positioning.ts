@@ -1,14 +1,14 @@
 /**
  * Positioning Mutator
  * Provides offline-capable positioning that matches Rails positioning gem API
- * 
+ *
  * Handles automatic position assignment with offline conflict resolution:
  * - New records get positioned at end of list (max position + 1)
  * - Position updates are cached offline and resolved server-side
  * - Supports scoped positioning (e.g., tasks within a job)
  */
 
-import type { MutatorContext, MutatorFunction } from '../base-mutator';
+import type { MutatorContext, MutatorFunction } from './base-mutator';
 
 /**
  * Interface for records that support positioning
@@ -36,7 +36,7 @@ export interface PositioningConfig {
 const DEFAULT_POSITIONING_CONFIG: Required<PositioningConfig> = {
   positionField: 'position',
   scopeFields: [],
-  allowManualPositioning: true
+  allowManualPositioning: true,
 };
 
 /**
@@ -48,26 +48,16 @@ const offlinePositionCache = new Map<string, number>();
 /**
  * Generate cache key for position tracking
  */
-function generatePositionCacheKey(
-  tableName: string, 
-  data: any, 
-  scopeFields: string[]
-): string {
-  const scopeValues = scopeFields.map(field => data[field] || 'null').join(':');
-  return scopeFields.length > 0 
-    ? `${tableName}:${scopeValues}` 
-    : tableName;
+function generatePositionCacheKey(tableName: string, data: any, scopeFields: string[]): string {
+  const scopeValues = scopeFields.map((field) => data[field] || 'null').join(':');
+  return scopeFields.length > 0 ? `${tableName}:${scopeValues}` : tableName;
 }
 
 /**
  * Get next available position for offline scenarios
  * Uses cached values to prevent conflicts when multiple records are created offline
  */
-function getNextOfflinePosition(
-  tableName: string,
-  data: any,
-  scopeFields: string[]
-): number {
+function getNextOfflinePosition(tableName: string, data: any, scopeFields: string[]): number {
   const cacheKey = generatePositionCacheKey(tableName, data, scopeFields);
   const currentMax = offlinePositionCache.get(cacheKey) || 0;
   const nextPosition = currentMax + 1;
@@ -78,7 +68,11 @@ function getNextOfflinePosition(
 /**
  * Clear position cache for a specific scope (useful when coming back online)
  */
-export function clearPositionCache(tableName?: string, scopeData: any = {}, scopeFields: string[] = []): void {
+export function clearPositionCache(
+  tableName?: string,
+  scopeData: any = {},
+  scopeFields: string[] = []
+): void {
   if (tableName === undefined) {
     // Clear all cache entries
     offlinePositionCache.clear();
@@ -96,48 +90,51 @@ export function createPositioningMutator(
   config: PositioningConfig = {}
 ): MutatorFunction<Positionable> {
   const finalConfig = { ...DEFAULT_POSITIONING_CONFIG, ...config };
-  
-  return (data: Positionable, context: MutatorContext): Positionable => {
-    
+
+  return (data: Positionable, context?: MutatorContext): Positionable => {
     const { positionField, scopeFields, allowManualPositioning } = finalConfig;
-    
+
     // Skip positioning if:
     // 1. This is an update and position isn't being changed
     // 2. Manual positioning is disabled and a position was provided
-    if (context.action === 'update' && !(positionField in data)) {
+    if (context?.action === 'update' && !(positionField in data)) {
       return data;
     }
-    
+
     if (!allowManualPositioning && data[positionField] !== undefined) {
       // Remove manually set position if not allowed and assign new position
-      const { [positionField]: _, ...dataWithoutPosition } = data;
-      const nextPosition = context.offline 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [positionField]: _position, ...dataWithoutPosition } = data;
+      const nextPosition = context?.offline
         ? getNextOfflinePosition(tableName, data, scopeFields)
         : Date.now(); // Use timestamp for online scenarios to avoid conflicts
-        
+
       return {
         ...dataWithoutPosition,
-        [positionField]: nextPosition
+        [positionField]: nextPosition,
       };
     }
-    
+
     // If position is already set and manual positioning is allowed, keep it
     if (allowManualPositioning && data[positionField] !== undefined) {
       return data;
     }
-    
+
     // For new records or updates without position, assign next position
-    if (context.action === 'create' || (context.action === 'update' && data[positionField] === undefined)) {
-      const nextPosition = context.offline 
+    if (
+      context?.action === 'create' ||
+      (context?.action === 'update' && data[positionField] === undefined)
+    ) {
+      const nextPosition = context?.offline
         ? getNextOfflinePosition(tableName, data, scopeFields)
         : Date.now(); // Use timestamp for online scenarios to avoid conflicts
-        
+
       return {
         ...data,
-        [positionField]: nextPosition
+        [positionField]: nextPosition,
       };
     }
-    
+
     return data;
   };
 }
@@ -151,7 +148,7 @@ export class PositionManager {
     private tableName: string,
     private config: PositioningConfig = {}
   ) {}
-  
+
   /**
    * Move record to specific position (Rails: move_to!)
    * This creates update data that will be handled by the positioning mutator
@@ -159,17 +156,17 @@ export class PositionManager {
   moveTo(newPosition: number): Partial<Positionable> {
     const positionField = this.config.positionField || 'position';
     return {
-      [positionField]: newPosition
+      [positionField]: newPosition,
     };
   }
-  
+
   /**
    * Move record to top (Rails: move_to_top!)
    */
   moveToTop(): Partial<Positionable> {
     return this.moveTo(1);
   }
-  
+
   /**
    * Move record to bottom (Rails: move_to_bottom!)
    * In offline scenarios, this uses a high timestamp
@@ -177,10 +174,10 @@ export class PositionManager {
   moveToBottom(): Partial<Positionable> {
     const positionField = this.config.positionField || 'position';
     return {
-      [positionField]: Date.now() + 1000000 // Ensure it's higher than auto-assigned positions
+      [positionField]: Date.now() + 1000000, // Ensure it's higher than auto-assigned positions
     };
   }
-  
+
   /**
    * Move record higher by one position (Rails: move_higher!)
    * Note: This requires knowing current position, typically used in UI with current data
@@ -188,7 +185,7 @@ export class PositionManager {
   moveHigher(currentPosition: number): Partial<Positionable> {
     return this.moveTo(Math.max(1, currentPosition - 1));
   }
-  
+
   /**
    * Move record lower by one position (Rails: move_lower!)
    */
@@ -206,14 +203,14 @@ export class PositionManager {
  */
 export const taskPositioningMutator = createPositioningMutator('tasks', {
   scopeFields: ['job_id'],
-  allowManualPositioning: true
+  allowManualPositioning: true,
 });
 
 /**
  * Task positioning manager for UI operations
  */
 export const TaskPositionManager = new PositionManager('tasks', {
-  scopeFields: ['job_id']
+  scopeFields: ['job_id'],
 });
 
 /**

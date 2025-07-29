@@ -71,32 +71,35 @@
     jobLoaded?: boolean; // NEW: Prevents empty state flash during initial load
   } = $props();
 
-
   // Normalize task data to ensure required fields are present for type system
   function normalizeTaskData<T extends Task>(taskList: T[]): T[] {
     // Defensive check to ensure taskList is actually an array
     if (!Array.isArray(taskList)) {
-      debugComponent.warn('[TaskList] normalizeTaskData received non-array:', typeof taskList, taskList);
+      debugComponent.warn(
+        '[TaskList] normalizeTaskData received non-array:',
+        typeof taskList,
+        taskList
+      );
       return [];
     }
-    
+
     return taskList.map((task, index) => {
       // Ensure position field is always present - use index as fallback
       const position = task.position ?? (index + 1) * 1000;
-      
+
       // Ensure parent_id is properly typed as string | null instead of undefined
       const parent_id = task.parent_id === undefined ? null : task.parent_id;
-      
+
       if (task.position === undefined) {
         debugBusiness.workflow.warn(
           `[TaskList] Normalizing missing position for task ${task.id} "${task.title}" - assigned ${position}`
         );
       }
-      
-      return { 
-        ...task, 
+
+      return {
+        ...task,
         position,
-        parent_id
+        parent_id,
       };
     });
   }
@@ -107,14 +110,14 @@
     // Ensure both inputs are arrays before combining
     const safeTasks = Array.isArray(tasks) ? tasks : [];
     const safeKeptTasks = Array.isArray(keptTasks) ? keptTasks : [];
-    
+
     // Combine both task arrays and deduplicate by ID
     const allTasks = [...safeTasks, ...safeKeptTasks];
     const uniqueTasks = allTasks.reduce((acc, task) => {
       acc.set(task.id, task);
       return acc;
     }, new Map());
-    
+
     // Apply cleanup and normalization to the combined set
     const combinedTasks = Array.from(uniqueTasks.values());
     return normalizeTaskData(combinedTasks);
@@ -271,7 +274,7 @@
   // Computed deletion title for the modal
   const deletionTitle = $derived.by(() => {
     if (tasksToDelete.length === 1) {
-      const taskToDelete = canonicalTasks.find((t) => t.id === tasksToDelete[0]);
+      const taskToDelete = canonicalTasks().find((t) => t.id === tasksToDelete[0]);
       const taskName = taskToDelete ? `"${taskToDelete.title}"` : '"this task"';
       return `Are you sure you want to delete the task ${taskName}?`;
     } else {
@@ -325,7 +328,7 @@
   // Use pure reactive filtering with TaskHierarchyManager
   const hierarchicalTasks = $derived(
     hierarchyManager.organizeTasksHierarchicallyWithFilter(
-      canonicalTasks as BaseTask[],
+      canonicalTasks() as BaseTask[],
       shouldShowTask
     )
   );
@@ -333,7 +336,7 @@
   // Create a hierarchy from canonicalTasks for position calculations
   // This includes ALL non-discarded tasks, regardless of filters
   const canonicalTasksHierarchy = $derived(
-    hierarchyManager.organizeTasksSimple(canonicalTasks as BaseTask[])
+    hierarchyManager.organizeTasksSimple(canonicalTasks() as BaseTask[])
   );
 
   // Track if we've done initial auto-expansion
@@ -731,12 +734,12 @@
 
     // Calculate position based on creation type
     if (type === 'inline' && insertNewTaskAfter) {
-      const afterTask = canonicalTasks.find((t) => t.id === insertNewTaskAfter);
+      const afterTask = canonicalTasks().find((t) => t.id === insertNewTaskAfter);
       if (afterTask) {
         parentId = afterTask.parent_id || undefined;
 
         // Get tasks in the same scope (sibling tasks with same parent)
-        const scopeTasks = canonicalTasks.filter(
+        const scopeTasks = canonicalTasks().filter(
           (t) => (t.parent_id || null) === (parentId || null)
         );
 
@@ -756,7 +759,7 @@
         // After task not found - fall back to bottom creation
         console.error('[TaskList] After task not found:', insertNewTaskAfter);
         // Calculate position as if adding at bottom
-        const rootTasks = canonicalTasks.filter((t) => !t.parent_id);
+        const rootTasks = canonicalTasks().filter((t) => !t.parent_id);
         lastRootTask = rootTasks.length > 0 ? rootTasks[rootTasks.length - 1] : null;
         position = lastRootTask
           ? calculatePosition(lastRootTask.position ?? 0, null)
@@ -765,7 +768,7 @@
     } else {
       // Bottom task creation - add at the end of root level tasks
       // Get the last root task from the existing tasks array
-      const rootTasks = canonicalTasks.filter((t) => !t.parent_id);
+      const rootTasks = canonicalTasks().filter((t) => !t.parent_id);
       lastRootTask = rootTasks.length > 0 ? rootTasks[rootTasks.length - 1] : null;
 
       if (lastRootTask) {
@@ -825,25 +828,25 @@
         const visualIndex = flatTaskIds.indexOf(insertNewTaskAfter);
         if (visualIndex !== -1 && visualIndex < flatTaskIds.length - 1) {
           const nextTaskId = flatTaskIds[visualIndex + 1];
-          const nextTaskIndex = canonicalTasks.findIndex((t) => t.id === nextTaskId);
+          const nextTaskIndex = canonicalTasks().findIndex((t) => t.id === nextTaskId);
 
           if (nextTaskIndex !== -1) {
             tasks = [
-              ...canonicalTasks.slice(0, nextTaskIndex),
+              ...canonicalTasks().slice(0, nextTaskIndex),
               newTask,
-              ...canonicalTasks.slice(nextTaskIndex),
+              ...canonicalTasks().slice(nextTaskIndex),
             ];
           } else {
-            tasks = [...canonicalTasks, newTask];
+            tasks = [...canonicalTasks(), newTask];
           }
         } else {
-          tasks = [...canonicalTasks, newTask];
+          tasks = [...canonicalTasks(), newTask];
         }
 
         // Update insertNewTaskAfter to point to the newly created task
         insertNewTaskAfter = newTask.id;
       } else {
-        tasks = [...canonicalTasks, newTask];
+        tasks = [...canonicalTasks(), newTask];
       }
 
       // Select the newly created task only if requested (Return key, not blur)
@@ -884,10 +887,10 @@
     const updatedTask = event.detail.task;
 
     // Update the task in our tasks array
-    const taskIndex = canonicalTasks.findIndex((t) => t.id === updatedTask.id);
+    const taskIndex = canonicalTasks().findIndex((t) => t.id === updatedTask.id);
     if (taskIndex !== -1) {
-      tasks[taskIndex] = { ...canonicalTasks[taskIndex], ...updatedTask };
-      tasks = [...canonicalTasks]; // Trigger reactivity
+      tasks[taskIndex] = { ...canonicalTasks()[taskIndex], ...updatedTask };
+      tasks = [...canonicalTasks()]; // Trigger reactivity
     }
   }
 
@@ -979,7 +982,7 @@
       // Delete tasks in parallel while animation is running using ActiveRecord-style API
       deletePromises = tasksToDeleteCopy.map(async (taskId) => {
         // Find the task data and create an ActiveRecord-style instance
-        const taskData = canonicalTasks.find((t) => t.id === taskId);
+        const taskData = canonicalTasks().find((t) => t.id === taskId);
         if (!taskData) {
           throw new Error(`Task with ID ${taskId} not found`);
         }
@@ -1264,8 +1267,8 @@
       return { valid: false, reason: 'Task cannot be nested under itself' };
     }
 
-    const draggedTask = canonicalTasks.find((t) => t.id === draggedTaskId);
-    const targetTask = canonicalTasks.find((t) => t.id === targetTaskId);
+    const draggedTask = canonicalTasks().find((t) => t.id === draggedTaskId);
+    const targetTask = canonicalTasks().find((t) => t.id === targetTaskId);
 
     if (!draggedTask || !targetTask) {
       return { valid: false, reason: 'Task not found' };
@@ -1283,7 +1286,7 @@
   }
 
   function isDescendantOf(potentialDescendantId: string, ancestorId: string): boolean {
-    const potentialDescendant = canonicalTasks.find((t) => t.id === potentialDescendantId);
+    const potentialDescendant = canonicalTasks().find((t) => t.id === potentialDescendantId);
     if (!potentialDescendant || !potentialDescendant.parent_id) {
       return false;
     }
@@ -1310,14 +1313,14 @@
       return;
     }
 
-    const draggedTask = canonicalTasks.find((t) => t.id === draggedTaskId);
-    const targetTask = canonicalTasks.find((t) => t.id === targetTaskId);
+    const draggedTask = canonicalTasks().find((t) => t.id === draggedTaskId);
+    const targetTask = canonicalTasks().find((t) => t.id === targetTaskId);
 
     if (!draggedTask || !targetTask) {
       debugBusiness.workflow.error('Could not find dragged or target task', {
         draggedTaskId,
         targetTaskId,
-        availableTaskIds: canonicalTasks.map((t) => t.id),
+        availableTaskIds: canonicalTasks().map((t) => t.id),
       });
       return;
     }
@@ -1330,10 +1333,10 @@
       const relativePosition = calculateRelativePosition(null, targetTaskId, [draggedTaskId]);
 
       // Convert relative position to position updates and execute via positioning-v2.ts utilities
-      const positionUpdates = convertRelativeToPositionUpdates(canonicalTasks, [
+      const positionUpdates = convertRelativeToPositionUpdates(canonicalTasks(), [
         relativePosition,
       ]);
-      await applyAndExecutePositionUpdates(canonicalTasks, positionUpdates);
+      await applyAndExecutePositionUpdates(canonicalTasks(), positionUpdates);
     } catch (error: unknown) {
       debugBusiness.workflow.error('Task nesting failed', { error, draggedTaskId, targetTaskId });
 
@@ -1432,19 +1435,19 @@
         // Identify which selected tasks are roots (parent not in selection)
         // This preserves parent-child relationships during multi-drag
         const rootTaskIds = sortedTaskIds.filter((taskId) => {
-          const task = canonicalTasks.find((t) => t.id === taskId);
+          const task = canonicalTasks().find((t) => t.id === taskId);
           return !task?.parent_id || !sortedTaskIds.includes(task.parent_id);
         });
 
         rootTaskIds.forEach((taskId, index) => {
-          const currentTask = canonicalTasks.find((t) => t.id === taskId);
+          const currentTask = canonicalTasks().find((t) => t.id === taskId);
           if (!currentTask) return;
 
           if (index === 0) {
             // First task: position appropriately without considering other moving tasks
             if (event.dropZone?.mode === 'nest') {
               // For nesting: find existing children (excluding tasks being moved)
-              const existingChildren = canonicalTasks.filter(
+              const existingChildren = canonicalTasks().filter(
                 (t) => t.parent_id === newParentId && !rootTaskIds.includes(t.id)
               );
 
@@ -1494,10 +1497,10 @@
       }
 
       // Convert relative updates to position updates using positioning-v2.ts utilities
-      const positionUpdates = convertRelativeToPositionUpdates(canonicalTasks, relativeUpdates);
+      const positionUpdates = convertRelativeToPositionUpdates(canonicalTasks(), relativeUpdates);
 
       // Execute position updates using our batch API - it handles UI updates automatically
-      await applyAndExecutePositionUpdates(canonicalTasks, positionUpdates);
+      await applyAndExecutePositionUpdates(canonicalTasks(), positionUpdates);
     } catch (error: unknown) {
       debugBusiness.workflow.error('Task reorder failed', { error, relativeUpdates });
 
@@ -1576,12 +1579,12 @@
   function resolveParentChildBoundary(dropZone: DropZoneInfo | null): DropZoneInfo | null {
     if (!dropZone?.targetTaskId) return dropZone;
 
-    const targetTask = canonicalTasks.find((t) => t.id === dropZone.targetTaskId);
+    const targetTask = canonicalTasks().find((t) => t.id === dropZone.targetTaskId);
     if (!targetTask) return dropZone;
 
     // If dropping below a task that has children, and the first child is immediately after it
     if (dropZone.position === 'below') {
-      const hasChildren = canonicalTasks.some((t) => t.parent_id === targetTask.id);
+      const hasChildren = canonicalTasks().some((t) => t.parent_id === targetTask.id);
       if (hasChildren) {
         // For "below parent with children", prefer staying at parent level
         // rather than becoming first child (user can drag to middle of task to nest)
@@ -1602,7 +1605,7 @@
 
     // Convert Svelte tasks to Rails task format and sort by position
     // Important: Sort to use ReactiveRecord's true positions, not DOM order during drag
-    const railsTasks: Task[] = canonicalTasks
+    const railsTasks: Task[] = canonicalTasks()
       .map((t) => ({
         id: t.id,
         position: t.position || 0,
@@ -1653,7 +1656,7 @@
     {/if}
 
     <!-- Only show empty state when job has actually loaded AND tasks are truly empty -->
-    {#if canonicalTasks.length === 0 && jobLoaded}
+    {#if canonicalTasks().length === 0 && jobLoaded}
       {#if isNewJobMode}
         <!-- NEW: New job empty state -->
         <div class="empty-state empty-state--new-job">
