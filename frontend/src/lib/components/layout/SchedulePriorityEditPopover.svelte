@@ -4,6 +4,7 @@
   import FormSelect from '$lib/components/ui/FormSelect.svelte';
   import type { PopulatedJob } from '$lib/types/job';
   import { debugComponent } from '$lib/utils/debug';
+  import '$lib/styles/popover-common.css';
 
   let {
     jobId,
@@ -169,34 +170,7 @@
 </BasePopover>
 
 <style>
-  .popover-button {
-    width: 36px;
-    height: 36px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    padding: 0;
-    pointer-events: auto !important;
-    position: relative;
-    z-index: 10;
-  }
-
-  .popover-button:hover:not(:disabled) {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
-
-  .popover-button:disabled,
-  .popover-button.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-
+  /* Component-specific styling only - shared .popover-button styles in popover-common.css */
   .calendar-icon {
     width: 20px;
     height: 20px;
@@ -293,17 +267,9 @@
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
-    .popover-button,
     .cancel-button,
     .save-button {
       transition: none;
-    }
-  }
-
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    .popover-button {
-      border-width: 2px;
     }
   }
 </style>
