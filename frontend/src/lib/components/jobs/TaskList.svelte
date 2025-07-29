@@ -187,23 +187,25 @@
 
   // Direct position calculation helpers (using positioning-v2.ts utilities)
 
-  // Execute position updates using Task.updatePositions batch API
+  // Execute position updates using Task.updateBatch batch API
   async function executePositionUpdates(positionUpdates: PositionUpdate[]): Promise<void> {
     if (positionUpdates.length === 0) return;
 
     // NOTE: reorderedAt timestamp not currently used for position tracking
     // const _reorderedAt = Date.now();
     const batchUpdates = positionUpdates.map((update) => ({
-      taskId: update.id,
-      position: update.position,
-      parent_id: update.parent_id !== undefined ? update.parent_id : undefined,
-      repositioned_after_id: update.repositioned_after_id,
-      position_finalized: false,
-      repositioned_to_top: update.repositioned_after_id === null && update.parent_id === null,
-      reason: `Direct position calculation (${update.position})`,
+      id: update.id,
+      data: {
+        position: update.position,
+        parent_id: update.parent_id !== undefined ? update.parent_id : undefined,
+        repositioned_after_id: update.repositioned_after_id,
+        position_finalized: false,
+        repositioned_to_top: update.repositioned_after_id === null && update.parent_id === null,
+        reason: `Direct position calculation (${update.position})`,
+      },
     }));
 
-    await TaskModel.updatePositions(batchUpdates);
+    await TaskModel.updateBatch(batchUpdates);
   }
 
   // Apply and execute position updates in one operation
