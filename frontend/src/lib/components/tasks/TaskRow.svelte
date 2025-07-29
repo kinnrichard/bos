@@ -5,6 +5,7 @@
   import { taskPermissionHelpers } from '$lib/stores/taskPermissions.svelte';
   import EditableTitle from '../ui/EditableTitle.svelte';
   import TaskInfoPopover from './TaskInfoPopover.svelte';
+  import TaskStatusPopover from './TaskStatusPopover.svelte';
   import type { Task } from '$lib/api/tasks';
   import { debugUI } from '$lib/utils/debug';
   import '../../styles/task-components.scss';
@@ -45,6 +46,11 @@
   // Derive task-specific permissions
   const taskCanEdit = $derived(canEdit && taskPermissionHelpers.canEditTask(task));
   const taskCanChangeStatus = $derived(canEdit && taskPermissionHelpers.canChangeStatus(task));
+
+  // Click debouncing state for enhanced task status selection
+  let clickCount = $state(0);
+  let clickTimer: number | null = $state(null);
+  let showStatusPopover = $state(false);
 
   // Debug permissions using proper debug system
   $effect(() => {
@@ -124,12 +130,37 @@
     });
   }
 
-  function handleStatusChange(event: MouseEvent) {
+  // Enhanced status click handler with debouncing and popover logic
+  function handleStatusClick(event: MouseEvent) {
     // Check if status change is allowed
     if (!taskCanChangeStatus) {
       return;
     }
 
+    // Prevent this click from bubbling up to trigger row selection
+    event.stopPropagation();
+
+    clickCount++;
+
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+    }
+
+    clickTimer = setTimeout(() => {
+      if (clickCount === 1 && task.status !== 'successfully_completed') {
+        // Single click on non-completed task - cycle through quick statuses
+        handleQuickStatusCycle();
+      } else {
+        // Multiple clicks or completed status - show popover
+        showStatusPopover = true;
+      }
+      clickCount = 0;
+      clickTimer = null;
+    }, 1000);
+  }
+
+  // Quick status cycling for single clicks (preserves existing behavior)
+  function handleQuickStatusCycle() {
     const statusCycle = ['new_task', 'in_progress', 'successfully_completed'];
     const currentIndex = statusCycle.indexOf(task.status);
     const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
@@ -139,9 +170,20 @@
       taskId: task.id,
       data: { newStatus: nextStatus },
     });
+  }
 
-    // Prevent this click from bubbling up to trigger row selection
-    event.stopPropagation();
+  // Handle popover status selection
+  function handlePopoverStatusChange(event: CustomEvent) {
+    const { type, taskId, data } = event.detail;
+    if (type === 'statusChange') {
+      dispatch('taskaction', { type, taskId, data });
+      showStatusPopover = false;
+    }
+  }
+
+  // Handle popover close to reset state
+  function handlePopoverClose() {
+    showStatusPopover = false;
   }
 
   // Handle editing state changes from EditableTitle
@@ -200,15 +242,40 @@
 
   <!-- Task Status Button -->
   <div class="task-status">
-    <button
-      class="status-emoji"
-      class:disabled={!taskCanChangeStatus}
-      onclick={handleStatusChange}
-      title={taskCanChangeStatus ? 'Click to change status' : 'Status cannot be changed'}
-      disabled={!taskCanChangeStatus}
-    >
-      {getTaskEmoji(task)}
-    </button>
+    {#if showStatusPopover}
+      <!-- Enhanced popover wrapping the existing emoji -->
+      <TaskStatusPopover
+        taskId={task.id}
+        initialStatus={task.status}
+        on:taskaction={handlePopoverStatusChange}
+        on:close={handlePopoverClose}
+      >
+        {#snippet children({ popover })}
+          <button
+            class="status-emoji"
+            class:disabled={!taskCanChangeStatus}
+            use:popover.button
+            title={taskCanChangeStatus ? 'Select task status' : 'Status cannot be changed'}
+            disabled={!taskCanChangeStatus}
+          >
+            {getTaskEmoji(task)}
+          </button>
+        {/snippet}
+      </TaskStatusPopover>
+    {:else}
+      <!-- Traditional button for single clicks -->
+      <button
+        class="status-emoji"
+        class:disabled={!taskCanChangeStatus}
+        onclick={handleStatusClick}
+        title={taskCanChangeStatus
+          ? 'Click to change status (double-click for all options)'
+          : 'Status cannot be changed'}
+        disabled={!taskCanChangeStatus}
+      >
+        {getTaskEmoji(task)}
+      </button>
+    {/if}
   </div>
 
   <!-- Task Content -->

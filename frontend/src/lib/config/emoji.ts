@@ -9,6 +9,7 @@ import {
   getJobStatusString,
   getJobPriorityString,
   getTaskStatusString,
+  TASK_STATUS_MAP,
 } from '$lib/utils/enum-conversions';
 
 // Job Status Emoji Mappings
@@ -239,6 +240,24 @@ export function getJobPriorityWithEmoji(priority: string | number | null | undef
   const emoji = getJobPriorityEmoji(priority);
   const label = priorityString.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   return emoji ? `${emoji} ${label}` : label;
+}
+
+/**
+ * Generate PopoverMenu options for all task statuses
+ * Uses centralized enum from enum-conversions.ts to avoid duplication
+ */
+export function getTaskStatusOptions() {
+  const statusEntries = Object.values(TASK_STATUS_MAP) as string[];
+
+  return [
+    { id: 'title', value: 'title', label: 'Task Status', header: true },
+    ...statusEntries.map((status) => ({
+      id: status,
+      value: status,
+      label: getTaskStatusLabel(status),
+      icon: TASK_STATUS_EMOJIS[status] || '❓',
+    })),
+  ];
 }
 
 // Export emoji mappings for advanced use cases
