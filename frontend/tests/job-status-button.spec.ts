@@ -4,13 +4,11 @@ import { TestDatabase } from './helpers/database';
 import { DataFactory } from './helpers/data-factories';
 
 test.describe('Job Status Button Component', () => {
-  let _db: TestDatabase;
   let auth: AuthHelper;
   let dataFactory: DataFactory;
 
   test.beforeEach(async ({ page }) => {
     // Initialize helpers
-    _db = new TestDatabase();
     auth = new AuthHelper(page);
     dataFactory = new DataFactory(page);
     
