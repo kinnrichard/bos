@@ -11,7 +11,7 @@
 
 import type { Page } from '@playwright/test';
 import { test, expect } from '@playwright/test';
-import { debugComponent } from '$lib/utils/debug';
+import { debugComponent } from '$lib/utils/debug/index.js';
 import { withConsoleMonitoring, type ConsoleErrorFilter } from '../../helpers/console-monitoring';
 import { AuthHelper } from '../../helpers/auth';
 import { DataFactory } from '../../helpers/data-factories';
