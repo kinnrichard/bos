@@ -47,9 +47,7 @@
   const taskCanEdit = $derived(canEdit && taskPermissionHelpers.canEditTask(task));
   const taskCanChangeStatus = $derived(canEdit && taskPermissionHelpers.canChangeStatus(task));
 
-  // Click debouncing state for enhanced task status selection
-  let clickCount = $state(0);
-  let clickTimer: number | null = $state(null);
+  // Task status popover state
   let showStatusPopover = $state(false);
 
   // Debug permissions using proper debug system
@@ -130,7 +128,7 @@
     });
   }
 
-  // Enhanced status click handler with debouncing and popover logic
+  // Simplified status click handler - no debouncing
   function handleStatusClick(event: MouseEvent) {
     // Check if status change is allowed
     if (!taskCanChangeStatus) {
@@ -140,23 +138,13 @@
     // Prevent this click from bubbling up to trigger row selection
     event.stopPropagation();
 
-    clickCount++;
-
-    if (clickTimer) {
-      clearTimeout(clickTimer);
+    // Auto-advance for 'new_task' and 'in_progress' only
+    if (task.status === 'new_task' || task.status === 'in_progress') {
+      handleQuickStatusCycle();
+    } else {
+      // For all other statuses ('paused', 'successfully_completed', 'cancelled'), show popover
+      showStatusPopover = true;
     }
-
-    clickTimer = setTimeout(() => {
-      if (clickCount === 1 && task.status !== 'successfully_completed') {
-        // Single click on non-completed task - cycle through quick statuses
-        handleQuickStatusCycle();
-      } else {
-        // Multiple clicks or completed status - show popover
-        showStatusPopover = true;
-      }
-      clickCount = 0;
-      clickTimer = null;
-    }, 1000);
   }
 
   // Quick status cycling for single clicks (preserves existing behavior)
@@ -269,7 +257,9 @@
         class:disabled={!taskCanChangeStatus}
         onclick={handleStatusClick}
         title={taskCanChangeStatus
-          ? 'Click to change status (double-click for all options)'
+          ? task.status === 'new_task' || task.status === 'in_progress'
+            ? 'Click to advance to next status'
+            : 'Click for status options'
           : 'Status cannot be changed'}
         disabled={!taskCanChangeStatus}
       >
