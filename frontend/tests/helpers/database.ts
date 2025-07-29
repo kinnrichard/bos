@@ -187,15 +187,26 @@ export class TestDatabase {
       body: JSON.stringify({
         entity_type: entityType,
         entity_id: entityId,
+        cascade: true, // Enable cascading deletes to handle parent-child relationships
       }),
     });
 
     if (!response.ok && response.status !== 404) {
-      // 404 is fine (already deleted), but warn on other errors
+      // 404 is fine (already deleted), but log specific errors
       const errorText = await response.text().catch(() => 'Unknown error');
       console.warn(
         `Failed to cleanup ${entityType}/${entityId}: ${response.status} - ${errorText}`
       );
+
+      // If it's a foreign key violation, try to provide more context
+      if (
+        errorText.includes('PG::ForeignKeyViolation') ||
+        errorText.includes('foreign key constraint')
+      ) {
+        console.warn(
+          `Foreign key violation detected. This may indicate parent-child relationships that need to be cleaned up in proper order.`
+        );
+      }
     }
   }
 }

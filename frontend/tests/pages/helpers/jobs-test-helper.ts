@@ -415,7 +415,7 @@ export class JobsTestHelper {
       const statusButton = firstTask.locator('.status-emoji, .task-status').first();
       await expect(statusButton).toBeVisible();
 
-      // Check for task title - use .first() to avoid strict mode violations  
+      // Check for task title - use .first() to avoid strict mode violations
       const taskTitle = firstTask.locator('.task-title, .task-name').first();
       await expect(taskTitle).toBeVisible();
     } else {
@@ -629,31 +629,41 @@ export class JobsTestHelper {
     });
 
     // Clean up in reverse order (tasks, then jobs, then clients)
-    const tasks = this.createdEntities.filter((e) => e.type === 'tasks');
-    const jobs = this.createdEntities.filter((e) => e.type === 'jobs');
-    const clients = this.createdEntities.filter((e) => e.type === 'clients');
+    // Filter out entities with invalid IDs to prevent unnecessary cleanup attempts
+    const tasks = this.createdEntities.filter(
+      (e) => e.type === 'tasks' && e.id && e.id !== 'undefined'
+    );
+    const jobs = this.createdEntities.filter(
+      (e) => e.type === 'jobs' && e.id && e.id !== 'undefined'
+    );
+    const clients = this.createdEntities.filter(
+      (e) => e.type === 'clients' && e.id && e.id !== 'undefined'
+    );
 
+    // Clean up tasks first to avoid foreign key violations
     for (const task of tasks) {
       try {
         await this.factory.deleteEntity('tasks', task.id);
-      } catch {
-        console.warn(`Failed to cleanup task ${task.id}`);
+      } catch (error) {
+        console.warn(`Failed to cleanup task ${task.id}:`, error);
       }
     }
 
+    // Then clean up jobs
     for (const job of jobs) {
       try {
         await this.factory.deleteEntity('jobs', job.id);
-      } catch {
-        console.warn(`Failed to cleanup job ${job.id}`);
+      } catch (error) {
+        console.warn(`Failed to cleanup job ${job.id}:`, error);
       }
     }
 
+    // Finally clean up clients
     for (const client of clients) {
       try {
         await this.factory.deleteEntity('clients', client.id);
-      } catch {
-        console.warn(`Failed to cleanup client ${client.id}`);
+      } catch (error) {
+        console.warn(`Failed to cleanup client ${client.id}:`, error);
       }
     }
 

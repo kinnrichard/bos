@@ -413,21 +413,36 @@ export class DataFactory {
     const result = await response.json();
 
     // Handle different possible response structures
+    let taskResult;
     if (result.data) {
-      const taskResult = {
+      // JSON:API format with data wrapper
+      taskResult = {
         id: result.data.id,
         ...result.data.attributes,
         job_id: data.job_id, // Add back the job_id for consistency
       };
-      return taskResult;
+    } else if (result.task) {
+      // Response with task wrapper (current API format)
+      taskResult = {
+        ...result.task,
+        job_id: data.job_id, // Add back the job_id for consistency
+      };
     } else {
       // Fallback for simpler response structure
-      const taskResult = {
+      taskResult = {
         ...result,
         job_id: data.job_id,
       };
-      return taskResult;
     }
+
+    // Validate that the task has a proper ID
+    if (!taskResult.id || taskResult.id === 'undefined') {
+      throw new Error(
+        `Task creation returned invalid ID: ${taskResult.id}. Response: ${JSON.stringify(result)}`
+      );
+    }
+
+    return taskResult;
   }
 
   /**
