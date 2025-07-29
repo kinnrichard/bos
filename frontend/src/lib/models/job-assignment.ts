@@ -9,7 +9,7 @@
  * import { ReactiveJobAssignment as JobAssignment } from './reactive-job-assignment';
  * ```
  *
- * Generated: 2025-07-28 01:17:02 UTC
+ * Generated: 2025-07-28 12:38:50 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

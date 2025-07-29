@@ -9,7 +9,7 @@
  * import { ContactMethod } from './contact-method';
  * ```
  *
- * Generated: 2025-07-28 01:17:02 UTC
+ * Generated: 2025-07-28 12:38:50 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
