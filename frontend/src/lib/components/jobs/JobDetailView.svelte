@@ -83,7 +83,11 @@
   <!-- Tasks Section -->
   <div class="tasks-section">
     <TaskList
-      tasks={job?.tasks || []}
+      tasks={Array.isArray(job?.tasks) ? job.tasks.map((task, index) => ({
+        ...task,
+        position: task.position ?? (index + 1) * 1000,
+        parent_id: task.parent_id === undefined ? null : task.parent_id
+      })) : []}
       {keptTasks}
       jobId={job?.id}
       {batchTaskDetails}

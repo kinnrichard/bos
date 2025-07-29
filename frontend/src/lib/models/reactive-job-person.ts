@@ -9,15 +9,11 @@
  * import { JobPerson } from './job-person';
  * ```
  *
- * Generated: 2025-07-29 02:55:15 UTC
+ * Generated: 2025-07-29 23:03:18 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type {
-  JobPersonData,
-  CreateJobPersonData,
-  UpdateJobPersonData,
-} from './types/job-person-data';
+import type { JobPersonData, CreateJobPersonData, UpdateJobPersonData } from './types/job-person-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**

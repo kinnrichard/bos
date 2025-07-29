@@ -7,9 +7,9 @@ import { debugPerformance } from '$lib/utils/debug';
 
 export interface Task {
   id: string;
-  position?: number;
+  position: number;
   repositioned_after_id?: string | null;
-  parent_id?: string;
+  parent_id: string | null;
   title?: string;
   status?: string;
   created_at?: string;
@@ -24,13 +24,13 @@ export interface Task {
 export interface PositionUpdate {
   id: string;
   position: number;
-  parent_id?: string | null;
-  repositioned_after_id?: string | null;
+  parent_id: string | null;
+  repositioned_after_id: string | null;
 }
 
 export interface RelativePositionUpdate {
   id: string;
-  parent_id?: string;
+  parent_id: string | null;
   before_task_id?: string;
   after_task_id?: string;
   position?: 'first' | 'last';
@@ -79,7 +79,7 @@ export function calculateRelativePositionFromTarget(
     return {
       relativePosition: {
         id: draggedTaskIds[0],
-        parent_id: parentId ?? undefined,
+        parent_id: parentId,
         position: 'first',
       },
       reasoning: {
@@ -97,7 +97,7 @@ export function calculateRelativePositionFromTarget(
     return {
       relativePosition: {
         id: draggedTaskIds[0],
-        parent_id: parentId ?? undefined,
+        parent_id: parentId,
         position: 'first',
       },
       reasoning: {
@@ -159,7 +159,7 @@ export function calculateRelativePositionFromTarget(
         return {
           relativePosition: {
             id: draggedTaskIds[0],
-            parent_id: parentId ?? undefined,
+            parent_id: parentId,
             before_task_id: targetTask.id,
           },
           reasoning: {
@@ -173,7 +173,7 @@ export function calculateRelativePositionFromTarget(
         return {
           relativePosition: {
             id: draggedTaskIds[0],
-            parent_id: parentId ?? undefined,
+            parent_id: parentId,
             after_task_id: targetTask.id,
           },
           reasoning: {
@@ -192,7 +192,7 @@ export function calculateRelativePositionFromTarget(
       return {
         relativePosition: {
           id: draggedTaskIds[0],
-          parent_id: parentId ?? undefined,
+          parent_id: parentId,
           position: 'last',
         },
         reasoning: {
@@ -212,13 +212,13 @@ export function calculateRelativePositionFromTarget(
       targetTask: {
         id: targetTask.id.substring(0, 8),
         title: targetTask.title,
-        position: targetTask.position || 0,
+        position: targetTask.position,
       },
       allSiblings: allSiblings.map((s, idx) => ({
         index: idx,
         id: s.id.substring(0, 8),
         title: s.title,
-        position: s.position || 0,
+        position: s.position,
         isTarget: s.id === targetTask.id,
       })),
       destinationSiblings: destinationSiblings.map((s, idx) => ({
@@ -237,7 +237,7 @@ export function calculateRelativePositionFromTarget(
       return {
         relativePosition: {
           id: draggedTaskIds[0],
-          parent_id: parentId ?? undefined,
+          parent_id: parentId,
           before_task_id: targetTask.id,
         },
         reasoning: {
@@ -252,7 +252,7 @@ export function calculateRelativePositionFromTarget(
       return {
         relativePosition: {
           id: draggedTaskIds[0],
-          parent_id: parentId ?? undefined,
+          parent_id: parentId,
           after_task_id: targetTask.id,
         },
         reasoning: {
@@ -269,7 +269,7 @@ export function calculateRelativePositionFromTarget(
   return {
     relativePosition: {
       id: draggedTaskIds[0],
-      parent_id: parentId ?? undefined,
+      parent_id: parentId,
       position: 'first',
     },
     reasoning: {
@@ -302,9 +302,9 @@ export function calculatePositionFromTarget(
   // Use ClientActsAsList to convert to integer position for legacy callers
   // This is a circular dependency workaround - import dynamically
   const positionUpdates = [
-    { id: draggedTaskIds[0], position: 1, parent_id: parentId ?? undefined },
+    { id: draggedTaskIds[0], position: 1, parent_id: parentId, repositioned_after_id: null },
   ];
-  const calculatedPosition = positionUpdates[0]?.position || 1;
+  const calculatedPosition = positionUpdates[0]?.position ?? 1;
 
   return {
     calculatedPosition,

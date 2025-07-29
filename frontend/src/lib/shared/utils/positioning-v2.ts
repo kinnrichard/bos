@@ -27,7 +27,7 @@ export interface Positionable {
 
 export interface RelativePositionUpdate {
   id: string;
-  parent_id?: string;
+  parent_id: string | null;
   before_task_id?: string;
   after_task_id?: string;
   position?: 'first' | 'last';
@@ -36,8 +36,8 @@ export interface RelativePositionUpdate {
 export interface PositionUpdate {
   id: string;
   position: number;
-  parent_id?: string | null;
-  repositioned_after_id?: string | null;
+  parent_id: string | null;
+  repositioned_after_id: string | null;
 }
 
 /**

@@ -9,15 +9,11 @@
  * import { ReactiveScheduledDateTime as ScheduledDateTime } from './reactive-scheduled-date-time';
  * ```
  *
- * Generated: 2025-07-29 02:55:15 UTC
+ * Generated: 2025-07-29 23:03:18 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  ScheduledDateTimeData,
-  CreateScheduledDateTimeData,
-  UpdateScheduledDateTimeData,
-} from './types/scheduled-date-time-data';
+import type { ScheduledDateTimeData, CreateScheduledDateTimeData, UpdateScheduledDateTimeData } from './types/scheduled-date-time-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**

@@ -9,15 +9,11 @@
  * import { ReactiveContactMethod as ContactMethod } from './reactive-contact-method';
  * ```
  *
- * Generated: 2025-07-29 02:55:15 UTC
+ * Generated: 2025-07-29 23:03:18 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  ContactMethodData,
-  CreateContactMethodData,
-  UpdateContactMethodData,
-} from './types/contact-method-data';
+import type { ContactMethodData, CreateContactMethodData, UpdateContactMethodData } from './types/contact-method-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**

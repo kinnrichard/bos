@@ -1,7 +1,7 @@
 /**
  * ScheduledDateTimeData - TypeScript interface for scheduled_date_times table
  *
- * Generated from Rails schema: 2025-07-29 02:55:15 UTC
+ * Generated from Rails schema: 2025-07-29 23:03:18 UTC
  * * Relationships (loaded via includes()):
  * - activityLogs: has_many ActivityLog
  * - scheduledDateTimeUsers: has_many ScheduledDateTimeUser
@@ -38,28 +38,10 @@ export interface ScheduledDateTimeData extends BaseRecord {
  * Create ScheduledDateTime data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateScheduledDateTimeData = Omit<
-  ScheduledDateTimeData,
-  'id',
-  'created_at',
-  'updated_at',
-  'activityLogs',
-  'scheduledDateTimeUsers',
-  'users'
->;
+export type CreateScheduledDateTimeData = Omit<ScheduledDateTimeData, 'id', 'created_at', 'updated_at', 'activityLogs', 'scheduledDateTimeUsers', 'users'>;
 
 /**
  * Update ScheduledDateTime data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateScheduledDateTimeData = Partial<
-  Omit<
-    ScheduledDateTimeData,
-    'id',
-    'created_at',
-    'updated_at',
-    'activityLogs',
-    'scheduledDateTimeUsers',
-    'users'
-  >
->;
+export type UpdateScheduledDateTimeData = Partial<Omit<ScheduledDateTimeData, 'id', 'created_at', 'updated_at', 'activityLogs', 'scheduledDateTimeUsers', 'users'>>;
