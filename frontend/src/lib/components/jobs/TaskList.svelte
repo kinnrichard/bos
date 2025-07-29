@@ -201,7 +201,6 @@
         repositioned_after_id: update.repositioned_after_id,
         position_finalized: false,
         repositioned_to_top: update.repositioned_after_id === null && update.parent_id === null,
-        reason: `Direct position calculation (${update.position})`,
       },
     }));
 
