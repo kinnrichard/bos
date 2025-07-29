@@ -21,9 +21,6 @@ test.describe('Client Logs Page (/clients/[id]/logs)', () => {
   // Configure test timeout for complex operations
   test.setTimeout(20000);
 
-  // Force single worker for reliable test execution
-  test.describe.configure({ mode: 'serial' });
-
   test.describe('Core Functionality', () => {
     createPageTest(
       'should load client logs with proper client resolution',

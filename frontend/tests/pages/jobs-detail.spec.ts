@@ -22,9 +22,6 @@ import { JobsTestHelper } from './helpers/jobs-test-helper';
 test.describe('Job Detail Page (/jobs/[id])', () => {
   // Configure test timeout for complex operations
   test.setTimeout(30000);
-  
-  // Force single worker for reliable test execution
-  test.describe.configure({ mode: 'serial' });
 
   test.describe('Core Functionality', () => {
     createPageTest(
@@ -82,15 +79,15 @@ test.describe('Job Detail Page (/jobs/[id])', () => {
         await page.goto(`/jobs/${job.id}`);
         await expect(page.locator('.job-detail-container')).toBeVisible();
 
-        // Verify job title is editable
-        const jobTitle = page.locator('h1, .job-title, .editable-title');
+        // Verify job title is editable - target specifically the job title, not task titles
+        const jobTitle = page.locator('h1.job-title, h1.editable-title, .job-detail-container h1').first();
         await expect(jobTitle).toBeVisible();
         await expect(jobTitle).toContainText(job.title);
 
-        // Check for editable elements
-        const editableTitle = page.locator('.editable-title, [contenteditable], input[type="text"]');
-        if (await editableTitle.count() > 0) {
-          await expect(editableTitle.first()).toBeVisible();
+        // Check for job-specific editable elements (not task elements)
+        const editableJobTitle = page.locator('.job-detail-container .editable-title, .job-detail-container [contenteditable], .job-title[contenteditable]').first();
+        if (await editableJobTitle.count() > 0) {
+          await expect(editableJobTitle).toBeVisible();
         }
 
         // Verify status display
@@ -134,7 +131,7 @@ test.describe('Job Detail Page (/jobs/[id])', () => {
 
         // Verify we're now on the job detail page
         await expect(page.locator('.job-detail-container')).toBeVisible();
-        await expect(page.locator('h1, .job-title')).toContainText(createdJob.title);
+        await expect(page.locator('.job-detail-container h1, h1.job-title').first()).toContainText(createdJob.title);
 
         // Verify creation mode indicators are removed
         const creationMode = page.locator('[data-creation-mode="true"], .new-job-mode');

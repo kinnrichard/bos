@@ -22,9 +22,6 @@ test.describe('Jobs List Page (/jobs)', () => {
   // Configure test timeout for complex operations
   test.setTimeout(25000);
 
-  // Force single worker for reliable test execution
-  test.describe.configure({ mode: 'serial' });
-
   test.describe('Core Functionality', () => {
     createPageTest(
       'should load jobs list with proper structure',

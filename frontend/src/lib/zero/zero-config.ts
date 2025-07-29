@@ -89,10 +89,11 @@ export const ZERO_ERROR_CONFIG = {
  * Automatically applies based on NODE_ENV and other environment variables
  */
 export function getEnvironmentConfig() {
-  // Browser-only environment detection
-  const isDevelopment = import.meta.env.MODE === 'development';
-  const isTest = import.meta.env.MODE === 'test';
-  const isProduction = import.meta.env.MODE === 'production';
+  // Environment detection with Node.js fallback
+  const mode = (typeof import.meta !== 'undefined' && import.meta.env?.MODE) || process.env.NODE_ENV || 'development';
+  const isDevelopment = mode === 'development';
+  const isTest = mode === 'test';
+  const isProduction = mode === 'production';
 
   // Base configuration
   let config = {
@@ -128,14 +129,16 @@ export function getEnvironmentConfig() {
     config.error.LOG_STACK_TRACES = false;
   }
 
-  // Apply environment variable overrides
-  if (import.meta.env.VITE_ZERO_DEBUG === 'true') {
+  // Apply environment variable overrides with Node.js fallback
+  const env = (typeof import.meta !== 'undefined' && import.meta.env) || process.env;
+  
+  if (env.VITE_ZERO_DEBUG === 'true') {
     config.query.DEBUG_LOGGING = true;
     config.query.PERFORMANCE_LOGGING = true;
   }
 
-  if (import.meta.env.VITE_ZERO_TTL) {
-    config.query.DEFAULT_TTL = import.meta.env.VITE_ZERO_TTL;
+  if (env.VITE_ZERO_TTL) {
+    config.query.DEFAULT_TTL = env.VITE_ZERO_TTL;
   }
 
   return config;
@@ -207,10 +210,11 @@ export function validateZeroConfig(): void {
     });
   }
 
-  // Environment consistency checks
-  if (import.meta.env.MODE === 'production' && query.DEBUG_LOGGING) {
+  // Environment consistency checks with Node.js fallback
+  const mode = (typeof import.meta !== 'undefined' && import.meta.env?.MODE) || process.env.NODE_ENV || 'development';
+  if (mode === 'production' && query.DEBUG_LOGGING) {
     debugDatabase.warn('Debug logging enabled in production environment', {
-      mode: import.meta.env.MODE,
+      mode: mode,
       debugLogging: query.DEBUG_LOGGING,
     });
   }

@@ -400,8 +400,9 @@ export class JobsTestHelper {
 
     if (tasks.length > 0) {
       // Verify tasks are displayed
-      for (const task of tasks.slice(0, 3)) {
-        // Check first 3 tasks
+      for (const taskWrapper of tasks.slice(0, 3)) {
+        // Check first 3 tasks - handle nested task structure
+        const task = taskWrapper.task || taskWrapper; // Handle both nested and flat structures
         const taskElement = this.page.locator(`[data-task-id="${task.id}"]`);
         await expect(taskElement).toBeVisible();
         await expect(taskElement).toContainText(task.title);
@@ -410,12 +411,12 @@ export class JobsTestHelper {
       // Verify task interaction elements
       const firstTask = this.page.locator('[data-task-id]').first();
 
-      // Check for status emoji/button
-      const statusButton = firstTask.locator('.status-emoji, .task-status');
+      // Check for status emoji/button - use .first() to avoid strict mode violations
+      const statusButton = firstTask.locator('.status-emoji, .task-status').first();
       await expect(statusButton).toBeVisible();
 
-      // Check for task title
-      const taskTitle = firstTask.locator('.task-title, .task-name');
+      // Check for task title - use .first() to avoid strict mode violations  
+      const taskTitle = firstTask.locator('.task-title, .task-name').first();
       await expect(taskTitle).toBeVisible();
     } else {
       // Verify empty task state
