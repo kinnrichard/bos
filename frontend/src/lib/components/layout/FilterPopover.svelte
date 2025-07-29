@@ -1,6 +1,7 @@
 <script lang="ts">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
+  import '$lib/styles/popover-common.css';
   // NOTE: PopoverMenuSeparator import removed as unused
 
   interface Props {
@@ -140,33 +141,7 @@
 </BasePopover>
 
 <style>
-  .popover-button {
-    width: 36px;
-    height: 36px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    padding: 0;
-    pointer-events: auto !important;
-    position: relative;
-    z-index: 10;
-  }
-
-  .popover-button:hover:not(:disabled) {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
-
-  .popover-button:disabled,
-  .popover-button.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
+  /* Base .popover-button styles are imported from popover-common.css */
 
   .filter-icon {
     width: 20px;
@@ -178,17 +153,5 @@
     opacity: 1;
   }
 
-  /* Accessibility improvements */
-  @media (prefers-reduced-motion: reduce) {
-    .popover-button {
-      transition: none;
-    }
-  }
-
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    .popover-button {
-      border-width: 2px;
-    }
-  }
+  /* Accessibility improvements and high contrast support are imported from popover-common.css */
 </style>
