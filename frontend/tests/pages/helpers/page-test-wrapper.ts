@@ -246,16 +246,6 @@ export class PageAssertions {
   async assertPageLoads(expectedTitlePattern: string | RegExp) {
     await this.page.waitForLoadState('networkidle');
 
-    // Handle Unicode normalization for "bōs" vs "bŏs" - normalize to breve (ŏ) which is used consistently in the app
-    if (typeof expectedTitlePattern === 'string') {
-      expectedTitlePattern = expectedTitlePattern.replace(/bōs/g, 'bŏs').replace(/b[ōo]s/g, 'bŏs');
-    } else if (expectedTitlePattern instanceof RegExp) {
-      const source = expectedTitlePattern.source
-        .replace(/b\[ōŏo\]s/g, 'bŏs')
-        .replace(/bōs/g, 'bŏs');
-      expectedTitlePattern = new RegExp(source, expectedTitlePattern.flags);
-    }
-
     await expect(this.page).toHaveTitle(expectedTitlePattern);
     await expect(this.page.locator('body')).toBeVisible();
   }
