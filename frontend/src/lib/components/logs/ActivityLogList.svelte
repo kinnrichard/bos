@@ -575,7 +575,6 @@
 
       {#snippet content({ data, isLoading, isFresh })}
         <div class="logs-table-container" bind:this={tableContainer}>
-
           <!-- Show refresh indicator when data is being updated -->
           {#if isLoading && data.length > 0}
             <div class="refresh-indicator">
