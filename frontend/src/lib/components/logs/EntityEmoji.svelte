@@ -1,22 +1,16 @@
 <script lang="ts">
-  import type { ClientData } from '$lib/models/types/client-data';
-
   interface Props {
     entityType: string;
-    entity?: any; // The actual entity (client, job, etc.)
+    entity?: Record<string, unknown>; // The actual entity (client, job, etc.)
     size?: 'small' | 'medium' | 'large';
   }
 
-  let { 
-    entityType, 
-    entity,
-    size = 'medium' 
-  }: Props = $props();
+  let { entityType, entity, size = 'medium' }: Props = $props();
 
   const sizeClasses = {
     small: 'text-sm',
     medium: 'text-base',
-    large: 'text-lg'
+    large: 'text-lg',
   };
 
   const emoji = $derived(() => {

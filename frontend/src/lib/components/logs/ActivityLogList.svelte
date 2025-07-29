@@ -548,7 +548,7 @@
   }
 </script>
 
-<div class="logs-container">
+<div class="logs-container" data-testid="activity-log-list" data-context={context}>
   {#if logsQuery}
     <!-- New ReactiveView integration -->
     <ReactiveView query={logsQuery} {strategy}>
@@ -592,7 +592,7 @@
           {/if}
 
           {#each groupLogsByContext(data || []) as group (group.key)}
-            <div class="logs-group-container">
+            <div class="logs-group-container" data-testid="logs-group-container">
               <table class="logs-table">
                 <tbody>
                   <!-- Group header row -->
@@ -603,6 +603,8 @@
                       ? 'logs-group--collapsed'
                       : ''}"
                     onclick={() => toggleGroup(group)}
+                    data-testid="logs-group-header"
+                    data-group-key={group.key}
                   >
                     <td colspan="3">
                       <div class="logs-group-header-content">
@@ -662,6 +664,8 @@
                                   <tr
                                     class="logs-table__row logs-group-content"
                                     class:logs-table__row--alt={index % 2 === 1}
+                                    data-log-id={log.id}
+                                    data-testid="activity-log-row"
                                   >
                                     <!-- User cell -->
                                     <td class="logs-table__user-cell">
@@ -786,7 +790,7 @@
     {:else}
       <div class="logs-table-container" bind:this={tableContainer}>
         {#each groupedLogs() as group (group.key)}
-          <div class="logs-group-container">
+          <div class="logs-group-container" data-testid="logs-group-container">
             <table class="logs-table">
               <tbody>
                 <!-- Group header row -->
@@ -797,6 +801,8 @@
                     ? 'logs-group--collapsed'
                     : ''}"
                   onclick={() => toggleGroup(group)}
+                  data-testid="logs-group-header"
+                  data-group-key={group.key}
                 >
                   <td colspan="3">
                     <div class="logs-group-header-content">
@@ -855,6 +861,8 @@
                                 <tr
                                   class="logs-table__row logs-group-content"
                                   class:logs-table__row--alt={index % 2 === 1}
+                                  data-log-id={log.id}
+                                  data-testid="activity-log-row"
                                 >
                                   <!-- User cell -->
                                   <td class="logs-table__user-cell">

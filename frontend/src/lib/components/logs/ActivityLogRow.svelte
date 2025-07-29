@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { ActivityLogData } from '$lib/models/types/activity-log-data';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
-  import { getFormattedMessage, getEntityEmoji, isLinkable, getLoggablePath } from '$lib/models/extensions/activity-log-helpers';
-  
+  import { getFormattedMessage } from '$lib/models/extensions/activity-log-helpers';
+
   interface Props {
     log: ActivityLogData;
     showGroupIndicator?: boolean;
@@ -10,20 +10,20 @@
     showDuplicateIndicator?: boolean;
   }
 
-  let { 
-    log, 
-    showGroupIndicator = false, 
+  let {
+    log,
+    showGroupIndicator = false,
     groupCount = 1,
-    showDuplicateIndicator = true
+    showDuplicateIndicator = true,
   }: Props = $props();
 
   // Format timestamp
   const formattedTime = $derived(() => {
     const date = new Date(log.created_at);
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
     });
   });
 
@@ -37,23 +37,21 @@
       hour: 'numeric',
       minute: '2-digit',
       second: '2-digit',
-      hour12: true
+      hour12: true,
     });
   });
 
   // Check if this is a system action (no user)
   const isSystemAction = $derived(!log.user_id || log.user_id === 'system');
-  
+
   // Get computed values using helper functions
   const formattedMessage = $derived(getFormattedMessage(log));
-  const linkable = $derived(isLinkable(log));
-  const loggablePath = $derived(getLoggablePath(log));
-  
+
   // Duplicate detection from metadata
   const duplicateCount = $derived(log.metadata?.duplicateCount || 0);
   const hasDuplicates = $derived(duplicateCount > 1);
   const duplicateTimespan = $derived(log.metadata?.duplicateTimespan);
-  
+
   // Format duplicate timespan for tooltip
   const duplicateTooltip = $derived(() => {
     if (!duplicateTimespan) return '';
@@ -74,17 +72,17 @@
       <UserAvatar user={log.user} size="small" />
     {/if}
   </div>
-  
+
   <div class="content-column">
     <div class="message">
       <span class="message-text">
         {formattedMessage}
       </span>
-      
+
       {#if showGroupIndicator && groupCount > 1}
         <span class="group-badge">{groupCount}x</span>
       {/if}
-      
+
       {#if showDuplicateIndicator && hasDuplicates}
         <span class="duplicate-badge" title={duplicateTooltip()}>
           <span class="duplicate-icon">↻</span>
@@ -92,14 +90,14 @@
         </span>
       {/if}
     </div>
-    
+
     {#if log.user && !isSystemAction}
       <div class="user-name">
         by {log.user.name || log.user.email || 'Unknown User'}
       </div>
     {/if}
   </div>
-  
+
   <div class="time-column">
     <time datetime={log.created_at} title={fullDateTime()}>
       {formattedTime()}
@@ -170,7 +168,7 @@
   }
 
   .duplicate-badge {
-    background-color: var(--accent-orange, #FF9500);
+    background-color: var(--accent-orange, #ff9500);
     color: white;
     padding: 0.125rem 0.375rem;
     border-radius: 0.75rem;
