@@ -1,6 +1,6 @@
 /**
  * ReactiveRecord v2 - Phase 1 Core Implementation
- * 
+ *
  * This module provides the core functionality for ReactiveRecord v2 with:
  * - 5-state lifecycle management (initializing → loading → hydrating → ready → error)
  * - Flash prevention through intelligent state transitions
@@ -10,12 +10,12 @@
  */
 
 // Core coordinator and state management
-export { 
-  ReactiveCoordinator, 
+export {
+  ReactiveCoordinator,
   createReactiveCoordinator,
   type CoordinatorState,
   type VisualState,
-  type CoordinatorConfig
+  type CoordinatorConfig,
 } from './coordinator';
 
 // Integration utilities and adapters
@@ -26,7 +26,7 @@ export {
   MigrationUtils,
   DevUtils,
   TypeGuards,
-  type EnhancedReactiveQuery
+  type EnhancedReactiveQuery,
 } from './integration';
 
 // Factory functions for enhanced reactive records
@@ -36,7 +36,7 @@ export {
   createEnhancedReactiveRecord,
   upgradeReactiveRecord,
   ReactiveRecordFactory,
-  FactoryDevUtils
+  FactoryDevUtils,
 } from './factory';
 
 // Re-export ReactiveView component
@@ -48,58 +48,58 @@ export { default as ReactiveView } from './ReactiveView.svelte';
 export const QuickStart = {
   /**
    * Basic usage - wrap existing ReactiveRecord
-   * 
+   *
    * @example
    * ```typescript
    * import { ReactiveRecordFactory } from '$lib/reactive';
-   * 
+   *
    * const ReactiveJob = ReactiveRecordFactory.create({
    *   tableName: 'jobs',
    *   className: 'Job'
    * });
-   * 
+   *
    * // Use exactly like before, but with flash prevention
    * const job = ReactiveJob.find('job-id');
    * $: data = job.data; // No more flashing!
    * ```
    */
   basic: ReactiveRecordFactory.create,
-  
+
   /**
    * Navigation usage - optimized for page transitions
-   * 
+   *
    * @example
    * ```typescript
    * import { ReactiveRecordFactory } from '$lib/reactive';
-   * 
+   *
    * const ReactiveJob = ReactiveRecordFactory.createForNavigation({
    *   tableName: 'jobs',
    *   className: 'Job'
    * });
-   * 
+   *
    * // Optimized for fast navigation between pages
    * const jobs = ReactiveJob.kept().all();
    * ```
    */
   navigation: ReactiveRecordFactory.createForNavigation,
-  
+
   /**
    * Initial load usage - optimized for first page load
-   * 
+   *
    * @example
    * ```typescript
    * import { ReactiveRecordFactory } from '$lib/reactive';
-   * 
+   *
    * const ReactiveJob = ReactiveRecordFactory.createForInitialLoad({
    *   tableName: 'jobs',
    *   className: 'Job'
    * });
-   * 
+   *
    * // Optimized for initial page loads with longer timeouts
    * const jobs = ReactiveJob.all().all();
    * ```
    */
-  initialLoad: ReactiveRecordFactory.createForInitialLoad
+  initialLoad: ReactiveRecordFactory.createForInitialLoad,
 };
 
 /**
@@ -108,13 +108,13 @@ export const QuickStart = {
 export const MigrationGuide = {
   /**
    * Step 1: Replace ReactiveRecord creation
-   * 
+   *
    * Before:
    * ```typescript
    * import { createReactiveRecord } from '$lib/models/base/reactive-record';
    * const ReactiveJob = createReactiveRecord({ tableName: 'jobs', className: 'Job' });
    * ```
-   * 
+   *
    * After:
    * ```typescript
    * import { ReactiveRecordFactory } from '$lib/reactive';
@@ -122,16 +122,16 @@ export const MigrationGuide = {
    * ```
    */
   step1: 'Replace createReactiveRecord with ReactiveRecordFactory.create',
-  
+
   /**
    * Step 2: Use ReactiveView for complex components
-   * 
+   *
    * Before:
    * ```svelte
    * <script>
    *   const jobs = ReactiveJob.kept().all();
    * </script>
-   * 
+   *
    * {#if jobs.isLoading}
    *   <div>Loading...</div>
    * {:else if jobs.error}
@@ -144,14 +144,14 @@ export const MigrationGuide = {
    *   {/each}
    * {/if}
    * ```
-   * 
+   *
    * After:
    * ```svelte
    * <script>
    *   import { ReactiveView } from '$lib/reactive';
    *   const jobs = ReactiveJob.kept().all();
    * </script>
-   * 
+   *
    * <ReactiveView query={jobs} strategy="progressive">
    *   {#snippet content({ data })}
    *     {#each data as job}
@@ -162,21 +162,21 @@ export const MigrationGuide = {
    * ```
    */
   step2: 'Use ReactiveView component for declarative state handling',
-  
+
   /**
    * Step 3: Leverage visual state for advanced UX
-   * 
+   *
    * ```typescript
    * const enhancedQuery = ReactiveQueryFactory.create(jobs);
    * const visualState = enhancedQuery.getVisualState();
-   * 
+   *
    * // Access advanced state information
    * console.log(visualState.state);        // 'ready', 'loading', etc.
    * console.log(visualState.isFresh);      // Is data current?
    * console.log(visualState.isInitialLoad); // First load?
    * ```
    */
-  step3: 'Use visual state for advanced UX patterns'
+  step3: 'Use visual state for advanced UX patterns',
 };
 
 /**
@@ -186,22 +186,23 @@ export const PerformanceTips = {
   /**
    * Use appropriate factory methods for context
    */
-  context: 'Use ReactiveRecordFactory.createForNavigation() for page transitions, createForInitialLoad() for first loads',
-  
+  context:
+    'Use ReactiveRecordFactory.createForNavigation() for page transitions, createForInitialLoad() for first loads',
+
   /**
    * Leverage stale data preservation
    */
   staleData: 'Enable preserveStaleData for smooth transitions between related views',
-  
+
   /**
    * Monitor state transitions in development
    */
   debugging: 'Use DevUtils.monitorStateTransitions() to debug performance issues',
-  
+
   /**
    * Optimize TTL values
    */
-  ttl: 'Set appropriate TTL values based on data freshness requirements'
+  ttl: 'Set appropriate TTL values based on data freshness requirements',
 };
 
 /**
@@ -213,5 +214,5 @@ export default {
   MigrationUtils,
   QuickStart,
   MigrationGuide,
-  PerformanceTips
+  PerformanceTips,
 };
