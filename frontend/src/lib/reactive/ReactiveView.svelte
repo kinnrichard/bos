@@ -212,36 +212,59 @@
         showLoading,
         showError,
         shouldShowLoadingInsteadOfEmpty,
-        visualState: visualState ? {
-          state: visualState.state,
-          shouldShowLoading: visualState.shouldShowLoading,
-          shouldShowEmpty: visualState.shouldShowEmpty,
-          shouldShowError: visualState.shouldShowError,
-          isInitialLoad: visualState.isInitialLoad,
-          isFresh: visualState.isFresh,
-          displayDataLength: Array.isArray(visualState.displayData) ? visualState.displayData.length : visualState.displayData ? 'object' : 'null'
-        } : 'null',
-        filteredDataLength: Array.isArray(filteredData) ? filteredData.length : filteredData ? 'object' : 'null'
+        visualState: visualState
+          ? {
+              state: visualState.state,
+              shouldShowLoading: visualState.shouldShowLoading,
+              shouldShowEmpty: visualState.shouldShowEmpty,
+              shouldShowError: visualState.shouldShowError,
+              isInitialLoad: visualState.isInitialLoad,
+              isFresh: visualState.isFresh,
+              displayDataLength: Array.isArray(visualState.displayData)
+                ? visualState.displayData.length
+                : visualState.displayData
+                  ? 'object'
+                  : 'null',
+            }
+          : 'null',
+        filteredDataLength: Array.isArray(filteredData)
+          ? filteredData.length
+          : filteredData
+            ? 'object'
+            : 'null',
       });
     }
   });
 </script>
 
 {#if debug}
-<!-- Debug panel -->
-<div class="reactive-view-debug" style="background: #000; color: #00ff00; padding: 8px; margin-bottom: 16px; font-family: monospace; font-size: 11px; border: 1px solid #333;">
-  <strong>🔍 ReactiveView Debug Panel</strong><br>
-  hasData: {hasData} | isEmpty: {isEmpty} | showLoading: {showLoading} | showError: {showError}<br>
-  shouldShowLoadingInsteadOfEmpty: {shouldShowLoadingInsteadOfEmpty}<br>
-  {#if visualState}
-    VS.state: {visualState.state} | VS.shouldShowLoading: {visualState.shouldShowLoading} | VS.shouldShowEmpty: {visualState.shouldShowEmpty}<br>
-    VS.isInitialLoad: {visualState.isInitialLoad} | VS.isFresh: {visualState.isFresh}<br>
-    VS.displayData: {Array.isArray(visualState.displayData) ? `Array(${visualState.displayData.length})` : visualState.displayData ? 'Object' : 'null'}<br>
-  {:else}
-    visualState: null<br>
-  {/if}
-  filteredData: {Array.isArray(filteredData) ? `Array(${filteredData.length})` : filteredData ? 'Object' : 'null'}<br>
-</div>
+  <!-- Debug panel -->
+  <div
+    class="reactive-view-debug"
+    style="background: #000; color: #00ff00; padding: 8px; margin-bottom: 16px; font-family: monospace; font-size: 11px; border: 1px solid #333;"
+  >
+    <strong>🔍 ReactiveView Debug Panel</strong><br />
+    hasData: {hasData} | isEmpty: {isEmpty} | showLoading: {showLoading} | showError: {showError}<br
+    />
+    shouldShowLoadingInsteadOfEmpty: {shouldShowLoadingInsteadOfEmpty}<br />
+    {#if visualState}
+      VS.state: {visualState.state} | VS.shouldShowLoading: {visualState.shouldShowLoading} | VS.shouldShowEmpty:
+      {visualState.shouldShowEmpty}<br />
+      VS.isInitialLoad: {visualState.isInitialLoad} | VS.isFresh: {visualState.isFresh}<br />
+      VS.displayData: {Array.isArray(visualState.displayData)
+        ? `Array(${visualState.displayData.length})`
+        : visualState.displayData
+          ? 'Object'
+          : 'null'}<br />
+    {:else}
+      visualState: null<br />
+    {/if}
+    filteredData: {Array.isArray(filteredData)
+      ? `Array(${filteredData.length})`
+      : filteredData
+        ? 'Object'
+        : 'null'}<br />
+  </div>
 {/if}
 
 <!-- Main content rendering -->
@@ -283,17 +306,17 @@
 {:else if hasData}
   <div class="reactive-view__content">
     {#if debug}
-    <!-- Debug: Check snippet structure -->
-    <div
-      class="snippet-debug"
-      style="background: #ff0000; color: white; padding: 4px; font-size: 10px;"
-    >
-      Has loading: {!!loading}
-      <br />Has error: {!!error}
-      <br />Has empty: {!!empty}
-      <br />Has content: {!!content}
-      <br />Has loadingOverlay: {!!loadingOverlay}
-    </div>
+      <!-- Debug: Check snippet structure -->
+      <div
+        class="snippet-debug"
+        style="background: #ff0000; color: white; padding: 4px; font-size: 10px;"
+      >
+        Has loading: {!!loading}
+        <br />Has error: {!!error}
+        <br />Has empty: {!!empty}
+        <br />Has content: {!!content}
+        <br />Has loadingOverlay: {!!loadingOverlay}
+      </div>
     {/if}
 
     {#if content}
