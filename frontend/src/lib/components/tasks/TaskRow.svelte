@@ -47,8 +47,7 @@
   const taskCanEdit = $derived(canEdit && taskPermissionHelpers.canEditTask(task));
   const taskCanChangeStatus = $derived(canEdit && taskPermissionHelpers.canChangeStatus(task));
 
-  // Task status popover state
-  let showStatusPopover = $state(false);
+  // No popover state needed - purely status-based rendering
 
   // Debug permissions using proper debug system
   $effect(() => {
@@ -128,7 +127,7 @@
     });
   }
 
-  // Simplified status click handler - no debouncing
+  // Status click handler for auto-advance statuses only
   function handleStatusClick(event: MouseEvent) {
     // Check if status change is allowed
     if (!taskCanChangeStatus) {
@@ -138,13 +137,8 @@
     // Prevent this click from bubbling up to trigger row selection
     event.stopPropagation();
 
-    // Auto-advance for 'new_task' and 'in_progress' only
-    if (task.status === 'new_task' || task.status === 'in_progress') {
-      handleQuickStatusCycle();
-    } else {
-      // For all other statuses ('paused', 'successfully_completed', 'cancelled'), show popover
-      showStatusPopover = true;
-    }
+    // Only called for 'new_task' and 'in_progress' - auto-advance to next status
+    handleQuickStatusCycle();
   }
 
   // Quick status cycling for single clicks (preserves existing behavior)
@@ -165,13 +159,7 @@
     const { type, taskId, data } = event.detail;
     if (type === 'statusChange') {
       dispatch('taskaction', { type, taskId, data });
-      showStatusPopover = false;
     }
-  }
-
-  // Handle popover close to reset state
-  function handlePopoverClose() {
-    showStatusPopover = false;
   }
 
   // Handle editing state changes from EditableTitle
@@ -230,13 +218,23 @@
 
   <!-- Task Status Button -->
   <div class="task-status">
-    {#if showStatusPopover}
-      <!-- Enhanced popover wrapping the existing emoji -->
+    {#if task.status === 'new_task' || task.status === 'in_progress'}
+      <!-- Auto-advance button for progression statuses -->
+      <button
+        class="status-emoji"
+        class:disabled={!taskCanChangeStatus}
+        onclick={handleStatusClick}
+        title={taskCanChangeStatus ? 'Click to advance to next status' : 'Status cannot be changed'}
+        disabled={!taskCanChangeStatus}
+      >
+        {getTaskEmoji(task)}
+      </button>
+    {:else}
+      <!-- Popover for terminal statuses (paused, completed, cancelled) -->
       <TaskStatusPopover
         taskId={task.id}
         initialStatus={task.status}
         on:taskaction={handlePopoverStatusChange}
-        on:close={handlePopoverClose}
       >
         {#snippet children({ popover })}
           <button
@@ -250,21 +248,6 @@
           </button>
         {/snippet}
       </TaskStatusPopover>
-    {:else}
-      <!-- Traditional button for single clicks -->
-      <button
-        class="status-emoji"
-        class:disabled={!taskCanChangeStatus}
-        onclick={handleStatusClick}
-        title={taskCanChangeStatus
-          ? task.status === 'new_task' || task.status === 'in_progress'
-            ? 'Click to advance to next status'
-            : 'Click for status options'
-          : 'Status cannot be changed'}
-        disabled={!taskCanChangeStatus}
-      >
-        {getTaskEmoji(task)}
-      </button>
     {/if}
   </div>
 
