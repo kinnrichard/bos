@@ -1,6 +1,6 @@
 /**
  * Authentication Test Utilities
- * 
+ *
  * Provides utilities for testing authentication flows with real Rails API
  */
 
@@ -40,7 +40,7 @@ export class AuthHelper {
   async login(email: string, password: string): Promise<AuthTokens> {
     // First get CSRF token from production health endpoint
     const csrfResponse = await this.page.request.get(`${this.baseUrl}/api/v1/health`, {
-      headers: { 'Accept': 'application/json' }
+      headers: { Accept: 'application/json' },
     });
 
     if (!csrfResponse.ok()) {
@@ -59,15 +59,15 @@ export class AuthHelper {
     const loginResponse = await this.page.request.post(`${this.baseUrl}/api/v1/auth/login`, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-CSRF-Token': csrfToken
+        Accept: 'application/json',
+        'X-CSRF-Token': csrfToken,
       },
       data: {
         auth: {
           email,
-          password
-        }
-      }
+          password,
+        },
+      },
     });
 
     if (!loginResponse.ok()) {
@@ -84,7 +84,6 @@ export class AuthHelper {
     if (requestCookies.cookies && requestCookies.cookies.length > 0) {
       // Add cookies to the browser context so page.goto() can use them
       await this.page.context().addCookies(requestCookies.cookies);
-      console.log(`[AUTH] Transferred ${requestCookies.cookies.length} authentication cookies to browser context`);
     }
 
     return {
@@ -96,8 +95,8 @@ export class AuthHelper {
         email: userData.attributes.email,
         name: userData.attributes.name,
         role: userData.attributes.role,
-        password: password
-      }
+        password: password,
+      },
     };
   }
 
@@ -114,7 +113,7 @@ export class AuthHelper {
    */
   async logout(): Promise<void> {
     const response = await this.page.request.post(`${this.baseUrl}/api/v1/auth/logout`, {
-      headers: { 'Accept': 'application/json' }
+      headers: { Accept: 'application/json' },
     });
 
     if (!response.ok()) {
@@ -128,7 +127,7 @@ export class AuthHelper {
   async isAuthenticated(): Promise<boolean> {
     try {
       const response = await this.page.request.get(`${this.baseUrl}/api/v1/users/me`, {
-        headers: { 'Accept': 'application/json' }
+        headers: { Accept: 'application/json' },
       });
       return response.ok();
     } catch {
@@ -142,7 +141,7 @@ export class AuthHelper {
   async getCurrentUser(): Promise<TestUser | null> {
     try {
       const response = await this.page.request.get(`${this.baseUrl}/api/v1/users/me`, {
-        headers: { 'Accept': 'application/json' }
+        headers: { Accept: 'application/json' },
       });
 
       if (!response.ok()) {
@@ -155,7 +154,7 @@ export class AuthHelper {
         email: data.data.attributes.email,
         name: data.data.attributes.name,
         role: data.data.attributes.role,
-        password: '' // Not available from API
+        password: '', // Not available from API
       };
     } catch {
       return null;
@@ -167,17 +166,17 @@ export class AuthHelper {
    */
   async loginViaUI(email: string, password: string): Promise<void> {
     await this.page.goto('/login');
-    
+
     // Fill login form
     await this.page.fill('input[name="email"], input[type="email"]', email);
     await this.page.fill('input[name="password"], input[type="password"]', password);
-    
+
     // Submit form
     await this.page.click('button[type="submit"], input[type="submit"]');
-    
+
     // Wait for navigation away from login page
-    await this.page.waitForURL(url => !url.pathname.includes('/login'), {
-      timeout: 10000
+    await this.page.waitForURL((url) => !url.pathname.includes('/login'), {
+      timeout: 10000,
     });
   }
 
@@ -195,7 +194,7 @@ export class AuthHelper {
   async clearAuth(): Promise<void> {
     // Clear cookies
     await this.page.context().clearCookies();
-    
+
     // Clear localStorage/sessionStorage
     await this.page.evaluate(() => {
       localStorage.clear();
@@ -211,7 +210,7 @@ export class AuthHelper {
       owner: { email: 'owner@bos-test.local', password: 'password123' },
       admin: { email: 'admin@bos-test.local', password: 'password123' },
       customer_specialist: { email: 'customer@bos-test.local', password: 'password123' },
-      technician: { email: 'tech@bos-test.local', password: 'password123' }
+      technician: { email: 'tech@bos-test.local', password: 'password123' },
     };
 
     return credentials[role] || credentials.admin;
@@ -245,7 +244,7 @@ export class ContextAuthHelper {
     // Create a temporary page for authentication
     const page = await this.context.newPage();
     const authHelper = new AuthHelper(page);
-    
+
     try {
       const tokens = await authHelper.loginAsTestUser(role);
       await page.close();
@@ -277,7 +276,7 @@ export class UserFactory {
       email: `test-${Date.now()}@example.com`,
       name: 'Test User',
       role: 'technician',
-      password: 'password123'
+      password: 'password123',
     };
 
     return { ...defaults, ...overrides };
@@ -293,29 +292,29 @@ export class UserFactory {
         email: 'owner@bos-test.local',
         name: 'Test Owner',
         role: 'owner',
-        password: 'password123'
+        password: 'password123',
       },
       admin: {
         id: 'test-admin',
         email: 'admin@bos-test.local',
         name: 'Test Admin',
         role: 'admin',
-        password: 'password123'
+        password: 'password123',
       },
       customer_specialist: {
         id: 'test-customer-specialist',
         email: 'customer@bos-test.local',
         name: 'Test Customer Specialist',
         role: 'customer_specialist',
-        password: 'password123'
+        password: 'password123',
       },
       technician: {
         id: 'test-technician',
         email: 'tech@bos-test.local',
         name: 'Test Technician',
         role: 'technician',
-        password: 'password123'
-      }
+        password: 'password123',
+      },
     };
   }
 }
@@ -327,9 +326,12 @@ export class AuthTestUtils {
   /**
    * Test authentication flow with assertions
    */
-  static async testLoginFlow(page: Page, credentials: { email: string; password: string }): Promise<void> {
+  static async testLoginFlow(
+    page: Page,
+    credentials: { email: string; password: string }
+  ): Promise<void> {
     const authHelper = new AuthHelper(page);
-    
+
     // Verify not authenticated initially
     const initialAuth = await authHelper.isAuthenticated();
     if (initialAuth) {
@@ -351,7 +353,7 @@ export class AuthTestUtils {
    */
   static async testLogoutFlow(page: Page): Promise<void> {
     const authHelper = new AuthHelper(page);
-    
+
     // Verify authenticated initially
     const initialAuth = await authHelper.isAuthenticated();
     if (!initialAuth) {
@@ -371,7 +373,10 @@ export class AuthTestUtils {
   /**
    * Setup page with authenticated user
    */
-  static async setupAuthenticatedPage(page: Page, role: TestUser['role'] = 'admin'): Promise<TestUser> {
+  static async setupAuthenticatedPage(
+    page: Page,
+    role: TestUser['role'] = 'admin'
+  ): Promise<TestUser> {
     const authHelper = new AuthHelper(page);
     return authHelper.setupAuthenticatedSession(role);
   }
