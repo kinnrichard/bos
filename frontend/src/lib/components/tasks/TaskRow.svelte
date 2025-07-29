@@ -142,7 +142,7 @@
     handleQuickStatusCycle();
   }
 
-  // Clean click handler - no event conflicts needed
+  // Universal click handler for all statuses
   function handleButtonClick(event: MouseEvent) {
     // Check if status change is allowed
     if (!taskCanChangeStatus) {
@@ -152,11 +152,18 @@
     // Prevent this click from bubbling up to trigger row selection
     event.stopPropagation();
 
-    // Auto-advance for progression statuses
-    handleStatusClick(event);
+    if (task.status === 'new_task' || task.status === 'in_progress') {
+      // Auto-advance for progression statuses
+      handleStatusClick(event);
+    } else {
+      // Open popover for terminal statuses
+      if (rightClickTrigger) {
+        rightClickTrigger.click();
+      }
+    }
   }
 
-  // Right-click handler for auto-advance statuses
+  // Universal right-click handler for all statuses
   function handleRightClick(event: MouseEvent) {
     // Check if status change is allowed
     if (!taskCanChangeStatus) {
@@ -167,7 +174,7 @@
     event.preventDefault();
     event.stopPropagation();
 
-    // Trigger the hidden popover
+    // Trigger the hidden popover for all statuses
     if (rightClickTrigger) {
       rightClickTrigger.click();
     }
@@ -250,59 +257,40 @@
 
   <!-- Task Status Button -->
   <div class="task-status">
-    {#if task.status === 'new_task' || task.status === 'in_progress'}
-      <!-- Auto-advance button - no popover directive -->
-      <button
-        class="status-emoji"
-        class:disabled={!taskCanChangeStatus}
-        onclick={handleButtonClick}
-        oncontextmenu={handleRightClick}
-        title={taskCanChangeStatus
+    <!-- Universal pattern: visible button + hidden popover for right-click -->
+    <button
+      class="status-emoji"
+      class:disabled={!taskCanChangeStatus}
+      onclick={handleButtonClick}
+      oncontextmenu={handleRightClick}
+      title={taskCanChangeStatus
+        ? task.status === 'new_task' || task.status === 'in_progress'
           ? 'Left-click to advance, right-click for all options'
-          : 'Status cannot be changed'}
-        disabled={!taskCanChangeStatus}
-      >
-        {getTaskEmoji(task)}
-      </button>
+          : 'Left-click or right-click for status options'
+        : 'Status cannot be changed'}
+      disabled={!taskCanChangeStatus}
+    >
+      {getTaskEmoji(task)}
+    </button>
 
-      <!-- Right-click popover for auto-advance statuses -->
-      <TaskStatusPopover
-        taskId={task.id}
-        initialStatus={task.status}
-        on:taskaction={handlePopoverStatusChange}
-      >
-        {#snippet children({ popover })}
-          <button
-            class="status-emoji"
-            style="position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none;"
-            use:popover.button
-            bind:this={rightClickTrigger}
-            tabindex="-1"
-          >
-            {getTaskEmoji(task)}
-          </button>
-        {/snippet}
-      </TaskStatusPopover>
-    {:else}
-      <!-- Terminal statuses - full popover behavior -->
-      <TaskStatusPopover
-        taskId={task.id}
-        initialStatus={task.status}
-        on:taskaction={handlePopoverStatusChange}
-      >
-        {#snippet children({ popover })}
-          <button
-            class="status-emoji"
-            class:disabled={!taskCanChangeStatus}
-            use:popover.button
-            title={taskCanChangeStatus ? 'Click for status options' : 'Status cannot be changed'}
-            disabled={!taskCanChangeStatus}
-          >
-            {getTaskEmoji(task)}
-          </button>
-        {/snippet}
-      </TaskStatusPopover>
-    {/if}
+    <!-- Hidden popover for right-click (works for all statuses) -->
+    <TaskStatusPopover
+      taskId={task.id}
+      initialStatus={task.status}
+      on:taskaction={handlePopoverStatusChange}
+    >
+      {#snippet children({ popover })}
+        <button
+          class="status-emoji"
+          style="position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none;"
+          use:popover.button
+          bind:this={rightClickTrigger}
+          tabindex="-1"
+        >
+          {getTaskEmoji(task)}
+        </button>
+      {/snippet}
+    </TaskStatusPopover>
   </div>
 
   <!-- Task Content -->
