@@ -43,7 +43,7 @@ Recent commits (642ad91, ff6f061, 614d752, 7c1cfec6) show ongoing battles with Z
  * Lightweight coordinator that prevents UI flashing during Zero.js state transitions
  * SIMPLIFIED: Only handles visual transitions - Zero.js manages data freshness and errors
  */
-class ZeroStateCoordinator {
+class ReactiveCoordinator {
   private transitionHistory = new Map<string, TransitionEvent[]>();
   private flashPreventionTimers = new Map<string, number>();
 
@@ -208,7 +208,7 @@ interface VisualState {
 
 ```typescript
 // Simplified integration - no complex state management needed
-const stateCoordinator = new ZeroStateCoordinator();
+const stateCoordinator = new ReactiveCoordinator();
 
 const visualState = $derived(stateCoordinator.coordinateVisualTransition(
   'query-' + queryId,
@@ -241,7 +241,7 @@ Your job detail page shows complex multi-query coordination with manual state ma
  * Coordinates multiple queries using Zero.js's TTL system
  * SIMPLIFIED: Leverages Zero.js query lifecycle instead of custom dependency management
  */
-class TTLQueryCoordinator {
+class ReactiveTTLCoordinator {
   private queryRegistrations = new Map<string, QueryRegistration>();
   private preloadedQueries = new Map<string, { cleanup: () => void }>();
 
@@ -317,7 +317,7 @@ const clientQuery = $derived(/* more complex logic */);
 const isLoading = $derived(/* ultra-conservative loading logic */);
 
 // With this TTL-based coordination:
-const coordinator = new TTLQueryCoordinator();
+const coordinator = new ReactiveTTLCoordinator();
 
 // Job query with 1-day TTL for navigation performance
 const jobQuery = coordinator.registerQuery('job', 
@@ -345,48 +345,7 @@ const isLoading = combinedQuery.isLoading; // Coordinated loading state
 
 ### Client Row Count Monitoring
 
-```typescript
-/**
- * Monitor Zero.js's 20k row limit and provide warnings
- * Based on Zero.js documentation: default 20k rows, max 100k configurable
- */
-class ClientRowMonitor {
-  private rowCountThreshold = 20000; // Zero.js default
-  private warningThreshold = 16000;  // 80% of limit
-
-  monitorQuery<T>(query: IReactiveQuery<T>): MonitoredQuery<T> {
-    return {
-      ...query,
-      data: $derived.by(() => {
-        const data = query.data;
-        
-        // Monitor client-side row usage
-        const estimatedRows = this.estimateRowCount(data);
-        
-        if (estimatedRows > this.warningThreshold) {
-          console.warn(
-            `Query approaching Zero.js client row limit: ${estimatedRows}/${this.rowCountThreshold} rows`
-          );
-          
-          // Suggest optimization strategies
-          this.suggestOptimizations(query, estimatedRows);
-        }
-        
-        return data;
-      })
-    };
-  }
-
-  private suggestOptimizations(query: any, rowCount: number): void {
-    if (rowCount > 15000) {
-      console.warn('Consider using server-side filtering or pagination');
-    }
-    if (rowCount > 18000) {
-      console.error('Approaching Zero.js row limit - query may become unstable');
-    }
-  }
-}
-```
+**Note: ClientRowMonitor postponed to future sprint** - Will implement comprehensive row monitoring with Zero.js 20k limit warnings and optimization suggestions in a later iteration.
 
 ---
 
@@ -408,9 +367,9 @@ Rails-style query compilation needs to respect Zero.js's documented limitations,
  * Rails-style query compiler that respects Zero.js constraints
  * UPDATED: Handles documented limitations and suggests alternatives
  */
-class RailsToZeroCompiler {
+class RailsToReactiveQueryCompiler {
   private constraintDetector = new ZeroConstraintDetector();
-  private rowMonitor = new ClientRowMonitor();
+  // Note: ClientRowMonitor postponed to future sprint
 
   /**
    * Compile Rails-style query with constraint handling
@@ -491,7 +450,7 @@ class RailsToZeroCompiler {
     return {
       zeroQuery: railsQuery,
       strategy: 'monitored_large_dataset',
-      monitoring: this.rowMonitor.monitorQuery(railsQuery),
+      // Note: Row monitoring postponed to future sprint
       suggestions: this.generateOptimizationSuggestions(constraints)
     };
   }
@@ -503,19 +462,19 @@ class RailsToZeroCompiler {
 ## 🎯 **Updated Implementation Timeline**
 
 ### **Week 1: Simplified State Coordination**
-- Build lightweight `ZeroStateCoordinator` focused purely on visual flash prevention
+- Build lightweight `ReactiveCoordinator` focused purely on visual flash prevention
 - Remove complex error handling (Zero.js manages this)
 - Integrate with existing `ZeroDataView` using simple visual state coordination
 
 ### **Week 2: TTL-Based Multi-Query Coordination**
 - Replace custom dependency management with Zero.js TTL system
-- Implement `TTLQueryCoordinator` using `preload()` for complex scenarios
-- Add client row count monitoring (20k limit warnings)
+- Implement `ReactiveTTLCoordinator` using `preload()` for complex scenarios
+- Note: Client row count monitoring postponed to future sprint
 
 ### **Week 3: Rails Compiler with Zero.js Constraints**
-- Update Rails compiler to handle many-to-many ordering limitations
+- Update Rails compiler (`RailsToReactiveQueryCompiler`) to handle many-to-many ordering limitations
 - Add client-side processing fallbacks for unsupported features
-- Implement performance warnings for large datasets
+- Note: Performance warnings for large datasets moved to future sprint
 
 ### **Week 4: Enhanced ReactiveView Integration**
 - Integrate all coordination services into single `ReactiveView` component
