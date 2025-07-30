@@ -6,21 +6,16 @@
 -->
 
 <script lang="ts">
+  import { SPINNER_SIZES, type SpinnerSize } from '$lib/constants/spinner-sizes.js';
+
   interface Props {
-    size?: 'small' | 'normal' | 'large';
+    size?: SpinnerSize;
     class?: string;
   }
 
   let { size = 'normal', class: className = '' }: Props = $props();
 
-  // Size configuration
-  const sizeMap = {
-    small: '16px',
-    normal: '20px',
-    large: '24px',
-  };
-
-  const spinnerSize = $derived(sizeMap[size]);
+  const spinnerSize = $derived(SPINNER_SIZES[size]);
 </script>
 
 <div

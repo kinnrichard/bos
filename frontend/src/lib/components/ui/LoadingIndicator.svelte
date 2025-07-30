@@ -1,9 +1,10 @@
 <script lang="ts">
   import ProgressSpinner from './ProgressSpinner.svelte';
+  import { SPINNER_SIZES, type SpinnerSize } from '$lib/constants/spinner-sizes.js';
 
   // Type definitions for better TypeScript support
   type LoadingType = 'text' | 'spinner' | 'dots' | 'skeleton';
-  type LoadingSize = 'small' | 'normal' | 'large';
+  type LoadingSize = SpinnerSize; // Use shared type for consistency
   type LoadingColor = 'primary' | 'secondary' | 'tertiary';
 
   interface SizeConfig {
@@ -42,19 +43,19 @@
   const sizeConfigs: Record<LoadingSize, SizeConfig> = {
     small: {
       fontSize: '11px',
-      spinnerSize: '16px',
+      spinnerSize: SPINNER_SIZES.small,
       dotSize: '4px',
       skeletonHeight: { normal: '10px', short: '8px' },
     },
     normal: {
       fontSize: '12px',
-      spinnerSize: '20px',
+      spinnerSize: SPINNER_SIZES.normal,
       dotSize: '6px',
       skeletonHeight: { normal: '12px', short: '10px' },
     },
     large: {
       fontSize: '14px',
-      spinnerSize: '24px',
+      spinnerSize: SPINNER_SIZES.large,
       dotSize: '8px',
       skeletonHeight: { normal: '14px', short: '12px' },
     },
