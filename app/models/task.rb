@@ -20,7 +20,7 @@ class Task < ApplicationRecord
     repositioned_after&.title
   end
 
-  has_one :next_repositioned_task, class_name: "Task", foreign_key: :repositioned_after_id
+  has_one :next_repositioned_task, class_name: "Task", foreign_key: :repositioned_after_id, dependent: :nullify
   def next_repositioned_task_title
     next_repositioned_task&.title
   end

@@ -243,11 +243,17 @@ class Api::V1::TestController < Api::V1::BaseController
     begin
       case entity_type
       when "jobs"
-        Job.where(id: entity_id).destroy_all
+        # Find the specific job and destroy it (will cascade to tasks via dependent: :destroy)
+        job = Job.find_by(id: entity_id)
+        job&.destroy
       when "tasks"
-        Task.where(id: entity_id).destroy_all
+        # Use destroy to trigger callbacks and dependent associations
+        task = Task.find_by(id: entity_id)
+        task&.destroy
       when "clients"
-        Client.where(id: entity_id).destroy_all
+        # Find the specific client and destroy it (will cascade to jobs and tasks via dependent: :destroy)
+        client = Client.find_by(id: entity_id)
+        client&.destroy
       when "users"
         User.where(id: entity_id).destroy_all
       else
