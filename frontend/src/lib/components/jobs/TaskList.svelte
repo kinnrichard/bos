@@ -232,7 +232,7 @@
       id: update.id,
       data: {
         position: update.position,
-        parent_id: update.parent_id || undefined,
+        parent_id: update.parent_id,
         repositioned_after_id: update.repositioned_after_id,
         position_finalized: false,
         repositioned_to_top: update.repositioned_after_id === null && update.parent_id === null,
@@ -1532,17 +1532,17 @@
     // Reorder mode: adopt target's parent (sibling relationship)
     if (dropZone?.mode === 'reorder' && targetTaskId) {
       const targetTask = canonicalTasks().find((t) => t.id === targetTaskId);
-      const parentId = targetTask?.parent_id || undefined;
+      const parentId = targetTask?.parent_id || null;
       debugComponent('[Drag] Reorder mode: adopting target parent:', {
         targetId: targetTaskId.substring(0, 8),
-        parentId: parentId?.substring(0, 8) || 'root',
+        parentId: parentId?.substring(0, 8) || null,
       });
       return parentId;
     }
 
     // No target: root level assignment
     debugComponent('[Drag] No target: assigning to root level');
-    return undefined;
+    return null;
   }
 
   // Handle edge case ambiguity between parent and first child
