@@ -1,7 +1,7 @@
 /**
  * TaskData - TypeScript interface for tasks table
  *
- * Generated from Rails schema: 2025-07-29 23:03:18 UTC
+ * Generated from Rails schema: 2025-07-30 00:50:16 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - assignedTo: belongs_to User
@@ -29,7 +29,7 @@ import type { ActivityLogData } from './activity-log-data';
  */
 export interface TaskData extends BaseRecord {
   title?: string;
-  position?: number;
+  position: number;
   created_at: string | number;
   updated_at: string | number;
   subtasks_count?: number;
@@ -60,10 +60,40 @@ export interface TaskData extends BaseRecord {
  * Create Task data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateTaskData = Omit<TaskData, 'id', 'created_at', 'updated_at', 'job', 'assignedTo', 'parent', 'repositionedAfter', 'client', 'nextRepositionedTask', 'notes', 'activityLogs', 'subtasks'>;
+export type CreateTaskData = Omit<
+  TaskData,
+  'id',
+  'created_at',
+  'updated_at',
+  'job',
+  'assignedTo',
+  'parent',
+  'repositionedAfter',
+  'client',
+  'nextRepositionedTask',
+  'notes',
+  'activityLogs',
+  'subtasks'
+>;
 
 /**
  * Update Task data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateTaskData = Partial<Omit<TaskData, 'id', 'created_at', 'updated_at', 'job', 'assignedTo', 'parent', 'repositionedAfter', 'client', 'nextRepositionedTask', 'notes', 'activityLogs', 'subtasks'>>;
+export type UpdateTaskData = Partial<
+  Omit<
+    TaskData,
+    'id',
+    'created_at',
+    'updated_at',
+    'job',
+    'assignedTo',
+    'parent',
+    'repositionedAfter',
+    'client',
+    'nextRepositionedTask',
+    'notes',
+    'activityLogs',
+    'subtasks'
+  >
+>;
