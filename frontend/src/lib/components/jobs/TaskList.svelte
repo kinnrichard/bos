@@ -423,6 +423,7 @@
   // This allows slide animations at every level of the hierarchy
 
   // Flattened canonical tasks for position calculations (includes all non-discarded tasks)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const flattenedCanonicalTasks = $derived.by(() => {
     return hierarchyManager.flattenTasks(canonicalTasksHierarchy);
   });
@@ -1371,18 +1372,15 @@
     const isMultiSelectDrag =
       taskSelection.selectedTaskIds.has(draggedTaskId) && taskSelection.selectedTaskIds.size > 1;
 
-    // Calculate newParentId for both single and multi-select operations
-    let newParentId: string | undefined;
-    const dropIndex = event.newIndex!;
+    // Calculate newParentId using simplified logic
+    const newParentId = getNewParentId(event.dropZone, event.dropZone?.targetTaskId || null);
 
-    if (event.dropZone?.mode === 'nest' && event.dropZone.targetTaskId) {
-      // For nesting: all tasks become children of the target task
-      newParentId = event.dropZone.targetTaskId;
-    } else {
-      // For all reorder operations (and any other cases), calculate parent based on visual position
-      // This properly handles root-level drops, depth-based parent assignment, etc.
-      newParentId = calculateParentFromPosition(dropIndex, event.dropZone?.mode || 'reorder');
-    }
+    debugComponent('[Drag] handleTaskReorder parent assignment:', {
+      draggedTaskId: draggedTaskId.substring(0, 8),
+      dropMode: event.dropZone?.mode,
+      targetTaskId: event.dropZone?.targetTaskId?.substring(0, 8),
+      assignedParentId: newParentId?.substring(0, 8) || 'root',
+    });
 
     // Safety validation before proceeding
     if (newParentId) {
@@ -1515,64 +1513,36 @@
 
   // Task tree rendering is now handled by TaskHierarchyManager
 
-  // Calculate parent task based on drop position in flattened list
-  function calculateParentFromPosition(
-    dropIndex: number,
-    dropMode: 'reorder' | 'nest'
+  // Simple parent assignment logic - replaces complex calculateParentFromPosition
+  function getNewParentId(
+    dropZone: DropZoneInfo | null,
+    targetTaskId: string | null
   ): string | undefined {
-    // Use flattenedCanonicalTasks for position calculations (all non-discarded tasks)
-    // If explicitly nesting, the target becomes the parent
-    if (dropMode === 'nest') {
-      const targetItem = flattenedCanonicalTasks[dropIndex];
-      return targetItem?.task.id;
+    debugComponent('[Drag] getNewParentId called with:', {
+      dropMode: dropZone?.mode,
+      targetTaskId: targetTaskId?.substring(0, 8),
+    });
+
+    // Nest mode: target becomes parent
+    if (dropZone?.mode === 'nest' && targetTaskId) {
+      debugComponent('[Drag] Nest mode: target becomes parent:', targetTaskId.substring(0, 8));
+      return targetTaskId;
     }
 
-    // For reordering, determine parent based on the depth we're inserting at.
-    // If dropping at the very beginning, it's root level
-    if (dropIndex === 0) {
-      return undefined;
+    // Reorder mode: adopt target's parent (sibling relationship)
+    if (dropZone?.mode === 'reorder' && targetTaskId) {
+      const targetTask = canonicalTasks().find((t) => t.id === targetTaskId);
+      const parentId = targetTask?.parent_id || undefined;
+      debugComponent('[Drag] Reorder mode: adopting target parent:', {
+        targetId: targetTaskId.substring(0, 8),
+        parentId: parentId?.substring(0, 8) || 'root',
+      });
+      return parentId;
     }
 
-    // Look at the task immediately before the drop position
-    const previousItem = flattenedCanonicalTasks[dropIndex - 1];
-    if (!previousItem) {
-      return undefined; // Root level
-    }
-
-    // Also look at the task at the drop position (if it exists)
-    const targetItem = flattenedCanonicalTasks[dropIndex];
-
-    // Special case: dropping between a parent and its first child
-    // If the target item is a child of the previous item, we should become a child too
-    if (targetItem && targetItem.task.parent_id === previousItem.task.id) {
-      return previousItem.task.id; // Become child of the parent
-    }
-
-    // Enhanced root level detection: if previous item is at depth 0 and we're not inserting as its child
-    if (previousItem.depth === 0 && (!targetItem || targetItem.depth === 0)) {
-      return undefined;
-    }
-
-    // If there's a target item and previous item at the same depth,
-    // we're inserting at that same depth with the same parent
-    if (targetItem && previousItem.depth === targetItem.depth) {
-      return targetItem.task.parent_id || undefined;
-    }
-
-    // If target item is deeper than previous, we're inserting at previous item's depth
-    // which means previous item's parent becomes our parent
-    if (targetItem && previousItem.depth < targetItem.depth) {
-      return previousItem.task.parent_id || undefined;
-    }
-
-    // If no target item, we're appending after the last item
-    // Insert at the same level as the previous item
-    if (!targetItem) {
-      return previousItem.task.parent_id || undefined;
-    }
-
-    // If target is at same/shallower depth than previous, we're inserting at the same level as the previous item
-    return previousItem.task.parent_id || undefined;
+    // No target: root level assignment
+    debugComponent('[Drag] No target: assigning to root level');
+    return undefined;
   }
 
   // Handle edge case ambiguity between parent and first child
