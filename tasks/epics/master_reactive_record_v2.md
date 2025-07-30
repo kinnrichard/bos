@@ -459,6 +459,319 @@ class RailsToReactiveQueryCompiler {
 
 ---
 
+## 🎯 **Phase 4: Client-Side Computed Properties (Week 4)**
+
+### Problem Being Solved
+ReactiveRecord models need reactive calculated fields like `in_progress_since` and `accumulated_seconds` that update automatically when underlying data changes. Currently, these calculations must be done manually in components or fetched from the server, leading to stale data and complex state management.
+
+### Key Insight from Current Architecture
+The existing ReactiveRecord system with Svelte 5 `$derived` patterns provides the perfect foundation for client-side computed properties. By leveraging the reactive query system and TTL coordination, computed properties can automatically update when their dependencies change.
+
+### Hybrid Computed Properties Architecture
+
+Unlike traditional Rails computed properties that are generated from schema, this system uses **hand-written, version-controlled** computed property files that are imported by the generated models.
+
+```typescript
+/**
+ * Client-side computed properties with reactive dependency tracking
+ * HYBRID APPROACH: Separate files imported by generated models
+ */
+
+// Generated model imports computed properties
+// frontend/src/lib/models/reactive-task.ts (generated)
+import { createReactiveRecord } from './base/reactive-record';
+import { TaskComputedProperties } from './computed-properties/task-computed';
+
+export const ReactiveTask = createReactiveRecord<TaskData>(ReactiveTaskConfig)
+  .withComputedProperties(TaskComputedProperties);
+
+// Hand-written computed properties file
+// frontend/src/lib/models/computed-properties/task-computed.ts (version controlled)
+export const TaskComputedProperties = {
+  in_progress_since: {
+    dependencies: ['status', 'activityLogs'] as const,
+    compute: (task: TaskData): Date | null => {
+      // Find when task entered in_progress status from activity logs
+      const statusLogs = task.activityLogs?.filter(log => 
+        log.field_name === 'status' && 
+        log.new_value === 'in_progress'
+      ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      return statusLogs?.[0]?.created_at ? new Date(statusLogs[0].created_at) : null;
+    }
+  },
+
+  accumulated_seconds: {
+    dependencies: ['status', 'activityLogs'] as const,
+    compute: (task: TaskData): number => {
+      if (!task.activityLogs) return 0;
+      
+      let totalSeconds = 0;
+      let currentStart: Date | null = null;
+      
+      // Calculate time spent in in_progress status from activity logs
+      const statusLogs = task.activityLogs
+        .filter(log => log.field_name === 'status')
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      
+      for (const log of statusLogs) {
+        if (log.new_value === 'in_progress') {
+          currentStart = new Date(log.created_at);
+        } else if (currentStart && log.old_value === 'in_progress') {
+          totalSeconds += (new Date(log.created_at).getTime() - currentStart.getTime()) / 1000;
+          currentStart = null;
+        }
+      }
+      
+      // If still in progress, add time since last start
+      if (currentStart && task.status === 'in_progress') {
+        totalSeconds += (Date.now() - currentStart.getTime()) / 1000;
+      }
+      
+      return totalSeconds;
+    }
+  },
+
+  duration_display: {
+    dependencies: ['accumulated_seconds'] as const,
+    compute: (task: TaskData, computed: { accumulated_seconds: number }): string => {
+      const seconds = computed.accumulated_seconds;
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      }
+      return `${minutes}m`;
+    }
+  }
+};
+```
+
+### Enhanced ReactiveRecord Base Class
+
+```typescript
+/**
+ * Extended ReactiveRecord with computed properties support
+ * BUILDS ON: Existing reactive query system from Phases 1-3
+ */
+interface ComputedProperty<T, K = any> {
+  dependencies: readonly (keyof T | string)[];
+  compute: (data: T, computed?: Record<string, K>) => K;
+}
+
+interface ComputedPropertiesConfig<T> {
+  [key: string]: ComputedProperty<T>;
+}
+
+class ReactiveRecordWithComputed<T extends BaseRecord> extends ReactiveRecord<T> {
+  private computedProperties: ComputedPropertiesConfig<T> = {};
+  
+  withComputedProperties<P extends ComputedPropertiesConfig<T>>(
+    properties: P
+  ): ReactiveRecordWithComputed<T & { [K in keyof P]: ReturnType<P[K]['compute']> }> {
+    this.computedProperties = properties;
+    return this as any;
+  }
+  
+  /**
+   * Enhanced query results with computed properties
+   * Uses Svelte 5 $derived for reactive computation
+   */
+  protected createQueryWithComputed<Q>(baseQuery: Q): Q & ComputedPropertyQuery<T> {
+    return {
+      ...baseQuery,
+      // Add computed property access to query results
+      get data() {
+        const baseData = (baseQuery as any).data;
+        if (!baseData) return baseData;
+        
+        // Apply computed properties reactively using $derived
+        return $derived.by(() => {
+          if (Array.isArray(baseData)) {
+            return baseData.map(item => this.applyComputedProperties(item));
+          }
+          return this.applyComputedProperties(baseData);
+        });
+      }
+    };
+  }
+  
+  private applyComputedProperties(data: T): T & Record<string, any> {
+    const computed: Record<string, any> = {};
+    const result = { ...data };
+    
+    // Calculate computed properties with dependency tracking
+    for (const [key, property] of Object.entries(this.computedProperties)) {
+      // Check if dependencies have changed (simplified - actual implementation would use dependency tracking)
+      const dependencyValues = property.dependencies.map(dep => 
+        dep in computed ? computed[dep] : (data as any)[dep]
+      );
+      
+      // Compute property value
+      computed[key] = property.compute(data, computed);
+      (result as any)[key] = computed[key];
+    }
+    
+    return result;
+  }
+}
+```
+
+### Integration with ReactiveTTLCoordinator
+
+```typescript
+/**
+ * Computed properties coordinate with TTL system for dependency management
+ * BUILDS ON: Phase 2 ReactiveTTLCoordinator
+ */
+class ComputedPropertyCoordinator {
+  /**
+   * Register computed properties with TTL-based dependency tracking
+   */
+  registerComputedQuery<T>(
+    baseQuery: IReactiveQuery<T>,
+    computedProperties: ComputedPropertiesConfig<T>,
+    options: { ttl?: string; refreshInterval?: number } = {}
+  ): IReactiveQuery<T & Record<string, any>> {
+    
+    // Use ReactiveTTLCoordinator for dependency management
+    const coordinator = new ReactiveTTLCoordinator();
+    
+    // Register base query with TTL
+    coordinator.registerQuery('base', () => baseQuery, {
+      ttl: options.ttl || '1h',
+      required: true
+    });
+    
+    // For properties that depend on activity logs, register separate query
+    const needsActivityLogs = Object.values(computedProperties).some(prop =>
+      prop.dependencies.includes('activityLogs')
+    );
+    
+    if (needsActivityLogs) {
+      coordinator.registerQuery('activityLogs', 
+        () => ReactiveActivityLog.where({ entity_type: 'Task', entity_id: baseQuery.data?.id }),
+        { ttl: '5m', preload: true } // Shorter TTL for activity logs
+      );
+    }
+    
+    return coordinator.createCombinedQuery(['base', 'activityLogs']);
+  }
+}
+```
+
+### Real-World Usage Examples
+
+```typescript
+// In Svelte component - computed properties available reactively
+<script>
+  import { ReactiveTask } from '$lib/models/reactive-task';
+  
+  export let taskId: string;
+  
+  // Query includes computed properties automatically
+  const taskQuery = ReactiveTask.includes('activityLogs').find(taskId);
+  
+  // Computed properties are reactive and auto-update
+  $: task = taskQuery.data;
+  $: inProgressSince = task?.in_progress_since;
+  $: accumulatedTime = task?.accumulated_seconds;
+  $: durationDisplay = task?.duration_display;
+</script>
+
+{#if task}
+  <div class="task-timing">
+    {#if inProgressSince}
+      <p>In progress since: {inProgressSince.toLocaleString()}</p>
+    {/if}
+    <p>Time spent: {durationDisplay}</p>
+  </div>
+{/if}
+
+// In vanilla JavaScript
+const taskQuery = ReactiveTask.includes('activityLogs').find(taskId);
+taskQuery.subscribe((task) => {
+  if (task) {
+    console.log('Time tracking:', {
+      inProgressSince: task.in_progress_since,
+      totalSeconds: task.accumulated_seconds,
+      display: task.duration_display
+    });
+  }
+});
+```
+
+### Rails Generator Integration
+
+```erb
+<%# Enhanced generator template %>
+import { createReactiveRecord } from './base/reactive-record';
+import type { <%= class_name %>Data, Create<%= class_name %>Data, Update<%= class_name %>Data } from './types/<%= file_name %>-data';
+<% if has_computed_properties? -%>
+import { <%= class_name %>ComputedProperties } from './computed-properties/<%= file_name %>-computed';
+<% end -%>
+
+export const Reactive<%= class_name %> = createReactiveRecord<<%= class_name %>Data>(Reactive<%= class_name %>Config)
+<% if has_computed_properties? -%>
+  .withComputedProperties(<%= class_name %>ComputedProperties);
+<% else -%>
+;
+<% end -%>
+```
+
+### Performance Optimizations
+
+```typescript
+/**
+ * Performance-aware computed properties with caching and selective computation
+ * INTEGRATES WITH: Existing performance monitoring from all phases
+ */
+class PerformanceAwareComputedProperties {
+  private computeCache = new Map<string, { value: any; dependencies: any[]; timestamp: number }>();
+  private readonly CACHE_TTL = 30000; // 30 seconds
+  
+  computeWithCaching<T>(
+    key: string,
+    data: T,
+    property: ComputedProperty<T>,
+    computed: Record<string, any>
+  ): any {
+    const cacheKey = `${key}-${JSON.stringify(data.id)}`;
+    const cached = this.computeCache.get(cacheKey);
+    
+    // Check if cache is valid
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      const currentDeps = property.dependencies.map(dep => 
+        dep in computed ? computed[dep] : (data as any)[dep]
+      );
+      
+      // Use cache if dependencies haven't changed
+      if (JSON.stringify(currentDeps) === JSON.stringify(cached.dependencies)) {
+        return cached.value;
+      }
+    }
+    
+    // Compute new value
+    const value = property.compute(data, computed);
+    const dependencies = property.dependencies.map(dep => 
+      dep in computed ? computed[dep] : (data as any)[dep]
+    );
+    
+    // Cache result
+    this.computeCache.set(cacheKey, {
+      value,
+      dependencies,
+      timestamp: Date.now()
+    });
+    
+    return value;
+  }
+}
+```
+
+---
+
 ## 🎯 **Updated Implementation Timeline**
 
 ### **Week 1: Simplified State Coordination**
@@ -476,20 +789,34 @@ class RailsToReactiveQueryCompiler {
 - Add client-side processing fallbacks for unsupported features
 - Note: Performance warnings for large datasets moved to future sprint
 
-### **Week 4: Enhanced ReactiveView Integration**
+### **Week 4: Enhanced ReactiveView Integration + Computed Properties Foundation**
 - Integrate all coordination services into single `ReactiveView` component
 - Simplify component API by leveraging Zero.js automatic capabilities
-- Add comprehensive debugging and monitoring tools
+- **NEW: Implement computed properties base architecture**
+  - Extend ReactiveRecord base class with `withComputedProperties()` method
+  - Create computed property dependency tracking system
+  - Integrate with existing Svelte 5 `$derived` patterns
+- Add comprehensive debugging and monitoring tools for reactive coordination and computed properties
 
-### **Week 5: Rails Generator Enhancement**
+### **Week 5: Rails Generator Enhancement + Computed Properties Integration**
 - Update generator to respect Zero.js constraints in generated queries
+- **NEW: Enhance Rails generator for computed properties**
+  - Add computed properties import detection to generator templates
+  - Create computed-properties/ directory structure
+  - Generate example computed property files for common patterns
 - Add usage pattern analysis for TTL optimization
 - Generate coordinated query classes with performance monitoring
+- **NEW: Implement ComputedPropertyCoordinator** for TTL-based dependency management
 
-### **Week 6: Migration & Polish**
+### **Week 6: Migration & Polish + Computed Properties Examples**
 - Create backward compatibility layer for existing `ZeroDataView`
 - Build automated migration tools and documentation
+- **NEW: Create Task model computed properties examples**
+  - Implement `in_progress_since` and `accumulated_seconds` calculations
+  - Add comprehensive test coverage for computed properties
+  - Create migration guide for existing models to use computed properties
 - Add comprehensive performance monitoring and debugging tools
+- **NEW: Performance optimization for computed properties** with caching and selective computation
 
 ---
 
@@ -499,20 +826,84 @@ class RailsToReactiveQueryCompiler {
 - Never add retry logic - Zero.js handles all retries automatically
 - Trust Zero.js data freshness - "there is never any stale data in Zero"
 - Use TTL system for query lifecycle management instead of custom coordination
+- **NEW: Computed properties leverage Zero.js reactive updates** for automatic recalculation
 
 ### 2. **Respect Zero.js Constraints**
 - Handle many-to-many relationship ordering limitations gracefully
 - Monitor and warn about 20k client row limits
 - Provide fallback strategies for unsupported features
+- **NEW: Computed properties respect Zero.js data lifecycle** and integrate with TTL coordination
 
 ### 3. **Simplify Based on Zero.js Guarantees**
 - State coordination focused purely on visual concerns
 - No complex cache invalidation (Zero.js handles data freshness)
 - Automatic query reuse eliminates manual data sharing complexity
+- **NEW: Computed properties use Svelte 5 `$derived`** for reactive calculation without manual state management
 
 ### 4. **Performance Awareness**
-- Client row count monitoring and optimization suggestions
+- Client row count monitoring and optimization suggestions (postponed to future sprint)
 - TTL-based background queries for navigation performance
 - Size-based query strategy selection
+- **NEW: Computed properties performance optimization**
+  - Dependency-based caching to avoid unnecessary recalculation
+  - Selective computation - only calculate accessed properties
+  - Integration with existing performance monitoring systems
+
+### 5. **Computed Properties Design Principles** *(NEW)*
+- **Hand-written, version-controlled**: Computed property logic lives in separate TypeScript files, not generated code
+- **Reactive by design**: Automatic updates when dependencies change using Svelte 5 patterns
+- **Type-safe**: Full TypeScript support with IntelliSense for computed properties
+- **Performance-first**: Caching and dependency tracking prevent expensive recalculations
+- **Rails-compatible**: Familiar API patterns that feel natural to Rails developers
+- **Zero.js integrated**: Computed properties coordinate with TTL system and respect Zero.js constraints
 
 This updated architecture is significantly simpler while being more robust, leveraging Zero.js's powerful built-in capabilities instead of reinventing them.
+
+---
+
+## 📋 **Updated Classes List - All Phases**
+
+### **Core Classes (Phases 1-4)**
+
+1. **ReactiveCoordinator** (Phase 1)
+   - Lightweight coordinator that prevents UI flashing during Zero.js state transitions
+
+2. **ReactiveTTLCoordinator** (Phase 2)
+   - Coordinates multiple queries using Zero.js's TTL system and preload() methods
+
+3. **CombinedQuery** (Phase 2)
+   - Combines multiple queries into a single coordinated view using TTL management
+
+4. **RailsToReactiveQueryCompiler** (Phase 3)
+   - Compiles Rails-style queries while respecting Zero.js constraints and limitations
+
+5. **ZeroConstraintDetector** (Phase 3)
+   - Analyzes queries for Zero.js constraints and provides fallback strategies
+
+6. **ReactiveRecordWithComputed** *(NEW - Phase 4)*
+   - Extended ReactiveRecord base class with computed properties support
+   - Provides `withComputedProperties()` method for adding reactive calculations
+
+7. **ComputedPropertyCoordinator** *(NEW - Phase 4)*
+   - Coordinates computed properties with TTL system for dependency management
+   - Integrates with ReactiveTTLCoordinator for optimal performance
+
+8. **PerformanceAwareComputedProperties** *(NEW - Phase 4)*
+   - Performance optimization for computed properties with caching and selective computation
+   - Provides dependency-based caching to avoid unnecessary recalculations
+
+### **Supporting Interfaces & Types (Phase 4)**
+
+- **ComputedProperty<T, K>**: Interface for defining computed property with dependencies and compute function
+- **ComputedPropertiesConfig<T>**: Configuration object for multiple computed properties
+- **ComputedPropertyQuery<T>**: Enhanced query interface that includes computed properties
+
+### **Real-World Implementation Example**
+
+The Task model computed properties demonstrate the full system integration:
+- `TaskComputedProperties` defines `in_progress_since`, `accumulated_seconds`, and `duration_display`
+- Properties are hand-written in version-controlled files, not generated
+- Full integration with existing ReactiveRecord, TTL coordination, and Svelte 5 reactive patterns
+- Automatic updates when activity logs or task status changes
+
+This comprehensive system provides a complete reactive data orchestration layer that eliminates UI flashing, coordinates complex queries, respects Zero.js constraints, and enables powerful client-side computed properties - all while maintaining Rails-familiar API patterns.
