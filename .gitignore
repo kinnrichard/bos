@@ -75,3 +75,4 @@ frontend/src/lib/zero/generated-schema.ts.backup.*
 /claude.md
 /frontend/playwright/.auth/user.json
 /test-results
+/frontend/playwright/.auth/user-legacy.json
