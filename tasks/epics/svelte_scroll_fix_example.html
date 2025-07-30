@@ -1,0 +1,39 @@
+<!-- In your page component (e.g., src/routes/+page.svelte) -->
+<script>
+    import { afterNavigate } from '$app/navigation';
+    
+    let scrollContainer;
+    
+    // Reset scroll position after navigation
+    afterNavigate(() => {
+        if (scrollContainer) {
+            scrollContainer.scrollTo(0, 0);
+        }
+    });
+    
+    // Export snapshot for scroll restoration
+    export const snapshot = {
+        capture: () => {
+            return scrollContainer ? scrollContainer.scrollTop : 0;
+        },
+        restore: (scrollTop) => {
+            if (scrollContainer) {
+                scrollContainer.scrollTo(0, scrollTop);
+            }
+        }
+    };
+</script>
+
+<!-- Your page content with scroll container -->
+<div bind:this={scrollContainer} class="scroll-container">
+    <!-- Your page content here -->
+    <h1>My Page Content</h1>
+    <p>Lots of content that makes the page scrollable...</p>
+</div>
+
+<style>
+    .scroll-container {
+        height: 100vh;
+        overflow-y: auto;
+    }
+</style>
