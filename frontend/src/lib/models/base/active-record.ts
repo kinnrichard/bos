@@ -566,9 +566,15 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
     }
 
     try {
+      // eslint-disable-next-line no-console
       console.log(`[ActiveRecord] Starting batch update for ${this.config.tableName}:`, {
         count: updates.length,
-        ids: updates.map(u => u.id.substring(0, 8)).join(', ')
+        ids: updates.map(u => u.id).join(', '),
+        changes: updates.map(u => ({
+          id: u.id,
+          fields: Object.keys(u.data),
+          data: u.data
+        }))
       });
 
       // Process all updates through mutator pipeline first
