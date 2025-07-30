@@ -65,8 +65,6 @@
 
   // Constants to avoid magic numbers
   const DOT_COUNT = 3;
-  const CIRCLE_RADIUS = 10;
-  const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 </script>
 
 {#snippet optionalMessage()}
@@ -77,37 +75,12 @@
 
 {#snippet spinnerIcon()}
   <div
-    class="spinner"
+    class="progress-indicator"
     style:width={config.spinnerSize}
     style:height={config.spinnerSize}
     aria-label={message}
   >
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle
-        cx="12"
-        cy="12"
-        r={CIRCLE_RADIUS}
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-dasharray={CIRCLE_CIRCUMFERENCE}
-        stroke-dashoffset={CIRCLE_CIRCUMFERENCE}
-      >
-        <animate
-          attributeName="stroke-dasharray"
-          dur="2s"
-          values="0 {CIRCLE_CIRCUMFERENCE};{CIRCLE_CIRCUMFERENCE / 2} {CIRCLE_CIRCUMFERENCE /
-            2};0 {CIRCLE_CIRCUMFERENCE};0 {CIRCLE_CIRCUMFERENCE}"
-          repeatCount="indefinite"
-        />
-        <animate
-          attributeName="stroke-dashoffset"
-          dur="2s"
-          values="0;{-CIRCLE_CIRCUMFERENCE / 2};{-CIRCLE_CIRCUMFERENCE};{-CIRCLE_CIRCUMFERENCE}"
-          repeatCount="indefinite"
-        />
-      </circle>
-    </svg>
+    <img src="/icons/progress.indicator.svg" alt="" />
   </div>
 {/snippet}
 
@@ -157,6 +130,8 @@
 {/if}
 
 <style lang="scss">
+  @use 'sass:map';
+
   // SASS Variables for DRY principles
   $base-gap: 8px;
   $animation-duration-base: 1.4s;
@@ -190,7 +165,7 @@
   );
 
   // Animation keyframes
-  @keyframes spin {
+  @keyframes progress-rotate {
     from {
       transform: rotate(0deg);
     }
@@ -248,14 +223,14 @@
     // Size variants using SASS map and mixins
     @each $size, $config in $size-configs {
       &.#{$size} {
-        gap: map-get($config, gap);
+        gap: map.get($config, gap);
 
         .dots-container {
-          gap: map-get($config, dots-gap);
+          gap: map.get($config, dots-gap);
         }
 
         .skeleton-container {
-          gap: map-get($config, skeleton-gap);
+          gap: map.get($config, skeleton-gap);
         }
       }
     }
@@ -268,12 +243,12 @@
     font-weight: inherit;
   }
 
-  // Spinner loading
-  .spinner {
+  // Progress indicator loading
+  .progress-indicator {
     flex-shrink: 0;
-    animation: spin 1s linear infinite;
+    animation: progress-rotate 1s steps(8, end) infinite;
 
-    svg {
+    img {
       width: 100%;
       height: 100%;
       display: block;
@@ -320,7 +295,7 @@
 
   // Accessibility and reduced motion support
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
+    .progress-indicator {
       animation: none;
     }
 

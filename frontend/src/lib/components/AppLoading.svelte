@@ -10,26 +10,23 @@
     message?: string;
     showSpinner?: boolean;
   }
-  
-  let { 
-    message = "Connecting to data...",
-    showSpinner = true
-  }: Props = $props();
+
+  let { message = 'Connecting to data...', showSpinner = true }: Props = $props();
 </script>
 
 <div class="app-loading">
   <div class="app-loading__content">
     {#if showSpinner}
-      <div class="app-loading__spinner"></div>
+      <div class="app-loading__spinner">
+        <img src="/icons/progress.indicator.svg" alt="" />
+      </div>
     {/if}
-    
+
     <div class="app-loading__message">
       {message}
     </div>
-    
-    <div class="app-loading__subtitle">
-      Please wait while we initialize the system
-    </div>
+
+    <div class="app-loading__subtitle">Please wait while we initialize the system</div>
   </div>
 </div>
 
@@ -49,38 +46,44 @@
   }
 
   .app-loading__spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(0, 163, 255, 0.2);
-    border-top: 3px solid var(--accent-blue, #00A3FF);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+    width: 32px;
+    height: 32px;
+    animation: progress-rotate 1s steps(8, end) infinite;
     margin: 0 auto 24px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
   }
 
   .app-loading__message {
     font-size: 18px;
     font-weight: 600;
-    color: var(--text-primary, #F2F2F7);
+    color: var(--text-primary, #f2f2f7);
     margin-bottom: 8px;
   }
 
   .app-loading__subtitle {
     font-size: 14px;
-    color: var(--text-secondary, #C7C7CC);
+    color: var(--text-secondary, #c7c7cc);
     opacity: 0.8;
   }
 
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  @keyframes progress-rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
     .app-loading__spinner {
       animation: none;
-      border: 3px solid var(--accent-blue, #00A3FF);
     }
   }
 
