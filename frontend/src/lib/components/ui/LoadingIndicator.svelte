@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ProgressSpinner from './ProgressSpinner.svelte';
+
   // Type definitions for better TypeScript support
   type LoadingType = 'text' | 'spinner' | 'dots' | 'skeleton';
   type LoadingSize = 'small' | 'normal' | 'large';
@@ -74,14 +76,7 @@
 {/snippet}
 
 {#snippet spinnerIcon()}
-  <div
-    class="progress-indicator"
-    style:width={config.spinnerSize}
-    style:height={config.spinnerSize}
-    aria-label={message}
-  >
-    <img src="/icons/progress.indicator.svg" alt="" />
-  </div>
+  <ProgressSpinner {size} class="loading-spinner" />
 {/snippet}
 
 {#snippet dotsAnimation()}
@@ -164,15 +159,8 @@
     tertiary: var(--text-tertiary),
   );
 
-  // Animation keyframes
-  @keyframes progress-rotate {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  // Animation keyframes (dots and skeleton only)
+  // Progress spinner animation is handled by ProgressSpinner component
 
   @keyframes dot-bounce {
     0%,
@@ -243,16 +231,9 @@
     font-weight: inherit;
   }
 
-  // Progress indicator loading
-  .progress-indicator {
+  // Progress spinner loading
+  .loading-spinner {
     flex-shrink: 0;
-    animation: progress-rotate 1s steps(8, end) infinite;
-
-    img {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
   }
 
   // Dots loading
@@ -295,9 +276,7 @@
 
   // Accessibility and reduced motion support
   @media (prefers-reduced-motion: reduce) {
-    .progress-indicator {
-      animation: none;
-    }
+    // Progress spinner motion is handled by ProgressSpinner component
 
     .dot {
       animation: none;

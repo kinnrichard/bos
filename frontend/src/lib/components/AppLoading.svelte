@@ -6,6 +6,8 @@
 -->
 
 <script lang="ts">
+  import ProgressSpinner from './ui/ProgressSpinner.svelte';
+
   interface Props {
     message?: string;
     showSpinner?: boolean;
@@ -18,7 +20,7 @@
   <div class="app-loading__content">
     {#if showSpinner}
       <div class="app-loading__spinner">
-        <img src="/icons/progress.indicator.svg" alt="" />
+        <ProgressSpinner size="large" />
       </div>
     {/if}
 
@@ -46,16 +48,9 @@
   }
 
   .app-loading__spinner {
-    width: 32px;
-    height: 32px;
-    animation: progress-rotate 1s steps(8, end) infinite;
     margin: 0 auto 24px;
-
-    img {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
+    display: flex;
+    justify-content: center;
   }
 
   .app-loading__message {
@@ -71,21 +66,7 @@
     opacity: 0.8;
   }
 
-  @keyframes progress-rotate {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Reduced motion support */
-  @media (prefers-reduced-motion: reduce) {
-    .app-loading__spinner {
-      animation: none;
-    }
-  }
+  /* Progress spinner animation and reduced motion are handled by ProgressSpinner component */
 
   /* High contrast mode support */
   @media (prefers-contrast: high) {

@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import { authService } from '$lib/api/auth';
   import type { ApiError } from '$lib/types/api';
+  import ProgressSpinner from '$lib/components/ui/ProgressSpinner.svelte';
 
   let email = $state('');
   let password = $state('');
@@ -15,7 +16,7 @@
   async function handleSubmit() {
     // Prevent double-submit
     if (loading) return;
-    
+
     if (!email || !password) {
       error = 'Please enter both email and password';
       return;
@@ -26,15 +27,15 @@
 
     try {
       await authService.login({ email, password });
-      
+
       // Login successful, redirect to return_to or default
       goto(returnTo);
     } catch (err) {
       console.error('Login failed:', err);
-      
+
       if (err && typeof err === 'object' && 'message' in err) {
         const apiError = err as ApiError;
-        
+
         // Special handling for rate limiting
         if (apiError.code === 'RATE_LIMITED' || apiError.status === 429) {
           error = 'Too many login attempts. Please wait a moment and try again.';
@@ -79,7 +80,13 @@
     {/if}
 
     <!-- Login form -->
-    <form class="auth-form" onsubmit={(e) => { e.preventDefault(); handleSubmit(e); }}>
+    <form
+      class="auth-form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleSubmit(e);
+      }}
+    >
       <div class="form-group">
         <label for="email" class="form-label">Email</label>
         <input
@@ -108,13 +115,13 @@
         />
       </div>
 
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         class="button button--primary button--full-width submit-button"
         disabled={loading}
       >
         {#if loading}
-          <span class="button-spinner"></span>
+          <ProgressSpinner size="small" />
           Signing In...
         {:else}
           Sign In
@@ -137,8 +144,8 @@
   .auth-box {
     width: 100%;
     max-width: 400px;
-    background-color: var(--bg-primary, #1C1C1E);
-    border: 1px solid var(--border-primary, #38383A);
+    background-color: var(--bg-primary, #1c1c1e);
+    border: 1px solid var(--border-primary, #38383a);
     border-radius: 12px;
     padding: 48px 40px;
     box-shadow: var(--shadow-xl, 0 20px 60px rgba(0, 0, 0, 0.5));
@@ -152,7 +159,11 @@
   .logo-placeholder {
     display: inline-block;
     padding: 16px 24px;
-    background: linear-gradient(135deg, var(--accent-blue, #00A3FF), var(--accent-blue-hover, #0089E0));
+    background: linear-gradient(
+      135deg,
+      var(--accent-blue, #00a3ff),
+      var(--accent-blue-hover, #0089e0)
+    );
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 163, 255, 0.3);
   }
@@ -168,7 +179,7 @@
   .auth-title {
     font-size: 28px;
     font-weight: 600;
-    color: var(--text-primary, #F2F2F7);
+    color: var(--text-primary, #f2f2f7);
     text-align: center;
     margin-bottom: 32px;
   }
@@ -199,7 +210,7 @@
   .form-label {
     display: block;
     margin-bottom: 8px;
-    color: var(--text-secondary, #C7C7CC);
+    color: var(--text-secondary, #c7c7cc);
     font-size: 14px;
     font-weight: 500;
   }
@@ -207,10 +218,10 @@
   .form-input {
     width: 100%;
     padding: 12px 16px;
-    background-color: var(--bg-secondary, #1C1C1D);
-    border: 1px solid var(--border-primary, #38383A);
+    background-color: var(--bg-secondary, #1c1c1d);
+    border: 1px solid var(--border-primary, #38383a);
     border-radius: 8px;
-    color: var(--text-primary, #F2F2F7);
+    color: var(--text-primary, #f2f2f7);
     font-size: 16px;
     outline: none;
     transition: all 0.15s ease;
@@ -218,12 +229,12 @@
   }
 
   .form-input::placeholder {
-    color: var(--text-tertiary, #8E8E93);
+    color: var(--text-tertiary, #8e8e93);
   }
 
   .form-input:focus {
-    border-color: var(--accent-blue, #00A3FF);
-    background-color: var(--bg-tertiary, #3A3A3C);
+    border-color: var(--accent-blue, #00a3ff);
+    background-color: var(--bg-tertiary, #3a3a3c);
     box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
   }
 
@@ -248,19 +259,7 @@
     cursor: not-allowed;
   }
 
-  .button-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+  /* Progress spinner styling and animation handled by ProgressSpinner component */
 
   /* Responsive adjustments */
   @media (max-width: 480px) {
@@ -299,8 +298,6 @@
       transition: none;
     }
 
-    .button-spinner {
-      animation: none;
-    }
+    /* Progress spinner reduced motion handled by ProgressSpinner component */
   }
 </style>
