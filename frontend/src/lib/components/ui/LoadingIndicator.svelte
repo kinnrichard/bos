@@ -1,149 +1,195 @@
 <script lang="ts">
+  // Type definitions for better TypeScript support
+  type LoadingType = 'text' | 'spinner' | 'dots' | 'skeleton';
+  type LoadingSize = 'small' | 'normal' | 'large';
+  type LoadingColor = 'primary' | 'secondary' | 'tertiary';
+
+  interface SizeConfig {
+    fontSize: string;
+    spinnerSize: string;
+    dotSize: string;
+    skeletonHeight: {
+      normal: string;
+      short: string;
+    };
+  }
+
+  interface LoadingIndicatorProps {
+    type?: LoadingType;
+    size?: LoadingSize;
+    message?: string;
+    color?: LoadingColor;
+    center?: boolean;
+    inline?: boolean;
+    customClass?: string;
+    visible?: boolean;
+  }
+
   let {
-    type = 'text' as 'text' | 'spinner' | 'dots' | 'skeleton',
-    size = 'normal' as 'small' | 'normal' | 'large',
+    type = 'text',
+    size = 'normal',
     message = 'Loading...',
-    color = 'tertiary' as 'primary' | 'secondary' | 'tertiary',
+    color = 'tertiary',
     center = false,
     inline = false,
     customClass = '',
-    // Show/hide state
-    visible = true
-  } = $props();
+    visible = true,
+  }: LoadingIndicatorProps = $props();
 
-  // Size configurations
-  const sizeConfig = {
-    small: { fontSize: '11px', spinnerSize: '16px', dotSize: '4px' },
-    normal: { fontSize: '12px', spinnerSize: '20px', dotSize: '6px' },
-    large: { fontSize: '14px', spinnerSize: '24px', dotSize: '8px' }
+  // Centralized size configurations using DRY principles
+  const sizeConfigs: Record<LoadingSize, SizeConfig> = {
+    small: {
+      fontSize: '11px',
+      spinnerSize: '16px',
+      dotSize: '4px',
+      skeletonHeight: { normal: '10px', short: '8px' },
+    },
+    normal: {
+      fontSize: '12px',
+      spinnerSize: '20px',
+      dotSize: '6px',
+      skeletonHeight: { normal: '12px', short: '10px' },
+    },
+    large: {
+      fontSize: '14px',
+      spinnerSize: '24px',
+      dotSize: '8px',
+      skeletonHeight: { normal: '14px', short: '12px' },
+    },
   };
 
-  const config = $derived(sizeConfig[size]);
+  // Derived reactive state
+  const config = $derived(sizeConfigs[size]);
+  const shouldShowMessage = $derived(message && message !== 'Loading...');
+  const containerClasses = $derived(`loading-indicator ${type} ${size} ${color} ${customClass}`);
+
+  // Constants to avoid magic numbers
+  const DOT_COUNT = 3;
+  const CIRCLE_RADIUS = 10;
+  const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 </script>
 
+{#snippet optionalMessage()}
+  {#if shouldShowMessage}
+    <span class="loading-text">{message}</span>
+  {/if}
+{/snippet}
+
+{#snippet spinnerIcon()}
+  <div
+    class="spinner"
+    style:width={config.spinnerSize}
+    style:height={config.spinnerSize}
+    aria-label={message}
+  >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle
+        cx="12"
+        cy="12"
+        r={CIRCLE_RADIUS}
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-dasharray={CIRCLE_CIRCUMFERENCE}
+        stroke-dashoffset={CIRCLE_CIRCUMFERENCE}
+      >
+        <animate
+          attributeName="stroke-dasharray"
+          dur="2s"
+          values="0 {CIRCLE_CIRCUMFERENCE};{CIRCLE_CIRCUMFERENCE / 2} {CIRCLE_CIRCUMFERENCE /
+            2};0 {CIRCLE_CIRCUMFERENCE};0 {CIRCLE_CIRCUMFERENCE}"
+          repeatCount="indefinite"
+        />
+        <animate
+          attributeName="stroke-dashoffset"
+          dur="2s"
+          values="0;{-CIRCLE_CIRCUMFERENCE / 2};{-CIRCLE_CIRCUMFERENCE};{-CIRCLE_CIRCUMFERENCE}"
+          repeatCount="indefinite"
+        />
+      </circle>
+    </svg>
+  </div>
+{/snippet}
+
+{#snippet dotsAnimation()}
+  <div class="dots-container" aria-label={message}>
+    {#each Array(DOT_COUNT) as _, index}
+      <div
+        class="dot"
+        style:width={config.dotSize}
+        style:height={config.dotSize}
+        style:animation-delay="{-0.32 + index * 0.16}s"
+      ></div>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet skeletonLines()}
+  <div class="skeleton-container" aria-label={message}>
+    <div class="skeleton-line" style:height={config.skeletonHeight.normal}></div>
+    <div class="skeleton-line short" style:height={config.skeletonHeight.short}></div>
+  </div>
+{/snippet}
+
 {#if visible}
-  <div 
-    class="loading-indicator {type} {size} {color} {customClass}"
+  <div
+    class={containerClasses}
     class:center
     class:inline
-    data-testid="loading-spinner"
+    data-testid="loading-indicator"
     style:font-size={config.fontSize}
+    role="status"
+    aria-live="polite"
+    aria-label={message}
   >
     {#if type === 'text'}
       <span class="loading-text">{message}</span>
     {:else if type === 'spinner'}
-      <div 
-        class="spinner"
-        style:width={config.spinnerSize}
-        style:height={config.spinnerSize}
-        aria-label={message}
-      >
-        <svg viewBox="0 0 24 24" fill="none">
-          <circle 
-            cx="12" 
-            cy="12" 
-            r="10" 
-            stroke="currentColor" 
-            stroke-width="2" 
-            stroke-linecap="round"
-            stroke-dasharray="31.416"
-            stroke-dashoffset="31.416"
-          >
-            <animate 
-              attributeName="stroke-dasharray" 
-              dur="2s" 
-              values="0 31.416;15.708 15.708;0 31.416;0 31.416" 
-              repeatCount="indefinite"
-            />
-            <animate 
-              attributeName="stroke-dashoffset" 
-              dur="2s" 
-              values="0;-15.708;-31.416;-31.416" 
-              repeatCount="indefinite"
-            />
-          </circle>
-        </svg>
-      </div>
-      {#if message && message !== 'Loading...'}
-        <span class="loading-text">{message}</span>
-      {/if}
+      {@render spinnerIcon()}
+      {@render optionalMessage()}
     {:else if type === 'dots'}
-      <div class="dots-container" aria-label={message}>
-        <div 
-          class="dot"
-          style:width={config.dotSize}
-          style:height={config.dotSize}
-        ></div>
-        <div 
-          class="dot"
-          style:width={config.dotSize}
-          style:height={config.dotSize}
-        ></div>
-        <div 
-          class="dot"
-          style:width={config.dotSize}
-          style:height={config.dotSize}
-        ></div>
-      </div>
-      {#if message && message !== 'Loading...'}
-        <span class="loading-text">{message}</span>
-      {/if}
+      {@render dotsAnimation()}
+      {@render optionalMessage()}
     {:else if type === 'skeleton'}
-      <div class="skeleton-container" aria-label={message}>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line short"></div>
-      </div>
+      {@render skeletonLines()}
     {/if}
   </div>
 {/if}
 
-<style>
-  .loading-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    line-height: 1.3;
-  }
+<style lang="scss">
+  // SASS Variables for DRY principles
+  $base-gap: 8px;
+  $animation-duration-base: 1.4s;
+  $border-radius-small: 4px;
+  $skeleton-width-short: 60%;
 
-  .loading-indicator.center {
-    justify-content: center;
-    text-align: center;
-  }
+  // Size configuration map
+  $size-configs: (
+    small: (
+      gap: 6px,
+      dots-gap: 3px,
+      skeleton-gap: 6px,
+    ),
+    normal: (
+      gap: $base-gap,
+      dots-gap: 4px,
+      skeleton-gap: $base-gap,
+    ),
+    large: (
+      gap: 10px,
+      dots-gap: 5px,
+      skeleton-gap: 10px,
+    ),
+  );
 
-  .loading-indicator.inline {
-    display: inline-flex;
-  }
+  // Color configuration map
+  $color-variants: (
+    primary: var(--text-primary),
+    secondary: var(--text-secondary),
+    tertiary: var(--text-tertiary),
+  );
 
-  /* Color variants */
-  .loading-indicator.primary {
-    color: var(--text-primary);
-  }
-
-  .loading-indicator.secondary {
-    color: var(--text-secondary);
-  }
-
-  .loading-indicator.tertiary {
-    color: var(--text-tertiary);
-  }
-
-  /* Text loading */
-  .loading-text {
-    font-size: inherit;
-    color: inherit;
-  }
-
-  /* Spinner loading */
-  .spinner {
-    flex-shrink: 0;
-    animation: spin 1s linear infinite;
-  }
-
-  .spinner svg {
-    width: 100%;
-    height: 100%;
-  }
-
+  // Animation keyframes
   @keyframes spin {
     from {
       transform: rotate(0deg);
@@ -153,33 +199,10 @@
     }
   }
 
-  /* Dots loading */
-  .dots-container {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .dot {
-    background-color: currentColor;
-    border-radius: 50%;
-    animation: dot-bounce 1.4s ease-in-out infinite both;
-  }
-
-  .dot:nth-child(1) {
-    animation-delay: -0.32s;
-  }
-
-  .dot:nth-child(2) {
-    animation-delay: -0.16s;
-  }
-
-  .dot:nth-child(3) {
-    animation-delay: 0s;
-  }
-
   @keyframes dot-bounce {
-    0%, 80%, 100% {
+    0%,
+    80%,
+    100% {
       transform: scale(0.7);
       opacity: 0.5;
     }
@@ -187,32 +210,6 @@
       transform: scale(1);
       opacity: 1;
     }
-  }
-
-  /* Skeleton loading */
-  .skeleton-container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .skeleton-line {
-    height: 12px;
-    background: linear-gradient(
-      90deg,
-      var(--bg-tertiary) 25%,
-      var(--bg-quaternary) 50%,
-      var(--bg-tertiary) 75%
-    );
-    background-size: 200% 100%;
-    border-radius: 4px;
-    animation: skeleton-loading 1.5s ease-in-out infinite;
-  }
-
-  .skeleton-line.short {
-    width: 60%;
-    height: 10px;
   }
 
   @keyframes skeleton-loading {
@@ -224,48 +221,104 @@
     }
   }
 
-  /* Size variants */
-  .loading-indicator.small {
-    gap: 6px;
+  // Base component styles
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    gap: $base-gap;
+    line-height: 1.3;
+
+    // Modifiers
+    &.center {
+      justify-content: center;
+      text-align: center;
+    }
+
+    &.inline {
+      display: inline-flex;
+    }
+
+    // Color variants using SASS map
+    @each $color, $value in $color-variants {
+      &.#{$color} {
+        color: #{$value};
+      }
+    }
+
+    // Size variants using SASS map and mixins
+    @each $size, $config in $size-configs {
+      &.#{$size} {
+        gap: map-get($config, gap);
+
+        .dots-container {
+          gap: map-get($config, dots-gap);
+        }
+
+        .skeleton-container {
+          gap: map-get($config, skeleton-gap);
+        }
+      }
+    }
   }
 
-  .loading-indicator.large {
-    gap: 10px;
+  // Text loading
+  .loading-text {
+    font-size: inherit;
+    color: inherit;
+    font-weight: inherit;
   }
 
-  .loading-indicator.small .dots-container {
-    gap: 3px;
+  // Spinner loading
+  .spinner {
+    flex-shrink: 0;
+    animation: spin 1s linear infinite;
+
+    svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
   }
 
-  .loading-indicator.large .dots-container {
-    gap: 5px;
+  // Dots loading
+  .dots-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
-  .loading-indicator.small .skeleton-container {
-    gap: 6px;
+  .dot {
+    background-color: currentColor;
+    border-radius: 50%;
+    animation: dot-bounce $animation-duration-base ease-in-out infinite both;
+    flex-shrink: 0;
   }
 
-  .loading-indicator.large .skeleton-container {
-    gap: 10px;
+  // Skeleton loading
+  .skeleton-container {
+    display: flex;
+    flex-direction: column;
+    gap: $base-gap;
+    width: 100%;
   }
 
-  .loading-indicator.small .skeleton-line {
-    height: 10px;
+  .skeleton-line {
+    background: linear-gradient(
+      90deg,
+      var(--bg-tertiary) 25%,
+      var(--bg-quaternary) 50%,
+      var(--bg-tertiary) 75%
+    );
+    background-size: 200% 100%;
+    border-radius: $border-radius-small;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+
+    &.short {
+      width: $skeleton-width-short;
+    }
   }
 
-  .loading-indicator.large .skeleton-line {
-    height: 14px;
-  }
-
-  .loading-indicator.small .skeleton-line.short {
-    height: 8px;
-  }
-
-  .loading-indicator.large .skeleton-line.short {
-    height: 12px;
-  }
-
-  /* Reduced motion support */
+  // Accessibility and reduced motion support
   @media (prefers-reduced-motion: reduce) {
     .spinner {
       animation: none;
@@ -282,11 +335,34 @@
     }
   }
 
-  /* High contrast mode support */
+  // High contrast mode support
   @media (prefers-contrast: high) {
     .skeleton-line {
       background: var(--bg-quaternary);
       border: 1px solid var(--border-primary);
+    }
+
+    .dot {
+      border: 1px solid currentColor;
+    }
+  }
+
+  // Focus management for accessibility
+  .loading-indicator:focus-visible {
+    outline: 2px solid var(--focus-ring-color, currentColor);
+    outline-offset: 2px;
+    border-radius: $border-radius-small;
+  }
+
+  // Ensure proper contrast in all themes
+  @media (prefers-color-scheme: dark) {
+    .skeleton-line {
+      background: linear-gradient(
+        90deg,
+        var(--bg-tertiary) 25%,
+        var(--bg-secondary) 50%,
+        var(--bg-tertiary) 75%
+      );
     }
   }
 </style>
