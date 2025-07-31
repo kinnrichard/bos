@@ -28,7 +28,9 @@
   "dependencies": {
     "@playwright/test": "^1.54.1",
     "@rocicorp/zero": "^0.21.2025070200",
+    "glob": "^11.0.3",
     "html2canvas": "^1.4.1",
+    "js-yaml": "^4.1.0",
     "puppeteer": "^24.10.2"
   },
   "devDependencies": {
