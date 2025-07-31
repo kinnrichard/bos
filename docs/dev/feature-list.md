@@ -11,7 +11,7 @@
 ## Appearance
 - ✅ macOS 26 look and feel
 - ✅ Desktop-like interface (no hand pointer or hover)
-- 🚧 Sidebar show button
+- ✅ Sidebar show button
 - 💭 Remove Sidebar hover states
 - 💭 Scroll state restoration
 - 💭 v2 Better popover positioning
@@ -19,6 +19,9 @@
 - 💭 v3 Fading toolbar (Zero.js docs style)
 - 💭 v3 Better behavior on smaller screens
 - 💭 v3 Slide in/out sidebar
+
+## Authentication
+- 💭 Make user stay logged in
 
 ## Drag & Drop
 - 📋 make Drag & Drop more solid with a robust test library
@@ -28,10 +31,10 @@
 
 ## 📋 ReactiveRecord
 - ✅ When a model is instantiated client-side with .new(), it gets same default values that it would in Rails schema
-- 💭 Utilizing the Zero.js permissions system but defining it easily in Rails, for example, via Action Policy
+- 💭 v2 Utilizing the Zero.js permissions system but defining it easily in Rails, for example, via Action Policy
 - ✅ ActivityLogs should be generated client-side
-  - 💭 but then validated server-side
-- 💭 Calculated fields such as reduced name should be overwritten server-side
+  - 💭 v2 but then validated server-side
+- 💭 v2 Calculated fields such as reduced name should be overwritten server-side
   - 💭 Positioning
   - 💭 Activity Tracking
   - 💭 Setting User Attribution
@@ -92,6 +95,9 @@
   - 🚧 Deleted Task view
   - 💭 Undelete tasks
 - 💭 Smart behavior when marking something as canceled or complete
+
+## Logs
+- 🚧 Correctly group by date
 
 # Features for future versions
 
