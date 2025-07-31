@@ -1,15 +1,15 @@
 /**
  * ReactiveDevice - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for devices table.
+ * Read-only reactive Rails-compatible model for devices table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use Device instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use Device instead:
  * ```typescript
  * import { Device } from './device';
  * ```
  *
- * Generated: 2025-07-27 18:11:42 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -55,14 +55,22 @@ const ReactiveDeviceConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newDevice = await ReactiveDevice.create({ title: 'New Task' });
- * await ReactiveDevice.update('123', { title: 'Updated' });
- * await ReactiveDevice.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allDevicesQuery = ReactiveDevice.all().all();
  * const activeDevicesQuery = ReactiveDevice.kept().all();
+ * const singleDeviceQuery = ReactiveDevice.find('123');
+ *
+ * // With relationships
+ * const deviceWithRelationsQuery = ReactiveDevice
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredDevicesQuery = ReactiveDevice
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
 export const ReactiveDevice = createReactiveRecord<DeviceData>(ReactiveDeviceConfig);

@@ -9,12 +9,24 @@
  * import { ReactiveScheduledDateTime as ScheduledDateTime } from './reactive-scheduled-date-time';
  * ```
  *
- * Generated: 2025-07-29 23:03:18 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { ScheduledDateTimeData, CreateScheduledDateTimeData, UpdateScheduledDateTimeData } from './types/scheduled-date-time-data';
+import type {
+  ScheduledDateTimeData,
+  CreateScheduledDateTimeData,
+  UpdateScheduledDateTimeData,
+} from './types/scheduled-date-time-data';
 import { registerModelRelationships } from './base/scoped-query-base';
+
+/**
+ * Default values for ScheduledDateTime creation
+ * These defaults match the database schema defaults
+ */
+const ScheduledDateTimeDefaults: Partial<CreateScheduledDateTimeData> = {
+  scheduled_time_set: false,
+};
 
 /**
  * ActiveRecord configuration for ScheduledDateTime
@@ -24,6 +36,7 @@ const ScheduledDateTimeConfig = {
   className: 'ScheduledDateTime',
   primaryKey: 'id',
   supportsDiscard: false,
+  defaults: ScheduledDateTimeDefaults,
 };
 
 /**

@@ -1,15 +1,15 @@
 /**
  * ReactiveTask - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for tasks table.
+ * Read-only reactive Rails-compatible model for tasks table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use Task instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use Task instead:
  * ```typescript
  * import { Task } from './task';
  * ```
  *
- * Generated: 2025-07-27 18:11:42 UTC
+ * Generated: 2025-07-31 16:46:37 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -55,14 +55,22 @@ const ReactiveTaskConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newTask = await ReactiveTask.create({ title: 'New Task' });
- * await ReactiveTask.update('123', { title: 'Updated' });
- * await ReactiveTask.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allTasksQuery = ReactiveTask.all().all();
  * const activeTasksQuery = ReactiveTask.kept().all();
+ * const singleTaskQuery = ReactiveTask.find('123');
+ *
+ * // With relationships
+ * const taskWithRelationsQuery = ReactiveTask
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredTasksQuery = ReactiveTask
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * const discardedTasks = await Task.discarded().all();
  * ```
  */

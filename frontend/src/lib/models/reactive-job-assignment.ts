@@ -1,19 +1,23 @@
 /**
  * ReactiveJobAssignment - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for job_assignments table.
+ * Read-only reactive Rails-compatible model for job_assignments table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use JobAssignment instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use JobAssignment instead:
  * ```typescript
  * import { JobAssignment } from './job-assignment';
  * ```
  *
- * Generated: 2025-07-29 23:03:18 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { JobAssignmentData, CreateJobAssignmentData, UpdateJobAssignmentData } from './types/job-assignment-data';
+import type {
+  JobAssignmentData,
+  CreateJobAssignmentData,
+  UpdateJobAssignmentData,
+} from './types/job-assignment-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -55,17 +59,27 @@ const ReactiveJobAssignmentConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newJobAssignment = await ReactiveJobAssignment.create({ title: 'New Task' });
- * await ReactiveJobAssignment.update('123', { title: 'Updated' });
- * await ReactiveJobAssignment.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allJobAssignmentsQuery = ReactiveJobAssignment.all().all();
  * const activeJobAssignmentsQuery = ReactiveJobAssignment.kept().all();
+ * const singleJobAssignmentQuery = ReactiveJobAssignment.find('123');
+ *
+ * // With relationships
+ * const job_assignmentWithRelationsQuery = ReactiveJobAssignment
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredJobAssignmentsQuery = ReactiveJobAssignment
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
-export const ReactiveJobAssignment = createReactiveRecord<JobAssignmentData>(ReactiveJobAssignmentConfig);
+export const ReactiveJobAssignment = createReactiveRecord<JobAssignmentData>(
+  ReactiveJobAssignmentConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('job_assignments', {

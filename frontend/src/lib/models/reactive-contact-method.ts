@@ -1,19 +1,23 @@
 /**
  * ReactiveContactMethod - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for contact_methods table.
+ * Read-only reactive Rails-compatible model for contact_methods table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use ContactMethod instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use ContactMethod instead:
  * ```typescript
  * import { ContactMethod } from './contact-method';
  * ```
  *
- * Generated: 2025-07-29 23:03:18 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { ContactMethodData, CreateContactMethodData, UpdateContactMethodData } from './types/contact-method-data';
+import type {
+  ContactMethodData,
+  CreateContactMethodData,
+  UpdateContactMethodData,
+} from './types/contact-method-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -55,17 +59,27 @@ const ReactiveContactMethodConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newContactMethod = await ReactiveContactMethod.create({ title: 'New Task' });
- * await ReactiveContactMethod.update('123', { title: 'Updated' });
- * await ReactiveContactMethod.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allContactMethodsQuery = ReactiveContactMethod.all().all();
  * const activeContactMethodsQuery = ReactiveContactMethod.kept().all();
+ * const singleContactMethodQuery = ReactiveContactMethod.find('123');
+ *
+ * // With relationships
+ * const contact_methodWithRelationsQuery = ReactiveContactMethod
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredContactMethodsQuery = ReactiveContactMethod
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
-export const ReactiveContactMethod = createReactiveRecord<ContactMethodData>(ReactiveContactMethodConfig);
+export const ReactiveContactMethod = createReactiveRecord<ContactMethodData>(
+  ReactiveContactMethodConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('contact_methods', {

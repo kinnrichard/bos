@@ -110,6 +110,8 @@ module ZeroSchemaGenerator
           sql_type: column.sql_type,
           null: column.null,
           default: column.default,
+          default_function: extract_default_function(column),
+          default_type: categorize_default_type(column),
           comment: column.comment,
           enum: enum_column?(table_name, column.name),
           enum_values: enum_values_for_column(table_name, column.name),
@@ -276,6 +278,51 @@ module ZeroSchemaGenerator
 
           This project uses string enums for better developer experience and debugging.
         ERROR
+      end
+    end
+
+    def extract_default_function(column)
+      return nil unless column.default_function
+
+      # ActiveRecord provides default_function for database functions
+      column.default_function
+    rescue NoMethodError
+      # Fallback for older ActiveRecord versions
+      # Try to detect function defaults from the string representation
+      default_str = column.default.to_s
+      if default_str.include?("gen_random_uuid") || default_str.include?("uuid_generate")
+        "gen_random_uuid()"
+      elsif default_str.include?("CURRENT_TIMESTAMP") || default_str.include?("now()")
+        "CURRENT_TIMESTAMP"
+      else
+        nil
+      end
+    end
+
+    def categorize_default_type(column)
+      return nil unless column.default
+
+      default_str = column.default.to_s
+
+      # Check for database functions
+      if default_str.include?("->") || default_str.include?("lambda")
+        "function"
+      elsif default_str.include?("gen_random_uuid") || default_str.include?("uuid_generate")
+        "uuid_function"
+      elsif default_str.include?("CURRENT_TIMESTAMP") || default_str.include?("now()")
+        "timestamp_function"
+      elsif column.type == :string || column.type == :text
+        "string_literal"
+      elsif column.type == :integer || column.type == :bigint || column.type == :decimal || column.type == :float
+        "numeric_literal"
+      elsif column.type == :boolean
+        "boolean_literal"
+      elsif column.type == :date || column.type == :datetime || column.type == :time
+        "date_literal"
+      elsif column.type == :json || column.type == :jsonb
+        "json_literal"
+      else
+        "unknown"
       end
     end
 

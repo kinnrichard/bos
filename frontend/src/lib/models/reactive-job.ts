@@ -1,15 +1,15 @@
 /**
  * ReactiveJob - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for jobs table.
+ * Read-only reactive Rails-compatible model for jobs table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use Job instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use Job instead:
  * ```typescript
  * import { Job } from './job';
  * ```
  *
- * Generated: 2025-07-27 18:11:42 UTC
+ * Generated: 2025-07-31 16:46:47 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -55,14 +55,22 @@ const ReactiveJobConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newJob = await ReactiveJob.create({ title: 'New Task' });
- * await ReactiveJob.update('123', { title: 'Updated' });
- * await ReactiveJob.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allJobsQuery = ReactiveJob.all().all();
  * const activeJobsQuery = ReactiveJob.kept().all();
+ * const singleJobQuery = ReactiveJob.find('123');
+ *
+ * // With relationships
+ * const jobWithRelationsQuery = ReactiveJob
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredJobsQuery = ReactiveJob
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
 export const ReactiveJob = createReactiveRecord<JobData>(ReactiveJobConfig);

@@ -9,12 +9,20 @@
  * import { ReactiveUser as User } from './reactive-user';
  * ```
  *
- * Generated: 2025-07-27 18:15:08 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { UserData, CreateUserData, UpdateUserData } from './types/user-data';
 import { registerModelRelationships } from './base/scoped-query-base';
+
+/**
+ * Default values for User creation
+ * These defaults match the database schema defaults
+ */
+const UserDefaults: Partial<CreateUserData> = {
+  resort_tasks_on_status_change: true,
+};
 
 /**
  * ActiveRecord configuration for User
@@ -24,6 +32,7 @@ const UserConfig = {
   className: 'User',
   primaryKey: 'id',
   supportsDiscard: false,
+  defaults: UserDefaults,
 };
 
 /**

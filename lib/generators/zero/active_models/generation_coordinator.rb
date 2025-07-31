@@ -567,6 +567,11 @@ module Zero
         processor = processor_factory.call(relationships, table_name)
         relationship_registration = processor.process_all[:registration]
 
+        # Generate defaults using DefaultValueConverter
+        default_value_converter = service_registry.get_service(:default_value_converter)
+        defaults_object = default_value_converter.generate_defaults_object(table_name, table[:columns])
+        has_defaults = !defaults_object.nil?
+
         {
           class_name: class_name,
           table_name: table_name,
@@ -576,7 +581,9 @@ module Zero
           relationship_import_section: relationship_import_section,
           supports_discard: supports_discard?(patterns),
           discard_scopes: discard_scopes,
-          relationship_registration: relationship_registration
+          relationship_registration: relationship_registration,
+          has_defaults: has_defaults,
+          defaults_object: defaults_object
         }
       end
 

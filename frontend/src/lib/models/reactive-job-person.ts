@@ -1,19 +1,23 @@
 /**
  * ReactiveJobPerson - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for job_people table.
+ * Read-only reactive Rails-compatible model for job_people table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use JobPerson instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use JobPerson instead:
  * ```typescript
  * import { JobPerson } from './job-person';
  * ```
  *
- * Generated: 2025-07-29 23:03:18 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { JobPersonData, CreateJobPersonData, UpdateJobPersonData } from './types/job-person-data';
+import type {
+  JobPersonData,
+  CreateJobPersonData,
+  UpdateJobPersonData,
+} from './types/job-person-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -55,14 +59,22 @@ const ReactiveJobPersonConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newJobPerson = await ReactiveJobPerson.create({ title: 'New Task' });
- * await ReactiveJobPerson.update('123', { title: 'Updated' });
- * await ReactiveJobPerson.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allJobPersonsQuery = ReactiveJobPerson.all().all();
  * const activeJobPersonsQuery = ReactiveJobPerson.kept().all();
+ * const singleJobPersonQuery = ReactiveJobPerson.find('123');
+ *
+ * // With relationships
+ * const job_personWithRelationsQuery = ReactiveJobPerson
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredJobPersonsQuery = ReactiveJobPerson
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
 export const ReactiveJobPerson = createReactiveRecord<JobPersonData>(ReactiveJobPersonConfig);

@@ -1,7 +1,7 @@
 /**
  * TaskData - TypeScript interface for tasks table
  *
- * Generated from Rails schema: 2025-07-30 02:34:30 UTC
+ * Generated from Rails schema: 2025-07-31 16:46:37 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - assignedTo: belongs_to User

@@ -1,19 +1,23 @@
 /**
  * ReactiveScheduledDateTimeUser - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for scheduled_date_time_users table.
+ * Read-only reactive Rails-compatible model for scheduled_date_time_users table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use ScheduledDateTimeUser instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use ScheduledDateTimeUser instead:
  * ```typescript
  * import { ScheduledDateTimeUser } from './scheduled-date-time-user';
  * ```
  *
- * Generated: 2025-07-29 23:03:18 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { ScheduledDateTimeUserData, CreateScheduledDateTimeUserData, UpdateScheduledDateTimeUserData } from './types/scheduled-date-time-user-data';
+import type {
+  ScheduledDateTimeUserData,
+  CreateScheduledDateTimeUserData,
+  UpdateScheduledDateTimeUserData,
+} from './types/scheduled-date-time-user-data';
 
 /**
  * ReactiveRecord configuration for ScheduledDateTimeUser
@@ -54,17 +58,27 @@ const ReactiveScheduledDateTimeUserConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newScheduledDateTimeUser = await ReactiveScheduledDateTimeUser.create({ title: 'New Task' });
- * await ReactiveScheduledDateTimeUser.update('123', { title: 'Updated' });
- * await ReactiveScheduledDateTimeUser.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allScheduledDateTimeUsersQuery = ReactiveScheduledDateTimeUser.all().all();
  * const activeScheduledDateTimeUsersQuery = ReactiveScheduledDateTimeUser.kept().all();
+ * const singleScheduledDateTimeUserQuery = ReactiveScheduledDateTimeUser.find('123');
+ *
+ * // With relationships
+ * const scheduled_date_time_userWithRelationsQuery = ReactiveScheduledDateTimeUser
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredScheduledDateTimeUsersQuery = ReactiveScheduledDateTimeUser
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
-export const ReactiveScheduledDateTimeUser = createReactiveRecord<ScheduledDateTimeUserData>(ReactiveScheduledDateTimeUserConfig);
+export const ReactiveScheduledDateTimeUser = createReactiveRecord<ScheduledDateTimeUserData>(
+  ReactiveScheduledDateTimeUserConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
@@ -84,7 +98,11 @@ export const ReactiveScheduledDateTimeUser = createReactiveRecord<ScheduledDateT
 export { ReactiveScheduledDateTimeUser as ScheduledDateTimeUser };
 
 // Export types for convenience
-export type { ScheduledDateTimeUserData, CreateScheduledDateTimeUserData, UpdateScheduledDateTimeUserData };
+export type {
+  ScheduledDateTimeUserData,
+  CreateScheduledDateTimeUserData,
+  UpdateScheduledDateTimeUserData,
+};
 
 // Default export
 export default ReactiveScheduledDateTimeUser;

@@ -9,12 +9,24 @@
  * import { ReactiveJob as Job } from './reactive-job';
  * ```
  *
- * Generated: 2025-07-27 18:11:42 UTC
+ * Generated: 2025-07-31 16:46:47 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { JobData, CreateJobData, UpdateJobData } from './types/job-data';
 import { registerModelRelationships } from './base/scoped-query-base';
+
+/**
+ * Default values for Job creation
+ * These defaults match the database schema defaults
+ */
+const JobDefaults: Partial<CreateJobData> = {
+  due_time_set: false,
+  lock_version: 0,
+  priority: 'normal',
+  start_time_set: false,
+  status: 'open',
+};
 
 /**
  * ActiveRecord configuration for Job
@@ -24,6 +36,7 @@ const JobConfig = {
   className: 'Job',
   primaryKey: 'id',
   supportsDiscard: false,
+  defaults: JobDefaults,
 };
 
 /**

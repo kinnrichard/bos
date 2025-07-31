@@ -1,15 +1,15 @@
 /**
  * ReactiveClient - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for clients table.
+ * Read-only reactive Rails-compatible model for clients table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use Client instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use Client instead:
  * ```typescript
  * import { Client } from './client';
  * ```
  *
- * Generated: 2025-07-27 18:11:42 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -55,14 +55,22 @@ const ReactiveClientConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newClient = await ReactiveClient.create({ title: 'New Task' });
- * await ReactiveClient.update('123', { title: 'Updated' });
- * await ReactiveClient.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allClientsQuery = ReactiveClient.all().all();
  * const activeClientsQuery = ReactiveClient.kept().all();
+ * const singleClientQuery = ReactiveClient.find('123');
+ *
+ * // With relationships
+ * const clientWithRelationsQuery = ReactiveClient
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredClientsQuery = ReactiveClient
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
 export const ReactiveClient = createReactiveRecord<ClientData>(ReactiveClientConfig);

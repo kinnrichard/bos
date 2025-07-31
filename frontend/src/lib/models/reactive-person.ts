@@ -1,15 +1,15 @@
 /**
  * ReactivePerson - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for people table.
+ * Read-only reactive Rails-compatible model for people table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use Person instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use Person instead:
  * ```typescript
  * import { Person } from './person';
  * ```
  *
- * Generated: 2025-07-27 18:11:42 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -55,14 +55,22 @@ const ReactivePersonConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newPerson = await ReactivePerson.create({ title: 'New Task' });
- * await ReactivePerson.update('123', { title: 'Updated' });
- * await ReactivePerson.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allPersonsQuery = ReactivePerson.all().all();
  * const activePersonsQuery = ReactivePerson.kept().all();
+ * const singlePersonQuery = ReactivePerson.find('123');
+ *
+ * // With relationships
+ * const personWithRelationsQuery = ReactivePerson
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredPersonsQuery = ReactivePerson
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
 export const ReactivePerson = createReactiveRecord<PersonData>(ReactivePersonConfig);

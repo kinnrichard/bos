@@ -6,6 +6,7 @@ require_relative "file_manager"
 require_relative "template_renderer"
 require_relative "type_mapper"
 require_relative "relationship_processor"
+require_relative "default_value_converter"
 
 module Zero
   module Generators
@@ -61,7 +62,8 @@ module Zero
         file_manager: [ :configuration ],
         template_renderer: [ :configuration ],
         type_mapper: [ :configuration ],
-        relationship_processor: [ :schema ]
+        relationship_processor: [ :schema ],
+        default_value_converter: [ :configuration ]
       }.freeze
 
       # Service initialization order (topologically sorted)
@@ -71,7 +73,8 @@ module Zero
         :file_manager,
         :template_renderer,
         :type_mapper,
-        :relationship_processor
+        :relationship_processor,
+        :default_value_converter
       ].freeze
 
       attr_reader :services, :service_states, :configuration_options, :statistics
@@ -422,6 +425,8 @@ module Zero
           # Note: RelationshipProcessor is typically created per-use, not as singleton
           # This creates a factory method
           create_relationship_processor_factory(dependencies)
+        when :default_value_converter
+          create_default_value_converter(dependencies)
         else
           raise ServiceError, "Unknown service type: #{service_name}"
         end
@@ -488,6 +493,10 @@ module Zero
         lambda do |relationships, current_table_name|
           RelationshipProcessor.new(relationships, current_table_name)
         end
+      end
+
+      def create_default_value_converter(dependencies)
+        DefaultValueConverter.new
       end
 
       # Create a shell instance for services that need it

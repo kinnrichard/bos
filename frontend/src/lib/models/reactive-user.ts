@@ -1,15 +1,15 @@
 /**
  * ReactiveUser - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for users table.
+ * Read-only reactive Rails-compatible model for users table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use User instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use User instead:
  * ```typescript
  * import { User } from './user';
  * ```
  *
- * Generated: 2025-07-27 18:15:08 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -55,14 +55,22 @@ const ReactiveUserConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newUser = await ReactiveUser.create({ title: 'New Task' });
- * await ReactiveUser.update('123', { title: 'Updated' });
- * await ReactiveUser.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allUsersQuery = ReactiveUser.all().all();
  * const activeUsersQuery = ReactiveUser.kept().all();
+ * const singleUserQuery = ReactiveUser.find('123');
+ *
+ * // With relationships
+ * const userWithRelationsQuery = ReactiveUser
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredUsersQuery = ReactiveUser
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
 export const ReactiveUser = createReactiveRecord<UserData>(ReactiveUserConfig);

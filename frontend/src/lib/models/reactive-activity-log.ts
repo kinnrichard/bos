@@ -1,19 +1,23 @@
 /**
  * ReactiveActivityLog - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for activity_logs table.
+ * Read-only reactive Rails-compatible model for activity_logs table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use ActivityLog instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use ActivityLog instead:
  * ```typescript
  * import { ActivityLog } from './activity-log';
  * ```
  *
- * Generated: 2025-07-29 23:03:18 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { ActivityLogData, CreateActivityLogData, UpdateActivityLogData } from './types/activity-log-data';
+import type {
+  ActivityLogData,
+  CreateActivityLogData,
+  UpdateActivityLogData,
+} from './types/activity-log-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -55,14 +59,22 @@ const ReactiveActivityLogConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newActivityLog = await ReactiveActivityLog.create({ title: 'New Task' });
- * await ReactiveActivityLog.update('123', { title: 'Updated' });
- * await ReactiveActivityLog.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allActivityLogsQuery = ReactiveActivityLog.all().all();
  * const activeActivityLogsQuery = ReactiveActivityLog.kept().all();
+ * const singleActivityLogQuery = ReactiveActivityLog.find('123');
+ *
+ * // With relationships
+ * const activity_logWithRelationsQuery = ReactiveActivityLog
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredActivityLogsQuery = ReactiveActivityLog
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
 export const ReactiveActivityLog = createReactiveRecord<ActivityLogData>(ReactiveActivityLogConfig);

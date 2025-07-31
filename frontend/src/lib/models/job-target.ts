@@ -9,11 +9,24 @@
  * import { ReactiveJobTarget as JobTarget } from './reactive-job-target';
  * ```
  *
- * Generated: 2025-07-29 23:03:18 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { JobTargetData, CreateJobTargetData, UpdateJobTargetData } from './types/job-target-data';
+import type {
+  JobTargetData,
+  CreateJobTargetData,
+  UpdateJobTargetData,
+} from './types/job-target-data';
+
+/**
+ * Default values for JobTarget creation
+ * These defaults match the database schema defaults
+ */
+const JobTargetDefaults: Partial<CreateJobTargetData> = {
+  instance_number: 1,
+  status: 'active',
+};
 
 /**
  * ActiveRecord configuration for JobTarget
@@ -23,6 +36,7 @@ const JobTargetConfig = {
   className: 'JobTarget',
   primaryKey: 'id',
   supportsDiscard: false,
+  defaults: JobTargetDefaults,
 };
 
 /**

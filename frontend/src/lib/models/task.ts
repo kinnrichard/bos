@@ -9,12 +9,24 @@
  * import { ReactiveTask as Task } from './reactive-task';
  * ```
  *
- * Generated: 2025-07-27 18:11:42 UTC
+ * Generated: 2025-07-31 16:46:37 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { TaskData, CreateTaskData, UpdateTaskData } from './types/task-data';
 import { registerModelRelationships } from './base/scoped-query-base';
+
+/**
+ * Default values for Task creation
+ * These defaults match the database schema defaults
+ */
+const TaskDefaults: Partial<CreateTaskData> = {
+  applies_to_all_targets: true,
+  lock_version: 0,
+  position_finalized: false,
+  repositioned_to_top: false,
+  subtasks_count: 0,
+};
 
 /**
  * ActiveRecord configuration for Task
@@ -24,6 +36,7 @@ const TaskConfig = {
   className: 'Task',
   primaryKey: 'id',
   supportsDiscard: true,
+  defaults: TaskDefaults,
 };
 
 /**

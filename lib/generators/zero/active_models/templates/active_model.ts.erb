@@ -14,7 +14,13 @@
 
 import { createActiveRecord } from './base/active-record';
 import type { <%= class_name %>Data, Create<%= class_name %>Data, Update<%= class_name %>Data } from './types/<%= kebab_name %>-data';<%= relationship_import_section %>
-
+<% if has_defaults %>
+/**
+ * Default values for <%= class_name %> creation
+ * These defaults match the database schema defaults
+ */
+const <%= class_name %>Defaults: Partial<Create<%= class_name %>Data> = <%= defaults_object %>;
+<% end %>
 /**
  * ActiveRecord configuration for <%= class_name %>
  */
@@ -22,7 +28,8 @@ const <%= class_name %>Config = {
   tableName: '<%= table_name %>',
   className: '<%= class_name %>',
   primaryKey: 'id',
-  supportsDiscard: <%= supports_discard %>,
+  supportsDiscard: <%= supports_discard %>,<% if has_defaults %>
+  defaults: <%= class_name %>Defaults,<% end %>
 };
 
 /**

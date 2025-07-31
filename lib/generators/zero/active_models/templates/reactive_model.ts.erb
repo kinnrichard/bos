@@ -1,10 +1,10 @@
 /**
  * Reactive<%= class_name %> - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for <%= table_name %> table.
+ * Read-only reactive Rails-compatible model for <%= table_name %> table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use <%= class_name %> instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use <%= class_name %> instead:
  * ```typescript
  * import { <%= class_name %> } from './<%= kebab_name %>';
  * ```
@@ -54,14 +54,22 @@ const Reactive<%= class_name %>Config = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const new<%= class_name %> = await Reactive<%= class_name %>.create({ title: 'New Task' });
- * await Reactive<%= class_name %>.update('123', { title: 'Updated' });
- * await Reactive<%= class_name %>.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const all<%= class_name %>sQuery = Reactive<%= class_name %>.all().all();
- * const active<%= class_name %>sQuery = Reactive<%= class_name %>.kept().all();<%= discard_scopes %>
+ * const active<%= class_name %>sQuery = Reactive<%= class_name %>.kept().all();
+ * const single<%= class_name %>Query = Reactive<%= class_name %>.find('123');
+ * 
+ * // With relationships
+ * const <%= model_name %>WithRelationsQuery = Reactive<%= class_name %>
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ * 
+ * // Complex queries
+ * const filtered<%= class_name %>sQuery = Reactive<%= class_name %>
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();<%= discard_scopes %>
  * ```
  */
 export const Reactive<%= class_name %> = createReactiveRecord<<%= class_name %>Data>(Reactive<%= class_name %>Config);

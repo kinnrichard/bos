@@ -1,19 +1,23 @@
 /**
  * ReactiveJobTarget - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for job_targets table.
+ * Read-only reactive Rails-compatible model for job_targets table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use JobTarget instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use JobTarget instead:
  * ```typescript
  * import { JobTarget } from './job-target';
  * ```
  *
- * Generated: 2025-07-29 23:03:18 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { JobTargetData, CreateJobTargetData, UpdateJobTargetData } from './types/job-target-data';
+import type {
+  JobTargetData,
+  CreateJobTargetData,
+  UpdateJobTargetData,
+} from './types/job-target-data';
 
 /**
  * ReactiveRecord configuration for JobTarget
@@ -54,14 +58,22 @@ const ReactiveJobTargetConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newJobTarget = await ReactiveJobTarget.create({ title: 'New Task' });
- * await ReactiveJobTarget.update('123', { title: 'Updated' });
- * await ReactiveJobTarget.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allJobTargetsQuery = ReactiveJobTarget.all().all();
  * const activeJobTargetsQuery = ReactiveJobTarget.kept().all();
+ * const singleJobTargetQuery = ReactiveJobTarget.find('123');
+ *
+ * // With relationships
+ * const job_targetWithRelationsQuery = ReactiveJobTarget
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredJobTargetsQuery = ReactiveJobTarget
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
 export const ReactiveJobTarget = createReactiveRecord<JobTargetData>(ReactiveJobTargetConfig);

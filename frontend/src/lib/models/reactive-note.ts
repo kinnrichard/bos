@@ -1,15 +1,15 @@
 /**
  * ReactiveNote - ReactiveRecord model (Svelte 5 reactive)
  *
- * Reactive Rails-compatible model for notes table.
+ * Read-only reactive Rails-compatible model for notes table.
  * Automatically updates Svelte components when data changes.
  *
- * For non-reactive contexts, use Note instead:
+ * For mutations (create/update/delete) or non-reactive contexts, use Note instead:
  * ```typescript
  * import { Note } from './note';
  * ```
  *
- * Generated: 2025-07-27 18:11:42 UTC
+ * Generated: 2025-07-31 16:49:06 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -55,14 +55,22 @@ const ReactiveNoteConfig = {
  *
  * @example
  * ```typescript
- * // Mutation operations (still async)
- * const newNote = await ReactiveNote.create({ title: 'New Task' });
- * await ReactiveNote.update('123', { title: 'Updated' });
- * await ReactiveNote.discard('123');
- *
- * // Reactive queries
+ * // Reactive queries that automatically update
  * const allNotesQuery = ReactiveNote.all().all();
  * const activeNotesQuery = ReactiveNote.kept().all();
+ * const singleNoteQuery = ReactiveNote.find('123');
+ *
+ * // With relationships
+ * const noteWithRelationsQuery = ReactiveNote
+ *   .includes('client', 'tasks')
+ *   .find('123');
+ *
+ * // Complex queries
+ * const filteredNotesQuery = ReactiveNote
+ *   .where({ status: 'active' })
+ *   .orderBy('created_at', 'desc')
+ *   .limit(10)
+ *   .all();
  * ```
  */
 export const ReactiveNote = createReactiveRecord<NoteData>(ReactiveNoteConfig);
