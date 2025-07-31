@@ -144,9 +144,9 @@ class ActivityLog < ApplicationRecord
   end
 
   def get_priority_emoji(priority)
-    # Get priority emoji based on loggable type
-    context = loggable_type == "Job" ? :job : :generic
-    Priority.find(priority, context: context)&.emoji || ""
+    # Use JobPriority for jobs, fallback to JobPriority for other types as well
+    # since JobPriority is now the single source of truth
+    JobPriority.find(priority)&.emoji || ""
   end
 
   def format_field_change(field, values)
