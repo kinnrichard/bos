@@ -12,8 +12,10 @@ import {
   taskActivityLoggingMutator,
   jobActivityLoggingMutator, 
   clientActivityLoggingMutator,
-  userActivityLoggingMutator 
+  userActivityLoggingMutator,
+  createActivityLoggingMutator
 } from './activity-logging';
+import { LOGGABLE_MODELS } from '../../models/generated-loggable-config';
 
 /**
  * Mutator pipeline executor
@@ -79,30 +81,67 @@ export const userMutatorPipeline: MutatorFunction<any> = async (data, context) =
  * Generic mutator pipeline for models that only need basic tracking
  * Currently empty but can be extended
  */
-export const genericMutatorPipeline: MutatorFunction<any> = async (data, context) => {
+export const genericMutatorPipeline: MutatorFunction<any> = async (data, _context) => {
   // No mutators currently - just pass through
   return data;
 };
 
 /**
- * Model mutator registry
- * Maps table names to their respective mutator pipelines
+ * Create generic loggable pipeline for models that include the Loggable concern
+ * but don't have custom mutator logic
  */
-export const MODEL_MUTATORS: Record<string, MutatorFunction<any>> = {
-  tasks: taskMutatorPipeline,
-  jobs: jobMutatorPipeline,
-  clients: clientMutatorPipeline,
-  users: userMutatorPipeline,
+function createGenericLoggablePipeline(modelName: string): MutatorFunction<any> {
+  const activityLoggingMutator = createActivityLoggingMutator({
+    loggableType: modelName,
+    // Default associations - models can override as needed
+    getAssociatedClientId: (data) => data.client_id || null,
+    getAssociatedJobId: (data) => data.job_id || null
+  });
   
-  // Additional models with basic attribution
-  devices: genericMutatorPipeline,
-  people: genericMutatorPipeline,
-  scheduled_date_times: genericMutatorPipeline,
-  notes: genericMutatorPipeline,
-  
-  // Activity logs themselves don't need mutation (would create infinite loop)
-  activity_logs: async (data, context) => data
-};
+  return async (data, context) => {
+    return executeMutatorPipeline(data, context, [activityLoggingMutator]);
+  };
+}
+
+/**
+ * Model mutator registry
+ * Dynamically built based on Rails Loggable models
+ */
+export const MODEL_MUTATORS: Record<string, MutatorFunction<any>> = {};
+
+// Add activity logging mutators for Loggable models
+Object.entries(LOGGABLE_MODELS).forEach(([tableName, config]) => {
+  if (config.includesLoggable) {
+    // Special handling for specific models
+    switch (tableName) {
+      case 'tasks':
+        MODEL_MUTATORS[tableName] = taskMutatorPipeline;
+        break;
+      case 'jobs':
+        MODEL_MUTATORS[tableName] = jobMutatorPipeline;
+        break;
+      case 'clients':
+        MODEL_MUTATORS[tableName] = clientMutatorPipeline;
+        break;
+      case 'users':
+        MODEL_MUTATORS[tableName] = userMutatorPipeline;
+        break;
+      default:
+        // Generic activity logging for other Loggable models
+        MODEL_MUTATORS[tableName] = createGenericLoggablePipeline(config.modelName);
+    }
+  }
+});
+
+// Add non-loggable models
+['notes'].forEach(tableName => {
+  if (!MODEL_MUTATORS[tableName]) {
+    MODEL_MUTATORS[tableName] = genericMutatorPipeline;
+  }
+});
+
+// Activity logs themselves don't need mutation (would create infinite loop)
+MODEL_MUTATORS['activity_logs'] = async (data, _context) => data;
 
 /**
  * Get mutator pipeline for a specific model
@@ -158,7 +197,16 @@ export async function executeMutatorWithTracking<T>(
   };
 
   console.log('[Model Mutators] Calling mutator with enhanced context');
-  return mutator(data, enhancedContext);
+  const result = await mutator(data, enhancedContext);
+  
+  // Copy any properties added to enhanced context back to the original context
+  // This ensures pendingActivityLog is preserved
+  if (enhancedContext.pendingActivityLog && !context.pendingActivityLog) {
+    context.pendingActivityLog = enhancedContext.pendingActivityLog;
+    console.log('[Model Mutators] Preserved pendingActivityLog in original context');
+  }
+  
+  return result;
 }
 
 /**

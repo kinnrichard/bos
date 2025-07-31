@@ -232,7 +232,7 @@
         title={disabled ? 'Disabled' : 'Show sidebar'}
         {disabled}
       >
-        <img src="/icons/sidebar.svg" alt="Menu" />
+        <img src="/icons/sidebar.svg" alt="Menu" class="action-icon-svg" />
       </CircularButton>
     {/if}
 

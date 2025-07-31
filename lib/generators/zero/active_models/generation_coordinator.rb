@@ -107,10 +107,13 @@ module Zero
           # Phase 3: Model Generation
           generation_result = generate_models_for_all_tables(schema_data)
 
-          # Phase 4: Index File Generation
+          # Phase 4: Generate Loggable Configuration
+          generate_loggable_configuration_file unless options[:dry_run]
+
+          # Phase 5: Index File Generation
           generate_index_files(generation_result) unless options[:dry_run]
 
-          # Phase 5: Results Compilation
+          # Phase 6: Results Compilation
           compile_final_results(generation_result, execution_start_time)
 
         rescue => e
@@ -409,6 +412,37 @@ module Zero
         end
 
         result
+      end
+
+      # Generate Loggable configuration file
+      #
+      # Creates a TypeScript configuration file that maps all models
+      # that include the Loggable concern
+      def generate_loggable_configuration_file
+        shell&.say "📝 Generating Loggable configuration...", :blue
+
+        config_content = generate_loggable_config
+        file_manager = service_registry.get_service(:file_manager)
+
+        # Force write the file to ensure it's updated
+        config_path = File.join(file_manager.output_dir, "generated-loggable-config.ts")
+        full_path = if Pathname.new(file_manager.output_dir).absolute?
+                      config_path
+        else
+                      File.join(Rails.root, config_path)
+        end
+
+        # Ensure directory exists
+        FileUtils.mkdir_p(File.dirname(full_path))
+
+        # Write the file directly
+        File.write(full_path, config_content)
+
+        shell&.say "  ✅ Updated: #{full_path}", :green
+        @statistics[:files_created] += 1
+      rescue => e
+        shell&.say "  ❌ Failed to generate Loggable config: #{e.message}", :red
+        @statistics[:errors_encountered] += 1
       end
 
       # Generate index files for model imports
@@ -774,6 +808,104 @@ module Zero
 
         success_count = generation_result[:generated_models].length
         ((success_count.to_f / total_attempted) * 100).round(2)
+      end
+
+      # Detect models that include the Loggable concern
+      #
+      # @return [Hash] Map of table names to model info for Loggable models
+      def detect_loggable_models
+        loggable_models = {}
+
+        # Load models manually instead of using eager_load! which has issues
+        model_files = Dir[Rails.root.join("app/models/**/*.rb")]
+        model_files.each do |file|
+          # Skip concerns and application_record
+          next if file.include?("concerns/") || file.include?("application_record.rb")
+
+          begin
+            # Use load instead of require_dependency to avoid issues
+            load file
+          rescue => e
+            # Skip files that can't be loaded
+            Rails.logger.debug "Skipping file #{file}: #{e.message}"
+          end
+        end
+
+        # Now check loaded models for Loggable concern
+        if defined?(ApplicationRecord)
+          ApplicationRecord.descendants.each do |model|
+            next unless model.respond_to?(:included_modules)
+            next unless model.included_modules.include?(Loggable)
+
+            loggable_models[model.table_name] = {
+              modelName: model.name,
+              includesLoggable: true
+            }
+          end
+        end
+
+        # If still empty, use known models as fallback
+        if loggable_models.empty?
+          shell&.say "  ⚠️  Could not detect models dynamically, using known defaults", :yellow
+          %w[Job Task Client User Person Device ScheduledDateTime].each do |model_name|
+            begin
+              model = model_name.constantize
+              if model.included_modules.include?(Loggable)
+                loggable_models[model.table_name] = {
+                  modelName: model_name,
+                  includesLoggable: true
+                }
+              end
+            rescue => e
+              Rails.logger.debug "Could not check #{model_name}: #{e.message}"
+            end
+          end
+        end
+
+        shell&.say "  ✅ Detected #{loggable_models.count} Loggable models", :green if loggable_models.any?
+        loggable_models
+      rescue => e
+        Rails.logger.warn "Failed to detect Loggable models: #{e.message}"
+        shell&.say "  ❌ Error detecting Loggable models: #{e.message}", :red
+        {}
+      end
+
+      # Generate TypeScript configuration for Loggable models
+      #
+      # @return [String] Generated TypeScript configuration content
+      def generate_loggable_config
+        loggable_models = detect_loggable_models
+
+        # Sort models by table name for consistent output
+        sorted_models = loggable_models.sort_by { |table_name, _| table_name }
+
+        # Generate model entries
+        model_entries = sorted_models.map do |table_name, config|
+          "  '#{table_name}': { modelName: '#{config[:modelName]}', includesLoggable: true }"
+        end.join(",\n")
+
+        <<~TYPESCRIPT
+          // 🤖 AUTO-GENERATED LOGGABLE CONFIGURATION
+          // Generated at: #{Time.current.strftime("%Y-%m-%dT%H:%M:%SZ")}
+          //#{' '}
+          // ⚠️  DO NOT EDIT THIS FILE DIRECTLY
+          // This file is automatically generated by Rails generator
+          // Run: rails generate zero:active_models
+
+          export const LOGGABLE_MODELS = {
+          #{model_entries}
+          } as const;
+
+          export type LoggableModelName = keyof typeof LOGGABLE_MODELS;
+
+          export function isLoggableModel(tableName: string): tableName is LoggableModelName {
+            return tableName in LOGGABLE_MODELS;
+          }
+
+          export function getLoggableModelInfo(tableName: LoggableModelName) {
+            return LOGGABLE_MODELS[tableName];
+          }
+        TYPESCRIPT
       end
 
       # Determine if caching should be enabled based on environment

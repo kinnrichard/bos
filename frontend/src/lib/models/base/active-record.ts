@@ -33,6 +33,7 @@ import type {
   NewRecord,
 } from './types';
 import type { MutatorContext } from '../../shared/mutators/base-mutator';
+import { isLoggableModel } from '../generated-loggable-config';
 
 /**
  * Configuration for ActiveRecord class
@@ -339,6 +340,22 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
   }
 
   /**
+   * Check if this model includes the Loggable concern
+   * Uses generated configuration from Rails introspection
+   */
+  protected async isLoggableModel(): Promise<boolean> {
+    try {
+      const result = isLoggableModel(this.config.tableName);
+      console.log(`[ActiveRecord] isLoggableModel(${this.config.tableName}) = ${result}`);
+      return result;
+    } catch (error) {
+      // If config not loaded yet, return false
+      console.warn(`[ActiveRecord] Could not check if ${this.config.tableName} is loggable:`, error);
+      return false;
+    }
+  }
+
+  /**
    * Create a new record - Rails .create() behavior
    */
   async create(data: CreateData<T>, _options: QueryOptions = {}): Promise<T> {
@@ -409,8 +426,53 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
         );
       }
 
-      await (zero.mutate as any)[this.config.tableName].insert(mutatedData);
-      console.log(`[ActiveRecord] Insert successful for ${this.config.tableName}:`, id);
+      // Check if this model needs activity logging
+      const needsActivityLog = await this.isLoggableModel() && context.pendingActivityLog;
+      
+      console.log(`[ActiveRecord] Activity logging check for ${this.config.tableName}:`, {
+        isLoggable: await this.isLoggableModel(),
+        hasPendingActivityLog: !!context.pendingActivityLog,
+        needsActivityLog
+      });
+
+      if (needsActivityLog && context.pendingActivityLog) {
+        console.log(`[ActiveRecord] Using mutateBatch for atomic operation on ${this.config.tableName}`);
+        
+        // Use mutateBatch for atomic operation
+        await zero.mutateBatch(async (tx) => {
+          // Insert the main record
+          console.log(`[ActiveRecord] Inserting main record into ${this.config.tableName}`);
+          await (tx as any)[this.config.tableName].insert(mutatedData);
+          
+          // Insert activity log in same transaction
+          const activityLogData = {
+            id: crypto.randomUUID(),
+            created_at: now,
+            updated_at: now,
+            ...context.pendingActivityLog,
+            loggable_id: id // Use the parent record's ID
+          };
+          
+          console.log(`[ActiveRecord] Inserting activity log:`, activityLogData);
+          
+          try {
+            await tx.activity_logs.insert(activityLogData);
+            console.log(`[ActiveRecord] ✅ Activity log created for ${this.config.tableName}`);
+          } catch (activityLogError) {
+            console.error(`[ActiveRecord] ❌ Activity log creation failed:`, activityLogError);
+            // Log error but don't fail the parent creation
+            console.error(`[ActiveRecord] Failed to create activity log for ${this.config.tableName}:`, activityLogError);
+            // In mutateBatch, any error will rollback the entire transaction
+            // So we re-throw to ensure atomic behavior
+            throw activityLogError;
+          }
+        });
+        console.log(`[ActiveRecord] Batch insert successful for ${this.config.tableName} with activity log`);
+      } else {
+        // Regular insert for non-loggable models
+        await (zero.mutate as any)[this.config.tableName].insert(mutatedData);
+        console.log(`[ActiveRecord] Insert successful for ${this.config.tableName}:`, id);
+      }
 
       const createdRecord = await this.find(id, { withDiscarded: true });
       console.log(`[ActiveRecord] Record retrieved after creation:`, createdRecord);
@@ -450,24 +512,70 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
       throw new Error('Zero client not initialized');
     }
 
-    try {
-      // Process data through mutator pipeline
-      const mutatedData = await this.processUpdateData(id, data);
+    const now = this.currentTime();
 
-      // Execute single mutation
-      await (zero.mutate as any)[this.config.tableName].update(mutatedData);
+    try {
+      // Create context for mutator pipeline
+      const context: MutatorContext = {
+        action: 'update',
+        user: getCurrentUser(),
+        offline: !navigator.onLine,
+        environment: import.meta.env?.MODE || 'development',
+      };
+
+      // Process data through mutator pipeline
+      const mutatedData = await this.processUpdateData(id, data, context);
+
+      // Check if this model needs activity logging
+      const needsActivityLog = await this.isLoggableModel() && context.pendingActivityLog;
+      
+      console.log(`[ActiveRecord] Update activity logging check for ${this.config.tableName}:`, {
+        isLoggable: await this.isLoggableModel(),
+        hasPendingActivityLog: !!context.pendingActivityLog,
+        needsActivityLog
+      });
+
+      if (needsActivityLog && context.pendingActivityLog) {
+        console.log(`[ActiveRecord] Using mutateBatch for atomic update on ${this.config.tableName}`);
+        
+        // Use mutateBatch for atomic operation
+        await zero.mutateBatch(async (tx) => {
+          // Update the main record
+          console.log(`[ActiveRecord] Updating record in ${this.config.tableName}`);
+          await (tx as any)[this.config.tableName].update(mutatedData);
+          
+          // Insert activity log in same transaction
+          const activityLogData = {
+            id: crypto.randomUUID(),
+            created_at: now,
+            updated_at: now,
+            ...context.pendingActivityLog,
+            loggable_id: id // Use the existing record's ID
+          };
+          
+          console.log(`[ActiveRecord] Inserting activity log for update:`, activityLogData);
+          
+          try {
+            await tx.activity_logs.insert(activityLogData);
+            console.log(`[ActiveRecord] ✅ Activity log created for ${this.config.tableName} update`);
+          } catch (activityLogError) {
+            console.error(`[ActiveRecord] ❌ Activity log creation failed:`, activityLogError);
+            // In mutateBatch, any error will rollback the entire transaction
+            // So we re-throw to ensure atomic behavior
+            throw activityLogError;
+          }
+        });
+      } else {
+        // No activity logging needed, execute single mutation
+        console.log(`[ActiveRecord] Executing single update mutation for ${this.config.tableName}`);
+        await (zero.mutate as any)[this.config.tableName].update(mutatedData);
+      }
+
       const updatedRecord = await this.find(id, { withDiscarded: true });
 
       // Run after hooks
       const hooks = this.getMutatorHooks();
       if (hooks) {
-        const context: MutatorContext = {
-          action: 'update',
-          user: getCurrentUser(),
-          offline: !navigator.onLine,
-          environment: import.meta.env?.MODE || 'development',
-        };
-
         if (hooks.afterUpdate) {
           await runMutators(updatedRecord as any, hooks.afterUpdate, context);
         }
@@ -547,7 +655,11 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
   /**
    * Process update data through mutator pipeline (extracted for reuse in batch operations)
    */
-  private async processUpdateData(id: string, data: UpdateData<T>): Promise<any> {
+  private async processUpdateData(
+    id: string, 
+    data: UpdateData<T>, 
+    existingContext?: MutatorContext
+  ): Promise<any> {
     // Get original record for change tracking
     const originalRecord = await this.find(id, { withDiscarded: true });
 
@@ -558,8 +670,8 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
       updated_at: this.currentTime(),
     };
 
-    // Create mutator context
-    const context: MutatorContext = {
+    // Use provided context or create new one
+    const context: MutatorContext = existingContext || {
       action: 'update',
       user: getCurrentUser(),
       offline: !navigator.onLine,
@@ -646,17 +758,47 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
       });
 
       // Process all updates through mutator pipeline first
-      const processedUpdates: Array<{ id: string; processedData: any }> = [];
+      const processedUpdates: Array<{ 
+        id: string; 
+        processedData: any; 
+        context: MutatorContext;
+      }> = [];
+      
+      const now = this.currentTime();
+      const isLoggable = await this.isLoggableModel();
 
       for (const update of updates) {
-        const processedData = await this.processUpdateData(update.id, update.data);
-        processedUpdates.push({ id: update.id, processedData });
+        // Create context for each update
+        const context: MutatorContext = {
+          action: 'update',
+          user: getCurrentUser(),
+          offline: !navigator.onLine,
+          environment: import.meta.env?.MODE || 'development',
+        };
+        
+        const processedData = await this.processUpdateData(update.id, update.data, context);
+        processedUpdates.push({ id: update.id, processedData, context });
       }
 
       // Execute all mutations in a single atomic batch using Zero's native API
       await zero.mutateBatch(async (tx: any) => {
-        for (const { processedData } of processedUpdates) {
+        for (const { id, processedData, context } of processedUpdates) {
+          // Update the main record
           await tx[this.config.tableName].update(processedData);
+          
+          // If this model needs activity logging and has pending activity log
+          if (isLoggable && context.pendingActivityLog) {
+            // Insert activity log in same transaction
+            const activityLogData = {
+              id: crypto.randomUUID(),
+              created_at: now,
+              updated_at: now,
+              ...context.pendingActivityLog,
+              loggable_id: id // Use the existing record's ID
+            };
+            
+            await tx.activity_logs.insert(activityLogData);
+          }
         }
       });
 

@@ -5,7 +5,7 @@ require_relative "generation_coordinator"
 
 module Zero
   module Generators
-    class ActiveModelsGenerator < Rails::Generators::Base
+      class ActiveModelsGenerator < Rails::Generators::Base
       desc "Generate TypeScript ReactiveRecord and ActiveRecord models based on our Rails models"
 
       source_root File.expand_path("templates", __dir__)
@@ -36,6 +36,6 @@ module Zero
       def file_collision(destination)
         options[:force] ? :force : super
       end
-    end
+      end
   end
 end

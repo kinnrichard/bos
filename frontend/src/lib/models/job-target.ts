@@ -9,15 +9,11 @@
  * import { ReactiveJobTarget as JobTarget } from './reactive-job-target';
  * ```
  *
- * Generated: 2025-07-31 17:25:54 UTC
+ * Generated: 2025-07-31 19:03:55 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  JobTargetData,
-  CreateJobTargetData,
-  UpdateJobTargetData,
-} from './types/job-target-data';
+import type { JobTargetData, CreateJobTargetData, UpdateJobTargetData } from './types/job-target-data';
 
 /**
  * Default values for JobTarget creation

@@ -9,15 +9,11 @@
  * import { JobTarget } from './job-target';
  * ```
  *
- * Generated: 2025-07-31 17:25:54 UTC
+ * Generated: 2025-07-31 19:03:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type {
-  JobTargetData,
-  CreateJobTargetData,
-  UpdateJobTargetData,
-} from './types/job-target-data';
+import type { JobTargetData, CreateJobTargetData, UpdateJobTargetData } from './types/job-target-data';
 
 /**
  * ReactiveRecord configuration for JobTarget
@@ -62,12 +58,12 @@ const ReactiveJobTargetConfig = {
  * const allJobTargetsQuery = ReactiveJobTarget.all().all();
  * const activeJobTargetsQuery = ReactiveJobTarget.kept().all();
  * const singleJobTargetQuery = ReactiveJobTarget.find('123');
- *
+ * 
  * // With relationships
  * const job_targetWithRelationsQuery = ReactiveJobTarget
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredJobTargetsQuery = ReactiveJobTarget
  *   .where({ status: 'active' })

@@ -9,7 +9,7 @@
  * import { Note } from './note';
  * ```
  *
- * Generated: 2025-07-31 17:25:54 UTC
+ * Generated: 2025-07-31 19:03:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +59,12 @@ const ReactiveNoteConfig = {
  * const allNotesQuery = ReactiveNote.all().all();
  * const activeNotesQuery = ReactiveNote.kept().all();
  * const singleNoteQuery = ReactiveNote.find('123');
- *
+ * 
  * // With relationships
  * const noteWithRelationsQuery = ReactiveNote
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredNotesQuery = ReactiveNote
  *   .where({ status: 'active' })

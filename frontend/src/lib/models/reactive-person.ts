@@ -9,7 +9,7 @@
  * import { Person } from './person';
  * ```
  *
- * Generated: 2025-07-31 17:25:54 UTC
+ * Generated: 2025-07-31 19:03:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +59,12 @@ const ReactivePersonConfig = {
  * const allPersonsQuery = ReactivePerson.all().all();
  * const activePersonsQuery = ReactivePerson.kept().all();
  * const singlePersonQuery = ReactivePerson.find('123');
- *
+ * 
  * // With relationships
  * const personWithRelationsQuery = ReactivePerson
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredPersonsQuery = ReactivePerson
  *   .where({ status: 'active' })

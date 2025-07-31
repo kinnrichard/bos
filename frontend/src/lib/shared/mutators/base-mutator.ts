@@ -11,11 +11,22 @@ export interface MutatorContext {
   metadata?: Record<string, any>;
   changes?: Record<string, [any, any]>; // [oldValue, newValue] for each changed field
   
+  // Pending activity log data for batch creation
+  pendingActivityLog?: {
+    user_id: string;
+    action: string;
+    loggable_type: string;
+    loggable_id: string;
+    metadata: any;
+    client_id: string | null;
+    job_id: string | null;
+  };
+  
   [key: string]: any;
 }
 
 export abstract class BaseMutator<T = any> {
-  mutate(data: T, context?: MutatorContext): T | Promise<T> {
+  mutate(_data: T, _context?: MutatorContext): T | Promise<T> {
     throw new Error('Must be implemented by subclass');
   }
 }

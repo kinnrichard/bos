@@ -9,15 +9,11 @@
  * import { ContactMethod } from './contact-method';
  * ```
  *
- * Generated: 2025-07-31 17:25:54 UTC
+ * Generated: 2025-07-31 19:03:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type {
-  ContactMethodData,
-  CreateContactMethodData,
-  UpdateContactMethodData,
-} from './types/contact-method-data';
+import type { ContactMethodData, CreateContactMethodData, UpdateContactMethodData } from './types/contact-method-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -63,12 +59,12 @@ const ReactiveContactMethodConfig = {
  * const allContactMethodsQuery = ReactiveContactMethod.all().all();
  * const activeContactMethodsQuery = ReactiveContactMethod.kept().all();
  * const singleContactMethodQuery = ReactiveContactMethod.find('123');
- *
+ * 
  * // With relationships
  * const contact_methodWithRelationsQuery = ReactiveContactMethod
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredContactMethodsQuery = ReactiveContactMethod
  *   .where({ status: 'active' })
@@ -77,9 +73,7 @@ const ReactiveContactMethodConfig = {
  *   .all();
  * ```
  */
-export const ReactiveContactMethod = createReactiveRecord<ContactMethodData>(
-  ReactiveContactMethodConfig
-);
+export const ReactiveContactMethod = createReactiveRecord<ContactMethodData>(ReactiveContactMethodConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('contact_methods', {

@@ -29,7 +29,8 @@
 ## 📋 ReactiveRecord
 - ✅ When a model is instantiated client-side with .new(), it gets same default values that it would in Rails schema
 - 💭 Utilizing the Zero.js permissions system but defining it easily in Rails, for example, via Action Policy
-- 💭 ActivityLogs should be generated client-side but then validated server-side
+- ✅ ActivityLogs should be generated client-side
+  - 💭 but then validated server-side
 - 💭 Calculated fields such as reduced name should be overwritten server-side
   - 💭 Positioning
   - 💭 Activity Tracking

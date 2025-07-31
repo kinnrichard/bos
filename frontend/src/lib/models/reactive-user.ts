@@ -9,7 +9,7 @@
  * import { User } from './user';
  * ```
  *
- * Generated: 2025-07-31 17:25:54 UTC
+ * Generated: 2025-07-31 19:03:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +59,12 @@ const ReactiveUserConfig = {
  * const allUsersQuery = ReactiveUser.all().all();
  * const activeUsersQuery = ReactiveUser.kept().all();
  * const singleUserQuery = ReactiveUser.find('123');
- *
+ * 
  * // With relationships
  * const userWithRelationsQuery = ReactiveUser
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredUsersQuery = ReactiveUser
  *   .where({ status: 'active' })

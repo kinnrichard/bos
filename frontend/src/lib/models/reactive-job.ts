@@ -9,7 +9,7 @@
  * import { Job } from './job';
  * ```
  *
- * Generated: 2025-07-31 17:25:54 UTC
+ * Generated: 2025-07-31 19:03:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +59,12 @@ const ReactiveJobConfig = {
  * const allJobsQuery = ReactiveJob.all().all();
  * const activeJobsQuery = ReactiveJob.kept().all();
  * const singleJobQuery = ReactiveJob.find('123');
- *
+ * 
  * // With relationships
  * const jobWithRelationsQuery = ReactiveJob
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredJobsQuery = ReactiveJob
  *   .where({ status: 'active' })

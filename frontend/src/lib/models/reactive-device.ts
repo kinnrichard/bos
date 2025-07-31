@@ -9,7 +9,7 @@
  * import { Device } from './device';
  * ```
  *
- * Generated: 2025-07-31 17:25:54 UTC
+ * Generated: 2025-07-31 19:03:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +59,12 @@ const ReactiveDeviceConfig = {
  * const allDevicesQuery = ReactiveDevice.all().all();
  * const activeDevicesQuery = ReactiveDevice.kept().all();
  * const singleDeviceQuery = ReactiveDevice.find('123');
- *
+ * 
  * // With relationships
  * const deviceWithRelationsQuery = ReactiveDevice
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredDevicesQuery = ReactiveDevice
  *   .where({ status: 'active' })

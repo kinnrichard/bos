@@ -9,15 +9,11 @@
  * import { ActivityLog } from './activity-log';
  * ```
  *
- * Generated: 2025-07-31 17:25:54 UTC
+ * Generated: 2025-07-31 19:03:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type {
-  ActivityLogData,
-  CreateActivityLogData,
-  UpdateActivityLogData,
-} from './types/activity-log-data';
+import type { ActivityLogData, CreateActivityLogData, UpdateActivityLogData } from './types/activity-log-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -63,12 +59,12 @@ const ReactiveActivityLogConfig = {
  * const allActivityLogsQuery = ReactiveActivityLog.all().all();
  * const activeActivityLogsQuery = ReactiveActivityLog.kept().all();
  * const singleActivityLogQuery = ReactiveActivityLog.find('123');
- *
+ * 
  * // With relationships
  * const activity_logWithRelationsQuery = ReactiveActivityLog
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredActivityLogsQuery = ReactiveActivityLog
  *   .where({ status: 'active' })

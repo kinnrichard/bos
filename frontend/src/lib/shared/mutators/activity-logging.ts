@@ -65,14 +65,18 @@ export function createActivityLoggingMutator(
   const finalConfig = { ...DEFAULT_ACTIVITY_LOGGING_CONFIG, ...config };
   
   return async (data: Loggable, context: MutatorContext): Promise<Loggable> => {
+    console.log(`[Activity Logging] Mutator called for ${config.loggableType} with action: ${context.action}`);
+    
     // Skip if no authenticated user (can't attribute the action)
     const currentUser = context.user || getCurrentUser();
     if (!currentUser) {
+      console.log(`[Activity Logging] Skipping - no current user`);
       return data;
     }
 
     // Skip during test scenarios if activity logging is disabled
     if (context.environment === 'test' && context.skipActivityLogging) {
+      console.log(`[Activity Logging] Skipping - test environment with skipActivityLogging`);
       return data;
     }
 
@@ -92,6 +96,10 @@ export function createActivityLoggingMutator(
 
 /**
  * Core activity logging logic
+ * 
+ * Store activity log data in context for batch creation with parent record.
+ * This prevents foreign key constraint violations by ensuring the parent
+ * exists before the activity log is created.
  */
 async function logActivity(
   data: Loggable,
@@ -109,7 +117,9 @@ async function logActivity(
   const clientId = await Promise.resolve(config.getAssociatedClientId?.(data)) || null;
   const jobId = await Promise.resolve(config.getAssociatedJobId?.(data)) || null;
   
-  const activityLogData: CreateActivityLogData = {
+  // Store activity log data in context for batch creation
+  // ActiveRecord will use this to create the log atomically with the parent
+  context.pendingActivityLog = {
     user_id: currentUser.id,
     action,
     loggable_type: config.loggableType,
@@ -118,10 +128,15 @@ async function logActivity(
     client_id: clientId,
     job_id: jobId
   };
-
-  // Import ActivityLog here to avoid circular dependencies
-  const { ActivityLog } = await import('../../models/activity-log');
-  await ActivityLog.create(activityLogData);
+  
+  console.log(`[Activity Logging] Stored pending activity log in context for ${config.loggableType}:`, {
+    action,
+    loggable_type: config.loggableType,
+    user_id: currentUser.id
+  });
+  
+  // DO NOT create activity log here - let ActiveRecord handle it atomically
+  // This prevents foreign key constraint violations during offline/online sync
 }
 
 /**
@@ -277,7 +292,7 @@ function getRecordDisplayName(data: Loggable, loggableType: string): string {
 /**
  * Get status label for display (simplified version of Rails logic)
  */
-function getStatusLabel(status: string, loggableType: string): string {
+function getStatusLabel(status: string, _loggableType: string): string {
   // This would ideally integrate with status configuration
   // For now, just humanize the status
   return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -319,7 +334,7 @@ export const taskActivityLoggingMutator = createActivityLoggingMutator({
       const { Job } = await import('../../models/job');
       const job = await Job.find(data.job_id);
       return job?.client_id || null;
-    } catch (error) {
+    } catch (_error) {
       // If job not found or other error, return null
       return null;
     }
