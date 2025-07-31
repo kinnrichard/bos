@@ -1,7 +1,7 @@
 /**
  * Activity Logging Mutator
  * Integrates with Rails Loggable concern to provide audit trails for frontend operations
- * 
+ *
  * This mutator automatically creates activity log entries for:
  * - Record creation, updates, and deletions
  * - Status changes with specific handling
@@ -42,19 +42,15 @@ export interface ActivityLoggingConfig {
 /**
  * Default configuration
  */
-const DEFAULT_ACTIVITY_LOGGING_CONFIG: Required<Omit<ActivityLoggingConfig, 'loggableType' | 'getAssociatedClientId' | 'getAssociatedJobId'>> = {
+const DEFAULT_ACTIVITY_LOGGING_CONFIG: Required<
+  Omit<ActivityLoggingConfig, 'loggableType' | 'getAssociatedClientId' | 'getAssociatedJobId'>
+> = {
   excludeFields: ['updated_at', 'created_at', 'position', 'lock_version', 'reordered_at'],
   trackChanges: true,
-  actionMapping: {}
+  actionMapping: {},
 };
 
-/**
- * Activity logging mutator data structure
- */
-interface ActivityLogMutatorData {
-  originalData?: any; // For tracking changes
-  activityConfig?: ActivityLoggingConfig;
-}
+// Activity logging mutator data structure - removed as it's not currently used
 
 /**
  * Create activity logging mutator for a specific model
@@ -63,10 +59,12 @@ export function createActivityLoggingMutator(
   config: ActivityLoggingConfig
 ): MutatorFunction<Loggable> {
   const finalConfig = { ...DEFAULT_ACTIVITY_LOGGING_CONFIG, ...config };
-  
+
   return async (data: Loggable, context: MutatorContext): Promise<Loggable> => {
-    console.log(`[Activity Logging] Mutator called for ${config.loggableType} with action: ${context.action}`);
-    
+    console.log(
+      `[Activity Logging] Mutator called for ${config.loggableType} with action: ${context.action}`
+    );
+
     // Skip if no authenticated user (can't attribute the action)
     const currentUser = context.user || getCurrentUser();
     if (!currentUser) {
@@ -96,7 +94,7 @@ export function createActivityLoggingMutator(
 
 /**
  * Core activity logging logic
- * 
+ *
  * Store activity log data in context for batch creation with parent record.
  * This prevents foreign key constraint violations by ensuring the parent
  * exists before the activity log is created.
@@ -113,10 +111,10 @@ async function logActivity(
   }
 
   const metadata = buildMetadata(data, context, config, action);
-  
-  const clientId = await Promise.resolve(config.getAssociatedClientId?.(data)) || null;
-  const jobId = await Promise.resolve(config.getAssociatedJobId?.(data)) || null;
-  
+
+  const clientId = (await Promise.resolve(config.getAssociatedClientId?.(data))) || null;
+  const jobId = (await Promise.resolve(config.getAssociatedJobId?.(data))) || null;
+
   // Store activity log data in context for batch creation
   // ActiveRecord will use this to create the log atomically with the parent
   context.pendingActivityLog = {
@@ -126,15 +124,18 @@ async function logActivity(
     loggable_id: data.id || '',
     metadata,
     client_id: clientId,
-    job_id: jobId
+    job_id: jobId,
   };
-  
-  console.log(`[Activity Logging] Stored pending activity log in context for ${config.loggableType}:`, {
-    action,
-    loggable_type: config.loggableType,
-    user_id: currentUser.id
-  });
-  
+
+  console.log(
+    `[Activity Logging] Stored pending activity log in context for ${config.loggableType}:`,
+    {
+      action,
+      loggable_type: config.loggableType,
+      user_id: currentUser.id,
+    }
+  );
+
   // DO NOT create activity log here - let ActiveRecord handle it atomically
   // This prevents foreign key constraint violations during offline/online sync
 }
@@ -210,7 +211,7 @@ function buildMetadata(
   data: Loggable,
   context: MutatorContext,
   config: ActivityLoggingConfig & typeof DEFAULT_ACTIVITY_LOGGING_CONFIG,
-  action: string
+  _action: string
 ): any {
   const metadata: any = {};
   const changes = context.changes || {};
@@ -218,7 +219,7 @@ function buildMetadata(
   // Add change tracking if enabled
   if (config.trackChanges && context.action === 'update') {
     const filteredChanges = filterChanges(changes, config.excludeFields);
-    
+
     if (Object.keys(filteredChanges).length > 0) {
       metadata.changes = filteredChanges;
     }
@@ -234,7 +235,7 @@ function buildMetadata(
     if (context.action === 'update' && determineUpdateAction(data, context, config) === 'renamed') {
       // Clear the changes from metadata for renamed action
       delete metadata.changes;
-      
+
       if (changes.name || changes.title) {
         metadata.old_name = changes.name ? changes.name[0] : changes.title[0];
       }
@@ -260,15 +261,18 @@ function buildMetadata(
 /**
  * Filter out excluded fields from changes
  */
-function filterChanges(changes: Record<string, [any, any]>, excludeFields: string[]): Record<string, [any, any]> {
+function filterChanges(
+  changes: Record<string, [any, any]>,
+  excludeFields: string[]
+): Record<string, [any, any]> {
   const filtered: Record<string, [any, any]> = {};
-  
+
   for (const [field, values] of Object.entries(changes)) {
     if (!excludeFields.includes(field)) {
       filtered[field] = values;
     }
   }
-  
+
   return filtered;
 }
 
@@ -295,7 +299,7 @@ function getRecordDisplayName(data: Loggable, loggableType: string): string {
 function getStatusLabel(status: string, _loggableType: string): string {
   // This would ideally integrate with status configuration
   // For now, just humanize the status
-  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
 /**
@@ -323,31 +327,38 @@ export interface ActivityLoggingContext extends MutatorContext {
  */
 export const taskActivityLoggingMutator = createActivityLoggingMutator({
   loggableType: 'Task',
-  excludeFields: ['updated_at', 'created_at', 'position', 'lock_version', 'reordered_at', 'parent_id'],
+  excludeFields: [
+    'updated_at',
+    'created_at',
+    'position',
+    'lock_version',
+    'reordered_at',
+    'parent_id',
+  ],
   getAssociatedJobId: (data) => data.job_id,
   getAssociatedClientId: async (data) => {
     // Tasks don't have client_id directly, need to get from job using ActiveRecord
     if (!data.job_id) return null;
-    
+
     try {
       // Use ActiveRecord Job model for direct database lookup
       const { Job } = await import('../../models/job');
       const job = await Job.find(data.job_id);
       return job?.client_id || null;
-    } catch (_error) {
+    } catch {
       // If job not found or other error, return null
       return null;
     }
-  }
+  },
 });
 
 /**
- * Job activity logging mutator  
+ * Job activity logging mutator
  */
 export const jobActivityLoggingMutator = createActivityLoggingMutator({
   loggableType: 'Job',
   getAssociatedJobId: (data) => data.id,
-  getAssociatedClientId: (data) => data.client_id
+  getAssociatedClientId: (data) => data.client_id,
 });
 
 /**
@@ -355,7 +366,7 @@ export const jobActivityLoggingMutator = createActivityLoggingMutator({
  */
 export const clientActivityLoggingMutator = createActivityLoggingMutator({
   loggableType: 'Client',
-  getAssociatedClientId: (data) => data.id
+  getAssociatedClientId: (data) => data.id,
 });
 
 /**
@@ -363,7 +374,7 @@ export const clientActivityLoggingMutator = createActivityLoggingMutator({
  */
 export const userActivityLoggingMutator = createActivityLoggingMutator({
   loggableType: 'User',
-  trackChanges: false // Don't track detailed changes for users for privacy
+  trackChanges: false, // Don't track detailed changes for users for privacy
 });
 
 /**
@@ -386,7 +397,7 @@ export async function logCustomActivity(
   }
 
   const { ActivityLog } = await import('../../models/activity-log');
-  
+
   const activityLogData: CreateActivityLogData = {
     user_id: options.userId || currentUser?.id || '',
     action,
@@ -394,7 +405,7 @@ export async function logCustomActivity(
     loggable_id: loggableId,
     metadata,
     client_id: options.clientId || null,
-    job_id: options.jobId || null
+    job_id: options.jobId || null,
   };
 
   await ActivityLog.create(activityLogData);
@@ -404,4 +415,13 @@ export async function logCustomActivity(
  * Type helpers for activity logging
  */
 export type ActivityLoggingMutatorFunction<T> = MutatorFunction<T & Loggable>;
-export type ActivityAction = 'created' | 'updated' | 'deleted' | 'discarded' | 'undiscarded' | 'status_changed' | 'renamed' | 'assigned' | 'unassigned';
+export type ActivityAction =
+  | 'created'
+  | 'updated'
+  | 'deleted'
+  | 'discarded'
+  | 'undiscarded'
+  | 'status_changed'
+  | 'renamed'
+  | 'assigned'
+  | 'unassigned';
