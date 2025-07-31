@@ -16,11 +16,10 @@
   import type { ClientData } from '$lib/models/types/client-data';
   import type { JobData } from '$lib/models/types/job-data';
   import { ReactiveView } from '$lib/reactive';
-  import { ReactiveActivityLogV2, ActivityLogModels } from '$lib/models/reactive-activity-log-v2';
+  import { ActivityLogModels } from '$lib/models/reactive-activity-log-v2';
   import ActivityLogEmpty from '$lib/components/logs/ActivityLogEmpty.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import ActivityTypeEmoji from '$lib/components/ui/ActivityTypeEmoji.svelte';
-  import { getTaskStatusEmoji, getJobStatusEmoji, getTaskPriorityEmoji } from '$lib/config/emoji';
   import { slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
@@ -42,20 +41,14 @@
     lastActivity: Date;
   }
 
-  let { 
-    context = 'system', 
-    clientId,
-    jobId,
-    optimizeForNavigation = false
-  }: Props = $props();
+  let { context = 'system', clientId, jobId, optimizeForNavigation = false }: Props = $props();
 
   let tableContainer = $state<HTMLElement>();
   let groupStates = $state<Record<string, boolean>>({});
-  let autoScrolled = $state<boolean>(false);
 
   // Choose the appropriate model based on context
-  const ActivityLogModel = optimizeForNavigation 
-    ? ActivityLogModels.navigation 
+  const ActivityLogModel = optimizeForNavigation
+    ? ActivityLogModels.navigation
     : ActivityLogModels.standard;
 
   // Build query based on context
@@ -149,7 +142,7 @@
         weekday: 'long',
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
     }
   }
@@ -187,12 +180,12 @@
           job,
           logs: [],
           priority,
-          lastActivity: new Date(log.created_at)
+          lastActivity: new Date(log.created_at),
         });
       }
 
       groups.get(groupKey)!.logs.push(log);
-      
+
       // Update last activity time
       const logDate = new Date(log.created_at);
       if (logDate > groups.get(groupKey)!.lastActivity) {
@@ -223,9 +216,7 @@
     <div class="activity-logs-error">
       <h3>Failed to load activity logs</h3>
       <p>Error: {error?.message || 'Unknown error occurred'}</p>
-      <button onclick={refresh} class="retry-button">
-        Try Again
-      </button>
+      <button onclick={refresh} class="retry-button"> Try Again </button>
     </div>
   {/snippet}
 
@@ -254,9 +245,10 @@
       {#each groupLogsByContext(data) as group (group.key)}
         <div class="logs-group" transition:slide={{ duration: 300, easing: quintOut }}>
           <!-- Group header -->
-          <div 
+          <button
             class="logs-group-header {getGroupHeaderClass(group.type)}"
             onclick={() => toggleGroup(group)}
+            type="button"
           >
             <div class="group-title">
               <span class="collapse-icon">
@@ -268,7 +260,7 @@
             <div class="group-last-activity">
               Last activity: {group.lastActivity.toLocaleString()}
             </div>
-          </div>
+          </button>
 
           <!-- Group content -->
           {#if !isGroupCollapsed(group.key)}
@@ -276,16 +268,16 @@
               {#each getLogsByDate(group.logs) as [dateKey, dateLogs] (dateKey)}
                 <div class="date-group">
                   <h4 class="date-header">{formatDateHeader(dateKey)}</h4>
-                  
+
                   {#each dateLogs as log (log.id)}
                     <div class="activity-log-item" transition:slide={{ duration: 150 }}>
                       <div class="log-time">
                         {new Date(log.created_at).toLocaleTimeString('en-US', {
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
                         })}
                       </div>
-                      
+
                       <div class="log-content">
                         <div class="log-header">
                           <ActivityTypeEmoji type={log.activity_type} />
@@ -294,11 +286,11 @@
                             <span class="log-user">by {log.user.name}</span>
                           {/if}
                         </div>
-                        
+
                         <div class="log-description">
                           {log.description}
                         </div>
-                        
+
                         {#if log.details}
                           <div class="log-details">{log.details}</div>
                         {/if}
@@ -381,8 +373,12 @@
   }
 
   @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .stale-data-notice {
@@ -421,6 +417,10 @@
     justify-content: space-between;
     align-items: center;
     transition: background-color 0.2s;
+    width: 100%;
+    border: none;
+    text-align: left;
+    font: inherit;
   }
 
   .logs-group-header:hover {

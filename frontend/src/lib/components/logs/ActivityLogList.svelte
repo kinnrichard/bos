@@ -7,7 +7,12 @@
   import ActivityLogEmpty from './ActivityLogEmpty.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import ActivityTypeEmoji from '$lib/components/ui/ActivityTypeEmoji.svelte';
-  import { getTaskStatusEmoji, getJobStatusEmoji, getTaskPriorityEmoji } from '$lib/config/emoji';
+  import {
+    getTaskStatusEmoji,
+    getJobStatusEmoji,
+    getTaskPriorityEmoji,
+    getJobPriorityEmoji,
+  } from '$lib/config/emoji';
   import { slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
@@ -167,7 +172,11 @@
           // Handle special field changes
           if (changeKeys.length === 1 && changeKeys[0] === 'priority') {
             const [, newPriority] = filteredChanges.priority;
-            const priorityEmoji = getTaskPriorityEmoji(newPriority);
+            // Use appropriate priority emoji function based on loggable type
+            const priorityEmoji =
+              log.loggable_type === 'Job'
+                ? getJobPriorityEmoji(newPriority)
+                : getTaskPriorityEmoji(newPriority);
             return `marked ${loggableTypeEmoji} ${loggableName} as ${priorityEmoji} ${newPriority?.charAt(0)?.toUpperCase() + newPriority?.slice(1)} Priority`;
           }
 

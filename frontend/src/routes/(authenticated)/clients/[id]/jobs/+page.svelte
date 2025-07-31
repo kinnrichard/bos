@@ -85,17 +85,6 @@
   <JobsLayout>
     {#snippet header()}
       <div class="header-content">
-        <div class="breadcrumb">
-          {#if client}
-            <a href="/clients/{clientId}" class="breadcrumb-link">
-              {client.name}
-            </a>
-            <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-current">Jobs</span>
-          {:else}
-            <span>Client Jobs</span>
-          {/if}
-        </div>
         <h1>
           {#if client}
             Jobs for {client.name}

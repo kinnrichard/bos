@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PopulatedJob } from '$lib/types/job';
   import SchedulePriorityEditPopover from '$lib/components/layout/SchedulePriorityEditPopover.svelte';
+  import PriorityBadge from '$lib/components/ui/PriorityBadge.svelte';
 
   let {
     job,
@@ -29,15 +30,10 @@
     return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   }
 
-  function formatPriorityLabel(priority?: string): string {
-    if (!priority) return 'Normal';
-    // Convert raw priority to display label
-    return priority.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-  }
+  // Priority formatting now handled by PriorityBadge component
 
   // Computed labels from raw API data
   const statusLabel = $derived(formatStatusLabel(job?.attributes?.status));
-  const priorityLabel = $derived(formatPriorityLabel(job?.attributes?.priority));
 </script>
 
 <div class="job-info-panel">
@@ -55,12 +51,15 @@
           </div>
           <div class="info-item">
             <span class="info-label">Priority</span>
-            <span
-              class="info-value priority-value"
-              data-priority={job.attributes.priority || 'normal'}
-            >
-              {priorityLabel}
-            </span>
+            <div class="info-value priority-badge-container">
+              <PriorityBadge
+                priority={job.attributes.priority || 'normal'}
+                type="job"
+                size="small"
+                showLabel={true}
+                hideNormal={false}
+              />
+            </div>
           </div>
           {#if job.attributes.is_overdue}
             <div class="info-item">
@@ -212,14 +211,10 @@
     font-weight: 500;
   }
 
-  .priority-value[data-priority='high'] {
-    color: var(--accent-red);
-    font-weight: 500;
-  }
-
-  .priority-value[data-priority='critical'] {
-    color: var(--accent-red);
-    font-weight: 600;
+  .priority-badge-container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
   }
 
   .overdue-indicator {
@@ -319,7 +314,6 @@
     }
 
     .status-value,
-    .priority-value,
     .overdue-indicator {
       font-weight: 700;
     }

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
+  import { getJobStatusEmoji } from '$lib/config/emoji';
+  import PriorityBadge from '$lib/components/ui/PriorityBadge.svelte';
 
   let {
     status,
@@ -51,50 +52,12 @@
     );
   }
 
-  function getPriorityInfo(priority: string) {
-    const priorityMap: Record<string, { label: string; color: string }> = {
-      critical: {
-        label: 'Critical Priority',
-        color: 'var(--accent-red)',
-      },
-      very_high: {
-        label: 'Very High Priority',
-        color: 'var(--accent-red)',
-      },
-      high: {
-        label: 'High Priority',
-        color: 'var(--accent-red)',
-      },
-      normal: {
-        label: 'Normal Priority',
-        color: 'var(--text-secondary)',
-      },
-      low: {
-        label: 'Low Priority',
-        color: 'var(--text-secondary)',
-      },
-      proactive_followup: {
-        label: 'Proactive Follow-up',
-        color: 'var(--accent-blue)',
-      },
-    };
-
-    return (
-      priorityMap[priority] || {
-        label: priority && typeof priority === 'string' ? priority.replace('_', ' ') : 'Unknown',
-        color: 'var(--text-secondary)',
-      }
-    );
-  }
+  // Use centralized priority system via PriorityBadge component
 
   const statusInfo = $derived(
     status ? getStatusInfo(status) : { label: 'Unknown', color: 'var(--text-secondary)' }
   );
-  const priorityInfo = $derived(
-    priority ? getPriorityInfo(priority) : { label: 'Unknown', color: 'var(--text-secondary)' }
-  );
   const statusEmoji = $derived(status ? getJobStatusEmoji(status) : '📝');
-  const priorityEmoji = $derived(priority ? getJobPriorityEmoji(priority) : '');
 </script>
 
 <div class="status-indicator">
@@ -106,11 +69,8 @@
 
   <!-- Priority Indicator (only if not normal) -->
   {#if priority !== 'normal'}
-    <div class="status-badge priority" style="color: {priorityInfo.color}">
-      {#if priorityEmoji}
-        <span class="status-emoji">{priorityEmoji}</span>
-      {/if}
-      <span class="status-label">{priorityInfo.label}</span>
+    <div class="priority-badge-wrapper">
+      <PriorityBadge {priority} type="job" size="small" showLabel={true} hideNormal={true} />
     </div>
   {/if}
 
@@ -150,9 +110,8 @@
     padding: 8px 14px;
   }
 
-  .status-badge.priority {
-    background-color: rgba(255, 69, 58, 0.1);
-    border-color: rgba(255, 69, 58, 0.2);
+  .priority-badge-wrapper {
+    /* Priority badge styling now handled by PriorityBadge component */
   }
 
   .status-badge.overdue {
