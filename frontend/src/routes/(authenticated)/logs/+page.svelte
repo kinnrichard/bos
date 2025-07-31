@@ -4,9 +4,8 @@
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
 
   // Use ReactiveActivityLogV2 with flash prevention and progressive loading
-  const logsQuery = ReactiveActivityLogV2.kept()
-    .includes(['user', 'client', 'job'])
-    .orderBy('created_at', 'asc')
+  const logsQuery = ReactiveActivityLogV2.includes(['user', 'client', 'job'])
+    .orderBy('created_at', 'desc')
     .limit(500)
     .all();
 
@@ -20,10 +19,6 @@
 
 <AppLayout>
   <LogsLayout title="System Activity Logs">
-    <ActivityLogList
-      {logsQuery}
-      context="system"
-      strategy="progressive"
-    />
+    <ActivityLogList {logsQuery} context="system" strategy="progressive" />
   </LogsLayout>
 </AppLayout>
