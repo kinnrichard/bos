@@ -27,14 +27,14 @@
 - ✅ Components that are repeated 3x (namely popovers) are DRY
 
 ## 📋 ReactiveRecord
-- Incorporate the need for...
-  - ActivityLogs should be generated client-side but then validated server-side
-  - Utilizing the Zero.js permissions system but defining it easily in Rails, for example, via Action Policy
-  - When a model is instantiated client side, it should have the same default values that it would in Rails schema
-- 💭 Custom Mutators
+- ✅ When a model is instantiated client-side with .new(), it gets same default values that it would in Rails schema
+- 💭 Utilizing the Zero.js permissions system but defining it easily in Rails, for example, via Action Policy
+- 💭 ActivityLogs should be generated client-side but then validated server-side
+- 💭 Calculated fields such as reduced name should be overwritten server-side
   - 💭 Positioning
   - 💭 Activity Tracking
   - 💭 Setting User Attribution
+  - 💭 Name Normalized
 
 # v1 Features
 
