@@ -7,14 +7,18 @@ editor:
   default: code
 templates:
   directory: templates
+defaults:
+  assignee: null
 tasks:
   directory: tickets
   auto_id: true
   id_format: TSK-{counter:04d}
-  counter: 2
 git:
   auto_commit: false
   commit_prefix: '[ai-trackdown]'
 plugins: {}
-epics:
-  counter: 11
+paths:
+  tickets_dir: tickets
+  epics_dir: tickets/epics
+  issues_dir: tickets/issues
+  tasks_dir: tickets/tasks
