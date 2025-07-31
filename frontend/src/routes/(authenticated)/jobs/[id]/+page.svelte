@@ -32,19 +32,16 @@
   // ✨ Conditional Data Loading: Client query for new job creation
   const clientQuery = $derived(isNewJobMode && clientId ? ReactiveClient.find(clientId) : null);
 
-  // ✨ Create mock job object for new job creation mode
+  // ✨ Create new job object using ActiveRecord.new() for new job creation mode
   const newJobMock = $derived(
     isNewJobMode && clientQuery?.data
       ? {
-          id: null, // Indicates this is a new job
-          title: '', // Start empty, EditableTitle will handle in creation mode
-          status: 'active',
-          priority: 'medium',
-          client_id: clientId,
+          ...Job.new({
+            client_id: clientId || undefined,
+            title: '', // Start empty, EditableTitle will handle in creation mode
+          }),
           client: clientQuery.data,
           tasks: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         }
       : null
   );
@@ -127,10 +124,10 @@
 
     try {
       const createdJob = await Job.create({
+        ...Job.new({
+          client_id: clientId || undefined,
+        }),
         title: trimmedTitle,
-        client_id: clientId,
-        status: 'active',
-        priority: 'medium',
       });
 
       // Navigate to the newly created job

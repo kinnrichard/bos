@@ -30,6 +30,7 @@ import type {
   CreateData,
   UpdateData,
   CrudResult,
+  NewRecord,
 } from './types';
 import type { MutatorContext } from '../../shared/mutators/base-mutator';
 
@@ -257,6 +258,42 @@ export class ActiveRecord<T extends BaseRecord> implements ModelWithMutators<T> 
    */
   withDiscarded(): ScopedQuery<T> {
     return new ActiveRecordScopedQuery<T>(this.config).withDiscarded();
+  }
+
+  /**
+   * Create a new unpersisted record - Rails .new() behavior
+   * Returns an object with defaults applied but no database interaction
+   * The record has id, created_at, and updated_at set to null
+   *
+   * @param data - Optional data to merge with defaults
+   * @returns NewRecord<T> - Unpersisted record ready for forms
+   *
+   * @example
+   * ```typescript
+   * // Create empty job with defaults
+   * const newJob = Job.new();
+   *
+   * // Create job with initial data
+   * const newJob = Job.new({
+   *   client_id: 'client-123',
+   *   title: 'New Project'
+   * });
+   *
+   * // Use in forms - record is not saved until calling create()
+   * const savedJob = await Job.create(newJob);
+   * ```
+   */
+  new(data: Partial<CreateData<T>> = {}): NewRecord<T> {
+    // Apply defaults first, then override with provided data
+    const recordData = {
+      ...(this.config.defaults || {}),
+      ...data,
+      id: null,
+      created_at: null,
+      updated_at: null,
+    };
+
+    return recordData as NewRecord<T>;
   }
 
   /**
