@@ -5,6 +5,7 @@
  */
 
 import type { Page } from '@playwright/test';
+import { randomUUID } from 'crypto';
 import { testDb } from './database';
 
 export interface JobData {
@@ -155,7 +156,7 @@ export class DataFactory {
     await this.ensureAuthenticated();
 
     const clientData = {
-      name: `Test Client ${Date.now()}`,
+      name: `Test Client ${randomUUID()}`,
       client_type: 'residential' as const,
       ...data,
     };
@@ -342,7 +343,7 @@ export class DataFactory {
     }
 
     const jobData = {
-      title: `Test Job ${Date.now()}`,
+      title: `Test Job ${randomUUID()}`,
       description: 'Test job description',
       status: 'open' as const,
       priority: 'normal' as const,
@@ -389,7 +390,7 @@ export class DataFactory {
     const { job_id: _job_id, description: _description, ...cleanData } = data;
 
     const taskData = {
-      title: `Test Task ${Date.now()}`,
+      title: `Test Task ${randomUUID()}`,
       status: 'new_task',
       ...cleanData,
     };
