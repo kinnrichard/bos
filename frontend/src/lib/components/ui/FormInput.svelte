@@ -46,7 +46,8 @@
   } = $props();
 
   // Focus management
-  let inputElement = $state<HTMLInputElement>();
+  let inputElement: HTMLInputElement | undefined = $state();
+
   export function focus() {
     inputElement?.focus();
   }

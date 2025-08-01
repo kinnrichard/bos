@@ -1,7 +1,7 @@
 <script lang="ts">
   // Stores
   import { layout, layoutActions } from '$lib/stores/layout.svelte';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
 
   // Navigation
   import { goto } from '$app/navigation';

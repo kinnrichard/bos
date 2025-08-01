@@ -7,8 +7,7 @@
 
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
-  import { onMount, onDestroy } from 'svelte';
+  import { page } from '$app/state';
   import { ReactiveQuery } from '$lib/zero/reactive-query-unified.svelte';
   import { getZero } from '$lib/zero';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
@@ -95,9 +94,9 @@
   }
 
   // URL parameter handling
-  onMount(() => {
+  $effect(() => {
     const searchQuery = $page.url.searchParams.get('q');
-    if (searchQuery) {
+    if (searchQuery && !clientsSearch.searchQuery) {
       clientsSearchActions.setSearchQuery(searchQuery);
     }
   });
@@ -135,8 +134,10 @@
   });
 
   // Clean up timer on unmount
-  onDestroy(() => {
-    clearTimeout(debounceTimer);
+  $effect(() => {
+    return () => {
+      clearTimeout(debounceTimer);
+    };
   });
 </script>
 

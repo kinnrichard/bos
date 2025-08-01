@@ -7,7 +7,7 @@
 
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { ReactiveClient } from '$lib/models/reactive-client';
   import { Client } from '$lib/models/client';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
@@ -179,7 +179,7 @@
   ];
 
   // Focus management
-  let nameInput = $state<FormInput | null>(null);
+  let nameInput: FormInput | null = $state(null);
   $effect(() => {
     if (isEditing && clientId === 'new' && nameInput) {
       // Auto-focus name input for new clients
