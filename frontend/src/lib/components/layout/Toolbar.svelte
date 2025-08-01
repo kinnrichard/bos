@@ -53,8 +53,8 @@
 
     if (routeId === ROUTE_PATTERNS.jobDetail) return 'job-detail';
     if (routeId.includes('/jobs')) return 'jobs';
+    if (routeId === ROUTE_PATTERNS.clientPeople) return 'people';
     if (routeId.includes('/clients')) return 'clients';
-    if (routeId.includes('/people')) return 'people';
     if (routeId.includes('/devices')) return 'devices';
 
     return 'home';
