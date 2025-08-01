@@ -7,7 +7,7 @@
 
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { page } from '$app/state';
+  import { page } from '$app/stores';
   import { ReactiveQuery } from '$lib/zero/reactive-query-unified.svelte';
   import { getZero } from '$lib/zero';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
