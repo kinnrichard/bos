@@ -1,6 +1,7 @@
 <script lang="ts">
   import { layout, layoutActions } from '$lib/stores/layout.svelte';
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { taskFilter, taskFilterActions } from '$lib/stores/taskFilter.svelte';
   import { jobsSearch, jobsSearchActions } from '$lib/stores/jobsSearch.svelte';
   import { clientsSearch, clientsSearchActions } from '$lib/stores/clientsSearch.svelte';
@@ -162,17 +163,28 @@
 
   // Page-specific actions based on current page
   const currentPage = $derived(getCurrentPage());
-  const pageActions = $derived(getPageActions(currentPage));
 
-  function getPageActions(page: string) {
-    switch (page) {
+  // Derive the route and client ID at component level
+  const currentRoute = $derived($page.route.id);
+  const currentClientId = $derived($page.params.id);
+
+  const pageActions = $derived.by(() => {
+    switch (currentPage) {
       case 'jobs':
         return [
           {
             label: 'New Job',
             icon: '/icons/plus.svg',
             iconType: 'svg',
-            action: () => debugComponent('New job action triggered'),
+            action: () => {
+              // When on the client jobs page, include the client ID
+              if (currentRoute === '/(authenticated)/clients/[id]/jobs' && currentClientId) {
+                goto(`/jobs/new?clientId=${currentClientId}`);
+              } else {
+                // On the main jobs page, navigate without client ID
+                goto('/jobs/new');
+              }
+            },
           },
         ];
       case 'clients':
@@ -205,7 +217,7 @@
       default:
         return [];
     }
-  }
+  });
 
   // Task filter functionality
   function handleTaskStatusFilter(statuses: string[]) {
@@ -234,6 +246,28 @@
       >
         <img src="/icons/sidebar.svg" alt="Menu" class="action-icon-svg" />
       </CircularButton>
+    {/if}
+
+    <!-- Page-specific actions (left-aligned) -->
+    {#if pageActions.length > 0}
+      <div class="page-actions">
+        {#each pageActions as action}
+          <CircularButton
+            variant="default"
+            size="normal"
+            onclick={disabled ? undefined : action.action}
+            title={disabled ? 'Disabled' : action.label}
+            data-testid={action.label === 'New Job' ? 'create-job-button' : undefined}
+            {disabled}
+          >
+            {#if action.iconType === 'svg'}
+              <img src={action.icon} alt="" class="action-icon-svg" />
+            {:else if action.iconType === 'emoji'}
+              <span class="action-icon">{action.icon}</span>
+            {/if}
+          </CircularButton>
+        {/each}
+      </div>
     {/if}
 
     <!-- Job status button (show on job detail page or when currentJob is provided) -->
@@ -272,28 +306,6 @@
         bind:popover={filterPopover}
         {disabled}
       />
-    {/if}
-
-    <!-- Page-specific actions -->
-    {#if pageActions.length > 0}
-      <div class="page-actions">
-        {#each pageActions as action}
-          <CircularButton
-            variant="default"
-            size="normal"
-            onclick={disabled ? undefined : action.action}
-            title={disabled ? 'Disabled' : action.label}
-            data-testid={action.label === 'New Job' ? 'create-job-button' : undefined}
-            {disabled}
-          >
-            {#if action.iconType === 'svg'}
-              <img src={action.icon} alt="" class="action-icon-svg" />
-            {:else if action.iconType === 'emoji'}
-              <span class="action-icon">{action.icon}</span>
-            {/if}
-          </CircularButton>
-        {/each}
-      </div>
     {/if}
 
     {#if showSearch}

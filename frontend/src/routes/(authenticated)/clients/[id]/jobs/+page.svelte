@@ -93,10 +93,6 @@
           {/if}
         </h1>
       </div>
-      <a href="/jobs/new?clientId={clientId}" class="action-button action-button--small">
-        <span class="button-icon">➕</span>
-        New Job
-      </a>
     {/snippet}
 
     <ZeroDataView
