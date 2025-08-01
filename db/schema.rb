@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_01_195933) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_01_200501) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -153,6 +153,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_01_195933) do
     t.string "name_preferred"
     t.string "name_pronunciation_hint"
     t.boolean "is_active", default: true
+    t.string "title"
     t.index [ "client_id" ], name: "index_people_on_client_id"
     t.index [ "id" ], name: "index_people_on_id", unique: true
   end

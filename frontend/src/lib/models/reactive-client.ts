@@ -9,7 +9,7 @@
  * import { Client } from './client';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-01 20:03:51 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +59,12 @@ const ReactiveClientConfig = {
  * const allClientsQuery = ReactiveClient.all().all();
  * const activeClientsQuery = ReactiveClient.kept().all();
  * const singleClientQuery = ReactiveClient.find('123');
- * 
+ *
  * // With relationships
  * const clientWithRelationsQuery = ReactiveClient
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredClientsQuery = ReactiveClient
  *   .where({ status: 'active' })
@@ -81,6 +81,7 @@ registerModelRelationships('clients', {
   people: { type: 'hasMany', model: 'Person' },
   jobs: { type: 'hasMany', model: 'Job' },
   devices: { type: 'hasMany', model: 'Device' },
+  peopleGroups: { type: 'hasMany', model: 'PeopleGroup' },
 });
 
 /**
