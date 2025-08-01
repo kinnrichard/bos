@@ -150,10 +150,6 @@
     <!-- Page Header -->
     <div class="page-header">
       <h1>Clients</h1>
-      <button class="new-client-button" onclick={createNewClient}>
-        <span class="button-icon">➕</span>
-        New Client
-      </button>
     </div>
 
     <!-- Content Area -->
@@ -223,8 +219,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px;
-    border-bottom: 1px solid var(--border-primary, #38383a);
+    padding: 0 24px;
   }
 
   .page-header h1 {

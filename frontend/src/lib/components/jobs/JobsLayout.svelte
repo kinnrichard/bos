@@ -7,12 +7,12 @@
 
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  
+
   interface Props {
     children: Snippet;
     header?: Snippet;
   }
-  
+
   let { children, header }: Props = $props();
 </script>
 
@@ -22,7 +22,7 @@
       {@render header()}
     </div>
   {/if}
-  
+
   <div class="jobs-content">
     {@render children()}
   </div>
@@ -30,7 +30,7 @@
 
 <style>
   .jobs-container {
-    padding: 0 24px 24px 24px;
+    padding: 0 24px;
     max-width: 1200px;
     margin: 0 auto;
     height: 100%;

@@ -94,26 +94,29 @@
 
     switch (currentPageType) {
       case 'jobs':
-        return [
-          {
-            label: 'New Job',
-            icon: '/icons/plus.svg',
-            iconType: 'svg',
-            action: () => {
-              const clientId = currentRoute === ROUTE_PATTERNS.clientJobs ? currentClientId : null;
-              goto(clientId ? `/jobs/new?clientId=${clientId}` : '/jobs/new');
+        // Only show new job button when on client-specific jobs page
+        if (currentRoute === ROUTE_PATTERNS.clientJobs && currentClientId) {
+          return [
+            {
+              label: 'New Job',
+              icon: '/icons/plus.svg',
+              iconType: 'svg',
+              action: () => goto(`/jobs/new?clientId=${currentClientId}`),
+              testId: 'create-job-button',
             },
-            testId: 'create-job-button',
-          },
-        ];
+          ];
+        }
+        // No new job button on main jobs page - users must go through a client
+        return [];
 
       case 'clients':
         return [
           {
             label: 'New Client',
-            icon: '➕',
-            iconType: 'emoji',
+            icon: '/icons/plus.svg',
+            iconType: 'svg',
             action: () => goto('/clients/new'),
+            testId: 'create-client-button',
           },
         ];
 
