@@ -6,7 +6,7 @@ status: planning
 priority: high
 assignee: "BOS Engineering Team"
 created_date: 2025-07-31T00:00:00.000Z
-updated_date: 2025-07-31T00:00:00.000Z
+updated_date: 2025-07-31T01:00:00.000Z
 estimated_tokens: 0
 actual_tokens: 0
 ai_context: []
@@ -58,10 +58,12 @@ This epic covers the comprehensive migration of the Rails backend application fr
 ### Success Criteria
 - ✅ All Rails code organized under `backend/` directory
 - ✅ Development workflow (`bin/dev`) works seamlessly
+- ✅ ReactiveRecord generator functions with correct paths
 - ✅ All tests pass without modification
 - ✅ CI/CD pipelines execute successfully
 - ✅ Deployment process functions correctly
 - ✅ Zero.js integration continues working
+- ✅ Kamal deployment commands work with new paths
 - ✅ No regression in functionality
 - ✅ Clear documentation for new structure
 - ✅ Team onboarding materials updated
@@ -141,6 +143,10 @@ This epic covers the comprehensive migration of the Rails backend application fr
 - [ ] Update Rails internal path references
 - [ ] Move Gemfile and Gemfile.lock
 - [ ] Update bundler configuration
+- [ ] Update ReactiveRecord generator default output_dir path (from `frontend/src/lib/models` to `../frontend/src/lib/models`)
+- [ ] Update scripts/zero-dev-server.js config path reference
+- [ ] Update bin/setup Rails command paths (`bin/rails db:prepare`, `bin/rails log:clear`)
+- [ ] Update bin/test-servers Rails server path
 - [ ] Verify Rails console functionality
 - [ ] Test Rails server startup
 
@@ -183,11 +189,15 @@ This epic covers the comprehensive migration of the Rails backend application fr
 - [ ] Update Dockerfile with new structure
 - [ ] Update .github/workflows/ci.yml
 - [ ] Update .github/workflows/deploy-dev.yml
-- [ ] Modify bin/dev script
+- [ ] Modify bin/dev script (including generator paths)
 - [ ] Update bin/setup script
 - [ ] Update package.json scripts
 - [ ] Modify Zero.js server configuration
-- [ ] Update deployment configurations
+- [ ] Update Kamal deployment command paths in config/deploy.yml (console, dbc, routes, migrate, seed, reset, dbsetup)
+- [ ] Update Kamal deployment command paths in config/deploy.development.yml
+- [ ] Update .git/config textconv path for credentials diff
+- [ ] Verify scripts/shared-lint.sh path detection logic
+- [ ] Update any hardcoded Rails paths in test files
 
 ### Phase 4: Validation & Documentation (2-3 days)
 **Priority**: P1  
@@ -215,8 +225,12 @@ This epic covers the comprehensive migration of the Rails backend application fr
 #### Tasks Breakdown
 - [ ] Run full test suite
 - [ ] Validate development workflow
+- [ ] Test ReactiveRecord generator with new paths (`rails generate zero:active_models`)
+- [ ] Verify bin/setup works from backend/ directory
+- [ ] Test complete development workflow: bin/dev → generator → server startup
 - [ ] Test CI/CD pipelines
 - [ ] Perform deployment dry-run
+- [ ] Validate Kamal commands work with new backend/ paths
 - [ ] Update project README
 - [ ] Update development documentation
 - [ ] Create migration troubleshooting guide
@@ -247,11 +261,24 @@ This epic covers the comprehensive migration of the Rails backend application fr
 #### Script Updates
 | Script | Changes Required | Priority |
 |------|-----------------|----------|
-| bin/dev | Update to use backend/Procfile.dev | P0 |
-| bin/setup | Update Rails setup paths | P0 |
-| scripts/zero-dev-server.js | Update config path references | P0 |
-| scripts/shared-lint.sh | Update Ruby file paths | P1 |
+| bin/dev | Update to use backend/Procfile.dev and generator paths | P0 |
+| bin/setup | Update Rails setup paths (`bin/rails db:prepare`, `bin/rails log:clear`) | P0 |
+| bin/test-servers | Update Rails server path for test environment | P0 |
+| scripts/zero-dev-server.js | Update config path references (zero-config.json location) | P0 |
+| scripts/shared-lint.sh | Update Ruby file paths and backend detection logic | P1 |
 | scripts/claude-lint-hook.sh | Update Rails paths | P1 |
+
+#### Generator Updates
+| Generator | Changes Required | Priority |
+|------|-----------------|----------|
+| ReactiveRecord Generator | Update default output_dir from `frontend/src/lib/models` to `../frontend/src/lib/models` | P0 |
+
+#### Deployment Configuration Updates
+| File | Changes Required | Priority |
+|------|-----------------|----------|
+| config/deploy.yml | Update all kamal exec command paths (console, dbc, routes, migrate, seed, reset, dbsetup) | P0 |
+| config/deploy.development.yml | Update all kamal exec command paths | P0 |
+| .git/config | Update textconv path for credentials diff | P1 |
 
 ### Directory Migration Map
 
@@ -311,15 +338,25 @@ This epic covers the comprehensive migration of the Rails backend application fr
 
 ### High Priority Risks
 
-#### Risk 1: Development Workflow Disruption
+#### Risk 1: ReactiveRecord Generator Path Issues
+**Impact**: Critical  
+**Probability**: High  
+**Mitigation**:
+- Test generator with new paths before migration
+- Update generator configuration early in Phase 2
+- Ensure bin/dev startup includes generator test
+- Document generator path changes clearly
+
+#### Risk 2: Development Workflow Disruption
 **Impact**: High  
 **Probability**: Medium  
 **Mitigation**:
 - Comprehensive testing of bin/dev workflow
+- Test all development scripts (bin/setup, bin/test-servers)
 - Clear documentation of changes
 - Pair programming during initial adoption
 
-#### Risk 2: CI/CD Pipeline Failures
+#### Risk 3: CI/CD Pipeline Failures
 **Impact**: High  
 **Probability**: Medium  
 **Mitigation**:
@@ -327,25 +364,35 @@ This epic covers the comprehensive migration of the Rails backend application fr
 - Gradual rollout with monitoring
 - Maintain rollback capability
 
-#### Risk 3: Deployment Configuration Issues
+#### Risk 4: Deployment Configuration Issues
 **Impact**: Critical  
 **Probability**: Low  
 **Mitigation**:
 - Test deployment in staging environment
+- Test all Kamal commands with new paths
 - Maintain old configuration backup
 - Document all deployment changes
 
 ### Medium Priority Risks
 
-#### Risk 4: Path Reference Bugs
+#### Risk 5: Path Reference Bugs
 **Impact**: Medium  
-**Probability**: Medium  
+**Probability**: High  
 **Mitigation**:
 - Comprehensive grep for path references
+- Special attention to generator paths
 - Automated testing of all endpoints
 - Code review focus on path changes
 
-#### Risk 5: Team Adoption Challenges
+#### Risk 6: Zero.js Configuration Issues
+**Impact**: Medium  
+**Probability**: Medium  
+**Mitigation**:
+- Test Zero.js server with new config paths
+- Verify zero-config.json is found correctly
+- Test development server startup thoroughly
+
+#### Risk 7: Team Adoption Challenges
 **Impact**: Medium  
 **Probability**: Low  
 **Mitigation**:
@@ -411,12 +458,18 @@ This epic covers the comprehensive migration of the Rails backend application fr
 - [ ] All Rails files in backend/ directory
 - [ ] Rails server starts successfully
 - [ ] Rails console functions properly
+- [ ] ReactiveRecord generator updated with correct paths
+- [ ] bin/setup and bin/test-servers updated
+- [ ] Zero.js configuration paths updated
 - [ ] All Rails tests pass
 
 ### Phase 3 Completion Criteria
 - [ ] Development environment fully functional
 - [ ] CI/CD pipelines execute successfully
 - [ ] Deployment configurations updated
+- [ ] Kamal commands updated and tested
+- [ ] Git config updated for credentials diff
+- [ ] All script paths verified
 - [ ] Integration tests pass
 
 ### Phase 4 Completion Criteria
