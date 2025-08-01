@@ -1,37 +1,34 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { layout, getClientTypeEmoji, layoutActions } from '$lib/stores/layout.svelte';
-  import { mainNavItems, footerNavItems, brandConfig, getActiveNavItem } from '$lib/config/navigation';
+  import { mainNavItems, footerNavItems, getActiveNavItem } from '$lib/config/navigation';
 
   // Reactive active item tracking
   const activeItem = $derived(getActiveNavItem($page.url.pathname));
-  
+
   // Check if we're on a page without a specific object loaded
   const isHomepage = $derived($page.url.pathname === '/');
   const isClientsListing = $derived($page.url.pathname === '/clients');
   const isJobsListing = $derived($page.url.pathname === '/jobs');
   const isLogsListing = $derived($page.url.pathname === '/logs');
-  const showSimplifiedNav = $derived(isHomepage || isClientsListing || isJobsListing || isLogsListing);
-  
-  // Dynamic footer items based on current client
-  const dynamicFooterItems = $derived(
-    footerNavItems.map(item => ({
-      ...item,
-      href: item.id === 'logs' && layout.currentClient 
-        ? `/clients/${layout.currentClient.id}/logs` 
-        : item.href,
-      label: item.id === 'logs' ? 'Logs' : item.label
-    }))
+  const showSimplifiedNav = $derived(
+    isHomepage || isClientsListing || isJobsListing || isLogsListing
   );
 
+  // Dynamic footer items based on current client
+  const dynamicFooterItems = $derived(
+    footerNavItems.map((item) => ({
+      ...item,
+      href:
+        item.id === 'logs' && layout.currentClient
+          ? `/clients/${layout.currentClient.id}/logs`
+          : item.href,
+      label: item.id === 'logs' ? 'Logs' : item.label,
+    }))
+  );
 </script>
 
-<div 
-  class="sidebar"
-  role="navigation"
-  aria-label="Main navigation"
->
-
+<div class="sidebar" role="navigation" aria-label="Main navigation">
   <!-- Brand/Logo -->
   <div class="brand-section">
     <!-- Logo - clickable to go home -->
@@ -43,11 +40,7 @@
   </div>
 
   <!-- Close button (CSS-controlled visibility) -->
-  <button 
-    class="close-btn"
-    onclick={layoutActions.hideSidebar}
-    aria-label="Close sidebar"
-  >
+  <button class="close-btn" onclick={layoutActions.hideSidebar} aria-label="Close sidebar">
     <!-- Close icon -->
     <img src="/icons/close.svg" alt="Close" />
   </button>
@@ -55,35 +48,36 @@
   <!-- Main Navigation -->
   <nav class="main-nav">
     <ul class="nav-list">
-  	  <!-- Current Client Section -->
-  	  {#if layout.currentClient}
-  	    <li class="nav-item">
-  	      <a 
-  	        href="/clients/{layout.currentClient.id}"
-  	        class="nav-link"
-  	        class:active={$page.url.pathname === `/clients/${layout.currentClient.id}`}
-  	      >
-  	        <span class="nav-icon">
-  	          {getClientTypeEmoji(layout.currentClient.client_type)}
-  	        </span>
-  	        <span class="nav-label">{layout.currentClient.name}</span>
-  	      </a>
-  	    </li>
+      <!-- Current Client Section -->
+      {#if layout.currentClient}
+        <li class="nav-item">
+          <a
+            href="/clients/{layout.currentClient.id}"
+            class="nav-link"
+            class:active={$page.url.pathname === `/clients/${layout.currentClient.id}`}
+          >
+            <span class="nav-icon">
+              {getClientTypeEmoji(layout.currentClient.client_type)}
+            </span>
+            <span class="nav-label">{layout.currentClient.name}</span>
+          </a>
+        </li>
         <!-- Invisible spacer -->
         <li class="nav-spacer" aria-hidden="true"></li>
-  	  {/if}
-  
-  
+      {/if}
 
       {#each mainNavItems as item (item.id)}
         <!-- Only show certain items when showing simplified nav -->
-        {#if !showSimplifiedNav || (item.id === 'people' || item.id === 'jobs')}
+        {#if !showSimplifiedNav || item.id === 'people' || item.id === 'jobs'}
           <li class="nav-item">
-            <a 
-              href={layout.currentClient && item.id === 'jobs' ? `/clients/${layout.currentClient.id}/jobs` : item.href}
+            <a
+              href={layout.currentClient && (item.id === 'jobs' || item.id === 'people')
+                ? `/clients/${layout.currentClient.id}/${item.id === 'jobs' ? 'jobs' : 'people'}`
+                : item.href}
               class="nav-link"
-              class:active={layout.currentClient && item.id === 'jobs' 
-                ? $page.url.pathname === `/clients/${layout.currentClient.id}/jobs`
+              class:active={layout.currentClient && (item.id === 'jobs' || item.id === 'people')
+                ? $page.url.pathname ===
+                  `/clients/${layout.currentClient.id}/${item.id === 'jobs' ? 'jobs' : 'people'}`
                 : activeItem === item.id}
               data-nav-item={item.id}
             >
@@ -93,6 +87,8 @@
                   Clients
                 {:else if layout.currentClient && item.id === 'jobs'}
                   Jobs
+                {:else if layout.currentClient && item.id === 'people'}
+                  People
                 {:else}
                   {item.label}
                 {/if}
@@ -109,11 +105,7 @@
     <ul class="nav-list">
       {#each dynamicFooterItems as item (item.id)}
         <li class="nav-item">
-          <a 
-            href={item.href}
-            class="nav-link footer-link"
-            class:active={activeItem === item.id}
-          >
+          <a href={item.href} class="nav-link footer-link" class:active={activeItem === item.id}>
             <span class="nav-icon">{item.icon}</span>
             <span class="nav-label">{item.label}</span>
           </a>
@@ -155,31 +147,30 @@
     opacity: 0.5;
     transition: opacity 0.25s ease;
   }
-  
+
   /* Show close button when hovering brand section or the button itself */
   .brand-section:hover + .close-btn,
   .close-btn:hover {
     opacity: 1;
     pointer-events: auto;
   }
-  
+
   .close-btn:hover img {
     opacity: 1;
   }
-  
 
   /* Brand section */
   .brand-section {
     padding: 12px;
     margin-bottom: 30px;
   }
-  
+
   .logo-link {
     display: block;
     text-decoration: none;
     transition: opacity 0.15s ease;
   }
-  
+
   .logo-link:hover {
     opacity: 0.8;
   }
@@ -195,9 +186,6 @@
     height: 40px;
     width: auto;
   }
-
-
-
 
   /* Main navigation */
   .main-nav {
@@ -247,7 +235,7 @@
 
   .nav-link.active {
     background-color: var(--accent-blue);
-    color: #FFFFFF;
+    color: #ffffff;
     font-weight: bold;
     text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }

@@ -27,6 +27,7 @@ export const ROUTE_PATTERNS = {
   jobs: '/jobs',
   clientJobs: '/(authenticated)/clients/[id]/jobs',
   clients: '/(authenticated)/clients',
+  clientPeople: '/(authenticated)/clients/[id]/people',
   people: '/people',
   devices: '/devices',
 } as const;

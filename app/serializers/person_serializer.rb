@@ -1,53 +1,36 @@
-class PersonSerializer < ApplicationSerializer
-  set_type :users
+class PersonSerializer
+  include FastJsonapi::ObjectSerializer
 
-  attributes :name, :email, :role
+  attributes :name, :title, :is_active, :name_preferred, :name_pronunciation_hint,
+             :created_at, :updated_at
 
-  timestamp_attributes :created_at, :updated_at
+  belongs_to :client
+  has_many :contact_methods
+  has_many :people_groups, through: :people_group_memberships
 
-  # Name components
-  attribute :first_name do |user|
-    user.first_name
+  attribute :display_name do |person|
+    person.name_preferred.presence || person.name
   end
 
-  attribute :last_name do |user|
-    parts = user.name.split
-    parts.size > 1 ? parts[1..].join(" ") : nil
+  attribute :active_contact_methods do |person|
+    person.contact_methods.active.map do |cm|
+      {
+        id: cm.id,
+        contact_method_type: cm.contact_method_type,
+        value: cm.value,
+        formatted_value: cm.formatted_value,
+        is_primary: cm.is_primary
+      }
+    end
   end
 
-  attribute :full_name do |user|
-    user.name
+  attribute :groups do |person|
+    person.people_groups.map do |group|
+      {
+        id: group.id,
+        name: group.name,
+        is_department: group.is_department
+      }
+    end
   end
-
-  # API compatibility attribute
-  attribute :status do |user|
-    "active"
-  end
-
-  # Role and permissions
-  attribute :is_active do |user|
-    true
-  end
-
-  attribute :is_technician do |user|
-    user.technician?
-  end
-
-  attribute :is_admin do |user|
-    user.admin?
-  end
-
-  attribute :can_manage_jobs do |user|
-    user.technician? || user.admin? || user.owner?
-  end
-
-  # Additional timestamps
-  attribute :last_seen_at do |user|
-    user.updated_at
-  end
-
-  # Relationships
-  has_many :assigned_tasks, serializer: TaskSerializer
-  has_many :technician_jobs, serializer: JobSerializer
-  has_many :notes, serializer: NoteSerializer
 end

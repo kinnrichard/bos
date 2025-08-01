@@ -126,14 +126,19 @@
         ];
 
       case 'people':
-        return [
-          {
-            label: 'Add Person',
-            icon: '➕',
-            iconType: 'emoji',
-            action: () => debugComponent('Add person action triggered'),
-          },
-        ];
+        // Only show add person button when on a client's people page
+        if (currentRoute === ROUTE_PATTERNS.clientPeople && currentClientId) {
+          return [
+            {
+              label: 'Add Person',
+              icon: '/icons/plus.svg',
+              iconType: 'svg',
+              action: () => goto(`/clients/${currentClientId}/people/new`),
+              testId: 'add-person-button',
+            },
+          ];
+        }
+        return [];
 
       case 'devices':
         return [
