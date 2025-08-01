@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick, onMount } from 'svelte';
   import { focusActions } from '$lib/stores/focusManager.svelte';
   import '../../styles/focus-ring.scss';
 
@@ -45,6 +46,7 @@
   let originalValue = $state(value);
   let isSaving = $state(false);
   let hasFocus = $state(false);
+  let hasAutoFocused = $state(false);
 
   // Update original value when value prop changes
   // In creation mode, don't sync with external value to prevent duplication
@@ -59,9 +61,24 @@
   });
 
   // Auto-focus on mount if requested
+  onMount(() => {
+    if (autoFocus && element && !hasAutoFocused) {
+      // Give the browser time to fully render
+      requestAnimationFrame(() => {
+        element.focus();
+        hasAutoFocused = true;
+      });
+    }
+  });
+
+  // Also use effect for when element becomes available later
   $effect(() => {
-    if (autoFocus && element) {
-      element.focus();
+    if (autoFocus && element && !hasFocus && !hasAutoFocused) {
+      // Use tick() to ensure DOM is ready before focusing
+      tick().then(() => {
+        element.focus();
+        hasAutoFocused = true;
+      });
     }
   });
 
@@ -237,7 +254,7 @@
   aria-readonly={!editable}
   tabindex={editable ? '0' : '-1'}
 >
-  {isCreationMode ? '' : value || ''}
+  {value || ''}
 </svelte:element>
 
 <style>

@@ -88,11 +88,13 @@
   - 💭 Sort by priority
 - ✅ Assign to technician
   - 💭 Filter by assignment
+- 💭 If clicking would change status and new status would be filtered out, open popover instead
 
 ## Tasks
 - ✅ Task deletion
-  - 🚧 Modal for deletion
+  - ✅ Modal for deletion
   - 🚧 Deleted Task view
+    - 💭 Don't allow deleting a deleted task
   - 💭 Undelete tasks
 - 💭 Smart behavior when marking something as canceled or complete
 
