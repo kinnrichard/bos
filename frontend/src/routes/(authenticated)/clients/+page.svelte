@@ -289,9 +289,8 @@
   }
 
   .letter-clients {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 8px;
+    columns: 300px;
+    column-gap: 16px;
   }
 
   .client-item {
@@ -308,6 +307,8 @@
     text-align: left;
     transition: all 0.15s ease;
     width: 100%;
+    margin-bottom: 8px;
+    break-inside: avoid;
   }
 
   .client-item:hover {
@@ -389,7 +390,7 @@
     }
 
     .letter-clients {
-      grid-template-columns: 1fr;
+      columns: 1;
     }
   }
 </style>
