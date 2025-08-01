@@ -96,7 +96,7 @@
   .text-button.primary {
     background-color: var(--accent-blue, #00a3ff);
     color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
 
   .text-button.primary:hover:not(.disabled) {
