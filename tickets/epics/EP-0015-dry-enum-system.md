@@ -1,14 +1,14 @@
 # EP-0015: DRY Enum System - YAML to Ruby & TypeScript
 
-**Epic Type**: Technical Debt / Architecture Enhancement  
-**Priority**: High  
-**Created**: 2025-07-31  
-**Status**: Draft  
-**Estimated Effort**: 3-4 weeks  
+**Epic Type**: Technical Debt / Architecture Enhancement
+**Priority**: High
+**Created**: 2025-07-31
+**Status**: Draft
+**Estimated Effort**: 3-4 weeks
 
 ## Executive Summary
 
-Implement a DRY (Don't Repeat Yourself) enum system that eliminates duplication between Ruby and TypeScript by using YAML configuration files as the single source of truth for all enum metadata (labels, emojis, colors, sort order).
+Implement a DRY (Don't Repeat Yourself) enum system that eliminates duplication between Ruby and TypeScript by using YAML configuration files as the single source of truth for all enum metadata (labels, emoji, sort order).
 
 ## Problem Statement
 
@@ -20,7 +20,7 @@ Currently, enum metadata is duplicated across multiple locations:
 - No systematic approach for new enums
 
 ### Current Pain Points
-1. **Duplication**: Same emoji/label data maintained in 2+ places
+1. **Duplication**: Same emoji/label data maintained in 3+ places
 2. **Inconsistency**: Frontend uses simple string manipulation vs backend's proper labels
 3. **Manual Sync**: No automated way to keep frontend/backend in sync
 4. **Scattered Logic**: Priority/status logic spread across many components
@@ -49,18 +49,16 @@ Create a configuration-driven enum system where YAML files serve as the single s
 
 ### 1. YAML Configuration Structure
 ```yaml
-# config/enums/job_priority.yml
+# config/enums/job/priority.yml
 job_priority:
   critical:
     label: "Critical"
     emoji: "🔥"
-    color: "red"
-    sort_order: 0
+    sort_order: 1
   very_high:
     label: "Very High"
     emoji: "‼️"
-    color: "red"
-    sort_order: 1
+    sort_order: 2
   # ... etc
 ```
 
@@ -87,8 +85,8 @@ job_priority:
 ## Implementation Stories
 
 ### Story 1: Create YAML Enum Configuration System
-**Priority**: Must Have  
-**Effort**: 3 points  
+**Priority**: Must Have
+**Effort**: 3 points
 
 Create the YAML configuration structure and initial enum files.
 
@@ -109,8 +107,8 @@ Create the YAML configuration structure and initial enum files.
 ---
 
 ### Story 2: Enhance Rails Zero Generator for Enums
-**Priority**: Must Have  
-**Effort**: 5 points  
+**Priority**: Must Have
+**Effort**: 5 points
 
 Extend the Rails Zero generator to detect and process enum metadata.
 
@@ -129,8 +127,8 @@ Extend the Rails Zero generator to detect and process enum metadata.
 ---
 
 ### Story 3: Generate Ruby Value Objects from YAML
-**Priority**: Must Have  
-**Effort**: 5 points  
+**Priority**: Must Have
+**Effort**: 5 points
 
 Create Ruby generator that creates value objects from YAML configuration.
 
@@ -149,8 +147,8 @@ Create Ruby generator that creates value objects from YAML configuration.
 ---
 
 ### Story 4: Generate TypeScript Enum Classes
-**Priority**: Must Have  
-**Effort**: 5 points  
+**Priority**: Must Have
+**Effort**: 5 points
 
 Generate TypeScript classes that mirror Ruby value objects.
 
@@ -169,8 +167,8 @@ Generate TypeScript classes that mirror Ruby value objects.
 ---
 
 ### Story 5: Create Generic Enum UI Components
-**Priority**: Must Have  
-**Effort**: 3 points  
+**Priority**: Must Have
+**Effort**: 3 points
 
 Build reusable Svelte components for enum-based UI.
 
@@ -189,8 +187,8 @@ Build reusable Svelte components for enum-based UI.
 ---
 
 ### Story 6: Migrate Existing Enums
-**Priority**: Must Have  
-**Effort**: 8 points  
+**Priority**: Must Have
+**Effort**: 8 points
 
 Migrate all existing enum implementations to new system.
 
@@ -210,8 +208,8 @@ Migrate all existing enum implementations to new system.
 ---
 
 ### Story 7: Update All Svelte Views
-**Priority**: Must Have  
-**Effort**: 8 points  
+**Priority**: Must Have
+**Effort**: 8 points
 
 Update all Svelte components to use new enum system.
 
@@ -219,6 +217,7 @@ Update all Svelte components to use new enum system.
 - Replace `JobPriorityButton` with generic component
 - Replace `JobStatusButton` with generic component
 - Update `ActivityLogList` to use enum classes
+- Thoroughly search project for
 - Update all other enum displays
 - Remove hardcoded emoji mappings
 
