@@ -76,19 +76,20 @@
 ## Jobs
 - ✅ Create
 - ✅ Technician Emoji
-- 🚧 Drag & drop nesting and un-nesting
+- ✅ Drag & drop nesting and un-nesting
+- 🚧 Drag & drop reordering
 - 💭 Appointment Scheduling
 - 💭 Followup Scheduling
 - 💭 Job Start Scheduling
-- 💭 Time tracking
-- 💭 Billing integration
-- 💭 Repeatable jobs
-- 💭 Recurring jobs
+- 💭 v2 Time tracking
+- 💭 v2 Billing integration
+- 💭 v2 Repeatable jobs
+- 💭 v2 Recurring jobs
 - ✅ Priority system
   - 💭 Sort by priority
 - ✅ Assign to technician
   - 💭 Filter by assignment
-- 💭 If clicking would change status and new status would be filtered out, open popover instead
+- 💭 v2 If clicking would change status and new status would be filtered out, open popover instead
 
 ## Tasks
 - ✅ Task deletion
