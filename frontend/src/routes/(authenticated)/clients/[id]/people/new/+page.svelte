@@ -146,7 +146,7 @@
   <div class="add-person-page">
     <h1>Add New Person</h1>
 
-    <form on:submit={handleSubmit} novalidate>
+    <form onsubmit={handleSubmit} novalidate>
       {#if error}
         <div class="error-message" role="alert">
           {error}
@@ -157,30 +157,42 @@
       <section class="form-section">
         <h2>Basic Information</h2>
 
-        <FormInput label="Name" bind:value={formData.name} placeholder="Full name" />
+        <div class="form-field">
+          <label for="name">Name *</label>
+          <FormInput id="name" bind:value={formData.name} placeholder="Full name" required />
+        </div>
 
-        <FormInput
-          label="Preferred Name"
-          bind:value={formData.namePreferred}
-          placeholder="How they prefer to be called"
-          helperText="Optional: If different from their full name"
-        />
+        <div class="form-field">
+          <label for="preferred-name">Preferred Name</label>
+          <FormInput
+            id="preferred-name"
+            bind:value={formData.namePreferred}
+            placeholder="How they prefer to be called"
+          />
+          <p class="helper-text">Optional: If different from their full name</p>
+        </div>
 
-        <FormInput
-          label="Pronunciation"
-          bind:value={formData.namePronunciationHint}
-          placeholder="e.g., 'John Doe' → 'jon doh'"
-          helperText="Optional: Help others pronounce their name correctly"
-        />
+        <div class="form-field">
+          <label for="pronunciation">Pronunciation</label>
+          <FormInput
+            id="pronunciation"
+            bind:value={formData.namePronunciationHint}
+            placeholder="e.g., 'John Doe' → 'jon doh'"
+          />
+          <p class="helper-text">Optional: Help others pronounce their name correctly</p>
+        </div>
 
-        <FormInput label="Title" bind:value={formData.title} placeholder="Job title or role" />
+        <div class="form-field">
+          <label for="title">Title</label>
+          <FormInput id="title" bind:value={formData.title} placeholder="Job title or role" />
+        </div>
 
         <div class="form-field">
           <label>Status</label>
           <SegmentedControl
             options={statusOptions}
             value={formData.isActive ? 'active' : 'inactive'}
-            on:change={(e) => (formData.isActive = e.detail === 'active')}
+            onchange={(e) => (formData.isActive = e.detail === 'active')}
           />
         </div>
       </section>
@@ -192,7 +204,7 @@
           <CircularButton
             iconSrc={PlusIcon}
             size="small"
-            on:click={addContactMethod}
+            onclick={addContactMethod}
             title="Add contact method"
           />
         </div>
@@ -211,7 +223,7 @@
               iconSrc={TrashIcon}
               size="small"
               variant="danger"
-              on:click={() => removeContactMethod(method.id)}
+              onclick={() => removeContactMethod(method.id)}
               title="Remove contact method"
               disabled={contactMethods.length === 1}
             />
@@ -234,7 +246,7 @@
                       type="checkbox"
                       value={dept.id}
                       checked={formData.selectedDepartmentIds.includes(dept.id)}
-                      on:change={(e) => {
+                      onchange={(e) => {
                         if (e.currentTarget.checked) {
                           formData.selectedDepartmentIds = [
                             ...formData.selectedDepartmentIds,
@@ -264,7 +276,7 @@
                       type="checkbox"
                       value={group.id}
                       checked={formData.selectedGroupIds.includes(group.id)}
-                      on:change={(e) => {
+                      onchange={(e) => {
                         if (e.currentTarget.checked) {
                           formData.selectedGroupIds = [...formData.selectedGroupIds, group.id];
                         } else {
@@ -285,7 +297,7 @@
 
       <!-- Form Actions -->
       <div class="form-actions">
-        <button type="button" class="cancel-button" on:click={handleCancel} disabled={loading}>
+        <button type="button" class="cancel-button" onclick={handleCancel} disabled={loading}>
           Cancel
         </button>
         <button
@@ -304,41 +316,46 @@
   .add-person-page {
     max-width: 800px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 24px;
   }
 
   h1 {
-    margin-bottom: 2rem;
-    color: var(--text-color);
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 32px 0;
   }
 
   .error-message {
-    background-color: var(--error-background);
-    color: var(--error-color);
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
+    background-color: rgba(255, 69, 58, 0.1);
+    color: var(--accent-red);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
   .form-section {
-    background-color: var(--card-background);
-    border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
   }
 
   .form-section h2 {
-    margin: 0 0 1.5rem 0;
-    font-size: 1.25rem;
-    color: var(--text-color);
+    margin: 0 0 24px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
   }
 
   .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 24px;
   }
 
   .section-header h2 {
@@ -346,7 +363,7 @@
   }
 
   .form-field {
-    margin-bottom: 1.5rem;
+    margin-bottom: 20px;
   }
 
   .form-field:last-child {
@@ -355,81 +372,118 @@
 
   .form-field label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 8px;
     font-weight: 500;
-    color: var(--text-color);
+    font-size: 14px;
+    color: var(--text-secondary);
   }
 
   .contact-method {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 0.75rem;
+    gap: 12px;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 12px;
+  }
+
+  .contact-method:last-child {
+    margin-bottom: 0;
   }
 
   .contact-value-input {
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 0.375rem;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-size: 0.95rem;
+    padding: 8px 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.4;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   .contact-value-input:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
+  }
+
+  .contact-value-input::placeholder {
+    color: var(--text-tertiary);
+    opacity: 1;
   }
 
   .checkbox-group {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 12px;
   }
 
   .checkbox-label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
     cursor: pointer;
-    font-size: 0.95rem;
+    font-size: 14px;
+    color: var(--text-primary);
+    user-select: none;
   }
 
   .checkbox-label input[type='checkbox'] {
     cursor: pointer;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .checkbox-label:hover {
+    color: var(--text-primary);
+  }
+
+  .helper-text {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    line-height: 1.4;
   }
 
   .form-actions {
     display: flex;
-    gap: 1rem;
+    gap: 12px;
     justify-content: flex-end;
-    margin-top: 2rem;
+    margin-top: 32px;
   }
 
   .cancel-button,
   .submit-button {
-    padding: 0.75rem 1.5rem;
+    padding: 12px 24px;
     border: none;
-    border-radius: 0.375rem;
-    font-size: 1rem;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all 0.15s ease;
   }
 
   .cancel-button {
-    background-color: var(--secondary-color);
-    color: var(--text-color);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .cancel-button:hover:not(:disabled) {
+    background-color: #48484a;
   }
 
   .submit-button {
-    background-color: var(--primary-color);
+    background-color: var(--accent-blue);
     color: white;
   }
 
-  .cancel-button:hover:not(:disabled),
   .submit-button:hover:not(:disabled) {
-    opacity: 0.9;
+    background-color: var(--accent-blue-hover);
   }
 
   .cancel-button:disabled,
@@ -438,13 +492,30 @@
     cursor: not-allowed;
   }
 
-  @media (max-width: 640px) {
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .add-person-page {
+      padding: 16px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 24px;
+    }
+
+    .form-section {
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
     .contact-method {
       grid-template-columns: 1fr;
+      gap: 8px;
     }
 
     .form-actions {
       flex-direction: column-reverse;
+      margin-top: 24px;
     }
 
     .cancel-button,
