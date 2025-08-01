@@ -1,175 +1,86 @@
 <script lang="ts">
+  // Stores
   import { layout, layoutActions } from '$lib/stores/layout.svelte';
   import { page } from '$app/stores';
+
+  // Navigation
   import { goto } from '$app/navigation';
-  import { taskFilter, taskFilterActions } from '$lib/stores/taskFilter.svelte';
-  import { jobsSearch, jobsSearchActions } from '$lib/stores/jobsSearch.svelte';
-  import { clientsSearch, clientsSearchActions } from '$lib/stores/clientsSearch.svelte';
-  import { debugSearch, debugComponent } from '$lib/utils/debug';
+
+  // Components
+  import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import TaskFilterPopover from './TaskFilterPopover.svelte';
   import ClientTypeFilterPopover from './ClientTypeFilterPopover.svelte';
-  import JobStatusButton from './JobStatusButton.svelte';
-  import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
-  import SchedulePriorityEditPopover from './SchedulePriorityEditPopover.svelte';
-  import JobPriorityButton from './JobPriorityButton.svelte';
-  import CircularButton from '$lib/components/ui/CircularButton.svelte';
-  import type { PopulatedJob } from '$lib/types/job';
+  import SearchBar from './SearchBar.svelte';
+  import PageActionsBar from './PageActionsBar.svelte';
+  import JobControlsBar from './JobControlsBar.svelte';
 
-  // Props - accept job and disabled state
-  let {
-    currentJob,
-    disabled = false,
-  }: {
+  // Types
+  import type { PopulatedJob } from '$lib/types/job';
+  import type { SearchContext, PageType, PageAction } from '$lib/types/toolbar';
+  import { ROUTE_PATTERNS } from '$lib/types/toolbar';
+
+  // Utilities
+  import { debugComponent } from '$lib/utils/debug';
+  import { getSearchConfig, clearAllSearches } from '$lib/utils/searchManager';
+
+  // Props
+  interface Props {
     currentJob?: PopulatedJob | null;
     disabled?: boolean;
-  } = $props();
+  }
 
-  // Search context detection
-  function getSearchContext() {
-    if (!$page?.route?.id) return null;
+  const { currentJob = null, disabled = false }: Props = $props();
 
-    // Jobs listing page
-    if ($page.route.id === '/(authenticated)/jobs') return 'jobs';
+  // Route analysis
+  function getSearchContext(): SearchContext {
+    const routeId = $page?.route?.id;
+    if (!routeId) return null;
 
-    // Client jobs page - search client-specific jobs
-    if ($page.route.id === '/(authenticated)/clients/[id]/jobs') return 'client-jobs';
-
-    // Clients listing page (but not search results)
-    if ($page.route.id === '/(authenticated)/clients' && !$page.url.pathname.includes('/search'))
+    if (routeId === ROUTE_PATTERNS.jobDetail) return 'tasks';
+    if (routeId === '/(authenticated)/jobs') return 'jobs';
+    if (routeId === ROUTE_PATTERNS.clientJobs) return 'client-jobs';
+    if (routeId === ROUTE_PATTERNS.clients && !$page.url.pathname.includes('/search'))
       return 'clients';
-
-    // Job detail page - search tasks
-    if ($page.route.id === '/(authenticated)/jobs/[id]') return 'tasks';
 
     return null;
   }
 
-  // Get appropriate search placeholder
-  function getSearchPlaceholder(context: string | null) {
-    switch (context) {
-      case 'jobs':
-        return 'Search jobs';
-      case 'client-jobs':
-        return 'Search client jobs';
-      case 'clients':
-        return 'Search clients';
-      case 'tasks':
-        return 'Search tasks';
-      default:
-        return 'Search';
-    }
-  }
+  function getCurrentPageType(): PageType {
+    const routeId = $page?.route?.id;
+    if (!routeId) return 'home';
 
-  // Context-aware search state
-  const searchContext = $derived(getSearchContext());
-  const searchPlaceholder = $derived(getSearchPlaceholder(searchContext));
-  const showSearch = $derived(searchContext !== null);
+    if (routeId === ROUTE_PATTERNS.jobDetail) return 'job-detail';
+    if (routeId.includes('/jobs')) return 'jobs';
+    if (routeId.includes('/clients')) return 'clients';
+    if (routeId.includes('/people')) return 'people';
+    if (routeId.includes('/devices')) return 'devices';
 
-  // Get the appropriate search query based on context
-  const searchQuery = $derived.by(() => {
-    switch (searchContext) {
-      case 'jobs':
-        return jobsSearch.searchQuery;
-      case 'client-jobs':
-        return jobsSearch.searchQuery; // Use jobs search for client jobs too
-      case 'clients':
-        return clientsSearch.searchQuery;
-      case 'tasks':
-        return taskFilter.searchQuery;
-      default:
-        return '';
-    }
-  });
-
-  let searchFocused = $state(false);
-
-  function handleSearch() {
-    if (searchQuery.trim()) {
-      debugSearch('Search query executed', { query: searchQuery, context: searchContext });
-      // Search is handled by the respective stores
-    }
-  }
-
-  function handleSearchInput(event: Event) {
-    const target = event.target as HTMLInputElement;
-    const value = target.value;
-
-    switch (searchContext) {
-      case 'jobs':
-        jobsSearchActions.setSearchQuery(value);
-        break;
-      case 'client-jobs':
-        jobsSearchActions.setSearchQuery(value); // Use jobs search for client jobs too
-        break;
-      case 'clients':
-        clientsSearchActions.setSearchQuery(value);
-        break;
-      case 'tasks':
-        taskFilterActions.setSearchQuery(value);
-        break;
-    }
-  }
-
-  function handleSearchKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      handleSearch();
-    }
-    if (event.key === 'Escape') {
-      handleSearchClear();
-      (event.target as HTMLInputElement).blur();
-    }
-  }
-
-  function handleSearchClear() {
-    switch (searchContext) {
-      case 'jobs':
-        jobsSearchActions.clearSearch();
-        break;
-      case 'client-jobs':
-        jobsSearchActions.clearSearch(); // Use jobs search for client jobs too
-        break;
-      case 'clients':
-        clientsSearchActions.clearSearch();
-        break;
-      case 'tasks':
-        taskFilterActions.clearSearch();
-        break;
-    }
-  }
-
-  // Clear search when context changes
-  $effect(() => {
-    // When we navigate to a new page context, clear the previous search
-    if (searchContext) {
-      // Clear all search stores to ensure clean state
-      jobsSearchActions.clearSearch();
-      clientsSearchActions.clearSearch();
-      taskFilterActions.clearSearch();
-    }
-  });
-
-  // Get current page from route
-  function getCurrentPage() {
-    if (!$page?.route?.id) return 'home';
-
-    // Extract page type from route
-    if ($page.route.id === '/(authenticated)/jobs/[id]') return 'job-detail';
-    if ($page.route.id.includes('/jobs')) return 'jobs';
-    if ($page.route.id.includes('/clients')) return 'clients';
-    if ($page.route.id.includes('/people')) return 'people';
-    if ($page.route.id.includes('/devices')) return 'devices';
     return 'home';
   }
 
-  // Page-specific actions based on current page
-  const currentPage = $derived(getCurrentPage());
+  // Reactive state
+  const searchContext = $derived(getSearchContext());
+  const currentPageType = $derived(getCurrentPageType());
+  const searchConfig = $derived(getSearchConfig(searchContext));
 
-  // Derive the route and client ID at component level
+  // Route-specific data
   const currentRoute = $derived($page.route.id);
   const currentClientId = $derived($page.params.id);
 
-  const pageActions = $derived.by(() => {
-    switch (currentPage) {
+  // Show/hide logic
+  const showJobControls = $derived(
+    (currentPageType === 'job-detail' && $page.params.id) ||
+      (currentJob && $page.route.id?.includes('/jobs/new'))
+  );
+
+  const showTaskFilter = $derived(showJobControls);
+  const showClientFilter = $derived(
+    currentPageType === 'clients' && $page.route.id === ROUTE_PATTERNS.clients
+  );
+
+  // Page actions configuration
+  const pageActions = $derived.by((): PageAction[] => {
+    switch (currentPageType) {
       case 'jobs':
         return [
           {
@@ -177,16 +88,13 @@
             icon: '/icons/plus.svg',
             iconType: 'svg',
             action: () => {
-              // When on the client jobs page, include the client ID
-              if (currentRoute === '/(authenticated)/clients/[id]/jobs' && currentClientId) {
-                goto(`/jobs/new?clientId=${currentClientId}`);
-              } else {
-                // On the main jobs page, navigate without client ID
-                goto('/jobs/new');
-              }
+              const clientId = currentRoute === ROUTE_PATTERNS.clientJobs ? currentClientId : null;
+              goto(clientId ? `/jobs/new?clientId=${clientId}` : '/jobs/new');
             },
+            testId: 'create-job-button',
           },
         ];
+
       case 'clients':
         return [
           {
@@ -196,6 +104,7 @@
             action: () => debugComponent('New client action triggered'),
           },
         ];
+
       case 'people':
         return [
           {
@@ -205,6 +114,7 @@
             action: () => debugComponent('Add person action triggered'),
           },
         ];
+
       case 'devices':
         return [
           {
@@ -214,16 +124,22 @@
             action: () => debugComponent('Add device action triggered'),
           },
         ];
+
       default:
         return [];
     }
   });
 
-  // Technician assignment functionality removed - TanStack Query handles everything
+  // Clear all searches when context changes
+  $effect(() => {
+    if (searchContext) {
+      clearAllSearches();
+    }
+  });
 </script>
 
-<div class="toolbar">
-  <!-- Left section: Logo + Mobile sidebar toggle + Job status -->
+<div class="toolbar" role="navigation" aria-label="Main toolbar">
+  <!-- Left section: Sidebar toggle + Page actions + Job controls -->
   <div class="toolbar-left">
     <!-- Sidebar toggle (only show when sidebar is hidden) -->
     {#if !layout.sidebarVisible}
@@ -233,95 +149,35 @@
         onclick={disabled ? undefined : layoutActions.toggleSidebar}
         title={disabled ? 'Disabled' : 'Show sidebar'}
         {disabled}
+        aria-label="Show sidebar"
       >
-        <img src="/icons/sidebar.svg" alt="Menu" class="action-icon-svg" />
+        <img src="/icons/sidebar.svg" alt="" class="sidebar-icon" />
       </CircularButton>
     {/if}
 
-    <!-- Page-specific actions (left-aligned) -->
-    {#if pageActions.length > 0}
-      <div class="page-actions">
-        {#each pageActions as action}
-          <CircularButton
-            variant="default"
-            size="normal"
-            onclick={disabled ? undefined : action.action}
-            title={disabled ? 'Disabled' : action.label}
-            data-testid={action.label === 'New Job' ? 'create-job-button' : undefined}
-            {disabled}
-          >
-            {#if action.iconType === 'svg'}
-              <img src={action.icon} alt="" class="action-icon-svg" />
-            {:else if action.iconType === 'emoji'}
-              <span class="action-icon">{action.icon}</span>
-            {/if}
-          </CircularButton>
-        {/each}
-      </div>
-    {/if}
+    <!-- Page-specific actions -->
+    <PageActionsBar actions={pageActions} {disabled} />
 
-    <!-- Job status button (show on job detail page or when currentJob is provided) -->
-    {#if (currentPage === 'job-detail' && $page.params.id) || (currentJob && $page.route.id?.includes('/jobs/new'))}
-      <JobStatusButton
-        jobId={$page.params.id || currentJob?.id || 'new'}
-        initialStatus={currentJob?.status}
-        {disabled}
-      />
-      <TechnicianAssignmentButton
-        jobId={$page.params.id || currentJob?.id || 'new'}
-        initialTechnicians={currentJob?.technicians || []}
-        {disabled}
-      />
-      <SchedulePriorityEditPopover
-        jobId={$page.params.id || currentJob?.id || 'new'}
-        bind:initialJob={currentJob}
-        {disabled}
-      />
-      <JobPriorityButton
-        jobId={$page.params.id || currentJob?.id || 'new'}
-        initialPriority={currentJob?.priority}
-        {disabled}
-      />
+    <!-- Job controls -->
+    {#if showJobControls}
+      <JobControlsBar jobId={$page.params.id || currentJob?.id || 'new'} {currentJob} {disabled} />
     {/if}
   </div>
 
-  <!-- Right section: Search + Page actions + User menu -->
+  <!-- Right section: Filters + Search + User menu -->
   <div class="toolbar-right">
-    <!-- Search -->
-    <!-- Job detail page controls -->
-    {#if (currentPage === 'job-detail' && $page.params.id) || (currentJob && $page.route.id?.includes('/jobs/new'))}
+    <!-- Task filter -->
+    {#if showTaskFilter}
       <TaskFilterPopover {disabled} />
     {/if}
-    
-    <!-- Client listing page controls -->
-    {#if currentPage === 'clients' && $page.route.id === '/(authenticated)/clients'}
+
+    <!-- Client filter -->
+    {#if showClientFilter}
       <ClientTypeFilterPopover {disabled} />
     {/if}
 
-    {#if showSearch}
-      <div class="search-container" class:focused={searchFocused && !disabled} class:disabled>
-        <div class="search-input-wrapper">
-          <img src="/icons/magnifyingglass.svg" alt="Search" class="search-icon" />
-          <input
-            type="text"
-            placeholder={disabled ? '' : searchPlaceholder}
-            value={searchQuery}
-            oninput={disabled ? undefined : handleSearchInput}
-            onfocus={disabled ? undefined : () => (searchFocused = true)}
-            onblur={disabled ? undefined : () => (searchFocused = false)}
-            onkeydown={disabled ? undefined : handleSearchKeydown}
-            class="search-input"
-            {disabled}
-            readonly={disabled}
-          />
-          {#if searchQuery && !disabled}
-            <button class="search-clear" onclick={handleSearchClear} aria-label="Clear search">
-              <img src="/icons/close.svg" alt="Clear" />
-            </button>
-          {/if}
-        </div>
-      </div>
-    {/if}
+    <!-- Search bar -->
+    <SearchBar config={searchConfig} {disabled} />
 
     <!-- User menu -->
     <div class="user-menu">
@@ -330,6 +186,7 @@
         size="normal"
         title={disabled ? 'Disabled' : 'User menu'}
         {disabled}
+        aria-label="User menu"
       >
         <span class="user-initials">OL</span>
       </CircularButton>
@@ -338,6 +195,7 @@
 </div>
 
 <style>
+  /* Layout */
   .toolbar {
     height: 100%;
     display: flex;
@@ -346,131 +204,21 @@
     padding: 0 24px;
   }
 
-  .toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
+  .toolbar-left,
   .toolbar-right {
     display: flex;
     align-items: center;
     gap: 12px;
   }
 
-  /* Icon styling for CircularButton content */
-
-  /* Search container */
-  .search-container {
-    position: relative;
-    width: 240px;
-  }
-
-  .search-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 9999px;
-    transition: all 0.15s ease;
-    height: 36px;
-  }
-
-  .search-container.focused .search-input-wrapper {
-    border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
-  }
-
-  /* Active search indicator */
-  .search-container:has(.search-input:not(:placeholder-shown)) .search-input-wrapper {
-    border-color: var(--accent-blue);
-    background-color: rgba(0, 163, 255, 0.05);
-  }
-
-  /* Disabled search container */
-  .search-container.disabled .search-input-wrapper {
-    opacity: 0.5;
-    background-color: var(--bg-secondary);
-    border-color: var(--border-primary);
-  }
-
-  .search-container.disabled .search-input {
-    color: var(--text-tertiary);
-    cursor: not-allowed;
-  }
-
-  .search-container.disabled .search-icon {
-    opacity: 0.3;
-  }
-
-  .search-icon {
-    width: 16px;
-    height: 16px;
-    opacity: 0.5;
-    margin-left: 12px;
-    flex-shrink: 0;
-  }
-
-  .search-input {
-    flex: 1;
-    background: none;
-    border: none;
-    outline: none;
-    padding: 0 12px;
-    color: var(--text-primary);
-    font-size: 14px;
-    min-width: 0;
-    height: 100%;
-    width: 100%;
-  }
-
-  .search-input::placeholder {
-    color: var(--text-tertiary);
-  }
-
-  .search-clear {
-    width: 20px;
-    height: 20px;
-    background: none;
-    border: none;
-    margin-right: 8px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s ease;
-  }
-
-  .search-clear:hover {
-    background-color: var(--bg-tertiary);
-  }
-
-  .search-clear img {
-    width: 12px;
-    height: 12px;
-    opacity: 0.5;
-  }
-
-  /* Page actions */
-  .page-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .action-icon {
-    font-size: 16px;
-  }
-
-  .action-icon-svg {
+  /* Icons */
+  .sidebar-icon {
     width: 20px;
     height: 20px;
     opacity: 0.7;
   }
 
   /* User menu */
-
   .user-initials {
     color: white;
     font-size: 13px;
@@ -478,13 +226,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
-  /* Responsive adjustments */
-  @media (max-width: 1024px) {
-    .search-container {
-      width: 220px;
-    }
-  }
-
+  /* Responsive */
   @media (max-width: 768px) {
     .toolbar {
       padding: 0 20px;
@@ -492,48 +234,13 @@
 
     .toolbar-left,
     .toolbar-right {
-      gap: 16px;
-    }
-
-    .search-container {
-      width: 180px;
-    }
-
-    .page-actions {
       gap: 8px;
     }
   }
 
   @media (max-width: 480px) {
-    .search-container {
-      width: 150px;
-    }
-
-    .action-icon-svg {
-      width: 16px;
-      height: 16px;
-    }
-
     .user-initials {
       font-size: 12px;
-    }
-  }
-
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    .search-input-wrapper {
-      border-width: 2px;
-    }
-
-    .search-container.focused .search-input-wrapper {
-      box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.3);
-    }
-  }
-
-  /* Accessibility improvements */
-  @media (prefers-reduced-motion: reduce) {
-    .search-input-wrapper {
-      transition: none;
     }
   }
 </style>
