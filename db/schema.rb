@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_01_190340) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_01_195933) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -155,6 +155,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_01_190340) do
     t.boolean "is_active", default: true
     t.index [ "client_id" ], name: "index_people_on_client_id"
     t.index [ "id" ], name: "index_people_on_id", unique: true
+  end
+
+  create_table "people_group_memberships", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "person_id", null: false
+    t.uuid "people_group_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "people_group_id" ], name: "index_people_group_memberships_on_people_group_id"
+    t.index [ "person_id", "people_group_id" ], name: "index_people_group_memberships_unique", unique: true
+    t.index [ "person_id" ], name: "index_people_group_memberships_on_person_id"
+  end
+
+  create_table "people_groups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "name", null: false
+    t.boolean "is_department", default: false, null: false
+    t.uuid "client_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "client_id", "name" ], name: "index_people_groups_on_client_id_and_name", unique: true
+    t.index [ "client_id" ], name: "index_people_groups_on_client_id"
   end
 
   create_table "refresh_tokens", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -445,6 +465,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_01_190340) do
   add_foreign_key "jobs", "clients"
   add_foreign_key "notes", "users"
   add_foreign_key "people", "clients"
+  add_foreign_key "people_group_memberships", "people"
+  add_foreign_key "people_group_memberships", "people_groups"
+  add_foreign_key "people_groups", "clients"
   add_foreign_key "refresh_tokens", "users"
   add_foreign_key "scheduled_date_time_users", "scheduled_date_times"
   add_foreign_key "scheduled_date_time_users", "users"

@@ -5,6 +5,7 @@ class Client < ApplicationRecord
   has_many :people, dependent: :destroy
   has_many :jobs, dependent: :destroy
   has_many :devices, dependent: :destroy
+  has_many :people_groups, dependent: :destroy
 
   # Validations
   validates :name, presence: true

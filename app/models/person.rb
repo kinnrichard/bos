@@ -5,6 +5,8 @@ class Person < ApplicationRecord
   has_many :contact_methods, dependent: :destroy
   has_many :devices, dependent: :destroy
   has_many :notes, as: :notable, dependent: :destroy
+  has_many :people_group_memberships, dependent: :destroy
+  has_many :people_groups, through: :people_group_memberships
 
   validates :name, presence: true
 
