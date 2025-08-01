@@ -14,22 +14,23 @@ export const mainNavItems: NavItem[] = [
     label: 'People',
     href: '/clients',
     icon: '👥',
-    type: 'navigation'
+    type: 'navigation',
   },
-  {
-    id: 'devices', 
-    label: 'Devices',
-    href: '/devices',
-    icon: '💻',
-    type: 'navigation'
-  },
+  // Commented out - not implemented yet
+  // {
+  //   id: 'devices',
+  //   label: 'Devices',
+  //   href: '/devices',
+  //   icon: '💻',
+  //   type: 'navigation'
+  // },
   {
     id: 'jobs',
-    label: 'All Jobs', 
+    label: 'All Jobs',
     href: '/jobs',
     icon: '💼',
-    type: 'navigation'
-  }
+    type: 'navigation',
+  },
 ];
 
 // Footer navigation items
@@ -39,22 +40,22 @@ export const footerNavItems: NavItem[] = [
     label: "Vital Planet's Logs",
     href: '/logs',
     icon: '📜',
-    type: 'footer'
-  }
+    type: 'footer',
+  },
 ];
 
 // Get active navigation item based on current route
 export function getActiveNavItem(currentPath: string): string | null {
   // Handle exact matches first
-  const exactMatch = mainNavItems.find(item => item.href === currentPath);
+  const exactMatch = mainNavItems.find((item) => item.href === currentPath);
   if (exactMatch) return exactMatch.id;
 
   // Handle route-based matches (e.g., /jobs/123 should match jobs)
   if (currentPath.startsWith('/jobs')) return 'jobs';
-  if (currentPath.startsWith('/people')) return 'people'; 
+  if (currentPath.startsWith('/people')) return 'people';
   if (currentPath === '/clients') return 'people'; // Only highlight for clients listing, not client details
   if (currentPath.startsWith('/devices')) return 'devices';
-  
+
   // Handle logs routes - both /logs and /clients/[id]/logs
   if (currentPath === '/logs' || currentPath.includes('/logs')) return 'logs';
 
@@ -65,5 +66,5 @@ export function getActiveNavItem(currentPath: string): string | null {
 export const brandConfig = {
   name: 'FAULTLESS',
   logoIcon: '⚡', // Lightning bolt matching the image
-  homeHref: '/'
+  homeHref: '/',
 };
