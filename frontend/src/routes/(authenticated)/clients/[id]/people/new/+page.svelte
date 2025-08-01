@@ -17,8 +17,8 @@
   const TrashIcon = '/icons/trash-red.svg';
 
   let clientId = $page.params.id;
-  let loading = false;
-  let error: string | null = null;
+  let loading = $state(false);
+  let error = $state<string | null>(null);
 
   // Load client to ensure it exists and for layout
   const clientQuery = $derived(ReactiveClient.find(clientId));
@@ -33,25 +33,26 @@
   const departments = $derived(allGroups.filter((g) => g.is_department));
 
   // Form data
-  let name = '';
-  let namePreferred = '';
-  let namePronunciationHint = '';
-  let title = '';
-  let isActive = true;
-  let selectedGroupIds: string[] = [];
-  let selectedDepartmentIds: string[] = [];
+  let formData = $state({
+    name: '',
+    namePreferred: '',
+    namePronunciationHint: '',
+    title: '',
+    isActive: true,
+    selectedGroupIds: [] as string[],
+    selectedDepartmentIds: [] as string[],
+  });
 
   // Contact methods
   interface TempContactMethod {
     id: string;
-    type: 'email' | 'phone' | 'address';
     value: string;
     isPrimary: boolean;
   }
 
-  let contactMethods: TempContactMethod[] = [
-    { id: crypto.randomUUID(), type: 'email', value: '', isPrimary: true },
-  ];
+  let contactMethods = $state<TempContactMethod[]>([
+    { id: crypto.randomUUID(), value: '', isPrimary: true },
+  ]);
 
   // Add contact method
   function addContactMethod() {
@@ -59,7 +60,6 @@
       ...contactMethods,
       {
         id: crypto.randomUUID(),
-        type: 'email',
         value: '',
         isPrimary: contactMethods.length === 0,
       },
@@ -92,7 +92,7 @@
   async function handleSubmit(event: Event) {
     event.preventDefault();
 
-    if (!name.trim()) {
+    if (!formData.name.trim()) {
       error = 'Name is required';
       return;
     }
@@ -103,11 +103,11 @@
     try {
       // Create the person
       const personData: CreatePersonData = {
-        name: name.trim(),
-        name_preferred: namePreferred.trim() || undefined,
-        name_pronunciation_hint: namePronunciationHint.trim() || undefined,
-        title: title.trim() || undefined,
-        is_active: isActive,
+        name: formData.name.trim(),
+        name_preferred: formData.namePreferred.trim() || undefined,
+        name_pronunciation_hint: formData.namePronunciationHint.trim() || undefined,
+        title: formData.title.trim() || undefined,
+        is_active: formData.isActive,
         client_id: clientId,
       };
 
@@ -118,14 +118,13 @@
       for (const cm of validContactMethods) {
         await ContactMethod.create({
           person_id: newPerson.id,
-          contact_method_type: cm.type,
           value: cm.value.trim(),
           is_primary: cm.isPrimary,
         });
       }
 
       // Create group memberships
-      const allGroupIds = [...selectedGroupIds, ...selectedDepartmentIds];
+      const allGroupIds = [...formData.selectedGroupIds, ...formData.selectedDepartmentIds];
       for (const groupId of allGroupIds) {
         await PeopleGroupMembership.create({
           person_id: newPerson.id,
@@ -148,25 +147,27 @@
     goto(`/clients/${clientId}/people`);
   }
 
-  // Contact type options
-  const contactTypeOptions = [
-    { value: 'email', label: 'Email' },
-    { value: 'phone', label: 'Phone' },
-    { value: 'address', label: 'Address' },
-  ];
-
   // Status options
   const statusOptions = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
   ];
+
+  // Debug the form state
+  $effect(() => {
+    console.log('Form state:', {
+      name: formData.name,
+      loading,
+      isValid: formData.name.trim().length > 0,
+    });
+  });
 </script>
 
 <AppLayout currentClient={client}>
   <div class="add-person-page">
     <h1>Add New Person</h1>
 
-    <form on:submit={handleSubmit}>
+    <form on:submit={handleSubmit} novalidate>
       {#if error}
         <div class="error-message" role="alert">
           {error}
@@ -177,30 +178,30 @@
       <section class="form-section">
         <h2>Basic Information</h2>
 
-        <FormInput label="Name" bind:value={name} required placeholder="Full name" />
+        <FormInput label="Name" bind:value={formData.name} placeholder="Full name" />
 
         <FormInput
           label="Preferred Name"
-          bind:value={namePreferred}
+          bind:value={formData.namePreferred}
           placeholder="How they prefer to be called"
           helperText="Optional: If different from their full name"
         />
 
         <FormInput
           label="Pronunciation"
-          bind:value={namePronunciationHint}
+          bind:value={formData.namePronunciationHint}
           placeholder="e.g., 'John Doe' → 'jon doh'"
           helperText="Optional: Help others pronounce their name correctly"
         />
 
-        <FormInput label="Title" bind:value={title} placeholder="Job title or role" />
+        <FormInput label="Title" bind:value={formData.title} placeholder="Job title or role" />
 
         <div class="form-field">
           <label>Status</label>
           <SegmentedControl
             options={statusOptions}
-            value={isActive ? 'active' : 'inactive'}
-            on:change={(e) => (isActive = e.detail === 'active')}
+            value={formData.isActive ? 'active' : 'inactive'}
+            on:change={(e) => (formData.isActive = e.detail === 'active')}
           />
         </div>
       </section>
@@ -219,26 +220,12 @@
 
         {#each contactMethods as method (method.id)}
           <div class="contact-method">
-            <select
-              bind:value={method.type}
-              class="contact-type-select"
-              aria-label="Contact method type"
-            >
-              {#each contactTypeOptions as option}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-
             <input
-              type={method.type === 'email' ? 'email' : 'text'}
+              type="text"
               bind:value={method.value}
-              placeholder={method.type === 'email'
-                ? 'email@example.com'
-                : method.type === 'phone'
-                  ? '(555) 123-4567'
-                  : '123 Main St, City, ST 12345'}
+              placeholder="Email, phone, or address"
               class="contact-value-input"
-              aria-label="{method.type} value"
+              aria-label="Contact value"
             />
 
             <label class="primary-checkbox">
@@ -276,11 +263,15 @@
                     <input
                       type="checkbox"
                       value={dept.id}
+                      checked={formData.selectedDepartmentIds.includes(dept.id)}
                       on:change={(e) => {
                         if (e.currentTarget.checked) {
-                          selectedDepartmentIds = [...selectedDepartmentIds, dept.id];
+                          formData.selectedDepartmentIds = [
+                            ...formData.selectedDepartmentIds,
+                            dept.id,
+                          ];
                         } else {
-                          selectedDepartmentIds = selectedDepartmentIds.filter(
+                          formData.selectedDepartmentIds = formData.selectedDepartmentIds.filter(
                             (id) => id !== dept.id
                           );
                         }
@@ -302,11 +293,14 @@
                     <input
                       type="checkbox"
                       value={group.id}
+                      checked={formData.selectedGroupIds.includes(group.id)}
                       on:change={(e) => {
                         if (e.currentTarget.checked) {
-                          selectedGroupIds = [...selectedGroupIds, group.id];
+                          formData.selectedGroupIds = [...formData.selectedGroupIds, group.id];
                         } else {
-                          selectedGroupIds = selectedGroupIds.filter((id) => id !== group.id);
+                          formData.selectedGroupIds = formData.selectedGroupIds.filter(
+                            (id) => id !== group.id
+                          );
                         }
                       }}
                     />
@@ -324,7 +318,11 @@
         <button type="button" class="cancel-button" on:click={handleCancel} disabled={loading}>
           Cancel
         </button>
-        <button type="submit" class="submit-button" disabled={loading || !name.trim()}>
+        <button
+          type="submit"
+          class="submit-button"
+          disabled={loading || formData.name.trim().length === 0}
+        >
           {loading ? 'Creating...' : 'Create Person'}
         </button>
       </div>
@@ -394,19 +392,10 @@
 
   .contact-method {
     display: grid;
-    grid-template-columns: 120px 1fr auto auto;
+    grid-template-columns: 1fr auto auto;
     gap: 0.75rem;
     align-items: center;
     margin-bottom: 1rem;
-  }
-
-  .contact-type-select {
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 0.375rem;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-size: 0.95rem;
   }
 
   .contact-value-input {
