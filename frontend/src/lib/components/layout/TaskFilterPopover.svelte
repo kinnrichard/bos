@@ -19,13 +19,13 @@
 </script>
 
 <GenericFilterPopover
-  title="Filter Tasks"
+  title="Filter Tasks by Status"
   options={taskStatusOptions}
   selected={taskStatusFilter.selected}
   onFilterChange={handleFilterChange}
   {disabled}
-  showAllSelectedByDefault={true}
-  preventAllUnchecked={true}
+  showAllSelectedByDefault={false}
+  preventAllUnchecked={false}
   showDeletedToggle={true}
   deletedLabel="Deleted"
   showDeleted={taskStatusFilter.showDeleted}

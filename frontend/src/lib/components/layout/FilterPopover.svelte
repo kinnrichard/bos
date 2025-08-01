@@ -28,7 +28,7 @@
 
   // Build menu options with title and separator
   const menuOptions = $derived([
-    { id: 'title', value: 'title', label: 'Filter Tasks', header: true },
+    { id: 'title', value: 'title', label: 'Filter Tasks by Status', header: true },
     ...statusOptions,
     { id: 'separator', divider: true },
     { id: 'deleted', value: 'deleted', label: 'Deleted' },

@@ -15,11 +15,11 @@
 </script>
 
 <GenericFilterPopover
-  title="Filter Clients"
+  title="Filter Clients by Type"
   options={clientTypeOptions}
   selected={clientTypeFilter.selected}
   onFilterChange={handleFilterChange}
   {disabled}
-  showAllSelectedByDefault={true}
-  preventAllUnchecked={true}
+  showAllSelectedByDefault={false}
+  preventAllUnchecked={false}
 />
