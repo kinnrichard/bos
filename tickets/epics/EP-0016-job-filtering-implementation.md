@@ -1,10 +1,10 @@
 # Epic: Job Filtering Implementation
 
-**Epic ID**: EP-0016  
-**Created**: 2025-01-31  
-**Status**: Planning  
-**Priority**: High  
-**Dependencies**: Existing FilterPopover architecture  
+**Epic ID**: EP-0016
+**Created**: 2025-01-31
+**Status**: Planning
+**Priority**: High
+**Dependencies**: Existing FilterPopover architecture
 
 ## Overview
 
@@ -59,9 +59,9 @@ Implement comprehensive filtering functionality for job listings across the appl
 ### Phase 1: Core Infrastructure (Week 1)
 
 #### Ticket JOBS-001: Create Job Filter Store
-**Priority**: P0 - Critical  
-**Effort**: 3 points  
-**Assignee**: TBD  
+**Priority**: P0 - Critical
+**Effort**: 3 points
+**Assignee**: TBD
 
 **Description**: Create the foundational filter store for job filtering functionality.
 
@@ -96,17 +96,17 @@ export const jobPriorityOptions: FilterOption[] = [
 // Combined options for single popover
 export const jobFilterOptions: FilterOption[] = [
   { id: 'status-header', value: 'status-header', label: 'Status', header: true },
-  ...jobStatusOptions.map(opt => ({ 
-    ...opt, 
-    id: `status:${opt.id}`, 
-    value: `status:${opt.value}` 
+  ...jobStatusOptions.map(opt => ({
+    ...opt,
+    id: `status:${opt.id}`,
+    value: `status:${opt.value}`
   })),
   { id: 'divider', value: 'divider', label: '', divider: true },
   { id: 'priority-header', value: 'priority-header', label: 'Priority', header: true },
-  ...jobPriorityOptions.map(opt => ({ 
-    ...opt, 
-    id: `priority:${opt.id}`, 
-    value: `priority:${opt.value}` 
+  ...jobPriorityOptions.map(opt => ({
+    ...opt,
+    id: `priority:${opt.id}`,
+    value: `priority:${opt.value}`
   }))
 ];
 ```
@@ -119,9 +119,9 @@ export const jobFilterOptions: FilterOption[] = [
 - [ ] URL parameter sync working (e.g., `?statuses=open,in_progress&priorities=high`)
 
 #### Ticket JOBS-002: Create JobFilterPopover Component
-**Priority**: P0 - Critical  
-**Effort**: 2 points  
-**Assignee**: TBD  
+**Priority**: P0 - Critical
+**Effort**: 2 points
+**Assignee**: TBD
 
 **Description**: Implement the JobFilterPopover component using GenericFilterPopover.
 
@@ -165,9 +165,9 @@ export const jobFilterOptions: FilterOption[] = [
 ### Phase 2: UI Integration (Week 1-2)
 
 #### Ticket JOBS-003: Update JobsLayout Component
-**Priority**: P1 - High  
-**Effort**: 2 points  
-**Assignee**: TBD  
+**Priority**: P1 - High
+**Effort**: 2 points
+**Assignee**: TBD
 
 **Description**: Integrate filtering controls into the jobs layout header.
 
@@ -184,9 +184,9 @@ export const jobFilterOptions: FilterOption[] = [
 - [ ] Consistent with TasksLayout patterns
 
 #### Ticket JOBS-004: Implement Filtering in Jobs Page
-**Priority**: P1 - High  
-**Effort**: 3 points  
-**Assignee**: TBD  
+**Priority**: P1 - High
+**Effort**: 3 points
+**Assignee**: TBD
 
 **Description**: Apply filtering logic to the main jobs listing page.
 
@@ -215,9 +215,9 @@ const filteredJobs = $derived(
 - [ ] Performance remains smooth with large datasets
 
 #### Ticket JOBS-005: Implement Filtering in Client Jobs Page
-**Priority**: P1 - High  
-**Effort**: 2 points  
-**Assignee**: TBD  
+**Priority**: P1 - High
+**Effort**: 2 points
+**Assignee**: TBD
 
 **Description**: Apply same filtering logic to client-specific jobs page.
 
@@ -230,9 +230,9 @@ const filteredJobs = $derived(
 ### Phase 3: Testing & Polish (Week 2)
 
 #### Ticket JOBS-006: Comprehensive Testing
-**Priority**: P1 - High  
-**Effort**: 3 points  
-**Assignee**: TBD  
+**Priority**: P1 - High
+**Effort**: 3 points
+**Assignee**: TBD
 
 **Test Cases**:
 1. **Filter Combinations**
@@ -262,9 +262,9 @@ const filteredJobs = $derived(
    - Memory usage remains stable
 
 #### Ticket JOBS-007: Documentation
-**Priority**: P2 - Medium  
-**Effort**: 1 point  
-**Assignee**: TBD  
+**Priority**: P2 - Medium
+**Effort**: 1 point
+**Assignee**: TBD
 
 **Deliverables**:
 - [ ] Update user documentation with filter instructions
@@ -276,19 +276,16 @@ const filteredJobs = $derived(
 
 ### Performance Optimizations
 - Use `$derived` for reactive filtering to leverage Svelte 5 efficiency
-- Implement virtual scrolling if job lists exceed 100 items
-- Consider debouncing filter changes for smoother UX
 
 ### Accessibility
 - ARIA labels for filter controls
 - Keyboard navigation support
 - Screen reader announcements for filter changes
-- High contrast mode support
 
 ### Future Enhancements
 1. **Advanced Filters** (Future Epic)
    - Date range filtering
-   - Assigned technician filter
+   - Assigned technician filter (requires a different popover component)
    - Customer type filter
    - Location-based filtering
 
