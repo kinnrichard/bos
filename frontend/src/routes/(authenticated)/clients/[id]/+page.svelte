@@ -15,6 +15,7 @@
   import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import type { CreateClientData, UpdateClientData } from '$lib/models/types/client-data';
+  import { layoutActions } from '$lib/stores/layout.svelte';
 
   // Get client ID from URL params
   const clientId = $derived($page.params.id);
@@ -187,6 +188,26 @@
     }
   });
 
+  // Derived validation state
+  const canSave = $derived(validateForm() === null);
+
+  // Set up client edit state in layout store
+  $effect(() => {
+    layoutActions.setClientEditState(isEditing, isNewClient);
+    layoutActions.setSavingClient(isSaving);
+    layoutActions.setCanSaveClient(canSave);
+    layoutActions.setClientEditCallbacks({
+      onEdit: handleEdit,
+      onSave: handleSave,
+      onCancel: handleCancel,
+    });
+
+    // Cleanup on unmount
+    return () => {
+      layoutActions.clearClientEditState();
+    };
+  });
+
   // Handle loading and error states
   const shouldShowLoading = $derived(queryLoading && !isNewClient);
   const shouldShowError = $derived(queryError && !isNewClient);
@@ -201,44 +222,6 @@
 
 <AppLayout currentClient={client}>
   <div class="client-detail-page">
-    <!-- Toolbar -->
-    <div class="client-toolbar">
-      <div class="toolbar-left">
-        <!-- Back button or breadcrumb could go here -->
-      </div>
-
-      <div class="toolbar-right">
-        {#if isEditing}
-          <button
-            class="toolbar-button cancel-button"
-            onclick={handleCancel}
-            disabled={isSaving}
-            aria-label="Cancel editing"
-          >
-            Cancel
-          </button>
-          <button
-            class="toolbar-button save-button"
-            onclick={handleSave}
-            disabled={isSaving || validateForm() !== null}
-            aria-label={isNewClient ? 'Create client' : 'Save changes'}
-          >
-            {#if isSaving}
-              Saving...
-            {:else if isNewClient}
-              Create
-            {:else}
-              Done
-            {/if}
-          </button>
-        {:else}
-          <button class="toolbar-button edit-button" onclick={handleEdit} aria-label="Edit client">
-            Edit
-          </button>
-        {/if}
-      </div>
-    </div>
-
     <!-- Content -->
     <div class="client-content">
       {#if shouldShowLoading}
@@ -330,65 +313,6 @@
     background-color: var(--bg-black, #000);
     display: flex;
     flex-direction: column;
-  }
-
-  /* Toolbar */
-  .client-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border-primary, #38383a);
-    background-color: var(--bg-primary, #1c1c1d);
-  }
-
-  .toolbar-left,
-  .toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .toolbar-button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .edit-button {
-    background-color: var(--accent-blue, #00a3ff);
-    color: white;
-  }
-
-  .edit-button:hover {
-    background-color: var(--accent-blue-hover, #0089e0);
-  }
-
-  .save-button {
-    background-color: var(--accent-blue, #00a3ff);
-    color: white;
-  }
-
-  .save-button:hover:not(:disabled) {
-    background-color: var(--accent-blue-hover, #0089e0);
-  }
-
-  .save-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .cancel-button {
-    background-color: var(--accent-red, #ff3b30);
-    color: white;
-  }
-
-  .cancel-button:hover:not(:disabled) {
-    background-color: var(--accent-red-hover, #e0342a);
   }
 
   /* Content */
@@ -512,26 +436,12 @@
 
   /* Responsive */
   @media (max-width: 768px) {
-    .client-toolbar {
-      padding: 12px 16px;
-    }
-
     .client-content {
       padding: 24px 16px;
     }
 
     .client-title {
       font-size: 36px;
-    }
-
-    .toolbar-right {
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .toolbar-button {
-      width: 100%;
-      justify-content: center;
     }
   }
 
@@ -547,10 +457,6 @@
 
   /* High contrast mode support */
   @media (prefers-contrast: high) {
-    .client-toolbar {
-      border-bottom-width: 2px;
-    }
-
     .detail-item {
       border-bottom-width: 2px;
     }
@@ -562,10 +468,6 @@
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
-    .toolbar-button {
-      transition: none;
-    }
-
     .retry-button {
       transition: none;
     }

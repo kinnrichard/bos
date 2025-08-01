@@ -13,6 +13,7 @@
   import SearchBar from './SearchBar.svelte';
   import PageActionsBar from './PageActionsBar.svelte';
   import JobControlsBar from './JobControlsBar.svelte';
+  import ClientActionsBar from './ClientActionsBar.svelte';
 
   // Types
   import type { PopulatedJob } from '$lib/types/job';
@@ -76,6 +77,12 @@
   const showTaskFilter = $derived(showJobControls);
   const showClientFilter = $derived(
     currentPageType === 'clients' && $page.route.id === ROUTE_PATTERNS.clients
+  );
+
+  // Show client actions when on client detail page
+  const showClientActions = $derived(
+    $page.route.id === '/(authenticated)/clients/[id]' ||
+      $page.route.id === '/(authenticated)/clients/new'
   );
 
   // Page actions configuration
@@ -174,6 +181,11 @@
     <!-- Client filter -->
     {#if showClientFilter}
       <ClientTypeFilterPopover {disabled} />
+    {/if}
+
+    <!-- Client actions -->
+    {#if showClientActions}
+      <ClientActionsBar {disabled} />
     {/if}
 
     <!-- Search bar -->
