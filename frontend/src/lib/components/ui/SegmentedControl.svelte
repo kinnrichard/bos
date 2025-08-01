@@ -20,7 +20,7 @@
   let {
     id,
     options,
-    value,
+    value = $bindable(),
     onchange,
     disabled = false,
     fullWidth = false,
@@ -31,6 +31,7 @@
 
   function handleOptionClick(optionValue: string) {
     if (disabled || optionValue === value) return;
+    value = optionValue;
     onchange?.(optionValue);
   }
 
