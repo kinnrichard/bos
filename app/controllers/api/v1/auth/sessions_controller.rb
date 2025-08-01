@@ -18,7 +18,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
           id: user.id.to_s,
           attributes: {
             message: "Successfully authenticated",
-            expires_at: 15.minutes.from_now.iso8601
+            expires_at: 30.minutes.from_now.iso8601
           },
           relationships: {
             user: {
@@ -99,13 +99,12 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
       set_auth_cookie(new_tokens[:access_token], new_tokens[:refresh_token])
 
       render json: {
-        data: {
-          type: "auth",
-          id: user.id.to_s,
-          attributes: {
-            message: "Token refreshed successfully",
-            expires_at: new_tokens[:expires_at]
-          }
+        user: UserSerializer.new(user),
+        auth: {
+          message: "Token refreshed successfully",
+          expires_at: new_tokens[:expires_at],
+          session_created_at: refresh_token_record.created_at,
+          session_age_hours: ((Time.current - refresh_token_record.created_at) / 1.hour).round(2)
         }
       }, status: :ok
     rescue StandardError => e
@@ -201,7 +200,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
     # Generate tokens
     access_token = JwtService.encode(
       { user_id: user.id, type: "access" },
-      15.minutes.from_now
+      30.minutes.from_now
     )
 
     # Generate refresh token with predefined JTI
@@ -220,7 +219,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
     {
       access_token: access_token,
       refresh_token: refresh_token,
-      expires_at: 15.minutes.from_now.iso8601
+      expires_at: 30.minutes.from_now.iso8601
     }
   end
 
@@ -230,7 +229,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
       httponly: true,
       secure: Rails.env.production?,
       same_site: :strict,
-      expires: 15.minutes.from_now
+      expires: 30.minutes.from_now
     }
 
     # Set refresh token if provided
@@ -256,7 +255,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
       httponly: true,
       secure: Rails.env.production?,
       same_site: :strict,
-      expires: 15.minutes.from_now
+      expires: 30.minutes.from_now
     }
 
     # Store user ID for simple authentication
@@ -265,7 +264,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
       httponly: true,
       secure: Rails.env.production?,
       same_site: :strict,
-      expires: 15.minutes.from_now
+      expires: 30.minutes.from_now
     }
   end
 end
