@@ -40,6 +40,9 @@
     borderRadius: '14.5px', // Default for normal size
   });
 
+  // Track if this is the initial render to prevent animation
+  let isInitialRender = $state(true);
+
   // Update indicator position when value changes or on mount
   $effect(() => {
     if (!containerEl || !value) return;
@@ -64,6 +67,14 @@
       width: `${width}px`,
       borderRadius: indicatorBorderRadius,
     };
+
+    // After first positioning, enable animations
+    if (isInitialRender) {
+      // Use a small delay to ensure styles are applied before enabling transitions
+      setTimeout(() => {
+        isInitialRender = false;
+      }, 50);
+    }
   });
 
   function handleOptionClick(optionValue: string) {
@@ -120,6 +131,7 @@
   {#if variant === 'default'}
     <div
       class="sliding-indicator"
+      class:no-transition={isInitialRender}
       style:transform={indicatorStyle.transform}
       style:width={indicatorStyle.width}
       style:border-radius={indicatorStyle.borderRadius}
@@ -183,6 +195,11 @@
       width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
       border-radius 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 0;
+  }
+
+  /* Disable transitions on initial render */
+  .sliding-indicator.no-transition {
+    transition: none;
   }
 
   .segmented-option {
