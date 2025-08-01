@@ -101,7 +101,7 @@
             label: 'New Client',
             icon: '➕',
             iconType: 'emoji',
-            action: () => debugComponent('New client action triggered'),
+            action: () => goto('/clients/new'),
           },
         ];
 
