@@ -55,7 +55,7 @@
     const buttonRect = selectedButton.getBoundingClientRect();
 
     // Account for container padding when calculating position
-    const containerPaddingLeft = 8; // matches CSS padding-left
+    const containerPaddingLeft = 4; // matches CSS padding-left
     const offsetX = buttonRect.left - containerRect.left - containerPaddingLeft;
     const width = buttonRect.width;
 
@@ -166,7 +166,7 @@
   .segmented-control {
     display: inline-flex;
     background-color: rgba(255, 255, 255, 0.15);
-    padding: 8px 8px;
+    padding: 4px 4px;
     position: relative;
     isolation: isolate;
   }
@@ -183,9 +183,9 @@
   /* Sliding indicator for default variant */
   .sliding-indicator {
     position: absolute;
-    top: 8px;
-    bottom: 8px;
-    left: 8px;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
     background-color: #000;
     box-shadow:
       0 2px 4px rgba(0, 0, 0, 0.15),
