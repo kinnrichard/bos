@@ -2,13 +2,26 @@
 
 **Epic ID**: EP-0016
 **Created**: 2025-01-31
+**Updated**: 2025-01-31 (Post EP-0018 DRY implementation)
 **Status**: Planning
 **Priority**: High
-**Dependencies**: Existing FilterPopover architecture
+**Dependencies**: 
+- Existing FilterPopover architecture
+- EP-0018 DRY Jobs Pages (COMPLETED)
 
 ## Overview
 
-Implement comprehensive filtering functionality for job listings across the application, specifically on the `/jobs` page and `/clients/[id]/jobs` page. The implementation will use the existing `FilterPopover.svelte` component architecture to provide filtering by Job Status and Job Priority within a single, unified popover interface.
+Implement comprehensive filtering functionality for job listings across the application, specifically on the `/jobs` page and `/clients/[id]/jobs` page. The implementation will leverage the composable architecture from EP-0018 and the existing `FilterPopover.svelte` component to provide filtering by Job Status and Job Priority within a single, unified popover interface.
+
+### Impact of EP-0018
+
+The completion of EP-0018 (DRY Jobs Pages) has significantly simplified this implementation:
+- **Filtering logic already exists** in `/lib/filters/jobs.svelte.ts`
+- **URL parameter handling** is built into `createFilterFromSearchParams`
+- **Display filtering infrastructure** is ready with `createJobsFilter`
+- **Estimated effort reduced by ~70%** from original estimates
+
+This epic now focuses primarily on UI integration rather than building filtering infrastructure from scratch.
 
 ## Business Value
 
@@ -19,17 +32,20 @@ Implement comprehensive filtering functionality for job listings across the appl
 
 ## Technical Architecture
 
-### Current State
-- Jobs are displayed in list format with basic search functionality
-- `GenericFilterPopover.svelte` provides reusable filter component with TypeScript generics
+### Current State (Post EP-0018)
+- Jobs are displayed using composable `JobsListView` component
+- Display filtering infrastructure exists in `/lib/filters/jobs.svelte.ts`
+- `createJobsFilter` supports multiple filter criteria including status and priority
+- `createFilterFromSearchParams` extracts filters from URL parameters
+- `GenericFilterPopover.svelte` provides reusable filter UI component
 - Task filtering already implemented as a reference pattern
-- URL parameter sync supported via `createFilterStore` utility
 
 ### Proposed Solution
+- Integrate `GenericFilterPopover` into `JobsLayout` for UI controls
+- Extend `JobFilterOptions` interface to properly type status and priority
+- Update `displayFilter` creation to include URL-based status/priority filters
 - Single combined filter popover containing both Status and Priority sections
-- Leverage existing `GenericFilterPopover` with headers and dividers
-- Maintain consistency with task filtering patterns
-- Full URL parameter persistence for bookmarkable filter states
+- Full URL parameter persistence using existing infrastructure
 
 ## User Stories
 
@@ -56,14 +72,17 @@ Implement comprehensive filtering functionality for job listings across the appl
 
 ## Implementation Plan
 
-### Phase 1: Core Infrastructure (Week 1)
+**Total Estimated Effort**: 5-7 story points (reduced from 15-20)
+**Timeline**: 3-5 days (reduced from 2 weeks)
+
+### Phase 1: Core Infrastructure (1 day)
 
 #### Ticket JOBS-001: Create Job Filter Store
 **Priority**: P0 - Critical
-**Effort**: 3 points
+**Effort**: 1 point (reduced from 3)
 **Assignee**: TBD
 
-**Description**: Create the foundational filter store for job filtering functionality.
+**Description**: Create the filter store and options for job filtering, integrating with existing infrastructure.
 
 **Technical Requirements**:
 ```typescript
@@ -109,14 +128,30 @@ export const jobFilterOptions: FilterOption[] = [
     value: `priority:${opt.value}`
   }))
 ];
+
+// Create the filter store
+export const jobFilter = createFilterStore('jobFilter', jobFilterOptions);
+
+// Helper to extract selected statuses and priorities
+export const selectedJobStatuses = $derived(
+  jobFilter.selected
+    .filter(id => id.startsWith('status:'))
+    .map(id => id.replace('status:', '') as JobStatus)
+);
+
+export const selectedJobPriorities = $derived(
+  jobFilter.selected
+    .filter(id => id.startsWith('priority:'))
+    .map(id => id.replace('priority:', '') as JobPriority)
+);
 ```
 
 **Acceptance Criteria**:
-- [ ] Filter store created with proper TypeScript types
+- [ ] Filter store created using existing `createFilterStore` utility
 - [ ] Status and priority options properly defined
 - [ ] Combined filter options support headers and dividers
-- [ ] Helper functions for filtering jobs implemented
-- [ ] URL parameter sync working (e.g., `?statuses=open,in_progress&priorities=high`)
+- [ ] Helper derivations for extracting selected values
+- [ ] Integration with existing `JobFilterOptions` type
 
 #### Ticket JOBS-002: Create JobFilterPopover Component
 **Priority**: P0 - Critical
@@ -162,11 +197,11 @@ export const jobFilterOptions: FilterOption[] = [
 - [ ] Alt-click for exclusive selection works
 - [ ] Active filter indicator displays correctly
 
-### Phase 2: UI Integration (Week 1-2)
+### Phase 2: UI Integration (1-2 days)
 
 #### Ticket JOBS-003: Update JobsLayout Component
 **Priority**: P1 - High
-**Effort**: 2 points
+**Effort**: 1 point (reduced from 2)
 **Assignee**: TBD
 
 **Description**: Integrate filtering controls into the jobs layout header.
@@ -174,7 +209,7 @@ export const jobFilterOptions: FilterOption[] = [
 **Technical Updates**:
 - Add filter button to header area (right side)
 - Import JobFilterPopover component
-- Add jobsSearch integration for unified search/filter experience
+- Existing jobsSearch integration already works with unified search/filter
 - Ensure responsive design for mobile views
 
 **Acceptance Criteria**:
@@ -185,41 +220,49 @@ export const jobFilterOptions: FilterOption[] = [
 
 #### Ticket JOBS-004: Implement Filtering in Jobs Page
 **Priority**: P1 - High
-**Effort**: 3 points
+**Effort**: 1 point (reduced from 3)
 **Assignee**: TBD
 
-**Description**: Apply filtering logic to the main jobs listing page.
+**Description**: Update the jobs page to include status and priority filtering using existing infrastructure.
 
 **Implementation Details**:
 ```typescript
 // Update /frontend/src/routes/(authenticated)/jobs/+page.svelte
 
-import { jobFilter, filterJobs } from '$lib/stores/jobFilter.svelte';
+import { createJobsQuery } from '$lib/queries/jobs.svelte';
+import { createJobsFilter, createFilterFromSearchParams } from '$lib/filters/jobs.svelte';
+import { jobsSearch } from '$lib/stores/jobsSearch.svelte';
 import { selectedJobStatuses, selectedJobPriorities } from '$lib/stores/jobFilter.svelte';
 
-// Apply filtering
-const filteredJobs = $derived(
-  filterJobs(
-    searchFilteredJobs,
-    $selectedJobStatuses,
-    $selectedJobPriorities
-  )
+// Create the display filter with status and priority from filter store
+const displayFilter = $derived(
+  createJobsFilter({
+    ...createFilterFromSearchParams(url.searchParams),
+    search: jobsSearch.searchQuery,
+    technicianId,
+    status: selectedJobStatuses[0], // or support multiple
+    priority: selectedJobPriorities[0], // or support multiple
+  })
 );
 ```
 
+**Note**: The filtering logic already exists in `createJobsFilter`. We just need to pass the selected values from the filter store.
+
 **Acceptance Criteria**:
-- [ ] Status filtering works correctly
-- [ ] Priority filtering works correctly
-- [ ] Filters combine properly (AND logic)
-- [ ] Empty states show appropriate messages
-- [ ] Performance remains smooth with large datasets
+- [ ] Status filtering works through UI popover
+- [ ] Priority filtering works through UI popover
+- [ ] Filters combine properly with search
+- [ ] Filter state persists in URL
+- [ ] Performance remains smooth
 
 #### Ticket JOBS-005: Implement Filtering in Client Jobs Page
 **Priority**: P1 - High
-**Effort**: 2 points
+**Effort**: 0.5 points (reduced from 2)
 **Assignee**: TBD
 
 **Description**: Apply same filtering logic to client-specific jobs page.
+
+**Implementation**: Nearly identical to JOBS-004, just update the `displayFilter` creation in `/clients/[id]/jobs/+page.svelte` to include status and priority from the filter store.
 
 **Acceptance Criteria**:
 - [ ] Filtering works within client context
@@ -227,11 +270,11 @@ const filteredJobs = $derived(
 - [ ] Client filter remains active with job filters
 - [ ] Consistent behavior with main jobs page
 
-### Phase 3: Testing & Polish (Week 2)
+### Phase 3: Testing & Polish (1 day)
 
 #### Ticket JOBS-006: Comprehensive Testing
 **Priority**: P1 - High
-**Effort**: 3 points
+**Effort**: 2 points (reduced from 3)
 **Assignee**: TBD
 
 **Test Cases**:
@@ -275,12 +318,20 @@ const filteredJobs = $derived(
 ## Technical Considerations
 
 ### Performance Optimizations
-- Use `$derived` for reactive filtering to leverage Svelte 5 efficiency
+- Leverage existing `$derived` based filtering from EP-0018
+- Display filtering happens client-side for instant feedback
+- No additional performance overhead since infrastructure exists
 
 ### Accessibility
 - ARIA labels for filter controls
 - Keyboard navigation support
 - Screen reader announcements for filter changes
+
+### Integration with EP-0018
+- All filtering logic exists in `createJobsFilter`
+- `JobFilterOptions` interface supports status and priority
+- URL parameter extraction via `createFilterFromSearchParams`
+- Minimal code changes required - mostly UI integration
 
 ### Future Enhancements
 1. **Advanced Filters** (Future Epic)
