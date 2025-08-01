@@ -37,6 +37,7 @@
   let indicatorStyle = $state({
     transform: 'translateX(0px)',
     width: '0px',
+    borderRadius: '14.5px', // Default for normal size
   });
 
   // Update indicator position when value changes or on mount
@@ -50,12 +51,18 @@
     const containerRect = containerEl.getBoundingClientRect();
     const buttonRect = selectedButton.getBoundingClientRect();
 
-    const offsetX = buttonRect.left - containerRect.left;
+    // Account for container padding when calculating position
+    const containerPaddingLeft = 8; // matches CSS padding-left
+    const offsetX = buttonRect.left - containerRect.left - containerPaddingLeft;
     const width = buttonRect.width;
+
+    // Use same large border radius for pill shape
+    const indicatorBorderRadius = '999px';
 
     indicatorStyle = {
       transform: `translateX(${offsetX}px)`,
       width: `${width}px`,
+      borderRadius: indicatorBorderRadius,
     };
   });
 
@@ -73,9 +80,27 @@
   }
 
   const sizeConfig = {
-    small: { fontSize: '12px', padding: '6px 12px', gap: '4px' },
-    normal: { fontSize: '13px', padding: '8px 16px', gap: '6px' },
-    large: { fontSize: '14px', padding: '10px 20px', gap: '8px' },
+    small: {
+      fontSize: '12px',
+      padding: '6px 12px',
+      gap: '4px',
+      height: 32, // 12px font + 6px*2 padding + 4px*2 container padding
+      borderRadius: '999px', // Large value for pill shape
+    },
+    normal: {
+      fontSize: '13px',
+      padding: '8px 16px',
+      gap: '6px',
+      height: 37, // 13px font + 8px*2 padding + 4px*2 container padding
+      borderRadius: '999px', // Large value for pill shape
+    },
+    large: {
+      fontSize: '14px',
+      padding: '10px 20px',
+      gap: '8px',
+      height: 42, // 14px font + 10px*2 padding + 4px*2 container padding
+      borderRadius: '999px', // Large value for pill shape
+    },
   };
 
   const config = $derived(sizeConfig[size]);
@@ -90,12 +115,14 @@
   role="radiogroup"
   aria-label={ariaLabel}
   style:gap={config.gap}
+  style:border-radius={config.borderRadius}
 >
   {#if variant === 'default'}
     <div
       class="sliding-indicator"
       style:transform={indicatorStyle.transform}
       style:width={indicatorStyle.width}
+      style:border-radius={indicatorStyle.borderRadius}
       aria-hidden="true"
     ></div>
   {/if}
@@ -111,6 +138,7 @@
       aria-label={option.label}
       style:font-size={config.fontSize}
       style:padding={config.padding}
+      style:border-radius={config.borderRadius}
       onclick={() => handleOptionClick(option.value)}
       onkeydown={(e) => handleKeydown(e, option.value)}
     >
@@ -126,8 +154,7 @@
   .segmented-control {
     display: inline-flex;
     background-color: rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    padding: 4px;
+    padding: 8px 8px;
     position: relative;
     isolation: isolate;
   }
@@ -144,17 +171,17 @@
   /* Sliding indicator for default variant */
   .sliding-indicator {
     position: absolute;
-    top: 4px;
-    bottom: 4px;
-    left: 4px;
+    top: 8px;
+    bottom: 8px;
+    left: 8px;
     background-color: #000;
-    border-radius: 4px;
     box-shadow:
       0 2px 4px rgba(0, 0, 0, 0.15),
       0 1px 2px rgba(0, 0, 0, 0.1);
     transition:
       transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-      width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      border-radius 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 0;
   }
 
@@ -164,7 +191,6 @@
     justify-content: center;
     background: none;
     border: none;
-    border-radius: 4px;
     color: var(--text-secondary, #c7c7cc);
     cursor: pointer;
     transition: color 0.15s ease;
