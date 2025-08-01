@@ -158,7 +158,13 @@
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       handleSubmit();
+    } else if (event.key === 's' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      handleSubmit();
     } else if (event.key === 'Escape') {
+      event.preventDefault();
+      handleCancel();
+    } else if (event.key === '.' && event.metaKey) {
       event.preventDefault();
       handleCancel();
     }
