@@ -85,9 +85,9 @@
       if (person.contactMethods?.length) {
         contactMethods = person.contactMethods.map((cm) => ({
           id: cm.id,
-          type: cm.contact_method_type as 'email' | 'phone' | 'address',
+          type: cm.contact_type as 'email' | 'phone' | 'address',
           value: cm.value,
-          isPrimary: cm.is_primary,
+          isPrimary: false, // Primary field no longer exists
         }));
       } else {
         contactMethods = [];
@@ -122,9 +122,9 @@
       if (person.contactMethods?.length) {
         contactMethods = person.contactMethods.map((cm) => ({
           id: cm.id,
-          type: cm.contact_method_type as 'email' | 'phone' | 'address',
+          type: cm.contact_type as 'email' | 'phone' | 'address',
           value: cm.value,
-          isPrimary: cm.is_primary,
+          isPrimary: false, // Primary field no longer exists
         }));
       }
     }
@@ -170,17 +170,15 @@
           if (cm.id) {
             // Update existing
             await ContactMethod.update(cm.id, {
-              contact_method_type: cm.type,
+              contact_type: cm.type,
               value: cm.value.trim(),
-              is_primary: cm.isPrimary,
             });
           } else {
             // Create new
             await ContactMethod.create({
               person_id: personId,
-              contact_method_type: cm.type,
+              contact_type: cm.type,
               value: cm.value.trim(),
-              is_primary: cm.isPrimary,
             });
           }
         }
@@ -355,12 +353,9 @@
               <div class="contact-list">
                 {#each person.contactMethods as cm}
                   <div class="contact-item">
-                    <span class="contact-type">{cm.contact_method_type}:</span>
+                    <span class="contact-type">{cm.contact_type}:</span>
                     <span class="contact-value">
                       {cm.formatted_value || cm.value}
-                      {#if cm.is_primary}
-                        <span class="primary-badge">Primary</span>
-                      {/if}
                     </span>
                   </div>
                 {/each}
