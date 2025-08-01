@@ -217,7 +217,7 @@
           {:else if layout.isNewClient}
             Create
           {:else}
-            Done
+            Save
           {/if}
         </TextButton>
       {:else}
