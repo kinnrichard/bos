@@ -15,7 +15,9 @@ import type { JobStatus, JobPriority } from '$lib/types/job';
 export interface JobFilterOptions {
   search?: string;
   status?: JobStatus;
+  statuses?: JobStatus[]; // Support multiple statuses
   priority?: JobPriority;
+  priorities?: JobPriority[]; // Support multiple priorities
   technicianId?: string;
   clientId?: string;
   dateFrom?: string;
@@ -99,13 +101,29 @@ export function createJobsFilter(options: JobFilterOptions) {
         return false;
       }
 
-      // Apply status filter
+      // Apply status filter (single or multiple)
+      // Only filter if we have specific statuses selected
       if (options.status && job.status !== options.status) {
         return false;
       }
+      if (
+        options.statuses &&
+        options.statuses.length > 0 &&
+        !options.statuses.includes(job.status as JobStatus)
+      ) {
+        return false;
+      }
 
-      // Apply priority filter
+      // Apply priority filter (single or multiple)
+      // Only filter if we have specific priorities selected
       if (options.priority && job.priority !== options.priority) {
+        return false;
+      }
+      if (
+        options.priorities &&
+        options.priorities.length > 0 &&
+        !options.priorities.includes(job.priority as JobPriority)
+      ) {
         return false;
       }
 
@@ -143,9 +161,18 @@ export function createFilterFromSearchParams(
   searchParams: URLSearchParams,
   additionalOptions?: Partial<JobFilterOptions>
 ): JobFilterOptions {
+  // Parse comma-separated values for statuses and priorities
+  const statusParam = searchParams.get('status');
+  const priorityParam = searchParams.get('priority');
+
+  const statuses = statusParam ? (statusParam.split(',') as JobStatus[]) : undefined;
+  const priorities = priorityParam ? (priorityParam.split(',') as JobPriority[]) : undefined;
+
   return {
-    status: searchParams.get('status') as JobStatus | undefined,
-    priority: searchParams.get('priority') as JobPriority | undefined,
+    status: statuses?.length === 1 ? statuses[0] : undefined,
+    statuses: statuses?.length && statuses.length > 1 ? statuses : undefined,
+    priority: priorities?.length === 1 ? priorities[0] : undefined,
+    priorities: priorities?.length && priorities.length > 1 ? priorities : undefined,
     technicianId: searchParams.get('technician_id') || undefined,
     clientId: searchParams.get('client_id') || undefined,
     dateFrom: searchParams.get('date_from') || undefined,

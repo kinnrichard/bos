@@ -1,8 +1,9 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { createJobsQuery } from '$lib/queries/jobs.svelte';
-  import { createJobsFilter, createFilterFromSearchParams } from '$lib/filters/jobs.svelte';
+  import { createJobsFilter } from '$lib/filters/jobs.svelte';
   import { jobsSearch } from '$lib/stores/jobsSearch.svelte';
+  import { getSelectedJobStatuses, getSelectedJobPriorities } from '$lib/stores/jobFilter.svelte';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobsListView from '$lib/components/jobs/JobsListView.svelte';
 
@@ -13,12 +14,18 @@
   // Create the query using composable builders
   const query = $derived(createJobsQuery().all());
 
-  // Create the display filter from URL params and search store
+  // Get filter selections
+  const selectedStatuses = $derived(getSelectedJobStatuses());
+  const selectedPriorities = $derived(getSelectedJobPriorities());
+
+  // Create the display filter from filter store selections
   const displayFilter = $derived(
     createJobsFilter({
-      ...createFilterFromSearchParams(url.searchParams),
       search: jobsSearch.searchQuery,
       technicianId,
+      // Use filter store selections - empty array means show all
+      statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+      priorities: selectedPriorities.length > 0 ? selectedPriorities : undefined,
     })
   );
 </script>

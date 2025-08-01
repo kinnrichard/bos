@@ -23,7 +23,7 @@
     selected = $bindable([]),
     onFilterChange,
     disabled = false,
-    showAllSelectedByDefault = true,
+    showAllSelectedByDefault = true, // Kept for backwards compatibility
     preventAllUnchecked = true,
     showDeletedToggle = false,
     deletedLabel = 'Deleted',
@@ -31,10 +31,9 @@
     onDeletedToggle = () => {},
   } = $props<Props<T>>();
 
-  // Initialize selected array if needed
-  if (showAllSelectedByDefault && selected.length === 0 && options.length > 0) {
-    selected = options.map((opt) => opt.value);
-  }
+  // Note: Initialization is handled by parent component to avoid circular updates
+  // showAllSelectedByDefault is deprecated but kept for backwards compatibility
+  void showAllSelectedByDefault; // Satisfy linter
 
   // Build menu options with title
   const menuOptions = $derived([
@@ -50,35 +49,40 @@
 
   // Handle option toggle with optional "prevent all unchecked" logic
   function handleOptionToggle(option: (typeof options)[0], event?: MouseEvent) {
+    let newSelected: string[];
+
     // Easter egg: Option-click for exclusive selection or toggle to all
     if (event?.altKey) {
       // Check if already exclusively selected - if so, select all
       if (selected.length === 1 && selected.includes(option.value)) {
-        selected = options.map((opt) => opt.value);
+        newSelected = options.map((opt) => opt.value);
       } else {
         // Otherwise, select only this option
-        selected = [option.value];
-      }
-      return;
-    }
-
-    const isCurrentlySelected = selected.includes(option.value);
-
-    if (isCurrentlySelected) {
-      // User wants to uncheck
-      const newSelected = selected.filter((value) => value !== option.value);
-
-      if (preventAllUnchecked && newSelected.length === 0) {
-        // Would make all unchecked - select all instead
-        selected = options.map((opt) => opt.value);
-      } else {
-        // Safe to uncheck this item
-        selected = newSelected;
+        newSelected = [option.value];
       }
     } else {
-      // User wants to check - add to selection
-      selected = [...selected, option.value];
+      const isCurrentlySelected = selected.includes(option.value);
+
+      if (isCurrentlySelected) {
+        // User wants to uncheck
+        const tempSelected = selected.filter((value) => value !== option.value);
+
+        if (preventAllUnchecked && tempSelected.length === 0) {
+          // Would make all unchecked - select all instead
+          newSelected = options.map((opt) => opt.value);
+        } else {
+          // Safe to uncheck this item
+          newSelected = tempSelected;
+        }
+      } else {
+        // User wants to check - add to selection
+        newSelected = [...selected, option.value];
+      }
     }
+
+    // Update local state and notify parent
+    selected = newSelected;
+    onFilterChange(newSelected);
   }
 
   // Compute if filters are active (not all selected or deleted toggle is on)
@@ -88,11 +92,6 @@
 
   // Compute all selected values for PopoverMenu
   const allSelectedValues = $derived([...selected, ...(showDeleted ? ['deleted'] : [])]);
-
-  // Notify parent when filters change
-  $effect(() => {
-    onFilterChange(selected);
-  });
 
   // Notify parent when deleted toggle changes
   $effect(() => {
