@@ -21,6 +21,12 @@ export interface ClientEditCallbacks {
   onEdit?: () => void;
 }
 
+// Person edit callbacks
+export interface PersonEditCallbacks {
+  onSave: () => void | Promise<void>;
+  onCancel: () => void;
+}
+
 // Layout state object - proper Svelte 5 pattern
 export const layout = $state({
   sidebarVisible: true,
@@ -32,6 +38,12 @@ export const layout = $state({
   isSavingClient: false,
   canSaveClient: true,
   clientEditCallbacks: null as ClientEditCallbacks | null,
+  // Person edit state
+  isEditingPerson: false,
+  isNewPerson: false,
+  isSavingPerson: false,
+  canSavePerson: true,
+  personEditCallbacks: null as PersonEditCallbacks | null,
 });
 
 // Initialize mobile detection if in browser
@@ -108,6 +120,32 @@ export const layoutActions = {
     layout.isSavingClient = false;
     layout.canSaveClient = true;
     layout.clientEditCallbacks = null;
+  },
+
+  // Person edit actions
+  setPersonEditState: (editing: boolean, isNew: boolean = false) => {
+    layout.isEditingPerson = editing;
+    layout.isNewPerson = isNew;
+  },
+
+  setPersonEditCallbacks: (callbacks: PersonEditCallbacks | null) => {
+    layout.personEditCallbacks = callbacks;
+  },
+
+  setSavingPerson: (saving: boolean) => {
+    layout.isSavingPerson = saving;
+  },
+
+  setCanSavePerson: (canSave: boolean) => {
+    layout.canSavePerson = canSave;
+  },
+
+  clearPersonEditState: () => {
+    layout.isEditingPerson = false;
+    layout.isNewPerson = false;
+    layout.isSavingPerson = false;
+    layout.canSavePerson = true;
+    layout.personEditCallbacks = null;
   },
 };
 

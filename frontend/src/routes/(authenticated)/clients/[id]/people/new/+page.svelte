@@ -3,7 +3,6 @@
   import { goto } from '$app/navigation';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import FormInput from '$lib/components/ui/FormInput.svelte';
-  import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
   import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import { Person } from '$lib/models/person';
   import { ContactMethod } from '$lib/models/contact-method';
@@ -11,6 +10,7 @@
   import { ReactivePeopleGroup } from '$lib/models/reactive-people-group';
   import { ReactiveClient } from '$lib/models/reactive-client';
   import type { CreatePersonData } from '$lib/models/types/person-data';
+  import { layoutActions } from '$lib/stores/layout.svelte';
 
   // Icon paths
   const PlusIcon = '/icons/plus.svg';
@@ -38,7 +38,6 @@
     namePreferred: '',
     namePronunciationHint: '',
     title: '',
-    isActive: true,
     selectedGroupIds: [] as string[],
     selectedDepartmentIds: [] as string[],
   });
@@ -68,8 +67,8 @@
   }
 
   // Handle form submission
-  async function handleSubmit(event: Event) {
-    event.preventDefault();
+  async function handleSubmit(event?: Event) {
+    event?.preventDefault();
 
     if (!formData.name.trim()) {
       error = 'Name is required';
@@ -86,7 +85,7 @@
         name_preferred: formData.namePreferred.trim() || undefined,
         name_pronunciation_hint: formData.namePronunciationHint.trim() || undefined,
         title: formData.title.trim() || undefined,
-        is_active: formData.isActive,
+        is_active: true,
         client_id: clientId,
       };
 
@@ -126,12 +125,6 @@
     goto(`/clients/${clientId}/people`);
   }
 
-  // Status options
-  const statusOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-  ];
-
   // Debug the form state
   $effect(() => {
     console.log('Form state:', {
@@ -140,7 +133,39 @@
       isValid: formData.name.trim().length > 0,
     });
   });
+
+  // Derived validation state
+  const canSave = $derived(formData.name.trim().length > 0);
+
+  // Set up person edit state in layout store
+  $effect(() => {
+    layoutActions.setPersonEditState(true, true); // editing = true, isNew = true
+    layoutActions.setSavingPerson(loading);
+    layoutActions.setCanSavePerson(canSave);
+    layoutActions.setPersonEditCallbacks({
+      onSave: handleSubmit,
+      onCancel: handleCancel,
+    });
+
+    // Cleanup on unmount
+    return () => {
+      layoutActions.clearPersonEditState();
+    };
+  });
+
+  // Handle keyboard shortcuts
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      handleSubmit();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      handleCancel();
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <AppLayout currentClient={client}>
   <div class="add-person-page">
@@ -157,43 +182,32 @@
       <section class="form-section">
         <h2>Basic Information</h2>
 
-        <div class="form-field">
+        <div class="form-row">
           <label for="name">Name *</label>
           <FormInput id="name" bind:value={formData.name} placeholder="Full name" required />
         </div>
 
-        <div class="form-field">
+        <div class="form-row">
           <label for="preferred-name">Preferred Name</label>
           <FormInput
             id="preferred-name"
             bind:value={formData.namePreferred}
             placeholder="How they prefer to be called"
           />
-          <p class="helper-text">Optional: If different from their full name</p>
         </div>
 
-        <div class="form-field">
+        <div class="form-row">
           <label for="pronunciation">Pronunciation</label>
           <FormInput
             id="pronunciation"
             bind:value={formData.namePronunciationHint}
             placeholder="e.g., 'John Doe' → 'jon doh'"
           />
-          <p class="helper-text">Optional: Help others pronounce their name correctly</p>
         </div>
 
-        <div class="form-field">
+        <div class="form-row">
           <label for="title">Title</label>
           <FormInput id="title" bind:value={formData.title} placeholder="Job title or role" />
-        </div>
-
-        <div class="form-field">
-          <label>Status</label>
-          <SegmentedControl
-            options={statusOptions}
-            value={formData.isActive ? 'active' : 'inactive'}
-            onchange={(e) => (formData.isActive = e.detail === 'active')}
-          />
         </div>
       </section>
 
@@ -294,20 +308,6 @@
           {/if}
         </section>
       {/if}
-
-      <!-- Form Actions -->
-      <div class="form-actions">
-        <button type="button" class="cancel-button" onclick={handleCancel} disabled={loading}>
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="submit-button"
-          disabled={loading || formData.name.trim().length === 0}
-        >
-          {loading ? 'Creating...' : 'Create Person'}
-        </button>
-      </div>
     </form>
   </div>
 </AppLayout>
@@ -360,6 +360,25 @@
 
   .section-header h2 {
     margin: 0;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .form-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .form-row label {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-align: right;
   }
 
   .form-field {
@@ -443,55 +462,6 @@
     color: var(--text-primary);
   }
 
-  .helper-text {
-    font-size: 12px;
-    color: var(--text-tertiary);
-    margin-top: 4px;
-    line-height: 1.4;
-  }
-
-  .form-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    margin-top: 32px;
-  }
-
-  .cancel-button,
-  .submit-button {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .cancel-button {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
-  .cancel-button:hover:not(:disabled) {
-    background-color: #48484a;
-  }
-
-  .submit-button {
-    background-color: var(--accent-blue);
-    color: white;
-  }
-
-  .submit-button:hover:not(:disabled) {
-    background-color: var(--accent-blue-hover);
-  }
-
-  .cancel-button:disabled,
-  .submit-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .add-person-page {
@@ -508,19 +478,18 @@
       margin-bottom: 20px;
     }
 
-    .contact-method {
+    .form-row {
       grid-template-columns: 1fr;
       gap: 8px;
     }
 
-    .form-actions {
-      flex-direction: column-reverse;
-      margin-top: 24px;
+    .form-row label {
+      text-align: left;
     }
 
-    .cancel-button,
-    .submit-button {
-      width: 100%;
+    .contact-method {
+      grid-template-columns: 1fr;
+      gap: 8px;
     }
   }
 </style>

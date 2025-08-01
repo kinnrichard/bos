@@ -53,7 +53,12 @@
 
     if (routeId === ROUTE_PATTERNS.jobDetail) return 'job-detail';
     if (routeId.includes('/jobs')) return 'jobs';
-    if (routeId === ROUTE_PATTERNS.clientPeople) return 'people';
+    if (
+      routeId === ROUTE_PATTERNS.clientPeople ||
+      routeId === '/(authenticated)/clients/[id]/people/new' ||
+      routeId === '/(authenticated)/clients/[id]/people/[personId]'
+    )
+      return 'people';
     if (routeId.includes('/clients')) return 'clients';
     if (routeId.includes('/devices')) return 'devices';
 
@@ -88,6 +93,12 @@
   const showClientActions = $derived(
     $page.route.id === '/(authenticated)/clients/[id]' ||
       $page.route.id === '/(authenticated)/clients/new'
+  );
+
+  // Show person actions when on person new/edit pages
+  const showPersonActions = $derived(
+    $page.route.id === '/(authenticated)/clients/[id]/people/new' ||
+      $page.route.id === '/(authenticated)/clients/[id]/people/[personId]'
   );
 
   // Page actions configuration
@@ -127,7 +138,13 @@
 
       case 'people':
         // Only show add person button when on a client's people page
-        if (currentRoute === ROUTE_PATTERNS.clientPeople && currentClientId) {
+        // but NOT when already adding a new person or viewing a specific person
+        if (
+          currentRoute === ROUTE_PATTERNS.clientPeople &&
+          currentClientId &&
+          !$page.url.pathname.includes('/people/new') &&
+          !$page.params.personId
+        ) {
           return [
             {
               label: 'Add Person',
@@ -200,6 +217,19 @@
         Cancel
       </TextButton>
     {/if}
+
+    <!-- Person actions - Cancel button -->
+    {#if showPersonActions && layout.personEditCallbacks}
+      <TextButton
+        variant="ghost-danger"
+        size="normal"
+        onclick={() => layout.personEditCallbacks?.onCancel?.()}
+        disabled={disabled || layout.isSavingPerson}
+        ariaLabel="Cancel"
+      >
+        Cancel
+      </TextButton>
+    {/if}
   </div>
 
   <!-- Right section: Filters + Search + User menu -->
@@ -232,8 +262,6 @@
         >
           {#if layout.isSavingClient}
             Saving...
-          {:else if layout.isNewClient}
-            Create
           {:else}
             Save
           {/if}
@@ -249,6 +277,24 @@
           Edit
         </TextButton>
       {/if}
+    {/if}
+
+    <!-- Person actions - Save button -->
+    {#if showPersonActions && layout.personEditCallbacks}
+      <TextButton
+        variant="primary"
+        size="normal"
+        onclick={() => layout.personEditCallbacks?.onSave?.()}
+        disabled={disabled || layout.isSavingPerson || !layout.canSavePerson}
+        loading={layout.isSavingPerson}
+        ariaLabel={layout.isNewPerson ? 'Create person' : 'Save changes'}
+      >
+        {#if layout.isSavingPerson}
+          Saving...
+        {:else}
+          Save
+        {/if}
+      </TextButton>
     {/if}
 
     <!-- Search bar -->
