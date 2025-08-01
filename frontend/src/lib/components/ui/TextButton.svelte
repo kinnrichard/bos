@@ -1,6 +1,6 @@
 <script lang="ts">
   let {
-    variant = 'default' as 'default' | 'primary' | 'danger',
+    variant = 'default' as 'default' | 'primary' | 'danger' | 'ghost' | 'ghost-danger',
     size = 'normal' as 'small' | 'normal' | 'large',
     disabled = false,
     loading = false,
@@ -12,7 +12,7 @@
     'data-testid': dataTestId = undefined as string | undefined,
     children,
   }: {
-    variant?: 'default' | 'primary' | 'danger';
+    variant?: 'default' | 'primary' | 'danger' | 'ghost' | 'ghost-danger';
     size?: 'small' | 'normal' | 'large';
     disabled?: boolean;
     loading?: boolean;
@@ -66,7 +66,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 18px; /* Fully rounded to match toolbar buttons */
     border: 1px solid transparent;
     font-weight: 500;
     line-height: 1;
@@ -96,6 +96,7 @@
   .text-button.primary {
     background-color: var(--accent-blue, #00a3ff);
     color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   .text-button.primary:hover:not(.disabled) {
@@ -117,6 +118,38 @@
 
   .text-button.danger:active:not(.disabled) {
     background-color: var(--accent-red-dark, #cc2a20);
+  }
+
+  /* Ghost variant - transparent with border */
+  .text-button.ghost {
+    background-color: transparent;
+    border-color: var(--border-primary, #38383a);
+    color: var(--text-primary, #f2f2f7);
+  }
+
+  .text-button.ghost:hover:not(.disabled) {
+    background-color: var(--bg-secondary, #1c1c1d);
+    border-color: var(--border-secondary, #48484a);
+  }
+
+  .text-button.ghost:active:not(.disabled) {
+    background-color: var(--bg-tertiary, #3a3a3c);
+  }
+
+  /* Ghost danger variant - transparent with red */
+  .text-button.ghost-danger {
+    background-color: transparent;
+    border-color: var(--accent-red, #ff3b30);
+    color: var(--accent-red, #ff3b30);
+  }
+
+  .text-button.ghost-danger:hover:not(.disabled) {
+    background-color: rgba(255, 59, 48, 0.1);
+    border-color: var(--accent-red-hover, #e0342a);
+  }
+
+  .text-button.ghost-danger:active:not(.disabled) {
+    background-color: rgba(255, 59, 48, 0.15);
   }
 
   /* Disabled state */

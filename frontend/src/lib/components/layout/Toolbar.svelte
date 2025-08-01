@@ -8,12 +8,12 @@
 
   // Components
   import CircularButton from '$lib/components/ui/CircularButton.svelte';
+  import TextButton from '$lib/components/ui/TextButton.svelte';
   import TaskFilterPopover from './TaskFilterPopover.svelte';
   import ClientTypeFilterPopover from './ClientTypeFilterPopover.svelte';
   import SearchBar from './SearchBar.svelte';
   import PageActionsBar from './PageActionsBar.svelte';
   import JobControlsBar from './JobControlsBar.svelte';
-  import ClientActionsBar from './ClientActionsBar.svelte';
 
   // Types
   import type { PopulatedJob } from '$lib/types/job';
@@ -87,6 +87,11 @@
 
   // Page actions configuration
   const pageActions = $derived.by((): PageAction[] => {
+    // Don't show + button on client detail/edit/new pages
+    if (showClientActions) {
+      return [];
+    }
+
     switch (currentPageType) {
       case 'jobs':
         return [
@@ -169,6 +174,19 @@
     {#if showJobControls}
       <JobControlsBar jobId={$page.params.id || currentJob?.id || 'new'} {currentJob} {disabled} />
     {/if}
+
+    <!-- Client actions - Cancel button -->
+    {#if showClientActions && layout.isEditingClient && layout.clientEditCallbacks}
+      <TextButton
+        variant="ghost-danger"
+        size="normal"
+        onclick={() => layout.clientEditCallbacks?.onCancel?.()}
+        disabled={disabled || layout.isSavingClient}
+        ariaLabel="Cancel editing"
+      >
+        Cancel
+      </TextButton>
+    {/if}
   </div>
 
   <!-- Right section: Filters + Search + User menu -->
@@ -183,9 +201,36 @@
       <ClientTypeFilterPopover {disabled} />
     {/if}
 
-    <!-- Client actions -->
-    {#if showClientActions}
-      <ClientActionsBar {disabled} />
+    <!-- Client actions - Edit/Done buttons -->
+    {#if showClientActions && layout.clientEditCallbacks}
+      {#if layout.isEditingClient}
+        <TextButton
+          variant="primary"
+          size="normal"
+          onclick={() => layout.clientEditCallbacks?.onSave?.()}
+          disabled={disabled || layout.isSavingClient || !layout.canSaveClient}
+          loading={layout.isSavingClient}
+          ariaLabel={layout.isNewClient ? 'Create client' : 'Save changes'}
+        >
+          {#if layout.isSavingClient}
+            Saving...
+          {:else if layout.isNewClient}
+            Create
+          {:else}
+            Done
+          {/if}
+        </TextButton>
+      {:else}
+        <TextButton
+          variant="ghost"
+          size="normal"
+          onclick={() => layout.clientEditCallbacks?.onEdit?.()}
+          {disabled}
+          ariaLabel="Edit client"
+        >
+          Edit
+        </TextButton>
+      {/if}
     {/if}
 
     <!-- Search bar -->
