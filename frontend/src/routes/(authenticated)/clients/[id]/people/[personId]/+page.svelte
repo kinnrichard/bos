@@ -37,9 +37,7 @@
   const client = $derived(clientQuery?.data);
 
   // Load person with relationships
-  const personQuery = $derived(
-    ReactivePerson.includes('contactMethods', 'peopleGroups').find(personId)
-  );
+  const personQuery = $derived(ReactivePerson.includes('contactMethods').find(personId));
   const person = $derived(personQuery?.data);
   const loading = $derived(personQuery?.isLoading || false);
   const queryError = $derived(personQuery?.error);
@@ -96,16 +94,10 @@
       }
 
       // Set groups
-      if (person.peopleGroups?.length) {
-        const personGroups = person.peopleGroups;
-        formData.selectedDepartmentIds = personGroups
-          .filter((g) => g.is_department)
-          .map((g) => g.id);
-        formData.selectedGroupIds = personGroups.filter((g) => !g.is_department).map((g) => g.id);
-      } else {
-        formData.selectedDepartmentIds = [];
-        formData.selectedGroupIds = [];
-      }
+      // TODO: peopleGroups relationship not available in Zero.js schema
+      // Groups would need to be loaded separately through PeopleGroupMembership
+      formData.selectedDepartmentIds = [];
+      formData.selectedGroupIds = [];
     }
   });
 
@@ -195,12 +187,11 @@
       }
 
       // Handle group memberships
-      if (person?.peopleGroups) {
-        // Delete all existing memberships
-        const memberships = await PeopleGroupMembership.where({ person_id: personId }).all();
-        for (const membership of memberships) {
-          await PeopleGroupMembership.destroy(membership.id);
-        }
+      // TODO: peopleGroups relationship not available in Zero.js schema
+      // Always delete and recreate memberships for now
+      const memberships = await PeopleGroupMembership.where({ person_id: personId }).all();
+      for (const membership of memberships) {
+        await PeopleGroupMembership.destroy(membership.id);
       }
 
       // Create new memberships
@@ -377,15 +368,12 @@
             </section>
           {/if}
 
-          {#if person.peopleGroups?.length}
+          {#if false}
+            <!-- TODO: Groups section disabled - peopleGroups relationship not available in Zero.js schema -->
             <section class="detail-section">
               <h2>Groups & Departments</h2>
               <div class="group-list">
-                {#each person.peopleGroups as group}
-                  <span class="group-badge" class:department={group.is_department}>
-                    {group.name}
-                  </span>
-                {/each}
+                <!-- Groups would be displayed here -->
               </div>
             </section>
           {/if}
