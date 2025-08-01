@@ -29,6 +29,36 @@
     ariaLabel = 'Select option',
   }: Props = $props();
 
+  // Element references for measuring positions
+  let containerEl = $state<HTMLDivElement>();
+  let buttonElements: Record<string, HTMLButtonElement> = {};
+
+  // Sliding indicator state
+  let indicatorStyle = $state({
+    transform: 'translateX(0px)',
+    width: '0px',
+  });
+
+  // Update indicator position when value changes or on mount
+  $effect(() => {
+    if (!containerEl || !value) return;
+
+    const selectedButton = buttonElements[value];
+    if (!selectedButton) return;
+
+    // Calculate position relative to container
+    const containerRect = containerEl.getBoundingClientRect();
+    const buttonRect = selectedButton.getBoundingClientRect();
+
+    const offsetX = buttonRect.left - containerRect.left;
+    const width = buttonRect.width;
+
+    indicatorStyle = {
+      transform: `translateX(${offsetX}px)`,
+      width: `${width}px`,
+    };
+  });
+
   function handleOptionClick(optionValue: string) {
     if (disabled || optionValue === value) return;
     value = optionValue;
@@ -53,6 +83,7 @@
 
 <div
   {id}
+  bind:this={containerEl}
   class="segmented-control {size} {variant}"
   class:full-width={fullWidth}
   class:disabled
@@ -60,8 +91,17 @@
   aria-label={ariaLabel}
   style:gap={config.gap}
 >
+  {#if variant === 'default'}
+    <div
+      class="sliding-indicator"
+      style:transform={indicatorStyle.transform}
+      style:width={indicatorStyle.width}
+      aria-hidden="true"
+    ></div>
+  {/if}
   {#each options as option (option.value)}
     <button
+      bind:this={buttonElements[option.value]}
       type="button"
       class="segmented-option"
       class:selected={value === option.value}
@@ -85,10 +125,11 @@
 <style>
   .segmented-control {
     display: inline-flex;
-    background-color: var(--bg-tertiary, #3a3a3c);
+    background-color: rgba(255, 255, 255, 0.15);
     border-radius: 8px;
-    padding: 2px;
-    border: 1px solid var(--border-primary, #48484a);
+    padding: 4px;
+    position: relative;
+    isolation: isolate;
   }
 
   .segmented-control.full-width {
@@ -100,44 +141,73 @@
     pointer-events: none;
   }
 
+  /* Sliding indicator for default variant */
+  .sliding-indicator {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    background-color: #000;
+    border-radius: 4px;
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.15),
+      0 1px 2px rgba(0, 0, 0, 0.1);
+    transition:
+      transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+  }
+
   .segmented-option {
     display: flex;
     align-items: center;
     justify-content: center;
     background: none;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     color: var(--text-secondary, #c7c7cc);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: color 0.15s ease;
     font-weight: 500;
     white-space: nowrap;
     min-width: 0;
     flex: 1;
+    position: relative;
+    z-index: 1;
   }
 
   .full-width .segmented-option {
     flex: 1;
   }
 
-  .segmented-option:hover:not(.selected) {
+  /* For default variant, rely on sliding indicator for background */
+  .segmented-control.default .segmented-option:hover:not(.selected) {
+    color: var(--text-primary, #f2f2f7);
+  }
+
+  .segmented-control.default .segmented-option.selected {
+    color: var(--accent-blue, #00a3ff);
+  }
+
+  /* Minimal variant retains original styling */
+  .segmented-control.minimal .segmented-option:hover:not(.selected) {
     background-color: var(--bg-quaternary, #48484a);
     color: var(--text-primary, #f2f2f7);
   }
 
-  .segmented-option.selected {
+  .segmented-control.minimal .segmented-option.selected {
     background-color: var(--bg-primary, #1c1c1d);
     color: var(--text-primary, #f2f2f7);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
-  .segmented-option:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--accent-blue, #00a3ff);
+  .segmented-option:focus-visible {
+    outline: 2px solid var(--accent-blue, #00a3ff);
+    outline-offset: 2px;
   }
 
   .segmented-option:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
 
   .option-icon {
