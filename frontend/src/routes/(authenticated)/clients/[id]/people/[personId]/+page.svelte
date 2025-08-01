@@ -44,7 +44,7 @@
 
   // Load all groups for editing
   const groupsQuery = $derived(
-    ReactivePeopleGroup.where({ client_id: clientId }).orderBy('name', 'asc')
+    ReactivePeopleGroup.where({ client_id: clientId }).orderBy('name', 'asc').all()
   );
   const allGroups = $derived(groupsQuery?.data || []);
   const groups = $derived(allGroups.filter((g) => !g.is_department));
