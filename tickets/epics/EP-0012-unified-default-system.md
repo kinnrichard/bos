@@ -6,7 +6,7 @@
 Implement Unified Default System for ActiveRecord and ReactiveRecord TypeScript Models
 
 ## Status
-Draft
+Complete
 
 ## Priority
 High
