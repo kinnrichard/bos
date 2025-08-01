@@ -1,7 +1,17 @@
 <script lang="ts">
   let {
-    type = 'text' as 'text' | 'email' | 'password' | 'url' | 'tel' | 'search' | 'number' | 'date' | 'time' | 'datetime-local',
-    value = '' as string | number,
+    type = 'text' as
+      | 'text'
+      | 'email'
+      | 'password'
+      | 'url'
+      | 'tel'
+      | 'search'
+      | 'number'
+      | 'date'
+      | 'time'
+      | 'datetime-local',
+    value = $bindable('') as string | number,
     placeholder = '',
     disabled = false,
     readonly = false,
@@ -32,7 +42,7 @@
     onblur = undefined as ((event: FocusEvent) => void) | undefined,
     onkeydown = undefined as ((event: KeyboardEvent) => void) | undefined,
     onkeyup = undefined as ((event: KeyboardEvent) => void) | undefined,
-    onkeypress = undefined as ((event: KeyboardEvent) => void) | undefined
+    onkeypress = undefined as ((event: KeyboardEvent) => void) | undefined,
   } = $props();
 
   // Focus management
@@ -53,7 +63,7 @@
   const sizeConfig = {
     small: { padding: '6px 10px', fontSize: '12px' },
     normal: { padding: '8px 12px', fontSize: '13px' },
-    large: { padding: '10px 14px', fontSize: '14px' }
+    large: { padding: '10px 14px', fontSize: '14px' },
   };
 
   const config = $derived(sizeConfig[size]);
@@ -83,13 +93,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {:else if type === 'email'}
     <input
@@ -112,13 +122,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {:else if type === 'password'}
     <input
@@ -140,13 +150,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {:else if type === 'url'}
     <input
@@ -169,13 +179,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {:else if type === 'tel'}
     <input
@@ -198,13 +208,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {:else if type === 'search'}
     <input
@@ -227,13 +237,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {:else if type === 'number'}
     <input
@@ -257,13 +267,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {:else if type === 'date'}
     <input
@@ -284,13 +294,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {:else if type === 'time'}
     <input
@@ -312,13 +322,13 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {:else if type === 'datetime-local'}
     <input
@@ -340,16 +350,16 @@
       class:has-error={hasError}
       style:padding={config.padding}
       style:font-size={config.fontSize}
-      oninput={oninput}
-      onchange={onchange}
-      onfocus={onfocus}
-      onblur={onblur}
-      onkeydown={onkeydown}
-      onkeyup={onkeyup}
-      onkeypress={onkeypress}
+      {oninput}
+      {onchange}
+      {onfocus}
+      {onblur}
+      {onkeydown}
+      {onkeyup}
+      {onkeypress}
     />
   {/if}
-  
+
   {#if hasError}
     <div class="input-error" id="{id}-error">
       {error}
@@ -373,7 +383,9 @@
     border: 1px solid var(--border-primary);
     border-radius: 6px;
     color: var(--text-primary);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
     font-family: inherit;
     line-height: 1.4;
     width: 100%;
@@ -432,35 +444,35 @@
   /* Size variants handled by style props - no CSS needed */
 
   /* Special input types */
-  .form-input[type="date"],
-  .form-input[type="time"],
-  .form-input[type="datetime-local"] {
+  .form-input[type='date'],
+  .form-input[type='time'],
+  .form-input[type='datetime-local'] {
     /* Ensure consistent appearance across browsers */
     -webkit-appearance: none;
     -moz-appearance: textfield;
     appearance: none;
   }
 
-  .form-input[type="number"] {
+  .form-input[type='number'] {
     -moz-appearance: textfield;
     appearance: textfield;
   }
 
-  .form-input[type="number"]::-webkit-outer-spin-button,
-  .form-input[type="number"]::-webkit-inner-spin-button {
+  .form-input[type='number']::-webkit-outer-spin-button,
+  .form-input[type='number']::-webkit-inner-spin-button {
     -webkit-appearance: none;
     appearance: none;
     margin: 0;
   }
 
   /* Search input specific styling */
-  .form-input[type="search"] {
+  .form-input[type='search'] {
     -webkit-appearance: none;
     appearance: none;
   }
 
-  .form-input[type="search"]::-webkit-search-decoration,
-  .form-input[type="search"]::-webkit-search-cancel-button {
+  .form-input[type='search']::-webkit-search-decoration,
+  .form-input[type='search']::-webkit-search-cancel-button {
     -webkit-appearance: none;
   }
 
@@ -484,9 +496,9 @@
 
   /* Dark mode adjustments */
   @media (prefers-color-scheme: dark) {
-    .form-input[type="date"],
-    .form-input[type="time"],
-    .form-input[type="datetime-local"] {
+    .form-input[type='date'],
+    .form-input[type='time'],
+    .form-input[type='datetime-local'] {
       color-scheme: dark;
     }
   }

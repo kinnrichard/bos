@@ -48,9 +48,9 @@
     }
   });
 
-  // Update form data when client loads
+  // Update form data when client loads (only when not editing)
   $effect(() => {
-    if (clientQuery?.data && !isNewClient) {
+    if (clientQuery?.data && !isNewClient && !isEditing) {
       formData.name = clientQuery.data.name || '';
       formData.client_type = clientQuery.data.client_type || 'residential';
     }
