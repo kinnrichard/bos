@@ -146,10 +146,12 @@
       onSave: handleSubmit,
       onCancel: handleCancel,
     });
+    layoutActions.setPageTitle('Add New Person');
 
     // Cleanup on unmount
     return () => {
       layoutActions.clearPersonEditState();
+      layoutActions.clearPageTitle();
     };
   });
 
@@ -175,8 +177,6 @@
 
 <AppLayout currentClient={client}>
   <div class="add-person-page">
-    <h1>Add New Person</h1>
-
     <form onsubmit={handleSubmit} novalidate>
       {#if error}
         <div class="error-message" role="alert">
@@ -323,13 +323,6 @@
     max-width: 800px;
     margin: 0 auto;
     padding: 24px;
-  }
-
-  h1 {
-    font-size: 32px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 32px 0;
   }
 
   .error-message {

@@ -32,6 +32,8 @@ export const layout = $state({
   sidebarVisible: true,
   currentClient: null as Client | null,
   isMobile: false,
+  // Page title
+  pageTitle: null as string | null,
   // Client edit state
   isEditingClient: false,
   isNewClient: false,
@@ -146,6 +148,15 @@ export const layoutActions = {
     layout.isSavingPerson = false;
     layout.canSavePerson = true;
     layout.personEditCallbacks = null;
+  },
+
+  // Page title actions
+  setPageTitle: (title: string | null) => {
+    layout.pageTitle = title;
+  },
+
+  clearPageTitle: () => {
+    layout.pageTitle = null;
   },
 };
 

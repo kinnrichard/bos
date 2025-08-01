@@ -232,6 +232,13 @@
     {/if}
   </div>
 
+  <!-- Center section: Page title -->
+  {#if layout.pageTitle}
+    <div class="toolbar-title">
+      {layout.pageTitle}
+    </div>
+  {/if}
+
   <!-- Right section: Filters + Search + User menu -->
   <div class="toolbar-right">
     <!-- Task filter -->
@@ -330,6 +337,23 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Center title */
+  .toolbar-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    pointer-events: none;
   }
 
   /* Icons */
