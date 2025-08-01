@@ -9,7 +9,7 @@
  * import { ReactivePeopleGroup as PeopleGroup } from './reactive-people-group';
  * ```
  *
- * Generated: 2025-08-01 20:03:51 UTC
+ * Generated: 2025-08-01 21:30:39 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
