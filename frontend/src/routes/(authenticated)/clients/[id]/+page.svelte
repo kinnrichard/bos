@@ -29,10 +29,23 @@
   $effect(() => {
     if (clientId === 'new') {
       isEditing = true;
+    } else {
+      // Reset to view mode when navigating to an existing client
+      isEditing = false;
     }
   });
   let isSaving = $state(false);
   let error = $state<string | null>(null);
+
+  // Create new client object for new client mode
+  const newClientObject = $derived(
+    isNewClient
+      ? Client.new({
+          name: '',
+          client_type: 'residential',
+        })
+      : null
+  );
 
   // Form state
   let formData = $state({
@@ -58,7 +71,7 @@
   });
 
   // Derived state
-  const client = $derived(clientQuery?.data || null);
+  const client = $derived(isNewClient ? newClientObject : clientQuery?.data || null);
   const queryLoading = $derived(clientQuery?.isLoading || false);
   const queryError = $derived(clientQuery?.error);
 
