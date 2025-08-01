@@ -47,12 +47,9 @@
   interface TempContactMethod {
     id: string;
     value: string;
-    isPrimary: boolean;
   }
 
-  let contactMethods = $state<TempContactMethod[]>([
-    { id: crypto.randomUUID(), value: '', isPrimary: true },
-  ]);
+  let contactMethods = $state<TempContactMethod[]>([{ id: crypto.randomUUID(), value: '' }]);
 
   // Add contact method
   function addContactMethod() {
@@ -61,31 +58,13 @@
       {
         id: crypto.randomUUID(),
         value: '',
-        isPrimary: contactMethods.length === 0,
       },
     ];
   }
 
   // Remove contact method
   function removeContactMethod(id: string) {
-    const wasOnlyPrimary =
-      contactMethods.find((cm) => cm.id === id)?.isPrimary &&
-      contactMethods.filter((cm) => cm.isPrimary).length === 1;
-
     contactMethods = contactMethods.filter((cm) => cm.id !== id);
-
-    // If we removed the only primary, make the first one primary
-    if (wasOnlyPrimary && contactMethods.length > 0) {
-      contactMethods[0].isPrimary = true;
-    }
-  }
-
-  // Toggle primary status
-  function togglePrimary(id: string) {
-    contactMethods = contactMethods.map((cm) => ({
-      ...cm,
-      isPrimary: cm.id === id,
-    }));
   }
 
   // Handle form submission
@@ -119,7 +98,6 @@
         await ContactMethod.create({
           person_id: newPerson.id,
           value: cm.value.trim(),
-          is_primary: cm.isPrimary,
         });
       }
 
@@ -227,15 +205,6 @@
               class="contact-value-input"
               aria-label="Contact value"
             />
-
-            <label class="primary-checkbox">
-              <input
-                type="checkbox"
-                checked={method.isPrimary}
-                on:change={() => togglePrimary(method.id)}
-              />
-              Primary
-            </label>
 
             <CircularButton
               iconSrc={TrashIcon}
@@ -392,7 +361,7 @@
 
   .contact-method {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto;
     gap: 0.75rem;
     align-items: center;
     margin-bottom: 1rem;
@@ -410,14 +379,6 @@
   .contact-value-input:focus {
     outline: none;
     border-color: var(--primary-color);
-  }
-
-  .primary-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    cursor: pointer;
   }
 
   .checkbox-group {
