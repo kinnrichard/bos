@@ -180,7 +180,12 @@
   });
 </script>
 
-<div class="toolbar" role="navigation" aria-label="Main toolbar">
+<div
+  class="toolbar"
+  class:sidebar-visible={layout.sidebarVisible}
+  role="navigation"
+  aria-label="Main toolbar"
+>
   <!-- Left section: Sidebar toggle + Page actions + Job controls -->
   <div class="toolbar-left">
     <!-- Sidebar toggle (only show when sidebar is hidden) -->
@@ -354,6 +359,21 @@
     text-overflow: ellipsis;
     max-width: 200px;
     pointer-events: none;
+  }
+
+  /* Adjust title position when sidebar is visible */
+  .toolbar.sidebar-visible .toolbar-title {
+    /* Account for 280px sidebar + 12px margin = 292px total */
+    /* Shift right by half of sidebar space (146px) to center over content */
+    left: calc(50% + 146px);
+  }
+
+  /* On mobile or when sidebar is hidden, center normally */
+  @media (max-width: 768px) {
+    .toolbar-title {
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+    }
   }
 
   /* Icons */

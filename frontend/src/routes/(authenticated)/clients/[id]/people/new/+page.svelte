@@ -146,7 +146,7 @@
       onSave: handleSubmit,
       onCancel: handleCancel,
     });
-    layoutActions.setPageTitle('Add New Person');
+    layoutActions.setPageTitle('New Person');
 
     // Cleanup on unmount
     return () => {
