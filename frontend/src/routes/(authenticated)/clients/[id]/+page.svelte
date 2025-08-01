@@ -330,7 +330,7 @@
   }
 
   .client-title {
-    font-size: 48px;
+    font-size: 32px;
     font-weight: 600;
     color: var(--text-primary, #f2f2f7);
     margin: 0 0 32px 0;
