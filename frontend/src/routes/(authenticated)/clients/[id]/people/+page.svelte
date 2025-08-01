@@ -28,50 +28,58 @@
   const client = $derived(clientQuery?.data);
 
   // Load people for this client
-  let peopleQuery = $state(ReactivePerson.where({ client_id: clientId }).orderBy('name', 'asc'));
+  const peopleQuery = $derived(
+    ReactivePerson.where({ client_id: clientId }).orderBy('name', 'asc').all()
+  );
 
   // Load groups and departments for this client
   const groupsQuery = $derived(
-    ReactivePeopleGroup.where({ client_id: clientId }).orderBy('name', 'asc')
+    ReactivePeopleGroup.where({ client_id: clientId }).orderBy('name', 'asc').all()
   );
   const allGroups = $derived(groupsQuery?.data || []);
   const groups = $derived(allGroups.filter((g) => !g.is_department));
   const departments = $derived(allGroups.filter((g) => g.is_department));
 
-  // Apply filters reactively
-  $effect(() => {
-    let query = ReactivePerson.where({ client_id: clientId });
-
+  // Filter function for people (client-side filtering)
+  function shouldShowPerson(person: any): boolean {
     // Apply search filter
-    if (searchQuery) {
-      query = query.where(
-        `name ILIKE :search OR name_preferred ILIKE :search OR title ILIKE :search`,
-        {
-          search: `%${searchQuery}%`,
-        }
-      );
+    if (searchQuery && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+
+      // Search in name
+      const nameMatch = person.name && person.name.toLowerCase().includes(query);
+
+      // Search in preferred name
+      const preferredNameMatch =
+        person.name_preferred && person.name_preferred.toLowerCase().includes(query);
+
+      // Search in title
+      const titleMatch = person.title && person.title.toLowerCase().includes(query);
+
+      if (!nameMatch && !preferredNameMatch && !titleMatch) {
+        return false;
+      }
     }
 
     // Apply active filter
-    if (showActiveOnly) {
-      query = query.where({ is_active: true });
+    if (showActiveOnly && !person.is_active) {
+      return false;
     }
 
-    // Apply group filter
-    if (selectedGroupId || selectedDepartmentId) {
-      const groupId = selectedGroupId || selectedDepartmentId;
-      query = query
-        .joins('people_group_memberships')
-        .where('people_group_memberships.people_group_id = :groupId', { groupId });
-    }
+    // Apply group/department filter
+    // TODO: Group filtering is temporarily disabled as the relationship is not available in Zero.js
+    // This would need to be implemented differently, perhaps by loading group memberships separately
 
-    // Always order by name
-    query = query.orderBy('name', 'asc');
+    return true;
+  }
 
-    peopleQuery = query;
-  });
+  // Get all people for the client
+  const allPeople = $derived(peopleQuery?.data || []);
 
-  const people = $derived(peopleQuery?.data || []);
+  // Apply client-side filtering
+  const people = $derived(allPeople.filter((person) => shouldShowPerson(person)));
+
+  // Loading and error states
   const loading = $derived(peopleQuery?.isLoading || clientQuery?.isLoading || false);
   const error = $derived(peopleQuery?.error || clientQuery?.error);
 

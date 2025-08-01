@@ -13,13 +13,12 @@ class PersonSerializer
   end
 
   attribute :active_contact_methods do |person|
-    person.contact_methods.active.map do |cm|
+    person.contact_methods.map do |cm|
       {
         id: cm.id,
-        contact_method_type: cm.contact_method_type,
+        contact_type: cm.contact_type,
         value: cm.value,
-        formatted_value: cm.formatted_value,
-        is_primary: cm.is_primary
+        formatted_value: cm.formatted_value
       }
     end
   end

@@ -91,6 +91,7 @@
       };
 
       const newPerson = await Person.create(personData);
+      console.log('Created person:', newPerson);
 
       // Create contact methods
       const validContactMethods = contactMethods.filter((cm) => cm.value.trim());
