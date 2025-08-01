@@ -44,14 +44,19 @@ interface ExtendedFilterOption extends FilterOption {
 
 // Combined filter options for single popover with sections
 export const jobFilterOptions: ExtendedFilterOption[] = [
-  { id: 'status-header', value: 'status-header', label: 'Status', header: true },
+  { id: 'status-header', value: 'status-header', label: 'Filter Jobs by Status', header: true },
   ...jobStatusOptions.map((opt) => ({
     ...opt,
     id: `status:${opt.id}`,
     value: `status:${opt.value}`,
   })),
   { id: 'divider', value: 'divider', label: '', divider: true },
-  { id: 'priority-header', value: 'priority-header', label: 'Priority', header: true },
+  {
+    id: 'priority-header',
+    value: 'priority-header',
+    label: 'Filter Jobs by Priority',
+    header: true,
+  },
   ...jobPriorityOptions.map((opt) => ({
     ...opt,
     id: `priority:${opt.id}`,

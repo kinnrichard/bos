@@ -4,7 +4,7 @@
   import '$lib/styles/popover-common.css';
 
   interface Props<T extends { id: string; value: string; label: string }> {
-    title: string;
+    title?: string | null;
     options: T[];
     selected: string[];
     onFilterChange: (selected: string[]) => void;
@@ -35,9 +35,9 @@
   // showAllSelectedByDefault is deprecated but kept for backwards compatibility
   void showAllSelectedByDefault; // Satisfy linter
 
-  // Build menu options with title
+  // Build menu options with optional title
   const menuOptions = $derived([
-    { id: 'title', value: 'title', label: title, header: true },
+    ...(title ? [{ id: 'title', value: 'title', label: title, header: true }] : []),
     ...options,
     ...(showDeletedToggle
       ? [
@@ -122,7 +122,7 @@
       class="popover-button"
       class:disabled
       use:popover.button
-      title={disabled ? 'Disabled' : `Filter ${title.toLowerCase()}`}
+      title={disabled ? 'Disabled' : title ? `Filter ${title.toLowerCase()}` : 'Filter'}
       {disabled}
       onclick={disabled ? undefined : (e: MouseEvent) => e.stopPropagation()}
     >

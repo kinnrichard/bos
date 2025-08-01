@@ -14,7 +14,7 @@
 </script>
 
 <GenericFilterPopover
-  title="Filter Jobs"
+  title={null}
   options={jobFilterOptions}
   selected={jobFilter.selected}
   onFilterChange={handleFilterChange}

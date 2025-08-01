@@ -15,7 +15,6 @@
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import JobCard from '$lib/components/jobs/JobCard.svelte';
   import JobsLayout from '$lib/components/jobs/JobsLayout.svelte';
-  import JobFilterPopover from '$lib/components/layout/JobFilterPopover.svelte';
 
   interface Props {
     /**
@@ -98,17 +97,12 @@
 
 <JobsLayout>
   {#snippet header()}
-    <div class="header-section">
-      {#if title}
-        <h1>{title}</h1>
-      {/if}
-      {#if headerContent}
-        {@render headerContent()}
-      {/if}
-    </div>
-    <div class="header-controls">
-      <JobFilterPopover />
-    </div>
+    {#if title}
+      <h1>{title}</h1>
+    {/if}
+    {#if headerContent}
+      {@render headerContent()}
+    {/if}
   {/snippet}
 
   <ReactiveView {query} {strategy}>
@@ -163,19 +157,6 @@
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
-  }
-
-  /* Header layout */
-  .header-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .header-controls {
-    display: flex;
-    gap: 12px;
-    align-items: center;
   }
 
   /* Jobs list container */

@@ -11,6 +11,7 @@
   import TextButton from '$lib/components/ui/TextButton.svelte';
   import TaskFilterPopover from './TaskFilterPopover.svelte';
   import ClientTypeFilterPopover from './ClientTypeFilterPopover.svelte';
+  import JobFilterPopover from './JobFilterPopover.svelte';
   import SearchBar from './SearchBar.svelte';
   import PageActionsBar from './PageActionsBar.svelte';
   import JobControlsBar from './JobControlsBar.svelte';
@@ -77,6 +78,10 @@
   const showTaskFilter = $derived(showJobControls);
   const showClientFilter = $derived(
     currentPageType === 'clients' && $page.route.id === ROUTE_PATTERNS.clients
+  );
+  const showJobFilter = $derived(
+    currentPageType === 'jobs' &&
+      ($page.route.id === '/(authenticated)/jobs' || $page.route.id === ROUTE_PATTERNS.clientJobs)
   );
 
   // Show client actions when on client detail page
@@ -197,6 +202,11 @@
     <!-- Task filter -->
     {#if showTaskFilter}
       <TaskFilterPopover {disabled} />
+    {/if}
+
+    <!-- Job filter -->
+    {#if showJobFilter}
+      <JobFilterPopover {disabled} />
     {/if}
 
     <!-- Client filter -->
