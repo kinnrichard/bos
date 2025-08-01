@@ -9,7 +9,7 @@
  * import { Person } from './person';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-01 19:07:35 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +59,12 @@ const ReactivePersonConfig = {
  * const allPersonsQuery = ReactivePerson.all().all();
  * const activePersonsQuery = ReactivePerson.kept().all();
  * const singlePersonQuery = ReactivePerson.find('123');
- * 
+ *
  * // With relationships
  * const personWithRelationsQuery = ReactivePerson
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredPersonsQuery = ReactivePerson
  *   .where({ status: 'active' })
@@ -81,6 +81,7 @@ registerModelRelationships('people', {
   activityLogs: { type: 'hasMany', model: 'ActivityLog' },
   contactMethods: { type: 'hasMany', model: 'ContactMethod' },
   devices: { type: 'hasMany', model: 'Device' },
+  notes: { type: 'hasMany', model: 'Note' },
 });
 
 /**

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_30_005501) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_01_190340) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -150,6 +150,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_005501) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "client_id"
+    t.string "name_preferred"
+    t.string "name_pronunciation_hint"
+    t.boolean "is_active", default: true
     t.index [ "client_id" ], name: "index_people_on_client_id"
     t.index [ "id" ], name: "index_people_on_id", unique: true
   end

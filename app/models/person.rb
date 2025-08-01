@@ -4,6 +4,7 @@ class Person < ApplicationRecord
   belongs_to :client
   has_many :contact_methods, dependent: :destroy
   has_many :devices, dependent: :destroy
+  has_many :notes, as: :notable, dependent: :destroy
 
   validates :name, presence: true
 

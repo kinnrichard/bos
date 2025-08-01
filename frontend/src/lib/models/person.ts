@@ -9,12 +9,20 @@
  * import { ReactivePerson as Person } from './reactive-person';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-01 19:07:35 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
 import type { PersonData, CreatePersonData, UpdatePersonData } from './types/person-data';
 import { registerModelRelationships } from './base/scoped-query-base';
+
+/**
+ * Default values for Person creation
+ * These defaults match the database schema defaults
+ */
+const PersonDefaults: Partial<CreatePersonData> = {
+  is_active: true,
+};
 
 /**
  * ActiveRecord configuration for Person
@@ -24,6 +32,7 @@ const PersonConfig = {
   className: 'Person',
   primaryKey: 'id',
   supportsDiscard: false,
+  defaults: PersonDefaults,
 };
 
 /**
@@ -62,6 +71,7 @@ registerModelRelationships('people', {
   activityLogs: { type: 'hasMany', model: 'ActivityLog' },
   contactMethods: { type: 'hasMany', model: 'ContactMethod' },
   devices: { type: 'hasMany', model: 'Device' },
+  notes: { type: 'hasMany', model: 'Note' },
 });
 
 // Export types for convenience
