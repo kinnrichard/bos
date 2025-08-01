@@ -6,7 +6,8 @@
   import { jobsSearch, jobsSearchActions } from '$lib/stores/jobsSearch.svelte';
   import { clientsSearch, clientsSearchActions } from '$lib/stores/clientsSearch.svelte';
   import { debugSearch, debugComponent } from '$lib/utils/debug';
-  import FilterPopover from './FilterPopover.svelte';
+  import TaskFilterPopover from './TaskFilterPopover.svelte';
+  import ClientTypeFilterPopover from './ClientTypeFilterPopover.svelte';
   import JobStatusButton from './JobStatusButton.svelte';
   import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
   import SchedulePriorityEditPopover from './SchedulePriorityEditPopover.svelte';
@@ -81,7 +82,6 @@
   });
 
   let searchFocused = $state(false);
-  let filterPopover = $state<{ open: boolean } | null>(null);
 
   function handleSearch() {
     if (searchQuery.trim()) {
@@ -219,16 +219,6 @@
     }
   });
 
-  // Task filter functionality
-  function handleTaskStatusFilter(statuses: string[]) {
-    taskFilterActions.setStatuses(statuses);
-  }
-
-  // Deleted task filter functionality
-  function handleDeletedToggle(showDeleted: boolean) {
-    taskFilterActions.setShowDeleted(showDeleted);
-  }
-
   // Technician assignment functionality removed - TanStack Query handles everything
 </script>
 
@@ -300,12 +290,12 @@
     <!-- Search -->
     <!-- Job detail page controls -->
     {#if (currentPage === 'job-detail' && $page.params.id) || (currentJob && $page.route.id?.includes('/jobs/new'))}
-      <FilterPopover
-        onFilterChange={handleTaskStatusFilter}
-        onDeletedToggle={handleDeletedToggle}
-        bind:popover={filterPopover}
-        {disabled}
-      />
+      <TaskFilterPopover {disabled} />
+    {/if}
+    
+    <!-- Client listing page controls -->
+    {#if currentPage === 'clients' && $page.route.id === '/(authenticated)/clients'}
+      <ClientTypeFilterPopover {disabled} />
     {/if}
 
     {#if showSearch}

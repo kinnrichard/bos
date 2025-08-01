@@ -58,6 +58,16 @@ export default [
         extraFileExtensions: ['.svelte'],
         project: true,
       },
+      globals: {
+        // Svelte 5 runes for .svelte.ts files
+        $state: 'readonly',
+        $derived: 'readonly',
+        $effect: 'readonly',
+        $props: 'readonly',
+        $bindable: 'readonly',
+        $inspect: 'readonly',
+        $host: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': typescript,
@@ -90,6 +100,16 @@ export default [
         extraFileExtensions: ['.svelte'],
         project: true,
         svelteConfig,
+      },
+      globals: {
+        // Svelte 5 runes
+        $state: 'readonly',
+        $derived: 'readonly',
+        $effect: 'readonly',
+        $props: 'readonly',
+        $bindable: 'readonly',
+        $inspect: 'readonly',
+        $host: 'readonly',
       },
     },
     plugins: {
