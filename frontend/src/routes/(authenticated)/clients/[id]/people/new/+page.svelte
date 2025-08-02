@@ -351,8 +351,9 @@
   }
 
   .contact-card {
-    max-width: 600px;
-    width: 100%;
+    width: auto;
+    min-width: 400px;
+    max-width: 90%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -424,6 +425,7 @@
     font-size: 14px;
     padding: 6px 12px;
     border-radius: 6px;
+    width: 300px;
   }
 
   hr.divider {
@@ -438,12 +440,14 @@
     margin-top: 16px;
     display: flex;
     flex-direction: column;
+    align-items: center;
   }
 
   .contact-method {
     display: flex;
     align-items: center;
-    width: 100%;
+    width: auto;
+    min-width: 0;
   }
 
   .contact-type-indicator {
@@ -468,10 +472,6 @@
 
   .contact-type-indicator img {
     filter: var(--icon-filter, none);
-  }
-
-  .contact-method :global(.chromeless-input) {
-    flex: 1;
   }
 
   .groups-section {
@@ -577,6 +577,18 @@
     }
   }
 
+  @media (max-width: 768px) {
+    .contact-card {
+      min-width: 100%;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    :global(.contact-input) {
+      min-width: 200px;
+    }
+  }
+
   @media (max-width: 480px) {
     .new-contact-page {
       padding: 0px 12px;
@@ -588,6 +600,10 @@
 
     :global(.title-input) {
       font-size: 14px;
+    }
+
+    :global(.contact-input) {
+      min-width: 150px;
     }
   }
 </style>
