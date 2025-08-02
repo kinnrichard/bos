@@ -215,7 +215,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 6px 16px;
+    padding: 6px 12px;
     text-decoration: none;
     color: var(--text-secondary);
     border-radius: 8px;
