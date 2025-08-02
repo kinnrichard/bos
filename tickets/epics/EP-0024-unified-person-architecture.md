@@ -34,14 +34,22 @@ This hybrid approach gives us the best of both worlds:
 - Optimized performance through mode-specific interaction components
 - Clear separation of concerns for maintainability
 
+### Svelte 5 Patterns Used
+- **Runes**: `$state`, `$derived`, `$effect` for reactive state management
+- **Snippets**: Replace slots with type-safe snippets for composition
+- **Props**: Proper `let { ... } = $props()` destructuring
+- **Bindable**: `$bindable` for two-way binding where needed
+- **Event Handlers**: Modern `onclick` syntax (no colon)
+- **Debugging**: `$inspect` for development-time debugging
+
 ### 1. Component Architecture
 
 #### Shared Components (Presentation Layer)
 ```
 /src/lib/components/people/shared/
-├── PersonLayout.svelte          # Overall container and spacing
-├── PersonHeader.svelte          # Icon, name, title display
-├── PersonContactList.svelte     # Contact list container
+├── PersonLayout.svelte          # Overall container with snippet support
+├── PersonHeader.svelte          # Icon, name, title display with snippets
+├── PersonContactList.svelte     # Contact list container (accepts children)
 ├── ContactItem.svelte           # Single contact display/edit
 ├── ContactTypeIndicator.svelte  # Icon and label for contact type
 ├── PersonGroups.svelte          # Groups/departments display
@@ -64,32 +72,121 @@ This hybrid approach gives us the best of both worlds:
     └── PersonViewFields.svelte
 ```
 
+#### ContactItem Component (with $bindable for two-way binding)
+```svelte
+<script lang="ts">
+  import type { NormalizedContact } from '$lib/utils/contactNormalizer';
+  import ContactTypeIndicator from './ContactTypeIndicator.svelte';
+  
+  interface Props {
+    mode: 'create' | 'edit' | 'view';
+    value: string = $bindable('');  // Two-way bindable
+    type?: string;
+    normalized?: NormalizedContact | null;
+    onBlur?: (event: Event) => void;
+    onInput?: (event: Event) => void;
+    placeholder?: string;
+  }
+  
+  let { 
+    mode, 
+    value = $bindable(''),
+    type,
+    normalized,
+    onBlur,
+    onInput,
+    placeholder = 'Email, phone, or address'
+  }: Props = $props();
+</script>
+
+<div class="contact-item" data-mode={mode}>
+  {#if normalized || type}
+    <ContactTypeIndicator 
+      contactType={normalized?.contact_type || type} 
+    />
+  {:else}
+    <span class="contact-type-placeholder"></span>
+  {/if}
+  
+  {#if mode === 'view'}
+    <span class="contact-value">{value}</span>
+  {:else}
+    <input
+      bind:value
+      {placeholder}
+      class="contact-input"
+      {onblur}
+      {oninput}
+    />
+  {/if}
+</div>
+
+<style>
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .contact-item[data-mode="view"] {
+    padding: 8px 0;
+  }
+  
+  .contact-input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+  }
+</style>
+```
+
 ### 2. Component Interfaces
 
 #### PersonLayout (Shared Container)
 ```svelte
 <script lang="ts">
+  import type { Snippet } from 'svelte';
+  
   interface Props {
     mode: 'create' | 'edit' | 'view';
     person?: Person;
     client?: Client;
     loading?: boolean;
     error?: string | null;
+    header?: Snippet;
+    fields?: Snippet;
+    contacts?: Snippet;
+    groups?: Snippet;
+    actions?: Snippet;
   }
   
-  const { mode, person, client, loading, error }: Props = $props();
+  let { 
+    mode, 
+    person, 
+    client, 
+    loading, 
+    error,
+    header,
+    fields,
+    contacts,
+    groups,
+    actions
+  }: Props = $props();
 </script>
 
 <div class="person-layout" data-mode={mode}>
-  {#if error}
-    <div class="error-message">{error}</div>
+  {#if loading}
+    <div class="loading-spinner">Loading...</div>
+  {:else if error}
+    <div class="error-message" role="alert">{error}</div>
+  {:else}
+    {@render header?.()}
+    {@render fields?.()}
+    {@render contacts?.()}
+    {@render groups?.()}
+    {@render actions?.()}
   {/if}
-  
-  <slot name="header" />
-  <slot name="fields" />
-  <slot name="contacts" />
-  <slot name="groups" />
-  <slot name="actions" />
 </div>
 
 <style>
@@ -117,7 +214,21 @@ This hybrid approach gives us the best of both worlds:
     title?: string;
     isActive?: boolean;
     onEdit?: () => void;  // For view mode edit button
+    nameInput?: () => any;  // Snippet for name input
+    titleInput?: () => any; // Snippet for title input
   }
+  
+  let { 
+    mode, 
+    name, 
+    namePreferred, 
+    namePronunciation, 
+    title, 
+    isActive,
+    onEdit,
+    nameInput,
+    titleInput
+  }: Props = $props();
 </script>
 
 <div class="person-header">
@@ -131,15 +242,15 @@ This hybrid approach gives us the best of both worlds:
       {#if namePronunciation}
         <span class="pronunciation">({namePronunciation})</span>
       {/if}
-    {:else}
-      <slot name="name-input" />
+    {:else if nameInput}
+      {@render nameInput()}
     {/if}
     
     {#if title}
       {#if mode === 'view'}
         <p class="title">{title}</p>
-      {:else}
-        <slot name="title-input" />
+      {:else if titleInput}
+        {@render titleInput()}
       {/if}
     {/if}
   </div>
@@ -159,6 +270,7 @@ This hybrid approach gives us the best of both worlds:
   import PersonHeader from './shared/PersonHeader.svelte';
   import PersonContactList from './shared/PersonContactList.svelte';
   import PersonGroups from './shared/PersonGroups.svelte';
+  import ChromelessInput from '$lib/components/ui/ChromelessInput.svelte';
   import { normalizeContact, resizeInput } from '$lib/utils/contactNormalizer';
   
   interface Props {
@@ -169,7 +281,7 @@ This hybrid approach gives us the best of both worlds:
     onCancel?: () => void;
   }
   
-  const { mode, person, clientId, onSuccess, onCancel }: Props = $props();
+  let { mode, person, clientId, onSuccess, onCancel }: Props = $props();
   
   // Form state
   let formData = $state({
@@ -181,34 +293,120 @@ This hybrid approach gives us the best of both worlds:
   });
   
   // Contact methods with all the beautiful features
-  let contactMethods = $state<TempContactMethod[]>(/* ... */);
+  let contactMethods = $state<TempContactMethod[]>(
+    person?.contactMethods?.map(cm => ({
+      id: crypto.randomUUID(),
+      value: cm.value,
+      normalized: normalizeContact(cm.value)
+    })) || [
+      { id: crypto.randomUUID(), value: '', normalized: null },
+      { id: crypto.randomUUID(), value: '', normalized: null }
+    ]
+  );
   
   // All the dynamic width calculation logic
-  function handleContactInput(method, index, event) { /* ... */ }
-  function handleContactBlur(method, index, event) { /* ... */ }
+  function handleContactInput(method: TempContactMethod, index: number, event: Event) {
+    // Implementation from actual new person form
+    if (index === contactMethods.length - 1 && method.value.trim()) {
+      const hasEmptyField = contactMethods.some((cm, i) => i !== index && !cm.value.trim());
+      if (!hasEmptyField) {
+        addContactMethod();
+      }
+    }
+    resizeInput();
+  }
   
-  // Save handling
-  async function handleSubmit() { /* ... */ }
+  function handleContactBlur(method: TempContactMethod, index: number, event: Event) {
+    const normalized = normalizeContact(method.value);
+    method.normalized = normalized;
+    
+    if (normalized && (normalized.contact_type === 'email' || normalized.contact_type === 'phone')) {
+      method.value = normalized.formatted_value;
+    }
+    
+    setTimeout(() => resizeInput(), 0);
+    
+    if (!method.value.trim() && contactMethods.length > 2 && index !== contactMethods.length - 1) {
+      contactMethods = contactMethods.filter((cm) => cm.id !== method.id);
+    }
+  }
+  
+  // Save handling with proper error management
+  let saving = $state(false);
+  
+  async function handleSubmit() {
+    if (!formData.name.trim()) {
+      error = 'Name is required';
+      return;
+    }
+    
+    saving = true;
+    error = null;
+    
+    try {
+      const personData = {
+        name: formData.name.trim(),
+        name_preferred: formData.namePreferred.trim() || undefined,
+        name_pronunciation_hint: formData.namePronunciation.trim() || undefined,
+        title: formData.title.trim() || undefined,
+        is_active: formData.isActive,
+        client_id: clientId,
+      };
+      
+      const savedPerson = mode === 'create' 
+        ? await Person.create(personData)
+        : await Person.update(person!.id, personData);
+      
+      onSuccess?.(savedPerson);
+    } catch (err) {
+      error = (err as Error).message || 'Failed to save person';
+    } finally {
+      saving = false;
+    }
+  }
+  
+  // Use $effect for side effects
+  $effect(() => {
+    // Update layout store or other side effects
+    if (import.meta.env.DEV) {
+      $inspect('Form state:', { formData, contactMethods, saving });
+    }
+  });
 </script>
 
-<PersonLayout {mode} {person}>
-  <PersonHeader slot="header" {mode} {...formData}>
-    <ChromelessInput 
-      slot="name-input"
-      bind:value={formData.name}
-      class="name-input"
-      oninput={() => resizeInput()}
-    />
-    <ChromelessInput 
-      slot="title-input"
-      bind:value={formData.title}
-      class="title-input"
-      oninput={() => resizeInput()}
-    />
-  </PersonHeader>
+<!-- Using Svelte 5 snippets for composition -->
+{#snippet nameInputSnippet()}
+  <ChromelessInput 
+    bind:value={formData.name}
+    class="name-input"
+    oninput={() => resizeInput()}
+  />
+{/snippet}
+
+{#snippet titleInputSnippet()}
+  <ChromelessInput 
+    bind:value={formData.title}
+    class="title-input"
+    oninput={() => resizeInput()}
+  />
+{/snippet}
+
+{#snippet headerSnippet()}
+  <PersonHeader 
+    {mode} 
+    name={formData.name}
+    namePreferred={formData.namePreferred}
+    namePronunciation={formData.namePronunciation}
+    title={formData.title}
+    isActive={formData.isActive}
+    nameInput={nameInputSnippet}
+    titleInput={titleInputSnippet}
+  />
+{/snippet}
   
-  <PersonContactList slot="contacts" {mode}>
-    {#each contactMethods as method, index}
+{#snippet contactsSnippet()}
+  <PersonContactList {mode}>
+    {#each contactMethods as method, index (method.id)}
       <ContactItem
         {mode}
         {method}
@@ -218,14 +416,23 @@ This hybrid approach gives us the best of both worlds:
       />
     {/each}
   </PersonContactList>
-  
+{/snippet}
+
+{#snippet groupsSnippet()}
   <PersonGroups 
-    slot="groups"
     {mode}
     groups={formData.selectedGroupIds}
     departments={formData.selectedDepartmentIds}
   />
-</PersonLayout>
+{/snippet}
+
+<PersonLayout 
+  {mode} 
+  {person}
+  header={headerSnippet}
+  contacts={contactsSnippet}
+  groups={groupsSnippet}
+/>
 ```
 
 #### PersonView (View Mode Orchestrator)
@@ -235,6 +442,7 @@ This hybrid approach gives us the best of both worlds:
   import PersonHeader from './shared/PersonHeader.svelte';
   import PersonContactList from './shared/PersonContactList.svelte';
   import PersonGroups from './shared/PersonGroups.svelte';
+  import ContactItem from './shared/ContactItem.svelte';
   import { goto } from '$app/navigation';
   
   interface Props {
@@ -244,16 +452,16 @@ This hybrid approach gives us the best of both worlds:
     canDelete?: boolean;
   }
   
-  const { person, clientId, canEdit, canDelete }: Props = $props();
+  let { person, clientId, canEdit, canDelete }: Props = $props();
   
   function handleEdit() {
     goto(`/clients/${clientId}/people/${person.id}/edit`);
   }
 </script>
 
-<PersonLayout mode="view" {person}>
+<!-- Using Svelte 5 snippets for view mode -->
+{#snippet headerSnippet()}
   <PersonHeader 
-    slot="header"
     mode="view"
     name={person.name}
     namePreferred={person.name_preferred}
@@ -262,9 +470,11 @@ This hybrid approach gives us the best of both worlds:
     isActive={person.is_active}
     onEdit={canEdit ? handleEdit : undefined}
   />
-  
-  <PersonContactList slot="contacts" mode="view">
-    {#each person.contactMethods as method}
+{/snippet}
+
+{#snippet contactsSnippet()}
+  <PersonContactList mode="view">
+    {#each person.contactMethods as method (method.id)}
       <ContactItem
         mode="view"
         type={method.contact_type}
@@ -272,14 +482,23 @@ This hybrid approach gives us the best of both worlds:
       />
     {/each}
   </PersonContactList>
-  
+{/snippet}
+
+{#snippet groupsSnippet()}
   <PersonGroups 
-    slot="groups"
     mode="view"
     groups={person.groups}
     departments={person.departments}
   />
-</PersonLayout>
+{/snippet}
+
+<PersonLayout 
+  mode="view" 
+  {person}
+  header={headerSnippet}
+  contacts={contactsSnippet}
+  groups={groupsSnippet}
+/>
 ```
 
 ### 3. Route Structure
@@ -296,17 +515,43 @@ This hybrid approach gives us the best of both worlds:
 
 **New Person Route** (`/people/new/+page.svelte`)
 ```svelte
-<script>
+<script lang="ts">
   import PersonForm from '$lib/components/people/PersonForm.svelte';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  
+  const clientId = $derived($page.params.id);
+  
+  function handleSuccess(person: Person) {
+    goto(`/clients/${clientId}/people/${person.id}`);
+  }
+  
+  function handleCancel() {
+    goto(`/clients/${clientId}/people`);
+  }
 </script>
 
-<PersonForm mode="create" {clientId} {onSuccess} {onCancel} />
+<PersonForm 
+  mode="create" 
+  {clientId} 
+  onSuccess={handleSuccess} 
+  onCancel={handleCancel} 
+/>
 ```
 
 **View Person Route** (`/people/[personId]/+page.svelte`)
 ```svelte
-<script>
+<script lang="ts">
   import PersonView from '$lib/components/people/PersonView.svelte';
+  import { page } from '$app/stores';
+  import type { PageData } from './$types';
+  
+  let { data }: { data: PageData } = $props();
+  
+  const clientId = $derived($page.params.id);
+  const person = $derived(data.person);
+  const canEdit = $derived(data.user?.permissions?.canEditPeople ?? false);
+  const canDelete = $derived(data.user?.permissions?.canDeletePeople ?? false);
 </script>
 
 <PersonView {person} {clientId} {canEdit} {canDelete} />
@@ -314,14 +559,58 @@ This hybrid approach gives us the best of both worlds:
 
 **Edit Person Route** (`/people/[personId]/edit/+page.svelte`)
 ```svelte
-<script>
+<script lang="ts">
   import PersonForm from '$lib/components/people/PersonForm.svelte';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import type { PageData } from './$types';
+  
+  let { data }: { data: PageData } = $props();
+  
+  const clientId = $derived($page.params.id);
+  const person = $derived(data.person);
+  
+  function handleSuccess(updatedPerson: Person) {
+    goto(`/clients/${clientId}/people/${updatedPerson.id}`);
+  }
+  
+  function handleCancel() {
+    goto(`/clients/${clientId}/people/${person.id}`);
+  }
 </script>
 
-<PersonForm mode="edit" {person} {clientId} {onSuccess} {onCancel} />
+<PersonForm 
+  mode="edit" 
+  {person} 
+  {clientId} 
+  onSuccess={handleSuccess} 
+  onCancel={handleCancel} 
+/>
 ```
 
-### 4. Shared Features Across All Modes
+### 4. Component Communication with $bindable
+
+#### Using $bindable for Two-Way Data Flow
+```svelte
+<!-- Parent component -->
+<script lang="ts">
+  import ContactItem from './ContactItem.svelte';
+  
+  let email = $state('user@example.com');
+</script>
+
+<!-- Two-way binding with child component -->
+<ContactItem 
+  bind:value={email}
+  mode="edit"
+  placeholder="Email address"
+/>
+
+<!-- Email is automatically updated when ContactItem changes it -->
+<p>Current email: {email}</p>
+```
+
+### 5. Shared Features Across All Modes
 
 #### Visual Consistency
 - Same layout structure and spacing
@@ -343,10 +632,10 @@ This hybrid approach gives us the best of both worlds:
 - Status indicators
 - Responsive design
 
-### 5. Performance Optimizations
+### 6. Performance Optimizations
 
 #### Code Splitting Strategy
-```javascript
+```typescript
 // View mode - lightweight bundle
 import PersonView from '$lib/components/people/PersonView.svelte';
 // No normalization utilities, no validation, no dynamic width logic
@@ -354,29 +643,79 @@ import PersonView from '$lib/components/people/PersonView.svelte';
 // Edit mode - full featured bundle  
 import PersonForm from '$lib/components/people/PersonForm.svelte';
 import { normalizeContact, resizeInput } from '$lib/utils/contactNormalizer';
+
+// Using Svelte 5's $effect for performance monitoring
+$effect(() => {
+  if (import.meta.env.DEV) {
+    $inspect('Bundle loaded:', isEditing ? 'edit' : 'view');
+  }
+});
 ```
 
 #### Lazy Loading
 ```svelte
+<script lang="ts">
+  import PersonView from './PersonView.svelte';
+  
+  let { isEditing, ...props } = $props();
+</script>
+
 <!-- Only load edit components when needed -->
 {#if isEditing}
-  {#await import('./PersonForm.svelte') then { default: PersonForm }}
-    <PersonForm {...props} />
+  {#await import('./PersonForm.svelte') then module}
+    <svelte:component this={module.default} {...props} />
   {/await}
 {:else}
   <PersonView {...props} />
 {/if}
 ```
 
-### 6. Testing Strategy
+### 7. Testing Strategy
 
 #### Unit Tests
 ```typescript
+import { render, screen } from '@testing-library/svelte';
+import { vi } from 'vitest';
+import PersonHeader from './PersonHeader.svelte';
+
 // Shared components
 describe('PersonHeader', () => {
-  test('renders correctly in view mode');
-  test('renders correctly in edit mode');
-  test('shows edit button when canEdit is true');
+  test('renders correctly in view mode', () => {
+    render(PersonHeader, {
+      props: {
+        mode: 'view',
+        name: 'John Doe',
+        title: 'Software Engineer'
+      }
+    });
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+  });
+  
+  test('renders snippets in edit mode', () => {
+    const nameInput = vi.fn(() => 'Name Input');
+    render(PersonHeader, {
+      props: {
+        mode: 'edit',
+        name: 'John Doe',
+        nameInput
+      }
+    });
+    // Verify snippet was rendered
+  });
+  
+  test('shows edit button when canEdit is true', () => {
+    const onEdit = vi.fn();
+    render(PersonHeader, {
+      props: {
+        mode: 'view',
+        name: 'John Doe',
+        canEdit: true,
+        onEdit
+      }
+    });
+    const editButton = screen.getByRole('button', { name: /edit/i });
+    expect(editButton).toBeInTheDocument();
+  });
 });
 
 describe('PersonContactList', () => {
@@ -387,10 +726,38 @@ describe('PersonContactList', () => {
 
 // Mode-specific components
 describe('PersonForm', () => {
-  test('creates new person');
-  test('updates existing person');
-  test('normalizes contacts on blur');
-  test('dynamically resizes inputs');
+  test('creates new person with Svelte 5 state', async () => {
+    const onSuccess = vi.fn();
+    const { component } = render(PersonForm, {
+      props: {
+        mode: 'create',
+        clientId: '123',
+        onSuccess
+      }
+    });
+    
+    // Test $state reactivity
+    const nameInput = screen.getByPlaceholderText('Full name');
+    await userEvent.type(nameInput, 'Jane Doe');
+    
+    // Submit form
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    
+    // Verify onSuccess was called
+    expect(onSuccess).toHaveBeenCalled();
+  });
+  
+  test('updates existing person', () => {
+    // Test edit mode with existing person data
+  });
+  
+  test('normalizes contacts on blur', () => {
+    // Test contact normalization logic
+  });
+  
+  test('dynamically resizes inputs with $effect', () => {
+    // Test dynamic width calculation
+  });
 });
 
 describe('PersonView', () => {
@@ -408,6 +775,14 @@ describe('PersonView', () => {
 - Contact method CRUD
 
 ## Implementation Steps
+
+### Key Svelte 5 Implementation Guidelines
+1. **Always use `let` for props destructuring**: `let { ... } = $props()`
+2. **Use snippets instead of slots**: Pass snippets as props for composition
+3. **Mark bindable props explicitly**: Use `$bindable` for two-way binding
+4. **Leverage runes for state**: `$state`, `$derived`, `$effect`
+5. **Use modern event syntax**: `onclick` not `on:click`
+6. **Add development helpers**: Use `$inspect` for debugging in DEV mode
 
 ### Phase 1: Shared Components (4 hours)
 1. Create `PersonLayout` component
@@ -541,7 +916,7 @@ describe('PersonView', () => {
 **Rationale**: Cleaner navigation, better performance, clearer user mental model
 **Consequences**: Additional route but simpler state management
 
-### ADR-003: Slots Over Props for Composition
-**Decision**: Use Svelte slots for component composition
-**Rationale**: More flexible, better TypeScript support, cleaner APIs
-**Consequences**: More verbose templates but better maintainability
+### ADR-003: Snippets Over Props for Composition
+**Decision**: Use Svelte 5 snippets for component composition
+**Rationale**: More flexible than slots, better TypeScript support, cleaner APIs, proper Svelte 5 pattern
+**Consequences**: More verbose templates but better maintainability and type safety

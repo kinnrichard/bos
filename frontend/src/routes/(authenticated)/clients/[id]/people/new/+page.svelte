@@ -17,7 +17,8 @@
   } from '$lib/utils/contactNormalizer';
   import type { NormalizedContact } from '$lib/utils/contactNormalizer';
 
-  let clientId = $page.params.id;
+  // Make clientId reactive to respond to route changes
+  const clientId = $derived($page.params.id);
   let loading = $state(false);
   let error = $state<string | null>(null);
 
@@ -33,7 +34,7 @@
   const groups = $derived(allGroups.filter((g) => !g.is_department));
   const departments = $derived(allGroups.filter((g) => g.is_department));
 
-  // Form data
+  // Form data - using regular $state since we need deep reactivity for arrays
   let formData = $state({
     name: '',
     namePreferred: '',
@@ -111,32 +112,46 @@
     resizeInput();
   }
 
+  // Reusable measuring element for better performance
+  let measuringSpan: HTMLSpanElement | null = null;
+
+  function getMeasuringSpan(): HTMLSpanElement {
+    if (!measuringSpan) {
+      measuringSpan = document.createElement('span');
+      measuringSpan.style.visibility = 'hidden';
+      measuringSpan.style.position = 'absolute';
+      measuringSpan.style.whiteSpace = 'nowrap';
+      measuringSpan.style.pointerEvents = 'none';
+      measuringSpan.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(measuringSpan);
+    }
+    return measuringSpan;
+  }
+
   // Calculate and set appropriate width for all inputs based on the widest content
   function resizeInput(_input?: HTMLInputElement) {
     // Get all inputs (name, title, and contact methods)
     const inputs = document.querySelectorAll('.name-input, .title-input, .contact-input');
     let maxWidth = 0; // Start with 0 to find actual needed width
 
+    const span = getMeasuringSpan();
+
     // Find the widest required width among all inputs
     inputs.forEach((inp) => {
       if (inp instanceof HTMLInputElement) {
-        // Create a temporary span to measure text width
-        const span = document.createElement('span');
-        span.style.visibility = 'hidden';
-        span.style.position = 'absolute';
-        span.style.whiteSpace = 'nowrap';
-        span.style.font = window.getComputedStyle(inp).font;
-        span.style.padding = window.getComputedStyle(inp).padding;
+        // Apply the input's font styles to the measuring span
+        const styles = window.getComputedStyle(inp);
+        span.style.font = styles.font;
+        span.style.padding = styles.padding;
+        span.style.letterSpacing = styles.letterSpacing;
 
         // Measure both the value and placeholder to get the needed width
         const textToMeasure = inp.value || inp.placeholder || '';
         span.textContent = textToMeasure;
 
-        document.body.appendChild(span);
         const textWidth = span.getBoundingClientRect().width;
-        document.body.removeChild(span);
-
         const requiredWidth = textWidth + 30; // +30 for padding and some breathing room
+
         if (requiredWidth > maxWidth) {
           maxWidth = requiredWidth;
         }
@@ -243,6 +258,11 @@
     return () => {
       layoutActions.clearPersonEditState();
       layoutActions.clearPageTitle();
+      // Clean up the measuring span
+      if (measuringSpan && measuringSpan.parentNode) {
+        document.body.removeChild(measuringSpan);
+        measuringSpan = null;
+      }
     };
   });
 
@@ -363,15 +383,14 @@
                         value={dept.id}
                         checked={formData.selectedDepartmentIds.includes(dept.id)}
                         onchange={(e) => {
-                          if (e.currentTarget.checked) {
-                            formData.selectedDepartmentIds = [
-                              ...formData.selectedDepartmentIds,
-                              dept.id,
-                            ];
+                          const isChecked = e.currentTarget.checked;
+                          if (isChecked) {
+                            formData.selectedDepartmentIds.push(dept.id);
                           } else {
-                            formData.selectedDepartmentIds = formData.selectedDepartmentIds.filter(
-                              (id) => id !== dept.id
-                            );
+                            const index = formData.selectedDepartmentIds.indexOf(dept.id);
+                            if (index > -1) {
+                              formData.selectedDepartmentIds.splice(index, 1);
+                            }
                           }
                         }}
                       />
@@ -393,12 +412,14 @@
                         value={group.id}
                         checked={formData.selectedGroupIds.includes(group.id)}
                         onchange={(e) => {
-                          if (e.currentTarget.checked) {
-                            formData.selectedGroupIds = [...formData.selectedGroupIds, group.id];
+                          const isChecked = e.currentTarget.checked;
+                          if (isChecked) {
+                            formData.selectedGroupIds.push(group.id);
                           } else {
-                            formData.selectedGroupIds = formData.selectedGroupIds.filter(
-                              (id) => id !== group.id
-                            );
+                            const index = formData.selectedGroupIds.indexOf(group.id);
+                            if (index > -1) {
+                              formData.selectedGroupIds.splice(index, 1);
+                            }
                           }
                         }}
                       />
