@@ -9,7 +9,7 @@
  * import { ReactivePeopleGroupMembership as PeopleGroupMembership } from './reactive-people-group-membership';
  * ```
  *
- * Generated: 2025-08-02 17:16:27 UTC
+ * Generated: 2025-08-02 18:19:33 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
