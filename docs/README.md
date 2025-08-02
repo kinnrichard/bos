@@ -65,6 +65,11 @@ tags: ["documentation", "overview", "navigation", "quick-start"]
 - **[Debug Best Practices](./frontend/debug/best-practices.md)** - Professional debugging patterns
 - **[Debug Quick Reference](./frontend/debug/quick-reference.md)** - Quick debug namespace reference
 
+### 🧩 UI Components & Patterns
+- **[Chromeless UI Pattern](./dev/chromeless-ui-pattern.md)** - Clean, borderless input design pattern
+- **[ChromelessInput Component](./dev/components-chromeless-input.md)** - Reusable chromeless input component
+- **[Component Library](./dev/components/)** - All UI component documentation
+
 ### 🧪 Testing Documentation
 - **[Testing Overview](./testing/overview.md)** - Testing strategy
 - **[Playwright Guide](./testing/playwright.md)** - Frontend testing
@@ -204,8 +209,8 @@ git push
 
 ---
 
-**Last Updated**: January 17, 2025  
+**Last Updated**: August 2, 2025  
 **Maintained By**: Development Team  
-**Documentation Version**: 2.0  
+**Documentation Version**: 2.1  
 
 *This documentation hub provides comprehensive navigation for the bŏs system. Choose your path above based on your role and current needs.*
