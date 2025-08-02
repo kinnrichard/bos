@@ -11,6 +11,12 @@
   import { ReactiveClient } from '$lib/models/reactive-client';
   import type { CreatePersonData } from '$lib/models/types/person-data';
   import { layoutActions } from '$lib/stores/layout.svelte';
+  import {
+    normalizeContact,
+    getContactTypeIcon,
+    getContactTypeLabel,
+  } from '$lib/utils/contactNormalizer';
+  import type { NormalizedContact } from '$lib/utils/contactNormalizer';
 
   // Icon paths
   const PlusIcon = '/icons/plus.svg';
@@ -46,11 +52,12 @@
   interface TempContactMethod {
     id: string;
     value: string;
+    normalized?: NormalizedContact | null;
   }
 
   let contactMethods = $state<TempContactMethod[]>([
-    { id: crypto.randomUUID(), value: '' },
-    { id: crypto.randomUUID(), value: '' },
+    { id: crypto.randomUUID(), value: '', normalized: null },
+    { id: crypto.randomUUID(), value: '', normalized: null },
   ]);
 
   // Add contact method
@@ -60,6 +67,7 @@
       {
         id: crypto.randomUUID(),
         value: '',
+        normalized: null,
       },
     ];
   }
@@ -68,6 +76,32 @@
   function removeContactMethod(id: string) {
     if (contactMethods.length > 2) {
       contactMethods = contactMethods.filter((cm) => cm.id !== id);
+    }
+  }
+
+  // Handle contact normalization on blur
+  function handleContactBlur(method: TempContactMethod) {
+    const normalized = normalizeContact(method.value);
+    method.normalized = normalized;
+
+    // Update the input value to show the normalized format for email and phone
+    if (
+      normalized &&
+      (normalized.contact_type === 'email' || normalized.contact_type === 'phone')
+    ) {
+      method.value = normalized.formatted_value;
+    }
+  }
+
+  // Handle input in contact method fields
+  function handleContactInput(method: TempContactMethod, index: number) {
+    // If typing in the last field and it has content, add a new empty field
+    if (index === contactMethods.length - 1 && method.value.trim()) {
+      // Check if we need to add a new field (don't add if one already exists with no value)
+      const hasEmptyField = contactMethods.some((cm, i) => i !== index && !cm.value.trim());
+      if (!hasEmptyField) {
+        addContactMethod();
+      }
     }
   }
 
@@ -96,12 +130,16 @@
 
       const newPerson = await Person.create(personData);
 
-      // Create contact methods
+      // Create contact methods with normalized data
       const validContactMethods = contactMethods.filter((cm) => cm.value.trim());
       for (const cm of validContactMethods) {
+        const normalized = cm.normalized || normalizeContact(cm.value);
+
         await ContactMethod.create({
           person_id: newPerson.id,
           value: cm.value.trim(),
+          contact_type: normalized?.contact_type,
+          formatted_value: normalized?.formatted_value || cm.value.trim(),
         });
       }
 
@@ -215,11 +253,27 @@
             <div class="contact-method">
               <ChromelessInput
                 bind:value={method.value}
-                placeholder={index === 0 ? 'Email or phone' : 'Address or other contact method'}
+                placeholder="Email, phone, or address"
                 customClass="contact-input"
                 type="text"
                 ariaLabel={`Contact method ${index + 1}`}
+                oninput={() => handleContactInput(method, index)}
+                onblur={() => handleContactBlur(method)}
               />
+
+              {#if method.normalized}
+                <span
+                  class="contact-type-indicator"
+                  title={getContactTypeLabel(method.normalized.contact_type)}
+                >
+                  <img
+                    src={getContactTypeIcon(method.normalized.contact_type)}
+                    alt={getContactTypeLabel(method.normalized.contact_type)}
+                    width="16"
+                    height="16"
+                  />
+                </span>
+              {/if}
 
               <CircularButton
                 iconSrc={TrashIcon}
@@ -411,6 +465,25 @@
     align-items: center;
     gap: 12px;
     width: 100%;
+  }
+
+  .contact-type-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .contact-type-indicator:hover {
+    opacity: 1;
+  }
+
+  .contact-type-indicator img {
+    filter: var(--icon-filter, none);
   }
 
   .contact-method :global(.chromeless-input) {
