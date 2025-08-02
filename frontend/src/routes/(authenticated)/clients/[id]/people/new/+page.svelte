@@ -488,6 +488,15 @@
     background-color: rgba(0, 0, 0, 0.9);
   }
 
+  /* Ensure text stays centered in all states for name and title inputs */
+  :global(.name-input:focus) {
+    text-align: center;
+  }
+
+  :global(.title-input:focus) {
+    text-align: center;
+  }
+
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .new-contact-page {
