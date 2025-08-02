@@ -259,6 +259,8 @@
                     height="16"
                   />
                 </span>
+              {:else}
+                <span class="contact-type-indicator placeholder"></span>
               {/if}
 
               <ChromelessInput
@@ -456,7 +458,11 @@
     flex-shrink: 0;
   }
 
-  .contact-type-indicator:hover {
+  .contact-type-indicator.placeholder {
+    opacity: 0;
+  }
+
+  .contact-type-indicator:not(.placeholder):hover {
     opacity: 1;
   }
 
