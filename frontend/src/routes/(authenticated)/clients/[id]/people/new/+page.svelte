@@ -95,7 +95,6 @@
       };
 
       const newPerson = await Person.create(personData);
-      console.log('Created person:', newPerson);
 
       // Create contact methods
       const validContactMethods = contactMethods.filter((cm) => cm.value.trim());
@@ -117,9 +116,8 @@
 
       // Navigate back to people list
       await goto(`/clients/${clientId}/people`);
-    } catch (err: any) {
-      error = err.message || 'Failed to create person. Please try again.';
-      console.error('Failed to create person:', err);
+    } catch (err) {
+      error = (err as Error).message || 'Failed to create person. Please try again.';
     } finally {
       loading = false;
     }
@@ -129,15 +127,6 @@
   function handleCancel() {
     goto(`/clients/${clientId}/people`);
   }
-
-  // Debug the form state
-  $effect(() => {
-    console.log('Form state:', {
-      name: formData.name,
-      loading,
-      isValid: formData.name.trim().length > 0,
-    });
-  });
 
   // Derived validation state
   const canSave = $derived(formData.name.trim().length > 0);
