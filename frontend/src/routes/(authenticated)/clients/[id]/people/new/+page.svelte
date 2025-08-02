@@ -319,7 +319,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: 16px;
   }
 
   .error-message {
@@ -347,7 +347,7 @@
 
   .field-group {
     width: 100%;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     display: flex;
     justify-content: center;
   }
@@ -366,25 +366,25 @@
   }
 
   :global(.name-input) {
-    font-size: 24px;
+    font-size: 17px;
     font-weight: 600;
     text-align: center;
-    padding: 8px 16px;
+    padding: 8px 12px;
     border-radius: 6px;
   }
 
   :global(.title-input) {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 400;
     text-align: center;
     color: var(--text-secondary);
-    padding: 6px 16px;
+    padding: 6px 12px;
     border-radius: 6px;
   }
 
   :global(.contact-input) {
-    font-size: 16px;
-    padding: 8px 12px;
+    font-size: 14px;
+    padding: 6px 12px;
     border-radius: 6px;
   }
 
@@ -447,7 +447,7 @@
     align-items: center;
     gap: 12px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
     color: var(--text-primary);
     user-select: none;
     padding: 8px 0;
@@ -496,11 +496,11 @@
     }
 
     :global(.name-input) {
-      font-size: 22px;
+      font-size: 16px;
     }
 
     :global(.title-input) {
-      font-size: 16px;
+      font-size: 14px;
     }
 
     .contact-method {
@@ -522,11 +522,11 @@
     }
 
     :global(.name-input) {
-      font-size: 20px;
+      font-size: 15px;
     }
 
     :global(.title-input) {
-      font-size: 15px;
+      font-size: 14px;
     }
   }
 </style>
