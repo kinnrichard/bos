@@ -192,14 +192,11 @@
   .chromeless-input:focus,
   .chromeless-input.focused {
     background-color: rgba(0, 0, 0, 0.9);
-    /* Explicitly maintain text alignment on focus to prevent placeholder shifting */
-    text-align: inherit;
   }
 
   /* Ensure placeholder text doesn't shift position on focus */
   .chromeless-input:focus::placeholder,
   .chromeless-input.focused::placeholder {
-    text-align: inherit;
     /* Force consistent positioning */
     text-indent: 0;
   }
@@ -208,8 +205,6 @@
   .chromeless-input::placeholder {
     color: var(--text-tertiary);
     opacity: 1;
-    /* Ensure placeholder text alignment is inherited consistently */
-    text-align: inherit;
   }
 
   /* Disabled state */
@@ -241,6 +236,16 @@
   .chromeless-input[type='search']::-webkit-search-decoration,
   .chromeless-input[type='search']::-webkit-search-cancel-button {
     -webkit-appearance: none;
+  }
+
+  /* Ensure text selection and cursor don't interfere with centering */
+  .chromeless-input::selection {
+    background-color: var(--accent-blue, rgba(0, 122, 255, 0.3));
+  }
+
+  /* Firefox-specific selection styling */
+  .chromeless-input::-moz-selection {
+    background-color: var(--accent-blue, rgba(0, 122, 255, 0.3));
   }
 
   /* High contrast mode support */
