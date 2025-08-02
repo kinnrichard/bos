@@ -51,8 +51,13 @@ class BackgroundRefreshService {
         return;
       }
 
-      // Get CSRF token
+      // Get CSRF token - will now use health endpoint
       const csrfToken = await csrfTokenManager.getToken();
+
+      if (!csrfToken) {
+        console.warn('Could not obtain CSRF token for refresh');
+        return;
+      }
 
       // Call refresh endpoint
       const response = await fetch('/api/v1/auth/refresh', {
@@ -65,7 +70,14 @@ class BackgroundRefreshService {
       });
 
       if (!response.ok) {
-        // If refresh fails, let the existing 401 retry logic handle it
+        // Don't log as error if it's a missing token (first login)
+        if (response.status === 400) {
+          const data = await response.json();
+          if (data.errors?.[0]?.code === 'MISSING_TOKEN') {
+            console.debug('No refresh token available yet - likely first login');
+            return;
+          }
+        }
         throw new Error(`Refresh failed with status: ${response.status}`);
       }
 
@@ -75,7 +87,6 @@ class BackgroundRefreshService {
       // Parse response to potentially update session metadata
       const data = await response.json();
       if (data.auth?.session_created_at) {
-        // Update session start time if provided by backend
         const sessionCreatedAt = new Date(data.auth.session_created_at).getTime();
         this.sessionStartTime = sessionCreatedAt;
         localStorage.setItem('sessionStartTime', sessionCreatedAt.toString());
@@ -84,8 +95,6 @@ class BackgroundRefreshService {
       console.debug('Background token refresh successful');
     } catch (error) {
       console.error('Background refresh failed:', error);
-      // Don't force logout here - let the existing error handling deal with it
-      // The API client's 401 retry logic will handle authentication errors
     }
   }
 

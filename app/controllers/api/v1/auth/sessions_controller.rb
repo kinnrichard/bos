@@ -8,9 +8,9 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
     user = User.find_by(email: login_params[:email]&.downcase)
 
     if user&.authenticate(login_params[:password])
-      # Simple token without JWT for now
-      simple_token = "simple_token_#{user.id}_#{Time.current.to_i}"
-      set_simple_auth_cookie(simple_token, user.id)
+      # Generate JWT tokens instead of simple tokens
+      tokens = generate_tokens(user)
+      set_auth_cookie(tokens[:access_token], tokens[:refresh_token])
 
       render json: {
         data: {
@@ -18,7 +18,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
           id: user.id.to_s,
           attributes: {
             message: "Successfully authenticated",
-            expires_at: 30.minutes.from_now.iso8601
+            expires_at: tokens[:expires_at]
           },
           relationships: {
             user: {
@@ -193,8 +193,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
       jti: jti,
       family_id: family_id,
       expires_at: expires_at,
-      device_fingerprint: request.user_agent,
-      user_uuid: user.uuid
+      device_fingerprint: request.user_agent
     )
 
     # Generate tokens
@@ -247,24 +246,5 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
   def clear_auth_cookies
     cookies.delete(:auth_token)
     cookies.delete(:refresh_token)
-  end
-
-  def set_simple_auth_cookie(token, user_id)
-    cookies.signed[:auth_token] = {
-      value: token,
-      httponly: true,
-      secure: Rails.env.production?,
-      same_site: :strict,
-      expires: 30.minutes.from_now
-    }
-
-    # Store user ID for simple authentication
-    cookies.signed[:user_id] = {
-      value: user_id,
-      httponly: true,
-      secure: Rails.env.production?,
-      same_site: :strict,
-      expires: 30.minutes.from_now
-    }
   end
 end

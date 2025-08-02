@@ -12,11 +12,9 @@ module Authenticatable
 
     # Debug logging for authentication failures
     if Rails.env.development? && !@current_user
-      user_id = cookies.signed[:user_id]
       token = cookies.signed[:auth_token]
       session_user_id = session[:user_id]
       Rails.logger.info "AUTH DEBUG: Authentication failed for #{request.method} #{request.path}"
-      Rails.logger.info "AUTH DEBUG: user_id cookie: #{user_id.present? ? user_id : 'MISSING'}"
       Rails.logger.info "AUTH DEBUG: auth_token cookie: #{token.present? ? 'PRESENT' : 'MISSING'}"
       Rails.logger.info "AUTH DEBUG: session user_id: #{session_user_id.present? ? session_user_id : 'MISSING'}"
       Rails.logger.info "AUTH DEBUG: Current user found: #{@current_user ? @current_user.id : 'NONE'}"
@@ -30,16 +28,27 @@ module Authenticatable
   end
 
   def current_user_from_token
-    # Try signed cookie authentication first (API auth)
-    user_id = cookies.signed[:user_id]
-    token = cookies.signed[:auth_token]
+    # Try JWT authentication first
+    token = auth_token
 
-    if user_id.present? && token.present?
-      user = User.find_by(id: user_id)
-      return user if user
+    if token.present?
+      begin
+        payload = JwtService.decode(token)
+
+        # Check if token is revoked
+        if RevokedToken.revoked?(payload[:jti])
+          return nil
+        end
+
+        user = User.find_by(id: payload[:user_id])
+        return user if user
+      rescue JWT::DecodeError, JWT::ExpiredSignature
+        # Token invalid or expired, try refresh
+        nil
+      end
     end
 
-    # Fallback to session-based authentication (main app login)
+    # Fallback to session-based authentication
     if session[:user_id].present?
       return User.find_by(id: session[:user_id])
     end
