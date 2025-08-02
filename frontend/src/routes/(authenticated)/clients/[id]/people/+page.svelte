@@ -2,27 +2,16 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
-  import SearchBar from '$lib/components/layout/SearchBar.svelte';
-  import BasePopover from '$lib/components/ui/BasePopover.svelte';
-  import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import PersonAvatar from '$lib/components/ui/PersonAvatar.svelte';
+  import { peopleSearch, shouldShowPerson } from '$lib/stores/peopleSearch.svelte';
   import { ReactivePerson } from '$lib/models/reactive-person';
-  import { ReactivePeopleGroup } from '$lib/models/reactive-people-group';
   import { ReactiveClient } from '$lib/models/reactive-client';
 
   // Icon paths
   const PersonIcon = '/icons/person.circle.fill.svg';
   const ChevronIcon = '/icons/chevron-right.svg';
-  const FilterIcon = '/icons/filter-inactive.svg';
 
   let clientId = $page.params.id;
-  let searchQuery = '';
-
-  // Filter states
-  let showActiveOnly = false;
-  let selectedGroupId: string | null = null;
-  let selectedDepartmentId: string | null = null;
-  let showFilterPopover = false;
 
   // Load client to ensure it exists
   const clientQuery = $derived(ReactiveClient.find(clientId));
@@ -32,47 +21,6 @@
   const peopleQuery = $derived(
     ReactivePerson.where({ client_id: clientId }).orderBy('name', 'asc').all()
   );
-
-  // Load groups and departments for this client
-  const groupsQuery = $derived(
-    ReactivePeopleGroup.where({ client_id: clientId }).orderBy('name', 'asc').all()
-  );
-  const allGroups = $derived(groupsQuery?.data || []);
-  const groups = $derived(allGroups.filter((g) => !g.is_department));
-  const departments = $derived(allGroups.filter((g) => g.is_department));
-
-  // Filter function for people (client-side filtering)
-  function shouldShowPerson(person: any): boolean {
-    // Apply search filter
-    if (searchQuery && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-
-      // Search in name
-      const nameMatch = person.name && person.name.toLowerCase().includes(query);
-
-      // Search in preferred name
-      const preferredNameMatch =
-        person.name_preferred && person.name_preferred.toLowerCase().includes(query);
-
-      // Search in title
-      const titleMatch = person.title && person.title.toLowerCase().includes(query);
-
-      if (!nameMatch && !preferredNameMatch && !titleMatch) {
-        return false;
-      }
-    }
-
-    // Apply active filter
-    if (showActiveOnly && !person.is_active) {
-      return false;
-    }
-
-    // Apply group/department filter
-    // TODO: Group filtering is temporarily disabled as the relationship is not available in Zero.js
-    // This would need to be implemented differently, perhaps by loading group memberships separately
-
-    return true;
-  }
 
   // Get all people for the client
   const allPeople = $derived(peopleQuery?.data || []);
@@ -84,90 +32,21 @@
   const loading = $derived(peopleQuery?.isLoading || clientQuery?.isLoading || false);
   const error = $derived(peopleQuery?.error || clientQuery?.error);
 
-  // Reset filters
-  function resetFilters() {
-    showActiveOnly = false;
-    selectedGroupId = null;
-    selectedDepartmentId = null;
-  }
-
   // Navigate to person details
   function navigateToPerson(personId: string) {
     goto(`/clients/${clientId}/people/${personId}`);
   }
-
-  // Calculate active filters count
-  const activeFiltersCount = $derived(
-    [showActiveOnly, selectedGroupId, selectedDepartmentId].filter(Boolean).length
-  );
 </script>
 
 <AppLayout currentClient={client}>
   <div class="people-page">
-    <!-- Search and Filters -->
-    <div class="search-section">
-      <div class="search-container">
-        <SearchBar bind:value={searchQuery} placeholder="Search people by name or title..." />
-      </div>
-
-      <div class="filter-button">
-        <BasePopover bind:isOpen={showFilterPopover}>
-          <CircularButton
-            slot="trigger"
-            iconSrc={FilterIcon}
-            size="medium"
-            badgeCount={activeFiltersCount}
-          />
-          <div slot="content" class="filter-popover">
-            <h3>Filter People</h3>
-
-            <div class="filter-section">
-              <label>
-                <input type="checkbox" bind:checked={showActiveOnly} />
-                Active only
-              </label>
-            </div>
-
-            {#if departments.length > 0}
-              <div class="filter-section">
-                <label for="department-filter">Department</label>
-                <select id="department-filter" bind:value={selectedDepartmentId}>
-                  <option value={null}>All departments</option>
-                  {#each departments as dept}
-                    <option value={dept.id}>{dept.name}</option>
-                  {/each}
-                </select>
-              </div>
-            {/if}
-
-            {#if groups.length > 0}
-              <div class="filter-section">
-                <label for="group-filter">Group</label>
-                <select id="group-filter" bind:value={selectedGroupId}>
-                  <option value={null}>All groups</option>
-                  {#each groups as group}
-                    <option value={group.id}>{group.name}</option>
-                  {/each}
-                </select>
-              </div>
-            {/if}
-
-            <div class="filter-actions">
-              <button
-                class="reset-button"
-                on:click={resetFilters}
-                disabled={activeFiltersCount === 0}
-              >
-                Reset Filters
-              </button>
-            </div>
-          </div>
-        </BasePopover>
-      </div>
-    </div>
-
     <!-- Results Count -->
-    {#if !loading}{/if}
+    {#if !loading}
+      <div class="results-info">
+        {people.length}
+        {people.length === 1 ? 'person' : 'people'} found
+      </div>
+    {/if}
 
     <!-- People List -->
     <div class="people-list">
@@ -186,8 +65,8 @@
         <div class="empty-state">
           <div class="icon" aria-hidden="true"><img src={PersonIcon} alt="" /></div>
           <p>No people found</p>
-          {#if searchQuery || activeFiltersCount > 0}
-            <button on:click={resetFilters}>Clear filters</button>
+          {#if peopleSearch.searchQuery || peopleSearch.activeFiltersCount > 0}
+            <button onclick={() => window.location.reload()}>Clear filters</button>
           {/if}
         </div>
       {:else}
@@ -254,77 +133,6 @@
     padding: 0 24px;
     max-width: 1200px;
     margin: 0 auto;
-  }
-
-  .search-section {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    align-items: center;
-  }
-
-  .search-container {
-    flex: 1;
-  }
-
-  .filter-popover {
-    padding: 1rem;
-    min-width: 250px;
-  }
-
-  .filter-popover h3 {
-    margin: 0 0 1rem 0;
-    font-size: 1.1rem;
-  }
-
-  .filter-section {
-    margin-bottom: 1rem;
-  }
-
-  .filter-section label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.95rem;
-    cursor: pointer;
-  }
-
-  .filter-section select {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 0.375rem;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-size: 0.95rem;
-    margin-top: 0.5rem;
-  }
-
-  .filter-actions {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
-  }
-
-  .reset-button {
-    width: 100%;
-    padding: 0.5rem;
-    background-color: var(--secondary-color);
-    color: var(--text-color);
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-
-  .reset-button:hover:not(:disabled) {
-    opacity: 0.8;
-  }
-
-  .reset-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 
   .results-info {

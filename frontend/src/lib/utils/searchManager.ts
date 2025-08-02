@@ -1,6 +1,7 @@
 import { jobsSearch, jobsSearchActions } from '$lib/stores/jobsSearch.svelte';
 import { clientsSearch, clientsSearchActions } from '$lib/stores/clientsSearch.svelte';
 import { taskFilter, taskFilterActions } from '$lib/stores/taskFilter.svelte';
+import { peopleSearch, peopleSearchActions } from '$lib/stores/peopleSearch.svelte';
 import type { SearchContext, SearchConfig } from '$lib/types/toolbar';
 import { SEARCH_PLACEHOLDERS } from '$lib/types/toolbar';
 
@@ -40,6 +41,15 @@ export function getSearchConfig(context: SearchContext): SearchConfig | null {
         clearQuery: taskFilterActions.clearSearch,
       };
 
+    case 'people':
+      return {
+        context,
+        placeholder: SEARCH_PLACEHOLDERS[context],
+        searchQuery: peopleSearch.searchQuery,
+        setQuery: peopleSearchActions.setSearchQuery,
+        clearQuery: peopleSearchActions.clearSearch,
+      };
+
     default:
       return null;
   }
@@ -52,4 +62,5 @@ export function clearAllSearches(): void {
   jobsSearchActions.clearSearch();
   clientsSearchActions.clearSearch();
   taskFilterActions.clearSearch();
+  peopleSearchActions.clearSearch();
 }

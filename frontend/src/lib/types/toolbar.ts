@@ -2,7 +2,7 @@
  * Type definitions for toolbar components
  */
 
-export type SearchContext = 'jobs' | 'client-jobs' | 'clients' | 'tasks' | null;
+export type SearchContext = 'jobs' | 'client-jobs' | 'clients' | 'tasks' | 'people' | null;
 export type PageType = 'home' | 'job-detail' | 'jobs' | 'clients' | 'people' | 'devices';
 export type IconType = 'svg' | 'emoji';
 
@@ -37,4 +37,5 @@ export const SEARCH_PLACEHOLDERS: Record<NonNullable<SearchContext>, string> = {
   'client-jobs': 'Search client jobs',
   clients: 'Search clients',
   tasks: 'Search tasks',
+  people: 'Search people by name or title...',
 } as const;

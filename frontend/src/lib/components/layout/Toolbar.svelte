@@ -12,6 +12,7 @@
   import TaskFilterPopover from './TaskFilterPopover.svelte';
   import ClientTypeFilterPopover from './ClientTypeFilterPopover.svelte';
   import JobFilterPopover from './JobFilterPopover.svelte';
+  import PeopleFilterPopover from './PeopleFilterPopover.svelte';
   import SearchBar from './SearchBar.svelte';
   import PageActionsBar from './PageActionsBar.svelte';
   import JobControlsBar from './JobControlsBar.svelte';
@@ -43,6 +44,7 @@
     if (routeId === ROUTE_PATTERNS.clientJobs) return 'client-jobs';
     if (routeId === ROUTE_PATTERNS.clients && !$page.url.pathname.includes('/search'))
       return 'clients';
+    if (routeId === ROUTE_PATTERNS.clientPeople) return 'people';
 
     return null;
   }
@@ -87,6 +89,9 @@
   const showJobFilter = $derived(
     currentPageType === 'jobs' &&
       ($page.route.id === '/(authenticated)/jobs' || $page.route.id === ROUTE_PATTERNS.clientJobs)
+  );
+  const showPeopleFilter = $derived(
+    currentPageType === 'people' && $page.route.id === ROUTE_PATTERNS.clientPeople
   );
 
   // Show client actions when on client detail page
@@ -259,6 +264,11 @@
     <!-- Client filter -->
     {#if showClientFilter}
       <ClientTypeFilterPopover {disabled} />
+    {/if}
+
+    <!-- People filter -->
+    {#if showPeopleFilter}
+      <PeopleFilterPopover {disabled} />
     {/if}
 
     <!-- Client actions - Edit/Done buttons -->
