@@ -111,7 +111,7 @@
   function resizeInput(_input?: HTMLInputElement) {
     // Get all contact inputs
     const inputs = document.querySelectorAll('.contact-input');
-    let maxWidth = 300; // minimum width
+    let maxWidth = 0; // Start with 0 to find actual needed width
 
     // Find the widest required width among all inputs
     inputs.forEach((inp) => {
@@ -123,22 +123,26 @@
         span.style.whiteSpace = 'nowrap';
         span.style.font = window.getComputedStyle(inp).font;
         span.style.padding = window.getComputedStyle(inp).padding;
-        span.textContent = inp.value || inp.placeholder || '';
+
+        // Measure both the value and placeholder to get the needed width
+        const textToMeasure = inp.value || inp.placeholder || '';
+        span.textContent = textToMeasure;
 
         document.body.appendChild(span);
         const textWidth = span.getBoundingClientRect().width;
         document.body.removeChild(span);
 
-        const requiredWidth = textWidth + 20; // +20 for padding
+        const requiredWidth = textWidth + 30; // +30 for padding and some breathing room
         if (requiredWidth > maxWidth) {
           maxWidth = requiredWidth;
         }
       }
     });
 
-    // Apply max constraints
+    // Apply constraints - minimum for usability, maximum for viewport
+    const minWidth = 180; // Minimum for usability
     const maxAllowedWidth = window.innerWidth * 0.8; // 80% of viewport
-    const finalWidth = Math.min(maxWidth, maxAllowedWidth);
+    const finalWidth = Math.max(minWidth, Math.min(maxWidth, maxAllowedWidth));
 
     // Set all inputs to the same width
     inputs.forEach((inp) => {
@@ -414,7 +418,7 @@
 
   .contact-card {
     width: auto;
-    min-width: 400px;
+    min-width: 250px;
     max-width: 90%;
     display: flex;
     flex-direction: column;
@@ -453,41 +457,27 @@
     justify-content: center;
   }
 
-  .field-group:global(.name-input) {
-    font-size: 24px;
-    font-weight: 600;
-    text-align: center;
-  }
-
-  .field-group:global(.title-input) {
+  .field-group :global(.name-input) {
     font-size: 18px;
-    font-weight: 400;
-    text-align: center;
-    color: var(--text-secondary);
-  }
-
-  :global(.name-input) {
-    font-size: 17px;
     font-weight: 600;
     text-align: center;
-    padding: 8px 12px;
-    border-radius: 6px;
+    padding: 0 6px !important;
   }
 
-  :global(.title-input) {
+  .field-group :global(.title-input) {
     font-size: 14px;
     font-weight: 400;
     text-align: center;
     color: var(--text-secondary);
-    padding: 6px 12px;
-    border-radius: 6px;
+    padding: 0 6px !important;
   }
 
   :global(.contact-input) {
     font-size: 14px;
-    padding: 6px 12px;
+    padding: 0 6px !important;
     border-radius: 6px;
     transition: width 0.2s ease;
+    min-width: 0; /* Allow dynamic sizing */
   }
 
   hr.divider {

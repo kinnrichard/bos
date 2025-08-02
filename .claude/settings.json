@@ -3,19 +3,19 @@
   "projectType": "fullstack",
   "frameworks": ["rails", "svelte", "zero"],
   
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./scripts/claude-lint-hook-posttool.sh"
-          }
-        ]
-      }
-    ]
-  },
+  // "hooks": {
+  //   "PostToolUse": [
+  //     {
+  //       "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+  //       "hooks": [
+  //         {
+  //           "type": "command",
+  //           "command": "./scripts/claude-lint-hook-posttool.sh"
+  //         }
+  //       ]
+  //     }
+  //   ]
+  // },
   
   "linting": {
     "enabled": true,
