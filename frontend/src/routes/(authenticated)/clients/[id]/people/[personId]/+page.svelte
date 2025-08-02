@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
-  import FormInput from '$lib/components/ui/FormInput.svelte';
+  import ChromelessInput from '$lib/components/ui/ChromelessInput.svelte';
   import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
   import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
@@ -387,23 +387,48 @@
           <section class="form-section">
             <h2>Basic Information</h2>
 
-            <FormInput label="Name" bind:value={formData.name} required placeholder="Full name" />
+            <div class="form-field">
+              <label for="name">Name *</label>
+              <ChromelessInput
+                id="name"
+                bind:value={formData.name}
+                required
+                placeholder="Full name"
+                customClass="detail-input"
+              />
+            </div>
 
-            <FormInput
-              label="Preferred Name"
-              bind:value={formData.namePreferred}
-              placeholder="How they prefer to be called"
-              helperText="Optional: If different from their full name"
-            />
+            <div class="form-field">
+              <label for="preferred-name">Preferred Name</label>
+              <ChromelessInput
+                id="preferred-name"
+                bind:value={formData.namePreferred}
+                placeholder="How they prefer to be called"
+                customClass="detail-input"
+              />
+              <p class="helper-text">Optional: If different from their full name</p>
+            </div>
 
-            <FormInput
-              label="Pronunciation"
-              bind:value={formData.namePronunciationHint}
-              placeholder="e.g., 'John Doe' → 'jon doh'"
-              helperText="Optional: Help others pronounce their name correctly"
-            />
+            <div class="form-field">
+              <label for="pronunciation">Pronunciation</label>
+              <ChromelessInput
+                id="pronunciation"
+                bind:value={formData.namePronunciationHint}
+                placeholder="e.g., 'John Doe' → 'jon doh'"
+                customClass="detail-input"
+              />
+              <p class="helper-text">Optional: Help others pronounce their name correctly</p>
+            </div>
 
-            <FormInput label="Title" bind:value={formData.title} placeholder="Job title or role" />
+            <div class="form-field">
+              <label for="title">Title</label>
+              <ChromelessInput
+                id="title"
+                bind:value={formData.title}
+                placeholder="Job title or role"
+                customClass="detail-input"
+              />
+            </div>
 
             <div class="form-field">
               <label>Status</label>
@@ -438,7 +463,7 @@
                   {/each}
                 </select>
 
-                <input
+                <ChromelessInput
                   type={method.type === 'email' ? 'email' : 'text'}
                   bind:value={method.value}
                   placeholder={method.type === 'email'
@@ -446,8 +471,8 @@
                     : method.type === 'phone'
                       ? '(555) 123-4567'
                       : '123 Main St, City, ST 12345'}
-                  class="contact-value-input"
-                  aria-label="{method.type} value"
+                  customClass="contact-value-input"
+                  ariaLabel="{method.type} value"
                 />
 
                 <label class="primary-checkbox">
@@ -729,6 +754,35 @@
   .contact-value-input:focus {
     outline: none;
     border-color: var(--primary-color);
+  }
+
+  /* Chromeless input styling for detail page */
+  :global(.detail-input) {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+  }
+
+  :global(.detail-input:focus) {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  :global(.contact-value-input) {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+  }
+
+  :global(.contact-value-input:focus) {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .helper-text {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    margin-top: 0.25rem;
   }
 
   .primary-checkbox {

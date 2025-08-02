@@ -5,6 +5,7 @@
   import SearchBar from '$lib/components/layout/SearchBar.svelte';
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import CircularButton from '$lib/components/ui/CircularButton.svelte';
+  import PersonAvatar from '$lib/components/ui/PersonAvatar.svelte';
   import { ReactivePerson } from '$lib/models/reactive-person';
   import { ReactivePeopleGroup } from '$lib/models/reactive-people-group';
   import { ReactiveClient } from '$lib/models/reactive-client';
@@ -197,15 +198,18 @@
       {:else}
         {#each people as person}
           <button class="person-row" on:click={() => navigateToPerson(person.id)} type="button">
-            <div class="person-icon" aria-hidden="true">
-              <img src={PersonIcon} alt="" />
-            </div>
+            <PersonAvatar name={person.name} size="medium" />
 
             <div class="person-info">
-              <div class="person-name">
-                {person.name_preferred || person.name}
-                {#if person.name_pronunciation_hint}
-                  <span class="pronunciation">({person.name_pronunciation_hint})</span>
+              <div class="person-header">
+                <div class="person-name">
+                  {person.name_preferred || person.name}
+                  {#if person.name_pronunciation_hint}
+                    <span class="pronunciation">({person.name_pronunciation_hint})</span>
+                  {/if}
+                </div>
+                {#if !person.is_active}
+                  <span class="inactive-badge">Inactive</span>
                 {/if}
               </div>
 
@@ -213,21 +217,31 @@
                 <div class="person-title">{person.title}</div>
               {/if}
 
-              <div class="person-meta">
-                {#if !person.is_active}
-                  <span class="inactive-badge">Inactive</span>
-                {/if}
-
-                {#if person.contactMethods?.length}
-                  {@const primaryContact =
-                    person.contactMethods.find((cm) => cm.is_primary) || person.contactMethods[0]}
-                  {#if primaryContact}
-                    <span class="contact-info">
-                      {primaryContact.formatted_value || primaryContact.value}
+              {#if person.contactMethods?.length}
+                {@const email = person.contactMethods.find((cm) => cm.contact_type === 'email')}
+                {@const phone = person.contactMethods.find((cm) => cm.contact_type === 'phone')}
+                {@const address = person.contactMethods.find((cm) => cm.contact_type === 'address')}
+                <div class="contact-methods">
+                  {#if email}
+                    <span class="contact-item">
+                      <img src="/icons/envelope.svg" alt="Email" class="contact-icon" />
+                      {email.value}
                     </span>
                   {/if}
-                {/if}
-              </div>
+                  {#if phone}
+                    <span class="contact-item">
+                      <img src="/icons/phone.svg" alt="Phone" class="contact-icon" />
+                      {phone.formatted_value || phone.value}
+                    </span>
+                  {/if}
+                  {#if address}
+                    <span class="contact-item">
+                      <img src="/icons/mappin.and.ellipse.svg" alt="Address" class="contact-icon" />
+                      {address.formatted_value || address.value}
+                    </span>
+                  {/if}
+                </div>
+              {/if}
             </div>
 
             <div class="chevron-icon" aria-hidden="true">
@@ -335,45 +349,57 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
+    padding: 1.25rem 1rem;
     width: 100%;
     text-align: left;
     background: none;
     border: none;
-    border-bottom: 1px solid var(--border-color);
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
+    position: relative;
   }
 
-  .person-row:last-child {
-    border-bottom: none;
+  .person-row::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 4.5rem;
+    right: 1rem;
+    height: 1px;
+    background-color: var(--border-color);
+  }
+
+  .person-row:last-child::after {
+    display: none;
   }
 
   .person-row:hover {
     background-color: var(--hover-background);
+    transform: translateX(2px);
   }
 
-  .person-icon {
-    width: 40px;
-    height: 40px;
-    color: var(--primary-color);
-    flex-shrink: 0;
-  }
-
-  .person-icon img {
-    width: 100%;
-    height: 100%;
-  }
+  /* Remove old person-icon styles as we're using PersonAvatar */
 
   .person-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .person-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .person-name {
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 1rem;
     color: var(--text-color);
-    margin-bottom: 0.25rem;
+    line-height: 1.4;
   }
 
   .pronunciation {
@@ -383,29 +409,46 @@
   }
 
   .person-title {
-    font-size: 0.95rem;
-    color: var(--secondary-text-color);
-    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
   }
 
-  .person-meta {
+  .contact-methods {
     display: flex;
     gap: 1rem;
     align-items: center;
-    font-size: 0.85rem;
+    font-size: 0.8125rem;
+    margin-top: 0.125rem;
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--text-tertiary);
+    font-size: 0.8125rem;
+  }
+
+  .contact-icon {
+    width: 14px;
+    height: 14px;
+    opacity: 0.7;
+    flex-shrink: 0;
   }
 
   .inactive-badge {
-    background-color: var(--warning-background);
-    color: var(--warning-color);
-    padding: 0.125rem 0.5rem;
-    border-radius: 0.25rem;
+    background-color: var(--bg-warning);
+    color: var(--text-warning);
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
     font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
   }
 
-  .contact-info {
-    color: var(--secondary-text-color);
-  }
+  /* Remove old contact-info style */
 
   .chevron-icon {
     width: 20px;
