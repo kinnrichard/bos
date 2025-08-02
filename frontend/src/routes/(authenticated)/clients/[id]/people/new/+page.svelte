@@ -65,6 +65,10 @@
         normalized: null,
       },
     ];
+    // Immediately resize inputs after adding to prevent flash
+    requestAnimationFrame(() => {
+      resizeInput();
+    });
   }
 
   // Handle contact normalization on blur
@@ -242,10 +246,9 @@
     };
   });
 
-  // Initialize input widths when contact methods or form data changes
+  // Initialize input widths when form data changes
   $effect(() => {
-    // Trigger on contact methods or form data change
-    contactMethods;
+    // Trigger on form data change only (contact methods handled in addContactMethod)
     formData.name;
     formData.title;
     initializeInputWidths();
@@ -481,7 +484,7 @@
     padding: 0 6px !important;
     border-radius: 6px;
     transition: width 0.2s ease;
-    min-width: 0; /* Allow dynamic sizing */
+    min-width: 180px; /* Start with minimum width to prevent flash */
   }
 
   hr.divider {
