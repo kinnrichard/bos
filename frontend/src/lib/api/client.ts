@@ -278,20 +278,38 @@ export class EnhancedApiClient {
 
   private async performTokenRefresh(): Promise<boolean> {
     try {
-      debugAPI('Attempting token refresh...');
+      debugAPI('Attempting auth token refresh...');
 
-      // Use existing CSRF token manager for refresh
-      const newToken = await csrfTokenManager.forceRefresh();
+      // Get CSRF token first for the refresh request
+      const csrfToken = await csrfTokenManager.getToken();
 
-      if (newToken) {
-        debugAPI('Token refresh successful');
+      // Call the auth refresh endpoint
+      const response = await fetch('/api/v1/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken || '',
+        },
+      });
+
+      if (response.ok) {
+        debugAPI('Auth token refresh successful');
         return true;
       } else {
-        debugAPI('Token refresh failed - no new token received');
+        // Don't log as error if it's a missing token (first login)
+        if (response.status === 400) {
+          const data = await response.json();
+          if (data.errors?.[0]?.code === 'MISSING_TOKEN') {
+            debugAPI('No refresh token available - likely during login transition');
+            return false;
+          }
+        }
+        debugAPI('Auth token refresh failed', { status: response.status });
         return false;
       }
     } catch (error) {
-      debugAPI('Token refresh error', { error });
+      debugAPI('Auth token refresh error', { error });
       return false;
     }
   }

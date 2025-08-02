@@ -26,8 +26,8 @@ class BackgroundRefreshService {
 
     this.startRefreshTimer();
 
-    // Perform initial refresh to get session metadata
-    await this.performBackgroundRefresh();
+    // Don't perform initial refresh - let the timer handle it
+    // The user just logged in, so tokens are fresh
   }
 
   private startRefreshTimer(): void {
@@ -51,13 +51,8 @@ class BackgroundRefreshService {
         return;
       }
 
-      // Get CSRF token - will now use health endpoint
+      // Get CSRF token
       const csrfToken = await csrfTokenManager.getToken();
-
-      if (!csrfToken) {
-        console.warn('Could not obtain CSRF token for refresh');
-        return;
-      }
 
       // Call refresh endpoint
       const response = await fetch('/api/v1/auth/refresh', {
@@ -78,6 +73,9 @@ class BackgroundRefreshService {
             return;
           }
         }
+        // If refresh fails, let the existing 401 retry logic handle it
+        const errorText = await response.text();
+        console.debug(`Background refresh failed: ${response.status} - ${errorText}`);
         throw new Error(`Refresh failed with status: ${response.status}`);
       }
 
