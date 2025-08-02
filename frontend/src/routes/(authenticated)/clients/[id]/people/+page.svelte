@@ -71,7 +71,7 @@
         </div>
       {:else}
         {#each people as person}
-          <button class="person-row" on:click={() => navigateToPerson(person.id)} type="button">
+          <button class="person-row" onclick={() => navigateToPerson(person.id)} type="button">
             <PersonAvatar name={person.name} size="medium" />
 
             <div class="person-info">
