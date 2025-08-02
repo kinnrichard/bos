@@ -206,6 +206,9 @@
           />
         </div>
 
+        <!-- Divider -->
+        <hr class="divider" />
+
         <!-- Contact Methods -->
         <div class="contact-methods">
           {#each contactMethods as method, index (method.id)}
@@ -320,6 +323,7 @@
     flex-direction: column;
     align-items: center;
     gap: 16px;
+    padding-top: 16px;
   }
 
   .error-message {
@@ -347,7 +351,7 @@
 
   .field-group {
     width: 100%;
-    margin-bottom: 12px;
+    margin-bottom: 0px;
     display: flex;
     justify-content: center;
   }
@@ -388,12 +392,18 @@
     border-radius: 6px;
   }
 
+  hr.divider {
+    width: 100%;
+    border: none;
+    border-top: 1px solid var(--border-primary);
+    margin: 16px 0;
+  }
+
   .contact-methods {
     width: 100%;
-    margin-top: 32px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
   }
 
   .contact-method {
