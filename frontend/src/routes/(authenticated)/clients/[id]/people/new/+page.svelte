@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
-  import FormInput from '$lib/components/ui/FormInput.svelte';
+  import ChromelessInput from '$lib/components/ui/ChromelessInput.svelte';
   import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import { Person } from '$lib/models/person';
   import { ContactMethod } from '$lib/models/contact-method';
@@ -48,7 +48,10 @@
     value: string;
   }
 
-  let contactMethods = $state<TempContactMethod[]>([{ id: crypto.randomUUID(), value: '' }]);
+  let contactMethods = $state<TempContactMethod[]>([
+    { id: crypto.randomUUID(), value: '' },
+    { id: crypto.randomUUID(), value: '' },
+  ]);
 
   // Add contact method
   function addContactMethod() {
@@ -63,7 +66,9 @@
 
   // Remove contact method
   function removeContactMethod(id: string) {
-    contactMethods = contactMethods.filter((cm) => cm.id !== id);
+    if (contactMethods.length > 2) {
+      contactMethods = contactMethods.filter((cm) => cm.id !== id);
+    }
   }
 
   // Handle form submission
@@ -176,153 +181,157 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <AppLayout currentClient={client}>
-  <div class="add-person-page">
-    <form onsubmit={handleSubmit} novalidate>
-      {#if error}
-        <div class="error-message" role="alert">
-          {error}
-        </div>
-      {/if}
+  <div class="new-contact-page">
+    <div class="contact-card">
+      <form onsubmit={handleSubmit} novalidate>
+        {#if error}
+          <div class="error-message" role="alert">
+            {error}
+          </div>
+        {/if}
 
-      <!-- Basic Information -->
-      <section class="form-section">
-        <h2>Basic Information</h2>
-
-        <div class="form-row">
-          <label for="name">Name *</label>
-          <FormInput id="name" bind:value={formData.name} placeholder="Full name" required />
+        <!-- Person Icon -->
+        <div class="person-icon">
+          <img src="/icons/person.circle.fill.svg" alt="Person" width="64" height="64" />
         </div>
 
-        <div class="form-row">
-          <label for="preferred-name">Preferred Name</label>
-          <FormInput
-            id="preferred-name"
-            bind:value={formData.namePreferred}
-            placeholder="How they prefer to be called"
+        <!-- Name Field -->
+        <div class="field-group">
+          <ChromelessInput
+            id="name"
+            bind:value={formData.name}
+            placeholder="Full name"
+            customClass="name-input"
+            required
+            autoFocus
           />
         </div>
 
-        <div class="form-row">
-          <label for="pronunciation">Pronunciation</label>
-          <FormInput
-            id="pronunciation"
-            bind:value={formData.namePronunciationHint}
-            placeholder="e.g., 'John Doe' → 'jon doh'"
+        <!-- Title Field -->
+        <div class="field-group">
+          <ChromelessInput
+            id="title"
+            bind:value={formData.title}
+            placeholder="Job title or role"
+            customClass="title-input"
           />
         </div>
 
-        <div class="form-row">
-          <label for="title">Title</label>
-          <FormInput id="title" bind:value={formData.title} placeholder="Job title or role" />
-        </div>
-      </section>
+        <!-- Contact Methods -->
+        <div class="contact-methods">
+          {#each contactMethods as method, index (method.id)}
+            <div class="contact-method">
+              <ChromelessInput
+                bind:value={method.value}
+                placeholder={index === 0 ? 'Email or phone' : 'Address or other contact method'}
+                customClass="contact-input"
+                type="text"
+                ariaLabel={`Contact method ${index + 1}`}
+              />
 
-      <!-- Contact Methods -->
-      <section class="form-section">
-        <div class="section-header">
-          <h2>Contact Methods</h2>
-          <CircularButton
-            iconSrc={PlusIcon}
-            size="small"
-            onclick={addContactMethod}
-            title="Add contact method"
-          />
-        </div>
+              <CircularButton
+                iconSrc={TrashIcon}
+                size="small"
+                variant="danger"
+                onclick={() => removeContactMethod(method.id)}
+                title="Remove contact method"
+                disabled={contactMethods.length <= 2}
+              />
+            </div>
+          {/each}
 
-        {#each contactMethods as method (method.id)}
-          <div class="contact-method">
-            <input
-              type="text"
-              bind:value={method.value}
-              placeholder="Email, phone, or address"
-              class="contact-value-input"
-              aria-label="Contact value"
-            />
-
+          <div class="add-contact-button">
             <CircularButton
-              iconSrc={TrashIcon}
+              iconSrc={PlusIcon}
               size="small"
-              variant="danger"
-              onclick={() => removeContactMethod(method.id)}
-              title="Remove contact method"
-              disabled={contactMethods.length === 1}
+              onclick={addContactMethod}
+              title="Add contact method"
             />
           </div>
-        {/each}
-      </section>
+        </div>
 
-      <!-- Groups and Departments -->
-      {#if groups.length > 0 || departments.length > 0}
-        <section class="form-section">
-          <h2>Groups & Departments</h2>
-
-          {#if departments.length > 0}
-            <div class="form-field">
-              <label>Departments</label>
-              <div class="checkbox-group">
-                {#each departments as dept}
-                  <label class="checkbox-label">
-                    <input
-                      type="checkbox"
-                      value={dept.id}
-                      checked={formData.selectedDepartmentIds.includes(dept.id)}
-                      onchange={(e) => {
-                        if (e.currentTarget.checked) {
-                          formData.selectedDepartmentIds = [
-                            ...formData.selectedDepartmentIds,
-                            dept.id,
-                          ];
-                        } else {
-                          formData.selectedDepartmentIds = formData.selectedDepartmentIds.filter(
-                            (id) => id !== dept.id
-                          );
-                        }
-                      }}
-                    />
-                    {dept.name}
-                  </label>
-                {/each}
+        <!-- Groups and Departments -->
+        {#if groups.length > 0 || departments.length > 0}
+          <div class="groups-section">
+            {#if departments.length > 0}
+              <div class="form-field">
+                <label class="field-label">Departments</label>
+                <div class="checkbox-group">
+                  {#each departments as dept}
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        value={dept.id}
+                        checked={formData.selectedDepartmentIds.includes(dept.id)}
+                        onchange={(e) => {
+                          if (e.currentTarget.checked) {
+                            formData.selectedDepartmentIds = [
+                              ...formData.selectedDepartmentIds,
+                              dept.id,
+                            ];
+                          } else {
+                            formData.selectedDepartmentIds = formData.selectedDepartmentIds.filter(
+                              (id) => id !== dept.id
+                            );
+                          }
+                        }}
+                      />
+                      {dept.name}
+                    </label>
+                  {/each}
+                </div>
               </div>
-            </div>
-          {/if}
+            {/if}
 
-          {#if groups.length > 0}
-            <div class="form-field">
-              <label>Groups</label>
-              <div class="checkbox-group">
-                {#each groups as group}
-                  <label class="checkbox-label">
-                    <input
-                      type="checkbox"
-                      value={group.id}
-                      checked={formData.selectedGroupIds.includes(group.id)}
-                      onchange={(e) => {
-                        if (e.currentTarget.checked) {
-                          formData.selectedGroupIds = [...formData.selectedGroupIds, group.id];
-                        } else {
-                          formData.selectedGroupIds = formData.selectedGroupIds.filter(
-                            (id) => id !== group.id
-                          );
-                        }
-                      }}
-                    />
-                    {group.name}
-                  </label>
-                {/each}
+            {#if groups.length > 0}
+              <div class="form-field">
+                <label class="field-label">Groups</label>
+                <div class="checkbox-group">
+                  {#each groups as group}
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        value={group.id}
+                        checked={formData.selectedGroupIds.includes(group.id)}
+                        onchange={(e) => {
+                          if (e.currentTarget.checked) {
+                            formData.selectedGroupIds = [...formData.selectedGroupIds, group.id];
+                          } else {
+                            formData.selectedGroupIds = formData.selectedGroupIds.filter(
+                              (id) => id !== group.id
+                            );
+                          }
+                        }}
+                      />
+                      {group.name}
+                    </label>
+                  {/each}
+                </div>
               </div>
-            </div>
-          {/if}
-        </section>
-      {/if}
-    </form>
+            {/if}
+          </div>
+        {/if}
+      </form>
+    </div>
   </div>
 </AppLayout>
 
 <style>
-  .add-person-page {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 24px;
+  .new-contact-page {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+
+  .contact-card {
+    max-width: 600px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
   }
 
   .error-message {
@@ -330,107 +339,113 @@
     color: var(--accent-red);
     padding: 12px 16px;
     border-radius: 8px;
-    margin-bottom: 24px;
     font-size: 14px;
     line-height: 1.5;
+    width: 100%;
+    text-align: center;
   }
 
-  .form-section {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 24px;
-  }
-
-  .form-section h2 {
-    margin: 0 0 24px 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .section-header {
+  .person-icon {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 8px;
   }
 
-  .section-header h2 {
-    margin: 0;
+  .person-icon img {
+    opacity: 0.7;
+    filter: grayscale(0.3);
   }
 
-  .form-row {
-    display: grid;
-    grid-template-columns: 140px 1fr;
-    gap: 16px;
-    align-items: center;
+  .field-group {
+    width: 100%;
     margin-bottom: 16px;
+    display: flex;
+    justify-content: center;
   }
 
-  .form-row:last-child {
-    margin-bottom: 0;
+  .field-group:global(.name-input) {
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
   }
 
-  .form-row label {
-    font-weight: 500;
-    font-size: 14px;
+  .field-group:global(.title-input) {
+    font-size: 18px;
+    font-weight: 400;
+    text-align: center;
     color: var(--text-secondary);
-    text-align: right;
+  }
+
+  :global(.name-input) {
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px 16px;
+    border-radius: 6px;
+  }
+
+  :global(.title-input) {
+    font-size: 18px;
+    font-weight: 400;
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 6px 16px;
+    border-radius: 6px;
+  }
+
+  :global(.contact-input) {
+    font-size: 16px;
+    padding: 8px 12px;
+    border-radius: 6px;
+  }
+
+  .contact-methods {
+    width: 100%;
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .contact-method {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .contact-method :global(.chromeless-input) {
+    flex: 1;
+  }
+
+  .add-contact-button {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .groups-section {
+    width: 100%;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-secondary);
   }
 
   .form-field {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
   }
 
   .form-field:last-child {
     margin-bottom: 0;
   }
 
-  .form-field label {
+  .field-label {
     display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    font-size: 14px;
-    color: var(--text-secondary);
-  }
-
-  .contact-method {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 12px;
-    align-items: center;
     margin-bottom: 12px;
-  }
-
-  .contact-method:last-child {
-    margin-bottom: 0;
-  }
-
-  .contact-value-input {
-    padding: 8px 12px;
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    background-color: var(--bg-primary);
+    font-weight: 600;
+    font-size: 16px;
     color: var(--text-primary);
-    font-size: 14px;
-    font-family: inherit;
-    line-height: 1.4;
-    transition:
-      border-color 0.15s ease,
-      box-shadow 0.15s ease;
-  }
-
-  .contact-value-input:focus {
-    outline: none;
-    border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
-  }
-
-  .contact-value-input::placeholder {
-    color: var(--text-tertiary);
-    opacity: 1;
   }
 
   .checkbox-group {
@@ -442,53 +457,79 @@
   .checkbox-label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
     color: var(--text-primary);
     user-select: none;
+    padding: 8px 0;
   }
 
   .checkbox-label input[type='checkbox'] {
     cursor: pointer;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     margin: 0;
     flex-shrink: 0;
   }
 
   .checkbox-label:hover {
     color: var(--text-primary);
+    background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 0 -12px;
+  }
+
+  /* Focus states for better accessibility */
+  :global(.name-input:focus),
+  :global(.title-input:focus),
+  :global(.contact-input:focus) {
+    background-color: rgba(0, 0, 0, 0.9);
   }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
-    .add-person-page {
-      padding: 16px;
+    .new-contact-page {
+      padding: 24px 16px;
     }
 
-    h1 {
-      font-size: 24px;
-      margin-bottom: 24px;
+    .contact-card {
+      gap: 20px;
     }
 
-    .form-section {
-      padding: 20px;
-      margin-bottom: 20px;
+    :global(.name-input) {
+      font-size: 22px;
     }
 
-    .form-row {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-
-    .form-row label {
-      text-align: left;
+    :global(.title-input) {
+      font-size: 16px;
     }
 
     .contact-method {
-      grid-template-columns: 1fr;
+      flex-direction: column;
+      align-items: stretch;
       gap: 8px;
+    }
+
+    .checkbox-label:hover {
+      padding: 8px 0;
+      margin: 0;
+      background-color: transparent;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .new-contact-page {
+      padding: 16px 12px;
+    }
+
+    :global(.name-input) {
+      font-size: 20px;
+    }
+
+    :global(.title-input) {
+      font-size: 15px;
     }
   }
 </style>
