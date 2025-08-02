@@ -68,7 +68,7 @@
   }
 
   // Handle contact normalization on blur
-  function handleContactBlur(method: TempContactMethod, index: number) {
+  function handleContactBlur(method: TempContactMethod, index: number, _event: Event) {
     const normalized = normalizeContact(method.value);
     method.normalized = normalized;
 
@@ -80,6 +80,9 @@
       method.value = normalized.formatted_value;
     }
 
+    // Resize all inputs after normalization
+    setTimeout(() => resizeInput(), 0); // Timeout to ensure value is updated
+
     // Remove empty fields on blur (keep at least 2 fields)
     if (!method.value.trim() && contactMethods.length > 2) {
       // Don't remove if it's the last field
@@ -90,7 +93,7 @@
   }
 
   // Handle input in contact method fields
-  function handleContactInput(method: TempContactMethod, index: number) {
+  function handleContactInput(method: TempContactMethod, index: number, _event: Event) {
     // If typing in the last field and it has content, add a new empty field
     if (index === contactMethods.length - 1 && method.value.trim()) {
       // Check if we need to add a new field (don't add if one already exists with no value)
@@ -99,6 +102,58 @@
         addContactMethod();
       }
     }
+
+    // Dynamically resize all inputs based on content
+    resizeInput();
+  }
+
+  // Calculate and set appropriate width for all inputs based on the widest content
+  function resizeInput(_input?: HTMLInputElement) {
+    // Get all contact inputs
+    const inputs = document.querySelectorAll('.contact-input');
+    let maxWidth = 300; // minimum width
+
+    // Find the widest required width among all inputs
+    inputs.forEach((inp) => {
+      if (inp instanceof HTMLInputElement) {
+        // Create a temporary span to measure text width
+        const span = document.createElement('span');
+        span.style.visibility = 'hidden';
+        span.style.position = 'absolute';
+        span.style.whiteSpace = 'nowrap';
+        span.style.font = window.getComputedStyle(inp).font;
+        span.style.padding = window.getComputedStyle(inp).padding;
+        span.textContent = inp.value || inp.placeholder || '';
+
+        document.body.appendChild(span);
+        const textWidth = span.getBoundingClientRect().width;
+        document.body.removeChild(span);
+
+        const requiredWidth = textWidth + 20; // +20 for padding
+        if (requiredWidth > maxWidth) {
+          maxWidth = requiredWidth;
+        }
+      }
+    });
+
+    // Apply max constraints
+    const maxAllowedWidth = window.innerWidth * 0.8; // 80% of viewport
+    const finalWidth = Math.min(maxWidth, maxAllowedWidth);
+
+    // Set all inputs to the same width
+    inputs.forEach((inp) => {
+      if (inp instanceof HTMLInputElement) {
+        inp.style.width = `${finalWidth}px`;
+      }
+    });
+  }
+
+  // Initialize input widths on mount
+  function initializeInputWidths() {
+    // Wait for DOM to be ready
+    setTimeout(() => {
+      resizeInput();
+    }, 0);
   }
 
   // Handle form submission
@@ -181,6 +236,13 @@
       layoutActions.clearPersonEditState();
       layoutActions.clearPageTitle();
     };
+  });
+
+  // Initialize input widths when contact methods change
+  $effect(() => {
+    // Trigger on contact methods change
+    contactMethods;
+    initializeInputWidths();
   });
 
   // Handle keyboard shortcuts
@@ -269,8 +331,8 @@
                 customClass="contact-input"
                 type="text"
                 ariaLabel={`Contact method ${index + 1}`}
-                oninput={() => handleContactInput(method, index)}
-                onblur={() => handleContactBlur(method, index)}
+                oninput={(e) => handleContactInput(method, index, e)}
+                onblur={(e) => handleContactBlur(method, index, e)}
               />
             </div>
           {/each}
@@ -425,7 +487,7 @@
     font-size: 14px;
     padding: 6px 12px;
     border-radius: 6px;
-    width: 300px;
+    transition: width 0.2s ease;
   }
 
   hr.divider {
