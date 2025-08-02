@@ -130,7 +130,7 @@
 
 <style>
   .people-page {
-    padding: 0 24px;
+    padding: 0 24px 12px 24px;
     max-width: 1200px;
     margin: 0 auto;
   }
