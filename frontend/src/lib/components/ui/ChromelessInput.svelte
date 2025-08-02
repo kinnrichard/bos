@@ -192,12 +192,24 @@
   .chromeless-input:focus,
   .chromeless-input.focused {
     background-color: rgba(0, 0, 0, 0.9);
+    /* Explicitly maintain text alignment on focus to prevent placeholder shifting */
+    text-align: inherit;
+  }
+
+  /* Ensure placeholder text doesn't shift position on focus */
+  .chromeless-input:focus::placeholder,
+  .chromeless-input.focused::placeholder {
+    text-align: inherit;
+    /* Force consistent positioning */
+    text-indent: 0;
   }
 
   /* Placeholder styling */
   .chromeless-input::placeholder {
     color: var(--text-tertiary);
     opacity: 1;
+    /* Ensure placeholder text alignment is inherited consistently */
+    text-align: inherit;
   }
 
   /* Disabled state */
