@@ -3,7 +3,6 @@
   import { goto } from '$app/navigation';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import ChromelessInput from '$lib/components/ui/ChromelessInput.svelte';
-  import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import { Person } from '$lib/models/person';
   import { ContactMethod } from '$lib/models/contact-method';
   import { PeopleGroupMembership } from '$lib/models/people-group-membership';
@@ -17,10 +16,6 @@
     getContactTypeLabel,
   } from '$lib/utils/contactNormalizer';
   import type { NormalizedContact } from '$lib/utils/contactNormalizer';
-
-  // Icon paths
-  const PlusIcon = '/icons/plus.svg';
-  const TrashIcon = '/icons/trash-red.svg';
 
   let clientId = $page.params.id;
   let loading = $state(false);
@@ -72,15 +67,8 @@
     ];
   }
 
-  // Remove contact method
-  function removeContactMethod(id: string) {
-    if (contactMethods.length > 2) {
-      contactMethods = contactMethods.filter((cm) => cm.id !== id);
-    }
-  }
-
   // Handle contact normalization on blur
-  function handleContactBlur(method: TempContactMethod) {
+  function handleContactBlur(method: TempContactMethod, index: number) {
     const normalized = normalizeContact(method.value);
     method.normalized = normalized;
 
@@ -90,6 +78,14 @@
       (normalized.contact_type === 'email' || normalized.contact_type === 'phone')
     ) {
       method.value = normalized.formatted_value;
+    }
+
+    // Remove empty fields on blur (keep at least 2 fields)
+    if (!method.value.trim() && contactMethods.length > 2) {
+      // Don't remove if it's the last field
+      if (index !== contactMethods.length - 1) {
+        contactMethods = contactMethods.filter((cm) => cm.id !== method.id);
+      }
     }
   }
 
@@ -251,16 +247,6 @@
         <div class="contact-methods">
           {#each contactMethods as method, index (method.id)}
             <div class="contact-method">
-              <ChromelessInput
-                bind:value={method.value}
-                placeholder="Email, phone, or address"
-                customClass="contact-input"
-                type="text"
-                ariaLabel={`Contact method ${index + 1}`}
-                oninput={() => handleContactInput(method, index)}
-                onblur={() => handleContactBlur(method)}
-              />
-
               {#if method.normalized}
                 <span
                   class="contact-type-indicator"
@@ -275,25 +261,17 @@
                 </span>
               {/if}
 
-              <CircularButton
-                iconSrc={TrashIcon}
-                size="small"
-                variant="danger"
-                onclick={() => removeContactMethod(method.id)}
-                title="Remove contact method"
-                disabled={contactMethods.length <= 2}
+              <ChromelessInput
+                bind:value={method.value}
+                placeholder="Email, phone, or address"
+                customClass="contact-input"
+                type="text"
+                ariaLabel={`Contact method ${index + 1}`}
+                oninput={() => handleContactInput(method, index)}
+                onblur={() => handleContactBlur(method, index)}
               />
             </div>
           {/each}
-
-          <div class="add-contact-button">
-            <CircularButton
-              iconSrc={PlusIcon}
-              size="small"
-              onclick={addContactMethod}
-              title="Add contact method"
-            />
-          </div>
         </div>
 
         <!-- Groups and Departments -->
@@ -463,7 +441,6 @@
   .contact-method {
     display: flex;
     align-items: center;
-    gap: 12px;
     width: 100%;
   }
 
@@ -473,6 +450,7 @@
     justify-content: center;
     width: 24px;
     height: 24px;
+    margin-right: 4px;
     opacity: 0.6;
     transition: opacity 0.2s ease;
     flex-shrink: 0;
@@ -488,12 +466,6 @@
 
   .contact-method :global(.chromeless-input) {
     flex: 1;
-  }
-
-  .add-contact-button {
-    display: flex;
-    justify-content: center;
-    margin-top: 8px;
   }
 
   .groups-section {
