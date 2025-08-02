@@ -109,8 +109,8 @@
 
   // Calculate and set appropriate width for all inputs based on the widest content
   function resizeInput(_input?: HTMLInputElement) {
-    // Get all contact inputs
-    const inputs = document.querySelectorAll('.contact-input');
+    // Get all inputs (name, title, and contact methods)
+    const inputs = document.querySelectorAll('.name-input, .title-input, .contact-input');
     let maxWidth = 0; // Start with 0 to find actual needed width
 
     // Find the widest required width among all inputs
@@ -242,10 +242,12 @@
     };
   });
 
-  // Initialize input widths when contact methods change
+  // Initialize input widths when contact methods or form data changes
   $effect(() => {
-    // Trigger on contact methods change
+    // Trigger on contact methods or form data change
     contactMethods;
+    formData.name;
+    formData.title;
     initializeInputWidths();
   });
 
@@ -293,6 +295,7 @@
             customClass="name-input"
             required
             autoFocus
+            oninput={() => resizeInput()}
           />
         </div>
 
@@ -303,6 +306,7 @@
             bind:value={formData.title}
             placeholder="Job title or role"
             customClass="title-input"
+            oninput={() => resizeInput()}
           />
         </div>
 
