@@ -1,19 +1,20 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { layout, getClientTypeEmoji, layoutActions } from '$lib/stores/layout.svelte';
-  import { mainNavItems, footerNavItems, getActiveNavItem } from '$lib/config/navigation';
+  import {
+    globalNavItems,
+    clientNavItems,
+    footerNavItems,
+    getActiveNavItem,
+  } from '$lib/config/navigation';
 
   // Reactive active item tracking
   const activeItem = $derived(getActiveNavItem($page.url.pathname));
 
-  // Check if we're on a page without a specific object loaded
-  const isHomepage = $derived($page.url.pathname === '/');
-  const isClientsListing = $derived($page.url.pathname === '/clients');
-  const isJobsListing = $derived($page.url.pathname === '/jobs');
-  const isLogsListing = $derived($page.url.pathname === '/logs');
-  const showSimplifiedNav = $derived(
-    isHomepage || isClientsListing || isJobsListing || isLogsListing
-  );
+  // Helper to build client-specific URLs
+  function buildClientUrl(pattern: string, clientId: string): string {
+    return pattern.replace('{id}', clientId);
+  }
 
   // Dynamic footer items based on current client
   const dynamicFooterItems = $derived(
@@ -48,8 +49,24 @@
   <!-- Main Navigation -->
   <nav class="main-nav">
     <ul class="nav-list">
-      <!-- Current Client Section -->
-      {#if layout.currentClient}
+      {#if !layout.currentClient}
+        <!-- Global Navigation (no client selected) -->
+        {#each globalNavItems as item (item.id)}
+          <li class="nav-item">
+            <a
+              href={item.href}
+              class="nav-link"
+              class:active={activeItem === item.id}
+              data-nav-item={item.id}
+            >
+              <span class="nav-icon">{item.icon}</span>
+              <span class="nav-label">{item.label}</span>
+            </a>
+          </li>
+        {/each}
+      {:else}
+        <!-- Client-specific Navigation -->
+        <!-- Current Client -->
         <li class="nav-item">
           <a
             href="/clients/{layout.currentClient.id}"
@@ -62,41 +79,25 @@
             <span class="nav-label">{layout.currentClient.name}</span>
           </a>
         </li>
-        <!-- Invisible spacer -->
-        <li class="nav-spacer" aria-hidden="true"></li>
-      {/if}
 
-      {#each mainNavItems as item (item.id)}
-        <!-- Only show certain items when showing simplified nav -->
-        {#if !showSimplifiedNav || item.id === 'people' || item.id === 'jobs'}
+        <!-- Spacer -->
+        <li class="nav-spacer" aria-hidden="true"></li>
+
+        <!-- Client Navigation Items -->
+        {#each clientNavItems as item (item.id)}
           <li class="nav-item">
             <a
-              href={layout.currentClient && (item.id === 'jobs' || item.id === 'people')
-                ? `/clients/${layout.currentClient.id}/${item.id === 'jobs' ? 'jobs' : 'people'}`
-                : item.href}
+              href={buildClientUrl(item.href, layout.currentClient.id)}
               class="nav-link"
-              class:active={layout.currentClient && (item.id === 'jobs' || item.id === 'people')
-                ? $page.url.pathname ===
-                  `/clients/${layout.currentClient.id}/${item.id === 'jobs' ? 'jobs' : 'people'}`
-                : activeItem === item.id}
+              class:active={activeItem === item.id}
               data-nav-item={item.id}
             >
               <span class="nav-icon">{item.icon}</span>
-              <span class="nav-label">
-                {#if showSimplifiedNav && item.id === 'people'}
-                  Clients
-                {:else if layout.currentClient && item.id === 'jobs'}
-                  Jobs
-                {:else if layout.currentClient && item.id === 'people'}
-                  People
-                {:else}
-                  {item.label}
-                {/if}
-              </span>
+              <span class="nav-label">{item.label}</span>
             </a>
           </li>
-        {/if}
-      {/each}
+        {/each}
+      {/if}
     </ul>
   </nav>
 

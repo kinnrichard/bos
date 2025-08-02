@@ -7,31 +7,44 @@ export interface NavItem {
   isExternal?: boolean;
 }
 
-// Main navigation items
-export const mainNavItems: NavItem[] = [
+// Global navigation items (shown when no client is selected)
+export const globalNavItems: NavItem[] = [
   {
-    id: 'people',
-    label: 'People',
+    id: 'clients',
+    label: 'Clients',
     href: '/clients',
-    icon: '👥',
+    icon: '🏢',
     type: 'navigation',
   },
-  // Commented out - not implemented yet
-  // {
-  //   id: 'devices',
-  //   label: 'Devices',
-  //   href: '/devices',
-  //   icon: '💻',
-  //   type: 'navigation'
-  // },
   {
-    id: 'jobs',
+    id: 'all-jobs',
     label: 'All Jobs',
     href: '/jobs',
     icon: '💼',
     type: 'navigation',
   },
 ];
+
+// Client-specific navigation items (shown when a client is selected)
+export const clientNavItems: NavItem[] = [
+  {
+    id: 'people',
+    label: 'People',
+    href: '/clients/{id}/people',
+    icon: '👥',
+    type: 'navigation',
+  },
+  {
+    id: 'jobs',
+    label: 'Jobs',
+    href: '/clients/{id}/jobs',
+    icon: '💼',
+    type: 'navigation',
+  },
+];
+
+// Legacy - kept for backward compatibility during transition
+export const mainNavItems = globalNavItems;
 
 // Footer navigation items
 export const footerNavItems: NavItem[] = [
@@ -46,15 +59,21 @@ export const footerNavItems: NavItem[] = [
 
 // Get active navigation item based on current route
 export function getActiveNavItem(currentPath: string): string | null {
-  // Handle exact matches first
-  const exactMatch = mainNavItems.find((item) => item.href === currentPath);
-  if (exactMatch) return exactMatch.id;
+  // Check global nav items
+  const globalMatch = globalNavItems.find((item) => item.href === currentPath);
+  if (globalMatch) return globalMatch.id;
 
-  // Handle route-based matches (e.g., /jobs/123 should match jobs)
-  if (currentPath.startsWith('/jobs')) return 'jobs';
-  if (currentPath.startsWith('/people')) return 'people';
-  if (currentPath === '/clients') return 'people'; // Only highlight for clients listing, not client details
-  if (currentPath.startsWith('/devices')) return 'devices';
+  // Check footer items
+  const footerMatch = footerNavItems.find((item) => item.href === currentPath);
+  if (footerMatch) return footerMatch.id;
+
+  // Handle route-based matches
+  if (currentPath === '/clients') return 'clients';
+  if (currentPath.startsWith('/jobs') && !currentPath.includes('/clients/')) return 'all-jobs';
+
+  // Client-specific routes
+  if (currentPath.includes('/people')) return 'people';
+  if (currentPath.includes('/clients/') && currentPath.includes('/jobs')) return 'jobs';
 
   // Handle logs routes - both /logs and /clients/[id]/logs
   if (currentPath === '/logs' || currentPath.includes('/logs')) return 'logs';

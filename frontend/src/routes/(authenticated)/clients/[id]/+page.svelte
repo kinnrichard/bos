@@ -322,7 +322,7 @@
 
 <style>
   .client-detail-page {
-    min-height: 100vh;
+    height: 100%;
     background-color: var(--bg-black, #000);
     display: flex;
     flex-direction: column;
