@@ -167,12 +167,7 @@
     </div>
 
     <!-- Results Count -->
-    {#if !loading}
-      <div class="results-info">
-        {people.length}
-        {people.length === 1 ? 'person' : 'people'} found
-      </div>
-    {/if}
+    {#if !loading}{/if}
 
     <!-- People List -->
     <div class="people-list">
@@ -256,7 +251,7 @@
 
 <style>
   .people-page {
-    padding: 1rem;
+    padding: 0 24px;
     max-width: 1200px;
     margin: 0 auto;
   }
@@ -348,8 +343,8 @@
   .person-row {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1.25rem 1rem;
+    gap: 12px;
+    padding: 0;
     width: 100%;
     text-align: left;
     background: none;
@@ -358,6 +353,10 @@
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
+  }
+
+  .person-row:not(:first-child) {
+    margin-top: 16px; /* Add spacing between rows, but not above the first */
   }
 
   .person-row::after {
@@ -374,10 +373,7 @@
     display: none;
   }
 
-  .person-row:hover {
-    background-color: var(--hover-background);
-    transform: translateX(2px);
-  }
+  /* Hover effect removed */
 
   /* Remove old person-icon styles as we're using PersonAvatar */
 
@@ -386,7 +382,6 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
   }
 
   .person-header {

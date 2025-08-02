@@ -310,8 +310,7 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    min-height: 100vh;
-    padding: 32px 16px;
+    padding: 0px 24px;
   }
 
   .contact-card {
@@ -489,7 +488,7 @@
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .new-contact-page {
-      padding: 24px 16px;
+      padding: 0px 24px;
     }
 
     .contact-card {
@@ -519,7 +518,7 @@
 
   @media (max-width: 480px) {
     .new-contact-page {
-      padding: 16px 12px;
+      padding: 0px 12px;
     }
 
     :global(.name-input) {

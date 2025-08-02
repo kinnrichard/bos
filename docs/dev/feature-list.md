@@ -63,11 +63,12 @@
 - 💭 v2 Status (Potential/New/Current/Former)
 
 ## People
-- 💭 List
-- 💭 Create
+- ✅ List
+- ✅ Create
 - 💭 Edit
-- 💭 View
-- 💭 Set address, phone, email
+- 🚧 View
+- 🚧 Set address, phone, email
+  - 🚧 Fails to create contact method (client first needs to indicate type)
 
 ## Activity Logging
   - Build client-side
