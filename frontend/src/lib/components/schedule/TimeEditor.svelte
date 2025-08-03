@@ -1,7 +1,7 @@
 <script lang="ts">
   import FormInput from '$lib/components/ui/FormInput.svelte';
   import { formatTimeForInput, parseTimeFromInput } from '$lib/utils/date-formatting';
-  import { ChevronLeft, Trash2 } from 'lucide-svelte';
+  import { Trash2 } from 'lucide-svelte';
 
   interface Props {
     title: string;
@@ -86,29 +86,29 @@
 <div class="time-editor">
   <!-- Toolbar -->
   <div class="time-toolbar">
-    <button
-      class="toolbar-back-button"
-      onclick={onCancel}
-      type="button"
-      aria-label="Back to schedule menu"
-    >
-      <ChevronLeft size={20} />
-    </button>
+    <div class="toolbar-left">
+      <button
+        class="toolbar-button toolbar-cancel"
+        onclick={onCancel}
+        type="button"
+        aria-label="Cancel"
+      >
+        Cancel
+      </button>
+    </div>
 
     <h3 class="toolbar-title">{title}</h3>
 
-    {#if canRemove}
+    <div class="toolbar-right">
       <button
-        class="toolbar-remove-button"
-        onclick={handleRemove}
+        class="toolbar-button toolbar-save"
+        onclick={handleSave}
         type="button"
-        aria-label="Remove time"
+        aria-label="Save"
       >
-        <Trash2 size={18} />
+        Save
       </button>
-    {:else}
-      <div class="toolbar-spacer"></div>
-    {/if}
+    </div>
   </div>
 
   <!-- Content -->
@@ -191,11 +191,15 @@
       </div>
     </div>
 
-    <!-- Actions -->
-    <div class="time-actions">
-      <button type="button" class="action-button action-cancel" onclick={onCancel}> Cancel </button>
-      <button type="button" class="action-button action-save" onclick={handleSave}> Save </button>
-    </div>
+    <!-- Remove button if time is set -->
+    {#if canRemove}
+      <div class="remove-section">
+        <button class="remove-button" onclick={handleRemove} type="button" aria-label="Remove time">
+          <Trash2 size={18} />
+          <span>Remove Time</span>
+        </button>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -210,59 +214,62 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--border-primary);
     background: var(--bg-primary);
   }
 
-  .toolbar-back-button {
+  .toolbar-left,
+  .toolbar-right {
+    min-width: 80px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
+  }
+
+  .toolbar-left {
+    justify-content: flex-start;
+  }
+
+  .toolbar-right {
+    justify-content: flex-end;
+  }
+
+  .toolbar-button {
+    padding: 6px 16px;
     border: none;
-    background: transparent;
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
     cursor: default;
     transition: all 0.15s ease;
   }
 
-  .toolbar-back-button:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+  .toolbar-cancel {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+
+  .toolbar-cancel:hover {
+    background: rgba(255, 69, 58, 0.1);
+    color: var(--accent-red);
+  }
+
+  .toolbar-save {
+    background: var(--accent-blue);
+    color: white;
+  }
+
+  .toolbar-save:hover {
+    background: var(--accent-blue-hover);
   }
 
   .toolbar-title {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
     flex: 1;
     text-align: center;
-  }
-
-  .toolbar-remove-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    border-radius: var(--radius-md);
-    color: var(--accent-red);
-    cursor: default;
-    transition: all 0.15s ease;
-  }
-
-  .toolbar-remove-button:hover {
-    background: rgba(255, 69, 58, 0.1);
-  }
-
-  .toolbar-spacer {
-    width: 32px;
   }
 
   .time-content {
@@ -347,41 +354,32 @@
     border-color: var(--accent-blue);
   }
 
-  .time-actions {
-    display: flex;
-    gap: 12px;
+  .remove-section {
     padding-top: 12px;
     border-top: 1px solid var(--border-primary);
     margin-top: auto;
   }
 
-  .action-button {
-    flex: 1;
+  .remove-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
     padding: 10px 16px;
-    border: none;
+    border: 1px solid rgba(255, 69, 58, 0.3);
+    background: transparent;
     border-radius: var(--radius-md);
+    color: var(--accent-red);
     font-size: 14px;
     font-weight: 500;
     cursor: default;
     transition: all 0.15s ease;
   }
 
-  .action-cancel {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
-  .action-cancel:hover {
-    background: var(--bg-quaternary, #4a4a4c);
-  }
-
-  .action-save {
-    background: var(--accent-blue);
-    color: white;
-  }
-
-  .action-save:hover {
-    background: var(--accent-blue-hover);
+  .remove-button:hover {
+    background: rgba(255, 69, 58, 0.1);
+    border-color: var(--accent-red);
   }
 
   /* Responsive adjustments */
@@ -402,9 +400,8 @@
 
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
-    .toolbar-back-button,
-    .toolbar-remove-button,
-    .action-button,
+    .toolbar-button,
+    .remove-button,
     .quick-select-button {
       transition: none;
     }
