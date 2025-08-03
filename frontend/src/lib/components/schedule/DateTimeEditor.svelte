@@ -166,7 +166,7 @@
       <Calendar
         bind:value={calendarValue}
         bind:placeholder={calendarPlaceholder}
-        class="rounded-md border"
+        class="custom-calendar"
       />
     </div>
 
@@ -418,5 +418,85 @@
     .action-button {
       transition: none;
     }
+  }
+
+  /* Custom calendar styles */
+  :global(.custom-calendar) {
+    border: none !important;
+    padding: 8px !important;
+  }
+
+  /* Reduce spacing between dates */
+  :global(.custom-calendar [data-bits-calendar-grid]) {
+    gap: 0 !important;
+    margin-top: 8px !important;
+  }
+
+  :global(.custom-calendar [data-bits-calendar-grid-row]) {
+    gap: 2px !important;
+    margin-top: 2px !important;
+  }
+
+  /* Smaller cell size */
+  :global(.custom-calendar [data-bits-calendar-cell]) {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  :global(.custom-calendar [data-bits-calendar-day]) {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 13px !important;
+  }
+
+  /* Today's date in red */
+  :global(.custom-calendar [data-today]:not([data-selected])) {
+    color: var(--accent-red, #ff453a) !important;
+    background: transparent !important;
+    font-weight: 600 !important;
+  }
+
+  /* Selected date with gray background */
+  :global(.custom-calendar [data-selected]) {
+    background: var(--bg-tertiary, #48484a) !important;
+    color: var(--text-primary, #f2f2f7) !important;
+  }
+
+  :global(.custom-calendar [data-selected]:hover) {
+    background: var(--bg-quaternary, #5a5a5c) !important;
+  }
+
+  /* Dates outside current month in gray */
+  :global(.custom-calendar [data-outside-month]:not([data-selected])) {
+    color: var(--text-tertiary, #8e8e93) !important;
+    opacity: 0.5 !important;
+  }
+
+  /* Hover states */
+  :global(
+    .custom-calendar [data-bits-calendar-day]:hover:not([data-selected]):not([data-disabled])
+  ) {
+    background: var(--bg-secondary, #2c2c2e) !important;
+  }
+
+  /* Header adjustments for smaller calendar */
+  :global(.custom-calendar [data-bits-calendar-header]) {
+    height: 28px !important;
+    font-size: 14px !important;
+  }
+
+  /* Navigation buttons smaller */
+  :global(.custom-calendar [data-bits-calendar-prev-button]),
+  :global(.custom-calendar [data-bits-calendar-next-button]) {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  /* Weekday headers smaller */
+  :global(.custom-calendar [data-bits-calendar-head-cell]) {
+    width: 32px !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: var(--text-secondary, #a1a1a6) !important;
   }
 </style>
