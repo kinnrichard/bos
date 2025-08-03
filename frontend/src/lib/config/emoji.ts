@@ -17,7 +17,7 @@ const JOB_STATUS_EMOJIS: Record<string, string> = {
   open: '⚫',
   in_progress: '🟢',
   waiting_for_customer: '⏳',
-  waiting_for_scheduled_appointment: '📅',
+  waiting_for_scheduled_appointment: '🗓️',
   paused: '⏸️',
   successfully_completed: '✅',
   cancelled: '❌',
@@ -85,7 +85,7 @@ const UTILITY_EMOJIS = {
     address: '📍',
   },
   schedule_types: {
-    scheduled_appointment: '📅',
+    scheduled_appointment: '🗓️',
     follow_up: '🔄',
     due_date: '⏰',
     start_date: '▶️',
@@ -185,7 +185,7 @@ export function getContactMethodEmoji(method: keyof typeof UTILITY_EMOJIS.contac
  * Get schedule type emoji
  */
 export function getScheduleTypeEmoji(type: keyof typeof UTILITY_EMOJIS.schedule_types): string {
-  return UTILITY_EMOJIS.schedule_types[type] || '📅';
+  return UTILITY_EMOJIS.schedule_types[type] || '🗓️';
 }
 
 /**

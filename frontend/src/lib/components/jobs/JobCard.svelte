@@ -55,7 +55,12 @@
 
   <!-- Right side items -->
   <span class="job-right-section">
-    <!-- Technician avatars (leftmost) -->
+    <!-- Priority emoji (if not normal, leftmost) -->
+    {#if job.priority !== 'normal' && priorityEmoji}
+      <span class="job-priority-emoji">{priorityEmoji}</span>
+    {/if}
+
+    <!-- Technician avatars (middle) -->
     {#if technicians?.length > 0}
       <span class="technician-avatars">
         {#each technicians as technician, index}
@@ -64,14 +69,9 @@
       </span>
     {/if}
 
-    <!-- Due date icon (if due date is set) -->
+    <!-- Due date icon (if due date is set, rightmost) -->
     {#if dueDateIcon && job.due_at}
       <img src={dueDateIcon} alt="Due date" class="due-date-icon" />
-    {/if}
-
-    <!-- Priority emoji (if not normal, rightmost) -->
-    {#if job.priority !== 'normal' && priorityEmoji}
-      <span class="job-priority-emoji">{priorityEmoji}</span>
     {/if}
   </span>
 </a>
