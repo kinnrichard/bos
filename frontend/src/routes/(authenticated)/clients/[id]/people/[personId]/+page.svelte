@@ -63,8 +63,16 @@
       onCancel: handleCancel,
     });
 
+    // Set page title based on mode
+    if (isEditing) {
+      layoutActions.setPageTitle('Edit Person');
+    } else {
+      layoutActions.setPageTitle(null); // No title in view mode
+    }
+
     return () => {
       layoutActions.clearPersonEditState();
+      layoutActions.clearPageTitle();
     };
   });
 </script>

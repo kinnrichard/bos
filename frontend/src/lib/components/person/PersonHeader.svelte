@@ -115,30 +115,6 @@
         />
       </div>
 
-      <!-- Preferred Name Field (Edit mode only) -->
-      {#if mode === 'edit'}
-        <div class="field-group">
-          <ChromelessInput
-            id="person-name-preferred"
-            bind:value={namePreferred}
-            placeholder="Preferred name (optional)"
-            customClass="name-preferred-input"
-            oninput={handleInput}
-          />
-        </div>
-
-        <!-- Pronunciation Hint Field (Edit mode only) -->
-        <div class="field-group">
-          <ChromelessInput
-            id="person-pronunciation"
-            bind:value={namePronunciationHint}
-            placeholder="Pronunciation hint (optional)"
-            customClass="pronunciation-input"
-            oninput={handleInput}
-          />
-        </div>
-      {/if}
-
       <!-- Title Field -->
       <div class="field-group">
         <ChromelessInput
