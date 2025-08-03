@@ -40,13 +40,10 @@
 
 <AppLayout currentClient={client}>
   <div class="people-page">
-    <!-- Results Count -->
-    {#if !loading}
-      <div class="results-info">
-        {people.length}
-        {people.length === 1 ? 'person' : 'people'} found
-      </div>
-    {/if}
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1>People at {client?.name || 'Client'}</h1>
+    </div>
 
     <!-- People List -->
     <div class="people-list">
@@ -135,10 +132,15 @@
     margin: 0 auto;
   }
 
-  .results-info {
-    color: var(--secondary-text-color);
-    font-size: 0.95rem;
-    margin-bottom: 1rem;
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
   }
 
   .people-list {
