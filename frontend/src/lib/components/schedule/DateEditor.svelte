@@ -275,14 +275,16 @@
     font-weight: 600 !important;
   }
 
-  /* Selected date with gray background */
+  /* Selected date with blue circle background */
   :global(.custom-calendar [data-selected]) {
-    background: var(--bg-tertiary, #48484a) !important;
-    color: var(--text-primary, #f2f2f7) !important;
+    background: var(--accent-blue, #00a3ff) !important;
+    color: #ffffff !important;
+    text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5) !important;
+    border-radius: 50% !important;
   }
 
   :global(.custom-calendar [data-selected]:hover) {
-    background: var(--bg-quaternary, #5a5a5c) !important;
+    background: var(--accent-blue-hover, #0089e0) !important;
   }
 
   /* Dates outside current month in gray */
