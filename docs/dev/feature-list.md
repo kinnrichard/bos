@@ -14,7 +14,7 @@
 - ✅ Sidebar show button
 - 💭 Scroll state restoration
 - 💭 Redesign sidebar with nesting
-- 💭 Tweak coloring of forms, etc
+- 💭 Tweak coloring of forms, toolbar buttons, etc
 - 💭 v2 Better popover positioning
 - 💭 v3 Refined emoji placement
 - 💭 v3 Fading toolbar (Zero.js docs style)
@@ -30,7 +30,7 @@
 ## Svelte Components
 - ✅ Components that are repeated 3x (namely popovers) are DRY
 
-## 📋 ReactiveRecord
+## ReactiveRecord
 - ✅ When a model is instantiated client-side with .new(), it gets same default values that it would in Rails schema
 - 💭 v2 Utilizing the Zero.js permissions system but defining it easily in Rails, for example, via Action Policy
 - ✅ ActivityLogs should be generated client-side
@@ -40,6 +40,7 @@
   - 💭 Activity Tracking
   - 💭 Setting User Attribution
   - 💭 Name Normalized
+- Improve performance and TTL behavior
 
 # v1 Features
 
@@ -124,6 +125,7 @@
   - Have padding at the bottom to match sidebar margin
 - Make UI text un-selectable
 - Show technician glyphs on Job list
+- Make it more consistent
 
 # Features for future versions
 
