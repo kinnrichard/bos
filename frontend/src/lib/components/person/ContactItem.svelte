@@ -16,6 +16,7 @@
     ariaLabel?: string;
     mode?: 'create' | 'edit' | 'view';
     showValidation?: boolean;
+    normalized?: NormalizedContact | null;
     onInput?: ((event: Event) => void) | undefined;
     onBlur?: ((event: Event) => void) | undefined;
   }
@@ -27,16 +28,22 @@
     ariaLabel = 'Contact method',
     mode = 'create',
     showValidation = false,
+    normalized: normalizedFromParent = null,
     onInput = undefined,
     onBlur = undefined,
   }: Props = $props();
 
-  let normalized: NormalizedContact | null = null;
   let validation: ContactValidationResult | null = null;
+  let normalizedForEdit: NormalizedContact | null = null;
+
+  // Derived value for immediate normalization in view mode and when edit has normalized value
+  const normalized = $derived(
+    normalizedFromParent || (mode === 'view' && value ? normalizeContact(value) : normalizedForEdit)
+  );
 
   // Handle contact normalization and validation
   function handleBlur(event: Event) {
-    normalized = normalizeContact(value);
+    normalizedForEdit = normalizeContact(value);
 
     if (showValidation) {
       validation = validateContact(value);
@@ -44,10 +51,10 @@
 
     // Update the input value to show the normalized format for email and phone
     if (
-      normalized &&
-      (normalized.contact_type === 'email' || normalized.contact_type === 'phone')
+      normalizedForEdit &&
+      (normalizedForEdit.contact_type === 'email' || normalizedForEdit.contact_type === 'phone')
     ) {
-      value = normalized.formatted_value;
+      value = normalizedForEdit.formatted_value;
     }
 
     onBlur?.(event);
@@ -61,13 +68,6 @@
 
     onInput?.(event);
   }
-
-  // For view mode, normalize the value immediately
-  $effect(() => {
-    if (mode === 'view' && value && !normalized) {
-      normalized = normalizeContact(value);
-    }
-  });
 </script>
 
 {#if mode === 'view'}

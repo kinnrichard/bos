@@ -114,6 +114,7 @@
       <div class="contact-method-row">
         <ContactItem
           bind:value={method.value}
+          normalized={method.normalized}
           {mode}
           {showValidation}
           ariaLabel={`Contact method ${index + 1}`}
