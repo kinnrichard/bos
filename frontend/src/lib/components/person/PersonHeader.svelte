@@ -148,15 +148,11 @@
 <style>
   .person-header {
     display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .person-header.editing {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 16px;
+    margin-bottom: 24px;
   }
 
   .person-avatar {
@@ -172,7 +168,7 @@
   }
 
   .person-info {
-    flex: 1;
+    text-align: center;
   }
 
   .person-name {
@@ -369,12 +365,6 @@
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .person-header {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .person-header.editing {
       gap: 12px;
     }
 

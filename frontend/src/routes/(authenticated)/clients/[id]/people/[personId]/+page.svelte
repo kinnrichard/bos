@@ -78,7 +78,7 @@
 </script>
 
 <AppLayout currentClient={client}>
-  <div class="person-page" class:editing={isEditing}>
+  <div class="person-page">
     {#if loading}
       <div class="loading-state">
         <LoadingSkeleton type="detail" />
@@ -107,23 +107,15 @@
 </AppLayout>
 
 <style>
-  /* Default view mode styling */
+  /* Unified layout for all modes - matches new person page */
   .person-page {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-
-  /* When editing, match new person page layout exactly */
-  .person-page.editing {
     display: flex;
     justify-content: center;
     align-items: flex-start;
     padding: 0px 24px;
-    max-width: none;
   }
 
-  .person-page.editing .person-container {
+  .person-container {
     width: auto;
     min-width: 250px;
     max-width: 90%;
@@ -159,14 +151,10 @@
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .person-page {
-      padding: 1rem 0.5rem;
-    }
-
-    .person-page.editing {
       padding: 0px 24px;
     }
 
-    .person-page.editing .person-container {
+    .person-container {
       gap: 20px;
       min-width: 100%;
       width: 100%;
@@ -175,7 +163,7 @@
   }
 
   @media (max-width: 480px) {
-    .person-page.editing {
+    .person-page {
       padding: 0px 12px;
     }
   }

@@ -352,10 +352,8 @@
       onDelete={handleDelete}
     />
 
-    {#if mode !== 'view'}
-      <!-- Divider -->
-      <hr class="divider" />
-    {/if}
+    <!-- Divider -->
+    <hr class="divider" />
 
     <!-- Contact Methods -->
     <ContactMethodsSection
@@ -436,13 +434,12 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
-    max-width: 800px;
-    margin: 0 auto;
+    width: 100%;
     padding: 16px;
   }
 
   .person-form.view-mode {
-    padding: 24px 16px;
+    padding: 16px;
   }
 
   .error-message {
