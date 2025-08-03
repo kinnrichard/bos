@@ -2,6 +2,7 @@
   import type { JobData } from '$lib/models/types/job-data';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
   import { getDueDateIcon } from '$lib/utils/due-date-icon';
+  import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
 
   let {
     job,
@@ -15,16 +16,7 @@
 
   // Extract technicians from job assignments
   const technicians = $derived(
-    job.jobAssignments?.map((assignment: any) => ({
-      id: assignment.user?.id,
-      name: assignment.user?.name,
-      initials:
-        assignment.user?.name
-          ?.split(' ')
-          .map((n: string) => n[0])
-          .join('') || '?',
-      avatar_style: `background-color: var(--accent-blue);`, // TODO: Get actual avatar style
-    })) || []
+    job.jobAssignments?.map((assignment: any) => assignment.user).filter(Boolean) || []
   );
 
   const statusEmoji = $derived(getJobStatusEmoji(job.status));
@@ -66,13 +58,13 @@
     <!-- Technician avatars (leftmost) -->
     {#if technicians?.length > 0}
       <span class="technician-avatars">
-        {#each technicians as technician}
-          <span
-            class="technician-avatar"
-            style={technician.avatar_style || `background-color: var(--accent-blue);`}
-          >
-            {technician.initials}
-          </span>
+        {#each technicians as technician, index}
+          <UserAvatar
+            user={technician}
+            size="xs"
+            overlap={index > 0}
+            overlapOrder={technicians.length - index}
+          />
         {/each}
       </span>
     {/if}
@@ -162,45 +154,6 @@
   .technician-avatars {
     display: flex;
     align-items: center;
-    gap: 0; /* No gap, we'll use negative margins for overlap */
-  }
-
-  .technician-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px; /* Increased from 11px */
-    font-weight: 600;
-    color: white;
-    text-shadow: 0.5px 0.5px 2px rgba(0, 0, 0, 0.75);
-    border: 1px solid var(--border-primary);
-    flex-shrink: 0;
-    position: relative; /* For stacking */
-  }
-
-  /* Create overlap effect for multiple avatars */
-  .technician-avatar:not(:first-child) {
-    margin-left: -8px;
-  }
-
-  /* Ensure each avatar stacks properly */
-  .technician-avatar:nth-child(1) {
-    z-index: 5;
-  }
-  .technician-avatar:nth-child(2) {
-    z-index: 4;
-  }
-  .technician-avatar:nth-child(3) {
-    z-index: 3;
-  }
-  .technician-avatar:nth-child(4) {
-    z-index: 2;
-  }
-  .technician-avatar:nth-child(5) {
-    z-index: 1;
   }
 
   /* Responsive adjustments */
@@ -217,17 +170,6 @@
 
     .job-name {
       font-size: 13px;
-    }
-
-    .technician-avatar {
-      width: 24px;
-      height: 24px;
-      border-radius: 12px;
-      font-size: 14px;
-    }
-
-    .technician-avatar:not(:first-child) {
-      margin-left: -6px;
     }
   }
 </style>

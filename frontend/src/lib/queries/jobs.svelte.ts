@@ -16,7 +16,7 @@ import type { JobStatus, JobPriority } from '$lib/types/job';
  * This is the foundation that all job queries should start from
  */
 export function createJobsQuery(): ReactiveQuery<JobData[]> {
-  return ReactiveJob.includes('client').orderBy('created_at', 'desc');
+  return ReactiveJob.includes('client', 'jobAssignments.user').orderBy('created_at', 'desc');
 }
 
 /**
