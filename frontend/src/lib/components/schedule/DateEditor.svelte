@@ -201,7 +201,7 @@
   .date-content {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 0 16px 16px 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
