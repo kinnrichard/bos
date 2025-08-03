@@ -481,10 +481,9 @@
   const slideInFromLeft = { x: -240, duration: 300, easing: cubicOut };
   const slideOutToLeft = { x: -240, duration: 300, easing: cubicOut };
 
-  // Auto-detect and update container height
-  $effect(() => {
+  // Function to recalculate height
+  function recalculateHeight() {
     if (contentElement) {
-      // Use requestAnimationFrame to ensure DOM has updated
       requestAnimationFrame(() => {
         const rect = contentElement.getBoundingClientRect();
         const newHeight = rect.height;
@@ -494,6 +493,13 @@
           containerHeight = newHeight;
         }
       });
+    }
+  }
+
+  // Auto-detect and update container height on mount
+  $effect(() => {
+    if (contentElement) {
+      recalculateHeight();
     }
   });
 
@@ -568,6 +574,7 @@
             onCancel={handleBackToMenu}
             onRemove={startDate ? () => handleStartDateSave(null) : undefined}
             canRemove={!!startDate}
+            onHeightChange={recalculateHeight}
           />
         </div>
       {:else if currentView === 'start-time'}
@@ -601,6 +608,7 @@
             onCancel={handleBackToMenu}
             onRemove={dueDate ? () => handleDueDateSave(null) : undefined}
             canRemove={!!dueDate}
+            onHeightChange={recalculateHeight}
           />
         </div>
       {:else if currentView === 'due-time'}
@@ -634,6 +642,7 @@
             onCancel={handleBackToMenu}
             onRemove={editingFollowup ? handleFollowupRemove : undefined}
             canRemove={!!editingFollowup}
+            onHeightChange={recalculateHeight}
           />
         </div>
       {:else if currentView === 'followup-time'}

@@ -10,9 +10,18 @@
     onCancel: () => void;
     onRemove?: () => void;
     canRemove?: boolean;
+    onHeightChange?: () => void;
   }
 
-  let { title, value = null, onSave, onCancel, onRemove, canRemove = false }: Props = $props();
+  let {
+    title,
+    value = null,
+    onSave,
+    onCancel,
+    onRemove,
+    canRemove = false,
+    onHeightChange,
+  }: Props = $props();
 
   // Convert value to Date object and CalendarDate
   let selectedDate = $state<Date | null>(null);
@@ -20,6 +29,22 @@
 
   // Set a placeholder to today's date so calendar shows current month
   let calendarPlaceholder = $state<DateValue>(today(getLocalTimeZone()));
+  let calendarSection = $state<HTMLDivElement>();
+
+  // Use ResizeObserver to detect when calendar changes size
+  $effect(() => {
+    if (calendarSection && onHeightChange) {
+      const resizeObserver = new ResizeObserver(() => {
+        onHeightChange();
+      });
+
+      resizeObserver.observe(calendarSection);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  });
 
   // Convert Date to CalendarDate
   function dateToCalendarDate(date: Date): CalendarDate {
@@ -106,7 +131,7 @@
   <!-- Content -->
   <div class="date-content">
     <!-- Calendar -->
-    <div class="calendar-section">
+    <div class="calendar-section" bind:this={calendarSection}>
       <Calendar
         bind:value={calendarValue}
         bind:placeholder={calendarPlaceholder}
