@@ -78,7 +78,7 @@
 </script>
 
 <AppLayout currentClient={client}>
-  <div class="person-detail-page">
+  <div class="person-page" class:editing={isEditing}>
     {#if loading}
       <div class="loading-state">
         <LoadingSkeleton type="detail" />
@@ -90,25 +90,48 @@
         <button class="retry-button" onclick={() => window.location.reload()}>Try Again</button>
       </div>
     {:else if person}
-      <PersonForm
-        mode={isEditing ? 'edit' : 'view'}
-        {person}
-        {clientId}
-        loading={isSaving}
-        {error}
-        on:save={handleSave}
-        on:cancel={handleCancel}
-        on:delete={handleDelete}
-      />
+      <div class="person-container">
+        <PersonForm
+          mode={isEditing ? 'edit' : 'view'}
+          {person}
+          {clientId}
+          loading={isSaving}
+          {error}
+          on:save={handleSave}
+          on:cancel={handleCancel}
+          on:delete={handleDelete}
+        />
+      </div>
     {/if}
   </div>
 </AppLayout>
 
 <style>
-  .person-detail-page {
+  /* Default view mode styling */
+  .person-page {
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem 1rem;
+  }
+
+  /* When editing, match new person page layout exactly */
+  .person-page.editing {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0px 24px;
+    max-width: none;
+  }
+
+  .person-page.editing .person-container {
+    width: auto;
+    min-width: 250px;
+    max-width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding-top: 16px;
   }
 
   .loading-state,
@@ -133,9 +156,27 @@
     opacity: 0.9;
   }
 
+  /* Responsive adjustments */
   @media (max-width: 768px) {
-    .person-detail-page {
+    .person-page {
       padding: 1rem 0.5rem;
+    }
+
+    .person-page.editing {
+      padding: 0px 24px;
+    }
+
+    .person-page.editing .person-container {
+      gap: 20px;
+      min-width: 100%;
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .person-page.editing {
+      padding: 0px 12px;
     }
   }
 </style>

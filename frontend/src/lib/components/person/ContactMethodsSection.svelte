@@ -1,6 +1,5 @@
 <script lang="ts">
   import ContactItem from './ContactItem.svelte';
-  import CircularButton from '$lib/components/ui/CircularButton.svelte';
   import { normalizeContact } from '$lib/utils/shared/contactNormalizer';
   import type { NormalizedContact } from '$lib/utils/shared/contactNormalizer';
   import { resizeInputs, type DynamicWidthConfig } from '$lib/utils/person/dynamicWidth';
@@ -24,8 +23,6 @@
     dynamicWidthConfig = undefined,
     showValidation = false,
   }: Props = $props();
-
-  const PlusIcon = '/icons/plus.svg';
 
   // Add a new contact method
   function addContactMethod() {
@@ -92,12 +89,6 @@
     }
   }
 
-  // Remove a specific contact method
-  function removeContactMethod(index: number) {
-    contactMethods = contactMethods.filter((_, i) => i !== index);
-    onContactMethodsChange?.(contactMethods);
-  }
-
   // Ensure minimum contact methods for create mode
   $effect(() => {
     if (mode === 'create' && contactMethods.length < 2) {
@@ -117,22 +108,6 @@
 </script>
 
 <div class="contact-methods-section">
-  {#if mode !== 'view'}
-    <div class="section-header">
-      <h3>Contact Methods</h3>
-      {#if mode === 'edit'}
-        <CircularButton
-          iconSrc={PlusIcon}
-          size="small"
-          on:click={addContactMethod}
-          title="Add contact method"
-        />
-      {/if}
-    </div>
-  {:else}
-    <h3>Contact Information</h3>
-  {/if}
-
   <div class="contact-methods-list">
     {#each contactMethods as method, index (method.id)}
       <div class="contact-method-row">
@@ -144,16 +119,6 @@
           onInput={(e) => handleContactInput(method, index, e)}
           onBlur={(e) => handleContactBlur(method, index, e)}
         />
-
-        {#if mode === 'edit' && contactMethods.length > 1}
-          <CircularButton
-            iconSrc="/icons/trash-red.svg"
-            size="small"
-            variant="danger"
-            on:click={() => removeContactMethod(index)}
-            title="Remove contact method"
-          />
-        {/if}
       </div>
     {/each}
 
@@ -168,27 +133,6 @@
 <style>
   .contact-methods-section {
     width: 100%;
-  }
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-
-  .section-header h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  h3 {
-    margin: 0 0 16px 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
   }
 
   .contact-methods-list {
@@ -218,12 +162,6 @@
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .contact-method-row {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
-    }
-
-    .section-header {
       flex-direction: column;
       align-items: stretch;
       gap: 12px;
