@@ -23,7 +23,7 @@ class JobStatus
       color: "orange"
     },
     waiting_for_scheduled_appointment: {
-      emoji: "📅",
+      emoji: "🗓️",
       label: "Scheduled",
       color: "blue"
     },

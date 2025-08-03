@@ -1,3 +1,5 @@
+Add more: create object with nested objects
+
 # EP-0009: ReactiveRecord v3 Implementation Epic
 
 ## 🎯 Epic Overview
@@ -636,7 +638,7 @@ describe('ReactiveRecord V3 Features', () => {
 2. **Developer Adoption**: Learning curve for new features
    - **Mitigation**: Clear examples, gradual feature introduction
 
-## 📅 Timeline & Milestones
+## 🗓️ Timeline & Milestones
 
 ### Major Milestones
 - **Week 2**: ✅ ActivityLogs Foundation Complete

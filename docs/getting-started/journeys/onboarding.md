@@ -36,7 +36,7 @@ By the end of this journey, you will:
 
 ---
 
-## 📅 Week 1: Foundation and Setup
+## 🗓️ Week 1: Foundation and Setup
 
 ### Day 1: Project Overview and Context
 **Objective**: Understand the bŏs project, its purpose, and your role
@@ -324,7 +324,7 @@ By the end of this journey, you will:
 
 ---
 
-## 📅 Week 2: Contribution and Integration
+## 🗓️ Week 2: Contribution and Integration
 
 ### Day 6-7: First Feature Implementation
 **Objective**: Implement your first feature with guidance

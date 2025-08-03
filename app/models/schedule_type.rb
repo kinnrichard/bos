@@ -30,7 +30,7 @@ class ScheduleType
   end
 
   def emoji
-    TYPES[@key][:emoji] || "📅"
+    TYPES[@key][:emoji] || "🗓️"
   end
 
   def label

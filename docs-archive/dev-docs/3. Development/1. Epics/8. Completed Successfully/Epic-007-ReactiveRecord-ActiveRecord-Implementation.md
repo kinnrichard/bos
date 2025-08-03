@@ -348,7 +348,7 @@ Replace the current reactive query system with a Rails-compatible dual-class arc
 
 ---
 
-## 📅 Timeline and Dependencies
+## 🗓️ Timeline and Dependencies
 
 ### Phase 1: Foundation (Weeks 1-2)
 - **Story 1**: Factory-Based Architecture Foundation
