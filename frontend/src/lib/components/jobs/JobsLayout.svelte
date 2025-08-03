@@ -16,59 +16,63 @@
   let { children, header }: Props = $props();
 </script>
 
-<div class="jobs-container">
+<div class="jobs-page">
   {#if header}
+    <!-- Page Header -->
     <div class="page-header">
       {@render header()}
     </div>
   {/if}
 
+  <!-- Content Area -->
   <div class="jobs-content">
     {@render children()}
   </div>
 </div>
 
 <style>
-  .jobs-container {
-    padding: 0 24px;
-    max-width: 1200px;
-    margin: 0 auto;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
+  .jobs-page {
+    min-height: 100%;
+    background-color: var(--bg-black, #000);
   }
 
+  /* Page Header */
   .page-header {
-    margin-bottom: 0;
-    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
+    padding: 0 24px;
   }
 
+  .page-header :global(h1) {
+    font-size: 32px;
+    font-weight: 600;
+    color: #f2f2f7 !important;
+    margin: 0;
+  }
+
+  /* Content Area */
   .jobs-content {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    padding-top: 24px;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
   /* Responsive layout */
   @media (max-width: 768px) {
-    .jobs-container {
-      padding: 16px;
-    }
-
     .page-header {
       flex-direction: column;
-      align-items: flex-start;
       gap: 16px;
+      align-items: stretch;
+    }
+
+    .jobs-content {
+      padding: 16px;
     }
   }
 
   @media (max-width: 480px) {
-    .jobs-container {
+    .jobs-content {
       padding: 12px;
     }
   }

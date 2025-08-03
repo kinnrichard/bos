@@ -151,14 +151,6 @@
   /* Import shared styles */
   @import '$lib/styles/jobs-shared.scss';
 
-  /* Page header */
-  h1 {
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
-  }
-
   /* Jobs list container */
   .jobs-list {
     display: flex;
