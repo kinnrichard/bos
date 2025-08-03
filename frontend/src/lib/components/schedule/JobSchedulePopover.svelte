@@ -1,9 +1,10 @@
 <script lang="ts">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
-  import DateTimeEditor from './DateTimeEditor.svelte';
+  import DateEditor from './DateEditor.svelte';
+  import TimeEditor from './TimeEditor.svelte';
   import type { PopulatedJob } from '$lib/types/job';
-  import { formatDisplayDate, validateDateRange } from '$lib/utils/date-formatting';
+  import { validateDateRange } from '$lib/utils/date-formatting';
   import { debugComponent } from '$lib/utils/debug';
   import { slide } from 'svelte/transition';
   import '$lib/styles/popover-common.css';
@@ -22,7 +23,15 @@
 
   // Component state
   let basePopover = $state();
-  let currentView = $state<'menu' | 'start-date' | 'due-date' | 'followup-date'>('menu');
+  let currentView = $state<
+    | 'menu'
+    | 'start-date'
+    | 'start-time'
+    | 'due-date'
+    | 'due-time'
+    | 'followup-date'
+    | 'followup-time'
+  >('menu');
   let editingFollowupId = $state<string | null>(null);
 
   // Derive job data
@@ -31,64 +40,132 @@
   const dueDate = $derived(job?.due_at ? new Date(job.due_at) : null);
   const followupDates = $derived(job?.scheduledDateTimes || []);
 
+  // Check if times are set
+  const startTimeSet = $derived(job?.start_time_set || false);
+  const dueTimeSet = $derived(job?.due_time_set || false);
+
+  // Helper to format time only
+  function formatTimeOnly(date: Date): string {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+
+  // Helper to format date without time
+  function formatDateOnly(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
   // Create menu options
-  const menuOptions = $derived([
+  const menuOptions = $derived.by(() => {
+    const options = [];
+
     // Start Date
-    {
+    options.push({
       id: 'start-date',
       value: 'start-date',
-      label: startDate ? `Start: ${formatDisplayDate(startDate)}` : 'Set start date',
+      label: startDate ? `Start: ${formatDateOnly(startDate)}` : 'Add a Start Date',
       icon: '/icons/calendar.svg',
-    },
+    });
+
+    // Start Time (only if start date exists)
+    if (startDate) {
+      options.push({
+        id: 'start-time',
+        value: 'start-time',
+        label: startTimeSet ? `   at ${formatTimeOnly(startDate)}` : 'Add a Start Time',
+        icon: null, // No icon for time, indented label
+      });
+    }
+
+    // Separator before due date
+    options.push({
+      id: 'due-separator',
+      divider: true,
+    });
 
     // Due Date
-    {
+    options.push({
       id: 'due-date',
       value: 'due-date',
-      label: dueDate ? `Due: ${formatDisplayDate(dueDate)}` : 'Set due date',
+      label: dueDate ? `Due: ${formatDateOnly(dueDate)}` : 'Add a Due Date',
       icon: '/icons/calendar-with-badge.svg',
-    },
+    });
 
-    // Separator and followup dates if they exist
-    ...(followupDates.length > 0
-      ? [
-          {
-            id: 'followup-separator',
-            divider: true,
-          },
-          ...followupDates.map((followup, index) => ({
-            id: `followup-${followup.id}`,
-            value: `followup-${followup.id}`,
-            label: followup.scheduled_at
-              ? `Followup: ${formatDisplayDate(followup.scheduled_at)}`
-              : `Followup ${index + 1}`,
-            icon: '/icons/calendar.svg',
-          })),
-        ]
-      : []),
+    // Due Time (only if due date exists)
+    if (dueDate) {
+      options.push({
+        id: 'due-time',
+        value: 'due-time',
+        label: dueTimeSet ? `   at ${formatTimeOnly(dueDate)}` : 'Add a Due Time',
+        icon: null, // No icon for time, indented label
+      });
+    }
+
+    // Separator before followups
+    options.push({
+      id: 'followup-separator',
+      divider: true,
+    });
+
+    // Followup dates
+    followupDates.forEach((followup) => {
+      options.push({
+        id: `followup-${followup.id}`,
+        value: `followup-${followup.id}`,
+        label: followup.scheduled_at
+          ? `Followup: ${formatDateOnly(new Date(followup.scheduled_at))}`
+          : 'Followup',
+        icon: '/icons/calendar.svg',
+      });
+
+      // Followup time if date is set
+      if (followup.scheduled_at) {
+        options.push({
+          id: `followup-time-${followup.id}`,
+          value: `followup-time-${followup.id}`,
+          label: followup.time_set
+            ? `   at ${formatTimeOnly(new Date(followup.scheduled_at))}`
+            : 'Add a Time',
+          icon: null,
+        });
+      }
+    });
 
     // Add followup option
-    {
-      id: 'add-followup-separator',
-      divider: true,
-    },
-    {
+    options.push({
       id: 'add-followup',
       value: 'add-followup',
-      label: 'Add followup date',
+      label: 'Add a Followup Date',
       icon: '/icons/plus.svg',
-    },
-  ]);
+    });
+
+    return options;
+  });
 
   // Handle menu option selection
   function handleMenuSelect(value: string) {
     if (value === 'start-date') {
       currentView = 'start-date';
+    } else if (value === 'start-time') {
+      currentView = 'start-time';
     } else if (value === 'due-date') {
       currentView = 'due-date';
+    } else if (value === 'due-time') {
+      currentView = 'due-time';
     } else if (value === 'add-followup') {
       currentView = 'followup-date';
       editingFollowupId = null;
+    } else if (value.startsWith('followup-time-')) {
+      const followupId = value.replace('followup-time-', '');
+      editingFollowupId = followupId;
+      currentView = 'followup-time';
     } else if (value.startsWith('followup-')) {
       const followupId = value.replace('followup-', '');
       editingFollowupId = followupId;
@@ -107,27 +184,70 @@
     if (!job) return;
 
     try {
-      const updates: Record<string, unknown> = {
-        starts_at: date ? date.toISOString() : null,
-        start_time_set: date ? true : false,
-      };
-
-      // Validate date range
-      if (date && dueDate) {
-        const validation = validateDateRange(date, dueDate);
-        if (!validation.isValid) {
-          // TODO: Show error toast
-          debugComponent.error('Date validation failed', validation.error);
-          return;
+      // If we're removing the date, clear time as well
+      if (!date) {
+        const updates: Record<string, unknown> = {
+          starts_at: null,
+          start_time_set: false,
+        };
+        const { Job } = await import('$lib/models/job');
+        await Job.update(job.id, updates);
+      } else {
+        // Set the date to start of day if no time was previously set
+        const finalDate = new Date(date);
+        if (!startTimeSet) {
+          finalDate.setHours(0, 0, 0, 0);
+        } else if (startDate) {
+          // Preserve existing time
+          finalDate.setHours(
+            startDate.getHours(),
+            startDate.getMinutes(),
+            startDate.getSeconds(),
+            0
+          );
         }
+
+        const updates: Record<string, unknown> = {
+          starts_at: finalDate.toISOString(),
+          start_time_set: startTimeSet || false,
+        };
+
+        // Validate date range
+        if (dueDate) {
+          const validation = validateDateRange(finalDate, dueDate);
+          if (!validation.isValid) {
+            // TODO: Show error toast
+            debugComponent.error('Date validation failed', validation.error);
+            return;
+          }
+        }
+
+        const { Job } = await import('$lib/models/job');
+        await Job.update(job.id, updates);
       }
+
+      currentView = 'menu';
+    } catch (error) {
+      debugComponent.error('Failed to update start date', { error, jobId: job.id });
+    }
+  }
+
+  // Handle start time save
+  async function handleStartTimeSave(dateWithTime: Date | null) {
+    if (!job || !startDate) return;
+
+    try {
+      const updates: Record<string, unknown> = {
+        starts_at: dateWithTime ? dateWithTime.toISOString() : startDate.toISOString(),
+        start_time_set: !!dateWithTime,
+      };
 
       const { Job } = await import('$lib/models/job');
       await Job.update(job.id, updates);
 
       currentView = 'menu';
     } catch (error) {
-      debugComponent.error('Failed to update start date', { error, jobId: job.id });
+      debugComponent.error('Failed to update start time', { error, jobId: job.id });
     }
   }
 
@@ -136,27 +256,65 @@
     if (!job) return;
 
     try {
-      const updates: Record<string, unknown> = {
-        due_at: date ? date.toISOString() : null,
-        due_time_set: date ? true : false,
-      };
-
-      // Validate date range
-      if (date && startDate) {
-        const validation = validateDateRange(startDate, date);
-        if (!validation.isValid) {
-          // TODO: Show error toast
-          debugComponent.error('Date validation failed', validation.error);
-          return;
+      // If we're removing the date, clear time as well
+      if (!date) {
+        const updates: Record<string, unknown> = {
+          due_at: null,
+          due_time_set: false,
+        };
+        const { Job } = await import('$lib/models/job');
+        await Job.update(job.id, updates);
+      } else {
+        // Set the date to start of day if no time was previously set
+        const finalDate = new Date(date);
+        if (!dueTimeSet) {
+          finalDate.setHours(0, 0, 0, 0);
+        } else if (dueDate) {
+          // Preserve existing time
+          finalDate.setHours(dueDate.getHours(), dueDate.getMinutes(), dueDate.getSeconds(), 0);
         }
+
+        const updates: Record<string, unknown> = {
+          due_at: finalDate.toISOString(),
+          due_time_set: dueTimeSet || false,
+        };
+
+        // Validate date range
+        if (startDate) {
+          const validation = validateDateRange(startDate, finalDate);
+          if (!validation.isValid) {
+            // TODO: Show error toast
+            debugComponent.error('Date validation failed', validation.error);
+            return;
+          }
+        }
+
+        const { Job } = await import('$lib/models/job');
+        await Job.update(job.id, updates);
       }
+
+      currentView = 'menu';
+    } catch (error) {
+      debugComponent.error('Failed to update due date', { error, jobId: job.id });
+    }
+  }
+
+  // Handle due time save
+  async function handleDueTimeSave(dateWithTime: Date | null) {
+    if (!job || !dueDate) return;
+
+    try {
+      const updates: Record<string, unknown> = {
+        due_at: dateWithTime ? dateWithTime.toISOString() : dueDate.toISOString(),
+        due_time_set: !!dateWithTime,
+      };
 
       const { Job } = await import('$lib/models/job');
       await Job.update(job.id, updates);
 
       currentView = 'menu';
     } catch (error) {
-      debugComponent.error('Failed to update due date', { error, jobId: job.id });
+      debugComponent.error('Failed to update due time', { error, jobId: job.id });
     }
   }
 
@@ -168,10 +326,26 @@
       if (editingFollowupId) {
         // Update existing followup
         if (date) {
+          // Preserve time if it was set
+          const existingFollowup = followupDates.find((f) => f.id === editingFollowupId);
+          const finalDate = new Date(date);
+
+          if (existingFollowup?.time_set && existingFollowup.scheduled_at) {
+            const existingDate = new Date(existingFollowup.scheduled_at);
+            finalDate.setHours(
+              existingDate.getHours(),
+              existingDate.getMinutes(),
+              existingDate.getSeconds(),
+              0
+            );
+          } else {
+            finalDate.setHours(0, 0, 0, 0);
+          }
+
           const { ScheduledDateTime } = await import('$lib/models/scheduled-date-time');
           await ScheduledDateTime.update(editingFollowupId, {
-            scheduled_at: date.toISOString(),
-            scheduled_time_set: true,
+            scheduled_at: finalDate.toISOString(),
+            time_set: existingFollowup?.time_set || false,
           });
         } else {
           // Remove followup
@@ -180,13 +354,16 @@
         }
       } else if (date) {
         // Create new followup
+        const finalDate = new Date(date);
+        finalDate.setHours(0, 0, 0, 0);
+
         const { ScheduledDateTime } = await import('$lib/models/scheduled-date-time');
         await ScheduledDateTime.create({
           schedulable_type: 'Job',
           schedulable_id: job.id,
           scheduled_type: 'followup',
-          scheduled_at: date.toISOString(),
-          scheduled_time_set: true,
+          scheduled_at: finalDate.toISOString(),
+          time_set: false,
         });
       }
 
@@ -197,6 +374,32 @@
         error,
         jobId: job.id,
         editingFollowupId,
+      });
+    }
+  }
+
+  // Handle followup time save
+  async function handleFollowupTimeSave(dateWithTime: Date | null) {
+    if (!job || !editingFollowupId) return;
+
+    try {
+      const followup = followupDates.find((f) => f.id === editingFollowupId);
+      if (!followup || !followup.scheduled_at) return;
+
+      const updates: Record<string, unknown> = {
+        scheduled_at: dateWithTime ? dateWithTime.toISOString() : followup.scheduled_at,
+        time_set: !!dateWithTime,
+      };
+
+      const { ScheduledDateTime } = await import('$lib/models/scheduled-date-time');
+      await ScheduledDateTime.update(editingFollowupId, updates);
+
+      currentView = 'menu';
+      editingFollowupId = null;
+    } catch (error) {
+      debugComponent.error('Failed to update followup time', {
+        error,
+        followupId: editingFollowupId,
       });
     }
   }
@@ -224,9 +427,8 @@
     editingFollowupId ? followupDates.find((f) => f.id === editingFollowupId) || null : null
   );
 
-  // Get followup value and time set properly
+  // Get followup value
   const followupValue = $derived(editingFollowup?.scheduled_at || null);
-  const followupTimeSet = $derived(editingFollowup?.scheduled_time_set || false);
 </script>
 
 <BasePopover
@@ -267,41 +469,71 @@
         </div>
       {:else if currentView === 'start-date'}
         <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
-          <DateTimeEditor
+          <DateEditor
             title="Start Date"
             value={startDate}
-            timeSet={job?.start_time_set || false}
             onSave={handleStartDateSave}
             onCancel={handleBackToMenu}
             onRemove={startDate ? () => handleStartDateSave(null) : undefined}
             canRemove={!!startDate}
-            placeholder="Select start date"
+          />
+        </div>
+      {:else if currentView === 'start-time'}
+        <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
+          <TimeEditor
+            title="Start Time"
+            baseDate={startDate || new Date()}
+            value={startTimeSet ? startDate : null}
+            onSave={handleStartTimeSave}
+            onCancel={handleBackToMenu}
+            onRemove={() => handleStartTimeSave(null)}
+            canRemove={startTimeSet}
           />
         </div>
       {:else if currentView === 'due-date'}
         <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
-          <DateTimeEditor
+          <DateEditor
             title="Due Date"
             value={dueDate}
-            timeSet={job?.due_time_set || false}
             onSave={handleDueDateSave}
             onCancel={handleBackToMenu}
             onRemove={dueDate ? () => handleDueDateSave(null) : undefined}
             canRemove={!!dueDate}
-            placeholder="Select due date"
+          />
+        </div>
+      {:else if currentView === 'due-time'}
+        <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
+          <TimeEditor
+            title="Due Time"
+            baseDate={dueDate || new Date()}
+            value={dueTimeSet ? dueDate : null}
+            onSave={handleDueTimeSave}
+            onCancel={handleBackToMenu}
+            onRemove={() => handleDueTimeSave(null)}
+            canRemove={dueTimeSet}
           />
         </div>
       {:else if currentView === 'followup-date'}
         <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
-          <DateTimeEditor
+          <DateEditor
             title={editingFollowup ? 'Edit Followup' : 'Add Followup'}
             value={followupValue}
-            timeSet={followupTimeSet}
             onSave={handleFollowupDateSave}
             onCancel={handleBackToMenu}
             onRemove={editingFollowup ? handleFollowupRemove : undefined}
             canRemove={!!editingFollowup}
-            placeholder="Select followup date"
+          />
+        </div>
+      {:else if currentView === 'followup-time'}
+        <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
+          <TimeEditor
+            title="Followup Time"
+            baseDate={followupValue ? new Date(followupValue) : new Date()}
+            value={editingFollowup?.time_set ? new Date(followupValue) : null}
+            onSave={handleFollowupTimeSave}
+            onCancel={handleBackToMenu}
+            onRemove={() => handleFollowupTimeSave(null)}
+            canRemove={editingFollowup?.time_set || false}
           />
         </div>
       {/if}
