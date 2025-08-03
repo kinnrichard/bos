@@ -3,7 +3,7 @@
   import Portal from './Portal.svelte';
   import { onDestroy, onMount, tick } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { calculatePopoverPosition, type PopoverPosition } from '$lib/utils/popover-positioning';
+  // import { calculatePopoverPosition, type PopoverPosition } from '$lib/utils/popover-positioning';
   import { debugComponent } from '$lib/utils/debug';
   import { registerPopover } from '$lib/stores/popover-state';
 
@@ -19,10 +19,10 @@
     closeOnEscape = true,
     animationDuration = 200,
     className = '',
-    arrowClassName = '',
+    arrowClassName = '', // eslint-disable-line @typescript-eslint/no-unused-vars
     enabled = true,
     trigger,
-    children
+    children,
   }: {
     preferredPlacement?: 'top' | 'bottom' | 'left' | 'right';
     panelWidth?: string;
@@ -36,29 +36,31 @@
     className?: string;
     arrowClassName?: string;
     enabled?: boolean;
-    trigger?: import('svelte').Snippet<[{ popover: { close: () => void; expanded: boolean; button: any } }]>;
+    trigger?: import('svelte').Snippet<
+      [{ popover: { close: () => void; expanded: boolean; button: unknown } }]
+    >;
     children?: import('svelte').Snippet<[{ close: () => void }]>;
   } = $props();
 
   // Create the Melt UI popover with enhanced configuration
   const {
     elements: { trigger: meltTrigger, content },
-    states: { open }
+    states: { open },
   } = createPopover({
     positioning: {
       placement: preferredPlacement,
       gutter: offset,
-      offset: { mainAxis: 4 }
+      offset: { mainAxis: 4 },
     },
     disableFocusTrap: false,
     closeOnOutsideClick: closeOnClickOutside,
     preventScroll: false,
-    portal: null // Use portal for proper event handling
+    portal: null, // Use portal for proper event handling
   });
 
   let buttonElement = $state<HTMLElement>();
   let panelElement = $state<HTMLElement>();
-  
+
   // Arrow positioning state
   let arrowPosition = $state<{ top: string; left: string }>({ top: '50%', left: '50%' });
   let arrowPositioned = $state(false);
@@ -77,70 +79,77 @@
     }
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function calculateArrowPosition() {
     // Wait for next tick to ensure panel is positioned
     await tick();
-    
+
     if (!buttonElement || !panelElement || !showArrow) return;
-    
+
     // Find the actual button element inside the wrapper
     const actualButton = buttonElement.querySelector('button') || buttonElement;
     const triggerRect = actualButton.getBoundingClientRect();
     const panelRect = panelElement.getBoundingClientRect();
-    
+
     // Calculate arrow position relative to the trigger button
-    const triggerCenterX = triggerRect.left + (triggerRect.width / 2);
-    const triggerCenterY = triggerRect.top + (triggerRect.height / 2);
-    
+    const triggerCenterX = triggerRect.left + triggerRect.width / 2;
+    const triggerCenterY = triggerRect.top + triggerRect.height / 2;
+
     let arrowLeft: string;
     let arrowTop: string;
-    
+
     switch (preferredPlacement) {
       case 'left':
-      case 'right':
+      case 'right': {
         // For horizontal placements, arrow should point to trigger center
         const relativeY = triggerCenterY - panelRect.top;
         const clampedY = Math.max(12, Math.min(relativeY, panelRect.height - 12));
         arrowTop = `${clampedY}px`;
         arrowLeft = '50%'; // Will be overridden by CSS
         break;
-        
+      }
+
       case 'top':
-      case 'bottom':
+      case 'bottom': {
         // For vertical placements, arrow should point to trigger center
         const relativeX = triggerCenterX - panelRect.left;
         const clampedX = Math.max(12, Math.min(relativeX, panelRect.width - 12));
         arrowLeft = `${clampedX}px`;
         arrowTop = '50%'; // Will be overridden by CSS
         break;
-        
+      }
+
       default:
         arrowLeft = '50%';
         arrowTop = '50%';
     }
-    
+
     arrowPosition = { left: arrowLeft, top: arrowTop };
     arrowPositioned = true;
-    
-    debugComponent('Arrow position calculated', { 
+
+    debugComponent('Arrow position calculated', {
       placement: preferredPlacement,
-      arrowLeft, 
+      arrowLeft,
       arrowTop,
       triggerCenter: { x: triggerCenterX, y: triggerCenterY },
-      panelRect: { top: panelRect.top, left: panelRect.left }
+      panelRect: { top: panelRect.top, left: panelRect.left },
     });
   }
 
   // Enhanced outside click handler with configurable behavior
   function handleOutsideClick(event: MouseEvent) {
     if (!$open || !enabled || !closeOnClickOutside) return;
-    
+
     const target = event.target as Node;
     if (!target) return;
-    
+
     // Check if click is outside both panel and trigger
-    if (panelElement && !panelElement.contains(target) && 
-        buttonElement && !buttonElement.contains(target)) {
+    if (
+      panelElement &&
+      !panelElement.contains(target) &&
+      buttonElement &&
+      !buttonElement.contains(target)
+    ) {
       open.set(false);
     }
   }
@@ -148,7 +157,7 @@
   // Escape key handler
   function handleKeydown(event: KeyboardEvent) {
     if (!$open || !enabled || !closeOnEscape) return;
-    
+
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
@@ -173,10 +182,10 @@
 
   // Provide close function to slot content
   const closePopover = () => open.set(false);
-  
+
   // Register with global popover state when open
   let unregisterPopover: (() => void) | null = null;
-  
+
   $effect(() => {
     if ($open && enabled) {
       // Register this popover as open
@@ -187,7 +196,7 @@
       unregisterPopover = null;
     }
   });
-  
+
   // Clean up on destroy
   onDestroy(() => {
     if (unregisterPopover) {
@@ -200,11 +209,13 @@
   {#if trigger}
     <!-- Use trigger snippet with Melt trigger action -->
     <div class="base-popover-trigger" bind:this={buttonElement}>
-      {@render trigger({ popover: {
-        close: closePopover,
-        expanded: $open,
-        button: meltTrigger
-      } })}
+      {@render trigger({
+        popover: {
+          close: closePopover,
+          expanded: $open,
+          button: meltTrigger,
+        },
+      })}
     </div>
   {/if}
 </div>
@@ -212,7 +223,7 @@
 <!-- Render popover content in Portal for proper event isolation -->
 <Portal enabled={$open && enabled}>
   {#if $open && enabled}
-    <div 
+    <div
       use:content
       bind:this={panelElement}
       class="base-popover-panel panel-{preferredPlacement} {className}"
@@ -253,14 +264,16 @@
 
   .base-popover-panel {
     /* Panel is now just a positioning container for arrows */
-    z-index: 2000;
+    z-index: var(--z-popover, 2000);
     position: relative;
   }
 
   .base-popover-inner {
     /* All visual styling moved here */
     background-color: var(--bg-secondary);
-    box-shadow: inset 0 0 0 1px var(--border-primary), var(--shadow-xl);
+    box-shadow:
+      inset 0 0 0 1px var(--border-primary),
+      var(--shadow-xl);
     border-radius: var(--radius-lg);
     overflow: hidden; /* Clip content to rounded corners */
     width: 100%;
@@ -295,7 +308,7 @@
   }
 
   /* CSS Arrow styles - using ::before and ::after pseudo-elements */
-  
+
   /* Bottom placement (arrow points up to button) */
   .panel-bottom::before {
     content: '';

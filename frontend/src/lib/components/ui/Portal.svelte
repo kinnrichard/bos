@@ -6,7 +6,7 @@
   let {
     target = 'body' as HTMLElement | string,
     enabled = true,
-    children
+    children,
   }: {
     target?: HTMLElement | string;
     enabled?: boolean;
@@ -81,9 +81,11 @@
 <style>
   :global(.portal-container) {
     /* Ensure portal containers don't interfere with layout */
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
+    width: 0;
+    height: 0;
     z-index: 9999;
     pointer-events: none;
   }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import JobStatusButton from './JobStatusButton.svelte';
   import TechnicianAssignmentButton from './TechnicianAssignmentButton.svelte';
-  import SchedulePriorityEditPopover from './SchedulePriorityEditPopover.svelte';
+  import JobSchedulePopover from '$lib/components/schedule/JobSchedulePopover.svelte';
   import JobPriorityButton from './JobPriorityButton.svelte';
   import type { PopulatedJob } from '$lib/types/job';
 
@@ -24,7 +24,7 @@
 
   <TechnicianAssignmentButton {jobId} initialTechnicians={technicians} {disabled} />
 
-  <SchedulePriorityEditPopover {jobId} initialJob={currentJob} {disabled} />
+  <JobSchedulePopover {jobId} initialJob={currentJob} {disabled} />
 
   <JobPriorityButton {jobId} initialPriority={priority} {disabled} />
 </div>

@@ -86,7 +86,7 @@ export interface Job {
 
 export interface JobsApiResponse {
   data: Job[];
-  included: Array<Client | User | Task>;
+  included: Array<Client | User | Task | ScheduledDateTime>;
   meta: {
     total: number;
     page: number;
@@ -101,11 +101,28 @@ export interface JobsApiResponse {
   };
 }
 
+// Scheduled Date Time interface to match backend model
+export interface ScheduledDateTime {
+  id: string;
+  type: 'scheduled_date_times';
+  attributes: {
+    schedulable_type: string;
+    scheduled_type: string;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+    schedulable_id?: string;
+    scheduled_at?: string;
+    scheduled_time_set: boolean;
+  };
+}
+
 // Helper types for working with included data
 export interface PopulatedJob extends Omit<Job, 'relationships'> {
   client: Client['attributes'] & { id: string };
   technicians: Array<User['attributes'] & { id: string }>;
   tasks: Array<Task['attributes'] & { id: string }>;
+  scheduledDateTimes?: Array<ScheduledDateTime['attributes'] & { id: string }>;
 }
 
 // Status and priority enums for type safety
@@ -129,7 +146,7 @@ export type JobPriority =
 // Individual job API response (for job detail view)
 export interface JobApiResponse {
   data: Job;
-  included: Array<Client | User | Task>;
+  included: Array<Client | User | Task | ScheduledDateTime>;
 }
 
 // API request types

@@ -126,6 +126,7 @@
 - Make UI text un-selectable
 - Show technician glyphs on Job list
 - Make it more consistent
+- Make I-beam mouse cursor appear with inline edits, such as job title and task title
 
 # Features for future versions
 
