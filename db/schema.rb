@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_01_200501) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_03_015250) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -146,7 +146,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_01_200501) do
 
   create_table "people", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "name"
-    t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "client_id"

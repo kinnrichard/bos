@@ -205,7 +205,7 @@ class ReactiveRecordScopedQuery<T extends BaseRecord> extends BaseScopedQuery<T>
         return query ? {
           ...query,
           many: async () => {
-            const results = await query.many();
+            const results = await query.run();
             return [results ? results.length : 0];
           }
         } : null;
@@ -222,7 +222,7 @@ class ReactiveRecordScopedQuery<T extends BaseRecord> extends BaseScopedQuery<T>
         return query ? {
           ...query,
           many: async () => {
-            const results = await query.many();
+            const results = await query.run();
             return [results && results.length > 0];
           }
         } : null;

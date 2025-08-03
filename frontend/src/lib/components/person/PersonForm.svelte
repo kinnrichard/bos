@@ -64,12 +64,29 @@
 
   // Contact methods
   interface TempContactMethod {
-    id: string;
+    id?: string; // Optional - new records don't have IDs
     value: string;
     normalized?: NormalizedContact | null;
   }
 
   let contactMethods = $state<TempContactMethod[]>([]);
+
+  // DRY helper to ensure there's always at least one empty contact method for user input
+  function ensureEmptyContactMethod(methods: TempContactMethod[]): TempContactMethod[] {
+    // Check if there's already an empty contact method
+    const hasEmptyMethod = methods.some(cm => !cm.value.trim());
+    
+    if (!hasEmptyMethod) {
+      // Add one empty contact method for user to add new ones
+      // No ID for new records - follows Rails pattern
+      return [...methods, {
+        value: '',
+        normalized: null
+      }];
+    }
+    
+    return methods;
+  }
 
   // Load groups and departments for this client
   const groupsQuery = $derived(
@@ -79,8 +96,16 @@
   const groups = $derived(allGroups.filter((g) => !g.is_department));
   const departments = $derived(allGroups.filter((g) => g.is_department));
 
+  // Track initialization to prevent infinite loops
+  let isInitialized = false;
+
   // Initialize form data when person changes
   $effect(() => {
+    // Skip if already initialized and nothing changed
+    if (isInitialized && mode !== 'create') {
+      return;
+    }
+
     if (person && (mode === 'edit' || mode === 'view')) {
       formData.name = person.name || '';
       formData.namePreferred = person.name_preferred || '';
@@ -89,8 +114,9 @@
       formData.isActive = person.is_active ?? true;
 
       // Set contact methods
+      let newContactMethods: TempContactMethod[] = [];
       if (person.contactMethods?.length) {
-        contactMethods = person.contactMethods.map((cm) => ({
+        newContactMethods = person.contactMethods.map((cm) => ({
           id: cm.id,
           value: cm.value,
           normalized: cm.contact_type
@@ -100,14 +126,17 @@
               }
             : null,
         }));
-      } else {
-        contactMethods = [];
       }
+      
+      // Ensure there's always at least one empty field for adding new contacts
+      contactMethods = ensureEmptyContactMethod(newContactMethods);
 
       // Load group memberships (would need to be loaded separately in real implementation)
       formData.selectedGroupIds = [];
       formData.selectedDepartmentIds = [];
-    } else if (mode === 'create') {
+      
+      isInitialized = true;
+    } else if (mode === 'create' && !isInitialized) {
       // Initialize empty form for create mode
       formData = {
         name: '',
@@ -119,11 +148,10 @@
         selectedDepartmentIds: [],
       };
 
-      // Initialize with 2 empty contact methods
-      contactMethods = [
-        { id: crypto.randomUUID(), value: '', normalized: null },
-        { id: crypto.randomUUID(), value: '', normalized: null },
-      ];
+      // Initialize with one empty contact method (auto-add will create more as needed)
+      contactMethods = ensureEmptyContactMethod([]);
+      
+      isInitialized = true;
     }
   });
 

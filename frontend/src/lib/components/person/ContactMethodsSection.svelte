@@ -6,10 +6,10 @@
 
   interface Props {
     mode?: 'create' | 'edit' | 'view';
-    contactMethods?: Array<{ id: string; value: string; normalized?: NormalizedContact | null }>;
+    contactMethods?: Array<{ id?: string; value: string; normalized?: NormalizedContact | null }>;
     onContactMethodsChange?:
       | ((
-          methods: Array<{ id: string; value: string; normalized?: NormalizedContact | null }>
+          methods: Array<{ id?: string; value: string; normalized?: NormalizedContact | null }>
         ) => void)
       | undefined;
     dynamicWidthConfig?: DynamicWidthConfig | undefined;
@@ -27,7 +27,7 @@
   // Add a new contact method
   function addContactMethod() {
     const newMethod = {
-      id: crypto.randomUUID(),
+      // No ID for new records - follows Rails pattern
       value: '',
       normalized: null,
     };
@@ -83,7 +83,8 @@
     if (!method.value.trim() && contactMethods.length > minFields) {
       // Don't remove if it's the last field
       if (index !== contactMethods.length - 1) {
-        contactMethods = contactMethods.filter((cm) => cm.id !== method.id);
+        // Use index-based removal since new records don't have IDs
+        contactMethods = contactMethods.filter((_, i) => i !== index);
         onContactMethodsChange?.(contactMethods);
       }
     }
@@ -97,7 +98,7 @@
         contactMethods = [
           ...contactMethods,
           {
-            id: crypto.randomUUID(),
+            // No ID for new records - follows Rails pattern
             value: '',
             normalized: null,
           },
@@ -109,7 +110,7 @@
 
 <div class="contact-methods-section">
   <div class="contact-methods-list">
-    {#each contactMethods as method, index (method.id)}
+    {#each contactMethods as method, index (method.id || `new-${index}`)}
       <div class="contact-method-row">
         <ContactItem
           bind:value={method.value}

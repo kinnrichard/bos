@@ -148,10 +148,10 @@ class ActiveRecordScopedQuery<T extends BaseRecord>
       const query = this.buildZeroQuery();
 
       if (isCollection) {
-        const results = await query.many();
+        const results = await query.run();
         return results || [];
       } else {
-        const result = await query.one();
+        const result = await query.one().run();
         return result;
       }
     } catch (error) {
