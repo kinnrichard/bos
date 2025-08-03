@@ -84,8 +84,8 @@
       options.push({
         id: 'start-time',
         value: 'start-time',
-        label: startTimeSet ? '   at' : 'Add a Start Time',
-        rightText: startTimeSet ? formatTimeOnly(startDate) : undefined,
+        label: '',
+        rightText: startTimeSet ? `at ${formatTimeOnly(startDate)}` : 'Add a Start Time',
         icon: null, // No icon for time, indented label
       });
     }
@@ -110,8 +110,8 @@
       options.push({
         id: 'due-time',
         value: 'due-time',
-        label: dueTimeSet ? '   at' : 'Add a Due Time',
-        rightText: dueTimeSet ? formatTimeOnly(dueDate) : undefined,
+        label: '',
+        rightText: dueTimeSet ? `at ${formatTimeOnly(dueDate)}` : 'Add a Due Time',
         icon: null, // No icon for time, indented label
       });
     }
@@ -139,10 +139,10 @@
         options.push({
           id: `followup-time-${followup.id}`,
           value: `followup-time-${followup.id}`,
-          label: followup.time_set ? '   at' : 'Add a Time',
+          label: '',
           rightText: followup.time_set
-            ? formatTimeOnly(new Date(followup.scheduled_at))
-            : undefined,
+            ? `at ${formatTimeOnly(new Date(followup.scheduled_at))}`
+            : 'Add a Time',
           icon: null,
         });
       }
