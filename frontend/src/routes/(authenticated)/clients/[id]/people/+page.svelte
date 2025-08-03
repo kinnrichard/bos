@@ -19,7 +19,10 @@
 
   // Load people for this client
   const peopleQuery = $derived(
-    ReactivePerson.where({ client_id: clientId }).orderBy('name', 'asc').all()
+    ReactivePerson.includes('contactMethods')
+      .where({ client_id: clientId })
+      .orderBy('name', 'asc')
+      .all()
   );
 
   // Get all people for the client
@@ -86,32 +89,6 @@
 
               {#if person.title}
                 <div class="person-title">{person.title}</div>
-              {/if}
-
-              {#if person.contactMethods?.length}
-                {@const email = person.contactMethods.find((cm) => cm.contact_type === 'email')}
-                {@const phone = person.contactMethods.find((cm) => cm.contact_type === 'phone')}
-                {@const address = person.contactMethods.find((cm) => cm.contact_type === 'address')}
-                <div class="contact-methods">
-                  {#if email}
-                    <span class="contact-item">
-                      <img src="/icons/envelope.svg" alt="Email" class="contact-icon" />
-                      {email.value}
-                    </span>
-                  {/if}
-                  {#if phone}
-                    <span class="contact-item">
-                      <img src="/icons/phone.svg" alt="Phone" class="contact-icon" />
-                      {phone.formatted_value || phone.value}
-                    </span>
-                  {/if}
-                  {#if address}
-                    <span class="contact-item">
-                      <img src="/icons/mappin.and.ellipse.svg" alt="Address" class="contact-icon" />
-                      {address.formatted_value || address.value}
-                    </span>
-                  {/if}
-                </div>
               {/if}
             </div>
 
@@ -217,29 +194,6 @@
     font-size: 0.875rem;
     color: var(--text-secondary);
     line-height: 1.4;
-  }
-
-  .contact-methods {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    font-size: 0.8125rem;
-    margin-top: 0.125rem;
-  }
-
-  .contact-item {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    color: var(--text-tertiary);
-    font-size: 0.8125rem;
-  }
-
-  .contact-icon {
-    width: 14px;
-    height: 14px;
-    opacity: 0.7;
-    flex-shrink: 0;
   }
 
   .inactive-badge {
