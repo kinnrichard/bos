@@ -282,12 +282,17 @@
   /* Reduce spacing between dates */
   :global(.custom-calendar [data-bits-calendar-grid]) {
     gap: 0 !important;
-    margin-top: 4px !important;
+    margin-top: 2px !important;
   }
 
   :global(.custom-calendar [data-bits-calendar-grid-row]) {
-    gap: 1px !important;
-    margin-top: 1px !important;
+    gap: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  /* Override the mt-2 class on grid rows */
+  :global(.custom-calendar .mt-2) {
+    margin-top: 2px !important;
   }
 
   /* Cell font size */
