@@ -58,8 +58,8 @@
     <!-- Technician avatars (leftmost) -->
     {#if technicians?.length > 0}
       <span class="technician-avatars">
-        {#each technicians as technician}
-          <UserAvatar user={technician} size="xs" />
+        {#each technicians as technician, index}
+          <UserAvatar user={technician} size="xs" overlap={index > 0} />
         {/each}
       </span>
     {/if}
@@ -149,7 +149,6 @@
   .technician-avatars {
     display: flex;
     align-items: center;
-    gap: -2px; /* Slight overlap for compact display - matches TechnicianAssignmentButton */
   }
 
   /* Responsive adjustments */

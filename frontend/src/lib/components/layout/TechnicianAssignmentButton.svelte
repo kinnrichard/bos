@@ -166,8 +166,8 @@
       {#if hasAssignments}
         <!-- Show assigned technician avatars -->
         <div class="assigned-avatars">
-          {#each displayTechnicians as technician}
-            <UserAvatar user={technician} size="xs" />
+          {#each displayTechnicians as technician, index}
+            <UserAvatar user={technician} size="xs" overlap={index > 0} />
           {/each}
           {#if extraCount > 0}
             <div class="extra-count">+{extraCount}</div>
@@ -230,7 +230,6 @@
   .assigned-avatars {
     display: flex;
     align-items: center;
-    gap: -2px; /* Slight overlap for compact display */
   }
 
   .extra-count {

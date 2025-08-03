@@ -248,7 +248,7 @@
 
   /* Overlap styles for avatar groups */
   .avatar--overlap:not(:first-child) {
-    margin-left: -8px;
+    margin-left: -6px;
   }
 
   .avatar--overlap.avatar--border {
