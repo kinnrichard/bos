@@ -30,18 +30,12 @@
   // Set a placeholder to today's date so calendar shows current month
   let calendarPlaceholder = $state<DateValue>(today(getLocalTimeZone()));
   let calendarSection = $state<HTMLDivElement>();
-  let calendarHeight = $state<number | null>(null);
 
   // Use ResizeObserver to detect when calendar changes size
   $effect(() => {
-    if (calendarSection) {
-      const resizeObserver = new ResizeObserver((entries) => {
-        const entry = entries[0];
-        if (entry) {
-          const newHeight = entry.contentRect.height;
-          calendarHeight = newHeight;
-          onHeightChange?.();
-        }
+    if (calendarSection && onHeightChange) {
+      const resizeObserver = new ResizeObserver(() => {
+        onHeightChange();
       });
 
       resizeObserver.observe(calendarSection);
@@ -137,14 +131,12 @@
   <!-- Content -->
   <div class="date-content">
     <!-- Calendar -->
-    <div class="calendar-wrapper" style="height: {calendarHeight ? `${calendarHeight}px` : 'auto'}">
-      <div class="calendar-section" bind:this={calendarSection}>
-        <Calendar
-          bind:value={calendarValue}
-          bind:placeholder={calendarPlaceholder}
-          class="custom-calendar [--cell-size:26px]"
-        />
-      </div>
+    <div class="calendar-section" bind:this={calendarSection}>
+      <Calendar
+        bind:value={calendarValue}
+        bind:placeholder={calendarPlaceholder}
+        class="custom-calendar [--cell-size:26px]"
+      />
     </div>
 
     <!-- Remove button if date is set -->
@@ -242,11 +234,6 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
-  }
-
-  .calendar-wrapper {
-    overflow: hidden;
-    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .calendar-section {
