@@ -3,7 +3,11 @@
   import { createJobsQuery } from '$lib/queries/jobs.svelte';
   import { createJobsFilter } from '$lib/filters/jobs.svelte';
   import { jobsSearch } from '$lib/stores/jobsSearch.svelte';
-  import { getSelectedJobStatuses, getSelectedJobPriorities } from '$lib/stores/jobFilter.svelte';
+  import {
+    getSelectedJobStatuses,
+    getSelectedJobPriorities,
+    getSelectedTechnicianIds,
+  } from '$lib/stores/jobFilter.svelte';
   import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import JobsListView from '$lib/components/jobs/JobsListView.svelte';
 
@@ -17,6 +21,7 @@
   // Get filter selections
   const selectedStatuses = $derived(getSelectedJobStatuses());
   const selectedPriorities = $derived(getSelectedJobPriorities());
+  const selectedTechnicianIds = $derived(getSelectedTechnicianIds());
 
   // Create the display filter from filter store selections
   const displayFilter = $derived(
@@ -26,6 +31,7 @@
       // Use filter store selections - empty array means show all
       statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
       priorities: selectedPriorities.length > 0 ? selectedPriorities : undefined,
+      technicianIds: selectedTechnicianIds.length > 0 ? selectedTechnicianIds : undefined,
     })
   );
 </script>

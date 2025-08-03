@@ -12,6 +12,7 @@
   import TaskFilterPopover from './TaskFilterPopover.svelte';
   import ClientTypeFilterPopover from './ClientTypeFilterPopover.svelte';
   import JobFilterPopover from './JobFilterPopover.svelte';
+  import TechnicianFilterPopover from '$lib/components/jobs/TechnicianFilterPopover.svelte';
   import PeopleFilterPopover from './PeopleFilterPopover.svelte';
   import SearchBar from './SearchBar.svelte';
   import PageActionsBar from './PageActionsBar.svelte';
@@ -25,6 +26,7 @@
   // Utilities
   import { debugComponent } from '$lib/utils/debug';
   import { getSearchConfig, clearAllSearches } from '$lib/utils/searchManager';
+  import { jobFilter } from '$lib/stores/jobFilter.svelte';
 
   // Props
   interface Props {
@@ -177,6 +179,16 @@
     }
   });
 
+  // Technician filter handler
+  function handleTechnicianFilterChange(newSelection: string[]) {
+    jobFilter.setSelected([
+      // Keep non-technician selections
+      ...jobFilter.selected.filter((id) => !id.startsWith('technician:')),
+      // Add new technician selections
+      ...newSelection,
+    ]);
+  }
+
   // Clear all searches when context changes
   $effect(() => {
     if (searchContext) {
@@ -259,6 +271,11 @@
     <!-- Job filter -->
     {#if showJobFilter}
       <JobFilterPopover {disabled} />
+      <TechnicianFilterPopover
+        selected={jobFilter.selected.filter((id) => id.startsWith('technician:'))}
+        onFilterChange={handleTechnicianFilterChange}
+        {disabled}
+      />
     {/if}
 
     <!-- Client filter -->

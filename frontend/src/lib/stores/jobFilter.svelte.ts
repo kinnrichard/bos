@@ -89,6 +89,7 @@ class JobFilterStore {
     const url = new URL(window.location.href);
     const statusParam = url.searchParams.get('status');
     const priorityParam = url.searchParams.get('priority');
+    const technicianIdsParam = url.searchParams.get('technician_ids');
 
     const selected: string[] = [];
 
@@ -108,6 +109,17 @@ class JobFilterStore {
       priorities.forEach((priority) => {
         if (jobPriorityOptions.some((opt) => opt.value === priority)) {
           selected.push(`priority:${priority}`);
+        }
+      });
+    }
+
+    // Add technician selections
+    if (technicianIdsParam) {
+      const technicianIds = technicianIdsParam.split(',');
+      technicianIds.forEach((technicianId) => {
+        // Allow special "not_assigned" value and any valid technician ID
+        if (technicianId === 'not_assigned' || technicianId.trim()) {
+          selected.push(`technician:${technicianId}`);
         }
       });
     }
@@ -146,6 +158,11 @@ class JobFilterStore {
           .filter((id) => id.startsWith('priority:'))
           .map((id) => id.replace('priority:', ''));
 
+        // Extract technician selections
+        const technicianIds = this._selected
+          .filter((id) => id.startsWith('technician:'))
+          .map((id) => id.replace('technician:', ''));
+
         // Update URL parameters
         if (statuses.length > 0) {
           url.searchParams.set('status', statuses.join(','));
@@ -157,6 +174,12 @@ class JobFilterStore {
           url.searchParams.set('priority', priorities.join(','));
         } else {
           url.searchParams.delete('priority');
+        }
+
+        if (technicianIds.length > 0) {
+          url.searchParams.set('technician_ids', technicianIds.join(','));
+        } else {
+          url.searchParams.delete('technician_ids');
         }
 
         // Use SvelteKit's replaceState
@@ -201,4 +224,10 @@ export function getSelectedJobPriorities(): JobPriority[] {
   return jobFilter.selected
     .filter((id) => id.startsWith('priority:'))
     .map((id) => id.replace('priority:', '') as JobPriority);
+}
+
+export function getSelectedTechnicianIds(): string[] {
+  return jobFilter.selected
+    .filter((id) => id.startsWith('technician:'))
+    .map((id) => id.replace('technician:', ''));
 }

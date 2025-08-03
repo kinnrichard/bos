@@ -19,6 +19,7 @@ export interface JobFilterOptions {
   priority?: JobPriority;
   priorities?: JobPriority[]; // Support multiple priorities
   technicianId?: string;
+  technicianIds?: string[]; // Support multiple technicians
   clientId?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -57,6 +58,30 @@ export function isAssignedToTechnician(job: JobData, technicianId: string): bool
   if (!technicianId) return true;
 
   return job.jobAssignments?.some((assignment) => assignment.user?.id === technicianId) ?? false;
+}
+
+/**
+ * Checks if a job matches any of the specified technician filters
+ * Supports multiple technician IDs and special "not_assigned" value
+ */
+export function matchesTechnicianFilter(job: JobData, technicianIds: string[]): boolean {
+  if (!technicianIds || technicianIds.length === 0) return true;
+
+  // Check if "not_assigned" is selected and job has no assignments
+  const hasNotAssignedFilter = technicianIds.includes('not_assigned');
+  const hasNoAssignments = !job.jobAssignments || job.jobAssignments.length === 0;
+
+  if (hasNotAssignedFilter && hasNoAssignments) {
+    return true;
+  }
+
+  // Check if job is assigned to any of the selected technicians
+  const specificTechnicianIds = technicianIds.filter((id) => id !== 'not_assigned');
+  if (specificTechnicianIds.length > 0) {
+    return specificTechnicianIds.some((technicianId) => isAssignedToTechnician(job, technicianId));
+  }
+
+  return false;
 }
 
 /**
@@ -127,8 +152,11 @@ export function createJobsFilter(options: JobFilterOptions) {
         return false;
       }
 
-      // Apply technician filter
+      // Apply technician filter (single or multiple)
       if (options.technicianId && !isAssignedToTechnician(job, options.technicianId)) {
+        return false;
+      }
+      if (options.technicianIds && !matchesTechnicianFilter(job, options.technicianIds)) {
         return false;
       }
 
@@ -161,12 +189,14 @@ export function createFilterFromSearchParams(
   searchParams: URLSearchParams,
   additionalOptions?: Partial<JobFilterOptions>
 ): JobFilterOptions {
-  // Parse comma-separated values for statuses and priorities
+  // Parse comma-separated values for statuses, priorities, and technicians
   const statusParam = searchParams.get('status');
   const priorityParam = searchParams.get('priority');
+  const technicianIdsParam = searchParams.get('technician_ids');
 
   const statuses = statusParam ? (statusParam.split(',') as JobStatus[]) : undefined;
   const priorities = priorityParam ? (priorityParam.split(',') as JobPriority[]) : undefined;
+  const technicianIds = technicianIdsParam ? technicianIdsParam.split(',') : undefined;
 
   return {
     status: statuses?.length === 1 ? statuses[0] : undefined,
@@ -174,6 +204,7 @@ export function createFilterFromSearchParams(
     priority: priorities?.length === 1 ? priorities[0] : undefined,
     priorities: priorities?.length && priorities.length > 1 ? priorities : undefined,
     technicianId: searchParams.get('technician_id') || undefined,
+    technicianIds: technicianIds?.length ? technicianIds : undefined,
     clientId: searchParams.get('client_id') || undefined,
     dateFrom: searchParams.get('date_from') || undefined,
     dateTo: searchParams.get('date_to') || undefined,
