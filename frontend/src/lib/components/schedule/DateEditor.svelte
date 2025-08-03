@@ -196,6 +196,7 @@
     color: var(--text-primary);
     opacity: 0.33;
     margin: 0;
+    margin-top: 1px;
     flex: 1;
     text-align: center;
     white-space: nowrap;
