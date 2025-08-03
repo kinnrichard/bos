@@ -435,10 +435,10 @@
   const followupValue = $derived(editingFollowup?.scheduled_at || null);
 
   // Animation config
-  const slideInFromRight = { x: 250, duration: 300, easing: cubicOut };
-  const slideOutToRight = { x: 250, duration: 300, easing: cubicOut };
-  const slideInFromLeft = { x: -250, duration: 300, easing: cubicOut };
-  const slideOutToLeft = { x: -250, duration: 300, easing: cubicOut };
+  const slideInFromRight = { x: 240, duration: 300, easing: cubicOut };
+  const slideOutToRight = { x: 240, duration: 300, easing: cubicOut };
+  const slideInFromLeft = { x: -240, duration: 300, easing: cubicOut };
+  const slideOutToLeft = { x: -240, duration: 300, easing: cubicOut };
 
   // Auto-detect and update container height
   $effect(() => {
@@ -472,7 +472,7 @@
 <BasePopover
   bind:popover={basePopover}
   preferredPlacement="bottom"
-  panelWidth="250px"
+  panelWidth="240px"
   {disabled}
   closeOnClickOutside={currentView === 'menu'}
 >
