@@ -218,7 +218,6 @@
 
   .remove-section {
     padding-top: 12px;
-    border-top: 1px solid var(--border-primary);
   }
 
   .remove-button {
@@ -228,7 +227,7 @@
     gap: 8px;
     width: 100%;
     padding: 10px 16px;
-    border: 1px solid rgba(255, 69, 58, 0.3);
+    border: none;
     background: transparent;
     border-radius: var(--radius-md);
     color: var(--accent-red);
@@ -240,7 +239,6 @@
 
   .remove-button:hover {
     background: rgba(255, 69, 58, 0.1);
-    border-color: var(--accent-red);
   }
 
   /* Custom calendar styles */
