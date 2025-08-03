@@ -72,7 +72,6 @@
     line-height: 1;
     white-space: nowrap;
     cursor: default;
-    transition: all 0.15s ease;
     font-family: inherit;
     min-width: fit-content;
   }
@@ -185,9 +184,4 @@
   }
 
   /* Reduced motion support */
-  @media (prefers-reduced-motion: reduce) {
-    .text-button {
-      transition: none;
-    }
-  }
 </style>

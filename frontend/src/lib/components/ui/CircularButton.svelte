@@ -80,7 +80,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
     position: relative;
     padding: 0;
     font-family: inherit;
@@ -126,7 +125,6 @@
   /* Content styling */
   .circular-button :global(.icon) {
     opacity: 0.7;
-    transition: opacity 0.15s ease;
   }
 
   .circular-button :global(.emoji) {
@@ -173,9 +171,4 @@
   }
 
   /* Accessibility improvements */
-  @media (prefers-reduced-motion: reduce) {
-    .circular-button {
-      transition: none;
-    }
-  }
 </style>

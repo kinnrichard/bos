@@ -10,7 +10,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
   padding: 0;
   pointer-events: auto !important;
   position: relative;
@@ -32,11 +31,6 @@
 }
 
 /* Accessibility improvements for popover buttons */
-@media (prefers-reduced-motion: reduce) {
-  .popover-button {
-    transition: none;
-  }
-}
 
 /* High contrast mode support for popover buttons */
 @media (prefers-contrast: high) {
