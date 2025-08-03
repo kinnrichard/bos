@@ -142,7 +142,6 @@
   .due-date-icon {
     width: 20px;
     height: 20px;
-    opacity: 0.7;
     flex-shrink: 0;
   }
 

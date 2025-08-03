@@ -641,7 +641,6 @@
   .calendar-icon {
     width: 20px;
     height: 20px;
-    opacity: 0.7;
   }
 
   .schedule-popover-container {
