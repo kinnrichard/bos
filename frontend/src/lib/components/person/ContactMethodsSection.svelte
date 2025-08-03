@@ -135,7 +135,6 @@
 <style>
   .contact-methods-section {
     width: 100%;
-    margin-top: 16px;
   }
 
   .contact-methods-list {

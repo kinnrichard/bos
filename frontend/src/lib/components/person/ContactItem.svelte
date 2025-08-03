@@ -131,7 +131,6 @@
     width: auto;
     min-width: 0;
     gap: 8px;
-    padding: 4px 0;
   }
 
   .contact-item-edit {
@@ -168,7 +167,6 @@
 
   .contact-value {
     color: var(--text-primary);
-    font-size: 14px;
   }
 
   .validation-errors {
