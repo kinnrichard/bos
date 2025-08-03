@@ -163,32 +163,29 @@
   }
 
   .toolbar-button {
-    padding: 6px 16px;
+    padding: 0;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 400;
     cursor: default;
-    transition: all 0.15s ease;
+    transition: opacity 0.15s ease;
   }
 
   .toolbar-cancel {
-    background: transparent;
-    color: var(--text-secondary);
-  }
-
-  .toolbar-cancel:hover {
-    background: rgba(255, 69, 58, 0.1);
     color: var(--accent-red);
   }
 
+  .toolbar-cancel:hover {
+    opacity: 0.7;
+  }
+
   .toolbar-save {
-    background: var(--accent-blue);
-    color: white;
+    color: var(--accent-blue);
   }
 
   .toolbar-save:hover {
-    background: var(--accent-blue-hover);
+    opacity: 0.7;
   }
 
   .toolbar-title {
