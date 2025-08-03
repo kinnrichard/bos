@@ -1,5 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, loadEnv } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
   // Load environment variables for the current mode
@@ -13,7 +14,7 @@ export default defineConfig(({ mode }) => {
   console.log(`[Vite] Mode: ${mode}, API Target: ${apiTarget}`);
 
   return {
-    plugins: [sveltekit()],
+    plugins: [tailwindcss(), sveltekit()],
     server: {
       port: 5173,
       strictPort: false,

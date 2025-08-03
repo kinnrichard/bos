@@ -1,15 +1,14 @@
 <script lang="ts">
-  import Calendar from '$lib/components/ui/Calendar.svelte';
+  import { Calendar } from '$lib/components/ui/calendar';
   import FormInput from '$lib/components/ui/FormInput.svelte';
   import {
     formatDisplayDate,
-    formatDateForInput,
     formatTimeForInput,
     combineDateAndTime,
-    parseDateFromInput,
     parseTimeFromInput,
   } from '$lib/utils/date-formatting';
   import { ChevronLeft, Trash2 } from 'lucide-svelte';
+  import { CalendarDate, type DateValue, today, getLocalTimeZone } from '@internationalized/date';
 
   interface Props {
     title: string;
@@ -32,66 +31,74 @@
     timeSet = false,
     onTimeSetChange,
     canRemove = false,
-    placeholder = 'Select date',
   }: Props = $props();
 
-  // Convert value to Date object
+  // Convert value to Date object and CalendarDate
   let selectedDate = $state<Date | null>(null);
   let selectedTime = $state<Date | null>(null);
   let includeTime = $state(timeSet);
+  let calendarValue = $state<DateValue | null>(null);
 
-  // Date input values
-  let dateInputValue = $state('');
+  // Set a placeholder to today's date so calendar shows current month
+  let calendarPlaceholder = $state<DateValue>(today(getLocalTimeZone()));
+
+  // Time input value
   let timeInputValue = $state('');
 
-  // Initialize from prop value
+  // Convert Date to CalendarDate
+  function dateToCalendarDate(date: Date): CalendarDate {
+    return new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate());
+  }
+
+  // Convert CalendarDate to Date
+  function calendarDateToDate(calDate: DateValue): Date {
+    return new Date(calDate.year, calDate.month - 1, calDate.day);
+  }
+
+  // Initialize from prop value - only once on mount
+  let hasInitialized = false;
   $effect(() => {
-    if (value) {
-      let dateObj: Date;
+    if (!hasInitialized) {
+      hasInitialized = true;
+      if (value) {
+        let dateObj: Date;
 
-      if (typeof value === 'string') {
-        dateObj = new Date(value);
-      } else if (typeof value === 'number') {
-        dateObj = new Date(value);
-      } else {
-        dateObj = value;
-      }
+        if (typeof value === 'string') {
+          dateObj = new Date(value);
+        } else if (typeof value === 'number') {
+          dateObj = new Date(value);
+        } else {
+          dateObj = value;
+        }
 
-      if (!isNaN(dateObj.getTime())) {
-        selectedDate = dateObj;
-        selectedTime = dateObj;
-        dateInputValue = formatDateForInput(dateObj);
-        timeInputValue = formatTimeForInput(dateObj);
+        if (!isNaN(dateObj.getTime())) {
+          selectedDate = dateObj;
+          selectedTime = dateObj;
+          timeInputValue = formatTimeForInput(dateObj);
+          calendarValue = dateToCalendarDate(dateObj);
+        }
       }
-    } else {
-      selectedDate = null;
-      selectedTime = null;
-      dateInputValue = '';
-      timeInputValue = '';
+      includeTime = timeSet;
     }
-
-    includeTime = timeSet;
   });
 
-  // Handle calendar date selection
-  function handleCalendarChange(date: Date | null) {
-    selectedDate = date;
-    if (date) {
-      dateInputValue = formatDateForInput(date);
-    } else {
-      dateInputValue = '';
-    }
-  }
+  // Watch for calendar value changes - simple and direct
+  $effect(() => {
+    // Only update if calendar value actually exists
+    if (calendarValue) {
+      const date = calendarDateToDate(calendarValue);
+      selectedDate = date;
 
-  // Handle date input change
-  function handleDateInputChange() {
-    const parsed = parseDateFromInput(dateInputValue);
-    selectedDate = parsed;
-  }
+      // Initialize time if needed
+      if (!selectedTime) {
+        selectedTime = date;
+      }
+    }
+  });
 
   // Handle time input change
   function handleTimeInputChange() {
-    if (timeInputValue && selectedDate) {
+    if (selectedDate) {
       selectedTime = parseTimeFromInput(timeInputValue, selectedDate);
     }
   }
@@ -109,19 +116,10 @@
 
   // Save the date/time combination
   function handleSave() {
-    if (!selectedDate) {
-      onSave(null);
-      return;
-    }
+    let finalDate = selectedDate;
 
-    let finalDate: Date;
-
-    if (includeTime && selectedTime) {
-      finalDate = combineDateAndTime(selectedDate, selectedTime) || selectedDate;
-    } else {
-      // Use start of day if no time
-      finalDate = new Date(selectedDate);
-      finalDate.setHours(0, 0, 0, 0);
+    if (finalDate && includeTime && selectedTime) {
+      finalDate = combineDateAndTime(finalDate, selectedTime);
     }
 
     onSave(finalDate);
@@ -166,23 +164,9 @@
     <!-- Calendar -->
     <div class="calendar-section">
       <Calendar
-        value={selectedDate}
-        onValueChange={handleCalendarChange}
-        placeholder={new Date()}
-        className="schedule-calendar"
-      />
-    </div>
-
-    <!-- Date Input (backup/manual entry) -->
-    <div class="date-input-section">
-      <label for="date-input" class="input-label">Date</label>
-      <FormInput
-        id="date-input"
-        type="date"
-        bind:value={dateInputValue}
-        onchange={handleDateInputChange}
-        size="small"
-        {placeholder}
+        bind:value={calendarValue}
+        bind:placeholder={calendarPlaceholder}
+        class="rounded-md border"
       />
     </div>
 
@@ -208,21 +192,22 @@
             bind:value={timeInputValue}
             onchange={handleTimeInputChange}
             size="small"
-            placeholder="12:00"
+            placeholder="Select time"
           />
         </div>
       {/if}
     </div>
 
-    <!-- Preview -->
+    <!-- Date Preview -->
     {#if selectedDate}
       <div class="date-preview">
         <span class="preview-label">Selected:</span>
         <span class="preview-value">
-          {formatDisplayDate(selectedDate)}
-          {#if includeTime && selectedTime}
-            at {formatTimeForInput(selectedTime)}
-          {/if}
+          {formatDisplayDate(
+            includeTime && selectedTime
+              ? combineDateAndTime(selectedDate, selectedTime)
+              : selectedDate
+          )}
         </span>
       </div>
     {/if}
@@ -240,13 +225,12 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--bg-secondary);
   }
 
-  /* Toolbar */
   .datetime-toolbar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 16px 20px;
     border-bottom: 1px solid var(--border-primary);
     background: var(--bg-primary);
@@ -256,15 +240,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border: none;
     background: transparent;
     border-radius: var(--radius-md);
     color: var(--text-secondary);
-    cursor: pointer;
+    cursor: default;
     transition: all 0.15s ease;
-    margin-right: 12px;
   }
 
   .toolbar-back-button:hover {
@@ -273,40 +256,40 @@
   }
 
   .toolbar-title {
-    flex: 1;
-    margin: 0;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--text-primary);
+    margin: 0;
+    flex: 1;
+    text-align: center;
   }
 
   .toolbar-remove-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border: none;
     background: transparent;
     border-radius: var(--radius-md);
-    color: var(--text-danger, #ef4444);
-    cursor: pointer;
+    color: var(--accent-red);
+    cursor: default;
     transition: all 0.15s ease;
   }
 
   .toolbar-remove-button:hover {
-    background: var(--bg-danger, rgba(239, 68, 68, 0.1));
+    background: rgba(255, 69, 58, 0.1);
   }
 
   .toolbar-spacer {
-    width: 36px;
+    width: 32px;
   }
 
-  /* Content */
   .datetime-content {
     flex: 1;
-    padding: 20px;
     overflow-y: auto;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -317,18 +300,10 @@
     justify-content: center;
   }
 
-  :global(.schedule-calendar) {
-    border: none;
-    box-shadow: none;
-    background: transparent;
-  }
-
-  /* Inputs */
-  .date-input-section,
   .time-input-section {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   .input-label {
@@ -339,7 +314,6 @@
     letter-spacing: 0.5px;
   }
 
-  /* Time Section */
   .time-section {
     display: flex;
     flex-direction: column;
@@ -353,24 +327,21 @@
   }
 
   .time-checkbox {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     accent-color: var(--accent-blue);
   }
 
   .time-checkbox-label {
     font-size: 14px;
     color: var(--text-primary);
-    cursor: pointer;
-    user-select: none;
+    cursor: default;
   }
 
-  /* Preview */
   .date-preview {
-    padding: 12px 16px;
+    padding: 12px;
     background: var(--bg-tertiary);
     border-radius: var(--radius-md);
-    border: 1px solid var(--border-primary);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -378,8 +349,8 @@
 
   .preview-label {
     font-size: 13px;
-    font-weight: 500;
     color: var(--text-secondary);
+    font-weight: 500;
   }
 
   .preview-value {
@@ -388,44 +359,40 @@
     font-weight: 500;
   }
 
-  /* Actions */
   .datetime-actions {
     display: flex;
     gap: 12px;
-    margin-top: auto;
-    padding-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-primary);
   }
 
   .action-button {
     flex: 1;
-    padding: 12px 20px;
+    padding: 10px 16px;
+    border: none;
     border-radius: var(--radius-md);
     font-size: 14px;
     font-weight: 500;
-    cursor: pointer;
+    cursor: default;
     transition: all 0.15s ease;
-    border: 1px solid;
   }
 
   .action-cancel {
     background: var(--bg-tertiary);
-    border-color: var(--border-primary);
-    color: var(--text-secondary);
+    color: var(--text-primary);
   }
 
   .action-cancel:hover {
-    background: var(--bg-quaternary);
-    color: var(--text-primary);
+    background: var(--bg-quaternary, #4a4a4c);
   }
 
   .action-save {
     background: var(--accent-blue);
-    border-color: var(--accent-blue);
     color: white;
   }
 
   .action-save:hover {
-    background: var(--accent-blue-dark, #0066cc);
+    background: var(--accent-blue-hover);
   }
 
   /* Responsive adjustments */
