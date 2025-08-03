@@ -301,22 +301,34 @@
       {/if}
     {/if}
 
-    <!-- Person actions - Save button -->
+    <!-- Person actions - Edit/Save buttons -->
     {#if showPersonActions && layout.personEditCallbacks}
-      <TextButton
-        variant="primary"
-        size="normal"
-        onclick={() => layout.personEditCallbacks?.onSave?.()}
-        disabled={disabled || layout.isSavingPerson || !layout.canSavePerson}
-        loading={layout.isSavingPerson}
-        ariaLabel={layout.isNewPerson ? 'Create person' : 'Save changes'}
-      >
-        {#if layout.isSavingPerson}
-          Saving...
-        {:else}
-          Save
-        {/if}
-      </TextButton>
+      {#if layout.isEditingPerson}
+        <TextButton
+          variant="primary"
+          size="normal"
+          onclick={() => layout.personEditCallbacks?.onSave?.()}
+          disabled={disabled || layout.isSavingPerson || !layout.canSavePerson}
+          loading={layout.isSavingPerson}
+          ariaLabel={layout.isNewPerson ? 'Create person' : 'Save changes'}
+        >
+          {#if layout.isSavingPerson}
+            Saving...
+          {:else}
+            Save
+          {/if}
+        </TextButton>
+      {:else}
+        <TextButton
+          variant="ghost"
+          size="normal"
+          onclick={() => layout.personEditCallbacks?.onEdit?.()}
+          {disabled}
+          ariaLabel="Edit person"
+        >
+          Edit
+        </TextButton>
+      {/if}
     {/if}
 
     <!-- Search bar -->

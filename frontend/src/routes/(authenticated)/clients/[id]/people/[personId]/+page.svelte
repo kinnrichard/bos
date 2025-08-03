@@ -54,17 +54,17 @@
 
   // Setup edit state in layout
   $effect(() => {
-    layoutActions.setClientEditState(isEditing, false);
-    layoutActions.setSavingClient(isSaving);
-    layoutActions.setCanSaveClient(true); // PersonForm handles its own validation
-    layoutActions.setClientEditCallbacks({
+    layoutActions.setPersonEditState(isEditing, false);
+    layoutActions.setSavingPerson(isSaving);
+    layoutActions.setCanSavePerson(true); // PersonForm handles its own validation
+    layoutActions.setPersonEditCallbacks({
       onEdit: handleEdit,
       onSave: () => {}, // PersonForm handles saving internally
       onCancel: handleCancel,
     });
 
     return () => {
-      layoutActions.clearClientEditState();
+      layoutActions.clearPersonEditState();
     };
   });
 </script>
