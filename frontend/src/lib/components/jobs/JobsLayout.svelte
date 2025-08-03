@@ -53,7 +53,7 @@
 
   /* Content Area */
   .jobs-content {
-    padding: 24px;
+    padding: 24px 24px 12px 24px;
     max-width: 1200px;
     margin: 0 auto;
   }
@@ -67,13 +67,13 @@
     }
 
     .jobs-content {
-      padding: 16px;
+      padding: 16px 16px 12px 16px;
     }
   }
 
   @media (max-width: 480px) {
     .jobs-content {
-      padding: 12px;
+      padding: 12px 12px 12px 12px;
     }
   }
 </style>

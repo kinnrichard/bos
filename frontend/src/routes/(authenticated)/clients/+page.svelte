@@ -181,7 +181,6 @@
             <button class="client-item" onclick={() => navigateToClient(client.id)}>
               <span class="client-icon">{getClientTypeEmoji(client.client_type)}</span>
               <span class="client-name">{client.name || 'Unnamed Client'}</span>
-              <span class="client-arrow">→</span>
             </button>
           {/each}
         </div>
@@ -196,7 +195,6 @@
                   <button class="client-item" onclick={() => navigateToClient(client.id)}>
                     <span class="client-icon">{getClientTypeEmoji(client.client_type)}</span>
                     <span class="client-name">{client.name || 'Unnamed Client'}</span>
-                    <span class="client-arrow">→</span>
                   </button>
                 {/each}
               </div>
@@ -210,7 +208,7 @@
 
 <style>
   .clients-page {
-    min-height: 100vh;
+    min-height: 100%;
     background-color: var(--bg-black, #000);
   }
 
@@ -253,7 +251,7 @@
 
   /* Content Area */
   .clients-content {
-    padding: 24px;
+    padding: 24px 24px 12px 24px;
     max-width: 1200px;
     margin: 0 auto;
   }
@@ -262,7 +260,7 @@
   .clients-simple-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     max-width: 600px;
     margin: 0 auto;
   }
@@ -290,7 +288,7 @@
 
   .letter-clients {
     columns: 300px;
-    column-gap: 16px;
+    column-gap: 12px;
   }
 
   .client-item {
@@ -307,7 +305,7 @@
     text-align: left;
     transition: all 0.15s ease;
     width: 100%;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     break-inside: avoid;
   }
 
@@ -327,12 +325,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .client-arrow {
-    color: var(--text-tertiary, #8e8e93);
-    font-size: 18px;
-    flex-shrink: 0;
   }
 
   /* States */
