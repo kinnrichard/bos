@@ -71,7 +71,7 @@
 - ✅ View
 - ✅ Set address, phone, email
   - ✅ Fails to create contact method (client first needs to indicate type)
-  - 💭 Gracefully remove
+  - 💭 Gracefully remove during edit
 
 ## Activity Logging
   - ✅ Build client-side
@@ -82,14 +82,16 @@
 - ✅ Technician Emoji
 - ✅ Drag & drop nesting and un-nesting
 - 🚧 Drag & drop reordering
-- 💭 Appointment Scheduling
-- 💭 Followup Scheduling
-- 💭 Job Start Scheduling
-- 💭 Make Return place the new task in the right location
 - ✅ Priority system
   - 💭 Sort by priority
 - ✅ Assign to technician
-  - 💭 Filter by assignment
+  - 🚧 Filter by assignment
+- 💭 Filter by date
+- 💭 Appointment Scheduling
+
+- 💭 Followup Scheduling
+- 💭 Job Start Scheduling
+- 💭 Make Return place the new task in the right location
 - 💭 v2 Time tracking
 - 💭 v2 Billing integration
 - 💭 v2 Repeatable jobs
@@ -109,9 +111,9 @@
 - 🚧 Correctly group by date
 
 ## UI Inconsistencies
-- Technician glyphs don't have shadows
-- Remove mouse hand-pointer from everywhere
-- Remove Sidebar hover states
+- ✅ Technician glyphs don't have shadows
+- ✅ Remove mouse hand-pointer from everywhere
+- ✅ Remove Sidebar hover states
 - Cancel button when creating a job doesn't work if user has typed in a job name already
 - Move user menu to sidebar
 - Make sidebar hierarchical
@@ -124,7 +126,7 @@
 - Scroll containers should be normalized
   - Have padding at the bottom to match sidebar margin
 - Make UI text un-selectable
-- Show technician glyphs on Job list
+- ✅ Show technician glyphs on Job list
 - Make it more consistent
 - Make I-beam mouse cursor appear with inline edits, such as job title and task title
 
