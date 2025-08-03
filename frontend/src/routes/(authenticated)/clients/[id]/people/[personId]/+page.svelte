@@ -5,8 +5,8 @@
   import PersonForm from '$lib/components/person/PersonForm.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import { ReactivePerson } from '$lib/models/reactive-person';
-  import { ReactiveClient } from '$lib/models/reactive-client';
   import { Person } from '$lib/models/person';
+  import { ReactiveClient } from '$lib/models/reactive-client';
   import { layoutActions } from '$lib/stores/layout.svelte';
 
   let clientId = $page.params.id;

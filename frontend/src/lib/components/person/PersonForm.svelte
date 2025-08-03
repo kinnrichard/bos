@@ -2,9 +2,9 @@
   import { createEventDispatcher } from 'svelte';
   import PersonHeader from './PersonHeader.svelte';
   import ContactMethodsSection from './ContactMethodsSection.svelte';
-  import { ReactivePerson as Person } from '$lib/models/reactive-person';
-  import { ReactiveContactMethod as ContactMethod } from '$lib/models/reactive-contact-method';
-  import { ReactivePeopleGroupMembership as PeopleGroupMembership } from '$lib/models/reactive-people-group-membership';
+  import { Person } from '$lib/models/person';
+  import { ContactMethod } from '$lib/models/contact-method';
+  import { PeopleGroupMembership } from '$lib/models/people-group-membership';
   import { ReactivePeopleGroup } from '$lib/models/reactive-people-group';
   import type { CreatePersonData, UpdatePersonData } from '$lib/models/types/person-data';
   import type { PersonData } from '$lib/models/types/person-data';
@@ -74,17 +74,20 @@
   // DRY helper to ensure there's always at least one empty contact method for user input
   function ensureEmptyContactMethod(methods: TempContactMethod[]): TempContactMethod[] {
     // Check if there's already an empty contact method
-    const hasEmptyMethod = methods.some(cm => !cm.value.trim());
-    
+    const hasEmptyMethod = methods.some((cm) => !cm.value.trim());
+
     if (!hasEmptyMethod) {
       // Add one empty contact method for user to add new ones
       // No ID for new records - follows Rails pattern
-      return [...methods, {
-        value: '',
-        normalized: null
-      }];
+      return [
+        ...methods,
+        {
+          value: '',
+          normalized: null,
+        },
+      ];
     }
-    
+
     return methods;
   }
 
@@ -96,17 +99,17 @@
   const groups = $derived(allGroups.filter((g) => !g.is_department));
   const departments = $derived(allGroups.filter((g) => g.is_department));
 
-  // Track initialization to prevent infinite loops
-  let isInitialized = false;
+  // Track the person ID to detect when it actually changes
+  let lastPersonId = $state<string | null>(null);
 
   // Initialize form data when person changes
   $effect(() => {
-    // Skip if already initialized and nothing changed
-    if (isInitialized && mode !== 'create') {
-      return;
-    }
+    const currentPersonId = person?.id || null;
 
-    if (person && (mode === 'edit' || mode === 'view')) {
+    // In view mode, always update when person data changes
+    // In edit mode, only update when switching to a different person (not during edits)
+    if (person && mode === 'view') {
+      // Always sync in view mode
       formData.name = person.name || '';
       formData.namePreferred = person.name_preferred || '';
       formData.namePronunciationHint = person.name_pronunciation_hint || '';
@@ -127,16 +130,47 @@
             : null,
         }));
       }
-      
+
       // Ensure there's always at least one empty field for adding new contacts
       contactMethods = ensureEmptyContactMethod(newContactMethods);
 
       // Load group memberships (would need to be loaded separately in real implementation)
       formData.selectedGroupIds = [];
       formData.selectedDepartmentIds = [];
-      
-      isInitialized = true;
-    } else if (mode === 'create' && !isInitialized) {
+
+      lastPersonId = currentPersonId;
+    } else if (person && mode === 'edit' && currentPersonId !== lastPersonId) {
+      // In edit mode, only update when switching to a different person
+      formData.name = person.name || '';
+      formData.namePreferred = person.name_preferred || '';
+      formData.namePronunciationHint = person.name_pronunciation_hint || '';
+      formData.title = person.title || '';
+      formData.isActive = person.is_active ?? true;
+
+      // Set contact methods
+      let newContactMethods: TempContactMethod[] = [];
+      if (person.contactMethods?.length) {
+        newContactMethods = person.contactMethods.map((cm) => ({
+          id: cm.id,
+          value: cm.value,
+          normalized: cm.contact_type
+            ? {
+                contact_type: cm.contact_type as any,
+                formatted_value: cm.formatted_value || cm.value,
+              }
+            : null,
+        }));
+      }
+
+      // Ensure there's always at least one empty field for adding new contacts
+      contactMethods = ensureEmptyContactMethod(newContactMethods);
+
+      // Load group memberships (would need to be loaded separately in real implementation)
+      formData.selectedGroupIds = [];
+      formData.selectedDepartmentIds = [];
+
+      lastPersonId = currentPersonId;
+    } else if (mode === 'create' && lastPersonId !== 'create-mode') {
       // Initialize empty form for create mode
       formData = {
         name: '',
@@ -150,8 +184,8 @@
 
       // Initialize with one empty contact method (auto-add will create more as needed)
       contactMethods = ensureEmptyContactMethod([]);
-      
-      isInitialized = true;
+
+      lastPersonId = 'create-mode'; // Special marker for create mode
     }
   });
 
@@ -194,19 +228,19 @@
 
     // Create contact methods with normalized data
     const validContactMethods = contactMethods.filter((cm) => cm.value.trim());
-    
+
     const createdContactMethods = [];
 
     for (const cm of validContactMethods) {
       const normalized = cm.normalized || normalizeContact(cm.value);
-      
+
       const createData = {
         person_id: newPerson.id,
         value: cm.value.trim(),
         contact_type: normalized?.contact_type,
         formatted_value: normalized?.formatted_value || cm.value.trim(),
       };
-      
+
       const created = await ContactMethod.create(createData);
       createdContactMethods.push(created);
     }

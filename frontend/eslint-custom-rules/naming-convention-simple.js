@@ -28,7 +28,7 @@ export default {
     const isSvelteFile = filename.endsWith('.svelte');
     const isTestFile = /\.(test|spec)\.(js|ts)$/.test(filename);
     const isExampleFile = filename.includes('/examples/') || filename.includes('/record-factory/');
-    const isReactiveModelFile = filename.includes('/models/reactive-') && filename.endsWith('.ts'); // eslint-disable-line epic-007/naming-convention
+    const isReactiveModelFile = filename.includes('/models/reactive-') && filename.endsWith('.ts');
     const isModelSystemFile =
       filename.includes('/models/base/') || filename.includes('/models/migration/');
 
@@ -77,19 +77,24 @@ export default {
         if (isExampleFile) return;
 
         const name = node.name;
-        
+
         // Skip common property names that aren't model references
         // These are property/variable names, not model class names
-        if (name === 'isActive' || name === 'isReactive' || 
-            name === 'makeActive' || name === 'setActive' ||
-            name === 'active' || name === 'reactive') {
+        if (
+          name === 'isActive' ||
+          name === 'isReactive' ||
+          name === 'makeActive' ||
+          name === 'setActive' ||
+          name === 'active' ||
+          name === 'reactive'
+        ) {
           return;
         }
-        
+
         // Only check identifiers that look like model class names
         // Model names typically start with uppercase or contain "Model"
         const looksLikeModelName = /^[A-Z].*Model|^Active[A-Z]|^Reactive[A-Z]/.test(name);
-        
+
         if (!looksLikeModelName) {
           return;
         }
