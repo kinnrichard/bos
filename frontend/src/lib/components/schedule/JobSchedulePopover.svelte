@@ -432,9 +432,9 @@
   const followupValue = $derived(editingFollowup?.scheduled_at || null);
 
   // Animation config
-  const slideInFromRight = { x: 320, duration: 300, delay: 50, easing: cubicOut };
+  const slideInFromRight = { x: 320, duration: 300, easing: cubicOut };
   const slideOutToRight = { x: 320, duration: 300, easing: cubicOut };
-  const slideInFromLeft = { x: -320, duration: 300, delay: 50, easing: cubicOut };
+  const slideInFromLeft = { x: -320, duration: 300, easing: cubicOut };
   const slideOutToLeft = { x: -320, duration: 300, easing: cubicOut };
 </script>
 
