@@ -4,7 +4,7 @@
     subtitle?: string;
     children?: import('svelte').Snippet;
   }
-  
+
   let { title, subtitle, children }: Props = $props();
 </script>
 
@@ -15,7 +15,7 @@
       <p class="logs-subtitle">{subtitle}</p>
     {/if}
   </div>
-  
+
   <div class="logs-content">
     {@render children?.()}
   </div>
@@ -25,7 +25,7 @@
   .logs-layout {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 0 24px 24px 24px;
   }
 
   .logs-header {
