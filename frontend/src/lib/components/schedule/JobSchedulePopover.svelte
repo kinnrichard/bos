@@ -34,6 +34,7 @@
     | 'followup-time'
   >('menu');
   let editingFollowupId = $state<string | null>(null);
+  let containerHeight = $state('auto');
 
   // Derive job data
   const job = $derived(initialJob);
@@ -436,6 +437,18 @@
   const slideOutToRight = { x: 320, duration: 300, easing: cubicOut };
   const slideInFromLeft = { x: -320, duration: 300, easing: cubicOut };
   const slideOutToLeft = { x: -320, duration: 300, easing: cubicOut };
+
+  // Update container height based on view
+  $effect(() => {
+    if (currentView === 'menu') {
+      containerHeight = 'auto';
+    } else if (currentView.includes('time')) {
+      containerHeight = '420px';
+    } else {
+      // Date views need more space for calendar
+      containerHeight = '480px';
+    }
+  });
 </script>
 
 <BasePopover
@@ -459,7 +472,7 @@
   {/snippet}
 
   {#snippet children({ close: _close })}
-    <div class="schedule-popover-container">
+    <div class="schedule-popover-container" style="height: {containerHeight}">
       {#if currentView === 'menu'}
         <div class="schedule-menu" in:fly={slideInFromLeft} out:fly={slideOutToLeft}>
           <div class="schedule-header">
@@ -559,11 +572,14 @@
   .schedule-popover-container {
     position: relative;
     width: 100%;
-    height: 500px; /* Fixed height for smooth transitions */
     overflow: hidden;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .schedule-menu,
+  .schedule-menu {
+    width: 100%;
+  }
+
   .schedule-editor {
     position: absolute;
     top: 0;
@@ -590,10 +606,6 @@
 
   /* Responsive adjustments */
   @media (max-width: 480px) {
-    .schedule-popover-container {
-      height: 450px;
-    }
-
     .schedule-header {
       padding: 12px 16px 8px;
     }
