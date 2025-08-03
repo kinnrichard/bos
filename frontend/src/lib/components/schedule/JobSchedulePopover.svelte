@@ -74,7 +74,8 @@
     options.push({
       id: 'start-date',
       value: 'start-date',
-      label: startDate ? `Start: ${formatDateOnly(startDate)}` : 'Add a Start Date',
+      label: startDate ? 'Start:' : 'Add a Start Date',
+      rightText: startDate ? formatDateOnly(startDate) : undefined,
       icon: '/icons/calendar.svg',
     });
 
@@ -83,7 +84,8 @@
       options.push({
         id: 'start-time',
         value: 'start-time',
-        label: startTimeSet ? `   at ${formatTimeOnly(startDate)}` : 'Add a Start Time',
+        label: startTimeSet ? '   at' : 'Add a Start Time',
+        rightText: startTimeSet ? formatTimeOnly(startDate) : undefined,
         icon: null, // No icon for time, indented label
       });
     }
@@ -98,7 +100,8 @@
     options.push({
       id: 'due-date',
       value: 'due-date',
-      label: dueDate ? `Due: ${formatDateOnly(dueDate)}` : 'Add a Due Date',
+      label: dueDate ? 'Due:' : 'Add a Due Date',
+      rightText: dueDate ? formatDateOnly(dueDate) : undefined,
       icon: '/icons/calendar-with-badge.svg',
     });
 
@@ -107,7 +110,8 @@
       options.push({
         id: 'due-time',
         value: 'due-time',
-        label: dueTimeSet ? `   at ${formatTimeOnly(dueDate)}` : 'Add a Due Time',
+        label: dueTimeSet ? '   at' : 'Add a Due Time',
+        rightText: dueTimeSet ? formatTimeOnly(dueDate) : undefined,
         icon: null, // No icon for time, indented label
       });
     }
@@ -123,9 +127,10 @@
       options.push({
         id: `followup-${followup.id}`,
         value: `followup-${followup.id}`,
-        label: followup.scheduled_at
-          ? `Followup: ${formatDateOnly(new Date(followup.scheduled_at))}`
-          : 'Followup',
+        label: followup.scheduled_at ? 'Followup:' : 'Followup',
+        rightText: followup.scheduled_at
+          ? formatDateOnly(new Date(followup.scheduled_at))
+          : undefined,
         icon: '/icons/calendar.svg',
       });
 
@@ -134,9 +139,10 @@
         options.push({
           id: `followup-time-${followup.id}`,
           value: `followup-time-${followup.id}`,
-          label: followup.time_set
-            ? `   at ${formatTimeOnly(new Date(followup.scheduled_at))}`
-            : 'Add a Time',
+          label: followup.time_set ? '   at' : 'Add a Time',
+          rightText: followup.time_set
+            ? formatTimeOnly(new Date(followup.scheduled_at))
+            : undefined,
           icon: null,
         });
       }

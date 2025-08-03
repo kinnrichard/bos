@@ -1,15 +1,16 @@
 <script lang="ts" generics="T = any">
   import { onMount } from 'svelte';
-  
+
   // Option type definition
   interface MenuOption {
     id: string | number;
     value: T;
     label: string;
-    icon?: string;      // URL or emoji
+    icon?: string; // URL or emoji
+    rightText?: string; // Text to show on the right side
     disabled?: boolean;
-    divider?: boolean;  // Render as divider
-    header?: boolean;   // Render as header
+    divider?: boolean; // Render as divider
+    header?: boolean; // Render as header
     [key: string]: any; // Allow custom properties
   }
 
@@ -29,7 +30,9 @@
     enableKeyboard?: boolean;
     autoFocus?: boolean;
     maxHeight?: string;
-    optionContent?: import('svelte').Snippet<[{ option: MenuOption, isSelected: boolean, isFocused: boolean }]>;
+    optionContent?: import('svelte').Snippet<
+      [{ option: MenuOption; isSelected: boolean; isFocused: boolean }]
+    >;
     headerContent?: import('svelte').Snippet<[{ option: MenuOption }]>;
     iconContent?: import('svelte').Snippet<[{ option: MenuOption }]>;
   }
@@ -45,32 +48,32 @@
     iconPosition = 'left',
     className = '',
     optionClassName = '',
-    selectedClassName = '',
+    selectedClassName = '', // eslint-disable-line @typescript-eslint/no-unused-vars
     enableKeyboard = true,
     autoFocus = true,
     maxHeight = '',
     optionContent,
     headerContent,
-    iconContent
+    iconContent,
   }: Props = $props();
-  
+
   let menuElement = $state<HTMLElement>();
   let focusedIndex = $state(-1);
   let searchQuery = $state('');
   let searchTimeout: ReturnType<typeof setTimeout>;
-  
+
   // Filter out dividers and headers for keyboard navigation
   const selectableOptions = $derived(
-    options.filter(opt => !opt.divider && !opt.header && !opt.disabled)
+    options.filter((opt) => !opt.divider && !opt.header && !opt.disabled)
   );
-  
+
   // Find index in selectable options
   const focusedOption = $derived(
-    focusedIndex >= 0 && focusedIndex < selectableOptions.length 
-      ? selectableOptions[focusedIndex] 
+    focusedIndex >= 0 && focusedIndex < selectableOptions.length
+      ? selectableOptions[focusedIndex]
       : null
   );
-  
+
   function isSelected(value: T): boolean {
     if (selected === undefined) return false;
     if (Array.isArray(selected)) {
@@ -78,27 +81,27 @@
     }
     return selected === value;
   }
-  
+
   function handleSelect(option: MenuOption) {
     if (option.disabled || option.divider || option.header) return;
-    
+
     onSelect(option.value, option);
-    
+
     // Close on single select
     if (!multiple && onClose) {
       // Small delay to allow click animation
       setTimeout(() => onClose(), 100);
     }
   }
-  
+
   function handleMouseLeave() {
     // Clear highlight when mouse leaves menu (native macOS behavior)
     focusedIndex = -1;
   }
-  
+
   function handleKeydown(e: KeyboardEvent) {
     if (!enableKeyboard) return;
-    
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -108,13 +111,11 @@
           focusedIndex = 0;
         } else {
           // Normal cycling
-          const nextIndex = focusedIndex < selectableOptions.length - 1 
-            ? focusedIndex + 1 
-            : 0;
+          const nextIndex = focusedIndex < selectableOptions.length - 1 ? focusedIndex + 1 : 0;
           focusedIndex = nextIndex;
         }
         break;
-        
+
       case 'ArrowUp':
         e.preventDefault();
         e.stopPropagation();
@@ -123,13 +124,11 @@
           focusedIndex = selectableOptions.length - 1;
         } else {
           // Normal cycling
-          const prevIndex = focusedIndex > 0 
-            ? focusedIndex - 1 
-            : selectableOptions.length - 1;
+          const prevIndex = focusedIndex > 0 ? focusedIndex - 1 : selectableOptions.length - 1;
           focusedIndex = prevIndex;
         }
         break;
-        
+
       case 'Enter':
       case ' ':
         e.preventDefault();
@@ -138,28 +137,28 @@
           handleSelect(focusedOption);
         }
         break;
-        
+
       case 'Escape':
         e.preventDefault();
         e.stopPropagation();
         onClose?.();
         break;
-        
+
       default:
         // Type-ahead search
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
           clearTimeout(searchTimeout);
           searchQuery += e.key.toLowerCase();
-          
+
           // Find first matching option
-          const matchIndex = selectableOptions.findIndex(opt =>
+          const matchIndex = selectableOptions.findIndex((opt) =>
             opt.label.toLowerCase().startsWith(searchQuery)
           );
-          
+
           if (matchIndex >= 0) {
             focusedIndex = matchIndex;
           }
-          
+
           // Clear search after 1 second
           searchTimeout = setTimeout(() => {
             searchQuery = '';
@@ -167,14 +166,14 @@
         }
     }
   }
-  
+
   // Focus management
   onMount(() => {
     if (autoFocus && menuElement) {
       menuElement.focus();
       // Don't set initial focus - let user initiate with keyboard or mouse
     }
-    
+
     // Fix for text truncation bug: Force browser to recalculate layout
     // Without this, long text items (like "Test Customer Specialist") get truncated
     // until hover triggers a repaint. This is likely due to the popover's width
@@ -186,19 +185,14 @@
         menuElement.style.display = '';
       }
     });
-    
+
     return () => {
       clearTimeout(searchTimeout);
     };
   });
-
-  // Get index of option in full options array for rendering
-  function getOptionIndex(option: MenuOption): number {
-    return options.indexOf(option);
-  }
 </script>
 
-<div 
+<div
   class="popover-menu {className}"
   role={multiple ? 'listbox' : 'menu'}
   aria-multiselectable={multiple}
@@ -206,7 +200,7 @@
   bind:this={menuElement}
   onkeydown={handleKeydown}
   onmouseleave={handleMouseLeave}
-  style="{maxHeight ? `max-height: ${maxHeight};` : ''}"
+  style={maxHeight ? `max-height: ${maxHeight};` : ''}
 >
   {#each options as option (option.id)}
     {#if option.divider}
@@ -247,13 +241,19 @@
         }}
       >
         {#if optionContent}
-          {@render optionContent({ option, isSelected: isSelected(option.value), isFocused: option === focusedOption })}
+          {@render optionContent({
+            option,
+            isSelected: isSelected(option.value),
+            isFocused: option === focusedOption,
+          })}
         {:else}
           {#if showCheckmarks}
             <div class="popover-menu-checkmark">
               {#if isSelected(option.value)}
-                <img 
-                  src={option === focusedOption ? '/icons/checkmark-white.svg' : '/icons/checkmark-blue.svg'} 
+                <img
+                  src={option === focusedOption
+                    ? '/icons/checkmark-white.svg'
+                    : '/icons/checkmark-blue.svg'}
                   alt="Selected"
                   width="12"
                   height="12"
@@ -261,7 +261,7 @@
               {/if}
             </div>
           {/if}
-          
+
           {#if showIcons && iconPosition === 'left'}
             <span class="popover-menu-icon popover-menu-icon-left">
               {#if iconContent}
@@ -275,9 +275,13 @@
               {/if}
             </span>
           {/if}
-          
+
           <span class="popover-menu-label">{option.label}</span>
-          
+
+          {#if option.rightText}
+            <span class="popover-menu-right-text">{option.rightText}</span>
+          {/if}
+
           {#if showIcons && option.icon && iconPosition === 'right' && !showCheckmarks}
             <span class="popover-menu-icon popover-menu-icon-right">
               {#if option.icon.startsWith('/') || option.icon.startsWith('http')}
@@ -315,7 +319,7 @@
     background-color: var(--border-secondary);
     border-radius: 3px;
   }
-  
+
   .popover-menu-option {
     display: flex;
     align-items: center;
@@ -332,41 +336,41 @@
     position: relative;
     outline: none; /* Remove focus outline */
   }
-  
+
   /* Remove focus styles from all states */
   .popover-menu-option:focus {
     outline: none;
   }
-  
+
   .popover-menu-option:focus-visible {
     outline: none;
   }
-  
+
   .popover-menu-option:hover:not(.disabled) {
     background-color: var(--bg-tertiary);
   }
-  
+
   .popover-menu-option.focused:not(.disabled) {
     background-color: var(--accent-blue);
-    color: #FFFFFF; /* Pure white when highlighted */
+    color: #ffffff; /* Pure white when highlighted */
     text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
-  
+
   .popover-menu-option.selected:not(.disabled) {
     background-color: var(--accent-blue-bg);
   }
-  
+
   .popover-menu-option.selected.focused:not(.disabled) {
     background-color: var(--accent-blue);
-    color: #FFFFFF; /* Pure white when highlighted */
+    color: #ffffff; /* Pure white when highlighted */
     text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
-  
+
   .popover-menu-option.disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
+
   .popover-menu-icon {
     flex-shrink: 0;
     width: 20px;
@@ -377,7 +381,7 @@
     font-size: 16px;
     line-height: 1;
   }
-  
+
   .popover-menu-icon img {
     width: 100%;
     height: 100%;
@@ -391,15 +395,27 @@
   .popover-menu-icon-right {
     margin-left: auto;
   }
-  
+
   .popover-menu-label {
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding-right: 30px;
   }
-  
+
+  .popover-menu-right-text {
+    margin-left: auto;
+    padding-left: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  /* When focused, make right text white too */
+  .popover-menu-option.focused .popover-menu-right-text {
+    color: #ffffff;
+  }
+
   .popover-menu-checkmark {
     flex-shrink: 0;
     min-width: 12px;
@@ -410,13 +426,13 @@
     align-items: center;
     justify-content: center;
   }
-  
+
   .popover-menu-divider {
     height: 1px;
     background-color: var(--border-primary);
     margin: 4px 12px 4px 32px; /* 32px = 12px padding + 12px checkmark + 8px gap */
   }
-  
+
   .popover-menu-header {
     display: flex;
     align-items: center;
@@ -427,7 +443,7 @@
     opacity: 0.33;
     line-height: 1.5;
   }
-  
+
   .popover-menu-header .popover-menu-label {
     /* Remove the right padding since headers don't need space for right-side elements */
     padding-right: 0;
@@ -446,7 +462,7 @@
       /* Use stronger background instead of outline for high contrast */
       background-color: var(--bg-tertiary);
     }
-    
+
     .popover-menu-option.selected {
       font-weight: 600;
     }
