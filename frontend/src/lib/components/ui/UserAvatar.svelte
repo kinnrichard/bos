@@ -196,6 +196,7 @@
     border: none;
     padding: 0;
     overflow: hidden;
+    box-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease;
