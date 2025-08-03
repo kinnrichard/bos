@@ -443,8 +443,8 @@
   const calculateMenuHeight = () => {
     // Header height (with padding and border)
     const headerHeight = 52;
-    // Menu padding
-    const menuPadding = 16;
+    // Menu inner padding (8px top + 4px bottom from .schedule-menu-inner)
+    const menuPadding = 12;
     // Each regular menu item is ~36px
     const itemHeight = 36;
     // Dividers are ~9px
