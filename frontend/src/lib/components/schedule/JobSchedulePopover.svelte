@@ -434,15 +434,15 @@
   const followupValue = $derived(editingFollowup?.scheduled_at || null);
 
   // Animation config
-  const slideInFromRight = { x: 320, duration: 300, easing: cubicOut };
-  const slideOutToRight = { x: 320, duration: 300, easing: cubicOut };
-  const slideInFromLeft = { x: -320, duration: 300, easing: cubicOut };
-  const slideOutToLeft = { x: -320, duration: 300, easing: cubicOut };
+  const slideInFromRight = { x: 280, duration: 300, easing: cubicOut };
+  const slideOutToRight = { x: 280, duration: 300, easing: cubicOut };
+  const slideInFromLeft = { x: -280, duration: 300, easing: cubicOut };
+  const slideOutToLeft = { x: -280, duration: 300, easing: cubicOut };
 
   // Calculate menu height dynamically
   const calculateMenuHeight = () => {
     // Header height (with padding and border)
-    const headerHeight = 52;
+    const headerHeight = 45;
     // Menu inner padding (8px top + 4px bottom from .schedule-menu-inner)
     const menuPadding = 12;
     // Each regular menu item is ~36px
@@ -470,10 +470,10 @@
       const menuHeight = calculateMenuHeight();
       containerHeight = `${menuHeight}px`;
     } else if (currentView.includes('time')) {
-      containerHeight = '420px';
+      containerHeight = '400px';
     } else {
       // Date views need more space for calendar
-      containerHeight = '480px';
+      containerHeight = '440px';
     }
   });
 </script>
@@ -481,7 +481,7 @@
 <BasePopover
   bind:popover={basePopover}
   preferredPlacement="bottom"
-  panelWidth="320px"
+  panelWidth="280px"
   {disabled}
   closeOnClickOutside={currentView === 'menu'}
 >
@@ -621,7 +621,7 @@
   }
 
   .schedule-header {
-    padding: 16px 20px 12px;
+    padding: 12px 16px 10px;
     border-bottom: 1px solid var(--border-primary);
   }
 

@@ -217,7 +217,7 @@
     padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
   }
 
   .calendar-section {
