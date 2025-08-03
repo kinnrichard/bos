@@ -502,12 +502,11 @@
           in:fly={slideInFromLeft}
           out:fly={slideOutToLeft}
         >
-          <div class="schedule-header">
-            <h3 class="schedule-title">Schedule</h3>
-          </div>
-
           <PopoverMenu
-            options={menuOptions}
+            options={[
+              { id: 'title', value: 'title', label: 'Schedule', header: true },
+              ...menuOptions,
+            ]}
             onSelect={handleMenuSelect}
             showIcons={true}
             showCheckmarks={false}
@@ -646,31 +645,13 @@
     min-height: 0;
   }
 
-  .schedule-header {
-    padding: 12px 16px 10px;
-    border-bottom: 1px solid var(--border-primary);
-  }
-
-  .schedule-title {
-    color: var(--text-primary);
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-  }
-
   :global(.schedule-menu-inner) {
     padding: 8px 4px;
   }
 
   /* Responsive adjustments */
   @media (max-width: 480px) {
-    .schedule-header {
-      padding: 12px 16px 8px;
-    }
-
-    .schedule-title {
-      font-size: 15px;
-    }
+    /* Styles removed - using PopoverMenu header now */
   }
 
   /* Accessibility improvements */
