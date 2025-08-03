@@ -346,7 +346,7 @@
     color: white;
     border: none;
     border-radius: 0.25rem;
-    cursor: pointer;
+    cursor: default;
     transition: background-color 0.2s;
   }
 
@@ -396,7 +396,7 @@
     border: none;
     color: #3b82f6;
     text-decoration: underline;
-    cursor: pointer;
+    cursor: default;
     padding: 0;
     margin-left: 0.25rem;
   }
@@ -412,7 +412,7 @@
     padding: 1rem;
     background-color: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
-    cursor: pointer;
+    cursor: default;
     display: flex;
     justify-content: space-between;
     align-items: center;

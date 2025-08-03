@@ -383,7 +383,7 @@
     color: white;
     border: none;
     border-radius: 0.25rem;
-    cursor: pointer;
+    cursor: default;
   }
 
   .error-message button:hover {

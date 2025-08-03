@@ -100,11 +100,6 @@
     gap: 12px;
   }
 
-  .job-card-inline:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
-
   .job-status-emoji {
     font-size: 18px;
     flex-shrink: 0;
@@ -128,10 +123,6 @@
     text-decoration: none;
     color: var(--accent-blue);
     transition: color 0.15s ease;
-  }
-
-  .client-link:hover {
-    color: var(--accent-blue-hover);
   }
 
   .job-name {

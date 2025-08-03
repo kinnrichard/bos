@@ -160,7 +160,7 @@
     background: none;
     border: none;
     border-radius: 8px;
-    cursor: pointer;
+    cursor: default;
     transition: all 0.2s ease;
     position: relative;
   }
@@ -295,11 +295,7 @@
     color: white;
     border: none;
     border-radius: 0.375rem;
-    cursor: pointer;
+    cursor: default;
     font-size: 0.95rem;
-  }
-
-  .empty-state button:hover {
-    opacity: 0.9;
   }
 </style>

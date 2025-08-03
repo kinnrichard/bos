@@ -71,7 +71,7 @@
     font-weight: 500;
     line-height: 1;
     white-space: nowrap;
-    cursor: pointer;
+    cursor: default;
     transition: all 0.15s ease;
     font-family: inherit;
     min-width: fit-content;
@@ -84,11 +84,6 @@
     color: var(--text-primary, #f2f2f7);
   }
 
-  .text-button.default:hover:not(.disabled) {
-    background-color: var(--bg-tertiary, #3a3a3c);
-    border-color: var(--border-secondary, #48484a);
-  }
-
   .text-button.default:active:not(.disabled) {
     background-color: var(--bg-quaternary, #48484a);
   }
@@ -99,10 +94,6 @@
     text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
   }
 
-  .text-button.primary:hover:not(.disabled) {
-    background-color: var(--accent-blue-hover, #0089e0);
-  }
-
   .text-button.primary:active:not(.disabled) {
     background-color: var(--accent-blue-dark, #0066cc);
   }
@@ -110,10 +101,6 @@
   .text-button.danger {
     background-color: var(--accent-red, #ff3b30);
     color: white;
-  }
-
-  .text-button.danger:hover:not(.disabled) {
-    background-color: var(--accent-red-hover, #e0342a);
   }
 
   .text-button.danger:active:not(.disabled) {
@@ -127,11 +114,6 @@
     color: var(--text-primary, #f2f2f7);
   }
 
-  .text-button.ghost:hover:not(.disabled) {
-    background-color: var(--bg-secondary, #1c1c1d);
-    border-color: var(--border-secondary, #48484a);
-  }
-
   .text-button.ghost:active:not(.disabled) {
     background-color: var(--bg-tertiary, #3a3a3c);
   }
@@ -141,11 +123,6 @@
     background-color: transparent;
     border-color: var(--accent-red, #ff3b30);
     color: var(--accent-red, #ff3b30);
-  }
-
-  .text-button.ghost-danger:hover:not(.disabled) {
-    background-color: rgba(255, 59, 48, 0.1);
-    border-color: var(--accent-red-hover, #e0342a);
   }
 
   .text-button.ghost-danger:active:not(.disabled) {

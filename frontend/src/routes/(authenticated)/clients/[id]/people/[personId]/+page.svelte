@@ -151,7 +151,7 @@
     color: white;
     border: none;
     border-radius: 0.375rem;
-    cursor: pointer;
+    cursor: default;
     font-size: 0.95rem;
   }
 

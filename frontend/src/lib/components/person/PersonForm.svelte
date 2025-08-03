@@ -564,7 +564,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    cursor: pointer;
+    cursor: default;
     font-size: 14px;
     color: var(--text-primary);
     user-select: none;
@@ -572,7 +572,7 @@
   }
 
   .checkbox-label input[type='checkbox'] {
-    cursor: pointer;
+    cursor: default;
     width: 18px;
     height: 18px;
     margin: 0;

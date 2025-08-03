@@ -1866,7 +1866,7 @@
     color: var(--accent-blue);
     font-size: 14px;
     text-decoration: underline;
-    cursor: pointer;
+    cursor: default;
     padding: 0;
   }
 

@@ -209,7 +209,7 @@
     background: none;
     border: none;
     color: var(--text-secondary, #c7c7cc);
-    cursor: pointer;
+    cursor: default;
     transition: color 0.15s ease;
     font-weight: 500;
     white-space: nowrap;

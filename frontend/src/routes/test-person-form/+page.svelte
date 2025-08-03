@@ -165,7 +165,7 @@
     color: white;
     border: none;
     border-radius: 4px;
-    cursor: pointer;
+    cursor: default;
     font-size: 14px;
   }
 

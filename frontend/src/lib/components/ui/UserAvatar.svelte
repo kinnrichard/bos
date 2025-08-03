@@ -26,7 +26,7 @@
     className = '',
     style = '',
     overlap = false,
-    overlapOrder = 0
+    overlapOrder = 0,
   }: {
     user?: UserData;
     size?: 'small' | 'medium' | 'large' | 'xlarge' | 'xs' | 'normal';
@@ -44,15 +44,13 @@
   // Map legacy size names to new sizes
   const sizeMap = {
     xs: 'small',
-    normal: 'medium'
+    normal: 'medium',
   } as const;
-  
+
   const mappedSize = $derived(sizeMap[size as keyof typeof sizeMap] || size);
 
   // Get user name from various sources
-  const userName = $derived(
-    user?.name || user?.attributes?.name || user?.email || 'Unknown User'
-  );
+  const userName = $derived(user?.name || user?.attributes?.name || user?.email || 'Unknown User');
 
   // Generate initials
   const initials = $derived(() => {
@@ -60,22 +58,22 @@
     if (user?.attributes?.initials) {
       return user.attributes.initials;
     }
-    
+
     const source = user?.name || user?.attributes?.name || user?.email || '';
-    
+
     if (!source) return '?';
-    
+
     // Handle email format
     if (!user?.name && !user?.attributes?.name && user?.email) {
       return user.email.charAt(0).toUpperCase();
     }
-    
+
     // Handle full names
     const parts = source.trim().split(/\s+/);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    
+
     // Single name or word
     return source.slice(0, 2).toUpperCase();
   });
@@ -83,52 +81,55 @@
   // Avatar style mapping - these match the user avatar styles in the system
   const avatarStyles = {
     red: 'var(--accent-red)',
-    blue: 'var(--accent-blue)', 
+    blue: 'var(--accent-blue)',
     green: 'var(--accent-green)',
     orange: 'var(--accent-orange)',
     purple: 'var(--accent-purple)',
     gray: 'var(--text-secondary)',
-    teal: 'var(--accent-teal)'
+    teal: 'var(--accent-teal)',
   };
 
   // Generate color from user ID or use provided color
   const backgroundColor = $derived(() => {
     // Direct color provided
     if (user?.color) return user.color;
-    
+
     // Legacy avatar style
     if (user?.attributes?.avatar_style) {
-      return avatarStyles[user.attributes.avatar_style as keyof typeof avatarStyles] || avatarStyles.blue;
+      return (
+        avatarStyles[user.attributes.avatar_style as keyof typeof avatarStyles] || avatarStyles.blue
+      );
     }
-    
+
     // Generate from ID
     if (!user?.id) return avatarStyles.blue;
-    
+
     const colors = Object.values(avatarStyles);
-    const index = typeof user.id === 'number' 
-      ? user.id % colors.length
-      : parseInt(String(user.id), 36) % colors.length;
-      
+    const index =
+      typeof user.id === 'number'
+        ? user.id % colors.length
+        : parseInt(String(user.id), 36) % colors.length;
+
     return colors[index] || avatarStyles.blue;
   });
 
   // Get avatar URL from various sources
-  const avatarUrl = $derived(
-    user?.avatar_url || user?.attributes?.avatar_url
-  );
+  const avatarUrl = $derived(user?.avatar_url || user?.attributes?.avatar_url);
 
   // Handle image loading errors
   let imageError = $state(false);
-  
+
   // Size classes
   const sizeClasses = {
     small: 'avatar--small',
-    medium: 'avatar--medium', 
+    medium: 'avatar--medium',
     large: 'avatar--large',
-    xlarge: 'avatar--xlarge'
+    xlarge: 'avatar--xlarge',
   };
-  
-  const sizeClass = $derived(sizeClasses[mappedSize as keyof typeof sizeClasses] || sizeClasses.medium);
+
+  const sizeClass = $derived(
+    sizeClasses[mappedSize as keyof typeof sizeClasses] || sizeClasses.medium
+  );
 </script>
 
 {#if clickable}
@@ -136,7 +137,7 @@
     type="button"
     class="user-avatar {sizeClass} {className}"
     class:avatar--circle={shape === 'circle'}
-    class:avatar--square={shape === 'square'} 
+    class:avatar--square={shape === 'square'}
     class:avatar--clickable={clickable}
     class:avatar--border={showBorder}
     class:avatar--overlap={overlap}
@@ -146,10 +147,10 @@
     title={!showTooltip ? userName : undefined}
   >
     {#if avatarUrl && !imageError}
-      <img 
-        src={avatarUrl} 
+      <img
+        src={avatarUrl}
         alt={userName}
-        onerror={() => imageError = true}
+        onerror={() => (imageError = true)}
         loading="lazy"
         class="avatar-image"
       />
@@ -169,10 +170,10 @@
     title={!showTooltip ? userName : undefined}
   >
     {#if avatarUrl && !imageError}
-      <img 
-        src={avatarUrl} 
+      <img
+        src={avatarUrl}
         alt={userName}
-        onerror={() => imageError = true}
+        onerror={() => (imageError = true)}
         loading="lazy"
         class="avatar-image"
       />
@@ -195,76 +196,72 @@
     border: none;
     padding: 0;
     overflow: hidden;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
   }
-  
+
   /* Shape variants */
   .avatar--circle {
     border-radius: 50%;
   }
-  
+
   .avatar--square {
     border-radius: 6px;
   }
-  
+
   /* Border variant */
   .avatar--border {
-    box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 3px var(--border-primary);
+    box-shadow:
+      0 0 0 2px var(--bg-primary),
+      0 0 0 3px var(--border-primary);
   }
-  
+
   /* Clickable variant */
   button.avatar--clickable {
   }
-  
-  button.avatar--clickable:hover {
-    transform: scale(1.05);
-  }
-  
-  button.avatar--clickable:hover.avatar--border {
-    box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 3px var(--accent-blue);
-  }
-  
+
   button.avatar--clickable:active {
     transform: scale(0.95);
   }
-  
+
   /* Size variants */
   .avatar--small {
     width: 24px;
     height: 24px;
   }
-  
+
   .avatar--medium {
     width: 32px;
     height: 32px;
   }
-  
+
   .avatar--large {
     width: 40px;
     height: 40px;
   }
-  
+
   .avatar--xlarge {
     width: 56px;
     height: 56px;
   }
-  
+
   /* Overlap styles for avatar groups */
   .avatar--overlap:not(:first-child) {
     margin-left: -8px;
   }
-  
+
   .avatar--overlap.avatar--border {
     box-shadow: 0 0 0 2px var(--bg-primary);
   }
-  
+
   /* Image styles */
   .avatar-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  
+
   /* Initial styles */
   .user-initials {
     text-transform: uppercase;
@@ -273,20 +270,20 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     line-height: 1;
   }
-  
+
   /* Size-specific font sizes */
   .avatar--small .user-initials {
     font-size: 10px;
   }
-  
+
   .avatar--medium .user-initials {
     font-size: 14px;
   }
-  
+
   .avatar--large .user-initials {
     font-size: 16px;
   }
-  
+
   .avatar--xlarge .user-initials {
     font-size: 20px;
   }
@@ -303,9 +300,11 @@
     .user-avatar {
       border: 2px solid currentColor;
     }
-    
+
     .avatar--border {
-      box-shadow: 0 0 0 3px var(--bg-primary), 0 0 0 4px currentColor;
+      box-shadow:
+        0 0 0 3px var(--bg-primary),
+        0 0 0 4px currentColor;
     }
   }
 

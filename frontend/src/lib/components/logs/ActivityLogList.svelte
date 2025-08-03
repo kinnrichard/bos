@@ -1539,7 +1539,7 @@
     border: none;
     color: #3b82f6;
     text-decoration: underline;
-    cursor: pointer;
+    cursor: default;
     padding: 0;
     margin-left: 0.25rem;
     font-size: 0.875rem;

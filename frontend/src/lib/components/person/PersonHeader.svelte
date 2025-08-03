@@ -58,7 +58,6 @@
         <span class="inactive-badge">Inactive</span>
       {/if}
     </div>
-
   {:else}
     <!-- Edit/Create Mode -->
     <div class="person-form-fields">
@@ -161,14 +160,10 @@
     background: none;
     border: none;
     color: var(--accent-red);
-    cursor: pointer;
+    cursor: default;
     font-size: 14px;
     text-align: left;
     border-radius: 4px;
-  }
-
-  .delete-action:hover {
-    background-color: rgba(255, 69, 58, 0.1);
   }
 
   .delete-action .icon {
@@ -281,7 +276,7 @@
     color: var(--text-primary);
     border: none;
     border-radius: 6px;
-    cursor: pointer;
+    cursor: default;
     font-size: 14px;
   }
 
@@ -291,13 +286,8 @@
     color: white;
     border: none;
     border-radius: 6px;
-    cursor: pointer;
+    cursor: default;
     font-size: 14px;
-  }
-
-  .cancel-button:hover,
-  .delete-button:hover {
-    opacity: 0.9;
   }
 
   /* Responsive adjustments */

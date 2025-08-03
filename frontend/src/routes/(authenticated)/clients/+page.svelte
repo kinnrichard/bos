@@ -311,11 +311,6 @@
     break-inside: avoid;
   }
 
-  .client-item:hover {
-    background-color: var(--bg-tertiary, #3a3a3c);
-    border-color: var(--border-secondary, #48484a);
-  }
-
   .client-item:active {
     background-color: var(--bg-quaternary, #48484a);
   }

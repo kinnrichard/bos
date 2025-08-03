@@ -107,8 +107,29 @@
 		}
 	}
 	
-	/* Global link cursor style */
-	a {
-		cursor: default;
+	/* Global cursor overrides to disable pointer cursors */
+	button,
+	[role="button"],
+	input[type="button"],
+	input[type="submit"],
+	input[type="reset"],
+	input[type="checkbox"],
+	input[type="radio"],
+	select,
+	textarea,
+	a,
+	[onclick],
+	[tabindex]:not([tabindex="-1"]) {
+		cursor: default !important;
+	}
+
+	/* Keep not-allowed cursor for disabled states */
+	button:disabled,
+	[role="button"]:disabled,
+	input:disabled,
+	select:disabled,
+	textarea:disabled,
+	[aria-disabled="true"] {
+		cursor: not-allowed !important;
 	}
 }

@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { POPOVER_CONSTANTS } from '$lib/utils/popover-constants';
-
   let {
     size = 'normal' as 'small' | 'normal' | 'large',
     variant = 'default' as 'default' | 'avatar' | 'primary',
@@ -16,7 +14,7 @@
     borderRadius = undefined as number | string | undefined,
     customClass = '',
     'data-testid': dataTestId = undefined as string | undefined,
-    children
+    children,
   }: {
     size?: 'small' | 'normal' | 'large';
     variant?: 'default' | 'avatar' | 'primary';
@@ -39,19 +37,19 @@
   const sizeConfig = {
     small: { width: 28, height: 28, iconSize: 16 },
     normal: { width: 36, height: 36, iconSize: 20 },
-    large: { width: 44, height: 44, iconSize: 24 }
+    large: { width: 44, height: 44, iconSize: 24 },
   };
 
   const config = $derived(sizeConfig[size]);
 
-  function handleClick(event: MouseEvent) {
+  function handleClick() {
     if (!disabled && onclick) {
       onclick();
     }
   }
 </script>
 
-<button 
+<button
   {type}
   class="circular-button {variant} {size} {customClass}"
   class:dynamic-width={dynamicWidth}
@@ -65,7 +63,11 @@
   style:width={dynamicWidth ? 'auto' : `${config.width}px`}
   style:height={`${config.height}px`}
   style:min-width={minWidth ? `${minWidth}px` : dynamicWidth ? `${config.width}px` : undefined}
-  style:border-radius={borderRadius ? (typeof borderRadius === 'string' ? borderRadius : `${borderRadius}px`) : '50%'}
+  style:border-radius={borderRadius
+    ? typeof borderRadius === 'string'
+      ? borderRadius
+      : `${borderRadius}px`
+    : '50%'}
   onclick={handleClick}
 >
   {@render children?.({ config })}
@@ -87,10 +89,6 @@
   /* Size variants handled by style props - no CSS needed */
 
   /* Variant styles */
-  .circular-button.default:hover:not(:disabled) {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
 
   .circular-button.avatar {
     background-color: var(--accent-red);
@@ -98,18 +96,10 @@
     border-radius: 18px; /* Slightly rounded for avatar style */
   }
 
-  .circular-button.avatar:hover:not(:disabled) {
-    opacity: 0.9;
-  }
-
   .circular-button.primary {
     background-color: var(--accent-blue);
     border-color: var(--accent-blue);
     color: white;
-  }
-
-  .circular-button.primary:hover:not(:disabled) {
-    background-color: var(--accent-blue-dark, #0066cc);
   }
 
   /* Dynamic width for special cases */
@@ -129,10 +119,6 @@
   .circular-button :global(.icon) {
     opacity: 0.7;
     transition: opacity 0.15s ease;
-  }
-
-  .circular-button:hover:not(:disabled) :global(.icon) {
-    opacity: 1;
   }
 
   .circular-button :global(.emoji) {

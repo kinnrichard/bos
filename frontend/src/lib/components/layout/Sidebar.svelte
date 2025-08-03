@@ -149,7 +149,7 @@
     transition: opacity 0.25s ease;
   }
 
-  /* Show close button when hovering brand section or the button itself */
+  /* Show close button on hover - functional requirement */
   .brand-section:hover + .close-btn,
   .close-btn:hover {
     opacity: 1;
@@ -172,9 +172,7 @@
     transition: opacity 0.15s ease;
   }
 
-  .logo-link:hover {
-    opacity: 0.8;
-  }
+  /* Logo link - no hover state */
 
   /* Sidebar logo styling */
   .brand-section .logo-container {
@@ -229,10 +227,7 @@
     text-align: left;
   }
 
-  .nav-link:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
+  /* Navigation link - no hover state */
 
   .nav-link.active {
     background-color: var(--accent-blue);
@@ -270,9 +265,7 @@
     font-size: 13px;
   }
 
-  .footer-link:hover {
-    color: var(--text-primary);
-  }
+  /* Footer link - no hover state */
 
   /* Responsive adjustments */
   @media (max-width: 768px) {

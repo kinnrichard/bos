@@ -154,7 +154,7 @@
     color: var(--text-primary);
     font-size: 0.875rem;
     font-weight: 500;
-    cursor: pointer;
+    cursor: default;
     transition: opacity 0.2s;
   }
 

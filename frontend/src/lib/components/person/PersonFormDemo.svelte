@@ -227,7 +227,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    cursor: pointer;
+    cursor: default;
     font-size: 14px;
     color: var(--text-primary);
   }
@@ -238,7 +238,7 @@
     color: white;
     border: none;
     border-radius: 4px;
-    cursor: pointer;
+    cursor: default;
     font-size: 14px;
     white-space: nowrap;
   }

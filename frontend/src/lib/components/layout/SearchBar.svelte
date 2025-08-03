@@ -165,12 +165,10 @@
     align-items: center;
     justify-content: center;
     transition: background-color 0.15s ease;
-    cursor: pointer;
+    cursor: default;
   }
 
-  .search-clear:hover {
-    background-color: var(--bg-tertiary);
-  }
+  /* Search clear button - no hover state */
 
   .search-clear img {
     width: 12px;

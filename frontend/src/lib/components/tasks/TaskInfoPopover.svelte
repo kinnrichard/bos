@@ -853,7 +853,7 @@
     border-radius: 4px;
     font-size: 13px;
     font-weight: 500;
-    cursor: pointer;
+    cursor: default;
   }
 
   .button--primary {
