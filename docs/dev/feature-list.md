@@ -123,6 +123,7 @@
 - Scroll containers should be normalized
   - Have padding at the bottom to match sidebar margin
 - Make UI text un-selectable
+- Show technician glyphs on Job list
 
 # Features for future versions
 
