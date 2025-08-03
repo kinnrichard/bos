@@ -146,7 +146,7 @@
 
   .toolbar-left,
   .toolbar-right {
-    min-width: 80px;
+    min-width: 50px;
     display: flex;
     align-items: center;
   }
@@ -192,6 +192,7 @@
     margin: 0;
     flex: 1;
     text-align: center;
+    white-space: nowrap;
   }
 
   .time-content {
