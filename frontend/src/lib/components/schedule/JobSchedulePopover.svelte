@@ -6,7 +6,8 @@
   import type { PopulatedJob } from '$lib/types/job';
   import { validateDateRange } from '$lib/utils/date-formatting';
   import { debugComponent } from '$lib/utils/debug';
-  import { slide } from 'svelte/transition';
+  import { fly } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
   import '$lib/styles/popover-common.css';
 
   interface Props {
@@ -429,6 +430,12 @@
 
   // Get followup value
   const followupValue = $derived(editingFollowup?.scheduled_at || null);
+
+  // Animation config
+  const slideInFromRight = { x: 320, duration: 300, delay: 50, easing: cubicOut };
+  const slideOutToRight = { x: 320, duration: 300, easing: cubicOut };
+  const slideInFromLeft = { x: -320, duration: 300, delay: 50, easing: cubicOut };
+  const slideOutToLeft = { x: -320, duration: 300, easing: cubicOut };
 </script>
 
 <BasePopover
@@ -454,7 +461,7 @@
   {#snippet children({ close: _close })}
     <div class="schedule-popover-container">
       {#if currentView === 'menu'}
-        <div class="schedule-menu" transition:slide={{ duration: 200, axis: 'x' }}>
+        <div class="schedule-menu" in:fly={slideInFromLeft} out:fly={slideOutToLeft}>
           <div class="schedule-header">
             <h3 class="schedule-title">Schedule</h3>
           </div>
@@ -468,7 +475,7 @@
           />
         </div>
       {:else if currentView === 'start-date'}
-        <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
+        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
           <DateEditor
             title="Start Date"
             value={startDate}
@@ -479,7 +486,7 @@
           />
         </div>
       {:else if currentView === 'start-time'}
-        <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
+        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
           <TimeEditor
             title="Start Time"
             baseDate={startDate || new Date()}
@@ -491,7 +498,7 @@
           />
         </div>
       {:else if currentView === 'due-date'}
-        <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
+        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
           <DateEditor
             title="Due Date"
             value={dueDate}
@@ -502,7 +509,7 @@
           />
         </div>
       {:else if currentView === 'due-time'}
-        <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
+        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
           <TimeEditor
             title="Due Time"
             baseDate={dueDate || new Date()}
@@ -514,7 +521,7 @@
           />
         </div>
       {:else if currentView === 'followup-date'}
-        <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
+        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
           <DateEditor
             title={editingFollowup ? 'Edit Followup' : 'Add Followup'}
             value={followupValue}
@@ -525,7 +532,7 @@
           />
         </div>
       {:else if currentView === 'followup-time'}
-        <div class="schedule-editor" transition:slide={{ duration: 200, axis: 'x' }}>
+        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
           <TimeEditor
             title="Followup Time"
             baseDate={followupValue ? new Date(followupValue) : new Date()}
