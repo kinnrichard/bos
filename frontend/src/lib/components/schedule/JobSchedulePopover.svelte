@@ -35,6 +35,7 @@
   >('menu');
   let editingFollowupId = $state<string | null>(null);
   let containerHeight = $state('auto');
+  let menuElement = $state<HTMLDivElement>();
 
   // Derive job data
   const job = $derived(initialJob);
@@ -438,10 +439,36 @@
   const slideInFromLeft = { x: -320, duration: 300, easing: cubicOut };
   const slideOutToLeft = { x: -320, duration: 300, easing: cubicOut };
 
+  // Calculate menu height dynamically
+  const calculateMenuHeight = () => {
+    // Header height (with padding and border)
+    const headerHeight = 52;
+    // Menu padding
+    const menuPadding = 16;
+    // Each regular menu item is ~36px
+    const itemHeight = 36;
+    // Dividers are ~9px
+    const dividerHeight = 9;
+
+    // Count items and dividers
+    let totalHeight = headerHeight + menuPadding;
+    for (const option of menuOptions) {
+      if (option.divider) {
+        totalHeight += dividerHeight;
+      } else {
+        totalHeight += itemHeight;
+      }
+    }
+
+    return totalHeight;
+  };
+
   // Update container height based on view
   $effect(() => {
     if (currentView === 'menu') {
-      containerHeight = 'auto';
+      // Use calculated height for smooth transition
+      const menuHeight = calculateMenuHeight();
+      containerHeight = `${menuHeight}px`;
     } else if (currentView.includes('time')) {
       containerHeight = '420px';
     } else {
@@ -474,7 +501,12 @@
   {#snippet children({ close: _close })}
     <div class="schedule-popover-container" style="height: {containerHeight}">
       {#if currentView === 'menu'}
-        <div class="schedule-menu" in:fly={slideInFromLeft} out:fly={slideOutToLeft}>
+        <div
+          class="schedule-menu"
+          bind:this={menuElement}
+          in:fly={slideInFromLeft}
+          out:fly={slideOutToLeft}
+        >
           <div class="schedule-header">
             <h3 class="schedule-title">Schedule</h3>
           </div>
