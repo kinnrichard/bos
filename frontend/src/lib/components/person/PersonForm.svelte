@@ -460,7 +460,7 @@
     width: 100%;
     border: none;
     border-top: 1px solid var(--border-primary);
-    margin: 0;
+    margin: 16px 0;
   }
 
   .groups-section {
