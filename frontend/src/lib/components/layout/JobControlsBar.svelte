@@ -22,11 +22,11 @@
 <div class="job-controls" role="toolbar" aria-label="Job controls">
   <JobStatusButton {jobId} initialStatus={status} {disabled} />
 
+  <JobPriorityButton {jobId} initialPriority={priority} {disabled} />
+
   <TechnicianAssignmentButton {jobId} initialTechnicians={technicians} {disabled} />
 
   <JobSchedulePopover {jobId} initialJob={currentJob} {disabled} />
-
-  <JobPriorityButton {jobId} initialPriority={priority} {disabled} />
 </div>
 
 <style>
