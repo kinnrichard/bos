@@ -109,7 +109,7 @@
     options.push({
       id: 'start-date',
       value: 'start-date',
-      label: startDate ? 'Start:' : 'Add a Start Date',
+      label: startDate ? 'Start' : 'Add a Start Date',
       rightText: startDate ? formatDateOnly(startDate) : undefined,
       icon: '/icons/calendar.svg',
     });
@@ -135,7 +135,7 @@
     options.push({
       id: 'due-date',
       value: 'due-date',
-      label: dueDate ? 'Due:' : 'Add a Due Date',
+      label: dueDate ? 'Due' : 'Add a Due Date',
       rightText: dueDate ? formatDateOnly(dueDate) : undefined,
       icon: '/icons/calendar-with-badge.svg',
     });
@@ -162,7 +162,7 @@
       options.push({
         id: `followup-${followup.id}`,
         value: `followup-${followup.id}`,
-        label: followup.scheduled_at ? 'Followup:' : 'Followup',
+        label: followup.scheduled_at ? 'Followup' : 'Followup',
         rightText: followup.scheduled_at
           ? formatDateOnly(new Date(followup.scheduled_at))
           : undefined,
