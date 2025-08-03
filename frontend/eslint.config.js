@@ -56,7 +56,8 @@ export default [
       parser: typescriptParser,
       parserOptions: {
         extraFileExtensions: ['.svelte'],
-        project: true,
+        project: './tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         // Svelte 5 runes for .svelte.ts files
@@ -98,7 +99,8 @@ export default [
       parserOptions: {
         parser: typescriptParser,
         extraFileExtensions: ['.svelte'],
-        project: true,
+        project: './tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
         svelteConfig,
       },
       globals: {

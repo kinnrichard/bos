@@ -11,6 +11,9 @@
   let loading = $state(false);
   let error = $state<string | null>(null);
 
+  // Reference to PersonForm component to trigger its save method
+  let personFormRef: any;
+
   // Load client to ensure it exists and for layout
   const clientQuery = $derived(ReactiveClient.find(clientId));
   const client = $derived(clientQuery?.data);
@@ -25,6 +28,13 @@
     goto(`/clients/${clientId}/people`);
   }
 
+  // Handle save from toolbar - trigger PersonForm's submit
+  function handleToolbarSave() {
+    if (personFormRef && typeof personFormRef.triggerSubmit === 'function') {
+      personFormRef.triggerSubmit();
+    }
+  }
+
   // Derived validation state (for layout)
   const canSave = $derived(true); // PersonForm handles its own validation
 
@@ -34,7 +44,7 @@
     layoutActions.setSavingPerson(loading);
     layoutActions.setCanSavePerson(canSave);
     layoutActions.setPersonEditCallbacks({
-      onSave: () => {}, // PersonForm handles saving internally
+      onSave: handleToolbarSave, // Bridge to PersonForm's submit
       onCancel: handleCancel,
     });
     layoutActions.setPageTitle('New Person');
@@ -51,6 +61,7 @@
   <div class="new-contact-page">
     <div class="contact-card">
       <PersonForm
+        bind:this={personFormRef}
         mode="create"
         {clientId}
         {loading}

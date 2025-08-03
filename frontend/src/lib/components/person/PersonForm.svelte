@@ -2,9 +2,9 @@
   import { createEventDispatcher } from 'svelte';
   import PersonHeader from './PersonHeader.svelte';
   import ContactMethodsSection from './ContactMethodsSection.svelte';
-  import { Person } from '$lib/models/person';
-  import { ContactMethod } from '$lib/models/contact-method';
-  import { PeopleGroupMembership } from '$lib/models/people-group-membership';
+  import { ReactivePerson as Person } from '$lib/models/reactive-person';
+  import { ReactiveContactMethod as ContactMethod } from '$lib/models/reactive-contact-method';
+  import { ReactivePeopleGroupMembership as PeopleGroupMembership } from '$lib/models/reactive-people-group-membership';
   import { ReactivePeopleGroup } from '$lib/models/reactive-people-group';
   import type { CreatePersonData, UpdatePersonData } from '$lib/models/types/person-data';
   import type { PersonData } from '$lib/models/types/person-data';
@@ -194,16 +194,20 @@
 
     // Create contact methods with normalized data
     const validContactMethods = contactMethods.filter((cm) => cm.value.trim());
+    
     const createdContactMethods = [];
 
     for (const cm of validContactMethods) {
       const normalized = cm.normalized || normalizeContact(cm.value);
-      const created = await ContactMethod.create({
+      
+      const createData = {
         person_id: newPerson.id,
         value: cm.value.trim(),
         contact_type: normalized?.contact_type,
         formatted_value: normalized?.formatted_value || cm.value.trim(),
-      });
+      };
+      
+      const created = await ContactMethod.create(createData);
       createdContactMethods.push(created);
     }
 

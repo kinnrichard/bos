@@ -9,15 +9,11 @@
  * import { ReactivePeopleGroupMembership as PeopleGroupMembership } from './reactive-people-group-membership';
  * ```
  *
- * Generated: 2025-08-03 00:02:36 UTC
+ * Generated: 2025-08-03 01:48:59 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  PeopleGroupMembershipData,
-  CreatePeopleGroupMembershipData,
-  UpdatePeopleGroupMembershipData,
-} from './types/people-group-membership-data';
+import type { PeopleGroupMembershipData, CreatePeopleGroupMembershipData, UpdatePeopleGroupMembershipData } from './types/people-group-membership-data';
 
 /**
  * ActiveRecord configuration for PeopleGroupMembership
@@ -57,19 +53,13 @@ const PeopleGroupMembershipConfig = {
  * const activePeopleGroupMemberships = await PeopleGroupMembership.kept().all();
  * ```
  */
-export const PeopleGroupMembership = createActiveRecord<PeopleGroupMembershipData>(
-  PeopleGroupMembershipConfig
-);
+export const PeopleGroupMembership = createActiveRecord<PeopleGroupMembershipData>(PeopleGroupMembershipConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
 
 // Export types for convenience
-export type {
-  PeopleGroupMembershipData,
-  CreatePeopleGroupMembershipData,
-  UpdatePeopleGroupMembershipData,
-};
+export type { PeopleGroupMembershipData, CreatePeopleGroupMembershipData, UpdatePeopleGroupMembershipData };
 
 // Default export
 export default PeopleGroupMembership;

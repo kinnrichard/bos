@@ -9,15 +9,11 @@
  * import { PeopleGroupMembership } from './people-group-membership';
  * ```
  *
- * Generated: 2025-08-03 00:02:36 UTC
+ * Generated: 2025-08-03 01:48:59 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type {
-  PeopleGroupMembershipData,
-  CreatePeopleGroupMembershipData,
-  UpdatePeopleGroupMembershipData,
-} from './types/people-group-membership-data';
+import type { PeopleGroupMembershipData, CreatePeopleGroupMembershipData, UpdatePeopleGroupMembershipData } from './types/people-group-membership-data';
 
 /**
  * ReactiveRecord configuration for PeopleGroupMembership
@@ -62,12 +58,12 @@ const ReactivePeopleGroupMembershipConfig = {
  * const allPeopleGroupMembershipsQuery = ReactivePeopleGroupMembership.all().all();
  * const activePeopleGroupMembershipsQuery = ReactivePeopleGroupMembership.kept().all();
  * const singlePeopleGroupMembershipQuery = ReactivePeopleGroupMembership.find('123');
- *
+ * 
  * // With relationships
  * const people_group_membershipWithRelationsQuery = ReactivePeopleGroupMembership
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredPeopleGroupMembershipsQuery = ReactivePeopleGroupMembership
  *   .where({ status: 'active' })
@@ -76,9 +72,7 @@ const ReactivePeopleGroupMembershipConfig = {
  *   .all();
  * ```
  */
-export const ReactivePeopleGroupMembership = createReactiveRecord<PeopleGroupMembershipData>(
-  ReactivePeopleGroupMembershipConfig
-);
+export const ReactivePeopleGroupMembership = createReactiveRecord<PeopleGroupMembershipData>(ReactivePeopleGroupMembershipConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
@@ -98,11 +92,7 @@ export const ReactivePeopleGroupMembership = createReactiveRecord<PeopleGroupMem
 export { ReactivePeopleGroupMembership as PeopleGroupMembership };
 
 // Export types for convenience
-export type {
-  PeopleGroupMembershipData,
-  CreatePeopleGroupMembershipData,
-  UpdatePeopleGroupMembershipData,
-};
+export type { PeopleGroupMembershipData, CreatePeopleGroupMembershipData, UpdatePeopleGroupMembershipData };
 
 // Default export
 export default ReactivePeopleGroupMembership;

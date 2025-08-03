@@ -1,6 +1,6 @@
 /**
  * Test for ESLint custom rule: no-reactive-model-outside-svelte
- * 
+ *
  * EPIC-007 Phase 2 Story 3: Clear Naming Convention Implementation
  */
 
@@ -10,8 +10,8 @@ const rule = require('./no-reactive-model-outside-svelte');
 const ruleTester = new RuleTester({
   parserOptions: {
     ecmaVersion: 2020,
-    sourceType: 'module'
-  }
+    sourceType: 'module',
+  },
 });
 
 // Test the custom rule
@@ -20,27 +20,27 @@ ruleTester.run('no-reactive-model-outside-svelte', rule, {
     // ✅ Valid: ReactiveModel in .svelte file
     {
       code: `import { createReactiveModel } from '$lib/record-factory';`,
-      filename: 'JobList.svelte'
+      filename: 'JobList.svelte',
     },
-    
+
     // ✅ Valid: ActiveModel in .ts file
     {
       code: `import { createActiveModel } from '$lib/record-factory';`,
-      filename: 'api/jobs.ts'
+      filename: 'api/jobs.ts',
     },
-    
+
     // ✅ Valid: Example files are allowed
     {
       code: `import { ReactiveRecord } from '$lib/record-factory';`,
-      filename: 'examples/reactive-job-example.ts'
+      filename: 'examples/reactive-job-example.ts',
     },
-    
+
     // ✅ Valid: Type definition files are allowed
     {
       code: `type ReactiveModelType<T> = ReactiveRecord<T>;`,
-      filename: 'types/models.d.ts'
+      filename: 'types/models.d.ts',
     },
-    
+
     // ✅ Valid: ActiveModel usage patterns
     {
       code: `
@@ -48,8 +48,8 @@ ruleTester.run('no-reactive-model-outside-svelte', rule, {
         const tasks = ActiveTask.all();
         console.log(tasks.records);
       `,
-      filename: 'services/task-service.ts'
-    }
+      filename: 'services/task-service.ts',
+    },
   ],
 
   invalid: [
@@ -60,11 +60,11 @@ ruleTester.run('no-reactive-model-outside-svelte', rule, {
       errors: [
         {
           messageId: 'reactiveModelOutsideSvelte',
-          type: 'ImportSpecifier'
-        }
-      ]
+          type: 'ImportSpecifier',
+        },
+      ],
     },
-    
+
     // ❌ Invalid: ReactiveRecord variable in .js file
     {
       code: `
@@ -75,15 +75,15 @@ ruleTester.run('no-reactive-model-outside-svelte', rule, {
       errors: [
         {
           messageId: 'reactiveModelOutsideSvelte',
-          type: 'ImportSpecifier'
+          type: 'ImportSpecifier',
         },
         {
           messageId: 'reactiveModelOutsideSvelte',
-          type: 'Identifier'
-        }
-      ]
+          type: 'Identifier',
+        },
+      ],
     },
-    
+
     // ❌ Invalid: ReactiveModel in test file (warning)
     {
       code: `
@@ -94,15 +94,15 @@ ruleTester.run('no-reactive-model-outside-svelte', rule, {
       errors: [
         {
           messageId: 'reactiveModelInTest',
-          type: 'ImportSpecifier'
+          type: 'ImportSpecifier',
         },
         {
           messageId: 'reactiveModelInTest',
-          type: 'Identifier'
-        }
-      ]
+          type: 'Identifier',
+        },
+      ],
     },
-    
+
     // ❌ Invalid: ActiveModel in .svelte file
     {
       code: `
@@ -113,15 +113,15 @@ ruleTester.run('no-reactive-model-outside-svelte', rule, {
       errors: [
         {
           messageId: 'activeModelInSvelte',
-          type: 'ImportSpecifier'
+          type: 'ImportSpecifier',
         },
         {
           messageId: 'activeModelInSvelte',
-          type: 'Identifier'
-        }
-      ]
+          type: 'Identifier',
+        },
+      ],
     },
-    
+
     // ❌ Invalid: Mixed usage patterns
     {
       code: `
@@ -133,15 +133,15 @@ ruleTester.run('no-reactive-model-outside-svelte', rule, {
       errors: [
         {
           messageId: 'reactiveModelOutsideSvelte',
-          type: 'ImportSpecifier'
+          type: 'ImportSpecifier',
         },
         {
           messageId: 'reactiveModelOutsideSvelte',
-          type: 'Identifier'
-        }
-      ]
+          type: 'Identifier',
+        },
+      ],
     },
-    
+
     // ❌ Invalid: Method calls with wrong context
     {
       code: `
@@ -152,11 +152,11 @@ ruleTester.run('no-reactive-model-outside-svelte', rule, {
       errors: [
         {
           messageId: 'reactiveModelOutsideSvelte',
-          type: 'Identifier'
-        }
-      ]
-    }
-  ]
+          type: 'Identifier',
+        },
+      ],
+    },
+  ],
 });
 
 console.log('✅ All ESLint rule tests passed!');

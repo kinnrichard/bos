@@ -1,7 +1,5 @@
 <script lang="ts">
   import ChromelessInput from '$lib/components/ui/ChromelessInput.svelte';
-  import CircularButton from '$lib/components/ui/CircularButton.svelte';
-  import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import { resizeInputs, type DynamicWidthConfig } from '$lib/utils/person/dynamicWidth';
 
   interface Props {
@@ -13,8 +11,6 @@
     isActive?: boolean;
     avatarSrc?: string;
     dynamicWidthConfig?: DynamicWidthConfig | undefined;
-    canDelete?: boolean;
-    onDelete?: (() => void) | undefined;
   }
 
   let {
@@ -26,36 +22,13 @@
     isActive = $bindable(true),
     avatarSrc = '/icons/person.circle.fill.svg',
     dynamicWidthConfig = undefined,
-    canDelete = false,
-    onDelete = undefined,
   }: Props = $props();
-
-  const MoreIcon = '/icons/info.svg';
-  const TrashIcon = '/icons/trash-red.svg';
-
-  let showMoreActions = false;
-  let showDeleteConfirm = false;
 
   // Handle input changes with dynamic resizing
   function handleInput() {
     if (dynamicWidthConfig) {
       resizeInputs(dynamicWidthConfig);
     }
-  }
-
-  // Handle delete confirmation
-  function handleDeleteClick() {
-    showMoreActions = false;
-    showDeleteConfirm = true;
-  }
-
-  function confirmDelete() {
-    showDeleteConfirm = false;
-    onDelete?.();
-  }
-
-  function cancelDelete() {
-    showDeleteConfirm = false;
   }
 
   // Determine display name for view mode
@@ -86,19 +59,6 @@
       {/if}
     </div>
 
-    {#if canDelete}
-      <div class="header-actions">
-        <BasePopover bind:isOpen={showMoreActions}>
-          <CircularButton slot="trigger" iconSrc={MoreIcon} variant="ghost" size="medium" />
-          <div slot="content" class="more-actions-menu">
-            <button class="delete-action" on:click={handleDeleteClick}>
-              <span class="icon"><img src={TrashIcon} alt="" /></span>
-              Delete Person
-            </button>
-          </div>
-        </BasePopover>
-      </div>
-    {/if}
   {:else}
     <!-- Edit/Create Mode -->
     <div class="person-form-fields">
@@ -128,22 +88,6 @@
     </div>
   {/if}
 </div>
-
-<!-- Delete Confirmation Modal -->
-{#if showDeleteConfirm}
-  <div class="modal-overlay" on:click={cancelDelete}>
-    <div class="modal-content" on:click|stopPropagation>
-      <h2>Delete Person?</h2>
-      <p>
-        Are you sure you want to delete {displayName}? This action cannot be undone.
-      </p>
-      <div class="modal-actions">
-        <button class="cancel-button" on:click={cancelDelete}>Cancel</button>
-        <button class="delete-button" on:click={confirmDelete}>Delete</button>
-      </div>
-    </div>
-  </div>
-{/if}
 
 <style>
   .person-header {
@@ -201,12 +145,6 @@
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
   }
 
   .more-actions-menu {

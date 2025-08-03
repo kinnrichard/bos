@@ -1,7 +1,7 @@
 /**
  * ClientData - TypeScript interface for clients table
  *
- * Generated from Rails schema: 2025-08-03 00:02:36 UTC
+ * Generated from Rails schema: 2025-08-03 01:48:59 UTC
  * * Relationships (loaded via includes()):
  * - activityLogs: has_many ActivityLog
  * - people: has_many Person
@@ -41,32 +41,10 @@ export interface ClientData extends BaseRecord {
  * Create Client data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateClientData = Omit<
-  ClientData,
-  'id',
-  'created_at',
-  'updated_at',
-  'activityLogs',
-  'people',
-  'jobs',
-  'devices',
-  'peopleGroups'
->;
+export type CreateClientData = Omit<ClientData, 'id', 'created_at', 'updated_at', 'activityLogs', 'people', 'jobs', 'devices', 'peopleGroups'>;
 
 /**
  * Update Client data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateClientData = Partial<
-  Omit<
-    ClientData,
-    'id',
-    'created_at',
-    'updated_at',
-    'activityLogs',
-    'people',
-    'jobs',
-    'devices',
-    'peopleGroups'
-  >
->;
+export type UpdateClientData = Partial<Omit<ClientData, 'id', 'created_at', 'updated_at', 'activityLogs', 'people', 'jobs', 'devices', 'peopleGroups'>>;

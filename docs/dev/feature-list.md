@@ -14,6 +14,8 @@
 - ✅ Sidebar show button
 - 💭 Remove Sidebar hover states
 - 💭 Scroll state restoration
+- 💭 Redesign sidebar
+- 💭 Tweak coloring of forms, etc
 - 💭 v2 Better popover positioning
 - 💭 v3 Refined emoji placement
 - 💭 v3 Fading toolbar (Zero.js docs style)
@@ -21,7 +23,7 @@
 - 💭 v3 Slide in/out sidebar
 
 ## Authentication
-- 💭 Make user stay logged in
+- ✅ Make user stay logged in
 
 ## Drag & Drop
 - 📋 make Drag & Drop more solid with a robust test library
@@ -47,16 +49,16 @@
   - 💭 Different behavior with spacebar
   - 💭 v2 AI-powered search
 - 🚧 Logs
-- 💭 Audit higher-risk activites
+- 💭 v2 Audit higher-risk activites
 
 ## Clients
 - ✅ List Clients
-- 💭 Create
-- 💭 Edit
-- 💭 Mark as business or residential
+- ✅ Create
+- ✅ Edit
+- ✅ Mark as business or residential
 - ✅ Basic Search
 - ✅ Name normalization** with duplicate prevention
-  - 💭 Client side
+  - 💭 v2 Client side
 - 💭 v2 Search by other attributes
 - 💭 v2 Search People inside Clients
 - 💭 v2 Date of Birth
@@ -65,8 +67,8 @@
 ## People
 - ✅ List
 - ✅ Create
-- 💭 Edit
-- 🚧 View
+- ✅ Edit
+- ✅ View
 - 🚧 Set address, phone, email
   - 🚧 Fails to create contact method (client first needs to indicate type)
 
@@ -98,6 +100,7 @@
   - 🚧 Deleted Task view
     - 💭 Don't allow deleting a deleted task
   - 💭 Undelete tasks
+  - 💭 What to do with children of deleted tasks
 - 💭 Smart behavior when marking something as canceled or complete
 
 ## Logs

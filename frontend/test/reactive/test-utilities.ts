@@ -1,37 +1,48 @@
 /**
  * Test Utilities for ReactiveRecord v2 Component Integration
- * 
+ *
  * Provides reusable utilities for testing ReactiveRecord v2 components,
  * coordinator behavior, and integration scenarios. Includes mock factories,
  * state simulation helpers, and validation utilities.
  */
 
 import { vi, type MockedFunction } from 'vitest';
-import type { CoordinatorState, VisualState, CoordinatorConfig } from '../../src/lib/reactive/coordinator';
+import type {
+  CoordinatorState,
+  VisualState,
+  CoordinatorConfig,
+} from '../../src/lib/reactive/coordinator';
 import type { EnhancedReactiveQuery } from '../../src/lib/reactive/integration';
 
 /**
  * Mock ReactiveQuery implementation for testing
  */
 export class MockReactiveQuery<T> {
-  public subscribers: Array<(data: T, meta: { isLoading: boolean; error: Error | null }) => void> = [];
+  public subscribers: Array<(data: T, meta: { isLoading: boolean; error: Error | null }) => void> =
+    [];
   public mockData: T | null = null;
   public mockIsLoading = false;
   public mockError: Error | null = null;
   public isDestroyed = false;
   public refreshCallCount = 0;
   public refreshDelay = 0;
-  
+
   constructor(
     initialData: T | null = null,
     public isCollection = false
   ) {
     this.mockData = initialData;
   }
-  
-  get data() { return this.mockData; }
-  get isLoading() { return this.mockIsLoading; }
-  get error() { return this.mockError; }
+
+  get data() {
+    return this.mockData;
+  }
+  get isLoading() {
+    return this.mockIsLoading;
+  }
+  get error() {
+    return this.mockError;
+  }
   get resultType() {
     if (this.mockError) return 'error';
     if (this.mockIsLoading) return 'loading';
@@ -42,12 +53,14 @@ export class MockReactiveQuery<T> {
     if (Array.isArray(this.mockData)) return this.mockData.length > 0;
     return true;
   }
-  get blank() { return !this.present; }
-  
+  get blank() {
+    return !this.present;
+  }
+
   subscribe(callback: (data: T, meta: { isLoading: boolean; error: Error | null }) => void) {
     this.subscribers.push(callback);
     callback(this.mockData as T, { isLoading: this.mockIsLoading, error: this.mockError });
-    
+
     return () => {
       const index = this.subscribers.indexOf(callback);
       if (index > -1) {
@@ -55,44 +68,44 @@ export class MockReactiveQuery<T> {
       }
     };
   }
-  
+
   async refresh() {
     this.refreshCallCount++;
     if (this.refreshDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, this.refreshDelay));
+      await new Promise((resolve) => setTimeout(resolve, this.refreshDelay));
     }
   }
-  
+
   destroy() {
     this.isDestroyed = true;
     this.subscribers = [];
   }
-  
+
   // Test utilities
   simulateDataChange(data: T | null, isLoading = false, error: Error | null = null) {
     this.mockData = data;
     this.mockIsLoading = isLoading;
     this.mockError = error;
-    
-    this.subscribers.forEach(callback => {
+
+    this.subscribers.forEach((callback) => {
       callback(data as T, { isLoading, error });
     });
   }
-  
+
   simulateLoading(isLoading = true) {
     this.mockIsLoading = isLoading;
-    this.subscribers.forEach(callback => {
+    this.subscribers.forEach((callback) => {
       callback(this.mockData as T, { isLoading, error: this.mockError });
     });
   }
-  
+
   simulateError(error: Error) {
     this.mockError = error;
-    this.subscribers.forEach(callback => {
+    this.subscribers.forEach((callback) => {
       callback(this.mockData as T, { isLoading: this.mockIsLoading, error });
     });
   }
-  
+
   simulateSuccess(data: T) {
     this.simulateDataChange(data, false, null);
   }
@@ -106,7 +119,7 @@ export class MockCoordinator<T> {
   public subscribers: Array<(state: VisualState<T>) => void> = [];
   public refreshCallCount = 0;
   public destroyCallCount = 0;
-  
+
   constructor(initialState?: Partial<VisualState<T>>) {
     this.visualState = {
       displayData: null,
@@ -117,14 +130,14 @@ export class MockCoordinator<T> {
       error: null,
       isFresh: false,
       isInitialLoad: true,
-      ...initialState
+      ...initialState,
     } as VisualState<T>;
   }
-  
+
   subscribe(callback: (state: VisualState<T>) => void) {
     this.subscribers.push(callback);
     callback(this.visualState);
-    
+
     return () => {
       const index = this.subscribers.indexOf(callback);
       if (index > -1) {
@@ -132,29 +145,29 @@ export class MockCoordinator<T> {
       }
     };
   }
-  
+
   async refresh() {
     this.refreshCallCount++;
   }
-  
+
   destroy() {
     this.destroyCallCount++;
     this.subscribers = [];
   }
-  
+
   // Test utilities
   updateVisualState(updates: Partial<VisualState<T>>) {
     this.visualState = { ...this.visualState, ...updates };
-    this.subscribers.forEach(callback => callback(this.visualState));
+    this.subscribers.forEach((callback) => callback(this.visualState));
   }
-  
+
   transitionTo(state: CoordinatorState, data?: T | null) {
     const updates: Partial<VisualState<T>> = { state };
-    
+
     if (data !== undefined) {
       updates.displayData = data;
     }
-    
+
     // Set appropriate flags based on state
     switch (state) {
       case 'initializing':
@@ -186,13 +199,13 @@ export class MockCoordinator<T> {
         updates.shouldShowError = true;
         break;
     }
-    
+
     this.updateVisualState(updates);
   }
-  
+
   simulateFlashPrevention(finalData: T, minimumTime = 300) {
     this.transitionTo('loading');
-    
+
     setTimeout(() => {
       this.transitionTo('ready', finalData);
     }, minimumTime);
@@ -212,16 +225,16 @@ export class TestDataFactory {
       user_id: 456,
       created_at: new Date().toISOString(),
       changes: { status: 'pending' },
-      ...overrides
+      ...overrides,
     };
   }
-  
+
   static createActivityLogCollection(count = 3, overrides = {}) {
     return Array.from({ length: count }, (_, i) =>
       this.createActivityLogEntry({ id: i + 1, ...overrides })
     );
   }
-  
+
   static createJobData(overrides = {}) {
     return {
       id: Math.floor(Math.random() * 1000),
@@ -229,10 +242,10 @@ export class TestDataFactory {
       status: 'pending',
       created_at: new Date().toISOString(),
       client_id: 123,
-      ...overrides
+      ...overrides,
     };
   }
-  
+
   static createClientData(overrides = {}) {
     return {
       id: Math.floor(Math.random() * 1000),
@@ -240,14 +253,14 @@ export class TestDataFactory {
       email: 'test@example.com',
       status: 'active',
       created_at: new Date().toISOString(),
-      ...overrides
+      ...overrides,
     };
   }
-  
+
   static createEmptyCollection() {
     return [];
   }
-  
+
   static createLargeCollection(size = 100, itemFactory = this.createActivityLogEntry) {
     return Array.from({ length: size }, (_, i) => itemFactory({ id: i + 1 }));
   }
@@ -262,93 +275,95 @@ export class CoordinatorTestValidator {
       isInitializing: visualState.state === 'initializing',
       showsLoading: visualState.shouldShowLoading,
       isInitialLoad: visualState.isInitialLoad,
-      hasNoData: visualState.displayData === null
+      hasNoData: visualState.displayData === null,
     };
   }
-  
+
   static validateReadyState(visualState: VisualState<any>, expectedData?: any) {
     const validation = {
       isReady: visualState.state === 'ready',
       noLoading: !visualState.shouldShowLoading,
       noError: !visualState.shouldShowError,
       isFresh: visualState.isFresh,
-      notInitialLoad: !visualState.isInitialLoad
+      notInitialLoad: !visualState.isInitialLoad,
     };
-    
+
     if (expectedData !== undefined) {
-      (validation as any).hasCorrectData = JSON.stringify(visualState.displayData) === JSON.stringify(expectedData);
+      (validation as any).hasCorrectData =
+        JSON.stringify(visualState.displayData) === JSON.stringify(expectedData);
     }
-    
+
     return validation;
   }
-  
+
   static validateLoadingState(visualState: VisualState<any>) {
     return {
       isLoading: visualState.state === 'loading' || visualState.state === 'initializing',
       showsLoading: visualState.shouldShowLoading,
       noError: !visualState.shouldShowError,
-      noEmpty: !visualState.shouldShowEmpty
+      noEmpty: !visualState.shouldShowEmpty,
     };
   }
-  
+
   static validateHydratingState(visualState: VisualState<any>) {
     return {
       isHydrating: visualState.state === 'hydrating',
       preservesData: visualState.displayData !== null,
-      noError: !visualState.shouldShowError
+      noError: !visualState.shouldShowError,
     };
   }
-  
+
   static validateErrorState(visualState: VisualState<any>, expectedError?: Error) {
     const validation = {
       isError: visualState.state === 'error',
       showsError: visualState.shouldShowError,
       noLoading: !visualState.shouldShowLoading,
-      hasError: visualState.error !== null
+      hasError: visualState.error !== null,
     };
-    
+
     if (expectedError) {
       (validation as any).correctError = visualState.error?.message === expectedError.message;
     }
-    
+
     return validation;
   }
-  
+
   static validateEmptyState(visualState: VisualState<any>) {
     return {
       isReady: visualState.state === 'ready',
       showsEmpty: visualState.shouldShowEmpty,
       noLoading: !visualState.shouldShowLoading,
       noError: !visualState.shouldShowError,
-      hasNoData: visualState.displayData === null || 
-                  (Array.isArray(visualState.displayData) && visualState.displayData.length === 0)
+      hasNoData:
+        visualState.displayData === null ||
+        (Array.isArray(visualState.displayData) && visualState.displayData.length === 0),
     };
   }
-  
+
   static validateFlashPrevention(states: VisualState<any>[], minimumLoadingTime = 300) {
     const loadingDuration = this.calculateLoadingDuration(states);
-    
+
     return {
       respectsMinimumTime: loadingDuration >= minimumLoadingTime,
       noFlash: !this.detectFlash(states),
-      properProgression: this.validateStateProgression(states)
+      properProgression: this.validateStateProgression(states),
     };
   }
-  
+
   private static calculateLoadingDuration(states: VisualState<any>[]): number {
-    const firstLoading = states.findIndex(s => s.shouldShowLoading);
-    const lastLoading = states.reverse().findIndex(s => s.shouldShowLoading);
-    
+    const firstLoading = states.findIndex((s) => s.shouldShowLoading);
+    const lastLoading = states.reverse().findIndex((s) => s.shouldShowLoading);
+
     if (firstLoading === -1 || lastLoading === -1) return 0;
-    
-    return (states.length - 1 - lastLoading) - firstLoading;
+
+    return states.length - 1 - lastLoading - firstLoading;
   }
-  
+
   private static detectFlash(states: VisualState<any>[]): boolean {
     // Flash detection: rapid transitions between loading and non-loading
     let flashCount = 0;
     let previousLoading = states[0]?.shouldShowLoading || false;
-    
+
     for (let i = 1; i < states.length; i++) {
       const currentLoading = states[i].shouldShowLoading;
       if (previousLoading !== currentLoading) {
@@ -356,18 +371,18 @@ export class CoordinatorTestValidator {
       }
       previousLoading = currentLoading;
     }
-    
+
     return flashCount > 2; // More than one transition cycle indicates flash
   }
-  
+
   private static validateStateProgression(states: VisualState<any>[]): boolean {
     // Valid progressions: initializing -> loading -> ready, initializing -> ready, etc.
-    const stateSequence = states.map(s => s.state);
+    const stateSequence = states.map((s) => s.state);
     const invalidTransitions = this.findInvalidTransitions(stateSequence);
-    
+
     return invalidTransitions.length === 0;
   }
-  
+
   private static findInvalidTransitions(states: CoordinatorState[]): string[] {
     const invalid: string[] = [];
     const validTransitions: Record<CoordinatorState, CoordinatorState[]> = {
@@ -375,18 +390,18 @@ export class CoordinatorTestValidator {
       loading: ['ready', 'error', 'hydrating'],
       hydrating: ['ready', 'error'],
       ready: ['loading', 'hydrating', 'error'],
-      error: ['loading', 'ready']
+      error: ['loading', 'ready'],
     };
-    
+
     for (let i = 1; i < states.length; i++) {
       const from = states[i - 1];
       const to = states[i];
-      
+
       if (!validTransitions[from]?.includes(to)) {
         invalid.push(`${from} -> ${to}`);
       }
     }
-    
+
     return invalid;
   }
 }
@@ -397,7 +412,7 @@ export class CoordinatorTestValidator {
 export class ComponentTestHelpers {
   static createMockReactiveRecord<T>(tableName: string, className: string) {
     const mockQuery = new MockReactiveQuery<T>();
-    
+
     return {
       config: { tableName, className },
       find: vi.fn(() => mockQuery),
@@ -406,42 +421,44 @@ export class ComponentTestHelpers {
         all: vi.fn(() => mockQuery),
         first: vi.fn(() => mockQuery),
         where: vi.fn(() => ({
-          all: vi.fn(() => mockQuery)
-        }))
+          all: vi.fn(() => mockQuery),
+        })),
       })),
       where: vi.fn(() => ({
         all: vi.fn(() => mockQuery),
-        first: vi.fn(() => mockQuery)
+        first: vi.fn(() => mockQuery),
       })),
       kept: vi.fn(() => ({
         all: vi.fn(() => mockQuery),
         where: vi.fn(() => ({
-          all: vi.fn(() => mockQuery)
-        }))
+          all: vi.fn(() => mockQuery),
+        })),
       })),
-      _mockQuery: mockQuery // For test access
+      _mockQuery: mockQuery, // For test access
     };
   }
-  
+
   static simulateNetworkDelay(ms = 100) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
-  
+
   static createStateCapture<T>() {
     const states: VisualState<T>[] = [];
-    
+
     const capture = (state: VisualState<T>) => {
       states.push({ ...state });
     };
-    
+
     return {
       capture,
       getStates: () => [...states],
       getLatestState: () => states[states.length - 1],
-      clear: () => { states.length = 0; }
+      clear: () => {
+        states.length = 0;
+      },
     };
   }
-  
+
   static waitForState<T>(
     coordinator: { visualState: VisualState<T> },
     predicate: (state: VisualState<T>) => boolean,
@@ -449,7 +466,7 @@ export class ComponentTestHelpers {
   ): Promise<VisualState<T>> {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
-      
+
       const check = () => {
         if (predicate(coordinator.visualState)) {
           resolve(coordinator.visualState);
@@ -459,16 +476,16 @@ export class ComponentTestHelpers {
           setTimeout(check, 10);
         }
       };
-      
+
       check();
     });
   }
-  
+
   static measurePerformance<T>(operation: () => T): { result: T; duration: number } {
     const start = performance.now();
     const result = operation();
     const duration = performance.now() - start;
-    
+
     return { result, duration };
   }
 }
@@ -479,7 +496,7 @@ export class ComponentTestHelpers {
 export class ReactiveAssertions {
   static expectInitializing<T>(visualState: VisualState<T>) {
     const validation = CoordinatorTestValidator.validateInitialState(visualState);
-    
+
     if (!validation.isInitializing) {
       throw new Error(`Expected state 'initializing', got '${visualState.state}'`);
     }
@@ -490,10 +507,10 @@ export class ReactiveAssertions {
       throw new Error('Expected isInitialLoad to be true in initializing state');
     }
   }
-  
+
   static expectReady<T>(visualState: VisualState<T>, expectedData?: T) {
     const validation = CoordinatorTestValidator.validateReadyState(visualState, expectedData);
-    
+
     if (!validation.isReady) {
       throw new Error(`Expected state 'ready', got '${visualState.state}'`);
     }
@@ -504,10 +521,10 @@ export class ReactiveAssertions {
       throw new Error('Data does not match expected value');
     }
   }
-  
+
   static expectLoading<T>(visualState: VisualState<T>) {
     const validation = CoordinatorTestValidator.validateLoadingState(visualState);
-    
+
     if (!validation.isLoading) {
       throw new Error(`Expected loading state, got '${visualState.state}'`);
     }
@@ -515,10 +532,10 @@ export class ReactiveAssertions {
       throw new Error('Expected loading indicator to be shown');
     }
   }
-  
+
   static expectError<T>(visualState: VisualState<T>, expectedError?: Error) {
     const validation = CoordinatorTestValidator.validateErrorState(visualState, expectedError);
-    
+
     if (!validation.isError) {
       throw new Error(`Expected state 'error', got '${visualState.state}'`);
     }
@@ -526,13 +543,15 @@ export class ReactiveAssertions {
       throw new Error('Expected error to be present');
     }
     if (expectedError && !(validation as any).correctError) {
-      throw new Error(`Expected error '${expectedError.message}', got '${visualState.error?.message}'`);
+      throw new Error(
+        `Expected error '${expectedError.message}', got '${visualState.error?.message}'`
+      );
     }
   }
-  
+
   static expectNoFlash<T>(states: VisualState<T>[], minimumLoadingTime = 300) {
     const validation = CoordinatorTestValidator.validateFlashPrevention(states, minimumLoadingTime);
-    
+
     if (!validation.respectsMinimumTime) {
       throw new Error(`Loading time did not respect minimum of ${minimumLoadingTime}ms`);
     }
@@ -566,32 +585,32 @@ export class PerformanceTestUtils {
   static measureCoordinatorCreation(iterations = 100) {
     const mockQuery = createMockQuery();
     const times: number[] = [];
-    
+
     for (let i = 0; i < iterations; i++) {
       const start = performance.now();
       const coordinator = createMockCoordinator();
       const end = performance.now();
-      
+
       times.push(end - start);
       coordinator.destroy();
     }
-    
+
     return {
       average: times.reduce((sum, time) => sum + time, 0) / times.length,
       min: Math.min(...times),
       max: Math.max(...times),
-      median: times.sort()[Math.floor(times.length / 2)]
+      median: times.sort()[Math.floor(times.length / 2)],
     };
   }
-  
+
   static measureStateTransitions<T>(coordinator: MockCoordinator<T>, transitionCount = 100) {
     const start = performance.now();
-    
+
     for (let i = 0; i < transitionCount; i++) {
       coordinator.transitionTo('loading');
       coordinator.transitionTo('ready', `data-${i}` as T);
     }
-    
+
     const end = performance.now();
     return (end - start) / transitionCount; // Average per transition
   }

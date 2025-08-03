@@ -77,6 +77,22 @@ export default {
         if (isExampleFile) return;
 
         const name = node.name;
+        
+        // Skip common property names that aren't model references
+        // These are property/variable names, not model class names
+        if (name === 'isActive' || name === 'isReactive' || 
+            name === 'makeActive' || name === 'setActive' ||
+            name === 'active' || name === 'reactive') {
+          return;
+        }
+        
+        // Only check identifiers that look like model class names
+        // Model names typically start with uppercase or contain "Model"
+        const looksLikeModelName = /^[A-Z].*Model|^Active[A-Z]|^Reactive[A-Z]/.test(name);
+        
+        if (!looksLikeModelName) {
+          return;
+        }
 
         if (name.includes('Reactive') && !isSvelteFile) {
           if (isTestFile) {

@@ -9,7 +9,7 @@
  * import { Client } from './client';
  * ```
  *
- * Generated: 2025-08-03 00:02:36 UTC
+ * Generated: 2025-08-03 01:48:59 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +59,12 @@ const ReactiveClientConfig = {
  * const allClientsQuery = ReactiveClient.all().all();
  * const activeClientsQuery = ReactiveClient.kept().all();
  * const singleClientQuery = ReactiveClient.find('123');
- *
+ * 
  * // With relationships
  * const clientWithRelationsQuery = ReactiveClient
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredClientsQuery = ReactiveClient
  *   .where({ status: 'active' })

@@ -9,15 +9,11 @@
  * import { ReactivePeopleGroup as PeopleGroup } from './reactive-people-group';
  * ```
  *
- * Generated: 2025-08-03 00:02:36 UTC
+ * Generated: 2025-08-03 01:48:59 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  PeopleGroupData,
-  CreatePeopleGroupData,
-  UpdatePeopleGroupData,
-} from './types/people-group-data';
+import type { PeopleGroupData, CreatePeopleGroupData, UpdatePeopleGroupData } from './types/people-group-data';
 
 /**
  * Default values for PeopleGroup creation
