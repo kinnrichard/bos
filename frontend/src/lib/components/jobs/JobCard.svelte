@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { JobData } from '$lib/models/types/job-data';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
+  import { getDueDateIcon } from '$lib/utils/due-date-icon';
 
   let {
     job,
@@ -28,6 +29,7 @@
 
   const statusEmoji = $derived(getJobStatusEmoji(job.status));
   const priorityEmoji = $derived(getJobPriorityEmoji(job.priority));
+  const dueDateIcon = $derived(job.due_at ? getDueDateIcon(new Date(job.due_at)) : null);
 
   function getJobPath(job: JobData): string {
     return `/jobs/${job.id}`;
@@ -61,12 +63,7 @@
 
   <!-- Right side items -->
   <span class="job-right-section">
-    <!-- Priority emoji (if not normal) -->
-    {#if job.priority !== 'normal' && priorityEmoji}
-      <span class="job-priority-emoji">{priorityEmoji}</span>
-    {/if}
-
-    <!-- Technician avatars -->
+    <!-- Technician avatars (leftmost) -->
     {#if technicians?.length > 0}
       <span class="technician-avatars">
         {#each technicians as technician}
@@ -78,6 +75,16 @@
           </span>
         {/each}
       </span>
+    {/if}
+
+    <!-- Due date icon (if due date is set) -->
+    {#if dueDateIcon && job.due_at}
+      <img src={dueDateIcon} alt="Due date" class="due-date-icon" />
+    {/if}
+
+    <!-- Priority emoji (if not normal, rightmost) -->
+    {#if job.priority !== 'normal' && priorityEmoji}
+      <span class="job-priority-emoji">{priorityEmoji}</span>
     {/if}
   </span>
 </a>
@@ -143,6 +150,13 @@
 
   .job-priority-emoji {
     font-size: 18px;
+  }
+
+  .due-date-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+    flex-shrink: 0;
   }
 
   .technician-avatars {

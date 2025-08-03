@@ -5,6 +5,7 @@
   import TimeEditor from './TimeEditor.svelte';
   import type { PopulatedJob } from '$lib/types/job';
   import { validateDateRange } from '$lib/utils/date-formatting';
+  import { getDueDateIcon } from '$lib/utils/due-date-icon';
   import { debugComponent } from '$lib/utils/debug';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -48,40 +49,8 @@
   const startTimeSet = $derived(job?.start_time_set || false);
   const dueTimeSet = $derived(job?.due_time_set || false);
 
-  // Calculate days until due date
-  function getDaysUntilDue(due: Date | null): number | null {
-    if (!due) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const dueDay = new Date(due);
-    dueDay.setHours(0, 0, 0, 0);
-
-    const diffTime = dueDay.getTime() - today.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    return diffDays;
-  }
-
-  // Dynamic icon based on due date
-  const calendarIcon = $derived.by(() => {
-    const daysUntil = getDaysUntilDue(dueDate);
-
-    if (daysUntil === null) {
-      // No due date set
-      return '/icons/calendar-add.svg';
-    } else if (daysUntil < 0) {
-      // Overdue
-      return '/icons/calendar.badge.exclamation.svg';
-    } else if (daysUntil >= 0 && daysUntil <= 31) {
-      // Due within 31 days - use numbered calendar
-      return `/icons/${daysUntil}.calendar.svg`;
-    } else {
-      // Due more than 31 days away
-      return '/icons/ellipsis.calendar.svg';
-    }
-  });
+  // Dynamic icon based on due date (using extracted utility)
+  const calendarIcon = $derived(getDueDateIcon(dueDate));
 
   // Helper to format time only
   function formatTimeOnly(date: Date): string {
