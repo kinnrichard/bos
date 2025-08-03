@@ -104,7 +104,9 @@
 
   .search-container.focused .search-input-wrapper {
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
+    border-width: 3px;
+    padding: 0;
+    margin: -2px;
   }
 
   /* Active search indicator */
@@ -199,10 +201,6 @@
   @media (prefers-contrast: high) {
     .search-input-wrapper {
       border-width: 2px;
-    }
-
-    .search-container.focused .search-input-wrapper {
-      box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.3);
     }
   }
 
