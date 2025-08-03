@@ -84,6 +84,13 @@
     color: var(--text-primary, #f2f2f7);
   }
 
+  .text-button.default:hover:not(.disabled) {
+    /* 33% brighter than --bg-secondary (#1c1c1d) = #252527 */
+    background-color: #252527;
+    /* 33% brighter than --border-primary (#38383a) = #494a4d */
+    border-color: #494a4d;
+  }
+
   .text-button.default:active:not(.disabled) {
     background-color: var(--bg-quaternary, #48484a);
   }
@@ -92,6 +99,11 @@
     background-color: var(--accent-blue, #00a3ff);
     color: white;
     text-shadow: 1.5px 1.5px 3px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-button.primary:hover:not(.disabled) {
+    /* 20% darker than --accent-blue (#00a3ff) = #0082cc */
+    background-color: #0082cc;
   }
 
   .text-button.primary:active:not(.disabled) {
@@ -114,6 +126,13 @@
     color: var(--text-primary, #f2f2f7);
   }
 
+  .text-button.ghost:hover:not(.disabled) {
+    /* 33% brighter than transparent = slight background */
+    background-color: rgba(37, 37, 39, 0.5);
+    /* 33% brighter than --border-primary (#38383a) = #494a4d */
+    border-color: #494a4d;
+  }
+
   .text-button.ghost:active:not(.disabled) {
     background-color: var(--bg-tertiary, #3a3a3c);
   }
@@ -123,6 +142,13 @@
     background-color: transparent;
     border-color: var(--accent-red, #ff3b30);
     color: var(--accent-red, #ff3b30);
+  }
+
+  .text-button.ghost-danger:hover:not(.disabled) {
+    /* Subtle red background on hover */
+    background-color: rgba(255, 59, 48, 0.08);
+    /* 33% brighter than --accent-red (#ff3b30) = #ff4f40 (clamped for visibility) */
+    border-color: #ff4f40;
   }
 
   .text-button.ghost-danger:active:not(.disabled) {

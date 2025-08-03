@@ -88,6 +88,14 @@
 
   /* Size variants handled by style props - no CSS needed */
 
+  /* Hover states */
+  .circular-button.default:hover:not(:disabled) {
+    /* 33% brighter than --bg-secondary (#1c1c1d) = #252527 */
+    background-color: #252527;
+    /* 33% brighter than --border-primary (#38383a) = #494a4d */
+    border-color: #494a4d;
+  }
+
   /* Variant styles */
 
   .circular-button.avatar {
