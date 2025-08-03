@@ -34,8 +34,9 @@
     | 'followup-time'
   >('menu');
   let editingFollowupId = $state<string | null>(null);
-  let containerHeight = $state('auto');
-  let menuElement = $state<HTMLDivElement>();
+  let containerElement = $state<HTMLDivElement>();
+  let contentElement = $state<HTMLDivElement>();
+  let containerHeight = $state<number | null>(null);
 
   // Derive job data
   const job = $derived(initialJob);
@@ -439,42 +440,32 @@
   const slideInFromLeft = { x: -280, duration: 300, easing: cubicOut };
   const slideOutToLeft = { x: -280, duration: 300, easing: cubicOut };
 
-  // Calculate menu height dynamically
-  const calculateMenuHeight = () => {
-    // Header height (with padding and border)
-    const headerHeight = 45;
-    // Menu inner padding (8px top + 4px bottom from .schedule-menu-inner)
-    const menuPadding = 12;
-    // Each regular menu item is ~36px
-    const itemHeight = 36;
-    // Dividers are ~9px
-    const dividerHeight = 9;
-
-    // Count items and dividers
-    let totalHeight = headerHeight + menuPadding;
-    for (const option of menuOptions) {
-      if (option.divider) {
-        totalHeight += dividerHeight;
-      } else {
-        totalHeight += itemHeight;
-      }
-    }
-
-    return totalHeight;
-  };
-
-  // Update container height based on view
+  // Auto-detect and update container height
   $effect(() => {
-    if (currentView === 'menu') {
-      // Use calculated height for smooth transition
-      const menuHeight = calculateMenuHeight();
-      containerHeight = `${menuHeight}px`;
-    } else if (currentView.includes('time')) {
-      containerHeight = '400px';
-    } else {
-      // Date views need more space for calendar
-      containerHeight = '440px';
+    if (contentElement) {
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        const rect = contentElement.getBoundingClientRect();
+        const newHeight = rect.height;
+
+        // Only update if height actually changed (avoid infinite loops)
+        if (containerHeight !== newHeight && newHeight > 0) {
+          containerHeight = newHeight;
+        }
+      });
     }
+  });
+
+  // Reset height tracking when view changes
+  $effect(() => {
+    currentView; // Track view changes
+    // Force a small delay to let new content render before measuring
+    setTimeout(() => {
+      if (contentElement) {
+        const rect = contentElement.getBoundingClientRect();
+        containerHeight = rect.height;
+      }
+    }, 10);
   });
 </script>
 
@@ -499,11 +490,15 @@
   {/snippet}
 
   {#snippet children({ close: _close })}
-    <div class="schedule-popover-container" style="height: {containerHeight}">
+    <div
+      class="schedule-popover-container"
+      bind:this={containerElement}
+      style="height: {containerHeight ? `${containerHeight}px` : 'auto'}"
+    >
       {#if currentView === 'menu'}
         <div
           class="schedule-menu"
-          bind:this={menuElement}
+          bind:this={contentElement}
           in:fly={slideInFromLeft}
           out:fly={slideOutToLeft}
         >
@@ -520,7 +515,12 @@
           />
         </div>
       {:else if currentView === 'start-date'}
-        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
+        <div
+          class="schedule-editor"
+          bind:this={contentElement}
+          in:fly={slideInFromRight}
+          out:fly={slideOutToRight}
+        >
           <DateEditor
             title="Start Date"
             value={startDate}
@@ -531,7 +531,12 @@
           />
         </div>
       {:else if currentView === 'start-time'}
-        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
+        <div
+          class="schedule-editor"
+          bind:this={contentElement}
+          in:fly={slideInFromRight}
+          out:fly={slideOutToRight}
+        >
           <TimeEditor
             title="Start Time"
             baseDate={startDate || new Date()}
@@ -543,7 +548,12 @@
           />
         </div>
       {:else if currentView === 'due-date'}
-        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
+        <div
+          class="schedule-editor"
+          bind:this={contentElement}
+          in:fly={slideInFromRight}
+          out:fly={slideOutToRight}
+        >
           <DateEditor
             title="Due Date"
             value={dueDate}
@@ -554,7 +564,12 @@
           />
         </div>
       {:else if currentView === 'due-time'}
-        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
+        <div
+          class="schedule-editor"
+          bind:this={contentElement}
+          in:fly={slideInFromRight}
+          out:fly={slideOutToRight}
+        >
           <TimeEditor
             title="Due Time"
             baseDate={dueDate || new Date()}
@@ -566,7 +581,12 @@
           />
         </div>
       {:else if currentView === 'followup-date'}
-        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
+        <div
+          class="schedule-editor"
+          bind:this={contentElement}
+          in:fly={slideInFromRight}
+          out:fly={slideOutToRight}
+        >
           <DateEditor
             title={editingFollowup ? 'Edit Followup' : 'Add Followup'}
             value={followupValue}
@@ -577,7 +597,12 @@
           />
         </div>
       {:else if currentView === 'followup-time'}
-        <div class="schedule-editor" in:fly={slideInFromRight} out:fly={slideOutToRight}>
+        <div
+          class="schedule-editor"
+          bind:this={contentElement}
+          in:fly={slideInFromRight}
+          out:fly={slideOutToRight}
+        >
           <TimeEditor
             title="Followup Time"
             baseDate={followupValue ? new Date(followupValue) : new Date()}
@@ -610,6 +635,7 @@
 
   .schedule-menu {
     width: 100%;
+    min-height: 0;
   }
 
   .schedule-editor {
@@ -617,7 +643,7 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    min-height: 0;
   }
 
   .schedule-header {
