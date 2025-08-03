@@ -111,7 +111,7 @@
       <Calendar
         bind:value={calendarValue}
         bind:placeholder={calendarPlaceholder}
-        class="custom-calendar"
+        class="custom-calendar [--cell-size:26px]"
       />
     </div>
 
@@ -290,15 +290,8 @@
     margin-top: 1px !important;
   }
 
-  /* Smaller cell size */
-  :global(.custom-calendar [data-bits-calendar-cell]) {
-    width: 28px !important;
-    height: 28px !important;
-  }
-
+  /* Cell font size */
   :global(.custom-calendar [data-bits-calendar-day]) {
-    width: 28px !important;
-    height: 28px !important;
     font-size: 13px !important;
   }
 
@@ -348,7 +341,6 @@
 
   /* Weekday headers smaller */
   :global(.custom-calendar [data-bits-calendar-head-cell]) {
-    width: 28px !important;
     font-size: 11px !important;
     font-weight: 500 !important;
     color: var(--text-secondary, #a1a1a6) !important;
