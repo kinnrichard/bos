@@ -327,6 +327,11 @@
       cleanupMeasuringSpan();
     };
   });
+
+  // Expose method to trigger form submission from parent component
+  export function triggerSubmit() {
+    handleSubmit();
+  }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />

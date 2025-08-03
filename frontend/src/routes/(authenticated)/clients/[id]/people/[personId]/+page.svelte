@@ -26,6 +26,9 @@
   const loading = $derived(personQuery?.isLoading || false);
   const queryError = $derived(personQuery?.error);
 
+  // Reference to PersonForm component to trigger its save method
+  let personFormRef: any;
+
   // Handle form events
   function handleEdit() {
     isEditing = true;
@@ -40,6 +43,13 @@
   function handleCancel() {
     isEditing = false;
     error = null;
+  }
+
+  // Handle save from toolbar - trigger PersonForm's submit
+  function handleToolbarSave() {
+    if (personFormRef && typeof personFormRef.triggerSubmit === 'function') {
+      personFormRef.triggerSubmit();
+    }
   }
 
   // Handle delete
@@ -59,7 +69,7 @@
     layoutActions.setCanSavePerson(true); // PersonForm handles its own validation
     layoutActions.setPersonEditCallbacks({
       onEdit: handleEdit,
-      onSave: () => {}, // PersonForm handles saving internally
+      onSave: handleToolbarSave, // Bridge to PersonForm's submit
       onCancel: handleCancel,
     });
 
@@ -92,6 +102,7 @@
     {:else if person}
       <div class="person-container">
         <PersonForm
+          bind:this={personFormRef}
           mode={isEditing ? 'edit' : 'view'}
           {person}
           {clientId}

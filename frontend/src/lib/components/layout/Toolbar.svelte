@@ -229,7 +229,7 @@
     {/if}
 
     <!-- Person actions - Cancel button -->
-    {#if showPersonActions && layout.personEditCallbacks}
+    {#if showPersonActions && layout.isEditingPerson && layout.personEditCallbacks}
       <TextButton
         variant="ghost-danger"
         size="normal"

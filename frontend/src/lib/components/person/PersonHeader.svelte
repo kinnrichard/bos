@@ -173,7 +173,7 @@
 
   .person-name {
     margin: 0 0 4px 0;
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
   }
@@ -187,7 +187,7 @@
 
   .person-title {
     color: var(--text-secondary);
-    font-size: 16px;
+    font-size: 14px;
     margin: 0 0 8px 0;
   }
 
@@ -369,7 +369,7 @@
     }
 
     .person-name {
-      font-size: 20px;
+      font-size: 16px;
     }
 
     .field-group :global(.name-input) {
