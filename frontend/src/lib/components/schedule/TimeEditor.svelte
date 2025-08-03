@@ -71,16 +71,6 @@
     onSave(dateOnly);
     onRemove?.();
   }
-
-  // Format display time
-  function formatDisplayTime(date: Date | null): string {
-    if (!date) return '';
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  }
 </script>
 
 <div class="time-editor">
@@ -124,71 +114,6 @@
         size="large"
         placeholder="Select time"
       />
-    </div>
-
-    <!-- Time Preview -->
-    {#if selectedTime}
-      <div class="time-preview">
-        <span class="preview-label">Selected time:</span>
-        <span class="preview-value">
-          {formatDisplayTime(selectedTime)}
-        </span>
-      </div>
-    {/if}
-
-    <!-- Quick select buttons -->
-    <div class="quick-select-section">
-      <p class="quick-select-label">Quick select:</p>
-      <div class="quick-select-grid">
-        <button
-          type="button"
-          class="quick-select-button"
-          onclick={() => {
-            const date = new Date(baseDate);
-            date.setHours(9, 0, 0, 0);
-            selectedTime = date;
-            timeInputValue = formatTimeForInput(date);
-          }}
-        >
-          9:00 AM
-        </button>
-        <button
-          type="button"
-          class="quick-select-button"
-          onclick={() => {
-            const date = new Date(baseDate);
-            date.setHours(12, 0, 0, 0);
-            selectedTime = date;
-            timeInputValue = formatTimeForInput(date);
-          }}
-        >
-          12:00 PM
-        </button>
-        <button
-          type="button"
-          class="quick-select-button"
-          onclick={() => {
-            const date = new Date(baseDate);
-            date.setHours(15, 0, 0, 0);
-            selectedTime = date;
-            timeInputValue = formatTimeForInput(date);
-          }}
-        >
-          3:00 PM
-        </button>
-        <button
-          type="button"
-          class="quick-select-button"
-          onclick={() => {
-            const date = new Date(baseDate);
-            date.setHours(17, 0, 0, 0);
-            selectedTime = date;
-            timeInputValue = formatTimeForInput(date);
-          }}
-        >
-          5:00 PM
-        </button>
-      </div>
     </div>
 
     <!-- Remove button if time is set -->
@@ -295,65 +220,6 @@
     letter-spacing: 0.5px;
   }
 
-  .time-preview {
-    padding: 12px;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .preview-label {
-    font-size: 13px;
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
-  .preview-value {
-    font-size: 16px;
-    color: var(--text-primary);
-    font-weight: 600;
-  }
-
-  .quick-select-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .quick-select-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0;
-  }
-
-  .quick-select-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .quick-select-button {
-    padding: 10px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: default;
-    transition: all 0.15s ease;
-  }
-
-  .quick-select-button:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--accent-blue);
-  }
-
   .remove-section {
     padding-top: 12px;
     border-top: 1px solid var(--border-primary);
@@ -401,8 +267,7 @@
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
     .toolbar-button,
-    .remove-button,
-    .quick-select-button {
+    .remove-button {
       transition: none;
     }
   }

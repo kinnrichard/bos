@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Calendar } from '$lib/components/ui/calendar';
-  import { formatDisplayDate } from '$lib/utils/date-formatting';
   import { Trash2 } from 'lucide-svelte';
   import { CalendarDate, type DateValue, today, getLocalTimeZone } from '@internationalized/date';
 
@@ -115,16 +114,6 @@
       />
     </div>
 
-    <!-- Date Preview -->
-    {#if selectedDate}
-      <div class="date-preview">
-        <span class="preview-label">Selected:</span>
-        <span class="preview-value">
-          {formatDisplayDate(selectedDate)}
-        </span>
-      </div>
-    {/if}
-
     <!-- Remove button if date is set -->
     {#if canRemove}
       <div class="remove-section">
@@ -223,27 +212,6 @@
   .calendar-section {
     display: flex;
     justify-content: center;
-  }
-
-  .date-preview {
-    padding: 12px;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .preview-label {
-    font-size: 13px;
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
-  .preview-value {
-    font-size: 14px;
-    color: var(--text-primary);
-    font-weight: 500;
   }
 
   .remove-section {
