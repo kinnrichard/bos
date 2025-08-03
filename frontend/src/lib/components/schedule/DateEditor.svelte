@@ -143,7 +143,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: var(--bg-primary);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    border-left: 1px solid var(--border-primary);
+    border-right: 1px solid var(--border-primary);
   }
 
   .toolbar-left,
