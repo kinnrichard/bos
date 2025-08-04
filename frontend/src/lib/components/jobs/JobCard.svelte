@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { JobData } from '$lib/models/types/job-data';
+  import type { JobAssignmentData } from '$lib/models/types/job-assignment-data';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
   import { getJobDateIcon } from '$lib/utils/due-date-icon';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
@@ -16,9 +17,10 @@
 
   // Extract technicians from job assignments and sort alphabetically
   const technicians = $derived(
-    (job.jobAssignments?.map((assignment: any) => assignment.user).filter(Boolean) || []).sort(
-      (a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || '')
-    )
+    (
+      job.jobAssignments?.map((assignment: JobAssignmentData) => assignment.user).filter(Boolean) ||
+      []
+    ).sort((a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || ''))
   );
 
   const statusEmoji = $derived(getJobStatusEmoji(job.status));
