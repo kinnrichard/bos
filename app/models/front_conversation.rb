@@ -6,7 +6,7 @@ class FrontConversation < ApplicationRecord
   has_many :front_conversation_inboxes, dependent: :destroy
   has_many :front_inboxes, through: :front_conversation_inboxes
 
-  belongs_to :assignee, class_name: "User", optional: true
+  belongs_to :assignee, class_name: "FrontTeammate", optional: true
   belongs_to :recipient_contact, class_name: "FrontContact", optional: true
 
   # Validations

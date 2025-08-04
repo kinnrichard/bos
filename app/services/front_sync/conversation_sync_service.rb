@@ -106,15 +106,13 @@ class FrontSync::ConversationSyncService < FrontSyncService
     end
   end
 
-  # Find assignee user ID from Front assignee data
+  # Find assignee teammate ID from Front assignee data
   def find_assignee_id(assignee_data)
     return nil unless assignee_data && assignee_data["id"]
 
-    # Look for user by Front teammate ID
-    # Note: This assumes we have a way to map Front teammate IDs to our User model
-    # This might need to be implemented based on how your User model relates to Front teammates
-    user = User.find_by(front_teammate_id: assignee_data["id"])
-    user&.id
+    # Look for teammate by Front ID
+    teammate = FrontTeammate.find_by(front_id: assignee_data["id"])
+    teammate&.id
   end
 
   # Find recipient contact ID from Front recipient data

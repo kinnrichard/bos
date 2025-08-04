@@ -201,12 +201,16 @@ class FrontSync::MessageSyncService < FrontSyncService
       return
     end
 
-    # Create the recipient relationship
-    FrontMessageRecipient.create!(
+    # Create or update the recipient relationship
+    # Include handle and name from the recipient data
+    FrontMessageRecipient.find_or_create_by(
       front_message: message,
       front_contact: contact,
       role: recipient_data["role"] || "to"
-    )
+    ) do |recipient|
+      recipient.handle = recipient_data["handle"]
+      recipient.name = recipient_data["name"]
+    end
 
   rescue => e
     Rails.logger.error "Failed to create recipient for message #{message.front_id}: #{e.message}"

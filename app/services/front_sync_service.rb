@@ -23,6 +23,7 @@ class FrontSyncService
       start_time = Time.current
 
       # Phase 1: Foundation Resources (required for other resources)
+      sync_teammates
       sync_tags
       sync_inboxes
 
@@ -40,6 +41,15 @@ class FrontSyncService
 
       @stats
     end
+  end
+
+  # Sync teammates from Front API
+  def sync_teammates
+    Rails.logger.info "Starting teammates sync..."
+    service = FrontSync::TeammateSyncService.new
+    result = service.sync_all
+    aggregate_stats!(result)
+    result
   end
 
   # Sync contacts from Front API

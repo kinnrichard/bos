@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_091758) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_133610) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -240,6 +240,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_091758) do
     t.index [ "front_id" ], name: "index_front_tags_on_front_id", unique: true
     t.index [ "name" ], name: "index_front_tags_on_name"
     t.index [ "parent_tag_id" ], name: "index_front_tags_on_parent_tag_id"
+  end
+
+  create_table "front_teammates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "front_id", null: false
+    t.string "email"
+    t.string "username"
+    t.string "first_name"
+    t.string "last_name"
+    t.boolean "is_admin", default: false
+    t.boolean "is_available", default: true
+    t.boolean "is_blocked", default: false
+    t.string "teammate_type"
+    t.jsonb "custom_fields", default: {}
+    t.jsonb "api_links", default: {}
+    t.float "created_at_timestamp"
+    t.float "updated_at_timestamp"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "email" ], name: "index_front_teammates_on_email"
+    t.index [ "front_id" ], name: "index_front_teammates_on_front_id", unique: true
   end
 
   create_table "job_assignments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
