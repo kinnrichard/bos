@@ -1,7 +1,7 @@
 /**
  * JobData - TypeScript interface for jobs table
  *
- * Generated from Rails schema: 2025-07-31 19:03:55 UTC
+ * Generated from Rails schema: 2025-08-04 08:04:28 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
  * - activityLogs: has_many ActivityLog
@@ -9,6 +9,7 @@
  * - technicians: has_many User, through: job_assignments
  * - jobPeople: has_many JobPerson
  * - people: has_many Person, through: job_people
+ * - jobTargets: has_many JobTarget
  * - tasks: has_many Task
  * - allTasks: has_many Task
  * - notes: has_many Note
@@ -24,6 +25,7 @@ import type { JobAssignmentData } from './job-assignment-data';
 import type { UserData } from './user-data';
 import type { JobPersonData } from './job-person-data';
 import type { PersonData } from './person-data';
+import type { JobTargetData } from './job-target-data';
 import type { TaskData } from './task-data';
 import type { NoteData } from './note-data';
 import type { ScheduledDateTimeData } from './scheduled-date-time-data';
@@ -44,7 +46,14 @@ export interface JobData extends BaseRecord {
   due_time_set: boolean;
   starts_at?: string | number;
   start_time_set: boolean;
-  status: 'open' | 'in_progress' | 'paused' | 'waiting_for_customer' | 'waiting_for_scheduled_appointment' | 'successfully_completed' | 'cancelled';
+  status:
+    | 'open'
+    | 'in_progress'
+    | 'paused'
+    | 'waiting_for_customer'
+    | 'waiting_for_scheduled_appointment'
+    | 'successfully_completed'
+    | 'cancelled';
   priority: 'critical' | 'very_high' | 'high' | 'normal' | 'low' | 'proactive_followup';
   client?: ClientData; // belongs_to
   activityLogs?: ActivityLogData[]; // has_many
@@ -52,6 +61,7 @@ export interface JobData extends BaseRecord {
   technicians?: UserData[]; // has_many
   jobPeople?: JobPersonData[]; // has_many
   people?: PersonData[]; // has_many
+  jobTargets?: JobTargetData[]; // has_many
   tasks?: TaskData[]; // has_many
   allTasks?: TaskData[]; // has_many
   notes?: NoteData[]; // has_many
@@ -62,10 +72,44 @@ export interface JobData extends BaseRecord {
  * Create Job data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateJobData = Omit<JobData, 'id', 'created_at', 'updated_at', 'client', 'activityLogs', 'jobAssignments', 'technicians', 'jobPeople', 'people', 'tasks', 'allTasks', 'notes', 'scheduledDateTimes'>;
+export type CreateJobData = Omit<
+  JobData,
+  'id',
+  'created_at',
+  'updated_at',
+  'client',
+  'activityLogs',
+  'jobAssignments',
+  'technicians',
+  'jobPeople',
+  'people',
+  'jobTargets',
+  'tasks',
+  'allTasks',
+  'notes',
+  'scheduledDateTimes'
+>;
 
 /**
  * Update Job data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateJobData = Partial<Omit<JobData, 'id', 'created_at', 'updated_at', 'client', 'activityLogs', 'jobAssignments', 'technicians', 'jobPeople', 'people', 'tasks', 'allTasks', 'notes', 'scheduledDateTimes'>>;
+export type UpdateJobData = Partial<
+  Omit<
+    JobData,
+    'id',
+    'created_at',
+    'updated_at',
+    'client',
+    'activityLogs',
+    'jobAssignments',
+    'technicians',
+    'jobPeople',
+    'people',
+    'jobTargets',
+    'tasks',
+    'allTasks',
+    'notes',
+    'scheduledDateTimes'
+  >
+>;

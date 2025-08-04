@@ -9,11 +9,15 @@
  * import { PeopleGroup } from './people-group';
  * ```
  *
- * Generated: 2025-08-03 01:48:59 UTC
+ * Generated: 2025-08-04 08:04:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { PeopleGroupData, CreatePeopleGroupData, UpdatePeopleGroupData } from './types/people-group-data';
+import type {
+  PeopleGroupData,
+  CreatePeopleGroupData,
+  UpdatePeopleGroupData,
+} from './types/people-group-data';
 
 /**
  * ReactiveRecord configuration for PeopleGroup
@@ -58,12 +62,12 @@ const ReactivePeopleGroupConfig = {
  * const allPeopleGroupsQuery = ReactivePeopleGroup.all().all();
  * const activePeopleGroupsQuery = ReactivePeopleGroup.kept().all();
  * const singlePeopleGroupQuery = ReactivePeopleGroup.find('123');
- * 
+ *
  * // With relationships
  * const people_groupWithRelationsQuery = ReactivePeopleGroup
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredPeopleGroupsQuery = ReactivePeopleGroup
  *   .where({ status: 'active' })

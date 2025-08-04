@@ -9,7 +9,7 @@
  * import { ReactiveJob as Job } from './reactive-job';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-04 08:04:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
@@ -77,6 +77,7 @@ registerModelRelationships('jobs', {
   technicians: { type: 'hasMany', model: 'User' },
   jobPeople: { type: 'hasMany', model: 'JobPerson' },
   people: { type: 'hasMany', model: 'Person' },
+  jobTargets: { type: 'hasMany', model: 'JobTarget' },
   tasks: { type: 'hasMany', model: 'Task' },
   allTasks: { type: 'hasMany', model: 'Task' },
   notes: { type: 'hasMany', model: 'Note' },

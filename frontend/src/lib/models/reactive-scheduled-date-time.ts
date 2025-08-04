@@ -9,11 +9,15 @@
  * import { ScheduledDateTime } from './scheduled-date-time';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-04 08:04:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { ScheduledDateTimeData, CreateScheduledDateTimeData, UpdateScheduledDateTimeData } from './types/scheduled-date-time-data';
+import type {
+  ScheduledDateTimeData,
+  CreateScheduledDateTimeData,
+  UpdateScheduledDateTimeData,
+} from './types/scheduled-date-time-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -59,12 +63,12 @@ const ReactiveScheduledDateTimeConfig = {
  * const allScheduledDateTimesQuery = ReactiveScheduledDateTime.all().all();
  * const activeScheduledDateTimesQuery = ReactiveScheduledDateTime.kept().all();
  * const singleScheduledDateTimeQuery = ReactiveScheduledDateTime.find('123');
- * 
+ *
  * // With relationships
  * const scheduled_date_timeWithRelationsQuery = ReactiveScheduledDateTime
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredScheduledDateTimesQuery = ReactiveScheduledDateTime
  *   .where({ status: 'active' })
@@ -73,7 +77,9 @@ const ReactiveScheduledDateTimeConfig = {
  *   .all();
  * ```
  */
-export const ReactiveScheduledDateTime = createReactiveRecord<ScheduledDateTimeData>(ReactiveScheduledDateTimeConfig);
+export const ReactiveScheduledDateTime = createReactiveRecord<ScheduledDateTimeData>(
+  ReactiveScheduledDateTimeConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('scheduled_date_times', {

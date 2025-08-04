@@ -1,7 +1,7 @@
 /**
  * ActivityLogData - TypeScript interface for activity_logs table
  *
- * Generated from Rails schema: 2025-07-31 19:03:55 UTC
+ * Generated from Rails schema: 2025-08-04 08:04:28 UTC
  * * Relationships (loaded via includes()):
  * - user: belongs_to User
  * - client: belongs_to Client
@@ -39,10 +39,20 @@ export interface ActivityLogData extends BaseRecord {
  * Create ActivityLog data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateActivityLogData = Omit<ActivityLogData, 'id', 'created_at', 'updated_at', 'user', 'client', 'job'>;
+export type CreateActivityLogData = Omit<
+  ActivityLogData,
+  'id',
+  'created_at',
+  'updated_at',
+  'user',
+  'client',
+  'job'
+>;
 
 /**
  * Update ActivityLog data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateActivityLogData = Partial<Omit<ActivityLogData, 'id', 'created_at', 'updated_at', 'user', 'client', 'job'>>;
+export type UpdateActivityLogData = Partial<
+  Omit<ActivityLogData, 'id', 'created_at', 'updated_at', 'user', 'client', 'job'>
+>;

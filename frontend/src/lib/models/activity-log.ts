@@ -9,11 +9,15 @@
  * import { ReactiveActivityLog as ActivityLog } from './reactive-activity-log';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-04 08:04:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { ActivityLogData, CreateActivityLogData, UpdateActivityLogData } from './types/activity-log-data';
+import type {
+  ActivityLogData,
+  CreateActivityLogData,
+  UpdateActivityLogData,
+} from './types/activity-log-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**

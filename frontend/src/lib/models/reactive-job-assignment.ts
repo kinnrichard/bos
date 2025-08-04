@@ -9,11 +9,15 @@
  * import { JobAssignment } from './job-assignment';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-04 08:04:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { JobAssignmentData, CreateJobAssignmentData, UpdateJobAssignmentData } from './types/job-assignment-data';
+import type {
+  JobAssignmentData,
+  CreateJobAssignmentData,
+  UpdateJobAssignmentData,
+} from './types/job-assignment-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -59,12 +63,12 @@ const ReactiveJobAssignmentConfig = {
  * const allJobAssignmentsQuery = ReactiveJobAssignment.all().all();
  * const activeJobAssignmentsQuery = ReactiveJobAssignment.kept().all();
  * const singleJobAssignmentQuery = ReactiveJobAssignment.find('123');
- * 
+ *
  * // With relationships
  * const job_assignmentWithRelationsQuery = ReactiveJobAssignment
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredJobAssignmentsQuery = ReactiveJobAssignment
  *   .where({ status: 'active' })
@@ -73,7 +77,9 @@ const ReactiveJobAssignmentConfig = {
  *   .all();
  * ```
  */
-export const ReactiveJobAssignment = createReactiveRecord<JobAssignmentData>(ReactiveJobAssignmentConfig);
+export const ReactiveJobAssignment = createReactiveRecord<JobAssignmentData>(
+  ReactiveJobAssignmentConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('job_assignments', {

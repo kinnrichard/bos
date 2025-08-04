@@ -9,11 +9,15 @@
  * import { ReactiveJobAssignment as JobAssignment } from './reactive-job-assignment';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-04 08:04:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { JobAssignmentData, CreateJobAssignmentData, UpdateJobAssignmentData } from './types/job-assignment-data';
+import type {
+  JobAssignmentData,
+  CreateJobAssignmentData,
+  UpdateJobAssignmentData,
+} from './types/job-assignment-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**

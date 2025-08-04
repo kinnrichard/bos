@@ -9,7 +9,7 @@
  * import { Job } from './job';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-04 08:04:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +59,12 @@ const ReactiveJobConfig = {
  * const allJobsQuery = ReactiveJob.all().all();
  * const activeJobsQuery = ReactiveJob.kept().all();
  * const singleJobQuery = ReactiveJob.find('123');
- * 
+ *
  * // With relationships
  * const jobWithRelationsQuery = ReactiveJob
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredJobsQuery = ReactiveJob
  *   .where({ status: 'active' })
@@ -83,6 +83,7 @@ registerModelRelationships('jobs', {
   technicians: { type: 'hasMany', model: 'User' },
   jobPeople: { type: 'hasMany', model: 'JobPerson' },
   people: { type: 'hasMany', model: 'Person' },
+  jobTargets: { type: 'hasMany', model: 'JobTarget' },
   tasks: { type: 'hasMany', model: 'Task' },
   allTasks: { type: 'hasMany', model: 'Task' },
   notes: { type: 'hasMany', model: 'Note' },

@@ -9,11 +9,15 @@
  * import { JobPerson } from './job-person';
  * ```
  *
- * Generated: 2025-07-31 19:03:55 UTC
+ * Generated: 2025-08-04 08:04:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { JobPersonData, CreateJobPersonData, UpdateJobPersonData } from './types/job-person-data';
+import type {
+  JobPersonData,
+  CreateJobPersonData,
+  UpdateJobPersonData,
+} from './types/job-person-data';
 import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
@@ -59,12 +63,12 @@ const ReactiveJobPersonConfig = {
  * const allJobPersonsQuery = ReactiveJobPerson.all().all();
  * const activeJobPersonsQuery = ReactiveJobPerson.kept().all();
  * const singleJobPersonQuery = ReactiveJobPerson.find('123');
- * 
+ *
  * // With relationships
  * const job_personWithRelationsQuery = ReactiveJobPerson
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredJobPersonsQuery = ReactiveJobPerson
  *   .where({ status: 'active' })
