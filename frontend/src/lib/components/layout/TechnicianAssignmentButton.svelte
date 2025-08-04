@@ -2,6 +2,7 @@
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
+  import TechnicianAvatarGroup from '$lib/components/jobs/TechnicianAvatarGroup.svelte';
   // NOTE: getZeroContext import removed as it was unused
 
   // Epic-009: Use ReactiveRecord models for consistent architecture
@@ -30,8 +31,6 @@
     disabled?: boolean;
   } = $props();
 
-  let basePopover = $state();
-
   // Epic-009: Use ReactiveUser model for consistent architecture
   const usersQuery = ReactiveUser.all().orderBy('name', 'asc').all();
 
@@ -57,16 +56,18 @@
 
   // Create options array for PopoverMenu with custom properties
   const menuOptions = $derived(
-    availableUsers.map((user) => ({
-      id: user.id,
-      value: user.id,
-      label: user.name,
-      user: user, // Include full user object for avatar rendering
-      selected:
-        (job as { jobAssignments?: Array<{ user_id: string }> })?.jobAssignments?.some(
-          (a) => a.user_id === user.id
-        ) || false,
-    }))
+    Array.isArray(availableUsers)
+      ? availableUsers.map((user) => ({
+          id: user.id,
+          value: user.id,
+          label: user.name || user.email || `User ${user.id}`,
+          user: user, // Include full user object for avatar rendering
+          selected:
+            (job as { jobAssignments?: Array<{ user_id: string }> })?.jobAssignments?.some(
+              (a) => a.user_id === user.id
+            ) || false,
+        }))
+      : []
   );
 
   // Get currently selected user IDs
@@ -134,45 +135,37 @@
   }
 
   // Display logic for button content - use actual assignment data
-  const displayTechnicians = $derived(assignedTechniciansForDisplay.slice(0, 2));
-  const extraCount = $derived(Math.max(0, assignedTechniciansForDisplay.length - 2));
   const hasAssignments = $derived(assignedTechniciansForDisplay.length > 0);
 </script>
 
-<BasePopover
-  bind:popover={basePopover}
-  preferredPlacement="bottom"
-  panelWidth="max-content"
-  panelMinWidth="240px"
-  {disabled}
->
+<BasePopover preferredPlacement="bottom" panelWidth="max-content" panelMinWidth="240px" {disabled}>
   {#snippet trigger({ popover })}
     <button
       class="popover-button"
       class:has-assignments={hasAssignments}
       class:disabled
       use:popover.button
+      as
+      any
       title={disabled
         ? 'Disabled'
         : hasAssignments
           ? `Technicians: ${assignedTechniciansForDisplay
-              .map((t) => t?.name)
+              .map((t: { name?: string }) => t?.name)
               .filter(Boolean)
               .join(', ')}`
           : 'Technicians'}
       {disabled}
-      onclick={disabled ? undefined : (e) => e.stopPropagation()}
+      onclick={disabled ? undefined : (e: MouseEvent) => e.stopPropagation()}
     >
       {#if hasAssignments}
-        <!-- Show assigned technician avatars -->
-        <div class="assigned-avatars">
-          {#each displayTechnicians as technician, index}
-            <UserAvatar user={technician} size="xs" overlap={index > 0} />
-          {/each}
-          {#if extraCount > 0}
-            <div class="extra-count">+{extraCount}</div>
-          {/if}
-        </div>
+        <!-- Show assigned technician avatars using shared component -->
+        <TechnicianAvatarGroup
+          technicians={assignedTechniciansForDisplay as UserData[]}
+          maxDisplay={2}
+          size="xs"
+          showNames={false}
+        />
       {:else}
         <!-- Show add-person icon when no assignments -->
         <img src="/icons/add-person.svg" alt="Assign technicians" class="add-person-icon" />
@@ -197,7 +190,7 @@
         ]}
         selected={selectedUserIds}
         multiple={true}
-        onSelect={handleUserToggle}
+        onSelect={(value: string, option: any) => handleUserToggle(value, option)}
         onClose={close}
         showCheckmarks={true}
         showIcons={true}
@@ -227,24 +220,7 @@
     padding: 0 6px;
   }
 
-  .assigned-avatars {
-    display: flex;
-    align-items: center;
-  }
-
-  .extra-count {
-    background-color: var(--text-secondary);
-    color: white;
-    font-size: 10px;
-    font-weight: 600;
-    width: 20px;
-    height: 20px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 2px;
-  }
+  /* Removed duplicate styles - now using TechnicianAvatarGroup component */
 
   .add-person-icon {
     width: 20px;
