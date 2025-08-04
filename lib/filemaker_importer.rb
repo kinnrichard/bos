@@ -784,6 +784,14 @@ class FilemakerImporter
       puts "\n📋 Merged #{merged_count} duplicate 'Legacy Tasks' jobs"
       puts "   Created #{@job_id_mappings.size} job ID mappings for task import"
     end
+
+    # Clean up empty Legacy Tasks jobs that were created but never got tasks
+    empty_legacy_jobs = Job.where(title: "Legacy Tasks").left_joins(:tasks).where(tasks: { id: nil })
+    if empty_legacy_jobs.any?
+      count = empty_legacy_jobs.count
+      empty_legacy_jobs.destroy_all
+      puts "   Cleaned up #{count} empty Legacy Tasks jobs"
+    end
   end
 
   def print_summary(entity_type, count)
