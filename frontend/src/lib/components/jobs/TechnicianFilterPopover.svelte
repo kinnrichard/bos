@@ -2,6 +2,7 @@
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
   import TechnicianAvatarGroup from './TechnicianAvatarGroup.svelte';
+  import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { ReactiveUser } from '$lib/models/reactive-user';
   import '$lib/styles/popover-common.css';
 
@@ -44,24 +45,20 @@
   const menuOptions = $derived([
     // Title
     { id: 'title', value: 'title', label: 'Filter by Technician', header: true },
-    // Not Assigned option with icon
+    // Not Assigned option (icon rendered via iconContent snippet)
     {
       id: 'technician:not_assigned',
       value: 'technician:not_assigned',
       label: 'Not Assigned',
-      icon: '/icons/questionmark.circle.fill.svg',
-      iconType: 'svg' as const,
     },
     // Divider
     { id: 'divider', value: 'divider', label: '', divider: true },
-    // Technician options with person icon
+    // Technician options with user data for avatar display
     ...technicians.map((technician) => ({
       id: `technician:${technician.id}`,
       value: `technician:${technician.id}`,
       label: technician.name || technician.email || `User ${technician.id}`,
-      icon: '/icons/person.fill.svg',
-      iconType: 'svg' as const,
-      user: technician, // Include for potential avatar display
+      user: technician, // Include for avatar display in iconContent snippet
     })),
   ]);
 
@@ -140,11 +137,20 @@
       options={menuOptions}
       showCheckmarks={true}
       showIcons={true}
+      iconPosition="left"
       multiple={true}
       {selected}
       onSelect={handleSelect}
       onClose={close}
-    />
+    >
+      {#snippet iconContent({ option })}
+        {#if option.value === 'technician:not_assigned'}
+          <img src="/icons/questionmark.circle.fill.svg" alt="Not assigned" class="menu-icon" />
+        {:else if option.user}
+          <UserAvatar user={option.user} size="xs" />
+        {/if}
+      {/snippet}
+    </PopoverMenu>
   {/snippet}
 </BasePopover>
 
@@ -202,5 +208,12 @@
     padding: 2px 4px;
     border-radius: 4px;
     line-height: 1;
+  }
+
+  .menu-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: contain;
   }
 </style>
