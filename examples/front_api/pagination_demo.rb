@@ -3,7 +3,7 @@
 
 require 'bundler/setup'
 require 'frontapp'
-require_relative 'config/initializers/frontapp_monkeypatch'
+require_relative '../../config/initializers/frontapp_monkeypatch'
 
 AUTH_TOKEN = ENV['FRONT_API_TOKEN'] || "your_token_here"
 

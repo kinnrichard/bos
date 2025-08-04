@@ -37,6 +37,12 @@ module Frontapp
         url = "#{base_url}#{path}"
       end
 
+      # Debug logging for query parameters
+      if ENV["DEBUG_FRONT_API"] && !params.empty?
+        puts "  DEBUG [list_page]: URL: #{url}"
+        puts "  DEBUG [list_page]: Params: #{params.inspect}"
+      end
+
       response = @headers.get(url, params: params)
 
       # Handle API errors
@@ -196,8 +202,15 @@ module Frontapp
       if page_token
         list_page(nil, page_token: page_token)
       else
-        cleaned = params.permit({ q: [ :statuses ] })
+        # Allow more q parameters including updated_after for date filtering
+        cleaned = params.permit({ q: [ :statuses, :updated_after, :updated_before ] })
         cleaned[:limit] = limit
+        # Also pass through any q[...] parameters that came as flat strings
+        params.each do |key, value|
+          if key.to_s.start_with?("q[")
+            cleaned[key] = value
+          end
+        end
         list_page("conversations", cleaned)
       end
     end
@@ -228,10 +241,18 @@ module Frontapp
       fetch_all = params[:fetch_all] || params["fetch_all"]
       limit = params[:limit] || params["limit"]
 
-      cleaned = params.permit({ q: [ :statuses ] })
+      # Allow more q parameters including updated_after for date filtering
+      cleaned = params.permit({ q: [ :statuses, :updated_after, :updated_before ] })
       cleaned[:max_results] = max_results if max_results
       cleaned[:fetch_all] = fetch_all if fetch_all
       cleaned[:limit] = limit if limit
+
+      # Also pass through any q[...] parameters that came as flat strings
+      params.each do |key, value|
+        if key.to_s.start_with?("q[")
+          cleaned[key] = value
+        end
+      end
 
       list("conversations", cleaned)
     end
