@@ -9,11 +9,11 @@
 #   # Get just first 10 results (fast!)
 #   client.get_inbox_conversations(inbox_id, max_results: 10)
 #
-#   # Manual pagination - get one page at a time
-#   page1 = client.get_inbox_conversations_page(inbox_id, limit: 25)
+#   # Manual pagination - get one page at a time (default: 100 per page)
+#   page1 = client.get_inbox_conversations_page(inbox_id)
 #   # page1 = { results: [...], next_token: "...", has_more: true }
 #
-#   page2 = client.get_inbox_conversations_page(inbox_id, limit: 25, page_token: page1[:next_token])
+#   page2 = client.get_inbox_conversations_page(inbox_id, page_token: page1[:next_token])
 #
 #   # Get ALL results (original behavior - careful with large datasets!)
 #   client.get_inbox_conversations(inbox_id, fetch_all: true)
@@ -23,6 +23,8 @@ require "http"
 
 module Frontapp
   class Client
+    # Default page size for API requests
+    DEFAULT_PAGE_SIZE = 100
     # New method: Get a single page of results with pagination info
     def list_page(path, params = {})
       # Extract page_token if provided
@@ -96,11 +98,11 @@ module Frontapp
         request_params = params.dup
         if max_results
           remaining = max_results - total_collected
-          # Use smaller of default (25) or remaining needed
-          request_params[:limit] = [ 25, remaining ].min
+          # Use smaller of default or remaining needed
+          request_params[:limit] = [ DEFAULT_PAGE_SIZE, remaining ].min
         else
           # No max_results, use default page size
-          request_params[:limit] ||= 25
+          request_params[:limit] ||= DEFAULT_PAGE_SIZE
         end
 
         response = @headers.get(url, params: request_params)
@@ -184,7 +186,7 @@ module Frontapp
 
     def get_inbox_conversations_page(inbox_id, params = {})
       page_token = params[:page_token] || params["page_token"]
-      limit = params[:limit] || params["limit"] || 25
+      limit = params[:limit] || params["limit"] || DEFAULT_PAGE_SIZE
 
       if page_token
         list_page(nil, page_token: page_token)
@@ -197,7 +199,7 @@ module Frontapp
 
     def conversations_page(params = {})
       page_token = params[:page_token] || params["page_token"]
-      limit = params[:limit] || params["limit"] || 25
+      limit = params[:limit] || params["limit"] || DEFAULT_PAGE_SIZE
 
       if page_token
         list_page(nil, page_token: page_token)
@@ -258,7 +260,7 @@ module Frontapp
     end
 
     # Helper method for iterating through pages with a block
-    def each_conversation_page(inbox_id, limit: 25, &block)
+    def each_conversation_page(inbox_id, limit: DEFAULT_PAGE_SIZE, &block)
       page_token = nil
 
       loop do
