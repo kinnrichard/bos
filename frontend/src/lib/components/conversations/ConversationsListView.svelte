@@ -13,7 +13,11 @@
   import ReactiveView from '$lib/reactive/ReactiveView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import ConversationCard from '$lib/components/conversations/ConversationCard.svelte';
-  import ConversationsLayout from '$lib/components/conversations/ConversationsLayout.svelte';
+  import AppLayout from '$lib/components/layout/AppLayout.svelte';
+  import {
+    groupConversationsByMonth,
+    shouldUseCompactMode,
+  } from '$lib/utils/conversation-grouping';
 
   interface Props {
     /**
@@ -26,12 +30,6 @@
      * Defaults to identity function (no filtering)
      */
     displayFilter?: (conversations: FrontConversationData[]) => FrontConversationData[];
-
-    /**
-     * Whether to show the client name in conversation cards
-     * Defaults to true
-     */
-    showClient?: boolean;
 
     /**
      * Optional title for the page
@@ -82,7 +80,6 @@
   let {
     query,
     displayFilter = (conversations) => conversations,
-    showClient = true,
     title,
     headerContent,
     emptyMessage = 'No conversations found',
@@ -92,120 +89,104 @@
     noResultsIcon = '🔍',
     strategy = 'progressive',
   }: Props = $props();
-
-  // Group conversations by status category
-  function groupConversations(conversations: FrontConversationData[]) {
-    const groups: Record<string, FrontConversationData[]> = {};
-
-    conversations.forEach((conversation) => {
-      const category = conversation.status_category || 'unassigned';
-      if (!groups[category]) {
-        groups[category] = [];
-      }
-      groups[category].push(conversation);
-    });
-
-    return groups;
-  }
-
-  // Get section info for display
-  function getSectionInfo(category: string) {
-    const titles: Record<string, string> = {
-      assigned: 'Assigned',
-      unassigned: 'Unassigned',
-      archived: 'Archived',
-      snoozed: 'Snoozed',
-    };
-
-    return {
-      title: titles[category] || category.charAt(0).toUpperCase() + category.slice(1),
-    };
-  }
-
-  // Get populated sections (sections that have conversations)
-  function getPopulatedSections(groupedConversations: Record<string, FrontConversationData[]>) {
-    return Object.entries(groupedConversations)
-      .filter(([_, conversations]) => conversations.length > 0)
-      .map(([category, conversations]) => ({
-        section: category,
-        conversations,
-        info: getSectionInfo(category),
-      }))
-      .sort((a, b) => {
-        // Sort order: unassigned, assigned, snoozed, archived
-        const order = ['unassigned', 'assigned', 'snoozed', 'archived'];
-        const aIndex = order.indexOf(a.section);
-        const bIndex = order.indexOf(b.section);
-        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-      });
-  }
 </script>
 
-<ConversationsLayout>
-  {#snippet header()}
+<AppLayout>
+  <div class="conversations-page">
     {#if title}
-      <h1>{title}</h1>
-    {/if}
-    {#if headerContent}
-      {@render headerContent()}
-    {/if}
-  {/snippet}
-
-  <ReactiveView {query} {strategy}>
-    {#snippet loading()}
-      <LoadingSkeleton type="conversation-card" count={6} />
-    {/snippet}
-
-    {#snippet error({ error, refresh })}
-      <div class="error-state">
-        <h2>Unable to load conversations</h2>
-        <p>{error.message}</p>
-        <button onclick={refresh} class="retry-button">Retry</button>
+      <div class="page-header">
+        <h1>{title}</h1>
+        {#if headerContent}
+          {@render headerContent()}
+        {/if}
       </div>
-    {/snippet}
+    {/if}
 
-    {#snippet empty()}
-      <div class="empty-state">
-        <div class="empty-state-icon">{emptyIcon}</div>
-        <h2>{emptyMessage}</h2>
-      </div>
-    {/snippet}
+    <div class="conversations-content">
+      <ReactiveView {query} {strategy}>
+        {#snippet loading()}
+          <LoadingSkeleton type="conversation-card" count={6} />
+        {/snippet}
 
-    {#snippet content({ data })}
-      {@const filteredConversations = displayFilter(data)}
-      {@const groupedConversations = groupConversations(filteredConversations)}
-      {@const populatedSections = getPopulatedSections(groupedConversations)}
+        {#snippet error({ error, refresh })}
+          <div class="error-state">
+            <h2>Unable to load conversations</h2>
+            <p>{error.message}</p>
+            <button onclick={refresh} class="retry-button">Retry</button>
+          </div>
+        {/snippet}
 
-      {#if filteredConversations.length === 0}
-        <div class="empty-state">
-          <div class="empty-state-icon">{noResultsIcon}</div>
-          <h2>{noResultsMessage}</h2>
-          {#if noResultsDescription}
-            <p>{noResultsDescription}</p>
-          {/if}
-        </div>
-      {:else}
-        <div class="conversations-list">
-          {#each populatedSections as { section, conversations, info } (section)}
-            <div class="conversation-section">
-              <div class="section-header">
-                <h3 class="section-title">{info.title}</h3>
-                <span class="section-count">{conversations.length}</span>
-              </div>
-              <div class="section-conversations">
-                {#each conversations as conversation (conversation.id)}
-                  <ConversationCard {conversation} {showClient} />
-                {/each}
-              </div>
+        {#snippet empty()}
+          <div class="empty-state">
+            <div class="empty-state-icon">{emptyIcon}</div>
+            <h2>{emptyMessage}</h2>
+          </div>
+        {/snippet}
+
+        {#snippet content({ data })}
+          {@const filteredConversations = displayFilter(data)}
+          {@const monthSections = groupConversationsByMonth(filteredConversations)}
+          {@const isCompactMode = shouldUseCompactMode(filteredConversations)}
+
+          {#if filteredConversations.length === 0}
+            <div class="empty-state">
+              <div class="empty-state-icon">{noResultsIcon}</div>
+              <h2>{noResultsMessage}</h2>
+              {#if noResultsDescription}
+                <p>{noResultsDescription}</p>
+              {/if}
             </div>
-          {/each}
-        </div>
-      {/if}
-    {/snippet}
-  </ReactiveView>
-</ConversationsLayout>
+          {:else}
+            <div class="conversations-list" class:compact-mode={isCompactMode}>
+              {#each monthSections as section (section.key)}
+                <div class="month-section">
+                  <div class="section-header">
+                    <h3 class="section-title">{section.title}</h3>
+                    <span class="section-count">{section.conversations.length}</span>
+                  </div>
+                  <div class="section-conversations">
+                    {#each section.conversations as conversation (conversation.id)}
+                      <ConversationCard {conversation} />
+                    {/each}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        {/snippet}
+      </ReactiveView>
+    </div>
+  </div>
+</AppLayout>
 
 <style>
+  .conversations-page {
+    min-height: 100%;
+    background-color: var(--bg-black, #000);
+  }
+
+  /* Page Header */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+  }
+
+  .page-header :global(h1) {
+    font-size: 32px;
+    font-weight: 600;
+    color: #f2f2f7 !important;
+    margin: 0;
+  }
+
+  /* Content Area */
+  .conversations-content {
+    padding: 24px 24px 12px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
   /* Conversations list container */
   .conversations-list {
     display: flex;
@@ -213,8 +194,8 @@
     gap: 24px;
   }
 
-  /* Conversation section */
-  .conversation-section {
+  /* Month section */
+  .month-section {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -224,8 +205,9 @@
   .section-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0;
+    justify-content: space-between;
+    padding: 4px 0;
+    margin-bottom: 4px;
   }
 
   .section-title {
@@ -256,8 +238,122 @@
     gap: 12px;
   }
 
-  /* Mobile responsive adjustments */
+  /* Compact mode styles - applied when 7+ conversations */
+  .conversations-list.compact-mode .section-conversations {
+    gap: 0;
+  }
+
+  /* Reduce padding and remove individual borders in compact mode */
+  .conversations-list.compact-mode .section-conversations :global(.conversation-card-inline) {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-radius: 0;
+    border-bottom: none;
+  }
+
+  /* First card gets top rounded corners */
+  .conversations-list.compact-mode
+    .section-conversations
+    :global(.conversation-card-inline:first-child) {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+
+  /* Last card gets bottom rounded corners and bottom border */
+  .conversations-list.compact-mode
+    .section-conversations
+    :global(.conversation-card-inline:last-child) {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  /* Add subtle separator between cards in compact mode */
+  .conversations-list.compact-mode
+    .section-conversations
+    :global(.conversation-card-inline:not(:last-child))::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background-color: var(--border-secondary, rgba(0, 0, 0, 0.05));
+  }
+
+  /* Make conversation cards position relative for the separator */
+  .conversations-list.compact-mode .section-conversations :global(.conversation-card-inline) {
+    position: relative;
+  }
+
+  /* Error state */
+  .error-state {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .error-state h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+  }
+
+  .error-state p {
+    color: var(--text-secondary);
+    margin: 0 0 20px 0;
+  }
+
+  .retry-button {
+    background-color: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .retry-button:hover {
+    background-color: var(--accent-blue-hover);
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  .empty-state h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+  }
+
+  .empty-state p {
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  /* Responsive layout */
   @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .conversations-content {
+      padding: 16px 16px 12px 16px;
+    }
+
     .conversations-list {
       gap: 20px;
     }
@@ -271,82 +367,28 @@
     }
 
     .section-count {
-      font-size: 13px;
+      font-size: 11px;
       padding: 1px 6px;
     }
 
     .section-conversations {
       gap: 10px;
     }
+
+    /* Compact mode on mobile */
+    .conversations-list.compact-mode .section-conversations {
+      gap: 0;
+    }
+
+    .conversations-list.compact-mode .section-conversations :global(.conversation-card-inline) {
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
   }
 
-  /* Error state */
-  .error-state {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px;
-    padding: 32px;
-    text-align: center;
-  }
-
-  .error-state h2 {
-    color: var(--text-primary);
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
-  }
-
-  .error-state p {
-    color: var(--text-secondary);
-    font-size: 14px;
-    margin: 0 0 16px 0;
-  }
-
-  .retry-button {
-    padding: 8px 16px;
-    background-color: var(--accent-blue);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-
-  .retry-button:hover {
-    background-color: var(--accent-blue-hover, #0051d5);
-  }
-
-  /* Empty state */
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 200px;
-    padding: 32px;
-    text-align: center;
-  }
-
-  .empty-state-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-    opacity: 0.6;
-  }
-
-  .empty-state h2 {
-    color: var(--text-secondary, #86868b);
-    font-size: 18px;
-    font-weight: 500;
-    margin: 0;
-  }
-
-  .empty-state p {
-    color: var(--text-tertiary, #98989d);
-    font-size: 14px;
-    margin: 8px 0 0 0;
+  @media (max-width: 480px) {
+    .conversations-content {
+      padding: 12px 12px 12px 12px;
+    }
   }
 </style>

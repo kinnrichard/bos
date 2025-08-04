@@ -85,13 +85,7 @@
     padding: 12px 16px;
     text-decoration: none;
     color: inherit;
-    transition: all 0.2s ease;
     gap: 12px;
-  }
-
-  .conversation-card-inline:hover {
-    background-color: var(--bg-secondary-hover, rgba(0, 0, 0, 0.02));
-    border-color: var(--border-primary-hover, rgba(0, 0, 0, 0.1));
   }
 
   .conversation-status-emoji {
