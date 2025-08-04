@@ -15,7 +15,7 @@
 
 .task-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   padding: #{$task-padding-y} #{$task-padding-x} #{$task-padding-y} #{$task-padding-left} !important;
   padding-left: calc(#{$task-padding-left} + (var(--depth, 0) * #{$task-depth-offset})) !important;
   border: none !important;
@@ -178,6 +178,7 @@
   border: none;
   cursor: normal;
   padding: 0;
+  margin-top: 2px;
   color: var(--text-tertiary);
   @include transition-transform();
 
@@ -210,6 +211,7 @@
 .disclosure-spacer {
   @include square-element($disclosure-size);
   flex-shrink: 0;
+  margin-top: 2px;
 
   @include mobile-down {
     @include square-element($icon-size-sm);
@@ -220,7 +222,7 @@
 
 .task-status {
   flex-shrink: 0;
-  margin-top: 1px;
+  margin-top: 2px;
   position: relative;
   margin-left: 2px;
   margin-right: $gap-md;
@@ -294,6 +296,7 @@
 .task-actions {
   @include flex-row();
   flex-shrink: 0;
+  margin-top: 2px;
   pointer-events: none;
   opacity: 0;
 
