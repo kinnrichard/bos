@@ -158,15 +158,16 @@
   .technician-filter-button {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
-    padding: 6px 10px;
+    padding: 6px;
     background: var(--color-background);
     border: 1px solid var(--color-border);
-    border-radius: 6px;
+    border-radius: 50%;
     cursor: pointer;
     transition: all 0.2s;
-    height: 32px;
-    min-width: 32px;
+    width: 36px;
+    height: 36px;
   }
 
   .technician-filter-button:hover:not(.disabled) {
@@ -195,19 +196,25 @@
   }
 
   .mixed-indicator {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
   }
 
   .mixed-indicator .count {
-    font-size: 11px;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 10px;
     font-weight: 600;
-    color: var(--color-text-secondary);
-    background: var(--color-background-secondary);
-    padding: 2px 4px;
-    border-radius: 4px;
+    color: white;
+    background: var(--color-primary);
+    padding: 1px 4px;
+    border-radius: 8px;
     line-height: 1;
+    min-width: 16px;
+    text-align: center;
   }
 
   .menu-icon {
