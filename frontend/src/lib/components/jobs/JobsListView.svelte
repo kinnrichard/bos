@@ -15,6 +15,7 @@
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import JobCard from '$lib/components/jobs/JobCard.svelte';
   import JobsLayout from '$lib/components/jobs/JobsLayout.svelte';
+  import { groupJobs, getPopulatedSections } from '$lib/utils/job-grouping';
 
   interface Props {
     /**
@@ -127,6 +128,8 @@
 
     {#snippet content({ data })}
       {@const filteredJobs = displayFilter(data)}
+      {@const groupedJobs = groupJobs(filteredJobs)}
+      {@const populatedSections = getPopulatedSections(groupedJobs)}
 
       {#if filteredJobs.length === 0}
         <div class="empty-state">
@@ -138,8 +141,18 @@
         </div>
       {:else}
         <div class="jobs-list">
-          {#each filteredJobs as job (job.id)}
-            <JobCard {job} {showClient} />
+          {#each populatedSections as { section, jobs, info } (section)}
+            <div class="job-section">
+              <div class="section-header">
+                <h3 class="section-title">{info.title}</h3>
+                <span class="section-count">({jobs.length})</span>
+              </div>
+              <div class="section-jobs">
+                {#each jobs as job (job.id)}
+                  <JobCard {job} {showClient} />
+                {/each}
+              </div>
+            </div>
           {/each}
         </div>
       {/if}
@@ -155,7 +168,70 @@
   .jobs-list {
     display: flex;
     flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Job section */
+  .job-section {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
+  }
+
+  /* Section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary, #1d1d1f);
+    margin: 0;
+    flex: 1;
+  }
+
+  .section-count {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary, #86868b);
+    padding: 2px 8px;
+    background-color: var(--background-secondary, #f5f5f7);
+    border-radius: 12px;
+  }
+
+  /* Section jobs container */
+  .section-jobs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Mobile responsive adjustments */
+  @media (max-width: 768px) {
+    .jobs-list {
+      gap: 20px;
+    }
+
+    .section-header {
+      padding: 6px 0;
+    }
+
+    .section-title {
+      font-size: 15px;
+    }
+
+    .section-count {
+      font-size: 13px;
+      padding: 1px 6px;
+    }
+
+    .section-jobs {
+      gap: 10px;
+    }
   }
 
   /* Error state */
