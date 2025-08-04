@@ -88,6 +88,17 @@ Rails.application.routes.draw do
   post "login", to: "sessions#create"
   delete "logout", to: "sessions#destroy", as: :logout
 
+  # Admin routes
+  namespace :admin do
+    resources :front_sync_monitor, only: [ :index, :show ] do
+      collection do
+        post :trigger_sync
+        post :reset_circuit_breaker
+        get :api_status
+      end
+    end
+  end
+
   # Defines the root path route ("/")
   root "home#show"
 end

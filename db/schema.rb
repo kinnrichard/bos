@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_071815) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_091758) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -200,6 +200,29 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_071815) do
     t.index [ "front_conversation_id" ], name: "index_front_messages_on_front_conversation_id"
     t.index [ "front_id" ], name: "index_front_messages_on_front_id", unique: true
     t.index [ "message_type" ], name: "index_front_messages_on_message_type"
+  end
+
+  create_table "front_sync_logs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "resource_type", null: false
+    t.string "sync_type", default: "full", null: false
+    t.string "status", default: "running", null: false
+    t.datetime "started_at", precision: nil, null: false
+    t.datetime "completed_at", precision: nil
+    t.decimal "duration_seconds", precision: 10, scale: 3
+    t.integer "records_synced", default: 0
+    t.integer "records_created", default: 0
+    t.integer "records_updated", default: 0
+    t.integer "records_failed", default: 0
+    t.text "error_messages", default: [], array: true
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "metadata" ], name: "index_front_sync_logs_on_metadata", using: :gin
+    t.index [ "resource_type", "started_at" ], name: "index_front_sync_logs_on_resource_type_and_started_at"
+    t.index [ "resource_type" ], name: "index_front_sync_logs_on_resource_type"
+    t.index [ "started_at" ], name: "index_front_sync_logs_on_started_at"
+    t.index [ "status" ], name: "index_front_sync_logs_on_status"
+    t.index [ "sync_type" ], name: "index_front_sync_logs_on_sync_type"
   end
 
   create_table "front_tags", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

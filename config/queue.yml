@@ -7,12 +7,37 @@ default: &default
       threads: 3
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1
+  recurring:
+    # Front API sync scheduler - runs every 15 minutes
+    front_sync_scheduler:
+      class: FrontSyncSchedulerJob
+      schedule: "*/15 * * * *"
+      queue: default
+    # Hourly incremental syncs for high-priority resources
+    front_contacts_incremental:
+      class: FrontSyncJob
+      args: ["contacts", "incremental"]
+      schedule: "0 * * * *"  # Every hour
+      queue: default
+    front_conversations_incremental:
+      class: FrontSyncJob
+      args: ["conversations", "incremental"]
+      schedule: "*/30 * * * *"  # Every 30 minutes
+      queue: default
+    # Daily full syncs for all resources
+    front_full_sync_daily:
+      class: FrontSyncJob
+      args: ["all", "full"]
+      schedule: "0 2 * * *"  # 2 AM daily
+      queue: default
 
 development:
   <<: *default
 
 test:
   <<: *default
+  # Disable recurring tasks in test environment
+  recurring: {}
 
 production:
   <<: *default
