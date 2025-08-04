@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_034820) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_071815) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -74,6 +74,149 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_034820) do
     t.index [ "client_id" ], name: "index_devices_on_client_id"
     t.index [ "id" ], name: "index_devices_on_id", unique: true
     t.index [ "person_id" ], name: "index_devices_on_person_id"
+  end
+
+  create_table "front_attachments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "front_message_id", null: false
+    t.string "filename"
+    t.string "content_type"
+    t.string "url"
+    t.integer "size"
+    t.jsonb "metadata"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_message_id" ], name: "index_front_attachments_on_front_message_id"
+  end
+
+  create_table "front_contacts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "front_id"
+    t.string "name"
+    t.string "handle"
+    t.string "role"
+    t.jsonb "handles", default: []
+    t.jsonb "api_links", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_id" ], name: "index_front_contacts_on_front_id", unique: true, where: "(front_id IS NOT NULL)"
+    t.index [ "handle" ], name: "index_front_contacts_on_handle"
+    t.index [ "name" ], name: "index_front_contacts_on_name"
+  end
+
+  create_table "front_conversation_inboxes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "front_conversation_id", null: false
+    t.uuid "front_inbox_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_conversation_id", "front_inbox_id" ], name: "index_front_conversation_inboxes_unique", unique: true
+    t.index [ "front_conversation_id" ], name: "index_front_conversation_inboxes_on_front_conversation_id"
+    t.index [ "front_inbox_id" ], name: "index_front_conversation_inboxes_on_front_inbox_id"
+  end
+
+  create_table "front_conversation_tags", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "front_conversation_id", null: false
+    t.uuid "front_tag_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_conversation_id", "front_tag_id" ], name: "index_front_conversation_tags_unique", unique: true
+    t.index [ "front_conversation_id" ], name: "index_front_conversation_tags_on_front_conversation_id"
+    t.index [ "front_tag_id" ], name: "index_front_conversation_tags_on_front_tag_id"
+  end
+
+  create_table "front_conversations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "front_id", null: false
+    t.string "subject"
+    t.string "status"
+    t.string "status_category"
+    t.string "status_id"
+    t.boolean "is_private", default: false
+    t.decimal "created_at_timestamp", precision: 15, scale: 3
+    t.decimal "waiting_since_timestamp", precision: 15, scale: 3
+    t.jsonb "custom_fields", default: {}
+    t.jsonb "metadata", default: {}
+    t.jsonb "links", default: []
+    t.jsonb "scheduled_reminders", default: []
+    t.jsonb "api_links", default: {}
+    t.uuid "assignee_id"
+    t.uuid "recipient_contact_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "assignee_id" ], name: "index_front_conversations_on_assignee_id"
+    t.index [ "created_at_timestamp" ], name: "index_front_conversations_on_created_at_timestamp"
+    t.index [ "front_id" ], name: "index_front_conversations_on_front_id", unique: true
+    t.index [ "recipient_contact_id" ], name: "index_front_conversations_on_recipient_contact_id"
+    t.index [ "status" ], name: "index_front_conversations_on_status"
+  end
+
+  create_table "front_inboxes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "front_id", null: false
+    t.string "name", null: false
+    t.string "inbox_type"
+    t.string "handle"
+    t.jsonb "settings", default: {}
+    t.jsonb "api_links", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_id" ], name: "index_front_inboxes_on_front_id", unique: true
+    t.index [ "handle" ], name: "index_front_inboxes_on_handle"
+    t.index [ "name" ], name: "index_front_inboxes_on_name"
+  end
+
+  create_table "front_message_recipients", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "front_message_id", null: false
+    t.uuid "front_contact_id"
+    t.string "role", null: false
+    t.string "handle", null: false
+    t.string "name"
+    t.jsonb "api_links", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_contact_id" ], name: "index_front_message_recipients_on_front_contact_id"
+    t.index [ "front_message_id", "role" ], name: "index_front_message_recipients_on_front_message_id_and_role"
+    t.index [ "front_message_id" ], name: "index_front_message_recipients_on_front_message_id"
+    t.index [ "handle" ], name: "index_front_message_recipients_on_handle"
+  end
+
+  create_table "front_messages", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "front_id", null: false
+    t.uuid "front_conversation_id", null: false
+    t.string "message_uid"
+    t.string "message_type"
+    t.boolean "is_inbound", default: true
+    t.boolean "is_draft", default: false
+    t.string "subject"
+    t.text "blurb"
+    t.text "body_html"
+    t.text "body_plain"
+    t.string "error_type"
+    t.string "draft_mode"
+    t.jsonb "metadata", default: {}
+    t.jsonb "api_links", default: {}
+    t.decimal "created_at_timestamp", precision: 15, scale: 3
+    t.uuid "author_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "author_id" ], name: "index_front_messages_on_author_id"
+    t.index [ "created_at_timestamp" ], name: "index_front_messages_on_created_at_timestamp"
+    t.index [ "front_conversation_id" ], name: "index_front_messages_on_front_conversation_id"
+    t.index [ "front_id" ], name: "index_front_messages_on_front_id", unique: true
+    t.index [ "message_type" ], name: "index_front_messages_on_message_type"
+  end
+
+  create_table "front_tags", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "front_id", null: false
+    t.string "name", null: false
+    t.string "highlight"
+    t.text "description"
+    t.boolean "is_private", default: false
+    t.boolean "is_visible_in_conversation_lists", default: false
+    t.decimal "created_at_timestamp", precision: 15, scale: 3
+    t.decimal "updated_at_timestamp", precision: 15, scale: 3
+    t.uuid "parent_tag_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_id" ], name: "index_front_tags_on_front_id", unique: true
+    t.index [ "name" ], name: "index_front_tags_on_name"
+    t.index [ "parent_tag_id" ], name: "index_front_tags_on_parent_tag_id"
   end
 
   create_table "job_assignments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -459,6 +602,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_034820) do
   add_foreign_key "contact_methods", "people"
   add_foreign_key "devices", "clients"
   add_foreign_key "devices", "people"
+  add_foreign_key "front_attachments", "front_messages"
+  add_foreign_key "front_conversation_inboxes", "front_conversations"
+  add_foreign_key "front_conversation_inboxes", "front_inboxes"
+  add_foreign_key "front_conversation_tags", "front_conversations"
+  add_foreign_key "front_conversation_tags", "front_tags"
+  add_foreign_key "front_message_recipients", "front_contacts"
+  add_foreign_key "front_message_recipients", "front_messages"
+  add_foreign_key "front_messages", "front_contacts", column: "author_id"
+  add_foreign_key "front_messages", "front_conversations"
+  add_foreign_key "front_tags", "front_tags", column: "parent_tag_id"
   add_foreign_key "job_assignments", "jobs"
   add_foreign_key "job_assignments", "users"
   add_foreign_key "job_people", "jobs"

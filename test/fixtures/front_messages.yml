@@ -1,0 +1,37 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  front_id: MyString
+  front_conversation: one
+  message_uid: MyString
+  message_type: MyString
+  is_inbound: false
+  is_draft: false
+  subject: MyString
+  blurb: MyText
+  body_html: MyText
+  body_plain: MyText
+  error_type: MyString
+  draft_mode: MyString
+  metadata: 
+  api_links: 
+  created_at_timestamp: 9.99
+  author: one
+
+two:
+  front_id: MyString
+  front_conversation: two
+  message_uid: MyString
+  message_type: MyString
+  is_inbound: false
+  is_draft: false
+  subject: MyString
+  blurb: MyText
+  body_html: MyText
+  body_plain: MyText
+  error_type: MyString
+  draft_mode: MyString
+  metadata: 
+  api_links: 
+  created_at_timestamp: 9.99
+  author: two
