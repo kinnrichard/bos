@@ -5,6 +5,8 @@ class FrontConversation < ApplicationRecord
   has_many :front_tags, through: :front_conversation_tags
   has_many :front_conversation_inboxes, dependent: :destroy
   has_many :front_inboxes, through: :front_conversation_inboxes
+  has_many :front_conversation_tickets, dependent: :destroy
+  has_many :front_tickets, through: :front_conversation_tickets
 
   belongs_to :assignee, class_name: "FrontTeammate", optional: true
   belongs_to :recipient_contact, class_name: "FrontContact", optional: true
@@ -85,7 +87,8 @@ class FrontConversation < ApplicationRecord
     Rails.logger.tagged("FrontConversation##{id}") do
       Rails.logger.info "Downloading messages for conversation #{front_id}"
 
-      result = service.sync_messages_for_conversation(front_id)
+      # Use the public method which takes an array
+      result = service.sync_for_conversations([ front_id ])
 
       # Log the outcome
       if result[:failed] > 0

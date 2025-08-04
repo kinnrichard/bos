@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_135942) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_143047) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -122,6 +122,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_135942) do
     t.index [ "front_tag_id" ], name: "index_front_conversation_tags_on_front_tag_id"
   end
 
+  create_table "front_conversation_tickets", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "front_conversation_id", null: false
+    t.uuid "front_ticket_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_conversation_id", "front_ticket_id" ], name: "index_front_conversation_tickets_unique", unique: true
+    t.index [ "front_conversation_id" ], name: "index_front_conversation_tickets_on_front_conversation_id"
+    t.index [ "front_ticket_id" ], name: "index_front_conversation_tickets_on_front_ticket_id"
+  end
+
   create_table "front_conversations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "front_id", null: false
     t.string "subject"
@@ -141,6 +151,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_135942) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "last_message_front_id"
+    t.string "recipient_handle"
+    t.string "recipient_role"
     t.index [ "assignee_id" ], name: "index_front_conversations_on_assignee_id"
     t.index [ "created_at_timestamp" ], name: "index_front_conversations_on_created_at_timestamp"
     t.index [ "front_id" ], name: "index_front_conversations_on_front_id", unique: true
@@ -261,6 +273,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_135942) do
     t.datetime "updated_at", null: false
     t.index [ "email" ], name: "index_front_teammates_on_email"
     t.index [ "front_id" ], name: "index_front_teammates_on_front_id", unique: true
+  end
+
+  create_table "front_tickets", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "front_id"
+    t.string "ticket_id"
+    t.string "subject"
+    t.string "status"
+    t.string "status_category"
+    t.string "status_id"
+    t.decimal "created_at_timestamp", precision: 15, scale: 3
+    t.decimal "updated_at_timestamp", precision: 15, scale: 3
+    t.jsonb "custom_fields"
+    t.jsonb "metadata"
+    t.jsonb "api_links"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_id" ], name: "index_front_tickets_on_front_id", unique: true
   end
 
   create_table "job_assignments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -651,6 +680,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_135942) do
   add_foreign_key "front_conversation_inboxes", "front_inboxes"
   add_foreign_key "front_conversation_tags", "front_conversations"
   add_foreign_key "front_conversation_tags", "front_tags"
+  add_foreign_key "front_conversation_tickets", "front_conversations"
+  add_foreign_key "front_conversation_tickets", "front_tickets"
   add_foreign_key "front_message_recipients", "front_contacts"
   add_foreign_key "front_message_recipients", "front_messages"
   add_foreign_key "front_messages", "front_contacts", column: "author_id"
