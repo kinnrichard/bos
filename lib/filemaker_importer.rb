@@ -398,6 +398,11 @@ class FilemakerImporter
       if orphaned_subtasks.size > subtask_inherited
         puts "⚠️  Warning: #{orphaned_subtasks.size - subtask_inherited} subtasks could not be imported"
       end
+
+      # Sort and position tasks within each job
+      puts "\n🔄 Sorting tasks within jobs..."
+      jobs_sorted = sort_and_position_tasks_for_jobs
+      puts "  → Sorted tasks in #{jobs_sorted} jobs"
     end
 
     print_summary("Tasks", count)
@@ -451,6 +456,67 @@ class FilemakerImporter
   end
 
   private
+
+  def sort_and_position_tasks_for_jobs
+    # Define status sort order based on your requirements
+    # Lower numbers = higher priority (appear first)
+    status_priority = {
+      "in_progress" => 1,
+      "paused" => 2,
+      "new_task" => 4,  # "New" status
+      # "Postponed" maps to "paused" in map_task_status, so gets priority 2
+      # "Assumed Completed" maps to "successfully_completed"
+      "successfully_completed" => 6,
+      # "Failed" maps to "cancelled" in map_task_status
+      "cancelled" => 8
+    }
+
+    # Get the original status from FileMaker for more granular sorting
+    # We'll need to track this during import, for now use the mapped status
+
+    jobs_processed = 0
+
+    # Process each job's tasks
+    Job.includes(:tasks).find_each do |job|
+      next if job.tasks.empty?
+
+      # Sort tasks according to the requirements
+      sorted_tasks = job.tasks.sort do |a, b|
+        # First sort by status priority
+        a_priority = status_priority[a.status] || 99
+        b_priority = status_priority[b.status] || 99
+
+        if a_priority != b_priority
+          a_priority <=> b_priority
+        else
+          # Then by position (which has the original SortIndex)
+          # Note: During import we stored SortIndex in position field
+          if a.position != b.position
+            a.position <=> b.position
+          else
+            # Then by created_at (CreationTimestamp)
+            if a.created_at != b.created_at
+              a.created_at <=> b.created_at
+            else
+              # Finally by id (PrimaryKey)
+              a.id <=> b.id
+            end
+          end
+        end
+      end
+
+      # Update positions starting at 10000, incrementing by 10000
+      position = 10000
+      sorted_tasks.each do |task|
+        task.update_column(:position, position)
+        position += 10000
+      end
+
+      jobs_processed += 1
+    end
+
+    jobs_processed
+  end
 
   def load_original_job_mappings(backup_file)
     doc = Nokogiri::XML(File.open(backup_file))
