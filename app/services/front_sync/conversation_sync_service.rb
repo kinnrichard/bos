@@ -14,14 +14,19 @@ class FrontSync::ConversationSyncService < FrontSyncService
       params[:since] = since.to_i if since
       params[:limit] = max_results if max_results
 
-      # Fetch conversations from Front API
-      conversations_data = fetch_all_data("conversations", params)
-      Rails.logger.info "Fetched #{conversations_data.size} conversations from Front API"
-
-      # Sync each conversation
-      conversations_data.each do |conversation_data|
+      # Process conversations in batches to avoid memory issues
+      batch_count = 0
+      fetch_all_data("conversations", params) do |conversation_data|
         sync_conversation(conversation_data)
+        batch_count += 1
+
+        # Log progress every 100 records
+        if batch_count % 100 == 0
+          Rails.logger.info "Processed #{batch_count} conversations so far..."
+        end
       end
+
+      Rails.logger.info "Processed #{batch_count} conversations total"
 
       duration = Time.current - start_time
       Rails.logger.info "Conversation sync completed in #{duration.round(2)}s: #{@stats[:created]} created, #{@stats[:updated]} updated, #{@stats[:failed]} failed"

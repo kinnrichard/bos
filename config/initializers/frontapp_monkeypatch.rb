@@ -64,14 +64,14 @@ module Frontapp
     end
 
     # Override the list method to respect max_results and fetch_all
-    def list(path, params = {})
+    def list(path, params = {}, &block)
       # Extract control parameters
       max_results = params.delete(:max_results) || params.delete("max_results")
       fetch_all = params.delete(:fetch_all) || params.delete("fetch_all") || false
 
       # If fetch_all is true, use original behavior (fetch everything)
       if fetch_all
-        return list_all_pages(path, params)
+        return list_all_pages(path, params, &block)
       end
 
       # If limit is specified without max_results, use it as max_results
@@ -150,36 +150,66 @@ module Frontapp
 
     # Original behavior - fetch all pages (be careful!)
     def list_all_pages(path, params = {})
-      items = []
-      last_page = false
-      url = "#{base_url}#{path}"
+      if block_given?
+        # When block given, yield each page instead of collecting
+        last_page = false
+        url = "#{base_url}#{path}"
+        page_count = 0
 
-      while !last_page
-        response = @headers.get(url, params: params)
+        while !last_page
+          response = @headers.get(url, params: params)
 
-        raise Error.from_response(response) unless response.status.success?
+          raise Error.from_response(response) unless response.status.success?
 
-        parsed = response.parse
-        if block_given?
-          yield parsed["_results"]
-        else
+          parsed = response.parse
+          results = parsed["_results"] || []
+
+          # Yield the page results
+          yield results if results.any?
+          page_count += 1
+
+          pagination = parsed["_pagination"]
+          if pagination.nil? || pagination["next"].nil?
+            last_page = true
+          else
+            url = pagination["next"]
+            params = {}
+          end
+
+          # Safety limit
+          break if page_count > 500  # 500 pages * 100 items = 50,000 max
+        end
+
+        nil  # Return nil when using blocks
+      else
+        # Original behavior - collect all results
+        items = []
+        last_page = false
+        url = "#{base_url}#{path}"
+
+        while !last_page
+          response = @headers.get(url, params: params)
+
+          raise Error.from_response(response) unless response.status.success?
+
+          parsed = response.parse
           results = parsed["_results"] || []
           items.concat(results)
+
+          pagination = parsed["_pagination"]
+          if pagination.nil? || pagination["next"].nil?
+            last_page = true
+          else
+            url = pagination["next"]
+            params = {}
+          end
+
+          # Safety limit
+          break if items.length > 50000
         end
 
-        pagination = parsed["_pagination"]
-        if pagination.nil? || pagination["next"].nil?
-          last_page = true
-        else
-          url = pagination["next"]
-          params = {}
-        end
-
-        # Safety limit
-        break if items.length > 50000
+        items
       end
-
-      items
     end
 
     # Add single-page methods for manual pagination
@@ -237,7 +267,7 @@ module Frontapp
     # Override conversations method to handle max_results and fetch_all
     alias_method :original_conversations, :conversations
 
-    def conversations(params = {})
+    def conversations(params = {}, &block)
       # Preserve control params through the permit call
       max_results = params[:max_results] || params["max_results"]
       fetch_all = params[:fetch_all] || params["fetch_all"]
@@ -256,7 +286,39 @@ module Frontapp
         end
       end
 
-      list("conversations", cleaned)
+      list("conversations", cleaned, &block)
+    end
+
+    # Override contacts method to handle blocks
+    alias_method :original_contacts, :contacts if method_defined?(:contacts)
+
+    def contacts(params = {}, &block)
+      params[:fetch_all] = true if params[:fetch_all].nil? && block_given?
+      list("contacts", params, &block)
+    end
+
+    # Override tags method to handle blocks
+    alias_method :original_tags, :tags if method_defined?(:tags)
+
+    def tags(params = {}, &block)
+      params[:fetch_all] = true if params[:fetch_all].nil? && block_given?
+      list("tags", params, &block)
+    end
+
+    # Override teammates method to handle blocks
+    alias_method :original_teammates, :teammates if method_defined?(:teammates)
+
+    def teammates(params = {}, &block)
+      params[:fetch_all] = true if params[:fetch_all].nil? && block_given?
+      list("teammates", params, &block)
+    end
+
+    # Override channels method to handle blocks
+    alias_method :original_channels, :channels if method_defined?(:channels)
+
+    def channels(params = {}, &block)
+      params[:fetch_all] = true if params[:fetch_all].nil? && block_given?
+      list("channels", params, &block)
     end
 
     # Helper method for iterating through pages with a block

@@ -174,7 +174,8 @@ class FrontSyncService
 
   # Fetch all data from Front API
   # The monkeypatch handles pagination automatically when fetch_all: true
-  def fetch_all_data(resource_type, params = {})
+  # If a block is given, yields each page for batch processing
+  def fetch_all_data(resource_type, params = {}, &block)
     Rails.logger.tagged("FrontAPI") do
       Rails.logger.info "Fetching all #{resource_type}"
 
@@ -182,36 +183,89 @@ class FrontSyncService
         # Add fetch_all parameter for automatic pagination via monkeypatch
         params = params.merge(fetch_all: true)
 
-        # Use the appropriate client method based on resource type
-        response = case resource_type
-        when "contacts"
-                     client.contacts(params)
-        when "tags"
-                     client.tags(params)
-        when "teammates"
-                     client.teammates(params)
-        when "channels", "inboxes"
-                     client.channels(params)
-        when "conversations"
-                     client.conversations(params)
-        when "comments"
-                     # Comments need a conversation_id
-                     raise ArgumentError, "Comments require conversation_id in params" unless params[:conversation_id]
-                     client.conversation_comments(params[:conversation_id], params.except(:conversation_id))
+        # If block given, we'll process in batches
+        if block_given?
+          total_processed = 0
+
+          # Use the appropriate client method based on resource type
+          # The monkeypatch will yield each page when a block is given
+          case resource_type
+          when "contacts"
+            client.contacts(params) do |page_results|
+              Rails.logger.info "Processing batch of #{page_results.size} #{resource_type} (total: #{total_processed})"
+              page_results.each { |item| yield item }
+              total_processed += page_results.size
+            end
+          when "tags"
+            client.tags(params) do |page_results|
+              Rails.logger.info "Processing batch of #{page_results.size} #{resource_type} (total: #{total_processed})"
+              page_results.each { |item| yield item }
+              total_processed += page_results.size
+            end
+          when "teammates"
+            client.teammates(params) do |page_results|
+              Rails.logger.info "Processing batch of #{page_results.size} #{resource_type} (total: #{total_processed})"
+              page_results.each { |item| yield item }
+              total_processed += page_results.size
+            end
+          when "channels", "inboxes"
+            client.channels(params) do |page_results|
+              Rails.logger.info "Processing batch of #{page_results.size} #{resource_type} (total: #{total_processed})"
+              page_results.each { |item| yield item }
+              total_processed += page_results.size
+            end
+          when "conversations"
+            client.conversations(params) do |page_results|
+              Rails.logger.info "Processing batch of #{page_results.size} #{resource_type} (total: #{total_processed})"
+              page_results.each { |item| yield item }
+              total_processed += page_results.size
+            end
+          when "comments"
+            # Comments need a conversation_id
+            raise ArgumentError, "Comments require conversation_id in params" unless params[:conversation_id]
+            client.conversation_comments(params[:conversation_id], params.except(:conversation_id)) do |page_results|
+              Rails.logger.info "Processing batch of #{page_results.size} #{resource_type} (total: #{total_processed})"
+              page_results.each { |item| yield item }
+              total_processed += page_results.size
+            end
+          else
+            raise ArgumentError, "Unknown resource type: #{resource_type}"
+          end
+
+          Rails.logger.info "Processed #{total_processed} #{resource_type} in batches"
+          total_processed
         else
-                     raise ArgumentError, "Unknown resource type: #{resource_type}"
+          # Original behavior - return all results as array
+          response = case resource_type
+          when "contacts"
+                       client.contacts(params)
+          when "tags"
+                       client.tags(params)
+          when "teammates"
+                       client.teammates(params)
+          when "channels", "inboxes"
+                       client.channels(params)
+          when "conversations"
+                       client.conversations(params)
+          when "comments"
+                       # Comments need a conversation_id
+                       raise ArgumentError, "Comments require conversation_id in params" unless params[:conversation_id]
+                       client.conversation_comments(params[:conversation_id], params.except(:conversation_id))
+          else
+                       raise ArgumentError, "Unknown resource type: #{resource_type}"
+          end
+
+          # The response is an array when fetch_all: true
+          results = response.is_a?(Array) ? response : (response["_results"] || [])
+
+          Rails.logger.info "Fetched #{results.size} #{resource_type}"
+          results
         end
-
-        # The response is an array when fetch_all: true
-        results = response.is_a?(Array) ? response : (response["_results"] || [])
-
-        Rails.logger.info "Fetched #{results.size} #{resource_type}"
-        results
 
       rescue => e
         Rails.logger.error "Failed to fetch #{resource_type}: #{e.message}"
         Rails.logger.error e.backtrace.first(5).join("\n")
-        []
+        block_given? ? 0 : []
       end
     end
   end

@@ -14,14 +14,19 @@ class FrontSync::MessageSyncService < FrontSyncService
       params[:since] = since.to_i if since
       params[:limit] = max_results if max_results
 
-      # Fetch messages from Front API
-      messages_data = fetch_all_data("messages", params)
-      Rails.logger.info "Fetched #{messages_data.size} messages from Front API"
-
-      # Sync each message
-      messages_data.each do |message_data|
+      # Process messages in batches to avoid memory issues
+      batch_count = 0
+      fetch_all_data("messages", params) do |message_data|
         sync_message(message_data)
+        batch_count += 1
+
+        # Log progress every 100 records
+        if batch_count % 100 == 0
+          Rails.logger.info "Processed #{batch_count} messages so far..."
+        end
       end
+
+      Rails.logger.info "Processed #{batch_count} messages total"
 
       duration = Time.current - start_time
       Rails.logger.info "Message sync completed in #{duration.round(2)}s: #{@stats[:created]} created, #{@stats[:updated]} updated, #{@stats[:failed]} failed"
