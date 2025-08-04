@@ -85,7 +85,7 @@
 - ✅ Priority system
   - 💭 Sort by priority
 - ✅ Assign to technician
-  - 🚧 Filter by assignment
+  - ✅ Filter by assignment
 - 💭 Filter by date
 - 💭 Appointment Scheduling
 

@@ -74,7 +74,7 @@
   }
 
   .extra-count {
-    background-color: var(--text-secondary);
+    background-color: #555555; /* 66% gray - closer to black than white */
     color: white;
     font-size: 10px;
     font-weight: 600;
@@ -83,6 +83,8 @@
     align-items: center;
     justify-content: center;
     margin-left: -6px;
+    position: relative;
+    z-index: 10; /* Ensure badge appears above adjacent avatars */
   }
 
   .extra-count.size-xs {
