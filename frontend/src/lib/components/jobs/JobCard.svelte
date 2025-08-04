@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { JobData } from '$lib/models/types/job-data';
   import { getJobStatusEmoji, getJobPriorityEmoji } from '$lib/config/emoji';
-  import { getDueDateIcon } from '$lib/utils/due-date-icon';
+  import { getJobDateIcon } from '$lib/utils/due-date-icon';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
 
   let {
@@ -23,7 +23,8 @@
 
   const statusEmoji = $derived(getJobStatusEmoji(job.status));
   const priorityEmoji = $derived(getJobPriorityEmoji(job.priority));
-  const dueDateIcon = $derived(job.due_at ? getDueDateIcon(new Date(job.due_at)) : null);
+  // Show start icon (green) for upcoming jobs, due icon (red) for in-progress jobs
+  const dateIcon = $derived(getJobDateIcon(job.starts_at, job.start_time_set, job.due_at));
 
   function getJobPath(job: JobData): string {
     return `/jobs/${job.id}`;
@@ -71,9 +72,13 @@
       </span>
     {/if}
 
-    <!-- Due date icon (if due date is set, rightmost) -->
-    {#if dueDateIcon && job.due_at}
-      <img src={dueDateIcon} alt="Due date" class="due-date-icon" />
+    <!-- Date icon (green for start countdown, red for due date, rightmost) -->
+    {#if dateIcon}
+      <img
+        src={dateIcon}
+        alt={dateIcon.includes('green') ? 'Start date' : 'Due date'}
+        class="due-date-icon"
+      />
     {/if}
   </span>
 </a>

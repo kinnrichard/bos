@@ -5,7 +5,7 @@
   import TimeEditor from './TimeEditor.svelte';
   import type { PopulatedJob } from '$lib/types/job';
   import { validateDateRange } from '$lib/utils/date-formatting';
-  import { getDueDateIcon } from '$lib/utils/due-date-icon';
+  import { getToolbarDateIcon } from '$lib/utils/due-date-icon';
   import { debugComponent } from '$lib/utils/debug';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -49,8 +49,8 @@
   const startTimeSet = $derived(job?.start_time_set || false);
   const dueTimeSet = $derived(job?.due_time_set || false);
 
-  // Dynamic icon based on due date (using extracted utility)
-  const calendarIcon = $derived(getDueDateIcon(dueDate));
+  // Dynamic icon based on start/due dates (shows green for upcoming starts, red for due dates)
+  const calendarIcon = $derived(getToolbarDateIcon(job?.starts_at, startTimeSet, job?.due_at));
 
   // Helper to format time only
   function formatTimeOnly(date: Date): string {
