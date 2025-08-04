@@ -53,22 +53,32 @@ export function matchesSearchQuery(job: JobData, search: string): boolean {
 
 /**
  * Checks if a job is assigned to a specific technician
+ * Supports both user ID and short_name
  */
-export function isAssignedToTechnician(job: JobData, technicianId: string): boolean {
-  if (!technicianId) return true;
+export function isAssignedToTechnician(job: JobData, technicianIdOrShortName: string): boolean {
+  if (!technicianIdOrShortName) return true;
 
-  return job.jobAssignments?.some((assignment) => assignment.user?.id === technicianId) ?? false;
+  return (
+    job.jobAssignments?.some(
+      (assignment) =>
+        assignment.user?.id === technicianIdOrShortName ||
+        assignment.user?.short_name === technicianIdOrShortName
+    ) ?? false
+  );
 }
 
 /**
  * Checks if a job matches any of the specified technician filters
- * Supports multiple technician IDs and special "not_assigned" value
+ * Supports multiple technician IDs/short_names and special "not_assigned" value
  */
-export function matchesTechnicianFilter(job: JobData, technicianIds: string[]): boolean {
-  if (!technicianIds || technicianIds.length === 0) return true;
+export function matchesTechnicianFilter(
+  job: JobData,
+  technicianIdsOrShortNames: string[]
+): boolean {
+  if (!technicianIdsOrShortNames || technicianIdsOrShortNames.length === 0) return true;
 
   // Check if "not_assigned" is selected and job has no assignments
-  const hasNotAssignedFilter = technicianIds.includes('not_assigned');
+  const hasNotAssignedFilter = technicianIdsOrShortNames.includes('not_assigned');
   const hasNoAssignments = !job.jobAssignments || job.jobAssignments.length === 0;
 
   if (hasNotAssignedFilter && hasNoAssignments) {
@@ -76,9 +86,11 @@ export function matchesTechnicianFilter(job: JobData, technicianIds: string[]): 
   }
 
   // Check if job is assigned to any of the selected technicians
-  const specificTechnicianIds = technicianIds.filter((id) => id !== 'not_assigned');
+  const specificTechnicianIds = technicianIdsOrShortNames.filter((id) => id !== 'not_assigned');
   if (specificTechnicianIds.length > 0) {
-    return specificTechnicianIds.some((technicianId) => isAssignedToTechnician(job, technicianId));
+    return specificTechnicianIds.some((technicianIdOrShortName) =>
+      isAssignedToTechnician(job, technicianIdOrShortName)
+    );
   }
 
   return false;

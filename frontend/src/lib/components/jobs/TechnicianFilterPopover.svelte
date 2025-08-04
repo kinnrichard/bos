@@ -51,13 +51,13 @@
       case 'unassigned':
         return ['technician:not_assigned'];
       default:
-        // Parse comma-separated values (could be short_names or IDs)
+        // Parse comma-separated values (short_names)
         return technicianParam.split(',').map((value) => {
           if (value === 'not_assigned') {
             return 'technician:not_assigned';
           }
-          // Try to find technician by short_name first, then by ID
-          const tech = technicians.find((t) => t.short_name === value || t.id === value);
+          // Find technician by short_name to get their ID for selection tracking
+          const tech = technicians.find((t) => t.short_name === value);
           return tech ? `technician:${tech.id}` : `technician:${value}`;
         });
     }

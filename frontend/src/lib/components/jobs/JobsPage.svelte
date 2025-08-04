@@ -38,14 +38,7 @@
   const selectedPriorities = $derived(getSelectedJobPriorities());
   const storedTechnicianIds = $derived(getSelectedTechnicianIds());
 
-  // Query to get all technicians (needed for short_name lookup)
-  const techniciansQuery = ReactiveUser.all()
-    .where('role', 'IN', ['technician', 'admin', 'owner'])
-    .orderBy('name', 'asc')
-    .all();
-  const technicians = $derived(techniciansQuery.data || []);
-
-  // Determine technician IDs based on query param or stored selection
+  // Determine technician filters based on query param or stored selection
   const selectedTechnicianIds = $derived(() => {
     if (!technicianParam) {
       // No query param, use stored selection from filter store
@@ -54,24 +47,17 @@
 
     switch (technicianParam) {
       case 'mine':
-        return currentUser ? [currentUser.id] : [];
+        return currentUser ? [currentUser.short_name || currentUser.id] : [];
       case 'others':
         // All technicians except current user
         return currentUser
-          ? allTechnicians.filter((t) => t.id !== currentUser.id).map((t) => t.id)
+          ? allTechnicians.filter((t) => t.id !== currentUser.id).map((t) => t.short_name || t.id)
           : [];
       case 'unassigned':
         return ['not_assigned'];
       default:
-        // Parse comma-separated values (could be short_names or IDs)
-        return technicianParam.split(',').map((value) => {
-          if (value === 'not_assigned') {
-            return 'not_assigned';
-          }
-          // Try to find technician by short_name first, then by ID
-          const tech = technicians.find((t) => t.short_name === value || t.id === value);
-          return tech ? tech.id : value; // Return ID if found, otherwise return as-is
-        });
+        // Parse comma-separated values (should be short_names)
+        return technicianParam.split(',');
     }
   });
 
