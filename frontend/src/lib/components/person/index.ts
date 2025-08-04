@@ -20,7 +20,6 @@ export { default as PersonForm } from './PersonForm.svelte';
 export { default as PersonHeader } from './PersonHeader.svelte';
 export { default as ContactMethodsSection } from './ContactMethodsSection.svelte';
 export { default as ContactItem } from './ContactItem.svelte';
-export { default as PersonFormDemo } from './PersonFormDemo.svelte';
 
 // Re-export utilities for convenience
 export * from '$lib/utils/person/dynamicWidth';
