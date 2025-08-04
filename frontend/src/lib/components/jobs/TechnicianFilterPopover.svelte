@@ -120,16 +120,16 @@
         />
       {:else if buttonState() === 'mixed'}
         <div class="avatars-mixed">
+          <img
+            src="/icons/questionmark.circle.fill.svg"
+            alt="Not assigned"
+            class="not-assigned-avatar"
+          />
           <TechnicianAvatarGroup
             technicians={selectedTechnicians}
             maxDisplay={selectedTechnicians.length <= 2 ? 2 : 1}
             size="xs"
             showNames={false}
-          />
-          <img
-            src="/icons/questionmark.circle.fill.svg"
-            alt="Not assigned"
-            class="not-assigned-avatar overlap"
           />
         </div>
       {:else}
@@ -222,18 +222,17 @@
     flex-shrink: 0;
   }
 
-  .not-assigned-avatar.overlap {
-    margin-left: -6px;
-  }
-
   .avatars-mixed {
     display: flex;
     align-items: center;
-    flex-direction: row-reverse;
   }
 
   .avatars-mixed :global(.technician-avatar-group) {
-    z-index: 2;
+    margin-left: -6px;
+  }
+
+  .avatars-mixed :global(.technician-avatar-group .avatars > *:not(:first-child)) {
+    margin-left: -6px;
   }
 
   .menu-icon {
