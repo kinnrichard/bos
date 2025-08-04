@@ -2,7 +2,7 @@
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
-  import TechnicianAvatarGroup from '$lib/components/jobs/TechnicianAvatarGroup.svelte';
+  import TechnicianButton from '$lib/components/ui/TechnicianButton.svelte';
   // NOTE: getZeroContext import removed as it was unused
 
   // Epic-009: Use ReactiveRecord models for consistent architecture
@@ -134,43 +134,27 @@
     }
   }
 
-  // Display logic for button content - use actual assignment data
-  const hasAssignments = $derived(assignedTechniciansForDisplay.length > 0);
 </script>
 
 <BasePopover preferredPlacement="bottom" panelWidth="max-content" panelMinWidth="240px" {disabled}>
   {#snippet trigger({ popover })}
-    <button
-      class="popover-button"
-      class:has-assignments={hasAssignments}
-      class:disabled
-      use:popover.button
-      as
-      any
+    <TechnicianButton
+      technicians={assignedTechniciansForDisplay as UserData[]}
+      showNotAssigned={false}
+      {disabled}
+      active={false}
       title={disabled
         ? 'Disabled'
-        : hasAssignments
+        : assignedTechniciansForDisplay.length > 0
           ? `Technicians: ${assignedTechniciansForDisplay
               .map((t: { name?: string }) => t?.name)
               .filter(Boolean)
               .join(', ')}`
-          : 'Technicians'}
-      {disabled}
-      onclick={disabled ? undefined : (e: MouseEvent) => e.stopPropagation()}
-    >
-      {#if hasAssignments}
-        <!-- Show assigned technician avatars using shared component -->
-        <TechnicianAvatarGroup
-          technicians={assignedTechniciansForDisplay as UserData[]}
-          maxDisplay={2}
-          size="xs"
-          showNames={false}
-        />
-      {:else}
-        <!-- Show add-person icon when no assignments -->
-        <img src="/icons/add-person.svg" alt="Assign technicians" class="add-person-icon" />
-      {/if}
-    </button>
+          : 'Assign technicians'}
+      emptyIcon="/icons/add-person.svg"
+      emptyIconAlt="Assign technicians"
+      popoverButton={popover.button as any}
+    />
   {/snippet}
 
   {#snippet children({ close })}
@@ -208,33 +192,3 @@
     {/if}
   {/snippet}
 </BasePopover>
-
-<style>
-  /* Base .popover-button styles are imported from popover-common.css */
-
-  /* Override button styles for dynamic button sizing when has assignments */
-  .popover-button.has-assignments {
-    border-radius: 18px;
-    width: auto;
-    min-width: 36px;
-    padding: 0 6px;
-  }
-
-  /* Removed duplicate styles - now using TechnicianAvatarGroup component */
-
-  .add-person-icon {
-    width: 20px;
-    height: 20px;
-    opacity: 0.7;
-  }
-
-  /* Accessibility improvements and high contrast support are imported from popover-common.css */
-
-  /* Panel content styling */
-
-  /* NOTE: Unused CSS selectors removed:
-   * - .technician-avatar
-   * - .technician-assignment-menu :global(.popover-menu-icon .user-avatar)
-   * - .technician-assignment-menu :global(.popover-menu-label)
-   */
-</style>

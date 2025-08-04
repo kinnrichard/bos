@@ -87,9 +87,13 @@ class JobFilterStore {
   private initializeFromUrl() {
     this.isInitializing = true;
     const url = new URL(window.location.href);
+    
+    // Don't read technician_ids from URL if we're on a semantic route
+    const isSemanticRoute = url.pathname.match(/\/jobs\/(mine|not-mine|not-assigned)/);
+    
     const statusParam = url.searchParams.get('status');
     const priorityParam = url.searchParams.get('priority');
-    const technicianIdsParam = url.searchParams.get('technician_ids');
+    const technicianIdsParam = !isSemanticRoute ? url.searchParams.get('technician_ids') : null;
 
     const selected: string[] = [];
 

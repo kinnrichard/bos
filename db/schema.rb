@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_03_015250) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_011738) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -437,8 +437,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_03_015250) do
     t.string "password_digest"
     t.boolean "resort_tasks_on_status_change", default: true, null: false
     t.string "role", null: false
+    t.string "short_name"
     t.index [ "email" ], name: "index_users_on_email"
     t.index [ "id" ], name: "index_users_on_id", unique: true
+    t.index [ "short_name" ], name: "index_users_on_short_name", unique: true
   end
 
   create_table "versions", force: :cascade do |t|

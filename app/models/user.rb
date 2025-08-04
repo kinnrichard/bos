@@ -25,9 +25,11 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :role, presence: true
   validates :password, length: { minimum: 6 }, if: :password_required?
+  validates :short_name, uniqueness: { case_sensitive: false }, allow_blank: true
 
   before_validation :downcase_email
   before_validation :strip_name
+  before_validation :generate_short_name, on: :create
 
   after_save :invalidate_technicians_cache, if: :should_invalidate_technicians_cache?
   after_destroy :invalidate_technicians_cache, if: :technician?
@@ -75,6 +77,30 @@ class User < ApplicationRecord
 
   def strip_name
     self.name = name.strip if name.present?
+  end
+
+  def generate_short_name
+    return if short_name.present?
+    return unless email.present?
+
+    # Try email prefix first
+    email_prefix = email.split("@").first.downcase
+    candidate = email_prefix
+
+    # If not unique, try with incremental numbers
+    counter = 1
+    while User.where.not(id: id).exists?(short_name: candidate)
+      candidate = "#{email_prefix}#{counter}"
+      counter += 1
+
+      # If we've tried too many times, use the full email
+      if counter > 10
+        candidate = email.downcase
+        break
+      end
+    end
+
+    self.short_name = candidate
   end
 
   def password_required?

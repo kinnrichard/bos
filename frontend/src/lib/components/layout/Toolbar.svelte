@@ -90,7 +90,8 @@
   );
   const showJobFilter = $derived(
     currentPageType === 'jobs' &&
-      ($page.route.id === '/(authenticated)/jobs' || $page.route.id === ROUTE_PATTERNS.clientJobs)
+      ($page.route.id === '/(authenticated)/jobs' || 
+       $page.route.id === ROUTE_PATTERNS.clientJobs)
   );
   const showPeopleFilter = $derived(
     currentPageType === 'people' && $page.route.id === ROUTE_PATTERNS.clientPeople

@@ -1,9 +1,12 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
-  import TechnicianAvatarGroup from './TechnicianAvatarGroup.svelte';
+  import TechnicianButton from '$lib/components/ui/TechnicianButton.svelte';
   import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
   import { ReactiveUser } from '$lib/models/reactive-user';
+  import { getCurrentUser } from '$lib/auth/current-user';
   import '$lib/styles/popover-common.css';
 
   interface Props {
@@ -13,6 +16,9 @@
   }
 
   let { selected = [], onFilterChange, disabled = false }: Props = $props();
+  
+  const currentUser = getCurrentUser();
+  const currentPath = $derived($page.url.pathname);
 
   // Query for all users that can be assigned as technicians
   // Note: Using all() and filtering client-side since where() doesn't support array filters
@@ -28,14 +34,35 @@
       : []
   );
 
+  // Determine effective selection based on semantic route or props
+  const effectiveSelection = $derived(() => {
+    const filter = currentPath.match(/\/jobs\/(mine|not-mine|not-assigned)/)?.[1];
+    
+    if (!filter) return selected;
+    
+    switch (filter) {
+      case 'mine':
+        return currentUser ? [`technician:${currentUser.id}`] : [];
+      case 'not-mine':
+        // All technicians except current user
+        return currentUser 
+          ? technicians.filter(t => t.id !== currentUser.id).map(t => `technician:${t.id}`)
+          : [];
+      case 'not-assigned':
+        return ['technician:not_assigned'];
+      default:
+        return selected;
+    }
+  });
+
   // Parse selected technicians
   const selectedTechnicianIds = $derived(
-    selected
+    effectiveSelection()
       .filter((id) => id.startsWith('technician:') && id !== 'technician:not_assigned')
       .map((id) => id.replace('technician:', ''))
   );
 
-  const isNotAssignedSelected = $derived(selected.includes('technician:not_assigned'));
+  const isNotAssignedSelected = $derived(effectiveSelection().includes('technician:not_assigned'));
 
   const selectedTechnicians = $derived(
     technicians.filter((tech) => selectedTechnicianIds.includes(tech.id))
@@ -62,7 +89,7 @@
     })),
   ]);
 
-  function handleSelect(value: string | undefined) {
+  async function handleSelect(value: string | undefined) {
     if (!value || value === 'title' || value === 'divider') return;
 
     const isCurrentlySelected = selected.includes(value);
@@ -76,71 +103,59 @@
       newSelection = [...selected, value];
     }
 
-    onFilterChange(newSelection);
+    // Check for semantic route navigation
+    if (currentUser) {
+      // Navigate to /jobs/mine if only current user is selected
+      if (newSelection.length === 1 && newSelection[0] === `technician:${currentUser.id}`) {
+        await goto('/jobs/mine');
+        return;
+      }
+      
+      // Navigate to /jobs/not-assigned if only not_assigned is selected
+      if (newSelection.length === 1 && newSelection[0] === 'technician:not_assigned') {
+        await goto('/jobs/not-assigned');
+        return;
+      }
+      
+      // Navigate to /jobs/not-mine if all technicians except current user are selected
+      const technicianSelections = newSelection.filter(id => 
+        id.startsWith('technician:') && id !== 'technician:not_assigned'
+      );
+      const selectedTechIds = technicianSelections.map(id => id.replace('technician:', ''));
+      const allOtherTechIds = technicians
+        .filter(t => t.id !== currentUser.id)
+        .map(t => t.id);
+      
+      if (selectedTechIds.length === allOtherTechIds.length &&
+          selectedTechIds.every(id => allOtherTechIds.includes(id))) {
+        await goto('/jobs/not-mine');
+        return;
+      }
+    }
+    
+    // If on a semantic route and changing filters, go back to /jobs
+    if (currentPath.match(/\/jobs\/(mine|not-mine|not-assigned)/)) {
+      await goto('/jobs');
+      // Small delay to let navigation complete
+      setTimeout(() => onFilterChange(newSelection), 50);
+    } else {
+      onFilterChange(newSelection);
+    }
   }
 
-  // Determine button visual state
-  const buttonState = $derived(() => {
-    if (selected.length === 0) {
-      return 'empty';
-    } else if (isNotAssignedSelected && selectedTechnicianIds.length === 0) {
-      return 'not-assigned';
-    } else if (isNotAssignedSelected && selectedTechnicianIds.length > 0) {
-      return 'mixed';
-    } else {
-      return 'technicians';
-    }
-  });
-
-  const hasActiveFilters = $derived(selected.length > 0);
+  const hasActiveFilters = $derived(effectiveSelection().length > 0);
 </script>
 
 <BasePopover preferredPlacement="bottom" panelWidth="max-content">
   {#snippet trigger({ popover })}
-    <button
-      class="technician-filter-button"
-      class:disabled
-      class:active={hasActiveFilters}
-      class:expanded={selectedTechnicians.length > 1 ||
-        (isNotAssignedSelected && selectedTechnicians.length > 0)}
-      use:popover.button
-      as
-      any
-      title={disabled ? 'Disabled' : 'Filter by Technician'}
+    <TechnicianButton
+      technicians={selectedTechnicians}
+      showNotAssigned={isNotAssignedSelected}
       {disabled}
-      onclick={disabled ? undefined : (e: MouseEvent) => e.stopPropagation()}
-    >
-      {#if buttonState() === 'empty'}
-        <img src="/icons/person.fill.svg" alt="No technician filter" class="button-icon empty" />
-      {:else if buttonState() === 'not-assigned'}
-        <img
-          src="/icons/questionmark.circle.fill.svg"
-          alt="Not assigned"
-          class="not-assigned-avatar"
-        />
-      {:else if buttonState() === 'mixed'}
-        <div class="avatars-mixed">
-          <img
-            src="/icons/questionmark.circle.fill.svg"
-            alt="Not assigned"
-            class="not-assigned-avatar"
-          />
-          <TechnicianAvatarGroup
-            technicians={selectedTechnicians}
-            maxDisplay={selectedTechnicians.length <= 2 ? 2 : 1}
-            size="xs"
-            showNames={false}
-          />
-        </div>
-      {:else}
-        <TechnicianAvatarGroup
-          technicians={selectedTechnicians}
-          maxDisplay={selectedTechnicians.length <= 3 ? 3 : 2}
-          size="xs"
-          showNames={false}
-        />
-      {/if}
-    </button>
+      active={hasActiveFilters}
+      title={disabled ? 'Disabled' : 'Filter by Technician'}
+      popoverButton={popover.button as any}
+    />
   {/snippet}
 
   {#snippet children({ close })}
@@ -150,7 +165,7 @@
       showIcons={true}
       iconPosition="left"
       multiple={true}
-      {selected}
+      selected={effectiveSelection()}
       onSelect={handleSelect}
       onClose={close}
     >
@@ -166,75 +181,6 @@
 </BasePopover>
 
 <style>
-  .technician-filter-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 6px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s;
-    width: 36px;
-    height: 36px;
-  }
-
-  /* Expanded state when multiple technicians selected */
-  .technician-filter-button.expanded {
-    border-radius: 18px;
-    width: auto;
-    min-width: 36px;
-    padding: 0 6px;
-  }
-
-  .technician-filter-button:hover:not(.disabled) {
-    /* Match popover-button hover styles */
-    background-color: #252527;
-    border-color: #494a4d;
-  }
-
-  .technician-filter-button.active {
-    background-color: var(--color-primary-soft, var(--bg-secondary));
-    border-color: var(--color-primary, var(--border-primary));
-  }
-
-  .technician-filter-button.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-
-  .button-icon {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-  }
-
-  .button-icon.empty {
-    opacity: 0.4;
-  }
-
-  .not-assigned-avatar {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-  }
-
-  .avatars-mixed {
-    display: flex;
-    align-items: center;
-  }
-
-  .avatars-mixed :global(.technician-avatar-group) {
-    margin-left: -6px;
-  }
-
-  .avatars-mixed :global(.technician-avatar-group .avatars > *:not(:first-child)) {
-    margin-left: -6px;
-  }
-
   .menu-icon {
     width: 20px;
     height: 20px;
