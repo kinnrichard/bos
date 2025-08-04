@@ -101,6 +101,7 @@
       class="technician-filter-button"
       class:disabled
       class:active={hasActiveFilters}
+      class:expanded={selectedTechnicians.length > 1}
       use:popover.button
       as
       any
@@ -168,6 +169,14 @@
     transition: all 0.2s;
     width: 36px;
     height: 36px;
+  }
+
+  /* Expanded state when multiple technicians selected */
+  .technician-filter-button.expanded {
+    border-radius: 18px;
+    width: auto;
+    min-width: 36px;
+    padding: 0 6px;
   }
 
   .technician-filter-button:hover:not(.disabled) {

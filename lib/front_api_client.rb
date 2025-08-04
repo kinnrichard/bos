@@ -76,11 +76,16 @@ class FrontApiClient
     all_results = []
     next_url = url
 
-    # Default pagination params
-    params = { limit: 100 }.merge(params)
+    # Extract control params (not sent to API)
+    max_results = params.delete(:max_results) || 100  # Default: only fetch up to 100 results
+    fetch_all = params.delete(:fetch_all) || false    # Default: don't fetch all pages
 
+    # Default pagination params for API
+    params = { limit: 25 }.merge(params)
+
+    page_count = 0
     while next_url
-      puts "DEBUG: Fetching #{next_url}" if ENV["DEBUG_FRONT_API"]
+      puts "DEBUG: Fetching page #{page_count + 1}: #{next_url}" if ENV["DEBUG_FRONT_API"]
 
       begin
         response = if next_url == url
@@ -115,6 +120,13 @@ class FrontApiClient
       # Handle Front's pagination format
       if data.is_a?(Hash) && data["_results"]
         all_results.concat(data["_results"])
+        page_count += 1
+
+        # Check if we should continue fetching
+        if !fetch_all && all_results.length >= max_results
+          puts "DEBUG: Reached max_results limit (#{max_results}), stopping pagination" if ENV["DEBUG_FRONT_API"]
+          break
+        end
 
         # Check for next page
         if data["_pagination"] && data["_pagination"]["next"]
@@ -128,7 +140,15 @@ class FrontApiClient
       end
 
       # Safety limit to prevent infinite loops
-      break if all_results.length > 10000
+      if all_results.length > 10000
+        puts "WARNING: Reached safety limit of 10000 results, stopping pagination"
+        break
+      end
+    end
+
+    # Trim to max_results if needed
+    if !fetch_all && all_results.length > max_results
+      all_results = all_results.first(max_results)
     end
 
     all_results
