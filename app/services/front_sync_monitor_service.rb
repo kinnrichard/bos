@@ -36,7 +36,7 @@ class FrontSyncMonitorService
                       "circuit_breaker_open"
     elsif has_recent_errors
                       "degraded"
-    elsif last_sync&.status == "success"
+    elsif last_sync&.status == "completed"
                       "healthy"
     else
                       "unknown"
@@ -103,7 +103,7 @@ class FrontSyncMonitorService
     logs_7d = FrontSyncLog.where("created_at >= ?", 7.days.ago)
 
     total_24h = logs_24h.count
-    successful_24h = logs_24h.where(status: "success").count
+    successful_24h = logs_24h.where(status: "completed").count
 
     success_rate = total_24h > 0 ? successful_24h.to_f / total_24h : 0.0
 

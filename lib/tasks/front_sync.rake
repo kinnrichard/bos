@@ -19,7 +19,7 @@ namespace :front_sync do
                    else "\e[37m" # white
                    end
     puts "Status: #{status_color}#{status[:overall].upcase}\e[0m"
-    puts "Last Sync: #{status[:last_sync] ? status[:last_sync].strftime('%Y-%m-%d %H:%M:%S') : 'Never'}"
+    puts "Last Sync: #{status[:last_sync] ? status[:last_sync].in_time_zone.strftime('%Y-%m-%d %H:%M:%S %Z') : 'Never'}"
     puts "Recent Errors (24h): #{status[:recent_errors]}"
     puts "Running Syncs: #{status[:running_syncs]}"
     
@@ -53,8 +53,9 @@ namespace :front_sync do
     if recent_logs.any?
       recent_logs.each do |log|
         status_emoji = case log.status
-                       when 'success' then '✅'
-                       when 'error' then '❌'
+                       when 'completed' then '✅'
+                       when 'completed_with_errors' then '⚠️'
+                       when 'failed', 'error' then '❌'
                        when 'running' then '🔄'
                        else '❓'
                        end
@@ -65,7 +66,7 @@ namespace :front_sync do
                      "N/A"
                    end
         
-        puts "#{status_emoji} #{log.created_at.strftime('%m/%d %H:%M')} | #{log.sync_type.ljust(12)} | #{duration.rjust(6)} | #{log.records_synced || 0} records"
+        puts "#{status_emoji} #{log.created_at.in_time_zone.strftime('%m/%d %H:%M %Z')} | #{log.sync_type.ljust(12)} | #{duration.rjust(6)} | #{log.records_synced || 0} records"
         
         if log.status == 'error' && log.error_message.present?
           puts "    Error: #{log.error_message.truncate(80)}"
