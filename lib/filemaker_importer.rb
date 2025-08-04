@@ -7,6 +7,7 @@ class FilemakerImporter
     @warnings = []
     @import_user = nil
     @job_id_mappings = {} # Track merged job ID mappings
+    @original_job_mappings = {} # Track original job assignments from backup
   end
 
   def import_user
@@ -179,6 +180,17 @@ class FilemakerImporter
     orphaned_count = 0
     orphaned_subtasks = [] # Store subtasks that need parent job inheritance
     subtask_inherited = 0
+    restored_count = 0
+
+    # Load original job mappings from backup file if it exists
+    backup_file = Rails.root.join("FMPTasksBackup")
+    if File.exist?(backup_file)
+      puts "Loading original job assignments from backup file..."
+      load_original_job_mappings(backup_file)
+      puts "  → Loaded #{@original_job_mappings.size} task-to-job mappings from backup"
+    else
+      puts "Warning: No backup file found at #{backup_file}"
+    end
 
     ActiveRecord::Base.transaction do
       # First pass: Create all tasks without parent relationships
@@ -198,15 +210,25 @@ class FilemakerImporter
           # Special handling for the problematic catch-all job
           # This job contained tasks for 239 different clients that need to be redistributed
           if job_id&.upcase == "DFE87385-A953-46DE-A4A3-CA6A0C868833"
-            client_id = extract_field(row, "Client ID")
-            if client_id.present?
-              # Find or create "Legacy Tasks" job for this task's actual client
-              job_id = find_or_create_legacy_job(client_id, legacy_jobs)
-              orphaned_count += 1
-              @warnings << "Task '#{extract_field(row, 'Title')}' from catch-all job reassigned to client #{client_id}'s Legacy Tasks"
+            # First try to restore to original job from backup
+            original_job_id = @original_job_mappings[task_id&.upcase]
+
+            if original_job_id.present? && Job.exists?(id: original_job_id)
+              job_id = original_job_id
+              restored_count += 1
+              @warnings << "Task '#{extract_field(row, 'Title')}' restored to original job from backup"
             else
-              @errors << "Task '#{extract_field(row, 'Title')}' from catch-all job has no client ID, skipping"
-              next
+              # Fall back to Legacy Tasks for the client
+              client_id = extract_field(row, "Client ID")
+              if client_id.present?
+                # Find or create "Legacy Tasks" job for this task's actual client
+                job_id = find_or_create_legacy_job(client_id, legacy_jobs)
+                orphaned_count += 1
+                @warnings << "Task '#{extract_field(row, 'Title')}' from catch-all job reassigned to client #{client_id}'s Legacy Tasks"
+              else
+                @errors << "Task '#{extract_field(row, 'Title')}' from catch-all job has no client ID, skipping"
+                next
+              end
             end
           end
 
@@ -360,9 +382,13 @@ class FilemakerImporter
         end
       end
 
-      # Report on orphaned tasks if any
+      # Report on orphaned and restored tasks
+      if restored_count > 0
+        puts "\n✨ Restored Tasks: #{restored_count} tasks were restored to their original jobs from backup"
+      end
+
       if orphaned_count > 0
-        puts "\n📋 Orphaned Tasks: #{orphaned_count} tasks were assigned to 'Legacy Tasks' jobs"
+        puts "📋 Orphaned Tasks: #{orphaned_count} tasks were assigned to 'Legacy Tasks' jobs"
       end
 
       if subtask_inherited > 0
@@ -425,6 +451,38 @@ class FilemakerImporter
   end
 
   private
+
+  def load_original_job_mappings(backup_file)
+    doc = Nokogiri::XML(File.open(backup_file))
+
+    # Build field map for backup file
+    backup_field_map = {}
+    doc.xpath("//xmlns:METADATA/xmlns:FIELD", "xmlns" => "http://www.filemaker.com/fmpxmlresult").each_with_index do |field, index|
+      backup_field_map[field["NAME"]] = index
+    end
+
+    # Process each task in the backup to get original job assignments
+    doc.xpath("//xmlns:RESULTSET/xmlns:ROW", "xmlns" => "http://www.filemaker.com/fmpxmlresult").each do |row|
+      cols = row.xpath("xmlns:COL/xmlns:DATA", "xmlns" => "http://www.filemaker.com/fmpxmlresult")
+
+      # Get task ID and job ID from backup
+      task_id_idx = backup_field_map["PrimaryKey"]
+      job_id_idx = backup_field_map["Job ID"]
+
+      if task_id_idx && job_id_idx
+        task_id = cols[task_id_idx]&.text&.strip
+        job_id = cols[job_id_idx]&.text&.strip
+
+        # Store the mapping if both IDs are present and job is not the problematic one
+        if task_id.present? && job_id.present? && job_id.upcase != "DFE87385-A953-46DE-A4A3-CA6A0C868833"
+          @original_job_mappings[task_id.upcase] = job_id.downcase
+        end
+      end
+    end
+  rescue => e
+    @errors << "Error loading backup file: #{e.message}"
+    puts "⚠️  Warning: Could not load backup file: #{e.message}"
+  end
 
   def parse_xml(xml_file)
     doc = Nokogiri::XML(File.open(xml_file))
