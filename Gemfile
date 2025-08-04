@@ -57,6 +57,9 @@ gem "thruster", require: false
 # CSV parsing
 gem "csv"
 
+# Phone number parsing and validation
+gem "phonelib"
+
 # GitHub API client for issue creation and PR management
 gem "octokit", "~> 9.1"
 

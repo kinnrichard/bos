@@ -9,7 +9,7 @@
  * import { FrontSyncLog } from './front-sync-log';
  * ```
  *
- * Generated: 2025-08-04 13:18:12 UTC
+ * Generated: 2025-08-04 18:13:52 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';

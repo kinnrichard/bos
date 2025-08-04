@@ -84,6 +84,7 @@
 		"date-fns": "^4.1.0",
 		"debug": "^4.4.1",
 		"fast-redact": "^3.5.0",
+		"libphonenumber-js": "^1.11.18",
 		"lucide-svelte": "^0.536.0",
 		"qs": "^6.14.0",
 		"shadcn-svelte": "^1.0.6",

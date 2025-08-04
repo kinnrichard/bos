@@ -238,7 +238,7 @@
         person_id: newPerson.id,
         value: cm.value.trim(),
         contact_type: normalized?.contact_type,
-        formatted_value: normalized?.formatted_value || cm.value.trim(),
+        normalized_value: normalized?.normalized_value || cm.value.trim(),
       };
 
       const created = await ContactMethod.create(createData);
@@ -297,7 +297,7 @@
           const updated = await ContactMethod.update(cm.id, {
             contact_type: normalized?.contact_type,
             value: cm.value.trim(),
-            formatted_value: normalized?.formatted_value || cm.value.trim(),
+            normalized_value: normalized?.normalized_value || cm.value.trim(),
           });
           updatedContactMethods.push(updated);
         } else {
@@ -306,7 +306,7 @@
             person_id: person.id,
             contact_type: normalized?.contact_type,
             value: cm.value.trim(),
-            formatted_value: normalized?.formatted_value || cm.value.trim(),
+            normalized_value: normalized?.normalized_value || cm.value.trim(),
           });
           updatedContactMethods.push(created);
         }

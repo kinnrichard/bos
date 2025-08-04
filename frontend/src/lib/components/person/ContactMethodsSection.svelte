@@ -1,6 +1,6 @@
 <script lang="ts">
   import ContactItem from './ContactItem.svelte';
-  import { normalizeContact } from '$lib/utils/shared/contactNormalizer';
+  import { normalizeContact, formatPhoneForDisplay } from '$lib/utils/shared/contactNormalizer';
   import type { NormalizedContact } from '$lib/utils/shared/contactNormalizer';
   import { resizeInputs, type DynamicWidthConfig } from '$lib/utils/person/dynamicWidth';
 
@@ -65,12 +65,15 @@
     const normalized = normalizeContact(method.value);
     method.normalized = normalized;
 
-    // Update the input value to show the normalized format for email and phone
-    if (
-      normalized &&
-      (normalized.contact_type === 'email' || normalized.contact_type === 'phone')
-    ) {
-      method.value = normalized.formatted_value;
+    // Update the input value to show the formatted version
+    if (normalized) {
+      if (normalized.contact_type === 'phone') {
+        // Format phone numbers for display
+        method.value = formatPhoneForDisplay(method.value) || method.value;
+      } else if (normalized.contact_type === 'email') {
+        // Use normalized (lowercase) email
+        method.value = normalized.normalized_value || method.value;
+      }
     }
 
     // Trigger resize after normalization

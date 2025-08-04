@@ -2,6 +2,7 @@
   import ChromelessInput from '$lib/components/ui/ChromelessInput.svelte';
   import {
     normalizeContact,
+    formatPhoneForDisplay,
     getContactTypeIcon,
     getContactTypeLabel,
   } from '$lib/utils/shared/contactNormalizer';
@@ -49,12 +50,15 @@
       validation = validateContact(value);
     }
 
-    // Update the input value to show the normalized format for email and phone
-    if (
-      normalizedForEdit &&
-      (normalizedForEdit.contact_type === 'email' || normalizedForEdit.contact_type === 'phone')
-    ) {
-      value = normalizedForEdit.formatted_value;
+    // Update the input value to show the formatted version
+    if (normalizedForEdit) {
+      if (normalizedForEdit.contact_type === 'phone') {
+        // Format phone numbers for display
+        value = formatPhoneForDisplay(value) || value;
+      } else if (normalizedForEdit.contact_type === 'email') {
+        // Use normalized (lowercase) email
+        value = normalizedForEdit.normalized_value || value;
+      }
     }
 
     onBlur?.(event);
@@ -82,7 +86,7 @@
         />
       </span>
       <span class="contact-value">
-        {normalized.formatted_value || value}
+        {normalized.contact_type === 'phone' ? formatPhoneForDisplay(value) || value : value}
       </span>
     {:else}
       <span class="contact-type-indicator placeholder"></span>

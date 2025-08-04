@@ -3,19 +3,19 @@
 john_doe:
   client: acme
   name: John Doe
-  notes: Primary technical contact
+  title: Primary technical contact
 
 jane_smith:
   client: acme
   name: Jane Smith
-  notes: IT Manager
+  title: IT Manager
 
 bob_wilson:
   client: techstartup
   name: Bob Wilson
-  notes: CTO
+  title: CTO
 
 alice_johnson:
   client: smith_family
   name: Alice Johnson
-  notes: Owner
+  title: Owner

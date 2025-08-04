@@ -11,6 +11,17 @@ class FrontConversation < ApplicationRecord
   belongs_to :assignee, class_name: "FrontTeammate", optional: true
   belongs_to :recipient_contact, class_name: "FrontContact", optional: true
 
+  # Association with ContactMethod via normalized handle matching
+  belongs_to :matched_contact, -> { where("contact_type IN ('phone', 'email')") },
+             class_name: "ContactMethod",
+             primary_key: "normalized_value",
+             foreign_key: "recipient_handle",
+             optional: true
+
+  # Access to Person and Client through matched contact
+  has_one :person, through: :matched_contact
+  has_one :client, through: :person
+
   # Validations
   validates :front_id, presence: true, uniqueness: true
   validates :status, presence: true
@@ -30,6 +41,7 @@ class FrontConversation < ApplicationRecord
         AND front_messages.front_id = front_conversations.last_message_front_id
       )")
   }
+  scope :with_client_data, -> { includes(matched_contact: { person: :client }) }
 
   # Class methods for bulk operations
   def self.download_all_messages(batch_size: 100)

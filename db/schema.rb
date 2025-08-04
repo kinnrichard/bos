@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_174453) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_215228) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -57,7 +57,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_174453) do
     t.datetime "updated_at", null: false
     t.uuid "person_id"
     t.string "contact_type", null: false
+    t.string "normalized_value"
     t.index [ "id" ], name: "index_contact_methods_on_id", unique: true
+    t.index [ "normalized_value", "contact_type" ], name: "index_contact_methods_on_normalized_value_and_type"
+    t.index [ "normalized_value" ], name: "index_contact_methods_on_normalized_value"
     t.index [ "person_id" ], name: "index_contact_methods_on_person_id"
   end
 

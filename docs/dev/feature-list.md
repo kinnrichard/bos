@@ -88,6 +88,8 @@
   - ✅ Filter by assignment
 - 💭 Filter by date
 - 💭 Appointment Scheduling
+- 💭 User Setting - move completed to bottom
+- 💭 Job Info
 
 - 💭 Followup Scheduling
 - 💭 Job Start Scheduling

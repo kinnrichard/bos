@@ -9,7 +9,7 @@
  * import { ContactMethod } from './contact-method';
  * ```
  *
- * Generated: 2025-08-04 13:55:36 UTC
+ * Generated: 2025-08-04 18:46:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -84,6 +84,8 @@ export const ReactiveContactMethod = createReactiveRecord<ContactMethodData>(
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('contact_methods', {
   person: { type: 'belongsTo', model: 'Person' },
+  frontConversations: { type: 'hasMany', model: 'FrontConversation' },
+  frontMessageRecipients: { type: 'hasMany', model: 'FrontMessageRecipient' },
 });
 
 /**

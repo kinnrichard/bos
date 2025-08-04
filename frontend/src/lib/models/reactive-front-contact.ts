@@ -9,7 +9,7 @@
  * import { FrontContact } from './front-contact';
  * ```
  *
- * Generated: 2025-08-04 13:55:36 UTC
+ * Generated: 2025-08-04 18:46:55 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
