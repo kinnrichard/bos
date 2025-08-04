@@ -193,6 +193,15 @@ export function sortJobsInSection(jobs: JobData[]): JobData[] {
     }
 
     // Tertiary sort by date
+    // Jobs with dates should come BEFORE jobs without dates
+    const hasDateA = (a.starts_at && isScheduledForFuture(a)) || a.due_at;
+    const hasDateB = (b.starts_at && isScheduledForFuture(b)) || b.due_at;
+
+    // If one has a date and the other doesn't, prioritize the one with a date
+    if (hasDateA && !hasDateB) return -1;
+    if (!hasDateA && hasDateB) return 1;
+
+    // Both have dates or both don't have dates - sort by the actual date
     let dateA: number;
     let dateB: number;
 
