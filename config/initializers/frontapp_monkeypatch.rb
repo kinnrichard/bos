@@ -112,12 +112,18 @@ module Frontapp
 
         # Process results
         parsed = response.parse
+        actual_results = parsed["_results"] || []
+
+        # Log if we got fewer results than requested (Front API limit)
+        if request_params[:limit] && actual_results.length < request_params[:limit] && parsed["_pagination"] && parsed["_pagination"]["next"]
+          Rails.logger.debug "[FrontAPI] Requested limit: #{request_params[:limit]}, but got #{actual_results.length} results (API max limit)"
+        end
+
         if block_given?
-          yield parsed["_results"]
+          yield actual_results
         else
-          results = parsed["_results"] || []
-          items.concat(results)
-          total_collected += results.length
+          items.concat(actual_results)
+          total_collected += actual_results.length
 
           # Stop immediately if we have enough results
           if max_results && total_collected >= max_results
@@ -156,6 +162,9 @@ module Frontapp
         url = "#{base_url}#{path}"
         page_count = 0
 
+        # Set default page size if not specified
+        params[:limit] ||= DEFAULT_PAGE_SIZE
+
         while !last_page
           response = @headers.get(url, params: params)
 
@@ -186,6 +195,9 @@ module Frontapp
         items = []
         last_page = false
         url = "#{base_url}#{path}"
+
+        # Set default page size if not specified
+        params[:limit] ||= DEFAULT_PAGE_SIZE
 
         while !last_page
           response = @headers.get(url, params: params)
