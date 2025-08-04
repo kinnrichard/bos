@@ -82,17 +82,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: 2px;
+    margin-left: -6px;
   }
 
   .extra-count.size-xs {
-    width: 20px;
-    height: 20px;
-  }
-
-  .extra-count.size-sm {
     width: 24px;
     height: 24px;
     font-size: 11px;
+  }
+
+  .extra-count.size-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
   }
 </style>

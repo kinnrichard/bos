@@ -124,7 +124,7 @@
       {:else}
         <TechnicianAvatarGroup
           technicians={selectedTechnicians}
-          maxDisplay={2}
+          maxDisplay={selectedTechnicians.length <= 3 ? 3 : 2}
           size="xs"
           showNames={false}
         />
