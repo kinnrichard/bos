@@ -32,7 +32,7 @@ class FrontConversation < ApplicationRecord
   }
 
   # Class methods for bulk operations
-  def self.download_all_messages(batch_size: 10)
+  def self.download_all_messages(batch_size: 100)
     results = { total: 0, success: 0, failed: 0, errors: [] }
 
     find_each(batch_size: batch_size) do |conversation|
@@ -61,7 +61,7 @@ class FrontConversation < ApplicationRecord
     results
   end
 
-  def self.sync_outdated_messages(batch_size: 10)
+  def self.sync_outdated_messages(batch_size: 100)
     needs_message_sync.find_each(batch_size: batch_size).map(&:sync_messages_if_needed)
   end
 
