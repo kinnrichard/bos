@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_011738) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_034820) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -475,6 +475,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_011738) do
   add_foreign_key "scheduled_date_time_users", "users"
   add_foreign_key "tasks", "jobs"
   add_foreign_key "tasks", "tasks", column: "parent_id"
-  add_foreign_key "tasks", "tasks", column: "repositioned_after_id"
+  add_foreign_key "tasks", "tasks", column: "repositioned_after_id", on_delete: :nullify
   add_foreign_key "tasks", "users", column: "assigned_to_id"
 end
