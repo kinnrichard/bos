@@ -287,8 +287,10 @@
   }
 
   .letter-clients {
-    columns: 300px;
-    column-gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+    align-content: start;
   }
 
   .client-item {
@@ -305,8 +307,6 @@
     text-align: left;
     transition: all 0.15s ease;
     width: 100%;
-    margin-bottom: 12px;
-    break-inside: avoid;
   }
 
   .client-item:active {
@@ -377,7 +377,7 @@
     }
 
     .letter-clients {
-      columns: 1;
+      grid-template-columns: 1fr;
     }
   }
 </style>
