@@ -161,8 +161,8 @@
     justify-content: center;
     gap: 4px;
     padding: 6px;
-    background: var(--color-background);
-    border: 1px solid var(--color-border);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.2s;
@@ -171,18 +171,20 @@
   }
 
   .technician-filter-button:hover:not(.disabled) {
-    background: var(--color-background-hover);
-    border-color: var(--color-border-hover);
+    /* Match popover-button hover styles */
+    background-color: #252527;
+    border-color: #494a4d;
   }
 
   .technician-filter-button.active {
-    background: var(--color-primary-soft);
-    border-color: var(--color-primary);
+    background-color: var(--color-primary-soft, var(--bg-secondary));
+    border-color: var(--color-primary, var(--border-primary));
   }
 
   .technician-filter-button.disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    pointer-events: none;
   }
 
   .button-icon {
