@@ -14,9 +14,11 @@
 
   // Use centralized enum conversion functions
 
-  // Extract technicians from job assignments
+  // Extract technicians from job assignments and sort alphabetically
   const technicians = $derived(
-    job.jobAssignments?.map((assignment: any) => assignment.user).filter(Boolean) || []
+    (job.jobAssignments?.map((assignment: any) => assignment.user).filter(Boolean) || []).sort(
+      (a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || '')
+    )
   );
 
   const statusEmoji = $derived(getJobStatusEmoji(job.status));

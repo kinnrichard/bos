@@ -73,7 +73,9 @@
   const isNotAssignedSelected = $derived(effectiveSelection().includes('technician:not_assigned'));
 
   const selectedTechnicians = $derived(
-    technicians.filter((tech) => selectedTechnicianIds.includes(tech.id))
+    technicians
+      .filter((tech) => selectedTechnicianIds.includes(tech.id))
+      .sort((a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || ''))
   );
 
   // Create filter options with icons

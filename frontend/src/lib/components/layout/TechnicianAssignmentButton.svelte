@@ -44,11 +44,13 @@
   const job = $derived(jobQuery?.data); // ReactiveJob query returns data directly
   const availableUsers = $derived(usersQuery.data || []);
 
-  // Use populated technicians from job.jobAssignments relationship
+  // Use populated technicians from job.jobAssignments relationship and sort alphabetically
   // Note: TypeScript doesn't know about includes() relationship data, but runtime has it
   const assignedTechnicians = $derived(
-    (job as { jobAssignments?: Array<{ user: UserData }> })?.jobAssignments?.map((a) => a.user) ||
+    (
+      (job as { jobAssignments?: Array<{ user: UserData }> })?.jobAssignments?.map((a) => a.user) ||
       initialTechnicians
+    ).sort((a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || ''))
   );
   const assignedTechniciansForDisplay = $derived(assignedTechnicians);
 
@@ -133,7 +135,6 @@
       // NOTE: isLoading assignment removed as variable was unused
     }
   }
-
 </script>
 
 <BasePopover preferredPlacement="bottom" panelWidth="max-content" panelMinWidth="240px" {disabled}>
