@@ -1,7 +1,7 @@
 class FrontContact < ApplicationRecord
   # Associations
   has_many :front_conversations, foreign_key: :recipient_contact_id, dependent: :nullify
-  has_many :authored_messages, class_name: "FrontMessage", foreign_key: :author_id, dependent: :nullify
+  has_many :authored_messages, class_name: "FrontMessage", as: :author, dependent: :nullify
   has_many :front_message_recipients, dependent: :destroy
   has_many :messages, through: :front_message_recipients, source: :front_message
 

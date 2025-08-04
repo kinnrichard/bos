@@ -121,10 +121,30 @@ class FrontSync::MessageSyncService < FrontSyncService
     increment_failed("Message sync error: #{e.message}")
   end
 
+  # Sanitize text to remove null bytes and problematic control characters
+  # PostgreSQL doesn't accept null bytes in text fields
+  def sanitize_text(text)
+    return nil if text.nil?
+
+    # Remove null bytes completely - they're not valid in PostgreSQL
+    # Also remove other problematic control characters except common whitespace
+    # Keep: \t (tab), \n (newline), \r (carriage return)
+    # Remove: \x00-\x08, \x0B, \x0C, \x0E-\x1F
+    text.gsub(/[\x00-\x08\x0B\x0C\x0E-\x1F]/, "")
+  end
+
   # Transform Front message attributes to FrontMessage model attributes
   def transform_message_attributes(message_data, conversation, existing_record = nil)
     # Extract author from Front API data
-    author_id = find_author_id(message_data["author"])
+    author_type, author_id = find_author_id(message_data["author"])
+
+    # Extract author handle and name (store regardless of whether we found a contact/teammate)
+    author_handle = nil
+    author_name = nil
+    if message_data["author"]
+      author_handle = sanitize_text(message_data["author"]["email"] || message_data["author"]["handle"])
+      author_name = sanitize_text(message_data["author"]["name"])
+    end
 
     # Base attributes
     attributes = {
@@ -133,14 +153,17 @@ class FrontSync::MessageSyncService < FrontSyncService
       message_type: message_data["type"],
       is_inbound: message_data["is_inbound"] || false,
       is_draft: message_data["is_draft"] || false,
-      subject: message_data["subject"],
-      blurb: message_data["blurb"],
-      body_html: message_data["body"],
-      body_plain: message_data["text"],
+      subject: sanitize_text(message_data["subject"]),
+      blurb: sanitize_text(message_data["blurb"]),
+      body_html: sanitize_text(message_data["body"]),
+      body_plain: sanitize_text(message_data["text"]),
       error_type: message_data["error_type"],
       draft_mode: message_data["draft_mode"],
       created_at_timestamp: message_data["created_at"],
+      author_type: author_type,
       author_id: author_id,
+      author_handle: author_handle,
+      author_name: author_name,
       api_links: message_data["_links"] || {}
     }
 
@@ -158,22 +181,22 @@ class FrontSync::MessageSyncService < FrontSyncService
 
   # Find author contact ID from Front author data
   def find_author_id(author_data)
-    return nil unless author_data
+    return [ nil, nil ] unless author_data
 
     # Author can be a contact or a teammate
     if author_data["_links"] && author_data["_links"]["self"]
       # If it's a contact, find by Front contact ID
       if author_data["_links"]["self"].include?("contacts/")
         contact = FrontContact.find_by(front_id: author_data["id"])
-        return contact&.id
+        return [ "FrontContact", contact.id ] if contact
+      elsif author_data["_links"]["self"].include?("teammates/")
+        # If it's a teammate, find by Front teammate ID
+        teammate = FrontTeammate.find_by(front_id: author_data["id"])
+        return [ "FrontTeammate", teammate.id ] if teammate
       end
-
-      # If it's a teammate, we might not have them in our FrontContact table
-      # For now, we'll skip teammate authors, but this could be extended
-      # to create FrontContact records for teammates if needed
     end
 
-    nil
+    [ nil, nil ]
   end
 
   # Sync message recipients relationship
@@ -193,22 +216,23 @@ class FrontSync::MessageSyncService < FrontSyncService
 
   # Sync individual message recipient
   def sync_message_recipient(message, recipient_data)
-    # Find the contact
+    # Find the contact (optional - we'll create recipient either way)
     contact = find_contact_by_handle(recipient_data["handle"])
 
-    unless contact
-      Rails.logger.warn "Contact not found for recipient #{recipient_data['handle']} in message #{message.front_id}"
-      return
+    if contact
+      Rails.logger.debug "Found contact #{contact.front_id} for recipient #{recipient_data['handle']}"
+    else
+      Rails.logger.info "No Front contact found for recipient #{recipient_data['handle']} - storing email only"
     end
 
     # Create or update the recipient relationship
-    # Include handle and name from the recipient data
+    # We store the recipient even if no contact exists, to preserve full to/from info
     FrontMessageRecipient.find_or_create_by(
       front_message: message,
-      front_contact: contact,
+      front_contact: contact,  # Can be nil if no unified Front contact exists
+      handle: recipient_data["handle"],
       role: recipient_data["role"] || "to"
     ) do |recipient|
-      recipient.handle = recipient_data["handle"]
       recipient.name = recipient_data["name"]
     end
 

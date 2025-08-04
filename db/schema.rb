@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_143047) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_162736) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -208,7 +208,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_143047) do
     t.uuid "author_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "author_type"
+    t.string "author_handle"
+    t.string "author_name"
+    t.index [ "author_handle" ], name: "index_front_messages_on_author_handle"
     t.index [ "author_id" ], name: "index_front_messages_on_author_id"
+    t.index [ "author_type", "author_id" ], name: "index_front_messages_on_author_type_and_author_id"
     t.index [ "created_at_timestamp" ], name: "index_front_messages_on_created_at_timestamp"
     t.index [ "front_conversation_id" ], name: "index_front_messages_on_front_conversation_id"
     t.index [ "front_id" ], name: "index_front_messages_on_front_id", unique: true

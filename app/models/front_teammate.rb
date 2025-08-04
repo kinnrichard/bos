@@ -1,6 +1,7 @@
 class FrontTeammate < ApplicationRecord
   # Associations
   has_many :assigned_conversations, class_name: "FrontConversation", foreign_key: "assignee_id"
+  has_many :authored_messages, class_name: "FrontMessage", as: :author
 
   # Validations
   validates :front_id, presence: true, uniqueness: true
