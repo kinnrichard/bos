@@ -66,6 +66,9 @@ class FrontSync::ConversationSyncService < FrontSyncService
     # Extract recipient contact from Front API data
     recipient_contact_id = find_recipient_contact_id(conversation_data["recipient"])
 
+    # Extract last message ID from API links
+    last_message_front_id = extract_last_message_id(conversation_data["_links"])
+
     # Base attributes
     attributes = {
       subject: conversation_data["subject"],
@@ -78,6 +81,7 @@ class FrontSync::ConversationSyncService < FrontSyncService
       custom_fields: conversation_data["custom_fields"] || {},
       assignee_id: assignee_id,
       recipient_contact_id: recipient_contact_id,
+      last_message_front_id: last_message_front_id,
       api_links: conversation_data["_links"] || {}
     }
 
@@ -198,5 +202,15 @@ class FrontSync::ConversationSyncService < FrontSyncService
 
   rescue => e
     Rails.logger.error "Failed to sync inboxes for conversation #{conversation.front_id}: #{e.message}"
+  end
+
+  # Extract last message ID from API links
+  def extract_last_message_id(links)
+    return nil unless links && links["related"] && links["related"]["last_message"]
+
+    # Extract message ID from URL like ".../messages/msg_2khzjx7i?referer=conversation"
+    if links["related"]["last_message"] =~ /\/messages\/(msg_\w+)/
+      $1
+    end
   end
 end

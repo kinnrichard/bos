@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_133610) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_135942) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -140,6 +140,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_133610) do
     t.uuid "recipient_contact_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "last_message_front_id"
     t.index [ "assignee_id" ], name: "index_front_conversations_on_assignee_id"
     t.index [ "created_at_timestamp" ], name: "index_front_conversations_on_created_at_timestamp"
     t.index [ "front_id" ], name: "index_front_conversations_on_front_id", unique: true
