@@ -87,13 +87,11 @@ class JobFilterStore {
   private initializeFromUrl() {
     this.isInitializing = true;
     const url = new URL(window.location.href);
-    
-    // Don't read technician_ids from URL if we're on a semantic route
-    const isSemanticRoute = url.pathname.match(/\/jobs\/(mine|not-mine|not-assigned)/);
-    
+
     const statusParam = url.searchParams.get('status');
     const priorityParam = url.searchParams.get('priority');
-    const technicianIdsParam = !isSemanticRoute ? url.searchParams.get('technician_ids') : null;
+    // Note: technician filter is now handled by query param 'technician', not stored in this store
+    const technicianIdsParam = null; // Deprecated - using query params directly
 
     const selected: string[] = [];
 
@@ -162,12 +160,8 @@ class JobFilterStore {
           .filter((id) => id.startsWith('priority:'))
           .map((id) => id.replace('priority:', ''));
 
-        // Extract technician selections
-        const technicianIds = this._selected
-          .filter((id) => id.startsWith('technician:'))
-          .map((id) => id.replace('technician:', ''));
-
-        // Update URL parameters
+        // Update URL parameters for status and priority only
+        // Technician filters are handled separately via query params
         if (statuses.length > 0) {
           url.searchParams.set('status', statuses.join(','));
         } else {
@@ -180,11 +174,7 @@ class JobFilterStore {
           url.searchParams.delete('priority');
         }
 
-        if (technicianIds.length > 0) {
-          url.searchParams.set('technician_ids', technicianIds.join(','));
-        } else {
-          url.searchParams.delete('technician_ids');
-        }
+        // Note: technician filters now use 'technician' query param, handled by TechnicianFilterPopover
 
         // Use SvelteKit's replaceState
         replaceState(url.href, {});

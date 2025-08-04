@@ -56,7 +56,7 @@
     if (!routeId) return 'home';
 
     if (routeId === ROUTE_PATTERNS.jobDetail) return 'job-detail';
-    if (routeId.includes('/jobs')) return 'jobs';
+    if (routeId === '/(authenticated)/jobs' || routeId.includes('/jobs')) return 'jobs';
     if (
       routeId === ROUTE_PATTERNS.clientPeople ||
       routeId === '/(authenticated)/clients/[id]/people/new' ||
@@ -90,8 +90,7 @@
   );
   const showJobFilter = $derived(
     currentPageType === 'jobs' &&
-      ($page.route.id === '/(authenticated)/jobs' || 
-       $page.route.id === ROUTE_PATTERNS.clientJobs)
+      ($page.route.id === '/(authenticated)/jobs' || $page.route.id === ROUTE_PATTERNS.clientJobs)
   );
   const showPeopleFilter = $derived(
     currentPageType === 'people' && $page.route.id === ROUTE_PATTERNS.clientPeople

@@ -1,7 +1,7 @@
 /**
  * UserData - TypeScript interface for users table
  *
- * Generated from Rails schema: 2025-07-31 19:03:55 UTC
+ * Generated from Rails schema: 2025-08-04 01:53:55 UTC
  * * Relationships (loaded via includes()):
  * - activityLogs: has_many ActivityLog
  * - assignedJobs: has_many Job
@@ -37,6 +37,7 @@ export interface UserData extends BaseRecord {
   resort_tasks_on_status_change: boolean;
   id: string;
   role: 'admin' | 'technician' | 'customer_specialist' | 'owner';
+  short_name?: string;
   activityLogs?: ActivityLogData[]; // has_many
   assignedJobs?: JobData[]; // has_many
   assignedTasks?: TaskData[]; // has_many
@@ -51,10 +52,38 @@ export interface UserData extends BaseRecord {
  * Create User data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateUserData = Omit<UserData, 'id', 'created_at', 'updated_at', 'activityLogs', 'assignedJobs', 'assignedTasks', 'jobAssignments', 'technicianJobs', 'scheduledDateTimeUsers', 'scheduledDateTimes', 'notes'>;
+export type CreateUserData = Omit<
+  UserData,
+  'id',
+  'created_at',
+  'updated_at',
+  'activityLogs',
+  'assignedJobs',
+  'assignedTasks',
+  'jobAssignments',
+  'technicianJobs',
+  'scheduledDateTimeUsers',
+  'scheduledDateTimes',
+  'notes'
+>;
 
 /**
  * Update User data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateUserData = Partial<Omit<UserData, 'id', 'created_at', 'updated_at', 'activityLogs', 'assignedJobs', 'assignedTasks', 'jobAssignments', 'technicianJobs', 'scheduledDateTimeUsers', 'scheduledDateTimes', 'notes'>>;
+export type UpdateUserData = Partial<
+  Omit<
+    UserData,
+    'id',
+    'created_at',
+    'updated_at',
+    'activityLogs',
+    'assignedJobs',
+    'assignedTasks',
+    'jobAssignments',
+    'technicianJobs',
+    'scheduledDateTimeUsers',
+    'scheduledDateTimes',
+    'notes'
+  >
+>;

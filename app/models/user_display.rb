@@ -54,7 +54,7 @@ class UserDisplay
   end
 
   # Short display name (first name only)
-  def short_name
+  def first_name_only
     @user.name.split(/\s+/).first
   end
 

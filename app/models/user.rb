@@ -60,9 +60,9 @@ class User < ApplicationRecord
     @display ||= UserDisplay.new(self)
   end
 
-  # Delegate display methods
+  # Delegate display methods (excluding short_name which is a database column)
   delegate :initials, :avatar_color, :avatar_style, :avatar_html,
-           :display_name, :short_name, :display_email, :role_label,
+           :display_name, :display_email, :role_label,
            to: :display
 
   def first_name

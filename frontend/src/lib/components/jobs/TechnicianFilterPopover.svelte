@@ -16,9 +16,9 @@
   }
 
   let { selected = [], onFilterChange, disabled = false }: Props = $props();
-  
+
   const currentUser = getCurrentUser();
-  const currentPath = $derived($page.url.pathname);
+  const currentUrl = $derived($page.url);
 
   // Query for all users that can be assigned as technicians
   // Note: Using all() and filtering client-side since where() doesn't support array filters
@@ -34,24 +34,32 @@
       : []
   );
 
-  // Determine effective selection based on semantic route or props
+  // Determine effective selection based on query param or props
   const effectiveSelection = $derived(() => {
-    const filter = currentPath.match(/\/jobs\/(mine|not-mine|not-assigned)/)?.[1];
-    
-    if (!filter) return selected;
-    
-    switch (filter) {
+    const technicianParam = currentUrl.searchParams.get('technician');
+
+    if (!technicianParam) return selected;
+
+    switch (technicianParam) {
       case 'mine':
         return currentUser ? [`technician:${currentUser.id}`] : [];
-      case 'not-mine':
+      case 'others':
         // All technicians except current user
-        return currentUser 
-          ? technicians.filter(t => t.id !== currentUser.id).map(t => `technician:${t.id}`)
+        return currentUser
+          ? technicians.filter((t) => t.id !== currentUser.id).map((t) => `technician:${t.id}`)
           : [];
-      case 'not-assigned':
+      case 'unassigned':
         return ['technician:not_assigned'];
       default:
-        return selected;
+        // Parse comma-separated values (could be short_names or IDs)
+        return technicianParam.split(',').map((value) => {
+          if (value === 'not_assigned') {
+            return 'technician:not_assigned';
+          }
+          // Try to find technician by short_name first, then by ID
+          const tech = technicians.find((t) => t.short_name === value || t.id === value);
+          return tech ? `technician:${tech.id}` : `technician:${value}`;
+        });
     }
   });
 
@@ -92,55 +100,68 @@
   async function handleSelect(value: string | undefined) {
     if (!value || value === 'title' || value === 'divider') return;
 
-    const isCurrentlySelected = selected.includes(value);
+    const isCurrentlySelected = effectiveSelection().includes(value);
     let newSelection: string[];
 
     if (isCurrentlySelected) {
       // Remove from selection
-      newSelection = selected.filter((id) => id !== value);
+      newSelection = effectiveSelection().filter((id) => id !== value);
     } else {
       // Add to selection
-      newSelection = [...selected, value];
+      newSelection = [...effectiveSelection(), value];
     }
 
-    // Check for semantic route navigation
-    if (currentUser) {
-      // Navigate to /jobs/mine if only current user is selected
-      if (newSelection.length === 1 && newSelection[0] === `technician:${currentUser.id}`) {
-        await goto('/jobs/mine');
-        return;
-      }
-      
-      // Navigate to /jobs/not-assigned if only not_assigned is selected
-      if (newSelection.length === 1 && newSelection[0] === 'technician:not_assigned') {
-        await goto('/jobs/not-assigned');
-        return;
-      }
-      
-      // Navigate to /jobs/not-mine if all technicians except current user are selected
-      const technicianSelections = newSelection.filter(id => 
-        id.startsWith('technician:') && id !== 'technician:not_assigned'
-      );
-      const selectedTechIds = technicianSelections.map(id => id.replace('technician:', ''));
-      const allOtherTechIds = technicians
-        .filter(t => t.id !== currentUser.id)
-        .map(t => t.id);
-      
-      if (selectedTechIds.length === allOtherTechIds.length &&
-          selectedTechIds.every(id => allOtherTechIds.includes(id))) {
-        await goto('/jobs/not-mine');
-        return;
-      }
-    }
-    
-    // If on a semantic route and changing filters, go back to /jobs
-    if (currentPath.match(/\/jobs\/(mine|not-mine|not-assigned)/)) {
-      await goto('/jobs');
-      // Small delay to let navigation complete
-      setTimeout(() => onFilterChange(newSelection), 50);
+    // Build new URL with appropriate query params
+    const url = new URL(currentUrl);
+
+    if (newSelection.length === 0) {
+      // No selection, remove technician param
+      url.searchParams.delete('technician');
+    } else if (
+      currentUser &&
+      newSelection.length === 1 &&
+      newSelection[0] === `technician:${currentUser.id}`
+    ) {
+      // Only current user selected
+      url.searchParams.set('technician', 'mine');
+    } else if (newSelection.length === 1 && newSelection[0] === 'technician:not_assigned') {
+      // Only not assigned selected
+      url.searchParams.set('technician', 'unassigned');
     } else {
-      onFilterChange(newSelection);
+      // Check if all other technicians are selected
+      const technicianSelections = newSelection.filter(
+        (id) => id.startsWith('technician:') && id !== 'technician:not_assigned'
+      );
+      const selectedTechIds = technicianSelections.map((id) => id.replace('technician:', ''));
+      const allOtherTechIds = technicians
+        .filter((t) => currentUser && t.id !== currentUser.id)
+        .map((t) => t.id);
+
+      if (
+        currentUser &&
+        selectedTechIds.length === allOtherTechIds.length &&
+        selectedTechIds.every((id) => allOtherTechIds.includes(id))
+      ) {
+        url.searchParams.set('technician', 'others');
+      } else {
+        // Custom selection - use comma-separated short_names
+        const shortNames = newSelection.map((id) => {
+          if (id === 'technician:not_assigned') {
+            return 'not_assigned';
+          }
+          const techId = id.replace('technician:', '');
+          const tech = technicians.find((t) => t.id === techId);
+          return tech?.short_name || techId; // Fallback to ID if no short_name
+        });
+        url.searchParams.set('technician', shortNames.join(','));
+      }
     }
+
+    // Navigate to the new URL
+    await goto(url.toString());
+
+    // Also update the filter store for non-query-param handling
+    onFilterChange(newSelection);
   }
 
   const hasActiveFilters = $derived(effectiveSelection().length > 0);
