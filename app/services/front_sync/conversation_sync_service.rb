@@ -9,6 +9,9 @@ class FrontSync::ConversationSyncService < FrontSyncService
       start_time = Time.current
       log_sync_start("conversations")
 
+      # Preload lookup caches for performance
+      preload_caches
+
       # Build query parameters
       params = {}
       params[:since] = since.to_i if since
@@ -16,15 +19,23 @@ class FrontSync::ConversationSyncService < FrontSyncService
 
       # Process conversations in batches to avoid memory issues
       batch_count = 0
+      batch_for_bulk = []
+      batch_size = 100
+
       fetch_all_data("conversations", params) do |conversation_data|
-        sync_conversation(conversation_data)
+        batch_for_bulk << conversation_data
         batch_count += 1
 
-        # Log progress every 100 records
-        if batch_count % 100 == 0
+        # Process in chunks for efficiency
+        if batch_for_bulk.size >= batch_size
+          process_conversation_batch(batch_for_bulk)
+          batch_for_bulk = []
           Rails.logger.info "Processed #{batch_count} conversations so far..."
         end
       end
+
+      # Process remaining conversations
+      process_conversation_batch(batch_for_bulk) if batch_for_bulk.any?
 
       Rails.logger.info "Processed #{batch_count} conversations total"
 
@@ -37,6 +48,50 @@ class FrontSync::ConversationSyncService < FrontSyncService
   end
 
   private
+
+  # Preload all lookup data into memory for fast access
+  def preload_caches
+    Rails.logger.info "Preloading lookup caches..."
+
+    @teammate_cache = FrontTeammate.pluck(:front_id, :id).to_h
+    @contact_cache = FrontContact.pluck(:handle, :id).to_h
+    @tag_cache = FrontTag.pluck(:front_id, :id).to_h
+    @inbox_cache = FrontInbox.pluck(:front_id, :id).to_h
+
+    Rails.logger.info "Cached #{@teammate_cache.size} teammates, #{@contact_cache.size} contacts, #{@tag_cache.size} tags, #{@inbox_cache.size} inboxes"
+  end
+
+  # Process a batch of conversations efficiently
+  def process_conversation_batch(conversation_batch)
+    return if conversation_batch.empty?
+
+    # Collect all conversations for bulk operations
+    conversations_to_sync = []
+    conversation_tags_data = {}
+    conversation_inboxes_data = {}
+
+    conversation_batch.each do |conversation_data|
+      front_id = conversation_data["id"]
+      next unless front_id
+
+      conversation = upsert_record(FrontConversation, front_id, conversation_data) do |data, existing_record|
+        transform_conversation_attributes(data, existing_record)
+      end
+
+      if conversation
+        conversations_to_sync << conversation
+        conversation_tags_data[conversation.id] = conversation_data["tags"] || []
+        conversation_inboxes_data[conversation.id] = conversation_data["inboxes"] || []
+      end
+    rescue => e
+      Rails.logger.error "Failed to sync conversation #{conversation_data['id']}: #{e.message}"
+      increment_failed("Conversation sync error: #{e.message}")
+    end
+
+    # Bulk sync relationships
+    bulk_sync_conversation_tags(conversations_to_sync, conversation_tags_data)
+    bulk_sync_conversation_inboxes(conversations_to_sync, conversation_inboxes_data)
+  end
 
   # Sync individual conversation with associated relationships
   def sync_conversation(conversation_data)
@@ -60,11 +115,9 @@ class FrontSync::ConversationSyncService < FrontSyncService
 
   # Transform Front conversation attributes to FrontConversation model attributes
   def transform_conversation_attributes(conversation_data, existing_record = nil)
-    # Extract assignee from Front API data
-    assignee_id = find_assignee_id(conversation_data["assignee"])
-
-    # Extract recipient contact from Front API data
-    recipient_contact_id = find_recipient_contact_id(conversation_data["recipient"])
+    # Use cached lookups instead of database queries
+    assignee_id = conversation_data.dig("assignee", "id").then { |id| @teammate_cache[id] }
+    recipient_contact_id = conversation_data.dig("recipient", "handle").then { |handle| @contact_cache[handle] }
 
     # Extract last message ID from API links
     last_message_front_id = extract_last_message_id(conversation_data["_links"])
@@ -110,25 +163,143 @@ class FrontSync::ConversationSyncService < FrontSyncService
     end
   end
 
-  # Find assignee teammate ID from Front assignee data
+  # Find assignee teammate ID from Front assignee data (using cache)
   def find_assignee_id(assignee_data)
     return nil unless assignee_data && assignee_data["id"]
-
-    # Look for teammate by Front ID
-    teammate = FrontTeammate.find_by(front_id: assignee_data["id"])
-    teammate&.id
+    @teammate_cache[assignee_data["id"]]
   end
 
-  # Find recipient contact ID from Front recipient data
+  # Find recipient contact ID from Front recipient data (using cache)
   def find_recipient_contact_id(recipient_data)
     return nil unless recipient_data && recipient_data["handle"]
-
-    # Find contact by handle (email)
-    contact = FrontContact.find_by(handle: recipient_data["handle"])
-    contact&.id
+    @contact_cache[recipient_data["handle"]]
   end
 
-  # Sync conversation tags relationship
+  # Bulk sync conversation tags for multiple conversations
+  def bulk_sync_conversation_tags(conversations, tags_data_by_conversation_id)
+    return if conversations.empty?
+
+    conversation_ids = conversations.map(&:id)
+
+    # Get all current associations in one query
+    current_associations = FrontConversationTag
+      .where(front_conversation_id: conversation_ids)
+      .pluck(:front_conversation_id, :front_tag_id)
+      .group_by(&:first)
+      .transform_values { |v| v.map(&:last).to_set }
+
+    # Prepare bulk insert data
+    new_associations = []
+    associations_to_delete = []
+
+    conversations.each do |conversation|
+      tags_data = tags_data_by_conversation_id[conversation.id] || []
+      current_tag_ids = current_associations[conversation.id] || Set.new
+      new_tag_ids = Set.new
+
+      tags_data.each do |tag_data|
+        tag_id = @tag_cache[tag_data["id"]]
+        if tag_id
+          new_tag_ids << tag_id
+          unless current_tag_ids.include?(tag_id)
+            new_associations << {
+              front_conversation_id: conversation.id,
+              front_tag_id: tag_id,
+              created_at: Time.current,
+              updated_at: Time.current
+            }
+          end
+        end
+      end
+
+      # Track associations to remove
+      tags_to_remove = current_tag_ids - new_tag_ids
+      tags_to_remove.each do |tag_id|
+        associations_to_delete << [ conversation.id, tag_id ]
+      end
+    end
+
+    # Bulk insert new associations
+    if new_associations.any?
+      FrontConversationTag.insert_all(new_associations)
+    end
+
+    # Bulk delete old associations
+    if associations_to_delete.any?
+      FrontConversationTag
+        .where(associations_to_delete.map { |conv_id, tag_id|
+          "(front_conversation_id = '#{conv_id}' AND front_tag_id = '#{tag_id}')"
+        }.join(" OR "))
+        .delete_all
+    end
+
+  rescue => e
+    Rails.logger.error "Failed to bulk sync tags: #{e.message}"
+  end
+
+  # Bulk sync conversation inboxes for multiple conversations
+  def bulk_sync_conversation_inboxes(conversations, inboxes_data_by_conversation_id)
+    return if conversations.empty?
+
+    conversation_ids = conversations.map(&:id)
+
+    # Get all current associations in one query
+    current_associations = FrontConversationInbox
+      .where(front_conversation_id: conversation_ids)
+      .pluck(:front_conversation_id, :front_inbox_id)
+      .group_by(&:first)
+      .transform_values { |v| v.map(&:last).to_set }
+
+    # Prepare bulk insert data
+    new_associations = []
+    associations_to_delete = []
+
+    conversations.each do |conversation|
+      inboxes_data = inboxes_data_by_conversation_id[conversation.id] || []
+      current_inbox_ids = current_associations[conversation.id] || Set.new
+      new_inbox_ids = Set.new
+
+      inboxes_data.each do |inbox_data|
+        inbox_id = @inbox_cache[inbox_data["id"]]
+        if inbox_id
+          new_inbox_ids << inbox_id
+          unless current_inbox_ids.include?(inbox_id)
+            new_associations << {
+              front_conversation_id: conversation.id,
+              front_inbox_id: inbox_id,
+              created_at: Time.current,
+              updated_at: Time.current
+            }
+          end
+        end
+      end
+
+      # Track associations to remove
+      inboxes_to_remove = current_inbox_ids - new_inbox_ids
+      inboxes_to_remove.each do |inbox_id|
+        associations_to_delete << [ conversation.id, inbox_id ]
+      end
+    end
+
+    # Bulk insert new associations
+    if new_associations.any?
+      FrontConversationInbox.insert_all(new_associations)
+    end
+
+    # Bulk delete old associations
+    if associations_to_delete.any?
+      FrontConversationInbox
+        .where(associations_to_delete.map { |conv_id, inbox_id|
+          "(front_conversation_id = '#{conv_id}' AND front_inbox_id = '#{inbox_id}')"
+        }.join(" OR "))
+        .delete_all
+    end
+
+  rescue => e
+    Rails.logger.error "Failed to bulk sync inboxes: #{e.message}"
+  end
+
+  # Original sync methods kept for backward compatibility
   def sync_conversation_tags(conversation, tags_data)
     return unless tags_data.any?
 
@@ -138,15 +309,15 @@ class FrontSync::ConversationSyncService < FrontSyncService
     # Process each tag from API
     new_tag_ids = []
     tags_data.each do |tag_data|
-      tag = FrontTag.find_by(front_id: tag_data["id"])
-      if tag
-        new_tag_ids << tag.id
+      tag_id = @tag_cache[tag_data["id"]]
+      if tag_id
+        new_tag_ids << tag_id
 
         # Create association if it doesn't exist
-        unless current_tag_ids.include?(tag.id)
+        unless current_tag_ids.include?(tag_id)
           FrontConversationTag.create!(
             front_conversation: conversation,
-            front_tag: tag
+            front_tag_id: tag_id
           )
         end
       else
@@ -157,8 +328,8 @@ class FrontSync::ConversationSyncService < FrontSyncService
     # Remove associations for tags no longer present
     tags_to_remove = current_tag_ids - new_tag_ids
     if tags_to_remove.any?
-      conversation.front_conversation_tags.joins(:front_tag)
-                  .where(front_tags: { id: tags_to_remove })
+      conversation.front_conversation_tags
+                  .where(front_tag_id: tags_to_remove)
                   .destroy_all
     end
 
@@ -176,15 +347,15 @@ class FrontSync::ConversationSyncService < FrontSyncService
     # Process each inbox from API
     new_inbox_ids = []
     inboxes_data.each do |inbox_data|
-      inbox = FrontInbox.find_by(front_id: inbox_data["id"])
-      if inbox
-        new_inbox_ids << inbox.id
+      inbox_id = @inbox_cache[inbox_data["id"]]
+      if inbox_id
+        new_inbox_ids << inbox_id
 
         # Create association if it doesn't exist
-        unless current_inbox_ids.include?(inbox.id)
+        unless current_inbox_ids.include?(inbox_id)
           FrontConversationInbox.create!(
             front_conversation: conversation,
-            front_inbox: inbox
+            front_inbox_id: inbox_id
           )
         end
       else
@@ -195,8 +366,8 @@ class FrontSync::ConversationSyncService < FrontSyncService
     # Remove associations for inboxes no longer present
     inboxes_to_remove = current_inbox_ids - new_inbox_ids
     if inboxes_to_remove.any?
-      conversation.front_conversation_inboxes.joins(:front_inbox)
-                  .where(front_inboxes: { id: inboxes_to_remove })
+      conversation.front_conversation_inboxes
+                  .where(front_inbox_id: inboxes_to_remove)
                   .destroy_all
     end
 
