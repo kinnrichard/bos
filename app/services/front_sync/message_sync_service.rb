@@ -247,12 +247,12 @@ class FrontSync::MessageSyncService < FrontSyncService
   def sync_message_attachment(message, attachment_data)
     FrontAttachment.create!(
       front_message: message,
-      front_id: attachment_data["id"],
       filename: attachment_data["filename"],
       url: attachment_data["url"],
       content_type: attachment_data["content_type"],
       size: attachment_data["size"],
       metadata: {
+        front_id: attachment_data["id"],
         is_inline: attachment_data["is_inline"],
         content_id: attachment_data["content_id"],
         disposition: attachment_data["disposition"]
