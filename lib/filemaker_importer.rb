@@ -32,6 +32,9 @@ class FilemakerImporter
     contacts_count = import_contacts(Rails.root.join("FMPContactInfo.xml"))
     puts "✓ Imported #{contacts_count} contact methods"
 
+    # Clean up any empty Legacy Tasks jobs after all imports are done
+    cleanup_empty_legacy_jobs
+
     puts "\nFileMaker import complete!"
 
     {
@@ -784,13 +787,15 @@ class FilemakerImporter
       puts "\n📋 Merged #{merged_count} duplicate 'Legacy Tasks' jobs"
       puts "   Created #{@job_id_mappings.size} job ID mappings for task import"
     end
+  end
 
+  def cleanup_empty_legacy_jobs
     # Clean up empty Legacy Tasks jobs that were created but never got tasks
     empty_legacy_jobs = Job.where(title: "Legacy Tasks").left_joins(:tasks).where(tasks: { id: nil })
     if empty_legacy_jobs.any?
       count = empty_legacy_jobs.count
       empty_legacy_jobs.destroy_all
-      puts "   Cleaned up #{count} empty Legacy Tasks jobs"
+      puts "\n🧹 Cleaned up #{count} empty Legacy Tasks jobs"
     end
   end
 
