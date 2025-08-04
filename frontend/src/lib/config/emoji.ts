@@ -19,7 +19,7 @@ const JOB_STATUS_EMOJIS: Record<string, string> = {
   waiting_for_customer: '⏳',
   waiting_for_scheduled_appointment: '🗓️',
   paused: '⏸️',
-  successfully_completed: '✅',
+  successfully_completed: '☑️',
   cancelled: '❌',
 };
 

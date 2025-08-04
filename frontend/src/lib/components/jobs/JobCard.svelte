@@ -24,7 +24,15 @@
   const statusEmoji = $derived(getJobStatusEmoji(job.status));
   const priorityEmoji = $derived(getJobPriorityEmoji(job.priority));
   // Show start icon (green) for upcoming jobs, due icon (red) for in-progress jobs
-  const dateIcon = $derived(getJobDateIcon(job.starts_at, job.start_time_set, job.due_at));
+  // Hide date icon for completed or cancelled jobs
+  const dateIcon = $derived(
+    job.status === 'successfully_completed' ||
+      job.status === 'cancelled' ||
+      job.status === 5 ||
+      job.status === 6
+      ? null
+      : getJobDateIcon(job.starts_at, job.start_time_set, job.due_at)
+  );
 
   function getJobPath(job: JobData): string {
     return `/jobs/${job.id}`;
