@@ -114,6 +114,7 @@
 - ✅ Technician glyphs don't have shadows
 - ✅ Remove mouse hand-pointer from everywhere
 - ✅ Remove Sidebar hover states
+- On New Job page, first task doesnt wrap nicely
 - Cancel button when creating a job doesn't work if user has typed in a job name already
 - Move user menu to sidebar
 - Make sidebar hierarchical
