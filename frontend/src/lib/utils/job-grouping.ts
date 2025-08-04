@@ -46,13 +46,13 @@ export interface SectionInfo {
  * Section configuration
  */
 export const SECTION_CONFIG: Record<JobGroupSection, SectionInfo> = {
-  overdue: { title: 'Overdue', priority: 1 },
-  today: { title: 'Due Today', priority: 2 },
+  today: { title: 'Today', priority: 1 },
+  overdue: { title: 'Overdue', priority: 2 },
   tomorrow: { title: 'Due Tomorrow', priority: 3 },
   next_week: { title: 'Due This Week', priority: 4 },
   no_due_date: { title: 'No Due Date', priority: 5 },
   scheduled: { title: 'Scheduled for Future', priority: 6 },
-  completed_cancelled: { title: 'Completed & Cancelled', priority: 7 },
+  completed_cancelled: { title: 'Completed or Cancelled', priority: 7 },
 };
 
 /**
@@ -92,9 +92,14 @@ export function isOverdue(job: JobData): boolean {
 }
 
 /**
- * Check if a job is due today
+ * Check if a job belongs in the Today section
+ * (due today OR in progress)
  */
 export function isDueToday(job: JobData): boolean {
+  // All in-progress jobs belong in Today
+  if (job.status === 'in_progress') return true;
+
+  // Jobs due today also belong in Today
   if (!job.due_at) return false;
   const daysUntil = getDaysUntilDue(new Date(job.due_at));
   return daysUntil === 0;
@@ -141,6 +146,11 @@ export function getJobSection(job: JobData): JobGroupSection {
   // Completed and cancelled jobs go to their own section
   if (isCompletedOrCancelled(job)) {
     return 'completed_cancelled';
+  }
+
+  // In-progress jobs always go to Today section
+  if (job.status === 'in_progress') {
+    return 'today';
   }
 
   // Jobs scheduled for future (haven't started yet)
@@ -259,10 +269,25 @@ export function getPopulatedSections(groupedJobs: GroupedJobs): Array<{
     const jobs = groupedJobs[sectionKey];
 
     if (jobs.length > 0) {
+      let sectionInfo = { ...info };
+
+      // Special handling for completed_cancelled section
+      if (sectionKey === 'completed_cancelled') {
+        const hasCompleted = jobs.some((job) => job.status === 'successfully_completed');
+        const hasCancelled = jobs.some((job) => job.status === 'cancelled');
+
+        if (hasCompleted && !hasCancelled) {
+          sectionInfo.title = 'Completed';
+        } else if (!hasCompleted && hasCancelled) {
+          sectionInfo.title = 'Cancelled';
+        }
+        // Otherwise keep the default 'Completed or Cancelled'
+      }
+
       sections.push({
         section: sectionKey,
         jobs,
-        info,
+        info: sectionInfo,
       });
     }
   }

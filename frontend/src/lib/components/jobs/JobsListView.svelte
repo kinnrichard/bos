@@ -130,6 +130,14 @@
       {@const filteredJobs = displayFilter(data)}
       {@const groupedJobs = groupJobs(filteredJobs)}
       {@const populatedSections = getPopulatedSections(groupedJobs)}
+      {@const activeJobCount = filteredJobs.filter(
+        (job) =>
+          job.status !== 'successfully_completed' &&
+          job.status !== 'cancelled' &&
+          job.status !== 5 && // numeric value for successfully_completed
+          job.status !== 6 // numeric value for cancelled
+      ).length}
+      {@const isCompactMode = activeJobCount >= 7}
 
       {#if filteredJobs.length === 0}
         <div class="empty-state">
@@ -140,12 +148,12 @@
           {/if}
         </div>
       {:else}
-        <div class="jobs-list">
+        <div class="jobs-list" class:compact-mode={isCompactMode}>
           {#each populatedSections as { section, jobs, info } (section)}
             <div class="job-section">
               <div class="section-header">
                 <h3 class="section-title">{info.title}</h3>
-                <span class="section-count">({jobs.length})</span>
+                <span class="section-count">{jobs.length}</span>
               </div>
               <div class="section-jobs">
                 {#each jobs as job (job.id)}
@@ -183,7 +191,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 0;
+    padding: 0;
   }
 
   .section-title {
@@ -195,12 +203,16 @@
   }
 
   .section-count {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-secondary, #86868b);
+    margin-left: auto;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 12px;
     padding: 2px 8px;
-    background-color: var(--background-secondary, #f5f5f7);
     border-radius: 12px;
+    min-width: 24px;
+    text-align: center;
+    display: inline-block;
   }
 
   /* Section jobs container */
@@ -210,6 +222,48 @@
     gap: 12px;
   }
 
+  /* Compact mode styles - applied when 7+ active jobs */
+  .jobs-list.compact-mode .section-jobs {
+    gap: 0;
+  }
+
+  /* Reduce padding and remove individual borders in compact mode */
+  .jobs-list.compact-mode .section-jobs :global(.job-card-inline) {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-radius: 0;
+    border-bottom: none;
+  }
+
+  /* First card gets top rounded corners */
+  .jobs-list.compact-mode .section-jobs :global(.job-card-inline:first-child) {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+
+  /* Last card gets bottom rounded corners and bottom border */
+  .jobs-list.compact-mode .section-jobs :global(.job-card-inline:last-child) {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  /* Add subtle separator between cards in compact mode */
+  .jobs-list.compact-mode .section-jobs :global(.job-card-inline:not(:last-child))::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background-color: var(--border-secondary, rgba(0, 0, 0, 0.05));
+  }
+
+  /* Make job cards position relative for the separator */
+  .jobs-list.compact-mode .section-jobs :global(.job-card-inline) {
+    position: relative;
+  }
+
   /* Mobile responsive adjustments */
   @media (max-width: 768px) {
     .jobs-list {
@@ -217,7 +271,7 @@
     }
 
     .section-header {
-      padding: 6px 0;
+      padding: 0;
     }
 
     .section-title {
@@ -231,6 +285,16 @@
 
     .section-jobs {
       gap: 10px;
+    }
+
+    /* Compact mode on mobile */
+    .jobs-list.compact-mode .section-jobs {
+      gap: 0;
+    }
+
+    .jobs-list.compact-mode .section-jobs :global(.job-card-inline) {
+      padding-top: 6px;
+      padding-bottom: 6px;
     }
   }
 

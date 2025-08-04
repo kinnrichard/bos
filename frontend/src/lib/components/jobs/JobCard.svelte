@@ -139,7 +139,7 @@
   .job-name {
     font-weight: 600;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: 15px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -180,7 +180,7 @@
     }
 
     .job-name {
-      font-size: 13px;
+      font-size: 14px; /* Slightly smaller on mobile */
     }
   }
 </style>
