@@ -13,12 +13,20 @@ class FrontApiClient
   end
 
   # Get conversations for an inbox
+  # Options:
+  #   limit: number of results per page from API (default 25)
+  #   max_results: maximum total results to fetch (default 100)
+  #   fetch_all: if true, fetch all pages ignoring max_results (default false)
+  # Example:
+  #   client.get_inbox_conversations(inbox_id, max_results: 50)  # Get first 50
+  #   client.get_inbox_conversations(inbox_id, fetch_all: true)  # Get ALL (careful!)
   def get_inbox_conversations(inbox_id, params = {})
     url = "#{BASE_URL}/inboxes/#{inbox_id}/conversations"
     fetch_paginated(url, params)
   end
 
   # Get all conversations
+  # Same options as get_inbox_conversations
   def get_conversations(params = {})
     url = "#{BASE_URL}/conversations"
     fetch_paginated(url, params)

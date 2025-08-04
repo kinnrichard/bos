@@ -101,7 +101,8 @@
       class="technician-filter-button"
       class:disabled
       class:active={hasActiveFilters}
-      class:expanded={selectedTechnicians.length > 1}
+      class:expanded={selectedTechnicians.length > 1 ||
+        (isNotAssignedSelected && selectedTechnicians.length > 0)}
       use:popover.button
       as
       any
@@ -112,15 +113,24 @@
       {#if buttonState() === 'empty'}
         <img src="/icons/person.fill.svg" alt="No technician filter" class="button-icon empty" />
       {:else if buttonState() === 'not-assigned'}
-        <img src="/icons/questionmark.circle.fill.svg" alt="Not assigned" class="button-icon" />
+        <img
+          src="/icons/questionmark.circle.fill.svg"
+          alt="Not assigned"
+          class="not-assigned-avatar"
+        />
       {:else if buttonState() === 'mixed'}
-        <div class="mixed-indicator">
+        <div class="avatars-mixed">
+          <TechnicianAvatarGroup
+            technicians={selectedTechnicians}
+            maxDisplay={selectedTechnicians.length <= 2 ? 2 : 1}
+            size="xs"
+            showNames={false}
+          />
           <img
             src="/icons/questionmark.circle.fill.svg"
-            alt="Mixed selection"
-            class="button-icon"
+            alt="Not assigned"
+            class="not-assigned-avatar overlap"
           />
-          <span class="count">+{selectedTechnicianIds.length}</span>
         </div>
       {:else}
         <TechnicianAvatarGroup
@@ -206,26 +216,24 @@
     opacity: 0.4;
   }
 
-  .mixed-indicator {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .not-assigned-avatar {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
   }
 
-  .mixed-indicator .count {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    font-size: 10px;
-    font-weight: 600;
-    color: white;
-    background: var(--color-primary);
-    padding: 1px 4px;
-    border-radius: 8px;
-    line-height: 1;
-    min-width: 16px;
-    text-align: center;
+  .not-assigned-avatar.overlap {
+    margin-left: -6px;
+  }
+
+  .avatars-mixed {
+    display: flex;
+    align-items: center;
+    flex-direction: row-reverse;
+  }
+
+  .avatars-mixed :global(.technician-avatar-group) {
+    z-index: 2;
   }
 
   .menu-icon {

@@ -36,7 +36,7 @@ end
 inbox_id = "inb_fkroe"
 puts "\n3. Testing conversations for inbox #{inbox_id}:"
 begin
-  conversations = client.get_inbox_conversations(inbox_id, limit: 10)
+  conversations = client.get_inbox_conversations(inbox_id, max_results: 10)
   puts "✓ Found #{conversations.length} conversations"
 
   if conversations.any?
@@ -55,7 +55,7 @@ end
 # Test 4: Get all conversations (limited)
 puts "\n4. Testing all conversations:"
 begin
-  conversations = client.get_conversations(limit: 5)
+  conversations = client.get_conversations(max_results: 5)
   puts "✓ Found #{conversations.length} conversations"
 rescue => e
   puts "✗ Error: #{e.message}"
