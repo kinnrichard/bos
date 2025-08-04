@@ -22,6 +22,10 @@ class FilemakerImporter
     clients_count = import_clients(Rails.root.join("FMPClients.xml"))
     puts "✓ Imported #{clients_count} clients"
 
+    # Import people (enhanced data) after clients but before jobs
+    people_count = import_people(Rails.root.join("FMPPeople.xml"))
+    puts "✓ Imported #{people_count} people with departments"
+
     jobs_count = import_jobs(Rails.root.join("FMPCases.xml"))
     puts "✓ Imported #{jobs_count} jobs"
 
@@ -40,6 +44,7 @@ class FilemakerImporter
 
     {
       clients: clients_count,
+      people: people_count,
       jobs: jobs_count,
       tasks: tasks_count,
       contacts: contacts_count
@@ -107,6 +112,139 @@ class FilemakerImporter
     end
 
     print_summary("Clients", count)
+    count
+  end
+
+  def import_people(xml_file)
+    count = 0
+    departments_created = {}
+
+    # Skip if file doesn't exist
+    unless File.exist?(xml_file)
+      puts "Warning: #{xml_file} not found, skipping people import"
+      return 0
+    end
+
+    ActiveRecord::Base.transaction do
+      parse_xml(xml_file) do |row|
+        begin
+          person_id = extract_field(row, "PrimaryKey")
+          client_id = extract_field(row, "ID of Client")
+
+          # Skip if no client association
+          unless client_id.present?
+            @warnings << "Person #{person_id} has no client ID, skipping"
+            next
+          end
+
+          # Skip if client doesn't exist
+          unless Client.exists?(id: client_id)
+            @warnings << "Client #{client_id} not found for person #{person_id}, skipping"
+            next
+          end
+
+          # Extract name fields
+          name_full = extract_field(row, "Name Full")
+          name_preferred = extract_field(row, "Name Preferred")
+          name_first = extract_field(row, "Name First")
+          name_remainder = extract_field(row, "Name Remainder") # Last name
+
+          # Use full name, or build from parts
+          person_name = name_full.presence ||
+                       [ name_first, name_remainder ].compact.join(" ").presence ||
+                       name_preferred.presence ||
+                       "Unknown Person"
+
+          # Check if person already exists by ID
+          existing_person = Person.find_by(id: person_id)
+
+          if existing_person
+            # Skip if person exists but for different client (data integrity issue)
+            if existing_person.client_id != client_id
+              @warnings << "Person #{person_id} exists but for different client (#{existing_person.client_id} vs #{client_id}), skipping"
+              next
+            end
+
+            # Update existing person with FileMaker data
+            existing_person.update!(
+              name: person_name,
+              name_preferred: name_preferred,
+              name_pronunciation_hint: extract_field(row, "Pronunciation of Name"),
+              is_active: extract_field(row, "Status") == "Active",
+              title: extract_field(row, "Title"),
+              updated_at: parse_timestamp(extract_field(row, "ModificationTimestamp"))
+            )
+            person = existing_person
+          else
+            # Check if a person with this name already exists for this client
+            # (may have been created during client import)
+            existing_by_name = Person.where(client_id: client_id)
+                                    .where("lower(name) = lower(?)", person_name)
+                                    .first
+
+            if existing_by_name
+              # Update existing person data (can't change ID)
+              existing_by_name.update!(
+                name_preferred: name_preferred,
+                name_pronunciation_hint: extract_field(row, "Pronunciation of Name"),
+                is_active: extract_field(row, "Status") == "Active",
+                title: extract_field(row, "Title"),
+                updated_at: parse_timestamp(extract_field(row, "ModificationTimestamp"))
+              )
+              person = existing_by_name
+              @warnings << "Person #{person_id} already exists as #{existing_by_name.id} for client #{client_id}, updated data"
+            else
+              # Create new person
+              person = Person.create!(
+                id: person_id,
+                client_id: client_id,
+                name: person_name,
+                name_preferred: name_preferred,
+                name_pronunciation_hint: extract_field(row, "Pronunciation of Name"),
+                is_active: extract_field(row, "Status") == "Active",
+                title: extract_field(row, "Title"),
+                created_at: parse_timestamp(extract_field(row, "CreationTimestamp")),
+                updated_at: parse_timestamp(extract_field(row, "ModificationTimestamp"))
+              )
+            end
+          end
+
+          # Handle department/group assignment
+          department_name = extract_field(row, "ID of Department")
+          if department_name.present? && person.present?
+            # Find or create the department as a PeopleGroup
+            client = Client.find(client_id)
+            department = departments_created[department_name] ||= PeopleGroup.find_or_create_by!(
+              client_id: client_id,
+              name: department_name,
+              is_department: true
+            )
+
+            # Add person to department if not already a member
+            unless person.people_groups.include?(department)
+              PeopleGroupMembership.create!(
+                person: person,
+                people_group: department
+              )
+            end
+          end
+
+          # Note: Skipping notes field from FMPPeople.xml per user request
+
+          count += 1
+        rescue => e
+          @errors << "Error importing person #{person_id}: #{e.message}"
+          # Don't rollback - just skip this person
+        end
+      end
+    end
+
+    # Report on departments created
+    if departments_created.any?
+      puts "  → Created/updated #{departments_created.size} departments: #{departments_created.keys.join(', ')}"
+    end
+
+    print_summary("People", count)
     count
   end
 
@@ -416,6 +554,7 @@ class FilemakerImporter
       parse_xml(xml_file) do |row|
         begin
           contact_id = extract_field(row, "PrimaryKey")
+          person_id = extract_field(row, "ID of Person")
           client_id = extract_field(row, "ID of Client")
 
           # Skip if already exists
@@ -424,8 +563,19 @@ class FilemakerImporter
             next
           end
 
-          # Find or create person for this client
-          person = find_or_create_person_for_client(client_id)
+          # Find person - use person_id if present, otherwise fall back to client's first person
+          person = nil
+
+          if person_id.present?
+            person = Person.find_by(id: person_id)
+            unless person
+              @warnings << "Person #{person_id} not found for contact #{contact_id}, skipping"
+              next
+            end
+          elsif client_id.present?
+            # No person_id provided, find or create first person for this client
+            person = find_or_create_person_for_client(client_id)
+          end
 
           next unless person
 
