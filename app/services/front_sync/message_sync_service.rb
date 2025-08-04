@@ -69,10 +69,10 @@ class FrontSync::MessageSyncService < FrontSyncService
       end
 
       # Fetch messages for this conversation from Front API
-      endpoint = "conversations/#{conversation_id}/messages"
-      # Messages must be fetched per conversation
-      # This needs to be fixed - we can't fetch all messages at once
-      messages_data = []
+      Rails.logger.debug "Fetching messages for conversation #{conversation_id}"
+
+      # Use the client to fetch conversation messages
+      messages_data = client.get_conversation_messages(conversation_id)
 
       Rails.logger.debug "Fetched #{messages_data.size} messages for conversation #{conversation_id}"
 
