@@ -117,7 +117,12 @@ class FrontSync::ConversationSyncService < FrontSyncService
   def transform_conversation_attributes(conversation_data, existing_record = nil)
     # Use cached lookups instead of database queries
     assignee_id = conversation_data.dig("assignee", "id").then { |id| @teammate_cache[id] }
-    recipient_contact_id = conversation_data.dig("recipient", "handle").then { |handle| @contact_cache[handle] }
+
+    # Extract recipient information
+    recipient_data = conversation_data["recipient"] || {}
+    recipient_handle = recipient_data["handle"]
+    recipient_role = recipient_data["role"]
+    recipient_contact_id = recipient_handle ? @contact_cache[recipient_handle] : nil
 
     # Extract last message ID from API links
     last_message_front_id = extract_last_message_id(conversation_data["_links"])
@@ -134,6 +139,8 @@ class FrontSync::ConversationSyncService < FrontSyncService
       custom_fields: conversation_data["custom_fields"] || {},
       assignee_id: assignee_id,
       recipient_contact_id: recipient_contact_id,
+      recipient_handle: recipient_handle,
+      recipient_role: recipient_role,
       last_message_front_id: last_message_front_id,
       api_links: conversation_data["_links"] || {}
     }
