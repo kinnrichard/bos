@@ -9,7 +9,7 @@
  * import { FrontMessageRecipient } from './front-message-recipient';
  * ```
  *
- * Generated: 2025-08-04 12:34:55 UTC
+ * Generated: 2025-08-04 13:18:12 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';

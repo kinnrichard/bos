@@ -1,7 +1,7 @@
 /**
  * DeviceData - TypeScript interface for devices table
  *
- * Generated from Rails schema: 2025-08-04 12:34:54 UTC
+ * Generated from Rails schema: 2025-08-04 13:55:36 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
  * - person: belongs_to Person

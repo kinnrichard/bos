@@ -1,7 +1,7 @@
 <script lang="ts">
   let {
     count = 5,
-    type = 'generic' as 'job-card' | 'job-detail' | 'generic'
+    type = 'generic' as 'job-card' | 'job-detail' | 'conversation-card' | 'generic',
   } = $props();
 </script>
 
@@ -11,20 +11,20 @@
     <div class="skeleton-job-card" data-testid="job-card-skeleton">
       <!-- Status emoji skeleton -->
       <div class="skeleton-emoji"></div>
-      
+
       <!-- Job name section skeleton -->
       <div class="skeleton-job-content">
         <div class="skeleton-client-name"></div>
         <div class="skeleton-job-title"></div>
       </div>
-      
+
       <!-- Right section skeleton -->
       <div class="skeleton-right-section">
         <!-- Priority emoji skeleton (randomly show/hide) -->
         {#if i % 3 === 0}
           <div class="skeleton-priority-emoji"></div>
         {/if}
-        
+
         <!-- Technician avatars skeleton (random 1-3 avatars) -->
         <div class="skeleton-technician-avatars">
           {#each Array(Math.min(3, Math.max(1, (i % 3) + 1))) as _avatar}
@@ -132,6 +132,25 @@
       </div>
     </div>
   </div>
+{:else if type === 'conversation-card'}
+  <!-- Conversation card skeleton that matches ConversationCard layout -->
+  {#each Array(count) as _item}
+    <div class="skeleton-conversation-card" data-testid="conversation-card-skeleton">
+      <!-- Status emoji skeleton -->
+      <div class="skeleton-emoji"></div>
+
+      <!-- Conversation content section skeleton -->
+      <div class="skeleton-conversation-content">
+        <div class="skeleton-recipient-handle"></div>
+        <div class="skeleton-conversation-subject"></div>
+      </div>
+
+      <!-- Right section skeleton -->
+      <div class="skeleton-right-section">
+        <div class="skeleton-waiting-time"></div>
+      </div>
+    </div>
+  {/each}
 {:else}
   <!-- Generic skeleton -->
   {#each Array(count) as _item}
@@ -211,6 +230,49 @@
     background-color: var(--bg-tertiary);
     border-radius: 50%;
     flex-shrink: 0;
+  }
+
+  /* Conversation card skeleton styles */
+  .skeleton-conversation-card {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+    gap: 12px;
+  }
+
+  .skeleton-conversation-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .skeleton-recipient-handle {
+    width: 70%;
+    height: 14px;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+  }
+
+  .skeleton-conversation-subject {
+    width: 85%;
+    height: 15px;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+  }
+
+  .skeleton-waiting-time {
+    width: 50px;
+    height: 12px;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    margin-top: 2px;
   }
 
   .skeleton-generic {
@@ -555,13 +617,31 @@
     .skeleton-job-card {
       padding: 10px 12px;
     }
-    
+
     .skeleton-client-name {
       height: 11px;
     }
-    
+
     .skeleton-job-title {
       height: 13px;
+    }
+
+    /* Conversation card responsive */
+    .skeleton-conversation-card {
+      padding: 10px 12px;
+    }
+
+    .skeleton-recipient-handle {
+      height: 13px;
+    }
+
+    .skeleton-conversation-subject {
+      height: 14px;
+    }
+
+    .skeleton-waiting-time {
+      width: 40px;
+      height: 11px;
     }
 
     /* Job Detail Responsive */

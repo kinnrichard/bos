@@ -30,5 +30,22 @@ export const permissions = definePermissions(generatedSchema, () => {
     job_assignments: { row: { select: allowAll, insert: allowAll, update: { preMutation: allowAll, postMutation: allowAll }, delete: allowAll } },
     job_people: { row: { select: allowAll, insert: allowAll, update: { preMutation: allowAll, postMutation: allowAll }, delete: allowAll } },
     job_targets: { row: { select: allowAll, insert: allowAll, update: { preMutation: allowAll, postMutation: allowAll }, delete: allowAll } },
+    people_groups: { row: { select: allowAll, insert: allowAll, update: { preMutation: allowAll, postMutation: allowAll }, delete: allowAll } },
+    people_group_memberships: { row: { select: allowAll, insert: allowAll, update: { preMutation: allowAll, postMutation: allowAll }, delete: allowAll } },
+    
+    // Front tables - READ ONLY (synced from Front API)
+    front_conversations: { row: { select: allowAll } },
+    front_messages: { row: { select: allowAll } },
+    front_contacts: { row: { select: allowAll } },
+    front_tags: { row: { select: allowAll } },
+    front_inboxes: { row: { select: allowAll } },
+    front_attachments: { row: { select: allowAll } },
+    front_conversation_tags: { row: { select: allowAll } },
+    front_message_recipients: { row: { select: allowAll } },
+    front_conversation_inboxes: { row: { select: allowAll } },
+    front_sync_logs: { row: { select: allowAll } },
+    front_teammates: { row: { select: allowAll } },
+    front_tickets: { row: { select: allowAll } },
+    front_conversation_tickets: { row: { select: allowAll } },
   };
 });
