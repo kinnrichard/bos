@@ -7,7 +7,7 @@ class FrontSync::ConversationSyncService < FrontSyncService
       Rails.logger.info "Starting #{sync_type} conversation synchronization#{ since ? " since #{since}" : ""}"
 
       start_time = Time.current
-      log_sync_start("conversations", sync_type)
+      log_sync_start("conversations")
 
       # Build query parameters
       params = {}

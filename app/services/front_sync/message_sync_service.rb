@@ -7,7 +7,7 @@ class FrontSync::MessageSyncService < FrontSyncService
       Rails.logger.info "Starting #{sync_type} message synchronization#{ since ? " since #{since}" : ""}"
 
       start_time = Time.current
-      log_sync_start("messages", sync_type)
+      log_sync_start("messages")
 
       # Build query parameters
       params = {}
@@ -37,7 +37,7 @@ class FrontSync::MessageSyncService < FrontSyncService
       Rails.logger.info "Starting message sync for #{conversation_ids.size} conversations"
 
       start_time = Time.current
-      log_sync_start("messages", "conversation_batch")
+      log_sync_start("messages")
 
       conversation_ids.each do |conversation_id|
         sync_messages_for_conversation(conversation_id)
