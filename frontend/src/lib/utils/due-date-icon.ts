@@ -45,3 +45,46 @@ export function getDueDateIcon(dueDate: Date | null): string {
     return '/icons/ellipsis.calendar.svg';
   }
 }
+
+/**
+ * Calculate the number of days until a start date
+ * @param start The start date to calculate from
+ * @returns Number of days until start (negative if already started), or null if no date
+ */
+export function getDaysUntilStart(start: Date | null): number | null {
+  if (!start) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const startDay = new Date(start);
+  startDay.setHours(0, 0, 0, 0);
+
+  const diffTime = startDay.getTime() - today.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays;
+}
+
+/**
+ * Get the appropriate calendar icon based on start date
+ * @param startDate The start date to calculate icon for
+ * @returns Path to the appropriate calendar SVG icon, or null if already started
+ */
+export function getStartDateIcon(startDate: Date | null): string | null {
+  const daysUntil = getDaysUntilStart(startDate);
+
+  if (daysUntil === null) {
+    // No start date set
+    return null;
+  } else if (daysUntil < 0) {
+    // Already started - no icon
+    return null;
+  } else if (daysUntil >= 0 && daysUntil <= 31) {
+    // Starting within 31 days - use numbered calendar
+    return `/icons/${daysUntil}.calendar.svg`;
+  } else {
+    // Starting more than 31 days away
+    return '/icons/ellipsis.calendar.svg';
+  }
+}
