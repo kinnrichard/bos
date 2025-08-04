@@ -5,7 +5,7 @@ require 'bundler/setup'
 require 'frontapp'
 require_relative 'config/initializers/frontapp_monkeypatch'
 
-AUTH_TOKEN = ENV['FRONT_API_TOKEN'] || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZXMiOlsic2NpbSIsInByb3Zpc2lvbmluZyIsInByaXZhdGU6KiIsInNoYXJlZDoqIiwia2IiLCJhcHBfdHJpZ2dlciIsInRpbToxMjM2MDM1MCJdLCJpYXQiOjE3NTQyNjY3MDIsImlzcyI6ImZyb250Iiwic3ViIjoiMDkxYzUxNjAzZWUyNDExMzgzZWYiLCJqdGkiOiI4MDA4NjUzMWJmZGM4YzE2In0.Gn5Lpo0RLtl1-auPg9DDFfikINmPzXxPF8Xgsaz6PkA"
+AUTH_TOKEN = ENV['FRONT_API_TOKEN'] || "your_token_here"
 
 puts "Testing frontapp gem with monkeypatch..."
 puts "=" * 50
