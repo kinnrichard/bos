@@ -86,13 +86,6 @@
     text-decoration: none;
     color: inherit;
     gap: 12px;
-    transition: all 0.2s ease;
-  }
-
-  .conversation-card-inline:hover {
-    background-color: var(--bg-tertiary);
-    transform: scale(1.01);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
   .conversation-card-inline:active {
