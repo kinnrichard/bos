@@ -22,11 +22,14 @@
 
 <AppLayout showToolbar={false}>
   <div class="conversation-detail">
-    <!-- Load conversation data for header -->
+    <!-- Load conversation data and render everything inside -->
     <ReactiveView query={data.conversationQuery} strategy="immediate">
       {#snippet loading()}
         <div class="header-skeleton">
           <LoadingSkeleton type="text" width="200px" height="32px" />
+        </div>
+        <div class="message-list-container">
+          <MessageList messages={[]} loading={true} conversation={null} />
         </div>
       {/snippet}
 
@@ -46,33 +49,33 @@
 
       {#snippet content({ data: conversation })}
         <ConversationHeader {conversation} />
+
+        <!-- Message list container -->
+        <div class="message-list-container">
+          <ReactiveView query={data.messagesQuery} strategy="progressive">
+            {#snippet loading()}
+              <MessageList messages={[]} loading={true} {conversation} />
+            {/snippet}
+
+            {#snippet error({ error, refresh })}
+              <div class="messages-error">
+                <h3>Unable to load messages</h3>
+                <p>{error.message}</p>
+                <button onclick={refresh} class="retry-button">Retry</button>
+              </div>
+            {/snippet}
+
+            {#snippet empty()}
+              <MessageList messages={[]} {conversation} />
+            {/snippet}
+
+            {#snippet content({ data: messages })}
+              <MessageList {messages} {conversation} />
+            {/snippet}
+          </ReactiveView>
+        </div>
       {/snippet}
     </ReactiveView>
-
-    <!-- Message list container -->
-    <div class="message-list-container">
-      <ReactiveView query={data.messagesQuery} strategy="progressive">
-        {#snippet loading()}
-          <MessageList messages={[]} loading={true} />
-        {/snippet}
-
-        {#snippet error({ error, refresh })}
-          <div class="messages-error">
-            <h3>Unable to load messages</h3>
-            <p>{error.message}</p>
-            <button onclick={refresh} class="retry-button">Retry</button>
-          </div>
-        {/snippet}
-
-        {#snippet empty()}
-          <MessageList messages={[]} />
-        {/snippet}
-
-        {#snippet content({ data: messages })}
-          <MessageList {messages} />
-        {/snippet}
-      </ReactiveView>
-    </div>
 
     <!-- Message input area (placeholder for future implementation) -->
     <div class="message-input-area">

@@ -7,6 +7,7 @@
 
 <script lang="ts">
   import type { FrontMessageData } from '$lib/models/types/front-message-data';
+  import type { FrontConversationData } from '$lib/models/types/front-conversation-data';
   import MessageBubble from './MessageBubble.svelte';
   import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
   import { onMount, tick } from 'svelte';
@@ -14,9 +15,10 @@
   interface Props {
     messages: FrontMessageData[];
     loading?: boolean;
+    conversation?: FrontConversationData;
   }
 
-  let { messages, loading = false }: Props = $props();
+  let { messages, loading = false, conversation }: Props = $props();
 
   let scrollContainer: HTMLDivElement;
   let shouldAutoScroll = true;
@@ -120,6 +122,7 @@
               showAuthor={group.isInbound && group.messages.length > 1}
               isFirstInGroup={messageIndex === 0}
               isLastInGroup={messageIndex === group.messages.length - 1}
+              recipientHandle={conversation?.recipient_handle}
             />
           {/each}
         </div>

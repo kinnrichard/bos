@@ -13,6 +13,7 @@
     showAuthor?: boolean;
     isFirstInGroup?: boolean;
     isLastInGroup?: boolean;
+    recipientHandle?: string;
   }
 
   let {
@@ -20,6 +21,7 @@
     showAuthor = false,
     isFirstInGroup = true,
     isLastInGroup = true,
+    recipientHandle,
   }: Props = $props();
 
   // Determine if message is outbound (sent by team)
@@ -56,7 +58,14 @@
   );
 
   // Get author display name
-  const authorName = $derived(message.author_name || message.author_handle || 'Unknown');
+  const authorName = $derived(() => {
+    // For inbound messages, use the conversation's recipient handle
+    if (!isOutbound && recipientHandle) {
+      return recipientHandle;
+    }
+    // Fallback to message author info
+    return message.author_name || message.author_handle || 'Unknown';
+  });
 </script>
 
 <div
@@ -67,7 +76,7 @@
   class:last-in-group={isLastInGroup}
 >
   {#if showAuthor && !isOutbound && isFirstInGroup}
-    <div class="author-name">{authorName}</div>
+    <div class="author-name">{authorName()}</div>
   {/if}
 
   {#if isFirstInGroup}
