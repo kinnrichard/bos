@@ -9,7 +9,7 @@
  * import { FrontInbox } from './front-inbox';
  * ```
  *
- * Generated: 2025-08-05 10:01:43 UTC
+ * Generated: 2025-08-05 14:49:07 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';

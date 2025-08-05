@@ -1,0 +1,198 @@
+# SolidQueue configuration for enhanced job processing
+# Sets up queue priorities and worker configurations for optimal performance
+
+if defined?(SolidQueue)
+  Rails.application.configure do
+    # Queue configuration with priorities
+    # Higher priority numbers = higher priority processing
+    config.solid_queue.queues = {
+      # High priority queues (processed first)
+      'urgent' => { polling_interval: 1, priority: 100 },         # Critical operations
+      'front_sync' => { polling_interval: 2, priority: 90 },      # Front API sync operations
+      
+      # Medium priority queues
+      'parsing_priority' => { polling_interval: 3, priority: 80 }, # Email parsing batch jobs
+      'parsing' => { polling_interval: 5, priority: 70 },          # Individual email parsing
+      
+      # Standard priority queues
+      'default' => { polling_interval: 5, priority: 50 },          # Default job processing
+      'low_priority' => { polling_interval: 10, priority: 30 },    # Background cleanup, etc.
+      
+      # Maintenance queues (processed when system is idle)
+      'maintenance' => { polling_interval: 30, priority: 10 }      # System maintenance tasks
+    }
+    
+    # Worker configuration
+    # Adjust based on server capacity and expected load
+    config.solid_queue.workers = {
+      # High-priority dedicated workers
+      urgent_worker: {
+        queues: ['urgent'],
+        threads: 2,
+        polling_interval: 1
+      },
+      
+      # Front sync dedicated workers
+      front_sync_worker: {
+        queues: ['front_sync'],
+        threads: 3,
+        polling_interval: 2
+      },
+      
+      # Email parsing workers (higher thread count for batch processing)
+      parsing_worker: {
+        queues: ['parsing_priority', 'parsing'],
+        threads: 4,
+        polling_interval: 3
+      },
+      
+      # General purpose workers
+      general_worker: {
+        queues: ['default', 'low_priority'],
+        threads: 3,
+        polling_interval: 5
+      },
+      
+      # Maintenance worker (single thread, low frequency)
+      maintenance_worker: {
+        queues: ['maintenance'],
+        threads: 1,
+        polling_interval: 30
+      }
+    }
+    
+    # Performance tuning
+    config.solid_queue.dispatcher_polling_interval = 1.second
+    config.solid_queue.batch_size = 500
+    
+    # Connection pool settings for high concurrency
+    config.solid_queue.connects_to = { 
+      database: { 
+        writing: :queue,
+        # Configure connection pool size based on worker threads
+        pool: 20,
+        checkout_timeout: 5
+      }
+    }
+    
+    # Logging configuration
+    config.solid_queue.logger = Rails.logger
+    config.solid_queue.log_level = Rails.env.production? ? :info : :debug
+    
+    # Job retention and cleanup
+    config.solid_queue.preserve_finished_jobs = true
+    config.solid_queue.finished_jobs_retention_period = 1.week
+    
+    # Performance monitoring hooks
+    config.solid_queue.on_thread_error = ->(error, context) {
+      Rails.logger.error "SolidQueue thread error: #{error.message}", context
+      
+      # Integration point for error tracking services
+      # Sentry.capture_exception(error, extra: context) if defined?(Sentry)
+    }
+  end
+  
+  # Custom job performance monitoring
+  # Track job execution metrics for monitoring and optimization
+  ActiveSupport::Notifications.subscribe('perform.active_job') do |name, started, finished, unique_id, data|
+    job = data[:job]
+    duration = finished - started
+    
+    # Log performance metrics for email parsing jobs
+    if job.class.name.include?('Parsing')
+      Rails.logger.info "Job Performance: #{job.class.name} (#{job.job_id}) - Duration: #{duration.round(3)}s, Queue: #{job.queue_name}"
+      
+      # Store metrics in Rails cache for monitoring dashboard
+      cache_key = "job_performance:#{job.class.name.underscore}:#{Time.current.strftime('%Y%m%d%H')}"
+      current_metrics = Rails.cache.read(cache_key) || { total_jobs: 0, total_duration: 0.0, max_duration: 0.0, min_duration: Float::INFINITY }
+      
+      current_metrics[:total_jobs] += 1
+      current_metrics[:total_duration] += duration
+      current_metrics[:max_duration] = [current_metrics[:max_duration], duration].max
+      current_metrics[:min_duration] = [current_metrics[:min_duration], duration].min
+      current_metrics[:avg_duration] = current_metrics[:total_duration] / current_metrics[:total_jobs]
+      current_metrics[:last_updated] = Time.current
+      
+      Rails.cache.write(cache_key, current_metrics, expires_in: 25.hours)
+      
+      # Alert on slow jobs (configurable threshold)
+      slow_job_threshold = ENV.fetch('SLOW_JOB_THRESHOLD', 30).to_f
+      if duration > slow_job_threshold
+        Rails.logger.warn "Slow job detected: #{job.class.name} took #{duration.round(2)}s (threshold: #{slow_job_threshold}s)"
+      end
+    end
+  end
+  
+  # Queue health monitoring
+  # Periodically check queue health and log warnings for bottlenecks
+  if Rails.env.production?
+    Rails.application.config.after_initialize do
+      Thread.new do
+        loop do
+          begin
+            # Check for queue backlogs
+            pending_jobs = SolidQueue::Job.where(status: 'pending').group(:queue_name).count
+            
+            pending_jobs.each do |queue_name, count|
+              # Alert thresholds by queue type
+              threshold = case queue_name
+                         when 'urgent' then 5
+                         when 'front_sync', 'parsing_priority' then 50
+                         when 'parsing', 'default' then 100
+                         else 200
+                         end
+              
+              if count > threshold
+                Rails.logger.warn "Queue backlog detected: #{queue_name} has #{count} pending jobs (threshold: #{threshold})"
+              end
+            end
+            
+            # Check for stuck jobs (running for too long)
+            stuck_threshold = 1.hour
+            stuck_jobs = SolidQueue::Job.where(status: 'running')
+                                       .where('created_at < ?', stuck_threshold.ago)
+            
+            if stuck_jobs.any?
+              Rails.logger.error "Stuck jobs detected: #{stuck_jobs.count} jobs running longer than #{stuck_threshold / 3600} hours"
+            end
+            
+          rescue => e
+            Rails.logger.error "Queue health check failed: #{e.message}"
+          end
+          
+          sleep 5.minutes
+        end
+      end
+    end
+  end
+end
+
+# Environment-specific queue configurations
+case Rails.env
+when 'development'
+  # Development: Fewer workers, more verbose logging
+  if defined?(SolidQueue)
+    Rails.application.configure do
+      config.solid_queue.workers = {
+        dev_worker: {
+          queues: ['urgent', 'front_sync', 'parsing_priority', 'parsing', 'default'],
+          threads: 2,
+          polling_interval: 2
+        }
+      }
+    end
+  end
+  
+when 'test'
+  # Test environment: Synchronous execution for predictable testing
+  if defined?(SolidQueue)
+    Rails.application.configure do
+      config.active_job.queue_adapter = :test
+    end
+  end
+  
+when 'production'
+  # Production: Full worker configuration is already set above
+  # Additional production-specific settings can go here
+  
+end

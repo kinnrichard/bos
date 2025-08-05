@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_221335) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_05_173050) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -377,6 +377,25 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_221335) do
     t.index [ "notable_id" ], name: "index_notes_on_notable_id"
     t.index [ "notable_type", "notable_id" ], name: "index_notes_on_notable_type_and_uuid"
     t.index [ "user_id" ], name: "index_notes_on_user_id"
+  end
+
+  create_table "parsed_emails", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "parseable_type", null: false
+    t.uuid "parseable_id", null: false
+    t.text "plain_message"
+    t.text "plain_signature"
+    t.text "html_message"
+    t.text "html_signature"
+    t.string "parse_options"
+    t.datetime "parsed_at"
+    t.string "parser_version"
+    t.text "parse_errors"
+    t.string "content_hash"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "content_hash" ], name: "index_parsed_emails_on_content_hash"
+    t.index [ "parseable_type", "parseable_id" ], name: "index_parsed_emails_on_parseable"
+    t.index [ "parsed_at" ], name: "index_parsed_emails_on_parsed_at"
   end
 
   create_table "people", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

@@ -156,7 +156,57 @@ tags: ["readme", "setup", "getting-started", "project-overview"]
 
 # bŏs - Business Operating System
 
-## starting up
+## Email Reply Parser Setup
+
+This application includes an advanced email reply parser using PyCall and Python's Talon library. Follow these steps for setup:
+
+### 1. System Requirements
+- **Ruby**: 3.2.2+
+- **Python**: 3.8+ (system Python)
+- **PostgreSQL**: 13+
+- **Redis**: For caching (optional but recommended)
+
+### 2. Python Dependencies
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Verify Talon installation
+python -c "import talon; print(f'Talon version: {talon.__version__}')"
+```
+
+### 3. PyCall Configuration
+The PyCall gem is already configured in `config/initializers/pycall.rb`. To verify:
+
+```bash
+# Test PyCall integration
+bundle exec rake talon:status
+
+# Run comprehensive functionality tests
+bundle exec rake talon:test
+```
+
+### 4. Database Setup
+```bash
+# Run email parser migrations
+rails db:migrate
+
+# Check parsed_emails table
+rails db:schema:load
+```
+
+### 5. Health Check
+```bash
+# Check parser availability via API
+curl localhost:3000/api/v1/health
+
+# Check parser status via rake task
+bundle exec rake talon:status
+```
+
+For detailed setup instructions, see [docs/EMAIL_PARSER_SETUP.md](docs/EMAIL_PARSER_SETUP.md).
+
+## Starting Up
 
 ```bash
 rails server

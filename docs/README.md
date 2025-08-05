@@ -32,6 +32,12 @@ tags: ["documentation", "overview", "navigation", "quick-start"]
 4. **[Testing Guide](./testing/playwright.md)** - Frontend testing with Playwright
 5. **[UI/UX Guidelines](./architecture/ui-ux-spec.md)** - Apple-like interface patterns
 
+### For Email Parser Setup
+1. **[Setup Guide](./EMAIL_PARSER_SETUP.md)** - Install PyCall and Python dependencies
+2. **[API Reference](./EMAIL_PARSER_API.md)** - Service usage and examples
+3. **[Troubleshooting](./EMAIL_PARSER_TROUBLESHOOTING.md)** - Fix common issues
+4. **[Migration Guide](./EMAIL_PARSER_MIGRATION.md)** - Migrate existing data
+
 ---
 
 ## 📚 Documentation Structure
@@ -43,6 +49,13 @@ tags: ["documentation", "overview", "navigation", "quick-start"]
 - **[Database Schema](./architecture/database-schema.md)** - PostgreSQL structure
 - **[Data Models](./architecture/data-models.md)** - Business entities
 - **[Technical Decisions](./architecture/decisions/)** - ADRs and design choices
+
+### 📧 Email Parser System
+- **[Setup Guide](./EMAIL_PARSER_SETUP.md)** - Complete installation and configuration
+- **[API Reference](./EMAIL_PARSER_API.md)** - Comprehensive API documentation and examples
+- **[Troubleshooting](./EMAIL_PARSER_TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Operations Guide](./EMAIL_PARSER_OPERATIONS.md)** - Performance tuning and monitoring
+- **[Migration Guide](./EMAIL_PARSER_MIGRATION.md)** - Migrating existing data
 
 ### 🔌 API Documentation
 - **[API Overview](./api/README.md)** - Complete API documentation
@@ -138,6 +151,8 @@ git push
 - **API Integration** → [API Documentation](./api/) + [Examples](./api/examples/)
 - **UI Changes** → [Frontend Architecture](./architecture/frontend-architecture.md) + [UI/UX Guidelines](./architecture/ui-ux-spec.md)
 - **Performance Issues** → [Performance Guidelines](./architecture/performance-guidelines.md)
+- **Email Parser Issues** → [Email Parser Troubleshooting](./EMAIL_PARSER_TROUBLESHOOTING.md) + [Operations Guide](./EMAIL_PARSER_OPERATIONS.md)
+- **Email Parser Setup** → [Setup Guide](./EMAIL_PARSER_SETUP.md) + [Migration Guide](./EMAIL_PARSER_MIGRATION.md)
 - **Deployment** → [Deployment Guide](./architecture/deployment-guide.md)
 
 ---
@@ -146,6 +161,8 @@ git push
 
 - **Backend**: Rails 8.0.2, Ruby 3.4.4, PostgreSQL (JSON API)
 - **Frontend**: SvelteKit, Svelte 4, TypeScript, Tailwind CSS
+- **Email Processing**: PyCall + Python Talon library for email parsing
+- **Background Jobs**: SolidQueue for asynchronous processing
 - **Testing**: Playwright (primary), Rails Minitest
 - **Deployment**: Kamal, Docker
 - **Development**: Claude-Flow orchestration system
@@ -209,8 +226,8 @@ git push
 
 ---
 
-**Last Updated**: August 2, 2025  
+**Last Updated**: August 5, 2025  
 **Maintained By**: Development Team  
-**Documentation Version**: 2.1  
+**Documentation Version**: 2.2  
 
 *This documentation hub provides comprehensive navigation for the bŏs system. Choose your path above based on your role and current needs.*
