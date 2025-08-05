@@ -28,6 +28,9 @@ module ZeroSchemaGenerator
         validation_result[:warnings].each { |warning| puts "  - #{warning}" }
       end
 
+      # Ensure Rails models are loaded for proper singularization
+      Rails.application.eager_load! if defined?(Rails)
+
       # Extract schema and patterns
       puts "🔍 Analyzing Rails schema and detecting patterns..."
       schema_data = @introspector.extract_schema
@@ -94,7 +97,10 @@ module ZeroSchemaGenerator
 
     def generate_table_mutations(table, patterns)
       table_name = table[:name]
-      singular_name = table_name.singularize
+
+      # Find the Rails model for this table to get proper singular name
+      rails_model = ApplicationRecord.descendants.find { |m| m.table_name == table_name }
+      singular_name = rails_model ? rails_model.name.underscore : table_name.singularize
 
       # Skip if no meaningful patterns detected
       if patterns.empty?

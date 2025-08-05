@@ -1,7 +1,7 @@
 /**
  * JobPersonData - TypeScript interface for job_people table
  *
- * Generated from Rails schema: 2025-08-04 18:46:55 UTC
+ * Generated from Rails schema: 2025-08-04 22:36:55 UTC
  * * Relationships (loaded via includes()):
  * - job: belongs_to Job
  * - person: belongs_to Person

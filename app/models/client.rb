@@ -7,6 +7,10 @@ class Client < ApplicationRecord
   has_many :devices, dependent: :destroy
   has_many :people_groups, dependent: :destroy
 
+  # Front conversation associations
+  has_many :clients_front_conversations, class_name: "ClientFrontConversation", dependent: :destroy
+  has_many :front_conversations, through: :clients_front_conversations
+
   # Validations
   validates :name, presence: true
   validates :client_type, presence: true

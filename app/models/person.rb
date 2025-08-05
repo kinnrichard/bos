@@ -8,6 +8,10 @@ class Person < ApplicationRecord
   has_many :people_group_memberships, dependent: :destroy
   has_many :people_groups, through: :people_group_memberships
 
+  # Front conversation associations
+  has_many :people_front_conversations, class_name: "PersonFrontConversation", dependent: :destroy
+  has_many :front_conversations, through: :people_front_conversations
+
   validates :name, presence: true
 
   accepts_nested_attributes_for :contact_methods,

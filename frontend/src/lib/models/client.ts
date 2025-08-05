@@ -9,7 +9,7 @@
  * import { ReactiveClient as Client } from './reactive-client';
  * ```
  *
- * Generated: 2025-08-04 18:46:55 UTC
+ * Generated: 2025-08-04 22:36:55 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
@@ -63,6 +63,8 @@ registerModelRelationships('clients', {
   jobs: { type: 'hasMany', model: 'Job' },
   devices: { type: 'hasMany', model: 'Device' },
   peopleGroups: { type: 'hasMany', model: 'PeopleGroup' },
+  clientsFrontConversations: { type: 'hasMany', model: 'ClientsFrontConversation' },
+  frontConversations: { type: 'hasMany', model: 'FrontConversation' },
 });
 
 // Export types for convenience

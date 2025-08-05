@@ -18,9 +18,12 @@ class FrontConversation < ApplicationRecord
              foreign_key: "recipient_handle",
              optional: true
 
-  # Access to Person and Client through matched contact
-  has_one :person, through: :matched_contact
-  has_one :client, through: :person
+  # Direct join table associations
+  has_many :people_front_conversations, class_name: "PersonFrontConversation", dependent: :destroy
+  has_many :people, through: :people_front_conversations
+
+  has_many :clients_front_conversations, class_name: "ClientFrontConversation", dependent: :destroy
+  has_many :clients, through: :clients_front_conversations
 
   # Validations
   validates :front_id, presence: true, uniqueness: true

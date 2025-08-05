@@ -120,7 +120,7 @@
 - 💭 Cancel button when creating a job doesn't work if user has typed in a job name already
 - 💭 Move user menu to sidebar
 - 💭 Make sidebar hierarchical
-- Text in selected cancelled or completed tasks is illegible
+- 💭 Text in selected cancelled or completed tasks is illegible
 - 💭 Popovers should fade out @ 200ms (but not fade in)
 - 💭 New Task label should have mouse-arrow everywhere
 - 💭 New Task label should appear whenever row is hovered

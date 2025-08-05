@@ -9,7 +9,7 @@
  * import { ReactivePerson as Person } from './reactive-person';
  * ```
  *
- * Generated: 2025-08-04 18:46:55 UTC
+ * Generated: 2025-08-04 22:36:55 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
@@ -74,6 +74,8 @@ registerModelRelationships('people', {
   notes: { type: 'hasMany', model: 'Note' },
   peopleGroupMemberships: { type: 'hasMany', model: 'PeopleGroupMembership' },
   peopleGroups: { type: 'hasMany', model: 'PeopleGroup' },
+  peopleFrontConversations: { type: 'hasMany', model: 'PeopleFrontConversation' },
+  frontConversations: { type: 'hasMany', model: 'FrontConversation' },
 });
 
 // Export types for convenience

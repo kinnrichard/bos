@@ -9,7 +9,7 @@
  * import { ReactiveFrontConversationTicket as FrontConversationTicket } from './reactive-front-conversation-ticket';
  * ```
  *
- * Generated: 2025-08-04 18:13:52 UTC
+ * Generated: 2025-08-04 22:23:45 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

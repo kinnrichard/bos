@@ -9,7 +9,7 @@
  * import { FrontTicket } from './front-ticket';
  * ```
  *
- * Generated: 2025-08-04 18:13:52 UTC
+ * Generated: 2025-08-04 22:23:45 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';

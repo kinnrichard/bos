@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_215228) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_221335) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -50,6 +50,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_215228) do
     t.index [ "name_normalized" ], name: "index_clients_on_name_normalized", unique: true
   end
 
+  create_table "clients_front_conversations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "client_id", null: false
+    t.uuid "front_conversation_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "client_id", "front_conversation_id" ], name: "idx_client_front_conversation", unique: true
+    t.index [ "client_id" ], name: "index_clients_front_conversations_on_client_id"
+    t.index [ "front_conversation_id" ], name: "idx_clients_front_convs_on_conv_id"
+    t.index [ "front_conversation_id" ], name: "index_clients_front_conversations_on_front_conversation_id"
+  end
+
   create_table "contact_methods", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "value"
     t.string "formatted_value"
@@ -57,7 +68,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_215228) do
     t.datetime "updated_at", null: false
     t.uuid "person_id"
     t.string "contact_type", null: false
-    t.string "normalized_value"
+    t.string "normalized_value", null: false
     t.index [ "id" ], name: "index_contact_methods_on_id", unique: true
     t.index [ "normalized_value", "contact_type" ], name: "index_contact_methods_on_normalized_value_and_type"
     t.index [ "normalized_value" ], name: "index_contact_methods_on_normalized_value"
@@ -381,6 +392,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_215228) do
     t.index [ "id" ], name: "index_people_on_id", unique: true
   end
 
+  create_table "people_front_conversations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "person_id", null: false
+    t.uuid "front_conversation_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "front_conversation_id" ], name: "idx_people_front_convs_on_conv_id"
+    t.index [ "front_conversation_id" ], name: "index_people_front_conversations_on_front_conversation_id"
+    t.index [ "person_id", "front_conversation_id" ], name: "idx_person_front_conversation", unique: true
+    t.index [ "person_id" ], name: "index_people_front_conversations_on_person_id"
+  end
+
   create_table "people_group_memberships", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "person_id", null: false
     t.uuid "people_group_id", null: false
@@ -680,6 +702,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_215228) do
   add_foreign_key "activity_logs", "clients"
   add_foreign_key "activity_logs", "jobs"
   add_foreign_key "activity_logs", "users"
+  add_foreign_key "clients_front_conversations", "clients"
+  add_foreign_key "clients_front_conversations", "front_conversations"
   add_foreign_key "contact_methods", "people"
   add_foreign_key "devices", "clients"
   add_foreign_key "devices", "people"
@@ -703,6 +727,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_215228) do
   add_foreign_key "jobs", "clients"
   add_foreign_key "notes", "users"
   add_foreign_key "people", "clients"
+  add_foreign_key "people_front_conversations", "front_conversations"
+  add_foreign_key "people_front_conversations", "people"
   add_foreign_key "people_group_memberships", "people"
   add_foreign_key "people_group_memberships", "people_groups"
   add_foreign_key "people_groups", "clients"

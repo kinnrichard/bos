@@ -119,4 +119,52 @@ class FrontConversationTest < ActiveSupport::TestCase
     assert_respond_to conversation, :assignee
     assert_respond_to conversation, :recipient_contact
   end
+
+  test "can access people through join table" do
+    conversation = create(:front_conversation)
+    person1 = create(:person)
+    person2 = create(:person)
+
+    create(:person_front_conversation, person: person1, front_conversation: conversation)
+    create(:person_front_conversation, person: person2, front_conversation: conversation)
+
+    assert_equal 2, conversation.people.count
+    assert_includes conversation.people, person1
+    assert_includes conversation.people, person2
+  end
+
+  test "can access clients through join table" do
+    conversation = create(:front_conversation)
+    client1 = create(:client)
+    client2 = create(:client)
+
+    create(:client_front_conversation, client: client1, front_conversation: conversation)
+    create(:client_front_conversation, client: client2, front_conversation: conversation)
+
+    assert_equal 2, conversation.clients.count
+    assert_includes conversation.clients, client1
+    assert_includes conversation.clients, client2
+  end
+
+  test "has join table associations" do
+    conversation = FrontConversation.new
+
+    assert_respond_to conversation, :people_front_conversations
+    assert_respond_to conversation, :people
+    assert_respond_to conversation, :clients_front_conversations
+    assert_respond_to conversation, :clients
+  end
+
+  test "destroys join table records when conversation is destroyed" do
+    conversation = create(:front_conversation)
+    person = create(:person)
+    client = create(:client)
+
+    create(:person_front_conversation, person: person, front_conversation: conversation)
+    create(:client_front_conversation, client: client, front_conversation: conversation)
+
+    assert_difference [ "PersonFrontConversation.count", "ClientFrontConversation.count" ], -1 do
+      conversation.destroy
+    end
+  end
 end
