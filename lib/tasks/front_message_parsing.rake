@@ -19,13 +19,11 @@ namespace :front_message_parsing do
     puts "Completion Rate: #{total_front_messages > 0 ? ((parsed_messages.to_f / total_front_messages) * 100).round(1) : 0}%"
     
     # Recent parsing statistics
-    recent_parsed = ParsedEmail.joins(:parseable)
-                               .where(parseable_type: 'FrontMessage')
+    recent_parsed = ParsedEmail.where(parseable_type: 'FrontMessage')
                                .where('parsed_at > ?', 24.hours.ago)
                                .count
     
-    recent_errors = ParsedEmail.joins(:parseable)
-                               .where(parseable_type: 'FrontMessage')
+    recent_errors = ParsedEmail.where(parseable_type: 'FrontMessage')
                                .where('parsed_at > ?', 24.hours.ago)
                                .where.not(parse_errors: [nil, {}, '{}', '[]'])
                                .count
@@ -38,13 +36,14 @@ namespace :front_message_parsing do
     
     # Queue status for parsing jobs
     if defined?(SolidQueue)
-      pending_jobs = SolidQueue::Job.where(job_class_name: 'FrontMessageParsingJob', status: ['pending']).count
-      running_jobs = SolidQueue::Job.where(job_class_name: 'FrontMessageParsingJob', status: ['running']).count
+      # SolidQueue jobs don't have a direct status column, check by finished_at
+      pending_jobs = SolidQueue::Job.where(class_name: 'FrontMessageParsingJob', finished_at: nil).count
+      completed_jobs = SolidQueue::Job.where(class_name: 'FrontMessageParsingJob').where.not(finished_at: nil).count
       
       puts "\n🔄 JOB QUEUE STATUS"
       puts "-" * 30
       puts "Pending Batch Jobs: #{pending_jobs}"
-      puts "Running Batch Jobs: #{running_jobs}"
+      puts "Completed Batch Jobs: #{completed_jobs}"
     end
     
     # Performance metrics from cache
@@ -65,8 +64,7 @@ namespace :front_message_parsing do
     end
     
     # Error analysis
-    error_messages = ParsedEmail.joins(:parseable)
-                                .where(parseable_type: 'FrontMessage')
+    error_messages = ParsedEmail.where(parseable_type: 'FrontMessage')
                                 .where.not(parse_errors: [nil, {}, '{}', '[]'])
                                 .where('parsed_at > ?', 7.days.ago)
                                 .limit(5)
@@ -77,6 +75,7 @@ namespace :front_message_parsing do
       error_messages.each do |parsed_email|
         error_data = JSON.parse(parsed_email.parse_errors) rescue { error: parsed_email.parse_errors }
         error_msg = error_data.is_a?(Hash) ? error_data['error'] : error_data.to_s
+        error_msg ||= 'Unknown error'
         
         puts "Message #{parsed_email.parseable_id}: #{error_msg.truncate(60)}"
       end
@@ -136,7 +135,7 @@ namespace :front_message_parsing do
     
     puts "\n📊 Batch processing initiated!"
     puts "Monitor progress with: rake front_message_parsing:status"
-    puts "View job queue with: rails runner 'puts SolidQueue::Job.where(job_class_name: \"FrontMessageParsingJob\").count'"
+    puts "View job queue with: rails runner 'puts SolidQueue::Job.where(class_name: \"FrontMessageParsingJob\").count'"
   end
   
   desc "Reparse messages that had parsing errors"
@@ -152,8 +151,7 @@ namespace :front_message_parsing do
     puts "Looking back: #{days_back} days"
     
     # Find messages with parsing errors
-    error_parsed_emails = ParsedEmail.joins(:parseable)
-                                     .where(parseable_type: 'FrontMessage')
+    error_parsed_emails = ParsedEmail.where(parseable_type: 'FrontMessage')
                                      .where.not(parse_errors: [nil, {}, '{}', '[]'])
                                      .where('parsed_at > ?', days_back.days.ago)
                                      .limit(max_messages)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_05_173050) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_05_200554) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -534,8 +534,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_05_173050) do
 
   create_table "solid_queue_claimed_executions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.bigint "job_id", null: false
-    t.bigint "process_id"
     t.datetime "created_at", null: false
+    t.uuid "process_id"
     t.index [ "id" ], name: "index_solid_queue_claimed_executions_on_id", unique: true
     t.index [ "job_id" ], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
     t.index [ "process_id", "job_id" ], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
@@ -578,12 +578,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_05_173050) do
   create_table "solid_queue_processes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "kind", null: false
     t.datetime "last_heartbeat_at", null: false
-    t.bigint "supervisor_id"
     t.integer "pid", null: false
     t.string "hostname"
     t.text "metadata"
     t.datetime "created_at", null: false
     t.string "name", null: false
+    t.uuid "supervisor_id"
     t.index [ "id" ], name: "index_solid_queue_processes_on_id", unique: true
     t.index [ "last_heartbeat_at" ], name: "index_solid_queue_processes_on_last_heartbeat_at"
     t.index [ "name", "supervisor_id" ], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
