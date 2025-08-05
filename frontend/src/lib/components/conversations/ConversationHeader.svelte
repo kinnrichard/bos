@@ -101,8 +101,8 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background-color: var(--bg-primary);
-    border-bottom: 1px solid var(--border-primary);
+    background-color: var(--bg-black);
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
@@ -135,7 +135,7 @@
   }
 
   .back-button:hover {
-    background-color: var(--bg-tertiary);
+    background-color: rgba(255, 255, 255, 0.05);
     transform: translateX(-2px);
   }
 
@@ -232,7 +232,7 @@
   }
 
   .action-button:hover {
-    background-color: var(--bg-tertiary);
+    background-color: rgba(255, 255, 255, 0.05);
   }
 
   /* Mobile adjustments */

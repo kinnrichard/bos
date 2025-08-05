@@ -117,10 +117,11 @@
   }
 
   .message-wrapper.inbound .message-bubble {
-    background-color: var(--bg-tertiary, #e5e5ea);
+    background-color: #1c1c1e;
     color: var(--text-primary);
     margin-right: auto;
     max-width: 70%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
   /* Outbound messages (right side) */
@@ -133,6 +134,7 @@
     color: white;
     margin-left: auto;
     max-width: 70%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
   /* Message bubble */
@@ -175,7 +177,7 @@
 
   /* Message content */
   .message-content {
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.4;
     white-space: pre-wrap;
   }
@@ -209,7 +211,7 @@
   /* Dark mode adjustments */
   @media (prefers-color-scheme: dark) {
     .message-wrapper.inbound .message-bubble {
-      background-color: var(--bg-tertiary, #3a3a3c);
+      background-color: #1c1c1e;
       color: var(--text-primary, #fff);
     }
   }
@@ -225,7 +227,7 @@
     }
 
     .message-content {
-      font-size: 15px;
+      font-size: 14px;
     }
 
     .message-metadata {

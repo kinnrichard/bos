@@ -153,7 +153,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
-    background-color: var(--bg-primary);
+    background-color: var(--bg-black);
     /* iOS-style elastic scrolling */
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
@@ -227,6 +227,11 @@
     margin: 0;
   }
 
+  /* Adjust empty state emoji for dark background */
+  .empty-icon {
+    opacity: 0.8;
+  }
+
   /* Scroll to bottom button */
   .scroll-to-bottom {
     position: absolute;
@@ -235,9 +240,9 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: var(--bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -255,7 +260,7 @@
   }
 
   .scroll-to-bottom:hover {
-    background-color: var(--bg-tertiary);
+    background-color: rgba(255, 255, 255, 0.1);
     transform: scale(1.05);
   }
 

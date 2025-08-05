@@ -99,7 +99,7 @@
           <input type="text" placeholder="Type a message..." class="message-input" disabled />
         </div>
 
-        <button class="send-button" disabled aria-label="Send message">
+        <button class="send-button active" disabled aria-label="Send message">
           <svg
             width="24"
             height="24"
@@ -126,7 +126,7 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background-color: var(--bg-primary);
+    background-color: var(--bg-black);
     overflow: hidden;
     animation: pageSlideIn 0.3s ease-out;
   }
@@ -229,10 +229,12 @@
 
   /* Message input area */
   .message-input-area {
-    border-top: 1px solid var(--border-primary);
-    background-color: var(--bg-secondary);
+    border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--bg-black);
     padding: 12px 16px;
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 
   .input-container {
@@ -261,13 +263,23 @@
 
   .attach-button:hover:not(:disabled),
   .send-button:hover:not(:disabled) {
-    background-color: var(--bg-tertiary);
+    background-color: rgba(255, 255, 255, 0.05);
   }
 
   .attach-button:disabled,
   .send-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  /* Active send button when message is ready */
+  .send-button.active:not(:disabled) {
+    background-color: var(--accent-blue);
+    color: white;
+  }
+
+  .send-button.active:not(:disabled):hover {
+    background-color: var(--accent-blue-hover);
   }
 
   .input-wrapper {
@@ -277,13 +289,13 @@
   .message-input {
     width: 100%;
     padding: 8px 16px;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--bg-tertiary);
     border-radius: 20px;
     font-size: 16px;
     color: var(--text-primary);
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
   }
 
   .message-input:focus {
