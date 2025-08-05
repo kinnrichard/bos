@@ -133,6 +133,14 @@
     overflow: hidden;
   }
 
+  /* Make ReactiveView wrappers participate in flex layout */
+  .conversation-detail > :global(.reactive-view__content) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
   /* Header skeleton */
   .header-skeleton {
     height: 64px;
@@ -176,7 +184,7 @@
   .message-list-container :global(.reactive-view__content) {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
     min-height: 0;
   }
 
