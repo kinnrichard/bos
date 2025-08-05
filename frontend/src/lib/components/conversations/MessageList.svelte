@@ -21,43 +21,45 @@
   let shouldAutoScroll = true;
 
   // Group messages by author and time proximity
-  const groupedMessages = $derived(() => {
-    const groups: Array<{
-      messages: FrontMessageData[];
-      authorId: string | undefined;
-      isInbound: boolean;
-    }> = [];
+  const groupedMessages = $derived(
+    (() => {
+      const groups: Array<{
+        messages: FrontMessageData[];
+        authorId: string | undefined;
+        isInbound: boolean;
+      }> = [];
 
-    messages.forEach((message, index) => {
-      const prevMessage = messages[index - 1];
-      const timeDiff =
-        prevMessage && message.created_at_timestamp && prevMessage.created_at_timestamp
-          ? message.created_at_timestamp - prevMessage.created_at_timestamp
-          : Infinity;
+      messages.forEach((message, index) => {
+        const prevMessage = messages[index - 1];
+        const timeDiff =
+          prevMessage && message.created_at_timestamp && prevMessage.created_at_timestamp
+            ? message.created_at_timestamp - prevMessage.created_at_timestamp
+            : Infinity;
 
-      // Group messages if:
-      // 1. Same author
-      // 2. Same direction (inbound/outbound)
-      // 3. Within 1 minute of each other
-      const shouldGroup =
-        prevMessage &&
-        prevMessage.author_id === message.author_id &&
-        prevMessage.is_inbound === message.is_inbound &&
-        timeDiff < 60; // 60 seconds
+        // Group messages if:
+        // 1. Same author
+        // 2. Same direction (inbound/outbound)
+        // 3. Within 1 minute of each other
+        const shouldGroup =
+          prevMessage &&
+          prevMessage.author_id === message.author_id &&
+          prevMessage.is_inbound === message.is_inbound &&
+          timeDiff < 60; // 60 seconds
 
-      if (shouldGroup && groups.length > 0) {
-        groups[groups.length - 1].messages.push(message);
-      } else {
-        groups.push({
-          messages: [message],
-          authorId: message.author_id,
-          isInbound: message.is_inbound || false,
-        });
-      }
-    });
+        if (shouldGroup && groups.length > 0) {
+          groups[groups.length - 1].messages.push(message);
+        } else {
+          groups.push({
+            messages: [message],
+            authorId: message.author_id,
+            isInbound: message.is_inbound || false,
+          });
+        }
+      });
 
-    return groups;
-  });
+      return groups;
+    })()
+  );
 
   // Auto-scroll to bottom when new messages arrive
   $effect(() => {

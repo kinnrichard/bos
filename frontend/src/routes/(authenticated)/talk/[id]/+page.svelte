@@ -181,6 +181,14 @@
     min-height: 0; /* Important for flex children */
   }
 
+  /* Make ReactiveView containers flex properly */
+  .message-list-container :global(.reactive-view__content) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
   .messages-error {
     flex: 1;
     display: flex;
