@@ -126,6 +126,36 @@ namespace :front_sync do
     end
   end
   
+  desc "Refresh conversations from the past X hours (default: 1)"
+  task :refresh_recent, [:hours] => :environment do |t, args|
+    hours = (args[:hours] || 1).to_f
+    since = hours.hours.ago
+    
+    puts "\n🔄 REFRESHING RECENT CONVERSATIONS"
+    puts "-" * 30
+    puts "Time range: Past #{hours} hours"
+    puts "Since: #{since.strftime('%Y-%m-%d %H:%M:%S')}"
+    
+    # Use the conversation sync service directly
+    conversation_service = FrontSync::ConversationSyncService.new
+    message_service = FrontSync::MessageSyncService.new
+    
+    puts "\n📊 Starting incremental sync..."
+    
+    # Sync conversations
+    conv_stats = conversation_service.sync_all(since: since)
+    puts "✅ Conversations: #{conv_stats[:created]} created, #{conv_stats[:updated]} updated"
+    
+    # Sync messages
+    msg_stats = message_service.sync_all(since: since)
+    puts "✅ Messages: #{msg_stats[:created]} created, #{msg_stats[:updated]} updated"
+    
+    puts "\n✅ Refresh completed successfully!"
+  rescue => e
+    puts "❌ Error: #{e.message}"
+    exit 1
+  end
+  
   desc "Reset Front API circuit breaker"
   task reset_circuit_breaker: :environment do
     puts "\n🔧 RESETTING CIRCUIT BREAKER"
