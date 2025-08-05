@@ -56,6 +56,24 @@ export interface QueryOptions {
 }
 
 /**
+ * Metadata passed to ReactiveQuery subscribers
+ * Contains loading state, error information, and other query metadata
+ */
+export interface QueryMeta {
+  /** Loading state - true while query is executing */
+  isLoading: boolean;
+
+  /** Error state - contains error if query failed */
+  error: Error | null;
+
+  /** Whether this query expects a collection (array) result */
+  isCollection?: boolean;
+
+  /** Zero.js result type - for flash prevention */
+  resultType?: 'loading' | 'complete' | 'error';
+}
+
+/**
  * Reactive query interface - returned by ReactiveRecord methods
  * Provides Svelte 5 reactive state management
  */
@@ -88,7 +106,7 @@ export interface ReactiveQuery<T> {
   destroy(): void;
 
   /** Subscribe to data changes (for non-Svelte usage) */
-  subscribe(callback: (data: T | T[] | null) => void): () => void;
+  subscribe(callback: (data: T | T[] | null, meta?: QueryMeta) => void): () => void;
 }
 
 /**

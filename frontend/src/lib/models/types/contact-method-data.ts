@@ -1,7 +1,7 @@
 /**
  * ContactMethodData - TypeScript interface for contact_methods table
  *
- * Generated from Rails schema: 2025-08-05 01:17:51 UTC
+ * Generated from Rails schema: 2025-08-05 10:01:42 UTC
  * * Relationships (loaded via includes()):
  * - person: belongs_to Person
  * - frontConversations: has_many FrontConversation

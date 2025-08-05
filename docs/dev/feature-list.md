@@ -132,14 +132,18 @@
 - 💭 Make UI text un-selectable
 - ✅ Show technician glyphs on Job list
 
+
+
 # Features for future versions
 
 ## Integrations
 - 📋 Addigy (gem prototyped)
 - 📋 M365 (gem in alpha)
 - 📋 Zoom (gem prototyped)
-- 💭 Front
+- 🚧 Front (gem monkeypatched in this project)
 - 💭 Google Workspace
+- 💭 Gmail
+- 💭 Outlook
 - 💭 ThreatDown
 - 💭 UniFi
 
