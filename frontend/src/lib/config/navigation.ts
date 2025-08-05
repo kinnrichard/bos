@@ -25,8 +25,8 @@ export const globalNavItems: NavItem[] = [
   },
   {
     id: 'conversations',
-    label: 'Conversations',
-    href: '/conversations',
+    label: 'Talk',
+    href: '/talk',
     icon: '💬',
     type: 'navigation',
   },
@@ -50,8 +50,8 @@ export const clientNavItems: NavItem[] = [
   },
   {
     id: 'conversations',
-    label: 'Conversations',
-    href: '/clients/{id}/conversations',
+    label: 'Talk',
+    href: '/clients/{id}/talk',
     icon: '💬',
     type: 'navigation',
   },
@@ -84,14 +84,12 @@ export function getActiveNavItem(currentPath: string): string | null {
   // Handle route-based matches
   if (currentPath === '/clients') return 'clients';
   if (currentPath.startsWith('/jobs') && !currentPath.includes('/clients/')) return 'all-jobs';
-  if (currentPath.startsWith('/conversations') && !currentPath.includes('/clients/'))
-    return 'conversations';
+  if (currentPath.startsWith('/talk') && !currentPath.includes('/clients/')) return 'conversations';
 
   // Client-specific routes
   if (currentPath.includes('/people')) return 'people';
   if (currentPath.includes('/clients/') && currentPath.includes('/jobs')) return 'jobs';
-  if (currentPath.includes('/clients/') && currentPath.includes('/conversations'))
-    return 'conversations';
+  if (currentPath.includes('/clients/') && currentPath.includes('/talk')) return 'conversations';
 
   // Handle logs routes - both /logs and /clients/[id]/logs
   if (currentPath === '/logs' || currentPath.includes('/logs')) return 'logs';

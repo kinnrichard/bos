@@ -1,5 +1,5 @@
 <!--
-  Conversations Page - All conversations listing
+  Talk Page - All conversations listing
   
   This page shows all conversations filtered to exclude closed ones.
   Uses ConversationsListView with ReactiveQuery for live updates.
@@ -27,19 +27,19 @@
 </script>
 
 <svelte:head>
-  <title>Conversations - FAULTLESS</title>
+  <title>Talk - FAULTLESS</title>
 </svelte:head>
 
 <AppLayout>
   <ConversationsListView
     query={conversationsQuery}
     displayFilter={filterOpenConversations}
-    title="All Conversations"
+    title="All Talk"
     showClient={true}
-    emptyMessage="No open conversations found"
+    emptyMessage="No open talk found"
     emptyIcon="💬"
-    noResultsMessage="No conversations match your criteria"
-    noResultsDescription="All conversations may be closed or archived."
+    noResultsMessage="No talk matches your criteria"
+    noResultsDescription="All talk may be closed or archived."
     noResultsIcon="🔍"
     strategy="progressive"
   />

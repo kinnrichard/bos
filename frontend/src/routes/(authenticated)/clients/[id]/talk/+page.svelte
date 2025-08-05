@@ -1,7 +1,7 @@
 <!--
-  Client Conversations Page - Client-specific conversations listing
+  Client Talk Page - Client-specific talk listing
   
-  This page shows conversations for a specific client, filtered to exclude closed ones.
+  This page shows talk for a specific client, filtered to exclude closed ones.
   Uses ConversationsListView with ReactiveQuery for live updates.
   
   Epic-010: Uses ReactiveClient.includes('frontConversations') pattern for client-specific filtering
@@ -61,7 +61,7 @@
     return clientQuery.data?.name || 'Unknown Client';
   });
 
-  const pageTitle = $derived(`${clientName} - Conversations`);
+  const pageTitle = $derived(`${clientName} - Talk`);
 
   // Handle client not found error
   // Distinguishes between loading states and actual missing client
@@ -95,11 +95,11 @@
     <ConversationsListView
       query={conversationsQuery}
       displayFilter={filterClientConversations}
-      title="{clientName} Conversations"
-      emptyMessage="No open conversations found for this client"
+      title="{clientName} Talk"
+      emptyMessage="No open talk found for this client"
       emptyIcon="💬"
-      noResultsMessage="No open conversations match your criteria"
-      noResultsDescription="This client may not have any open conversations at the moment."
+      noResultsMessage="No open talk matches your criteria"
+      noResultsDescription="This client may not have any open talk at the moment."
       noResultsIcon="🔍"
       strategy="progressive"
     />

@@ -48,7 +48,7 @@
   const waitingTime = $derived(formatWaitingTime(conversation.waiting_since_timestamp));
 
   function getConversationPath(conversation: FrontConversationData): string {
-    return `/conversations/${conversation.id}`;
+    return `/talk/${conversation.id}`;
   }
 </script>
 
