@@ -78,9 +78,6 @@
     {#if isLastInGroup}
       <div class="message-metadata">
         <span class="timestamp">{formattedTime()}</span>
-        {#if isOutbound}
-          <span class="read-status">Delivered</span>
-        {/if}
       </div>
     {/if}
   </div>
@@ -201,10 +198,6 @@
   }
 
   .timestamp {
-    font-weight: 400;
-  }
-
-  .read-status {
     font-weight: 400;
   }
 
