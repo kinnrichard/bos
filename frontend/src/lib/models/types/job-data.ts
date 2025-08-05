@@ -1,7 +1,7 @@
 /**
  * JobData - TypeScript interface for jobs table
  *
- * Generated from Rails schema: 2025-08-04 23:22:04 UTC
+ * Generated from Rails schema: 2025-08-04 23:23:50 UTC
  * * Relationships (loaded via includes()):
  * - client: belongs_to Client
  * - activityLogs: has_many ActivityLog

@@ -9,7 +9,7 @@
  * import { FrontTeammate } from './front-teammate';
  * ```
  *
- * Generated: 2025-08-04 23:22:06 UTC
+ * Generated: 2025-08-04 23:23:51 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';

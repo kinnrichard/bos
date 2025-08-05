@@ -9,7 +9,7 @@
  * import { ReactiveTask as Task } from './reactive-task';
  * ```
  *
- * Generated: 2025-08-04 23:22:05 UTC
+ * Generated: 2025-08-04 23:23:50 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
