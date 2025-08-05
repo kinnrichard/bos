@@ -22,7 +22,7 @@
 - 💭 v3 Slide in/out sidebar
 
 ## Authentication
-- ✅ Make user stay logged in
+- 🚧 Make user stay logged in
 
 ## Drag & Drop
 - 📋 make Drag & Drop more solid with a robust test library
@@ -116,22 +116,21 @@
 - ✅ Technician glyphs don't have shadows
 - ✅ Remove mouse hand-pointer from everywhere
 - ✅ Remove Sidebar hover states
-- On New Job page, first task doesnt wrap nicely
-- Cancel button when creating a job doesn't work if user has typed in a job name already
-- Move user menu to sidebar
-- Make sidebar hierarchical
+- 💭 On New Job page, new tasks don't wrap nicely
+- 💭 Cancel button when creating a job doesn't work if user has typed in a job name already
+- 💭 Move user menu to sidebar
+- 💭 Make sidebar hierarchical
 - Text in selected cancelled or completed tasks is illegible
-- Popovers should fade out (but not fade in)
-- New Task label should have mouse-arrow everywhere
-- New Task label should appear whenever row is hovered
-- Popover arrows should anchor to the activating button
-- Assigned To button should not get wider when just 1 technician
-- Scroll containers should be normalized
+- 💭 Popovers should fade out @ 200ms (but not fade in)
+- 💭 New Task label should have mouse-arrow everywhere
+- 💭 New Task label should appear whenever row is hovered
+- 💭 Use I-beam mouse pointer when over contenteditable inline edits, such as job title and task title
+- 💭 Popover arrows should anchor to the activating button
+- 💭 Assigned To button should not get wider when just 1 technician
+- 💭 Scroll containers should be normalized
   - Have padding at the bottom to match sidebar margin
-- Make UI text un-selectable
+- 💭 Make UI text un-selectable
 - ✅ Show technician glyphs on Job list
-- Make it more consistent
-- Make I-beam mouse cursor appear with inline edits, such as job title and task title
 
 # Features for future versions
 
