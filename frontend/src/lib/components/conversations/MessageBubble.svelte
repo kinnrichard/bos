@@ -70,16 +70,16 @@
     <div class="author-name">{authorName}</div>
   {/if}
 
+  {#if isFirstInGroup}
+    <div class="timestamp-row">
+      <span class="timestamp">{formattedTime()}</span>
+    </div>
+  {/if}
+
   <div class="message-bubble">
     <div class="message-content">
       {messageContent}
     </div>
-
-    {#if isLastInGroup}
-      <div class="message-metadata">
-        <span class="timestamp">{formattedTime()}</span>
-      </div>
-    {/if}
   </div>
 </div>
 
@@ -92,7 +92,7 @@
   }
 
   .message-wrapper.first-in-group {
-    margin-top: 8px;
+    margin-top: 12px;
   }
 
   .message-wrapper.last-in-group {
@@ -179,26 +179,25 @@
     white-space: pre-wrap;
   }
 
-  /* Metadata (timestamp and status) */
-  .message-metadata {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 4px;
-    font-size: 11px;
-  }
-
-  .message-wrapper.inbound .message-metadata {
-    color: var(--text-tertiary);
-  }
-
-  .message-wrapper.outbound .message-metadata {
-    color: rgba(255, 255, 255, 0.7);
-    justify-content: flex-end;
+  /* Timestamp above bubble */
+  .timestamp-row {
+    margin-bottom: 4px;
+    padding: 0 12px;
   }
 
   .timestamp {
+    font-size: 11px;
     font-weight: 400;
+    color: var(--text-tertiary);
+  }
+
+  /* Align timestamp based on message direction */
+  .message-wrapper.inbound .timestamp-row {
+    text-align: left;
+  }
+
+  .message-wrapper.outbound .timestamp-row {
+    text-align: right;
   }
 
   /* Dark mode adjustments */
