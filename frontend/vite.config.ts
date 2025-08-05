@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   // Determine API target based on environment
   const apiTarget = env.PUBLIC_API_URL
     ? env.PUBLIC_API_URL.replace('/api/v1', '')
-    : 'http://localhost:4000';
+    : 'http://localhost:3000';
 
   console.log(`[Vite] Mode: ${mode}, API Target: ${apiTarget}`);
 
