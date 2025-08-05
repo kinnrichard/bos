@@ -348,6 +348,15 @@ module Frontapp
         page_token = page[:next_token]
       end
     end
+
+    # Add get_conversation method if it doesn't exist
+    unless method_defined?(:get_conversation)
+      def get_conversation(conversation_id)
+        response = @headers.get("#{base_url}conversations/#{conversation_id}")
+        raise Error.from_response(response) unless response.status.success?
+        response.parse
+      end
+    end
   end
 end
 
