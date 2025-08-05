@@ -9,7 +9,7 @@
  * import { ReactiveFrontConversationTag as FrontConversationTag } from './reactive-front-conversation-tag';
  * ```
  *
- * Generated: 2025-08-04 22:23:45 UTC
+ * Generated: 2025-08-04 23:22:06 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

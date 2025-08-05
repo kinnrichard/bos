@@ -101,6 +101,18 @@ module Zero
           report_execution_start
           setup_output_directories
 
+          # Ensure Rails models are loaded for proper singularization
+          # Load models manually to avoid eager_load issues
+          if defined?(Rails)
+            Dir[Rails.root.join("app/models/**/*.rb")].each do |file|
+              begin
+                require_dependency file
+              rescue LoadError, NameError
+                # Skip files that can't be loaded
+              end
+            end
+          end
+
           # Phase 2: Schema Extraction and Filtering
           schema_data = extract_and_filter_schema
 
@@ -128,7 +140,9 @@ module Zero
       # @param schema_data [Hash] Complete schema data for relationships
       # @return [Hash] Model generation result for this table
       def generate_model_set(table, schema_data)
-        model_name = table[:name].singularize
+        # Find the Rails model for this table to get proper singular name
+        rails_model = ApplicationRecord.descendants.find { |m| m.table_name == table[:name] }
+        model_name = rails_model ? rails_model.name.underscore : table[:name].singularize
         class_name = model_name.camelize
         kebab_name = model_name.underscore.dasherize
 

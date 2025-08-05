@@ -1,5 +1,5 @@
 /**
- * FrontConversationInboxData - TypeScript interface for front_conversation_inboxes table
+ * ClientFrontConversationData - TypeScript interface for clients_front_conversations table
  *
  * Generated from Rails schema: 2025-08-04 23:22:06 UTC
  *
@@ -10,32 +10,32 @@
 import type { BaseRecord } from '../base/types';
 
 /**
- * Complete FrontConversationInbox record interface
+ * Complete ClientFrontConversation record interface
  * Matches the database schema exactly with optional relationships
  */
-export interface FrontConversationInboxData extends BaseRecord {
+export interface ClientFrontConversationData extends BaseRecord {
   id: string;
+  client_id: string;
   front_conversation_id: string;
-  front_inbox_id: string;
   created_at: string | number;
   updated_at: string | number;
 }
 
 /**
- * Create FrontConversationInbox data interface
+ * Create ClientFrontConversation data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateFrontConversationInboxData = Omit<
-  FrontConversationInboxData,
+export type CreateClientFrontConversationData = Omit<
+  ClientFrontConversationData,
   'id',
   'created_at',
   'updated_at'
 >;
 
 /**
- * Update FrontConversationInbox data interface
+ * Update ClientFrontConversation data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateFrontConversationInboxData = Partial<
-  Omit<FrontConversationInboxData, 'id', 'created_at', 'updated_at'>
+export type UpdateClientFrontConversationData = Partial<
+  Omit<ClientFrontConversationData, 'id', 'created_at', 'updated_at'>
 >;

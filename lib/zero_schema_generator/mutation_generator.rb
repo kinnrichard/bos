@@ -29,7 +29,16 @@ module ZeroSchemaGenerator
       end
 
       # Ensure Rails models are loaded for proper singularization
-      Rails.application.eager_load! if defined?(Rails)
+      # Load models manually to avoid eager_load issues
+      if defined?(Rails)
+        Dir[Rails.root.join("app/models/**/*.rb")].each do |file|
+          begin
+            require_dependency file
+          rescue LoadError, NameError
+            # Skip files that can't be loaded
+          end
+        end
+      end
 
       # Extract schema and patterns
       puts "🔍 Analyzing Rails schema and detecting patterns..."
