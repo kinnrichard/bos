@@ -8,6 +8,7 @@
 <script lang="ts">
   import type { FrontMessageData } from '$lib/models/types/front-message-data';
   import MessageBubble from './MessageBubble.svelte';
+  import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
   import { onMount, tick } from 'svelte';
 
   interface Props {
@@ -94,9 +95,14 @@
 
 <div class="message-list" bind:this={scrollContainer} onscroll={handleScroll}>
   {#if loading}
-    <div class="loading-indicator">
-      <div class="loading-spinner"></div>
-      <span>Loading messages...</span>
+    <div class="loading-container">
+      <LoadingIndicator
+        type="spinner"
+        size="large"
+        message="Loading messages..."
+        color="secondary"
+        center={true}
+      />
     </div>
   {:else if messages.length === 0}
     <div class="empty-state">
@@ -173,29 +179,12 @@
   }
 
   /* Loading state */
-  .loading-indicator {
+  .loading-container {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     height: 100%;
-    gap: 12px;
-    color: var(--text-secondary);
-  }
-
-  .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--bg-tertiary);
-    border-top-color: var(--accent-blue);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    padding: 40px 20px;
   }
 
   /* Empty state */
