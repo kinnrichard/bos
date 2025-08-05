@@ -440,4 +440,27 @@ const reactive = createReactiveQuery(() => query);
 debugReactive('Reactive state:', reactive.state);
 ```
 
+## Zero.js includes() Limitations and Workarounds
+
+### Client-Side Filtering Pattern for Relationship Data
+
+When working with `includes()` queries that need filtering on the included relationships, Zero.js requires a client-side filtering approach. See the [Client-Side Filtering with includes() Pattern](../patterns/client-side-filtering-with-includes.md) for a comprehensive guide.
+
+**Quick Example:**
+```typescript
+// ❌ This doesn't work with Zero.js
+const clientQuery = ReactiveClient
+  .includes('frontConversations')
+  .where('frontConversations.status_category', 'open')
+  .find(clientId);
+
+// ✅ Use client-side filtering pattern instead
+const clientQuery = ReactiveClient.includes('frontConversations').find(clientId);
+const filteredQuery = $derived.by(() => {
+  const conversations = clientQuery.data?.frontConversations || [];
+  const filtered = conversations.filter(c => c.status_category === 'open');
+  return createReactiveQueryWrapper(filtered, clientQuery);
+});
+```
+
 This migration guide provides a comprehensive path from the current verbose Zero.js patterns to the new streamlined integration layer while maintaining full compatibility with existing ReactiveRecord and ActiveRecord functionality.

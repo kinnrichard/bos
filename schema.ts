@@ -47,5 +47,9 @@ export const permissions = definePermissions(generatedSchema, () => {
     front_teammates: { row: { select: allowAll } },
     front_tickets: { row: { select: allowAll } },
     front_conversation_tickets: { row: { select: allowAll } },
+    
+    // Join tables
+    clients_front_conversations: { row: { select: allowAll } },
+    people_front_conversations: { row: { select: allowAll } },
   };
 });

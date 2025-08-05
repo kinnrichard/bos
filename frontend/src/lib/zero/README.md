@@ -303,12 +303,159 @@ const reactiveTest = createReactiveQuery(
 debugReactive('Initial state:', reactiveTest.state);
 ```
 
+## Zero.js includes() Limitations and Workarounds
+
+### Client-Side Filtering Pattern for includes() Relationships
+
+Zero.js has limitations with `includes()` queries:
+1. Cannot combine with `WHERE` clauses on included relationships
+2. Many-to-many relationships require querying through join tables
+
+#### The Problem
+
+```typescript
+// ❌ This doesn't work - can't filter included relationships
+const clientQuery = ReactiveClient
+  .includes('frontConversations')
+  .where('frontConversations.status_category', 'open')  // Won't work
+  .find(clientId);
+
+// ❌ This doesn't work - many-to-many relationships need join table
+const clientQuery = ReactiveClient.includes('frontConversations').find(clientId);
+// Error: Zero.js relationship 'frontConversations' not found in schema
+```
+
+#### Solution 1: For Direct Relationships (One-to-Many)
+
+When you have a direct relationship, use the client-side filtering pattern:
+
+```typescript
+// ✅ Client-side filtering for direct relationships
+const clientQuery = $derived(ReactiveClient.includes('people').find(clientId));
+
+const conversationsQuery = $derived.by(() => {
+  const client = clientQuery.data;
+  const conversations = client?.frontConversations || [];
+  
+  // Client-side filtering for status_category: 'open'
+  const openConversations = conversations.filter((conv) => 
+    conv.status_category === 'open'
+  );
+  
+  // Client-side sorting by waiting_since_timestamp (desc)
+  const sortedConversations = openConversations.sort((a, b) => {
+    const timeA = a.waiting_since_timestamp ? new Date(a.waiting_since_timestamp).getTime() : 0;
+    const timeB = b.waiting_since_timestamp ? new Date(b.waiting_since_timestamp).getTime() : 0;
+    return timeB - timeA; // descending order
+  });
+
+  // Return ReactiveQuery-compatible wrapper object
+  const wrapper: ReactiveQuery<FrontConversationData[]> = {
+    data: sortedConversations,
+    isLoading: clientQuery.isLoading,
+    error: clientQuery.error,
+    resultType: clientQuery.resultType,
+    isCollection: true,
+    present: sortedConversations.length > 0,
+    blank: sortedConversations.length === 0,
+    refresh: () => clientQuery.refresh(),
+    destroy: () => clientQuery.destroy(),
+    subscribe: (callback) => clientQuery.subscribe(() => {
+      callback(sortedConversations, { 
+        isLoading: clientQuery.isLoading, 
+        error: clientQuery.error 
+      });
+    })
+  };
+
+  return wrapper;
+});
+```
+
+#### Solution 2: For Many-to-Many Relationships
+
+Many-to-many relationships in Zero.js require querying through join tables:
+
+```typescript
+// ✅ Query join table first for many-to-many relationships
+// 1. Query the join table to get related IDs
+const joinTableQuery = $derived(
+  ReactiveClientsFrontConversation.where({ client_id: clientId }).all()
+);
+
+// 2. Extract the conversation IDs
+const conversationIds = $derived(
+  joinTableQuery.data?.map(record => record.front_conversation_id) || []
+);
+
+// 3. Query the target table and filter by IDs
+const conversationsQuery = $derived.by(() => {
+  // Query all open conversations
+  const allOpenQuery = ReactiveFrontConversation
+    .where({ status_category: 'open' })
+    .orderBy('waiting_since_timestamp', 'desc')
+    .all();
+
+  // Filter for only this client's conversations
+  const clientConversations = allOpenQuery.data?.filter(conv => 
+    conversationIds.includes(conv.id)
+  ) || [];
+
+  // Return ReactiveQuery wrapper
+  return {
+    data: clientConversations,
+    isLoading: joinTableQuery.isLoading || allOpenQuery.isLoading,
+    error: joinTableQuery.error || allOpenQuery.error,
+    // ... other ReactiveQuery properties
+  };
+});
+```
+
+#### When to Use This Pattern
+
+1. **Filtering included relationships**: When you need to filter data from `includes()` queries
+2. **Sorting included relationships**: When you need custom sorting on related data
+3. **Component compatibility**: When existing components expect ReactiveQuery interface
+4. **Real-time updates**: When you need the benefits of reactive queries with custom filtering
+
+#### Performance Considerations
+
+- **Memory usage**: Client-side filtering loads all related records into memory
+- **Network efficiency**: Reduces server round-trips compared to separate queries
+- **Reactivity**: Maintains real-time updates while providing custom filtering
+- **Best for**: Small to medium-sized relationship datasets (< 1000 records)
+
+#### Alternative Approaches
+
+For large datasets or complex filtering requirements, consider:
+
+```typescript
+// Alternative 1: Separate query for filtered results
+const openConversationsQuery = ReactiveFrontConversation
+  .where('client_id', clientId)
+  .where('status_category', 'open')
+  .orderBy('waiting_since_timestamp', 'desc')
+  .all();
+
+// Alternative 2: Server-side API endpoint with custom filtering
+const conversationsQuery = createReactiveQuery(
+  () => executeQuery(
+    (client) => client.query.frontConversations
+      .where('client_id', clientId)
+      .where('status_category', 'open')
+      .orderBy('waiting_since_timestamp', 'desc')
+      .run()
+  )
+);
+```
+
 ## Next Steps
 
 1. **Review Integration**: Test the new integration layer with existing patterns
 2. **Gradual Migration**: Start using new patterns for new development
 3. **Performance Testing**: Monitor query performance and memory usage
 4. **Team Training**: Familiarize team with new patterns and benefits
+5. **Document Patterns**: Add client-side filtering patterns to team knowledge base
 
 This integration layer provides a solid foundation for Epic-008 while maintaining full compatibility with existing ReactiveRecord and ActiveRecord functionality.
 
