@@ -7,6 +7,7 @@
 
 <script lang="ts">
   import ConversationsListView from '$lib/components/conversations/ConversationsListView.svelte';
+  import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import { ReactiveFrontConversation } from '$lib/models/reactive-front-conversation';
   import type { FrontConversationData } from '$lib/models/types/front-conversation-data';
 
@@ -29,15 +30,17 @@
   <title>Conversations - FAULTLESS</title>
 </svelte:head>
 
-<ConversationsListView
-  query={conversationsQuery}
-  displayFilter={filterOpenConversations}
-  title="All Conversations"
-  showClient={true}
-  emptyMessage="No open conversations found"
-  emptyIcon="💬"
-  noResultsMessage="No conversations match your criteria"
-  noResultsDescription="All conversations may be closed or archived."
-  noResultsIcon="🔍"
-  strategy="progressive"
-/>
+<AppLayout>
+  <ConversationsListView
+    query={conversationsQuery}
+    displayFilter={filterOpenConversations}
+    title="All Conversations"
+    showClient={true}
+    emptyMessage="No open conversations found"
+    emptyIcon="💬"
+    noResultsMessage="No conversations match your criteria"
+    noResultsDescription="All conversations may be closed or archived."
+    noResultsIcon="🔍"
+    strategy="progressive"
+  />
+</AppLayout>

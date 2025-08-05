@@ -13,7 +13,6 @@
   import ReactiveView from '$lib/reactive/ReactiveView.svelte';
   import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
   import ConversationCard from '$lib/components/conversations/ConversationCard.svelte';
-  import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import {
     groupConversationsByMonth,
     shouldUseCompactMode,
@@ -91,73 +90,71 @@
   }: Props = $props();
 </script>
 
-<AppLayout>
-  <div class="conversations-page">
-    {#if title}
-      <div class="page-header">
-        <h1>{title}</h1>
-        {#if headerContent}
-          {@render headerContent()}
-        {/if}
-      </div>
-    {/if}
-
-    <div class="conversations-content">
-      <ReactiveView {query} {strategy}>
-        {#snippet loading()}
-          <LoadingSkeleton type="conversation-card" count={6} />
-        {/snippet}
-
-        {#snippet error({ error, refresh })}
-          <div class="error-state">
-            <h2>Unable to load conversations</h2>
-            <p>{error.message}</p>
-            <button onclick={refresh} class="retry-button">Retry</button>
-          </div>
-        {/snippet}
-
-        {#snippet empty()}
-          <div class="empty-state">
-            <div class="empty-state-icon">{emptyIcon}</div>
-            <h2>{emptyMessage}</h2>
-          </div>
-        {/snippet}
-
-        {#snippet content({ data })}
-          {@const filteredConversations = displayFilter(data)}
-          {@const monthSections = groupConversationsByMonth(filteredConversations)}
-          {@const isCompactMode = shouldUseCompactMode(filteredConversations)}
-
-          {#if filteredConversations.length === 0}
-            <div class="empty-state">
-              <div class="empty-state-icon">{noResultsIcon}</div>
-              <h2>{noResultsMessage}</h2>
-              {#if noResultsDescription}
-                <p>{noResultsDescription}</p>
-              {/if}
-            </div>
-          {:else}
-            <div class="conversations-list" class:compact-mode={isCompactMode}>
-              {#each monthSections as section (section.key)}
-                <div class="month-section">
-                  <div class="section-header">
-                    <h3 class="section-title">{section.title}</h3>
-                    <span class="section-count">{section.conversations.length}</span>
-                  </div>
-                  <div class="section-conversations">
-                    {#each section.conversations as conversation (conversation.id)}
-                      <ConversationCard {conversation} />
-                    {/each}
-                  </div>
-                </div>
-              {/each}
-            </div>
-          {/if}
-        {/snippet}
-      </ReactiveView>
+<div class="conversations-page">
+  {#if title}
+    <div class="page-header">
+      <h1>{title}</h1>
+      {#if headerContent}
+        {@render headerContent()}
+      {/if}
     </div>
+  {/if}
+
+  <div class="conversations-content">
+    <ReactiveView {query} {strategy}>
+      {#snippet loading()}
+        <LoadingSkeleton type="conversation-card" count={6} />
+      {/snippet}
+
+      {#snippet error({ error, refresh })}
+        <div class="error-state">
+          <h2>Unable to load conversations</h2>
+          <p>{error.message}</p>
+          <button onclick={refresh} class="retry-button">Retry</button>
+        </div>
+      {/snippet}
+
+      {#snippet empty()}
+        <div class="empty-state">
+          <div class="empty-state-icon">{emptyIcon}</div>
+          <h2>{emptyMessage}</h2>
+        </div>
+      {/snippet}
+
+      {#snippet content({ data })}
+        {@const filteredConversations = displayFilter(data)}
+        {@const monthSections = groupConversationsByMonth(filteredConversations)}
+        {@const isCompactMode = shouldUseCompactMode(filteredConversations)}
+
+        {#if filteredConversations.length === 0}
+          <div class="empty-state">
+            <div class="empty-state-icon">{noResultsIcon}</div>
+            <h2>{noResultsMessage}</h2>
+            {#if noResultsDescription}
+              <p>{noResultsDescription}</p>
+            {/if}
+          </div>
+        {:else}
+          <div class="conversations-list" class:compact-mode={isCompactMode}>
+            {#each monthSections as section (section.key)}
+              <div class="month-section">
+                <div class="section-header">
+                  <h3 class="section-title">{section.title}</h3>
+                  <span class="section-count">{section.conversations.length}</span>
+                </div>
+                <div class="section-conversations">
+                  {#each section.conversations as conversation (conversation.id)}
+                    <ConversationCard {conversation} />
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      {/snippet}
+    </ReactiveView>
   </div>
-</AppLayout>
+</div>
 
 <style>
   .conversations-page {

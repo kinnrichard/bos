@@ -10,6 +10,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import ConversationsListView from '$lib/components/conversations/ConversationsListView.svelte';
+  import AppLayout from '$lib/components/layout/AppLayout.svelte';
   import { ReactiveClient } from '$lib/models/reactive-client';
   import { ReactiveClientFrontConversation } from '$lib/models/reactive-client-front-conversation';
   import { ReactiveFrontConversation } from '$lib/models/reactive-front-conversation';
@@ -71,37 +72,39 @@
   <title>{pageTitle} - FAULTLESS</title>
 </svelte:head>
 
-{#if clientNotFound}
-  <div class="error-state">
-    <div class="error-content">
-      <span class="error-icon">❌</span>
-      <h2>Client Not Found</h2>
-      <p>The client with ID "{clientId}" could not be found.</p>
-      <p>It may have been deleted or you may not have permission to view it.</p>
+<AppLayout currentClient={clientQuery.data}>
+  {#if clientNotFound}
+    <div class="error-state">
+      <div class="error-content">
+        <span class="error-icon">❌</span>
+        <h2>Client Not Found</h2>
+        <p>The client with ID "{clientId}" could not be found.</p>
+        <p>It may have been deleted or you may not have permission to view it.</p>
+      </div>
     </div>
-  </div>
-{:else if clientQuery.error}
-  <div class="error-state">
-    <div class="error-content">
-      <span class="error-icon">⚠️</span>
-      <h2>Error Loading Client</h2>
-      <p>There was an error loading the client: {clientQuery.error.message}</p>
-      <button onclick={() => clientQuery.refresh()} class="retry-button"> Try Again </button>
+  {:else if clientQuery.error}
+    <div class="error-state">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <h2>Error Loading Client</h2>
+        <p>There was an error loading the client: {clientQuery.error.message}</p>
+        <button onclick={() => clientQuery.refresh()} class="retry-button"> Try Again </button>
+      </div>
     </div>
-  </div>
-{:else}
-  <ConversationsListView
-    query={conversationsQuery}
-    displayFilter={filterClientConversations}
-    title="{clientName} Conversations"
-    emptyMessage="No open conversations found for this client"
-    emptyIcon="💬"
-    noResultsMessage="No open conversations match your criteria"
-    noResultsDescription="This client may not have any open conversations at the moment."
-    noResultsIcon="🔍"
-    strategy="progressive"
-  />
-{/if}
+  {:else}
+    <ConversationsListView
+      query={conversationsQuery}
+      displayFilter={filterClientConversations}
+      title="{clientName} Conversations"
+      emptyMessage="No open conversations found for this client"
+      emptyIcon="💬"
+      noResultsMessage="No open conversations match your criteria"
+      noResultsDescription="This client may not have any open conversations at the moment."
+      noResultsIcon="🔍"
+      strategy="progressive"
+    />
+  {/if}
+</AppLayout>
 
 <style>
   .error-state {
