@@ -9,7 +9,7 @@
  * import { FrontTag } from './front-tag';
  * ```
  *
- * Generated: 2025-08-05 00:17:13 UTC
+ * Generated: 2025-08-05 01:17:52 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';

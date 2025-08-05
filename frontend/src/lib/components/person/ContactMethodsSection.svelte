@@ -6,10 +6,20 @@
 
   interface Props {
     mode?: 'create' | 'edit' | 'view';
-    contactMethods?: Array<{ id?: string; value: string; normalized?: NormalizedContact | null }>;
+    contactMethods?: Array<{
+      id?: string;
+      value: string;
+      contact_type?: 'phone' | 'email' | 'address';
+      normalized?: NormalizedContact | null;
+    }>;
     onContactMethodsChange?:
       | ((
-          methods: Array<{ id?: string; value: string; normalized?: NormalizedContact | null }>
+          methods: Array<{
+            id?: string;
+            value: string;
+            contact_type?: 'phone' | 'email' | 'address';
+            normalized?: NormalizedContact | null;
+          }>
         ) => void)
       | undefined;
     dynamicWidthConfig?: DynamicWidthConfig | undefined;

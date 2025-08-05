@@ -9,7 +9,7 @@
   import type { CreatePersonData, UpdatePersonData } from '$lib/models/types/person-data';
   import type { PersonData } from '$lib/models/types/person-data';
   import type { NormalizedContact } from '$lib/utils/shared/contactNormalizer';
-  import { normalizeContact } from '$lib/utils/shared/contactNormalizer';
+  import { normalizeContact } from '$lib/utils/contactNormalizer';
   import {
     initializeInputWidths,
     cleanupMeasuringSpan,
@@ -66,6 +66,7 @@
   interface TempContactMethod {
     id?: string; // Optional - new records don't have IDs
     value: string;
+    contact_type?: 'phone' | 'email' | 'address'; // Store original type
     normalized?: NormalizedContact | null;
   }
 
@@ -122,6 +123,7 @@
         newContactMethods = person.contactMethods.map((cm) => ({
           id: cm.id,
           value: cm.value,
+          contact_type: cm.contact_type, // Preserve original type
           normalized: cm.contact_type
             ? {
                 contact_type: cm.contact_type as any,
@@ -153,6 +155,7 @@
         newContactMethods = person.contactMethods.map((cm) => ({
           id: cm.id,
           value: cm.value,
+          contact_type: cm.contact_type, // Preserve original type
           normalized: cm.contact_type
             ? {
                 contact_type: cm.contact_type as any,
@@ -202,6 +205,7 @@
       return;
     }
 
+    console.log('[PersonForm] Save clicked, mode:', mode);
     try {
       if (mode === 'create') {
         await handleCreate();
@@ -209,6 +213,7 @@
         await handleUpdate();
       }
     } catch (err) {
+      console.error('[PersonForm] Save error:', err);
       error = (err as Error).message || 'Failed to save person. Please try again.';
     }
   }
@@ -263,20 +268,31 @@
 
   // Handle update
   async function handleUpdate() {
+    console.log('[PersonForm] handleUpdate called');
+    console.log('[PersonForm] Current contactMethods:', contactMethods);
     if (!person) return;
 
     const updateData: UpdatePersonData = {
       name: formData.name.trim(),
-      name_preferred: formData.namePreferred.trim() || undefined,
-      name_pronunciation_hint: formData.namePronunciationHint.trim() || undefined,
-      title: formData.title.trim() || undefined,
+      name_preferred: formData.namePreferred.trim(),
+      name_pronunciation_hint: formData.namePronunciationHint.trim(),
+      title: formData.title.trim(),
       is_active: formData.isActive,
     };
 
-    const updatedPerson = await Person.update(person.id, updateData);
+    let updatedPerson;
+    try {
+      updatedPerson = await Person.update(person.id, updateData);
+      console.log('[PersonForm] Person update succeeded');
+    } catch (personError) {
+      console.error('[PersonForm] Person update failed:', personError);
+      throw personError;
+    }
 
     // Handle contact methods
+    console.log('[PersonForm] About to handle contact methods');
     const validContactMethods = contactMethods.filter((cm) => cm.value.trim() || cm.id);
+    console.log('[PersonForm] Valid contact methods after filter:', validContactMethods);
 
     // Delete removed contact methods
     if (person.contactMethods) {
@@ -288,23 +304,48 @@
     }
 
     // Update or create contact methods
+    console.log(
+      '[PersonForm] Starting contact method updates, validContactMethods:',
+      validContactMethods
+    );
     const updatedContactMethods = [];
     for (const cm of validContactMethods) {
+      console.log('[PersonForm] Processing contact method:', cm);
       if (cm.value.trim()) {
         const normalized = cm.normalized || normalizeContact(cm.value);
+        console.log('[PersonForm] Normalized result:', normalized);
         if (cm.id) {
           // Update existing
-          const updated = await ContactMethod.update(cm.id, {
-            contact_type: normalized?.contact_type,
+          const updatePayload = {
+            contact_type: normalized?.contact_type || cm.contact_type || 'address', // Preserve existing type or default to address
             value: cm.value.trim(),
             normalized_value: normalized?.normalized_value || cm.value.trim(),
+          };
+
+          console.log('[PersonForm] Contact method update payload:', {
+            id: cm.id,
+            payload: updatePayload,
+            normalized,
+            originalContactType: cm.contact_type,
           });
-          updatedContactMethods.push(updated);
+
+          try {
+            const updated = await ContactMethod.update(cm.id, updatePayload);
+            updatedContactMethods.push(updated);
+          } catch (error) {
+            console.error('[PersonForm] Contact method update failed:', {
+              error,
+              id: cm.id,
+              payload: updatePayload,
+              errorMessage: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+          }
         } else {
           // Create new
           const created = await ContactMethod.create({
             person_id: person.id,
-            contact_type: normalized?.contact_type,
+            contact_type: normalized?.contact_type || 'address', // Default to address if normalization fails
             value: cm.value.trim(),
             normalized_value: normalized?.normalized_value || cm.value.trim(),
           });
