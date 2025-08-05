@@ -110,7 +110,21 @@
 
 <style>
   /* Component-specific styles will inherit from parent TaskList styles */
+  /* NEW: added display: flex to task-item-add-new to expand input box to the end when inputting; Added By Richard 08/05/2025*/
   .task-item-add-new {
+    display: flex;
+  }
+
+  .task-content {
+    flex: 1;
+    display: flex;
+  }
+
+  .task-title-input {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+    box-sizing: border-box;
   }
   
   .add-task-placeholder {
