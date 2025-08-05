@@ -12,32 +12,13 @@ class FrontSync::ConversationSyncService < FrontSyncService
       # Preload lookup caches for performance
       preload_caches
 
-      # Build query parameters
-      params = {}
-      params[:since] = since.to_i if since
-      params[:limit] = max_results if max_results
-
-      # Process conversations in batches to avoid memory issues
-      batch_count = 0
-      batch_for_bulk = []
-      batch_size = 100
-
-      fetch_all_data("conversations", params) do |conversation_data|
-        batch_for_bulk << conversation_data
-        batch_count += 1
-
-        # Process in chunks for efficiency
-        if batch_for_bulk.size >= batch_size
-          process_conversation_batch(batch_for_bulk)
-          batch_for_bulk = []
-          Rails.logger.info "Processed #{batch_count} conversations so far..."
-        end
+      if since
+        # Use Events API for incremental sync
+        sync_conversations_using_events(since: since, max_results: max_results)
+      else
+        # Full sync - get all conversations
+        sync_all_conversations(max_results: max_results)
       end
-
-      # Process remaining conversations
-      process_conversation_batch(batch_for_bulk) if batch_for_bulk.any?
-
-      Rails.logger.info "Processed #{batch_count} conversations total"
 
       duration = Time.current - start_time
       Rails.logger.info "Conversation sync completed in #{duration.round(2)}s: #{@stats[:created]} created, #{@stats[:updated]} updated, #{@stats[:failed]} failed"
@@ -47,7 +28,99 @@ class FrontSync::ConversationSyncService < FrontSyncService
     end
   end
 
+  # Sync specific conversation IDs
+  def sync_conversation_ids(conversation_ids)
+    Rails.logger.tagged("ConversationSync") do
+      Rails.logger.info "Syncing #{conversation_ids.size} specific conversations"
+
+      start_time = Time.current
+
+      # Preload lookup caches for performance
+      preload_caches
+
+      # Process each conversation ID
+      conversation_ids.each_with_index do |conversation_id, index|
+        begin
+          # Fetch conversation data from API
+          conversation_data = client.get_conversation(conversation_id)
+
+          # Sync the conversation
+          sync_conversation(conversation_data)
+
+          # Log progress
+          if (index + 1) % 100 == 0
+            Rails.logger.info "Processed #{index + 1} of #{conversation_ids.size} conversations"
+          end
+        rescue => e
+          Rails.logger.error "Failed to sync conversation #{conversation_id}: #{e.message}"
+          increment_failed("Failed to fetch conversation #{conversation_id}: #{e.message}")
+        end
+      end
+
+      duration = Time.current - start_time
+      Rails.logger.info "Synced #{conversation_ids.size} conversations in #{duration.round(2)}s"
+
+      @stats
+    end
+  end
+
   private
+
+  # Sync conversations using Events API for incremental updates
+  def sync_conversations_using_events(since:, max_results: nil)
+    Rails.logger.info "Using Events API to detect conversation changes since #{since}"
+
+    # Use the event sync service to get conversation IDs with activity
+    event_service = FrontSync::EventSyncService.new
+    result = event_service.incremental_sync(since: since)
+
+    conversation_ids = result[:conversation_ids]
+
+    if conversation_ids.empty?
+      Rails.logger.info "No conversations with activity since #{since}"
+      return
+    end
+
+    Rails.logger.info "Found #{conversation_ids.size} conversations with activity (#{result[:active_count]} active, #{result[:new_count]} new)"
+
+    # Limit the number of conversations if max_results is specified
+    if max_results && conversation_ids.size > max_results
+      conversation_ids = conversation_ids.first(max_results)
+      Rails.logger.info "Limiting to first #{max_results} conversations"
+    end
+
+    # Sync the specific conversations
+    sync_conversation_ids(conversation_ids)
+  end
+
+  # Sync all conversations (full sync)
+  def sync_all_conversations(max_results: nil)
+    # Build query parameters
+    params = {}
+    params[:limit] = max_results if max_results
+
+    # Process conversations in batches to avoid memory issues
+    batch_count = 0
+    batch_for_bulk = []
+    batch_size = 100
+
+    fetch_all_data("conversations", params) do |conversation_data|
+      batch_for_bulk << conversation_data
+      batch_count += 1
+
+      # Process in chunks for efficiency
+      if batch_for_bulk.size >= batch_size
+        process_conversation_batch(batch_for_bulk)
+        batch_for_bulk = []
+        Rails.logger.info "Processed #{batch_count} conversations so far..."
+      end
+    end
+
+    # Process remaining conversations
+    process_conversation_batch(batch_for_bulk) if batch_for_bulk.any?
+
+    Rails.logger.info "Processed #{batch_count} conversations total"
+  end
 
   # Preload all lookup data into memory for fast access
   def preload_caches

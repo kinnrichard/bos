@@ -9,24 +9,43 @@ class FrontSync::MessageSyncService < FrontSyncService
       start_time = Time.current
       log_sync_start("messages")
 
-      # Build query parameters
-      params = {}
-      params[:since] = since.to_i if since
-      params[:limit] = max_results if max_results
+      if since
+        # For incremental sync, use Events API to detect conversations with activity
+        Rails.logger.info "Using Events API to detect conversations with new messages since #{since}"
 
-      # Process messages in batches to avoid memory issues
-      batch_count = 0
-      fetch_all_data("messages", params) do |message_data|
-        sync_message(message_data)
-        batch_count += 1
+        # Use the event sync service to get conversation IDs with activity
+        event_service = FrontSync::EventSyncService.new
+        result = event_service.incremental_sync(since: since)
 
-        # Log progress every 100 records
-        if batch_count % 100 == 0
-          Rails.logger.info "Processed #{batch_count} messages so far..."
+        conversation_ids = result[:conversation_ids]
+
+        Rails.logger.info "Found #{conversation_ids.size} conversations with activity since #{since}"
+
+        if conversation_ids.any?
+          # Limit if max_results is specified
+          if max_results && conversation_ids.size > max_results
+            conversation_ids = conversation_ids.first(max_results)
+            Rails.logger.info "Limiting to first #{max_results} conversations"
+          end
+
+          sync_for_conversations(conversation_ids)
+        else
+          Rails.logger.info "No conversations with activity since #{since}, skipping message sync"
+        end
+      else
+        # For full sync, get all conversations and sync their messages
+        Rails.logger.info "Performing full message sync for all conversations"
+
+        # Get all conversation IDs
+        conversation_ids = FrontConversation.pluck(:front_id)
+
+        Rails.logger.info "Syncing messages for #{conversation_ids.size} conversations"
+
+        # Process in batches to avoid memory issues
+        conversation_ids.each_slice(100) do |batch_ids|
+          sync_for_conversations(batch_ids)
         end
       end
-
-      Rails.logger.info "Processed #{batch_count} messages total"
 
       duration = Time.current - start_time
       Rails.logger.info "Message sync completed in #{duration.round(2)}s: #{@stats[:created]} created, #{@stats[:updated]} updated, #{@stats[:failed]} failed"
