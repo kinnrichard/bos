@@ -668,6 +668,5 @@ export function cleanupReactiveQuery(key: string): void {
 export {
   type ReactiveQueryState,
   type ReactiveQueryOptions,
-  type ReactiveQuerySubscription,
-  ReactivePolymorphicQuery
+  type ReactiveQuerySubscription
 };

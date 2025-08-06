@@ -799,6 +799,5 @@ export {
   type PolymorphicCacheConfig,
   type CacheEntry,
   type CacheInvalidationEvent,
-  type CacheMetrics,
-  PolymorphicCacheKeyGenerator
+  type CacheMetrics
 };

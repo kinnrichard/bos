@@ -20,7 +20,7 @@ import type { BaseModelConfig } from '../../models/base/types';
 import type { 
   PolymorphicType
 } from './types';
-import { polymorphicTracker } from './tracker';
+import { getPolymorphicTracker } from './tracker';
 import { debugDatabase } from '../../utils/debug';
 
 /**
@@ -427,7 +427,8 @@ export class PolymorphicQueryBuilder<T extends Record<string, any>> {
     }
 
     try {
-      const config = polymorphicTracker.getConfig();
+      const tracker = getPolymorphicTracker();
+      const config = tracker.getConfig();
       const association = config?.associations[this.polymorphicType];
       if (!association) {
         return [];
@@ -451,7 +452,7 @@ export class PolymorphicQueryBuilder<T extends Record<string, any>> {
       return [];
     }
 
-    const { fields, functions, groupByTargetType, groupByFields } = this.aggregationConfig;
+    const { fields, functions, groupByTargetType } = this.aggregationConfig;
 
     if (groupByTargetType && this.polymorphicType) {
       // Group by polymorphic target type
@@ -636,10 +637,3 @@ export async function createOptimizedPolymorphicQuery<T extends Record<string, a
 
   return builder.build();
 }
-
-export {
-  type PolymorphicQueryOptions,
-  type PolymorphicJoinConfig,
-  type PolymorphicAggregationConfig,
-  type PolymorphicQueryPlan
-};

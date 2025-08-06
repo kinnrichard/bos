@@ -20,7 +20,7 @@ import type { BaseModelConfig } from '../../models/base/types';
 import type { 
   PolymorphicType
 } from './types';
-import { polymorphicTracker } from './tracker';
+// import { getPolymorphicTracker } from './tracker';
 import { debugDatabase } from '../../utils/debug';
 
 /**
@@ -617,6 +617,5 @@ export function createParseableQuery<T extends Record<string, any>>(
  */
 export {
   type PolymorphicConditions,
-  type PolymorphicEagerLoadConfig,
-  PolymorphicQuery
+  type PolymorphicEagerLoadConfig
 };
