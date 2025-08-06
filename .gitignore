@@ -62,6 +62,10 @@ log/
 .bundle
 config/master.key
 config/credentials.yml.enc
+
+# Kamal deployment secrets - NEVER commit these
+.kamal/secrets.*
+.kamal/secrets
 storage/
 public/assets/
 public/packs/
