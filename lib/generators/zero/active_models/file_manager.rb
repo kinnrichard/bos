@@ -90,19 +90,22 @@ module Zero
         # Ensure directory exists
         ensure_directory_exists(File.dirname(file_path))
 
-        # Handle formatting: batch collection or immediate processing
-        if format && should_format?(file_path) && !options[:dry_run] && @batch_config[:enabled]
-          # Collect for batch formatting - file will be written during batch processing
-          formatted_content = collect_for_batch_formatting(file_path, content, relative_path)
-          result = create_file_with_comparison(file_path, formatted_content)
-        elsif format && should_format?(file_path) && !options[:dry_run]
-          # Immediate formatting
-          content = format_with_prettier(content, relative_path)
-          result = create_file_with_comparison(file_path, content)
+        # Format new content BEFORE comparison if needed
+        formatted_content = if format && should_format?(file_path) && !options[:dry_run]
+          if @batch_config[:enabled]
+            # Collect for batch formatting and get formatted content
+            collect_and_format_for_batch(file_path, content, relative_path)
+          else
+            # Immediate formatting
+            format_with_prettier(content, relative_path)
+          end
         else
           # No formatting required
-          result = create_file_with_comparison(file_path, content)
+          content
         end
+
+        # Now do semantic comparison with already-formatted new content
+        result = create_file_with_comparison(file_path, formatted_content)
 
         update_statistics(result)
 
@@ -467,6 +470,26 @@ module Zero
       # Update operation statistics
       #
       # @param result [Symbol] Operation result
+
+      # Collect and format file for batch processing
+      # This method formats the content immediately and returns it for comparison
+      # No batch processing is needed since files are already formatted
+      #
+      # @param file_path [String] Absolute file path
+      # @param content [String] File content
+      # @param relative_path [String] Relative path for error reporting
+      # @return [String] Formatted content
+      def collect_and_format_for_batch(file_path, content, relative_path)
+        # Simply format and return the content immediately
+        # Since we're formatting BEFORE comparison, no batch processing is needed
+        formatted = format_with_prettier(content, relative_path)
+
+        # Update statistics for tracking
+        @statistics[:formatted] += 1 if formatted != content
+
+        formatted
+      end
+
       # Collect file for batch formatting with memory management
       #
       # @param file_path [String] Absolute file path
