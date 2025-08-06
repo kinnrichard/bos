@@ -8,16 +8,10 @@
  * ```typescript
  * import { ReactiveFrontInbox as FrontInbox } from './reactive-front-inbox';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  FrontInboxData,
-  CreateFrontInboxData,
-  UpdateFrontInboxData,
-} from './types/front-inbox-data';
+import type { FrontInboxData, CreateFrontInboxData, UpdateFrontInboxData } from './types/front-inbox-data';
 
 /**
  * Default values for FrontInbox creation

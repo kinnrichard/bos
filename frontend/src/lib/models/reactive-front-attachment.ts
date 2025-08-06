@@ -8,16 +8,10 @@
  * ```typescript
  * import { FrontAttachment } from './front-attachment';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type {
-  FrontAttachmentData,
-  CreateFrontAttachmentData,
-  UpdateFrontAttachmentData,
-} from './types/front-attachment-data';
+import type { FrontAttachmentData, CreateFrontAttachmentData, UpdateFrontAttachmentData } from './types/front-attachment-data';
 
 /**
  * ReactiveRecord configuration for FrontAttachment
@@ -62,12 +56,12 @@ const ReactiveFrontAttachmentConfig = {
  * const allFrontAttachmentsQuery = ReactiveFrontAttachment.all().all();
  * const activeFrontAttachmentsQuery = ReactiveFrontAttachment.kept().all();
  * const singleFrontAttachmentQuery = ReactiveFrontAttachment.find('123');
- *
+ * 
  * // With relationships
  * const front_attachmentWithRelationsQuery = ReactiveFrontAttachment
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredFrontAttachmentsQuery = ReactiveFrontAttachment
  *   .where({ status: 'active' })
@@ -76,9 +70,7 @@ const ReactiveFrontAttachmentConfig = {
  *   .all();
  * ```
  */
-export const ReactiveFrontAttachment = createReactiveRecord<FrontAttachmentData>(
-  ReactiveFrontAttachmentConfig
-);
+export const ReactiveFrontAttachment = createReactiveRecord<FrontAttachmentData>(ReactiveFrontAttachmentConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model

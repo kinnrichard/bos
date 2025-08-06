@@ -23,6 +23,12 @@ export default [
       '!.env.example',
       'vite.config.ts.timestamp-*',
       'vite.config.js.timestamp-*',
+      'tmp/**',
+      '**/__tests__/**',
+      '**/*.test.ts',
+      '**/*.test.js',
+      '**/polymorphic/__tests__/**',
+      'src/lib/zero/polymorphic/__tests__/**',
     ],
   },
 

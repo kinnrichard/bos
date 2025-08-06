@@ -8,8 +8,6 @@
  * ```typescript
  * import { ReactiveScheduledDateTimeUser as ScheduledDateTimeUser } from './reactive-scheduled-date-time-user';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

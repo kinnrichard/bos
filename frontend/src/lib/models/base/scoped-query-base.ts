@@ -72,11 +72,12 @@ export interface RelationshipMetadata {
 }
 
 /**
- * Global relationship registry for validation
+ * Global relationship registry for validation with polymorphic support
  */
 class RelationshipRegistry {
   private static instance: RelationshipRegistry;
   private registry = new Map<string, Map<string, RelationshipMetadata>>();
+  private polymorphicIntegration: any; // Lazy loaded to avoid circular dependency
 
   static getInstance(): RelationshipRegistry {
     if (!RelationshipRegistry.instance) {
@@ -93,9 +94,25 @@ class RelationshipRegistry {
     this.registry.set(tableName, relationshipMap);
   }
 
+  /**
+   * Register polymorphic relationships for a table
+   * This method integrates with the polymorphic tracking system
+   */
+  registerPolymorphicRelationships(tableName: string): void {
+    // Polymorphic integration will be initialized when available
+    this.polymorphicIntegration?.registerPolymorphicRelationships(tableName);
+  }
+
   getValidRelationships(tableName: string): string[] {
     const relationships = this.registry.get(tableName);
-    return relationships ? Array.from(relationships.keys()) : [];
+    const standardRelationships = relationships ? Array.from(relationships.keys()) : [];
+
+    // Include polymorphic relationships if integration is available
+    if (this.polymorphicIntegration) {
+      return this.polymorphicIntegration.getAllRelationships(tableName);
+    }
+
+    return standardRelationships;
   }
 
   validateRelationships(tableName: string, relationships: string[]): void {
@@ -103,17 +120,50 @@ class RelationshipRegistry {
     const invalid = relationships.filter(rel => !validRelationships.includes(rel));
     
     if (invalid.length > 0) {
-      throw RelationshipError.invalidRelationship(
-        invalid[0],
-        tableName,
-        validRelationships
-      );
+      // Check if it's a polymorphic relationship before throwing error
+      if (this.polymorphicIntegration) {
+        const polymorphicInvalid = invalid.filter(rel => 
+          !this.polymorphicIntegration.validatePolymorphicRelationship(tableName, rel)
+        );
+        
+        if (polymorphicInvalid.length > 0) {
+          throw RelationshipError.invalidRelationship(
+            polymorphicInvalid[0],
+            tableName,
+            validRelationships
+          );
+        }
+      } else {
+        throw RelationshipError.invalidRelationship(
+          invalid[0],
+          tableName,
+          validRelationships
+        );
+      }
     }
   }
 
   getRelationshipMetadata(tableName: string, relationshipName: string): RelationshipMetadata | null {
     const relationships = this.registry.get(tableName);
-    return relationships?.get(relationshipName) || null;
+    const standardMetadata = relationships?.get(relationshipName);
+    
+    if (standardMetadata) {
+      return standardMetadata;
+    }
+
+    // Check polymorphic relationships
+    if (this.polymorphicIntegration) {
+      return this.polymorphicIntegration.getPolymorphicMetadata(tableName, relationshipName);
+    }
+
+    return null;
+  }
+
+  /**
+   * Get all registered table names (including polymorphic)
+   */
+  getAllRegisteredTables(): string[] {
+    return Array.from(this.registry.keys());
   }
 }
 

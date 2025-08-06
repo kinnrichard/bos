@@ -8,16 +8,10 @@
  * ```typescript
  * import { ReactiveFrontMessage as FrontMessage } from './reactive-front-message';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  FrontMessageData,
-  CreateFrontMessageData,
-  UpdateFrontMessageData,
-} from './types/front-message-data';
+import type { FrontMessageData, CreateFrontMessageData, UpdateFrontMessageData } from './types/front-message-data';
 
 /**
  * Default values for FrontMessage creation

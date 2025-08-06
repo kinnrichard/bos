@@ -8,8 +8,6 @@
  * ```typescript
  * import { ReactiveJobTarget as JobTarget } from './reactive-job-target';
  * ```
- *
- * Generated: 2025-08-05 22:30:27 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

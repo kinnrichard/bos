@@ -8,16 +8,10 @@
  * ```typescript
  * import { FrontInbox } from './front-inbox';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type {
-  FrontInboxData,
-  CreateFrontInboxData,
-  UpdateFrontInboxData,
-} from './types/front-inbox-data';
+import type { FrontInboxData, CreateFrontInboxData, UpdateFrontInboxData } from './types/front-inbox-data';
 
 /**
  * ReactiveRecord configuration for FrontInbox
@@ -62,12 +56,12 @@ const ReactiveFrontInboxConfig = {
  * const allFrontInboxsQuery = ReactiveFrontInbox.all().all();
  * const activeFrontInboxsQuery = ReactiveFrontInbox.kept().all();
  * const singleFrontInboxQuery = ReactiveFrontInbox.find('123');
- *
+ * 
  * // With relationships
  * const front_inboxWithRelationsQuery = ReactiveFrontInbox
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredFrontInboxsQuery = ReactiveFrontInbox
  *   .where({ status: 'active' })

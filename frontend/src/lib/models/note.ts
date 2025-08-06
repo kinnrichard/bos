@@ -8,8 +8,6 @@
  * ```typescript
  * import { ReactiveNote as Note } from './reactive-note';
  * ```
- *
- * Generated: 2025-08-05 22:30:27 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

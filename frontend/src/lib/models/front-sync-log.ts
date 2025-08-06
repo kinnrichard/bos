@@ -8,16 +8,10 @@
  * ```typescript
  * import { ReactiveFrontSyncLog as FrontSyncLog } from './reactive-front-sync-log';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  FrontSyncLogData,
-  CreateFrontSyncLogData,
-  UpdateFrontSyncLogData,
-} from './types/front-sync-log-data';
+import type { FrontSyncLogData, CreateFrontSyncLogData, UpdateFrontSyncLogData } from './types/front-sync-log-data';
 
 /**
  * Default values for FrontSyncLog creation

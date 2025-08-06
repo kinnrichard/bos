@@ -8,8 +8,6 @@
  * ```typescript
  * import { ReactiveContactMethod as ContactMethod } from './reactive-contact-method';
  * ```
- *
- * Generated: 2025-08-05 22:30:27 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

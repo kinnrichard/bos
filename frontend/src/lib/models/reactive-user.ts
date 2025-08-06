@@ -8,8 +8,6 @@
  * ```typescript
  * import { User } from './user';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
@@ -59,12 +57,12 @@ const ReactiveUserConfig = {
  * const allUsersQuery = ReactiveUser.all().all();
  * const activeUsersQuery = ReactiveUser.kept().all();
  * const singleUserQuery = ReactiveUser.find('123');
- *
+ * 
  * // With relationships
  * const userWithRelationsQuery = ReactiveUser
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredUsersQuery = ReactiveUser
  *   .where({ status: 'active' })

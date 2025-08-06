@@ -8,16 +8,10 @@
  * ```typescript
  * import { FrontMessage } from './front-message';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type {
-  FrontMessageData,
-  CreateFrontMessageData,
-  UpdateFrontMessageData,
-} from './types/front-message-data';
+import type { FrontMessageData, CreateFrontMessageData, UpdateFrontMessageData } from './types/front-message-data';
 
 /**
  * ReactiveRecord configuration for FrontMessage
@@ -62,12 +56,12 @@ const ReactiveFrontMessageConfig = {
  * const allFrontMessagesQuery = ReactiveFrontMessage.all().all();
  * const activeFrontMessagesQuery = ReactiveFrontMessage.kept().all();
  * const singleFrontMessageQuery = ReactiveFrontMessage.find('123');
- *
+ * 
  * // With relationships
  * const front_messageWithRelationsQuery = ReactiveFrontMessage
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredFrontMessagesQuery = ReactiveFrontMessage
  *   .where({ status: 'active' })
@@ -76,9 +70,7 @@ const ReactiveFrontMessageConfig = {
  *   .all();
  * ```
  */
-export const ReactiveFrontMessage = createReactiveRecord<FrontMessageData>(
-  ReactiveFrontMessageConfig
-);
+export const ReactiveFrontMessage = createReactiveRecord<FrontMessageData>(ReactiveFrontMessageConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model

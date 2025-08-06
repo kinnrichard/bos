@@ -8,8 +8,6 @@
  * ```typescript
  * import { ReactiveTask as Task } from './reactive-task';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

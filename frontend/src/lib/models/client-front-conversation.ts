@@ -8,8 +8,6 @@
  * ```typescript
  * import { ReactiveClientFrontConversation as ClientFrontConversation } from './reactive-client-front-conversation';
  * ```
- *
- * Generated: 2025-08-05 16:51:27 UTC
  */
 
 import { createActiveRecord } from './base/active-record';

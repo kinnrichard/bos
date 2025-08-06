@@ -8,8 +8,6 @@
  * ```typescript
  * import { FrontConversationTicket } from './front-conversation-ticket';
  * ```
- *
- * Generated: 2025-08-05 16:51:27 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';

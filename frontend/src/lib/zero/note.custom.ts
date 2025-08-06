@@ -7,7 +7,7 @@
 // 📚 Docs: https://zero.rocicorp.dev/docs/mutations
 
 
-import { getZero } from './zero-client';
+// import { getZero } from './zero-client';
 
 // Custom mutations for notes
 // Add your custom business logic here

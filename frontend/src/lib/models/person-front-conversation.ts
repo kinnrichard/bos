@@ -8,16 +8,10 @@
  * ```typescript
  * import { ReactivePersonFrontConversation as PersonFrontConversation } from './reactive-person-front-conversation';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  PersonFrontConversationData,
-  CreatePersonFrontConversationData,
-  UpdatePersonFrontConversationData,
-} from './types/person-front-conversation-data';
+import type { PersonFrontConversationData, CreatePersonFrontConversationData, UpdatePersonFrontConversationData } from './types/person-front-conversation-data';
 
 /**
  * ActiveRecord configuration for PersonFrontConversation
@@ -57,19 +51,13 @@ const PersonFrontConversationConfig = {
  * const activePersonFrontConversations = await PersonFrontConversation.kept().all();
  * ```
  */
-export const PersonFrontConversation = createActiveRecord<PersonFrontConversationData>(
-  PersonFrontConversationConfig
-);
+export const PersonFrontConversation = createActiveRecord<PersonFrontConversationData>(PersonFrontConversationConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
 
 // Export types for convenience
-export type {
-  PersonFrontConversationData,
-  CreatePersonFrontConversationData,
-  UpdatePersonFrontConversationData,
-};
+export type { PersonFrontConversationData, CreatePersonFrontConversationData, UpdatePersonFrontConversationData };
 
 // Default export
 export default PersonFrontConversation;

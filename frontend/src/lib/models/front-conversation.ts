@@ -8,12 +8,14 @@
  * ```typescript
  * import { ReactiveFrontConversation as FrontConversation } from './reactive-front-conversation';
  * ```
- *
- * Generated: 2025-08-05 22:30:27 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { FrontConversationData, CreateFrontConversationData, UpdateFrontConversationData } from './types/front-conversation-data';
+import type {
+  FrontConversationData,
+  CreateFrontConversationData,
+  UpdateFrontConversationData,
+} from './types/front-conversation-data';
 
 /**
  * Default values for FrontConversation creation

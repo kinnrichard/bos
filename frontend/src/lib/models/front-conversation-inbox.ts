@@ -8,16 +8,10 @@
  * ```typescript
  * import { ReactiveFrontConversationInbox as FrontConversationInbox } from './reactive-front-conversation-inbox';
  * ```
- *
- * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  FrontConversationInboxData,
-  CreateFrontConversationInboxData,
-  UpdateFrontConversationInboxData,
-} from './types/front-conversation-inbox-data';
+import type { FrontConversationInboxData, CreateFrontConversationInboxData, UpdateFrontConversationInboxData } from './types/front-conversation-inbox-data';
 
 /**
  * ActiveRecord configuration for FrontConversationInbox
@@ -57,19 +51,13 @@ const FrontConversationInboxConfig = {
  * const activeFrontConversationInboxs = await FrontConversationInbox.kept().all();
  * ```
  */
-export const FrontConversationInbox = createActiveRecord<FrontConversationInboxData>(
-  FrontConversationInboxConfig
-);
+export const FrontConversationInbox = createActiveRecord<FrontConversationInboxData>(FrontConversationInboxConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
 
 // Export types for convenience
-export type {
-  FrontConversationInboxData,
-  CreateFrontConversationInboxData,
-  UpdateFrontConversationInboxData,
-};
+export type { FrontConversationInboxData, CreateFrontConversationInboxData, UpdateFrontConversationInboxData };
 
 // Default export
 export default FrontConversationInbox;
