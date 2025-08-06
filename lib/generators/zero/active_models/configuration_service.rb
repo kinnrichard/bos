@@ -2,6 +2,7 @@
 
 require "yaml"
 require "pathname"
+require_relative "../../../zero_schema_generator/rails_schema_introspector"
 
 module Zero
   module Generators
@@ -43,34 +44,9 @@ module Zero
 
       # Default configuration structure
       DEFAULT_CONFIG = {
-        # System table exclusions
-        excluded_tables: %w[
-          solid_cache_entries
-          solid_queue_jobs
-          solid_queue_blocked_executions
-          solid_queue_claimed_executions
-          solid_queue_failed_executions
-          solid_queue_paused_executions
-          solid_queue_ready_executions
-          solid_queue_recurring_executions
-          solid_queue_scheduled_executions
-          solid_queue_semaphores
-          solid_queue_processes
-          solid_queue_pauses
-          solid_queue_recurring_tasks
-          solid_cable_messages
-          good_jobs
-          good_job_batches
-          good_job_executions
-          good_job_processes
-          good_job_settings
-          refresh_tokens
-          revoked_tokens
-          unique_ids
-          ar_internal_metadata
-          schema_migrations
-          versions
-        ].freeze,
+        # System table exclusions - uses the canonical list from RailsSchemaIntrospector
+        # Additional exclusions can be added via configuration files or add_excluded_table method
+        excluded_tables: ZeroSchemaGenerator::RailsSchemaIntrospector::EXCLUDED_TABLES.dup.freeze,
 
         # Type mapping overrides
         type_overrides: {}.freeze,
