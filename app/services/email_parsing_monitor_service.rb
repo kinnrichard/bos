@@ -70,22 +70,22 @@ class EmailParsingMonitorService
   # Get queue status for parsing jobs
   # @return [Hash] Queue statistics
   def queue_status
-    return { available: false, message: "SolidQueue not available" } unless defined?(SolidQueue)
+    return { available: false, message: "GoodJob not available" } unless defined?(GoodJob)
 
     begin
       # Individual parsing jobs
-      parsing_pending = SolidQueue::Job.where(job_class_name: "EmailParseJob", status: "pending").count
-      parsing_running = SolidQueue::Job.where(job_class_name: "EmailParseJob", status: "running").count
+      parsing_pending = GoodJob::Job.where(job_class: "EmailParseJob", finished_at: nil, performed_at: nil).count
+      parsing_running = GoodJob::Job.where(job_class: "EmailParseJob", finished_at: nil).where.not(performed_at: nil).count
 
       # Batch parsing jobs
-      batch_pending = SolidQueue::Job.where(job_class_name: "FrontMessageParsingJob", status: "pending").count
-      batch_running = SolidQueue::Job.where(job_class_name: "FrontMessageParsingJob", status: "running").count
+      batch_pending = GoodJob::Job.where(job_class: "FrontMessageParsingJob", finished_at: nil, performed_at: nil).count
+      batch_running = GoodJob::Job.where(job_class: "FrontMessageParsingJob", finished_at: nil).where.not(performed_at: nil).count
 
       # Failed jobs in last 24 hours
-      parsing_failed = SolidQueue::Job.where(job_class_name: [ "EmailParseJob", "FrontMessageParsingJob" ])
-                                      .where(status: "failed")
-                                      .where("created_at > ?", 24.hours.ago)
-                                      .count
+      parsing_failed = GoodJob::Job.where(job_class: [ "EmailParseJob", "FrontMessageParsingJob" ])
+                                   .where.not(error: nil)
+                                   .where("created_at > ?", 24.hours.ago)
+                                   .count
 
       {
         available: true,
@@ -238,7 +238,7 @@ class EmailParsingMonitorService
       rails_env: Rails.env,
       timestamp: Time.current.iso8601,
       talon_parser_available: TalonEmailParser&.instance&.available?,
-      solid_queue_available: defined?(SolidQueue)
+      good_job_available: defined?(GoodJob)
     }
 
     # Add trend analysis

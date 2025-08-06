@@ -98,22 +98,22 @@ class FrontSyncSchedulerJob < ApplicationJob
 
   # Check if a job is already queued for this resource/sync type
   def job_already_queued?(resource_type, sync_type)
-    # For Solid Queue, check the jobs table
-    if defined?(SolidQueue)
-      check_solid_queue_jobs(resource_type, sync_type)
+    # For GoodJob, check the jobs table
+    if defined?(GoodJob)
+      check_good_job_jobs(resource_type, sync_type)
     else
       # For other adapters, we can't easily check pending jobs
       false
     end
   end
 
-  # Check Solid Queue for existing jobs
-  def check_solid_queue_jobs(resource_type, sync_type)
-    SolidQueue::Job.where(
-      job_class_name: "FrontSyncJob",
-      status: [ "pending", "running" ]
+  # Check GoodJob for existing jobs
+  def check_good_job_jobs(resource_type, sync_type)
+    GoodJob::Job.where(
+      job_class: "FrontSyncJob",
+      finished_at: nil
     ).any? do |job|
-      args = job.arguments
+      args = job.serialized_params.dig("arguments")
       args&.first == resource_type && args&.second == sync_type
     end
   rescue => e
@@ -222,14 +222,14 @@ class FrontSyncSchedulerJob < ApplicationJob
     end
 
     # Cancel pending jobs if possible
-    if defined?(SolidQueue)
-      pending_jobs = SolidQueue::Job.where(
-        job_class_name: "FrontSyncJob",
-        status: "pending"
+    if defined?(GoodJob)
+      pending_jobs = GoodJob::Job.where(
+        job_class: "FrontSyncJob",
+        finished_at: nil
       )
 
-      Rails.logger.info "Cancelling #{pending_jobs.count} pending Front sync jobs"
-      pending_jobs.update_all(status: "cancelled")
+      Rails.logger.info "Discarding #{pending_jobs.count} pending Front sync jobs"
+      pending_jobs.each(&:discard_job)
     end
   end
 
