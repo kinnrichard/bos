@@ -18,6 +18,11 @@ module ZeroSchemaGenerator
       solid_queue_pauses
       solid_queue_recurring_tasks
       solid_cable_messages
+      good_jobs
+      good_job_batches
+      good_job_executions
+      good_job_processes
+      good_job_settings
       refresh_tokens
       revoked_tokens
       unique_ids
