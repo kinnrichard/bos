@@ -1,23 +1,24 @@
 /**
  * PolymorphicRegistry - Integration with RelationshipRegistry
- * 
+ *
  * Manages all polymorphic associations by integrating with the existing
  * RelationshipRegistry infrastructure. Provides centralized management
  * of polymorphic relationships and their valid target types.
- * 
+ *
  * Features:
  * - Integration with existing RelationshipRegistry
  * - Registration of polymorphic relationships
  * - Dynamic target type discovery
  * - Validation of polymorphic associations
  * - Type-safe polymorphic operations
- * 
+ *
  * Generated: 2025-08-06 Epic-008 Polymorphic Tracking
  */
 
-import { relationshipRegistry, RelationshipMetadata } from '../../models/base/scoped-query-base';
+import { relationshipRegistry } from '../../models/base/scoped-query-base';
+import type { RelationshipMetadata } from '../../models/base/scoped-query-base';
 import { PolymorphicTracker, getPolymorphicTracker } from './tracker';
-import { PolymorphicType, PolymorphicTrackingOptions } from './types';
+import type { PolymorphicType, PolymorphicTrackingOptions } from './types';
 import { debugDatabase } from '../../utils/debug';
 
 /**
@@ -68,7 +69,7 @@ export class PolymorphicRegistry {
 
     await this.tracker.initialize();
     this.initialized = true;
-    
+
     debugDatabase('PolymorphicRegistry initialized');
   }
 
@@ -86,7 +87,7 @@ export class PolymorphicRegistry {
     this.ensureInitialized();
 
     const validTargets = this.tracker.getValidTargets(polymorphicType, options);
-    
+
     const polymorphicMetadata: PolymorphicRelationshipMetadata = {
       type: 'belongsTo',
       model: 'Polymorphic',
@@ -95,12 +96,12 @@ export class PolymorphicRegistry {
       polymorphicIdField,
       polymorphicTypeField,
       validTargets,
-      foreignKey: polymorphicIdField
+      foreignKey: polymorphicIdField,
     };
 
     // Register with the existing RelationshipRegistry
     const relationships: Record<string, RelationshipMetadata> = {
-      [relationshipName]: polymorphicMetadata
+      [relationshipName]: polymorphicMetadata,
     };
 
     relationshipRegistry.register(sourceTableName, relationships);
@@ -109,7 +110,7 @@ export class PolymorphicRegistry {
       sourceTableName,
       relationshipName,
       polymorphicType,
-      validTargets: validTargets.length
+      validTargets: validTargets.length,
     });
   }
 
@@ -138,11 +139,11 @@ export class PolymorphicRegistry {
       }
 
       const relationshipName = `${polymorphicType}${targetMetadata.modelName}`;
-      
+
       relationships[relationshipName] = {
         type: 'belongsTo',
         model: targetMetadata.modelName,
-        foreignKey: polymorphicIdField
+        foreignKey: polymorphicIdField,
       };
     }
 
@@ -151,7 +152,7 @@ export class PolymorphicRegistry {
     debugDatabase('Registered polymorphic target relationships', {
       sourceTableName,
       polymorphicType,
-      relationshipCount: Object.keys(relationships).length
+      relationshipCount: Object.keys(relationships).length,
     });
   }
 
@@ -173,12 +174,14 @@ export class PolymorphicRegistry {
 
     const reverseMetadata: RelationshipMetadata = {
       type: 'hasMany',
-      model: this.capitalizeFirst(sourceTableName.replace(/_(.)/g, (_, char) => char.toUpperCase())),
-      foreignKey: polymorphicIdField
+      model: this.capitalizeFirst(
+        sourceTableName.replace(/_(.)/g, (_, char) => char.toUpperCase())
+      ),
+      foreignKey: polymorphicIdField,
     };
 
     const relationships: Record<string, RelationshipMetadata> = {
-      [reverseName]: reverseMetadata
+      [reverseName]: reverseMetadata,
     };
 
     relationshipRegistry.register(targetTableName, relationships);
@@ -187,7 +190,7 @@ export class PolymorphicRegistry {
       targetTableName,
       reverseName,
       sourceTableName,
-      polymorphicType
+      polymorphicType,
     });
   }
 
@@ -213,14 +216,19 @@ export class PolymorphicRegistry {
   /**
    * Check if a relationship is polymorphic
    */
-  isPolymorphicRelationship(metadata: RelationshipMetadata): metadata is PolymorphicRelationshipMetadata {
+  isPolymorphicRelationship(
+    metadata: RelationshipMetadata
+  ): metadata is PolymorphicRelationshipMetadata {
     return 'polymorphic' in metadata && metadata.polymorphic === true;
   }
 
   /**
    * Get valid target models for a polymorphic type
    */
-  getValidTargets(polymorphicType: PolymorphicType, options: PolymorphicTrackingOptions = {}): string[] {
+  getValidTargets(
+    polymorphicType: PolymorphicType,
+    options: PolymorphicTrackingOptions = {}
+  ): string[] {
     this.ensureInitialized();
     return this.tracker.getValidTargets(polymorphicType, options);
   }
@@ -228,7 +236,11 @@ export class PolymorphicRegistry {
   /**
    * Check if a target is valid for a polymorphic type
    */
-  isValidTarget(polymorphicType: PolymorphicType, tableName: string, options: PolymorphicTrackingOptions = {}): boolean {
+  isValidTarget(
+    polymorphicType: PolymorphicType,
+    tableName: string,
+    options: PolymorphicTrackingOptions = {}
+  ): boolean {
     this.ensureInitialized();
     return this.tracker.isValidTarget(polymorphicType, tableName, options);
   }
@@ -243,9 +255,9 @@ export class PolymorphicRegistry {
     options: PolymorphicTrackingOptions = {}
   ): Promise<void> {
     this.ensureInitialized();
-    
+
     await this.tracker.addTarget(polymorphicType, tableName, modelName, options);
-    
+
     // Update any existing registered relationships
     await this.refreshPolymorphicRelationships(polymorphicType);
   }
@@ -253,11 +265,14 @@ export class PolymorphicRegistry {
   /**
    * Remove a target from a polymorphic type
    */
-  async removePolymorphicTarget(polymorphicType: PolymorphicType, tableName: string): Promise<void> {
+  async removePolymorphicTarget(
+    polymorphicType: PolymorphicType,
+    tableName: string
+  ): Promise<void> {
     this.ensureInitialized();
-    
+
     await this.tracker.removeTarget(polymorphicType, tableName);
-    
+
     // Update any existing registered relationships
     await this.refreshPolymorphicRelationships(polymorphicType);
   }
@@ -280,7 +295,7 @@ export class PolymorphicRegistry {
 
     // This would scan all registered relationships to find polymorphic ones
     // Implementation depends on how RelationshipRegistry exposes its data
-    
+
     debugDatabase('Discovered polymorphic relationships', { count: discoveries.length });
     return discoveries;
   }
@@ -321,7 +336,9 @@ export class PolymorphicRegistry {
    */
   private ensureInitialized(): void {
     if (!this.initialized) {
-      throw new Error('PolymorphicRegistry must be initialized before use. Call initialize() first.');
+      throw new Error(
+        'PolymorphicRegistry must be initialized before use. Call initialize() first.'
+      );
     }
   }
 }
@@ -350,7 +367,7 @@ export function registerModelRelationshipsWithPolymorphic(
   relationships: Record<string, RelationshipMetadata | PolymorphicRelationshipMetadata>
 ): void {
   const registry = getPolymorphicRegistry();
-  
+
   // Separate polymorphic and regular relationships
   const regularRelationships: Record<string, RelationshipMetadata> = {};
   const polymorphicRelationships: PolymorphicRelationshipMetadata[] = [];
@@ -373,7 +390,7 @@ export function registerModelRelationshipsWithPolymorphic(
     // Additional polymorphic-specific registration logic would go here
     debugDatabase('Processing polymorphic relationship', {
       tableName,
-      polymorphicType: polyMetadata.polymorphicType
+      polymorphicType: polyMetadata.polymorphicType,
     });
   }
 }

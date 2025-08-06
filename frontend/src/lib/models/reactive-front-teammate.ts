@@ -11,7 +11,11 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { FrontTeammateData, CreateFrontTeammateData, UpdateFrontTeammateData } from './types/front-teammate-data';
+import type {
+  FrontTeammateData,
+  CreateFrontTeammateData,
+  UpdateFrontTeammateData,
+} from './types/front-teammate-data';
 
 /**
  * ReactiveRecord configuration for FrontTeammate
@@ -56,12 +60,12 @@ const ReactiveFrontTeammateConfig = {
  * const allFrontTeammatesQuery = ReactiveFrontTeammate.all().all();
  * const activeFrontTeammatesQuery = ReactiveFrontTeammate.kept().all();
  * const singleFrontTeammateQuery = ReactiveFrontTeammate.find('123');
- * 
+ *
  * // With relationships
  * const front_teammateWithRelationsQuery = ReactiveFrontTeammate
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredFrontTeammatesQuery = ReactiveFrontTeammate
  *   .where({ status: 'active' })
@@ -70,7 +74,9 @@ const ReactiveFrontTeammateConfig = {
  *   .all();
  * ```
  */
-export const ReactiveFrontTeammate = createReactiveRecord<FrontTeammateData>(ReactiveFrontTeammateConfig);
+export const ReactiveFrontTeammate = createReactiveRecord<FrontTeammateData>(
+  ReactiveFrontTeammateConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model

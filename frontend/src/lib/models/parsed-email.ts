@@ -11,7 +11,11 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { ParsedEmailData, CreateParsedEmailData, UpdateParsedEmailData } from './types/parsed-email-data';
+import type {
+  ParsedEmailData,
+  CreateParsedEmailData,
+  UpdateParsedEmailData,
+} from './types/parsed-email-data';
 
 /**
  * ActiveRecord configuration for ParsedEmail

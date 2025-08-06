@@ -11,7 +11,11 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { FrontTicketData, CreateFrontTicketData, UpdateFrontTicketData } from './types/front-ticket-data';
+import type {
+  FrontTicketData,
+  CreateFrontTicketData,
+  UpdateFrontTicketData,
+} from './types/front-ticket-data';
 
 /**
  * ReactiveRecord configuration for FrontTicket
@@ -56,12 +60,12 @@ const ReactiveFrontTicketConfig = {
  * const allFrontTicketsQuery = ReactiveFrontTicket.all().all();
  * const activeFrontTicketsQuery = ReactiveFrontTicket.kept().all();
  * const singleFrontTicketQuery = ReactiveFrontTicket.find('123');
- * 
+ *
  * // With relationships
  * const front_ticketWithRelationsQuery = ReactiveFrontTicket
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredFrontTicketsQuery = ReactiveFrontTicket
  *   .where({ status: 'active' })

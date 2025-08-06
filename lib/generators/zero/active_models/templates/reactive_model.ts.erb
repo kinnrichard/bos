@@ -11,7 +11,8 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { <%= class_name %>Data, Create<%= class_name %>Data, Update<%= class_name %>Data } from './types/<%= kebab_name %>-data';<%= relationship_import_section %>
+import type { <%= class_name %>Data, Create<%= class_name %>Data, Update<%= class_name %>Data } from './types/<%= kebab_name %>-data';<%= relationship_import_section %><% if has_polymorphic %>
+<%= polymorphic_import %><% end %>
 
 /**
  * ReactiveRecord configuration for <%= class_name %>
@@ -72,6 +73,10 @@ const Reactive<%= class_name %>Config = {
  */
 export const Reactive<%= class_name %> = createReactiveRecord<<%= class_name %>Data>(Reactive<%= class_name %>Config);
 
+<% if has_polymorphic %>
+<%= polymorphic_static_block %>
+
+<% end %>
 // Epic-009: Register model relationships for includes() functionality
 <%= relationship_registration %>
 

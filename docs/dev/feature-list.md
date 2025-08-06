@@ -59,6 +59,7 @@
 - ✅ Basic Search
 - ✅ Name normalization** with duplicate prevention
   - 💭 v2 Client side
+- 💭 Domain recognition
 - 💭 v2 Search by other attributes
 - 💭 v2 Search People inside Clients
 - 💭 v2 Date of Birth
@@ -132,7 +133,11 @@
 - 💭 Make UI text un-selectable
 - ✅ Show technician glyphs on Job list
 
-
+## Front Conversations
+- ✅ Import
+- 🚧 Background sync
+- 🚧 Link to client/person
+- 💭 Link to Job
 
 # Features for future versions
 
@@ -144,6 +149,7 @@
 - 💭 Google Workspace
 - 💭 Gmail
 - 💭 Outlook
+- 💭 Bit.ly or Short.io
 - 💭 ThreatDown
 - 💭 UniFi
 

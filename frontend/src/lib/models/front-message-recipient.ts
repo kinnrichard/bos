@@ -11,7 +11,11 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { FrontMessageRecipientData, CreateFrontMessageRecipientData, UpdateFrontMessageRecipientData } from './types/front-message-recipient-data';
+import type {
+  FrontMessageRecipientData,
+  CreateFrontMessageRecipientData,
+  UpdateFrontMessageRecipientData,
+} from './types/front-message-recipient-data';
 
 /**
  * Default values for FrontMessageRecipient creation
@@ -60,13 +64,19 @@ const FrontMessageRecipientConfig = {
  * const activeFrontMessageRecipients = await FrontMessageRecipient.kept().all();
  * ```
  */
-export const FrontMessageRecipient = createActiveRecord<FrontMessageRecipientData>(FrontMessageRecipientConfig);
+export const FrontMessageRecipient = createActiveRecord<FrontMessageRecipientData>(
+  FrontMessageRecipientConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
 
 // Export types for convenience
-export type { FrontMessageRecipientData, CreateFrontMessageRecipientData, UpdateFrontMessageRecipientData };
+export type {
+  FrontMessageRecipientData,
+  CreateFrontMessageRecipientData,
+  UpdateFrontMessageRecipientData,
+};
 
 // Default export
 export default FrontMessageRecipient;

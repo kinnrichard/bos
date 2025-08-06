@@ -11,7 +11,11 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { FrontConversationInboxData, CreateFrontConversationInboxData, UpdateFrontConversationInboxData } from './types/front-conversation-inbox-data';
+import type {
+  FrontConversationInboxData,
+  CreateFrontConversationInboxData,
+  UpdateFrontConversationInboxData,
+} from './types/front-conversation-inbox-data';
 
 /**
  * ReactiveRecord configuration for FrontConversationInbox
@@ -56,12 +60,12 @@ const ReactiveFrontConversationInboxConfig = {
  * const allFrontConversationInboxsQuery = ReactiveFrontConversationInbox.all().all();
  * const activeFrontConversationInboxsQuery = ReactiveFrontConversationInbox.kept().all();
  * const singleFrontConversationInboxQuery = ReactiveFrontConversationInbox.find('123');
- * 
+ *
  * // With relationships
  * const front_conversation_inboxWithRelationsQuery = ReactiveFrontConversationInbox
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredFrontConversationInboxsQuery = ReactiveFrontConversationInbox
  *   .where({ status: 'active' })
@@ -70,7 +74,9 @@ const ReactiveFrontConversationInboxConfig = {
  *   .all();
  * ```
  */
-export const ReactiveFrontConversationInbox = createReactiveRecord<FrontConversationInboxData>(ReactiveFrontConversationInboxConfig);
+export const ReactiveFrontConversationInbox = createReactiveRecord<FrontConversationInboxData>(
+  ReactiveFrontConversationInboxConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
@@ -90,7 +96,11 @@ export const ReactiveFrontConversationInbox = createReactiveRecord<FrontConversa
 export { ReactiveFrontConversationInbox as FrontConversationInbox };
 
 // Export types for convenience
-export type { FrontConversationInboxData, CreateFrontConversationInboxData, UpdateFrontConversationInboxData };
+export type {
+  FrontConversationInboxData,
+  CreateFrontConversationInboxData,
+  UpdateFrontConversationInboxData,
+};
 
 // Default export
 export default ReactiveFrontConversationInbox;

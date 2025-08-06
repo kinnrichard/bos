@@ -7,6 +7,7 @@ require_relative "template_renderer"
 require_relative "type_mapper"
 require_relative "relationship_processor"
 require_relative "default_value_converter"
+require_relative "polymorphic_model_analyzer"
 
 module Zero
   module Generators
@@ -63,7 +64,8 @@ module Zero
         template_renderer: [ :configuration ],
         type_mapper: [ :configuration ],
         relationship_processor: [ :schema ],
-        default_value_converter: [ :configuration ]
+        default_value_converter: [ :configuration ],
+        polymorphic_model_analyzer: []
       }.freeze
 
       # Service initialization order (topologically sorted)
@@ -74,7 +76,8 @@ module Zero
         :template_renderer,
         :type_mapper,
         :relationship_processor,
-        :default_value_converter
+        :default_value_converter,
+        :polymorphic_model_analyzer
       ].freeze
 
       attr_reader :services, :service_states, :configuration_options, :statistics
@@ -427,6 +430,8 @@ module Zero
           create_relationship_processor_factory(dependencies)
         when :default_value_converter
           create_default_value_converter(dependencies)
+        when :polymorphic_model_analyzer
+          create_polymorphic_model_analyzer(dependencies)
         else
           raise ServiceError, "Unknown service type: #{service_name}"
         end
@@ -497,6 +502,10 @@ module Zero
 
       def create_default_value_converter(dependencies)
         DefaultValueConverter.new
+      end
+
+      def create_polymorphic_model_analyzer(dependencies)
+        Zero::ActiveModels::PolymorphicModelAnalyzer.new
       end
 
       # Create a shell instance for services that need it

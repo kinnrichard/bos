@@ -17,6 +17,7 @@ import type {
   UpdateActivityLogData,
 } from './types/activity-log-data';
 import { registerModelRelationships } from './base/scoped-query-base';
+import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
  * ActiveRecord configuration for ActivityLog
@@ -57,6 +58,28 @@ const ActivityLogConfig = {
  * ```
  */
 export const ActivityLog = createActiveRecord<ActivityLogData>(ActivityLogConfig);
+
+// EP-0036: Polymorphic relationship declarations
+declarePolymorphicRelationships({
+  tableName: 'activity_logs',
+  belongsTo: {
+    loggable: {
+      typeField: 'loggable_type',
+      idField: 'loggable_id',
+      allowedTypes: [
+        'client',
+        'device',
+        'job',
+        'peoplegroup',
+        'peoplegroupmembership',
+        'person',
+        'scheduleddatetime',
+        'task',
+        'user',
+      ],
+    },
+  },
+});
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('activity_logs', {

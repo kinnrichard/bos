@@ -11,7 +11,11 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { FrontAttachmentData, CreateFrontAttachmentData, UpdateFrontAttachmentData } from './types/front-attachment-data';
+import type {
+  FrontAttachmentData,
+  CreateFrontAttachmentData,
+  UpdateFrontAttachmentData,
+} from './types/front-attachment-data';
 
 /**
  * ActiveRecord configuration for FrontAttachment

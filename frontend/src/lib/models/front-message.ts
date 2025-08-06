@@ -11,7 +11,12 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { FrontMessageData, CreateFrontMessageData, UpdateFrontMessageData } from './types/front-message-data';
+import type {
+  FrontMessageData,
+  CreateFrontMessageData,
+  UpdateFrontMessageData,
+} from './types/front-message-data';
+import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
  * Default values for FrontMessage creation
@@ -64,6 +69,18 @@ const FrontMessageConfig = {
  * ```
  */
 export const FrontMessage = createActiveRecord<FrontMessageData>(FrontMessageConfig);
+
+// EP-0036: Polymorphic relationship declarations
+declarePolymorphicRelationships({
+  tableName: 'front_messages',
+  belongsTo: {
+    author: {
+      typeField: 'author_type',
+      idField: 'author_id',
+      allowedTypes: ['frontcontact', 'frontteammate'],
+    },
+  },
+});
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model

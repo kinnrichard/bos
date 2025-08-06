@@ -11,7 +11,11 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { FrontSyncLogData, CreateFrontSyncLogData, UpdateFrontSyncLogData } from './types/front-sync-log-data';
+import type {
+  FrontSyncLogData,
+  CreateFrontSyncLogData,
+  UpdateFrontSyncLogData,
+} from './types/front-sync-log-data';
 
 /**
  * Default values for FrontSyncLog creation

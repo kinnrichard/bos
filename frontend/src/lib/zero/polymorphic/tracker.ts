@@ -1,26 +1,26 @@
 /**
  * PolymorphicTracker - Core polymorphic tracking system
- * 
+ *
  * Manages polymorphic associations by loading/saving configuration from JSON
  * and tracking discovered polymorphic types with metadata.
- * 
+ *
  * Features:
  * - JSON-based configuration storage (frontend appropriate)
  * - Dynamic type discovery and validation
  * - Integration with existing RelationshipRegistry
  * - Metadata tracking with timestamps
  * - Type-safe operations with TypeScript
- * 
+ *
  * Generated: 2025-08-06 Epic-008 Polymorphic Tracking
  */
 
-import { 
-  PolymorphicType, 
-  PolymorphicConfig, 
-  PolymorphicAssociationConfig, 
+import type {
+  PolymorphicType,
+  PolymorphicConfig,
+  PolymorphicAssociationConfig,
   PolymorphicTargetMetadata,
   PolymorphicTrackingOptions,
-  PolymorphicValidationResult
+  PolymorphicValidationResult,
 } from './types';
 import { debugDatabase } from '../../utils/debug';
 
@@ -65,7 +65,7 @@ export class PolymorphicTracker {
     this.initialized = true;
     debugDatabase('PolymorphicTracker initialized', {
       associations: Object.keys(this.config?.associations || {}).length,
-      totalTargets: this.config?.metadata.totalTargets || 0
+      totalTargets: this.config?.metadata.totalTargets || 0,
     });
   }
 
@@ -74,7 +74,7 @@ export class PolymorphicTracker {
    */
   getValidTargets(type: PolymorphicType, options: PolymorphicTrackingOptions = {}): string[] {
     this.ensureInitialized();
-    
+
     const association = this.config?.associations[type];
     if (!association) {
       debugDatabase.warn('Unknown polymorphic type', { type });
@@ -82,10 +82,10 @@ export class PolymorphicTracker {
     }
 
     const targets = Object.entries(association.validTargets);
-    
+
     // Filter inactive targets unless requested
-    const filteredTargets = options.includeInactive 
-      ? targets 
+    const filteredTargets = options.includeInactive
+      ? targets
       : targets.filter(([, metadata]) => metadata.active);
 
     return filteredTargets.map(([tableName]) => tableName);
@@ -96,7 +96,7 @@ export class PolymorphicTracker {
    */
   getTargetMetadata(type: PolymorphicType, tableName: string): PolymorphicTargetMetadata | null {
     this.ensureInitialized();
-    
+
     const association = this.config?.associations[type];
     return association?.validTargets[tableName] || null;
   }
@@ -104,9 +104,13 @@ export class PolymorphicTracker {
   /**
    * Check if a table is a valid target for a polymorphic type
    */
-  isValidTarget(type: PolymorphicType, tableName: string, options: PolymorphicTrackingOptions = {}): boolean {
+  isValidTarget(
+    type: PolymorphicType,
+    tableName: string,
+    options: PolymorphicTrackingOptions = {}
+  ): boolean {
     this.ensureInitialized();
-    
+
     const metadata = this.getTargetMetadata(type, tableName);
     if (!metadata) {
       return false;
@@ -120,13 +124,13 @@ export class PolymorphicTracker {
    * Add a new target to a polymorphic association
    */
   async addTarget(
-    type: PolymorphicType, 
-    tableName: string, 
-    modelName: string, 
+    type: PolymorphicType,
+    tableName: string,
+    modelName: string,
     options: PolymorphicTrackingOptions = {}
   ): Promise<void> {
     this.ensureInitialized();
-    
+
     if (!this.config) {
       throw new Error('PolymorphicTracker not properly initialized');
     }
@@ -143,18 +147,18 @@ export class PolymorphicTracker {
       discoveredAt: now,
       lastVerifiedAt: now,
       active: true,
-      source: options.source as any || 'manual'
+      source: (options.source as any) || 'manual',
     };
 
     this.config.associations[type].validTargets[tableName] = metadata;
     this.config.associations[type].metadata.updatedAt = now;
-    
+
     // Update global metadata
     this.config.metadata.updatedAt = now;
     this.config.metadata.totalTargets = this.calculateTotalTargets();
 
     await this.saveConfig();
-    
+
     debugDatabase('Added polymorphic target', { type, tableName, modelName });
   }
 
@@ -163,7 +167,7 @@ export class PolymorphicTracker {
    */
   async removeTarget(type: PolymorphicType, tableName: string): Promise<void> {
     this.ensureInitialized();
-    
+
     if (!this.config) {
       throw new Error('PolymorphicTracker not properly initialized');
     }
@@ -175,14 +179,14 @@ export class PolymorphicTracker {
     }
 
     delete association.validTargets[tableName];
-    
+
     const now = new Date().toISOString();
     association.metadata.updatedAt = now;
     this.config.metadata.updatedAt = now;
     this.config.metadata.totalTargets = this.calculateTotalTargets();
 
     await this.saveConfig();
-    
+
     debugDatabase('Removed polymorphic target', { type, tableName });
   }
 
@@ -191,7 +195,7 @@ export class PolymorphicTracker {
    */
   async deactivateTarget(type: PolymorphicType, tableName: string): Promise<void> {
     this.ensureInitialized();
-    
+
     if (!this.config) {
       throw new Error('PolymorphicTracker not properly initialized');
     }
@@ -210,7 +214,7 @@ export class PolymorphicTracker {
     this.config.metadata.updatedAt = now;
 
     await this.saveConfig();
-    
+
     debugDatabase('Deactivated polymorphic target', { type, tableName });
   }
 
@@ -243,7 +247,7 @@ export class PolymorphicTracker {
    */
   validate(options: PolymorphicTrackingOptions = {}): PolymorphicValidationResult {
     this.ensureInitialized();
-    
+
     const now = new Date().toISOString();
     const errors: PolymorphicValidationResult['errors'] = [];
     const warnings: PolymorphicValidationResult['warnings'] = [];
@@ -254,7 +258,7 @@ export class PolymorphicTracker {
       errors.push({
         type: 'notable' as PolymorphicType,
         message: 'PolymorphicTracker not initialized',
-        severity: 'error'
+        severity: 'error',
       });
       failedChecks++;
       totalChecked++;
@@ -262,24 +266,24 @@ export class PolymorphicTracker {
       // Validate each association
       for (const [type, association] of Object.entries(this.config.associations)) {
         totalChecked++;
-        
+
         if (Object.keys(association.validTargets).length === 0) {
           warnings.push({
             type: type as PolymorphicType,
-            message: `No valid targets defined for polymorphic type '${type}'`
+            message: `No valid targets defined for polymorphic type '${type}'`,
           });
         }
 
         // Validate each target
         for (const [tableName, metadata] of Object.entries(association.validTargets)) {
           totalChecked++;
-          
+
           if (!metadata.modelName) {
             errors.push({
               type: type as PolymorphicType,
               target: tableName,
               message: `Missing modelName for target '${tableName}'`,
-              severity: 'error'
+              severity: 'error',
             });
             failedChecks++;
           }
@@ -288,7 +292,7 @@ export class PolymorphicTracker {
             warnings.push({
               type: type as PolymorphicType,
               target: tableName,
-              message: `Target '${tableName}' is inactive`
+              message: `Target '${tableName}' is inactive`,
             });
           }
         }
@@ -296,7 +300,7 @@ export class PolymorphicTracker {
     }
 
     const passedChecks = totalChecked - failedChecks;
-    
+
     return {
       valid: errors.length === 0,
       errors,
@@ -306,8 +310,8 @@ export class PolymorphicTracker {
         validatedBy: 'PolymorphicTracker',
         totalChecked,
         passedChecks,
-        failedChecks
-      }
+        failedChecks,
+      },
     };
   }
 
@@ -320,7 +324,7 @@ export class PolymorphicTracker {
     // This would be: const configData = await fs.readFile(this.configPath, 'utf-8');
     // For frontend, we'll need to use a different approach or pre-generated config
     debugDatabase('Loading polymorphic config', { configPath: this.configPath });
-    
+
     // In the actual implementation, you would load from a JSON file
     // For now, we'll use createDefaultConfig() as fallback
     throw new Error('Config file not found - will create default');
@@ -336,14 +340,14 @@ export class PolymorphicTracker {
 
     try {
       const configData = JSON.stringify(this.config, null, 2);
-      
+
       // In a real implementation: await fs.writeFile(this.configPath, configData, 'utf-8');
       // For now, we'll log it since we're in frontend context
-      debugDatabase('Saving polymorphic config', { 
+      debugDatabase('Saving polymorphic config', {
         configPath: this.configPath,
-        associations: Object.keys(this.config.associations).length
+        associations: Object.keys(this.config.associations).length,
       });
-      
+
       // In development, you could write to a temporary location or log the config
       debugDatabase('Saving polymorphic config', { configData });
     } catch (error) {
@@ -357,14 +361,14 @@ export class PolymorphicTracker {
    */
   private createDefaultConfig(): PolymorphicConfig {
     const now = new Date().toISOString();
-    
+
     return {
       associations: {
         notable: this.createDefaultAssociation('notable'),
         loggable: this.createDefaultAssociation('loggable'),
         schedulable: this.createDefaultAssociation('schedulable'),
         target: this.createDefaultAssociation('target'),
-        parseable: this.createDefaultAssociation('parseable')
+        parseable: this.createDefaultAssociation('parseable'),
       },
       metadata: {
         createdAt: now,
@@ -372,8 +376,8 @@ export class PolymorphicTracker {
         configVersion: CONFIG_VERSION,
         totalAssociations: 5,
         totalTargets: 0,
-        generatedBy: 'PolymorphicTracker'
-      }
+        generatedBy: 'PolymorphicTracker',
+      },
     };
   }
 
@@ -382,13 +386,13 @@ export class PolymorphicTracker {
    */
   private createDefaultAssociation(type: PolymorphicType): PolymorphicAssociationConfig {
     const now = new Date().toISOString();
-    
+
     const descriptions: Record<PolymorphicType, string> = {
       notable: 'Notes can belong to jobs, tasks, and clients',
       loggable: 'Activity logs track changes to various models',
       schedulable: 'Scheduled date times can belong to jobs and tasks',
       target: 'Job targets can reference clients, people, and people groups',
-      parseable: 'Parsed emails can belong to jobs and tasks'
+      parseable: 'Parsed emails can belong to jobs and tasks',
     };
 
     return {
@@ -399,8 +403,8 @@ export class PolymorphicTracker {
         createdAt: now,
         updatedAt: now,
         configVersion: CONFIG_VERSION,
-        generatedBy: 'PolymorphicTracker'
-      }
+        generatedBy: 'PolymorphicTracker',
+      },
     };
   }
 
@@ -409,9 +413,11 @@ export class PolymorphicTracker {
    */
   private calculateTotalTargets(): number {
     if (!this.config) return 0;
-    
-    return Object.values(this.config.associations)
-      .reduce((total, association) => total + Object.keys(association.validTargets).length, 0);
+
+    return Object.values(this.config.associations).reduce(
+      (total, association) => total + Object.keys(association.validTargets).length,
+      0
+    );
   }
 
   /**
@@ -419,7 +425,9 @@ export class PolymorphicTracker {
    */
   private ensureInitialized(): void {
     if (!this.initialized) {
-      throw new Error('PolymorphicTracker must be initialized before use. Call initialize() first.');
+      throw new Error(
+        'PolymorphicTracker must be initialized before use. Call initialize() first.'
+      );
     }
   }
 }

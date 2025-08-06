@@ -16,6 +16,7 @@ import type {
   CreateJobTargetData,
   UpdateJobTargetData,
 } from './types/job-target-data';
+import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
  * ReactiveRecord configuration for JobTarget
@@ -75,6 +76,18 @@ const ReactiveJobTargetConfig = {
  * ```
  */
 export const ReactiveJobTarget = createReactiveRecord<JobTargetData>(ReactiveJobTargetConfig);
+
+// EP-0036: Polymorphic relationship declarations
+declarePolymorphicRelationships({
+  tableName: 'job_targets',
+  belongsTo: {
+    target: {
+      typeField: 'target_type',
+      idField: 'target_id',
+      allowedTypes: ['client', 'person', 'peoplegroup'],
+    },
+  },
+});
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model

@@ -11,7 +11,12 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { FrontMessageData, CreateFrontMessageData, UpdateFrontMessageData } from './types/front-message-data';
+import type {
+  FrontMessageData,
+  CreateFrontMessageData,
+  UpdateFrontMessageData,
+} from './types/front-message-data';
+import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
  * ReactiveRecord configuration for FrontMessage
@@ -56,12 +61,12 @@ const ReactiveFrontMessageConfig = {
  * const allFrontMessagesQuery = ReactiveFrontMessage.all().all();
  * const activeFrontMessagesQuery = ReactiveFrontMessage.kept().all();
  * const singleFrontMessageQuery = ReactiveFrontMessage.find('123');
- * 
+ *
  * // With relationships
  * const front_messageWithRelationsQuery = ReactiveFrontMessage
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredFrontMessagesQuery = ReactiveFrontMessage
  *   .where({ status: 'active' })
@@ -70,7 +75,21 @@ const ReactiveFrontMessageConfig = {
  *   .all();
  * ```
  */
-export const ReactiveFrontMessage = createReactiveRecord<FrontMessageData>(ReactiveFrontMessageConfig);
+export const ReactiveFrontMessage = createReactiveRecord<FrontMessageData>(
+  ReactiveFrontMessageConfig
+);
+
+// EP-0036: Polymorphic relationship declarations
+declarePolymorphicRelationships({
+  tableName: 'front_messages',
+  belongsTo: {
+    author: {
+      typeField: 'author_type',
+      idField: 'author_id',
+      allowedTypes: ['frontcontact', 'frontteammate'],
+    },
+  },
+});
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model

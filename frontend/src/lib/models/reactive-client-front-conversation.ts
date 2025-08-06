@@ -11,7 +11,11 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { ClientFrontConversationData, CreateClientFrontConversationData, UpdateClientFrontConversationData } from './types/client-front-conversation-data';
+import type {
+  ClientFrontConversationData,
+  CreateClientFrontConversationData,
+  UpdateClientFrontConversationData,
+} from './types/client-front-conversation-data';
 
 /**
  * ReactiveRecord configuration for ClientFrontConversation
@@ -56,12 +60,12 @@ const ReactiveClientFrontConversationConfig = {
  * const allClientFrontConversationsQuery = ReactiveClientFrontConversation.all().all();
  * const activeClientFrontConversationsQuery = ReactiveClientFrontConversation.kept().all();
  * const singleClientFrontConversationQuery = ReactiveClientFrontConversation.find('123');
- * 
+ *
  * // With relationships
  * const clients_front_conversationWithRelationsQuery = ReactiveClientFrontConversation
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredClientFrontConversationsQuery = ReactiveClientFrontConversation
  *   .where({ status: 'active' })
@@ -70,7 +74,9 @@ const ReactiveClientFrontConversationConfig = {
  *   .all();
  * ```
  */
-export const ReactiveClientFrontConversation = createReactiveRecord<ClientFrontConversationData>(ReactiveClientFrontConversationConfig);
+export const ReactiveClientFrontConversation = createReactiveRecord<ClientFrontConversationData>(
+  ReactiveClientFrontConversationConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
@@ -90,7 +96,11 @@ export const ReactiveClientFrontConversation = createReactiveRecord<ClientFrontC
 export { ReactiveClientFrontConversation as ClientFrontConversation };
 
 // Export types for convenience
-export type { ClientFrontConversationData, CreateClientFrontConversationData, UpdateClientFrontConversationData };
+export type {
+  ClientFrontConversationData,
+  CreateClientFrontConversationData,
+  UpdateClientFrontConversationData,
+};
 
 // Default export
 export default ReactiveClientFrontConversation;

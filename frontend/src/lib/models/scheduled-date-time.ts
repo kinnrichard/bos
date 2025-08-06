@@ -17,6 +17,7 @@ import type {
   UpdateScheduledDateTimeData,
 } from './types/scheduled-date-time-data';
 import { registerModelRelationships } from './base/scoped-query-base';
+import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
  * Default values for ScheduledDateTime creation
@@ -66,6 +67,18 @@ const ScheduledDateTimeConfig = {
  * ```
  */
 export const ScheduledDateTime = createActiveRecord<ScheduledDateTimeData>(ScheduledDateTimeConfig);
+
+// EP-0036: Polymorphic relationship declarations
+declarePolymorphicRelationships({
+  tableName: 'scheduled_date_times',
+  belongsTo: {
+    schedulable: {
+      typeField: 'schedulable_type',
+      idField: 'schedulable_id',
+      allowedTypes: ['job'],
+    },
+  },
+});
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('scheduled_date_times', {

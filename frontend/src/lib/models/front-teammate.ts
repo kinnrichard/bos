@@ -11,7 +11,11 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { FrontTeammateData, CreateFrontTeammateData, UpdateFrontTeammateData } from './types/front-teammate-data';
+import type {
+  FrontTeammateData,
+  CreateFrontTeammateData,
+  UpdateFrontTeammateData,
+} from './types/front-teammate-data';
 
 /**
  * Default values for FrontTeammate creation

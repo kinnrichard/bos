@@ -57,12 +57,12 @@ const ReactiveTaskConfig = {
  * const allTasksQuery = ReactiveTask.all().all();
  * const activeTasksQuery = ReactiveTask.kept().all();
  * const singleTaskQuery = ReactiveTask.find('123');
- * 
+ *
  * // With relationships
  * const taskWithRelationsQuery = ReactiveTask
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredTasksQuery = ReactiveTask
  *   .where({ status: 'active' })

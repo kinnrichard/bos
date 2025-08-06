@@ -11,7 +11,8 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { <%= class_name %>Data, Create<%= class_name %>Data, Update<%= class_name %>Data } from './types/<%= kebab_name %>-data';<%= relationship_import_section %>
+import type { <%= class_name %>Data, Create<%= class_name %>Data, Update<%= class_name %>Data } from './types/<%= kebab_name %>-data';<%= relationship_import_section %><% if has_polymorphic %>
+<%= polymorphic_import %><% end %>
 <% if has_defaults %>
 /**
  * Default values for <%= class_name %> creation
@@ -60,6 +61,10 @@ const <%= class_name %>Config = {
  */
 export const <%= class_name %> = createActiveRecord<<%= class_name %>Data>(<%= class_name %>Config);
 
+<% if has_polymorphic %>
+<%= polymorphic_static_block %>
+
+<% end %>
 // Epic-009: Register model relationships for includes() functionality
 <%= relationship_registration %>
 

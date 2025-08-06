@@ -13,6 +13,7 @@
 import { createReactiveRecord } from './base/reactive-record';
 import type { NoteData, CreateNoteData, UpdateNoteData } from './types/note-data';
 import { registerModelRelationships } from './base/scoped-query-base';
+import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
  * ReactiveRecord configuration for Note
@@ -72,6 +73,18 @@ const ReactiveNoteConfig = {
  * ```
  */
 export const ReactiveNote = createReactiveRecord<NoteData>(ReactiveNoteConfig);
+
+// EP-0036: Polymorphic relationship declarations
+declarePolymorphicRelationships({
+  tableName: 'notes',
+  belongsTo: {
+    notable: {
+      typeField: 'notable_type',
+      idField: 'notable_id',
+      allowedTypes: ['job', 'person', 'task'],
+    },
+  },
+});
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('notes', {

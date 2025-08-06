@@ -11,7 +11,11 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { FrontConversationTagData, CreateFrontConversationTagData, UpdateFrontConversationTagData } from './types/front-conversation-tag-data';
+import type {
+  FrontConversationTagData,
+  CreateFrontConversationTagData,
+  UpdateFrontConversationTagData,
+} from './types/front-conversation-tag-data';
 
 /**
  * ReactiveRecord configuration for FrontConversationTag
@@ -56,12 +60,12 @@ const ReactiveFrontConversationTagConfig = {
  * const allFrontConversationTagsQuery = ReactiveFrontConversationTag.all().all();
  * const activeFrontConversationTagsQuery = ReactiveFrontConversationTag.kept().all();
  * const singleFrontConversationTagQuery = ReactiveFrontConversationTag.find('123');
- * 
+ *
  * // With relationships
  * const front_conversation_tagWithRelationsQuery = ReactiveFrontConversationTag
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredFrontConversationTagsQuery = ReactiveFrontConversationTag
  *   .where({ status: 'active' })
@@ -70,7 +74,9 @@ const ReactiveFrontConversationTagConfig = {
  *   .all();
  * ```
  */
-export const ReactiveFrontConversationTag = createReactiveRecord<FrontConversationTagData>(ReactiveFrontConversationTagConfig);
+export const ReactiveFrontConversationTag = createReactiveRecord<FrontConversationTagData>(
+  ReactiveFrontConversationTagConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
@@ -90,7 +96,11 @@ export const ReactiveFrontConversationTag = createReactiveRecord<FrontConversati
 export { ReactiveFrontConversationTag as FrontConversationTag };
 
 // Export types for convenience
-export type { FrontConversationTagData, CreateFrontConversationTagData, UpdateFrontConversationTagData };
+export type {
+  FrontConversationTagData,
+  CreateFrontConversationTagData,
+  UpdateFrontConversationTagData,
+};
 
 // Default export
 export default ReactiveFrontConversationTag;

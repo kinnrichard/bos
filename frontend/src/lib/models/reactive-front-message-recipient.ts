@@ -11,7 +11,11 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { FrontMessageRecipientData, CreateFrontMessageRecipientData, UpdateFrontMessageRecipientData } from './types/front-message-recipient-data';
+import type {
+  FrontMessageRecipientData,
+  CreateFrontMessageRecipientData,
+  UpdateFrontMessageRecipientData,
+} from './types/front-message-recipient-data';
 
 /**
  * ReactiveRecord configuration for FrontMessageRecipient
@@ -56,12 +60,12 @@ const ReactiveFrontMessageRecipientConfig = {
  * const allFrontMessageRecipientsQuery = ReactiveFrontMessageRecipient.all().all();
  * const activeFrontMessageRecipientsQuery = ReactiveFrontMessageRecipient.kept().all();
  * const singleFrontMessageRecipientQuery = ReactiveFrontMessageRecipient.find('123');
- * 
+ *
  * // With relationships
  * const front_message_recipientWithRelationsQuery = ReactiveFrontMessageRecipient
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredFrontMessageRecipientsQuery = ReactiveFrontMessageRecipient
  *   .where({ status: 'active' })
@@ -70,7 +74,9 @@ const ReactiveFrontMessageRecipientConfig = {
  *   .all();
  * ```
  */
-export const ReactiveFrontMessageRecipient = createReactiveRecord<FrontMessageRecipientData>(ReactiveFrontMessageRecipientConfig);
+export const ReactiveFrontMessageRecipient = createReactiveRecord<FrontMessageRecipientData>(
+  ReactiveFrontMessageRecipientConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
@@ -90,7 +96,11 @@ export const ReactiveFrontMessageRecipient = createReactiveRecord<FrontMessageRe
 export { ReactiveFrontMessageRecipient as FrontMessageRecipient };
 
 // Export types for convenience
-export type { FrontMessageRecipientData, CreateFrontMessageRecipientData, UpdateFrontMessageRecipientData };
+export type {
+  FrontMessageRecipientData,
+  CreateFrontMessageRecipientData,
+  UpdateFrontMessageRecipientData,
+};
 
 // Default export
 export default ReactiveFrontMessageRecipient;

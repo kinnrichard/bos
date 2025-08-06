@@ -11,7 +11,11 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { PersonFrontConversationData, CreatePersonFrontConversationData, UpdatePersonFrontConversationData } from './types/person-front-conversation-data';
+import type {
+  PersonFrontConversationData,
+  CreatePersonFrontConversationData,
+  UpdatePersonFrontConversationData,
+} from './types/person-front-conversation-data';
 
 /**
  * ReactiveRecord configuration for PersonFrontConversation
@@ -56,12 +60,12 @@ const ReactivePersonFrontConversationConfig = {
  * const allPersonFrontConversationsQuery = ReactivePersonFrontConversation.all().all();
  * const activePersonFrontConversationsQuery = ReactivePersonFrontConversation.kept().all();
  * const singlePersonFrontConversationQuery = ReactivePersonFrontConversation.find('123');
- * 
+ *
  * // With relationships
  * const people_front_conversationWithRelationsQuery = ReactivePersonFrontConversation
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredPersonFrontConversationsQuery = ReactivePersonFrontConversation
  *   .where({ status: 'active' })
@@ -70,7 +74,9 @@ const ReactivePersonFrontConversationConfig = {
  *   .all();
  * ```
  */
-export const ReactivePersonFrontConversation = createReactiveRecord<PersonFrontConversationData>(ReactivePersonFrontConversationConfig);
+export const ReactivePersonFrontConversation = createReactiveRecord<PersonFrontConversationData>(
+  ReactivePersonFrontConversationConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
@@ -90,7 +96,11 @@ export const ReactivePersonFrontConversation = createReactiveRecord<PersonFrontC
 export { ReactivePersonFrontConversation as PersonFrontConversation };
 
 // Export types for convenience
-export type { PersonFrontConversationData, CreatePersonFrontConversationData, UpdatePersonFrontConversationData };
+export type {
+  PersonFrontConversationData,
+  CreatePersonFrontConversationData,
+  UpdatePersonFrontConversationData,
+};
 
 // Default export
 export default ReactivePersonFrontConversation;

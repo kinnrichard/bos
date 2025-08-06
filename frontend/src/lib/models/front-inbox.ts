@@ -11,7 +11,11 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { FrontInboxData, CreateFrontInboxData, UpdateFrontInboxData } from './types/front-inbox-data';
+import type {
+  FrontInboxData,
+  CreateFrontInboxData,
+  UpdateFrontInboxData,
+} from './types/front-inbox-data';
 
 /**
  * Default values for FrontInbox creation

@@ -11,7 +11,11 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { ParsedEmailData, CreateParsedEmailData, UpdateParsedEmailData } from './types/parsed-email-data';
+import type {
+  ParsedEmailData,
+  CreateParsedEmailData,
+  UpdateParsedEmailData,
+} from './types/parsed-email-data';
 
 /**
  * ReactiveRecord configuration for ParsedEmail
@@ -56,12 +60,12 @@ const ReactiveParsedEmailConfig = {
  * const allParsedEmailsQuery = ReactiveParsedEmail.all().all();
  * const activeParsedEmailsQuery = ReactiveParsedEmail.kept().all();
  * const singleParsedEmailQuery = ReactiveParsedEmail.find('123');
- * 
+ *
  * // With relationships
  * const parsed_emailWithRelationsQuery = ReactiveParsedEmail
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredParsedEmailsQuery = ReactiveParsedEmail
  *   .where({ status: 'active' })

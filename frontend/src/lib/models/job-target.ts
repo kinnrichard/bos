@@ -16,6 +16,7 @@ import type {
   CreateJobTargetData,
   UpdateJobTargetData,
 } from './types/job-target-data';
+import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
  * Default values for JobTarget creation
@@ -66,6 +67,18 @@ const JobTargetConfig = {
  * ```
  */
 export const JobTarget = createActiveRecord<JobTargetData>(JobTargetConfig);
+
+// EP-0036: Polymorphic relationship declarations
+declarePolymorphicRelationships({
+  tableName: 'job_targets',
+  belongsTo: {
+    target: {
+      typeField: 'target_type',
+      idField: 'target_id',
+      allowedTypes: ['client', 'person', 'peoplegroup'],
+    },
+  },
+});
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model

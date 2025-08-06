@@ -56,12 +56,12 @@ const ReactiveFrontTagConfig = {
  * const allFrontTagsQuery = ReactiveFrontTag.all().all();
  * const activeFrontTagsQuery = ReactiveFrontTag.kept().all();
  * const singleFrontTagQuery = ReactiveFrontTag.find('123');
- * 
+ *
  * // With relationships
  * const front_tagWithRelationsQuery = ReactiveFrontTag
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredFrontTagsQuery = ReactiveFrontTag
  *   .where({ status: 'active' })

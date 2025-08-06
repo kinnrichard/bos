@@ -7,6 +7,7 @@ require_relative "type_mapper"
 require_relative "file_manager"
 require_relative "template_renderer"
 require_relative "service_registry"
+require_relative "polymorphic_model_analyzer"
 
 module Zero
   module Generators
@@ -330,6 +331,7 @@ module Zero
           @service_registry.get_service(:file_manager)
           @service_registry.get_service(:template_renderer)
           @service_registry.get_service(:type_mapper)
+          @service_registry.get_service(:polymorphic_model_analyzer)
 
           @statistics[:services_initialized] = @service_registry.initialized_services.count
 
@@ -619,6 +621,15 @@ module Zero
         defaults_object = default_value_converter.generate_defaults_object(table_name, table[:columns])
         has_defaults = !defaults_object.nil?
 
+        # Get polymorphic configuration
+        polymorphic_analyzer = service_registry.get_service(:polymorphic_model_analyzer)
+        polymorphic_associations = polymorphic_analyzer.polymorphic_associations_for_table(table_name)
+        has_polymorphic = polymorphic_associations.any?
+
+        # Generate import and static block if needed
+        polymorphic_import = has_polymorphic ? "import { declarePolymorphicRelationships } from '../zero/polymorphic';" : ""
+        polymorphic_static_block = generate_polymorphic_static_block(table_name, polymorphic_associations)
+
         {
           class_name: class_name,
           table_name: table_name,
@@ -629,7 +640,10 @@ module Zero
           discard_scopes: discard_scopes,
           relationship_registration: relationship_registration,
           has_defaults: has_defaults,
-          defaults_object: defaults_object
+          defaults_object: defaults_object,
+          polymorphic_import: polymorphic_import,
+          polymorphic_static_block: polymorphic_static_block,
+          has_polymorphic: has_polymorphic
         }
       end
 
@@ -943,6 +957,76 @@ module Zero
             # Silent for testing
           end
         end.new
+      end
+
+      # Find the Rails model class for a given table name
+      def find_model_class(table_name)
+        # Try to find the Rails model that uses this table
+        ApplicationRecord.descendants.find { |model| model.table_name == table_name }
+      rescue => e
+        Rails.logger.warn "Could not find model for table #{table_name}: #{e.message}"
+        nil
+      end
+
+      # Generate convenience methods for polymorphic associations
+      def generate_polymorphic_convenience_methods(model_class, ts_class_name)
+        return "" unless model_class
+
+        methods = []
+
+        # Generate methods for has_many :as polymorphic associations
+        model_class.reflections.each do |name, reflection|
+          if reflection.macro == :has_many && reflection.options[:as]
+            polymorphic_type = reflection.options[:as]
+            target_model = reflection.class_name
+            target_table = target_model.constantize.table_name rescue name.to_s
+            method_name = name.to_s.camelize(:lower)
+
+            method_code = <<~TYPESCRIPT
+              // Convenience method for #{name} polymorphic association
+              Object.defineProperty(#{ts_class_name}.prototype, '#{method_name}', {
+                value: async function() {
+                  const { #{target_model} } = await import('./#{target_table.singularize.dasherize}');
+                  return #{target_model}.where({
+                    #{polymorphic_type}_type: '#{model_class.name}',
+                    #{polymorphic_type}_id: this.id
+                  }).all();
+                }
+              });
+            TYPESCRIPT
+
+            methods << method_code
+          end
+        end
+
+        methods.join("\n")
+      end
+
+      # Generate polymorphic static block for TypeScript model
+      def generate_polymorphic_static_block(table_name, polymorphic_associations)
+        return "" unless polymorphic_associations.any?
+
+        blocks = polymorphic_associations.map do |assoc|
+          # Convert Rails model names to lowercase for TypeScript
+          allowed_types = assoc[:allowed_types].map { |type| type.underscore.gsub("_", "") }
+
+          <<~BLOCK
+
+            // EP-0036: Polymorphic relationship declarations
+            declarePolymorphicRelationships({
+              tableName: '#{table_name}',
+              belongsTo: {
+                #{assoc[:name]}: {
+                typeField: '#{assoc[:type_field]}',
+                idField: '#{assoc[:id_field]}',
+                allowedTypes: #{allowed_types.to_json}
+              }
+              }
+            });
+          BLOCK
+        end
+
+        blocks.join("\n")
       end
     end
   end

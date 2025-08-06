@@ -11,11 +11,28 @@ module ZeroSchemaGenerator
       @type_mapper = TypeMapper.new(config)
       @output_path = config[:schema_file] || default_schema_path
       @types_path = config[:types_file] || default_types_path
+      @polymorphic_config = load_polymorphic_config(config[:polymorphic_config_path])
+      @polymorphic_collector = PolymorphicDeclarationCollector.new
     end
 
     def generate_schema(rails_schema = nil)
       puts "🔍 Analyzing Rails schema..."
       rails_schema ||= @introspector.extract_schema
+
+      puts "📋 Collecting polymorphic declarations from TypeScript models..."
+      @polymorphic_declarations = @polymorphic_collector.collect_declarations
+      if @polymorphic_declarations.any?
+        puts "  ✅ Found #{@polymorphic_declarations.size} tables with polymorphic declarations"
+        @polymorphic_declarations.each do |table, config|
+          belongs_to_count = config[:belongs_to].size
+          has_many_count = config[:has_many].size
+          if belongs_to_count > 0 || has_many_count > 0
+            puts "    - #{table}: #{belongs_to_count} belongs_to, #{has_many_count} has_many"
+          end
+        end
+      else
+        puts "  ⚠️ No polymorphic declarations found in TypeScript models"
+      end
 
       puts "🔄 Converting to Zero format..."
       zero_schema = build_zero_schema(rails_schema)
@@ -220,7 +237,7 @@ module ZeroSchemaGenerator
       belongs_to_rels.each do |rel|
         if rel[:polymorphic]
           # Handle polymorphic associations with multiple target relationships
-          polymorphic_rels = generate_polymorphic_relationships(rel, table_names)
+          polymorphic_rels = generate_polymorphic_relationships(rel, table_names, table_name)
           relationships.concat(polymorphic_rels)
           uses_one = true if polymorphic_rels.any? # Only set if relationships were actually generated
         elsif rel[:target_table] && table_names.include?(rel[:target_table])
@@ -324,19 +341,40 @@ module ZeroSchemaGenerator
       target_table_data[:columns].any? { |column| column[:name] == foreign_key }
     end
 
-    def generate_polymorphic_relationships(rel, table_names)
-      # For polymorphic associations, create separate relationships for each possible target
-      # Based on common Rails patterns: notable_type can be 'Job', 'Task', 'Client', etc.
+    def generate_polymorphic_relationships(rel, table_names, parent_table_name = nil)
+      # Collect declarations if not already done
+      @polymorphic_declarations ||= @polymorphic_collector.collect_declarations
 
-      polymorphic_targets = case rel[:name].to_s
-      when "notable"
-        %w[jobs tasks clients]
-      when "loggable"
-        %w[jobs tasks clients users people]
-      when "schedulable"
-        %w[jobs tasks]
+      table_name = parent_table_name || find_table_for_relationship(rel)
+
+      # First try to use declarations from TypeScript models
+      polymorphic_targets = if @polymorphic_declarations[table_name]
+        belongs_to = @polymorphic_declarations[table_name][:belongs_to][rel[:name].to_sym]
+        if belongs_to && belongs_to[:allowed_types]
+          # Map allowed types to table names
+          belongs_to[:allowed_types].map do |type|
+            # Convert TypeScript type names to Rails table names
+            map_type_to_table_name(type)
+          end.select { |t| table_names.include?(t) }
+        else
+          []
+        end
       else
         []
+      end
+
+      # Fallback to polymorphic config if no declarations found
+      if polymorphic_targets.empty?
+        config_key = "#{table_name}.#{rel[:name]}"
+
+        if @polymorphic_config && @polymorphic_config.dig(:polymorphic_associations, config_key)
+          # Use discovered configuration
+          polymorphic_targets = @polymorphic_config[:polymorphic_associations][config_key][:mapped_tables] || []
+        else
+          # Fallback to legacy hardcoded logic with warning
+          Rails.logger.warn "⚠️ No polymorphic configuration found for #{config_key}, using fallback logic"
+          polymorphic_targets = fallback_polymorphic_targets(rel[:name])
+        end
       end
 
       relationships = []
@@ -354,6 +392,12 @@ module ZeroSchemaGenerator
           target_table,
           singular_name.classify
         )
+      end
+
+      # Generate Polymorphic suffix model for this association
+      if relationships.any? && @config[:generate_polymorphic_models] != false
+        polymorphic_model = generate_polymorphic_model(rel, polymorphic_targets, table_names, table_name)
+        relationships << "// Polymorphic model: #{polymorphic_model[:model_name]} - see generated Polymorphic models"
       end
 
       relationships
@@ -393,6 +437,9 @@ module ZeroSchemaGenerator
         ""
       end
 
+      # Generate Polymorphic models section
+      polymorphic_models_section = generate_polymorphic_models_section
+
       schema_relationships = if relationship_names.any?
         ",\n  relationships: [\n    #{relationship_names.join(",\n    ")}\n  ]"
       else
@@ -405,7 +452,7 @@ module ZeroSchemaGenerator
 
         #{imports}
 
-        #{table_definitions.join("\n\n")}#{relationships_section}
+        #{table_definitions.join("\n\n")}#{relationships_section}#{polymorphic_models_section}
 
         // Create the complete schema
         export const schema = createSchema({
@@ -559,6 +606,119 @@ module ZeroSchemaGenerator
       end
 
       notes
+    end
+
+    def load_polymorphic_config(config_path = nil)
+      begin
+        require_relative "polymorphic_introspector"
+        PolymorphicIntrospector.load_from_yaml(config_path)
+      rescue LoadError, StandardError => e
+        Rails.logger.warn "⚠️ Could not load polymorphic configuration: #{e.message}"
+        {}
+      end
+    end
+
+    # Map TypeScript type names to database table names
+    def map_type_to_table_name(type_name)
+      # Handle special cases where simple pluralization doesn't work
+      type_to_table_mapping = {
+        "person" => "people",
+        "peoplegroup" => "people_groups",
+        "peoplegroupmembership" => "people_group_memberships",
+        "scheduleddatetime" => "scheduled_date_times",
+        "activitylog" => "activity_logs",
+        "frontcontact" => "front_contacts",
+        "frontteammate" => "front_teammates",
+        "frontconversation" => "front_conversations",
+        "frontmessage" => "front_messages"
+      }
+
+      # Check if we have a special mapping
+      return type_to_table_mapping[type_name.downcase] if type_to_table_mapping.key?(type_name.downcase)
+
+      # For compound words that Rails would normally underscore
+      # Try to inflect it as a Rails model name would be
+      type_name.downcase.gsub(/([a-z])([A-Z])/, '\1_\2').pluralize
+    end
+
+    def find_table_for_relationship(rel)
+      # Find the table name from the relationship context
+      # This assumes the relationship data includes model information
+      if rel.respond_to?(:dig) && rel[:model]
+        rel[:model].tableize
+      else
+        # Fallback: try to infer from foreign key
+        rel[:foreign_key]&.gsub(/_id$/, "")&.pluralize || "unknown"
+      end
+    end
+
+    def fallback_polymorphic_targets(association_name)
+      # Legacy hardcoded logic as fallback
+      case association_name.to_s
+      when "notable"
+        %w[jobs tasks clients]
+      when "loggable"
+        %w[jobs tasks clients users people]
+      when "schedulable"
+        %w[jobs tasks]
+      when "author"
+        %w[front_contacts front_teammates]
+      when "parseable"
+        %w[front_messages]
+      else
+        []
+      end
+    end
+
+    def generate_polymorphic_model(rel, polymorphic_targets, table_names, table_name = nil)
+      # Generate metadata for Polymorphic suffix model
+      association_name = rel[:name].to_s
+      table_name ||= find_table_for_relationship(rel)
+      model_name = "#{table_name.singularize.classify}#{association_name.classify}Polymorphic"
+
+      {
+        model_name: model_name,
+        association: association_name,
+        targets: polymorphic_targets,
+        type_column: rel[:foreign_type],
+        id_column: rel[:foreign_key]
+      }
+    end
+
+    def generate_polymorphic_models_section
+      return "" unless @polymorphic_config && @config[:generate_polymorphic_models] != false
+
+      models = []
+
+      @polymorphic_config.dig(:polymorphic_associations)&.each do |config_key, config|
+        table_name, association_name = config_key.split(".", 2)
+        model_name = "#{table_name.singularize.classify}#{association_name.classify}Polymorphic"
+
+        models << generate_polymorphic_model_definition(model_name, config)
+      end
+
+      if models.any?
+        "\n\n// Generated Polymorphic Models\n// These models use declarePolymorphicRelationships API\n\n#{models.join("\n\n")}"
+      else
+        ""
+      end
+    end
+
+    def generate_polymorphic_model_definition(model_name, config)
+      targets = config[:mapped_tables] || []
+
+      <<~TYPESCRIPT
+        // #{model_name} - Polymorphic association model
+        // Usage: import { declarePolymorphicRelationships } from '@/lib/zero/polymorphic';
+        // declarePolymorphicRelationships({
+        //   modelName: '#{model_name}',
+        //   association: '#{config[:association]}',
+        //   typeColumn: '#{config[:type_column]}',
+        //   idColumn: '#{config[:id_column]}',
+        //   targetTables: #{targets.inspect},
+        //   discoveredTypes: #{config[:discovered_types].inspect}
+        // });
+      TYPESCRIPT
     end
 
     def self.validate_schema(schema_content)

@@ -7,6 +7,8 @@ module ZeroSchemaGenerator
   autoload :Config, "zero_schema_generator/config"
   autoload :MutationConfig, "zero_schema_generator/mutation_config"
   autoload :MutationGenerator, "zero_schema_generator/mutation_generator"
+  autoload :PolymorphicIntrospector, "zero_schema_generator/polymorphic_introspector"
+  autoload :PolymorphicDeclarationCollector, "zero_schema_generator/polymorphic_declaration_collector"
 
   class << self
     def generate_schema(config_path: nil)
@@ -46,6 +48,22 @@ module ZeroSchemaGenerator
 
       config.save_to_file(output_path)
       puts "Sample mutation configuration created at #{output_path}"
+    end
+
+    def discover_polymorphic_types(output_path: nil)
+      introspector = PolymorphicIntrospector.new
+      config_data = introspector.discover_polymorphic_types
+
+      export_result = introspector.export_to_yaml(config_data, output_path)
+
+      puts introspector.generate_discovery_report(config_data)
+      puts "📝 Configuration exported to: #{export_result[:config_path]}"
+
+      {
+        config_data: config_data,
+        export_result: export_result,
+        discovered_at: Time.current
+      }
     end
 
     def validate_schema(schema_path = nil)

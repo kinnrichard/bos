@@ -11,7 +11,11 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { FrontTicketData, CreateFrontTicketData, UpdateFrontTicketData } from './types/front-ticket-data';
+import type {
+  FrontTicketData,
+  CreateFrontTicketData,
+  UpdateFrontTicketData,
+} from './types/front-ticket-data';
 
 /**
  * ActiveRecord configuration for FrontTicket

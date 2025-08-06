@@ -11,7 +11,11 @@
  */
 
 import { createActiveRecord } from './base/active-record';
-import type { FrontConversationTagData, CreateFrontConversationTagData, UpdateFrontConversationTagData } from './types/front-conversation-tag-data';
+import type {
+  FrontConversationTagData,
+  CreateFrontConversationTagData,
+  UpdateFrontConversationTagData,
+} from './types/front-conversation-tag-data';
 
 /**
  * ActiveRecord configuration for FrontConversationTag
@@ -51,13 +55,19 @@ const FrontConversationTagConfig = {
  * const activeFrontConversationTags = await FrontConversationTag.kept().all();
  * ```
  */
-export const FrontConversationTag = createActiveRecord<FrontConversationTagData>(FrontConversationTagConfig);
+export const FrontConversationTag = createActiveRecord<FrontConversationTagData>(
+  FrontConversationTagConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
 
 // Export types for convenience
-export type { FrontConversationTagData, CreateFrontConversationTagData, UpdateFrontConversationTagData };
+export type {
+  FrontConversationTagData,
+  CreateFrontConversationTagData,
+  UpdateFrontConversationTagData,
+};
 
 // Default export
 export default FrontConversationTag;

@@ -13,6 +13,7 @@
 import { createActiveRecord } from './base/active-record';
 import type { NoteData, CreateNoteData, UpdateNoteData } from './types/note-data';
 import { registerModelRelationships } from './base/scoped-query-base';
+import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
  * ActiveRecord configuration for Note
@@ -53,6 +54,18 @@ const NoteConfig = {
  * ```
  */
 export const Note = createActiveRecord<NoteData>(NoteConfig);
+
+// EP-0036: Polymorphic relationship declarations
+declarePolymorphicRelationships({
+  tableName: 'notes',
+  belongsTo: {
+    notable: {
+      typeField: 'notable_type',
+      idField: 'notable_id',
+      allowedTypes: ['job', 'person', 'task'],
+    },
+  },
+});
 
 // Epic-009: Register model relationships for includes() functionality
 registerModelRelationships('notes', {

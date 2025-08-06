@@ -1,17 +1,17 @@
 /**
  * Polymorphic Utility Functions
- * 
+ *
  * Helper utilities for common polymorphic operations:
  * - Type conversion and validation
  * - Relationship name generation
  * - Schema analysis helpers
  * - Configuration management
  * - Integration utilities
- * 
+ *
  * Generated: 2025-08-06 Epic-008 Polymorphic Tracking
  */
 
-import { PolymorphicType, PolymorphicTargetMetadata, PolymorphicConfig } from './types';
+import type { PolymorphicType, PolymorphicTargetMetadata, PolymorphicConfig } from './types';
 import { getPolymorphicTracker } from './tracker';
 // import { getPolymorphicRegistry } from './registry';
 import { debugDatabase } from '../../utils/debug';
@@ -24,7 +24,10 @@ export class RelationshipNamer {
    * Generate polymorphic relationship name
    * e.g., ('loggable', 'Job') -> 'loggableJob'
    */
-  static generatePolymorphicRelationshipName(polymorphicType: PolymorphicType, modelName: string): string {
+  static generatePolymorphicRelationshipName(
+    polymorphicType: PolymorphicType,
+    modelName: string
+  ): string {
     return `${polymorphicType}${modelName}`;
   }
 
@@ -44,21 +47,27 @@ export class RelationshipNamer {
     polymorphicType: PolymorphicType | null;
     modelName: string | null;
   } {
-    const polymorphicTypes: PolymorphicType[] = ['notable', 'loggable', 'schedulable', 'target', 'parseable'];
-    
+    const polymorphicTypes: PolymorphicType[] = [
+      'notable',
+      'loggable',
+      'schedulable',
+      'target',
+      'parseable',
+    ];
+
     for (const type of polymorphicTypes) {
       if (relationshipName.startsWith(type)) {
         const modelName = relationshipName.slice(type.length);
         return {
           polymorphicType: type,
-          modelName: modelName || null
+          modelName: modelName || null,
         };
       }
     }
 
     return {
       polymorphicType: null,
-      modelName: null
+      modelName: null,
     };
   }
 
@@ -71,7 +80,7 @@ export class RelationshipNamer {
   } {
     return {
       idField: `${polymorphicType}_id`,
-      typeField: `${polymorphicType}_type`
+      typeField: `${polymorphicType}_type`,
     };
   }
 }
@@ -87,7 +96,7 @@ export class TypeConverter {
   static tableToModelName(tableName: string): string {
     return tableName
       .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join('')
       .replace(/s$/, ''); // Remove trailing 's' for pluralization
   }
@@ -97,10 +106,12 @@ export class TypeConverter {
    * e.g., 'JobAssignment' -> 'job_assignments'
    */
   static modelToTableName(modelName: string): string {
-    return modelName
-      .replace(/([A-Z])/g, '_$1')
-      .toLowerCase()
-      .slice(1) + 's'; // Add 's' for pluralization
+    return (
+      modelName
+        .replace(/([A-Z])/g, '_$1')
+        .toLowerCase()
+        .slice(1) + 's'
+    ); // Add 's' for pluralization
   }
 
   /**
@@ -128,7 +139,13 @@ export class PolymorphicValidator {
    * Validate polymorphic type
    */
   static isValidPolymorphicType(type: string): type is PolymorphicType {
-    const validTypes: PolymorphicType[] = ['notable', 'loggable', 'schedulable', 'target', 'parseable'];
+    const validTypes: PolymorphicType[] = [
+      'notable',
+      'loggable',
+      'schedulable',
+      'target',
+      'parseable',
+    ];
     return validTypes.includes(type as PolymorphicType);
   }
 
@@ -189,7 +206,7 @@ export class PolymorphicValidator {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -215,25 +232,28 @@ export class ConfigUtils {
     source: 'generated-schema' | 'manual' | 'runtime' = 'manual'
   ): PolymorphicTargetMetadata {
     const now = new Date().toISOString();
-    
+
     return {
       modelName,
       tableName,
       discoveredAt: now,
       lastVerifiedAt: now,
       active: true,
-      source
+      source,
     };
   }
 
   /**
    * Merge polymorphic configurations
    */
-  static mergeConfigs(base: PolymorphicConfig, updates: Partial<PolymorphicConfig>): PolymorphicConfig {
+  static mergeConfigs(
+    base: PolymorphicConfig,
+    updates: Partial<PolymorphicConfig>
+  ): PolymorphicConfig {
     const merged: PolymorphicConfig = {
       ...base,
       associations: { ...base.associations },
-      metadata: { ...base.metadata }
+      metadata: { ...base.metadata },
     };
 
     if (updates.associations) {
@@ -243,8 +263,8 @@ export class ConfigUtils {
           ...association,
           validTargets: {
             ...merged.associations[type as PolymorphicType]?.validTargets,
-            ...association.validTargets
-          }
+            ...association.validTargets,
+          },
         };
       }
     }
@@ -256,8 +276,10 @@ export class ConfigUtils {
     // Update timestamps
     merged.metadata.updatedAt = new Date().toISOString();
     merged.metadata.totalAssociations = Object.keys(merged.associations).length;
-    merged.metadata.totalTargets = Object.values(merged.associations)
-      .reduce((total, assoc) => total + Object.keys(assoc.validTargets).length, 0);
+    merged.metadata.totalTargets = Object.values(merged.associations).reduce(
+      (total, assoc) => total + Object.keys(assoc.validTargets).length,
+      0
+    );
 
     return merged;
   }
@@ -279,9 +301,9 @@ export class ConfigUtils {
     for (const [type, association] of Object.entries(config.associations)) {
       const targets = Object.values(association.validTargets);
       associationBreakdown[type as PolymorphicType] = targets.length;
-      
-      activeTargets += targets.filter(t => t.active).length;
-      inactiveTargets += targets.filter(t => !t.active).length;
+
+      activeTargets += targets.filter((t) => t.active).length;
+      inactiveTargets += targets.filter((t) => !t.active).length;
     }
 
     return {
@@ -289,7 +311,7 @@ export class ConfigUtils {
       totalTargets: config.metadata.totalTargets,
       activeTargets,
       inactiveTargets,
-      associationBreakdown
+      associationBreakdown,
     };
   }
 }
@@ -311,7 +333,7 @@ export class IntegrationUtils {
   ): Record<string, any> {
     const tracker = getPolymorphicTracker();
     const validTargets = tracker.getValidTargets(polymorphicType, {
-      includeInactive: options.includeInactive
+      includeInactive: options.includeInactive,
     });
 
     const relationships: Record<string, any> = {};
@@ -333,7 +355,7 @@ export class IntegrationUtils {
       relationships[relationshipName] = {
         sourceField: [fieldNames.idField],
         destField: ['id'],
-        destSchema: tableName // This would reference the actual Zero.js schema
+        destSchema: tableName, // This would reference the actual Zero.js schema
       };
     }
 
@@ -355,14 +377,14 @@ export class IntegrationUtils {
     };
   } {
     const fieldNames = RelationshipNamer.generatePolymorphicFieldNames(polymorphicType);
-    
+
     return {
       relationshipName: polymorphicType,
       options: {
         polymorphic: true,
         foreign_key: fieldNames.idField,
-        foreign_type: fieldNames.typeField
-      }
+        foreign_type: fieldNames.typeField,
+      },
     };
   }
 
@@ -387,21 +409,21 @@ export class IntegrationUtils {
 
     for (const [relationshipName] of Object.entries(hardcodedRelationships)) {
       const parsed = RelationshipNamer.parsePolymorphicRelationshipName(relationshipName);
-      
+
       if (parsed.polymorphicType && parsed.modelName) {
         if (!polymorphicType) {
           polymorphicType = parsed.polymorphicType;
         } else if (polymorphicType !== parsed.polymorphicType) {
           debugDatabase.warn('Mixed polymorphic types in relationship set', {
             existing: polymorphicType,
-            found: parsed.polymorphicType
+            found: parsed.polymorphicType,
           });
         }
 
         targets.push({
           modelName: parsed.modelName,
           tableName: TypeConverter.modelToTableName(parsed.modelName),
-          relationshipName
+          relationshipName,
         });
       }
     }
@@ -419,11 +441,11 @@ export class PolymorphicDebugUtils {
    */
   static logConfigSummary(config: PolymorphicConfig): void {
     const summary = ConfigUtils.getConfigSummary(config);
-    
+
     debugDatabase('Polymorphic Configuration Summary', {
       ...summary,
       configVersion: config.metadata.configVersion,
-      lastUpdated: config.metadata.updatedAt
+      lastUpdated: config.metadata.updatedAt,
     });
 
     for (const [type, count] of Object.entries(summary.associationBreakdown)) {
@@ -450,15 +472,15 @@ export class PolymorphicDebugUtils {
       // Validate tracker
       const trackerValidation = tracker.validate();
       if (!trackerValidation.valid) {
-        errors.push(...trackerValidation.errors.map(e => e.message));
+        errors.push(...trackerValidation.errors.map((e) => e.message));
       }
-      warnings.push(...trackerValidation.warnings.map(w => w.message));
+      warnings.push(...trackerValidation.warnings.map((w) => w.message));
 
       return {
         trackerValid: trackerValidation.valid,
         registryValid: true, // Registry doesn't have built-in validation yet
         errors,
-        warnings
+        warnings,
       };
     } catch (error) {
       errors.push(`System validation failed: ${error}`);
@@ -466,7 +488,7 @@ export class PolymorphicDebugUtils {
         trackerValid: false,
         registryValid: false,
         errors,
-        warnings
+        warnings,
       };
     }
   }
@@ -481,7 +503,7 @@ export const PolymorphicUtils = {
   PolymorphicValidator,
   ConfigUtils,
   IntegrationUtils,
-  PolymorphicDebugUtils
+  PolymorphicDebugUtils,
 };
 
 /**
@@ -499,7 +521,10 @@ export function isPolymorphicRelationshipName(relationshipName: string): boolean
 /**
  * Quick generation of polymorphic relationship name
  */
-export function createPolymorphicRelationshipName(polymorphicType: PolymorphicType, modelName: string): string {
+export function createPolymorphicRelationshipName(
+  polymorphicType: PolymorphicType,
+  modelName: string
+): string {
   return RelationshipNamer.generatePolymorphicRelationshipName(polymorphicType, modelName);
 }
 

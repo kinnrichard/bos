@@ -1,16 +1,20 @@
 /**
  * Polymorphic Discovery Utilities
- * 
+ *
  * Helper utilities for discovering polymorphic relationships from various sources:
  * - Generated schema analysis
  * - Relationship pattern scanning
  * - Model registration inspection
  * - Runtime relationship discovery
- * 
+ *
  * Generated: 2025-08-06 Epic-008 Polymorphic Tracking
  */
 
-import { PolymorphicType, PolymorphicDiscoveryResult, PolymorphicTrackingOptions } from './types';
+import type {
+  PolymorphicType,
+  PolymorphicDiscoveryResult,
+  PolymorphicTrackingOptions,
+} from './types';
 import { getPolymorphicTracker, PolymorphicTracker } from './tracker';
 import { debugDatabase } from '../../utils/debug';
 
@@ -28,42 +32,45 @@ interface RelationshipPattern {
 /**
  * Discovery patterns for known polymorphic types
  */
-const POLYMORPHIC_PATTERNS: Record<PolymorphicType, {
-  typeField: string;
-  idField: string;
-  relationshipPrefix: string;
-  description: string;
-}> = {
+const POLYMORPHIC_PATTERNS: Record<
+  PolymorphicType,
+  {
+    typeField: string;
+    idField: string;
+    relationshipPrefix: string;
+    description: string;
+  }
+> = {
   notable: {
     typeField: 'notable_type',
     idField: 'notable_id',
     relationshipPrefix: 'notable',
-    description: 'Notes that belong to various models'
+    description: 'Notes that belong to various models',
   },
   loggable: {
     typeField: 'loggable_type',
     idField: 'loggable_id',
     relationshipPrefix: 'loggable',
-    description: 'Activity logs for various models'
+    description: 'Activity logs for various models',
   },
   schedulable: {
     typeField: 'schedulable_type',
     idField: 'schedulable_id',
     relationshipPrefix: 'schedulable',
-    description: 'Scheduled date times for various models'
+    description: 'Scheduled date times for various models',
   },
   target: {
     typeField: 'target_type',
     idField: 'target_id',
     relationshipPrefix: 'target',
-    description: 'Job targets referencing various models'
+    description: 'Job targets referencing various models',
   },
   parseable: {
     typeField: 'parseable_type',
     idField: 'parseable_id',
     relationshipPrefix: 'parseable',
-    description: 'Parsed emails belonging to various models'
-  }
+    description: 'Parsed emails belonging to various models',
+  },
 };
 
 /**
@@ -79,7 +86,9 @@ export class PolymorphicDiscovery {
   /**
    * Discover polymorphic relationships from schema relationships
    */
-  async discoverFromSchemaRelationships(relationships: RelationshipPattern[]): Promise<PolymorphicDiscoveryResult[]> {
+  async discoverFromSchemaRelationships(
+    relationships: RelationshipPattern[]
+  ): Promise<PolymorphicDiscoveryResult[]> {
     const discoveries: PolymorphicDiscoveryResult[] = [];
     const now = new Date().toISOString();
 
@@ -91,11 +100,11 @@ export class PolymorphicDiscovery {
         continue;
       }
 
-      const targets = patterns.map(pattern => ({
+      const targets = patterns.map((pattern) => ({
         modelName: this.tableToModelName(pattern.targetTable),
         tableName: pattern.targetTable,
         source: 'generated-schema',
-        relationshipName: pattern.relationshipName
+        relationshipName: pattern.relationshipName,
       }));
 
       discoveries.push({
@@ -104,14 +113,14 @@ export class PolymorphicDiscovery {
         metadata: {
           discoveredAt: now,
           source: 'schema-analysis',
-          confidence: 'high'
-        }
+          confidence: 'high',
+        },
       });
     }
 
     debugDatabase('Discovered polymorphic relationships from schema', {
       discoveryCount: discoveries.length,
-      totalTargets: discoveries.reduce((sum, d) => sum + d.targets.length, 0)
+      totalTargets: discoveries.reduce((sum, d) => sum + d.targets.length, 0),
     });
 
     return discoveries;
@@ -125,7 +134,7 @@ export class PolymorphicDiscovery {
     const now = new Date().toISOString();
 
     for (const [polymorphicType, pattern] of Object.entries(POLYMORPHIC_PATTERNS)) {
-      const matchingRelationships = relationshipNames.filter(name =>
+      const matchingRelationships = relationshipNames.filter((name) =>
         name.startsWith(pattern.relationshipPrefix)
       );
 
@@ -133,7 +142,7 @@ export class PolymorphicDiscovery {
         continue;
       }
 
-      const targets = matchingRelationships.map(relationshipName => {
+      const targets = matchingRelationships.map((relationshipName) => {
         // Extract model name from relationship name
         // e.g., 'loggableJob' -> 'Job', 'notableClient' -> 'Client'
         const modelName = relationshipName.replace(pattern.relationshipPrefix, '');
@@ -143,7 +152,7 @@ export class PolymorphicDiscovery {
           modelName,
           tableName,
           source: 'naming-pattern',
-          relationshipName
+          relationshipName,
         };
       });
 
@@ -153,13 +162,13 @@ export class PolymorphicDiscovery {
         metadata: {
           discoveredAt: now,
           source: 'naming-pattern-analysis',
-          confidence: 'medium'
-        }
+          confidence: 'medium',
+        },
       });
     }
 
     debugDatabase('Discovered polymorphic relationships from naming patterns', {
-      discoveryCount: discoveries.length
+      discoveryCount: discoveries.length,
     });
 
     return discoveries;
@@ -194,7 +203,7 @@ export class PolymorphicDiscovery {
           modelName,
           tableName,
           source: 'hardcoded-schema',
-          relationshipName
+          relationshipName,
         });
       }
 
@@ -205,14 +214,14 @@ export class PolymorphicDiscovery {
           metadata: {
             discoveredAt: now,
             source: 'hardcoded-schema-analysis',
-            confidence: 'high'
-          }
+            confidence: 'high',
+          },
         });
       }
     }
 
     debugDatabase('Discovered polymorphic relationships from hardcoded schema', {
-      discoveryCount: discoveries.length
+      discoveryCount: discoveries.length,
     });
 
     return discoveries;
@@ -228,33 +237,31 @@ export class PolymorphicDiscovery {
     for (const discovery of discoveries) {
       for (const target of discovery.targets) {
         const isValid = await this.validateTarget(discovery.type, target.tableName);
-        
+
         if (isValid || options.autoDiscover) {
-          await this.tracker.addTarget(
-            discovery.type,
-            target.tableName,
-            target.modelName,
-            {
-              ...options,
-              source: discovery.metadata.source as any
-            }
-          );
+          await this.tracker.addTarget(discovery.type, target.tableName, target.modelName, {
+            ...options,
+            source: discovery.metadata.source as any,
+          });
         }
       }
     }
 
     debugDatabase('Applied polymorphic discoveries to tracker', {
-      discoveryCount: discoveries.length
+      discoveryCount: discoveries.length,
     });
   }
 
   /**
    * Validate that a target model exists and is appropriate for the polymorphic type
    */
-  private async validateTarget(polymorphicType: PolymorphicType, tableName: string): Promise<boolean> {
+  private async validateTarget(
+    polymorphicType: PolymorphicType,
+    tableName: string
+  ): Promise<boolean> {
     // In a full implementation, this would check if the table exists in the schema
     // and if it makes sense as a target for the polymorphic type
-    
+
     // For now, we'll do basic validation
     if (!tableName || tableName.length === 0) {
       return false;
@@ -286,7 +293,7 @@ export class PolymorphicDiscovery {
           }
           grouped[polymorphicType].push({
             ...relationship,
-            polymorphicType: polymorphicType as PolymorphicType
+            polymorphicType: polymorphicType as PolymorphicType,
           });
         }
       }
@@ -308,7 +315,7 @@ export class PolymorphicDiscovery {
   private tableToModelName(tableName: string): string {
     return tableName
       .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join('')
       .replace(/s$/, ''); // Remove trailing 's' for pluralization
   }
@@ -317,10 +324,12 @@ export class PolymorphicDiscovery {
    * Convert model name to table name (PascalCase to snake_case)
    */
   private modelToTableName(modelName: string): string {
-    return modelName
-      .replace(/([A-Z])/g, '_$1')
-      .toLowerCase()
-      .slice(1) + 's'; // Add 's' for pluralization
+    return (
+      modelName
+        .replace(/([A-Z])/g, '_$1')
+        .toLowerCase()
+        .slice(1) + 's'
+    ); // Add 's' for pluralization
   }
 }
 
@@ -333,7 +342,7 @@ export class PolymorphicDiscovery {
  */
 export async function discoverPolymorphicRelationships(): Promise<PolymorphicDiscoveryResult[]> {
   const discovery = new PolymorphicDiscovery();
-  
+
   // This would load the actual schema content
   const schemaContent = `
     // Simulated schema content based on research findings
@@ -357,14 +366,16 @@ export async function discoverPolymorphicRelationships(): Promise<PolymorphicDis
 /**
  * Auto-discover and configure polymorphic relationships
  */
-export async function autoDiscoverAndConfigure(options: PolymorphicTrackingOptions = {}): Promise<void> {
+export async function autoDiscoverAndConfigure(
+  options: PolymorphicTrackingOptions = {}
+): Promise<void> {
   const discoveries = await discoverPolymorphicRelationships();
   const discovery = new PolymorphicDiscovery();
-  
+
   await discovery.applyDiscoveries(discoveries, {
     ...options,
     autoDiscover: true,
-    source: 'auto-discovery'
+    source: 'auto-discovery',
   });
 }
 

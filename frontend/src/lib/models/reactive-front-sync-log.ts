@@ -11,7 +11,11 @@
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type { FrontSyncLogData, CreateFrontSyncLogData, UpdateFrontSyncLogData } from './types/front-sync-log-data';
+import type {
+  FrontSyncLogData,
+  CreateFrontSyncLogData,
+  UpdateFrontSyncLogData,
+} from './types/front-sync-log-data';
 
 /**
  * ReactiveRecord configuration for FrontSyncLog
@@ -56,12 +60,12 @@ const ReactiveFrontSyncLogConfig = {
  * const allFrontSyncLogsQuery = ReactiveFrontSyncLog.all().all();
  * const activeFrontSyncLogsQuery = ReactiveFrontSyncLog.kept().all();
  * const singleFrontSyncLogQuery = ReactiveFrontSyncLog.find('123');
- * 
+ *
  * // With relationships
  * const front_sync_logWithRelationsQuery = ReactiveFrontSyncLog
  *   .includes('client', 'tasks')
  *   .find('123');
- * 
+ *
  * // Complex queries
  * const filteredFrontSyncLogsQuery = ReactiveFrontSyncLog
  *   .where({ status: 'active' })
@@ -70,7 +74,9 @@ const ReactiveFrontSyncLogConfig = {
  *   .all();
  * ```
  */
-export const ReactiveFrontSyncLog = createReactiveRecord<FrontSyncLogData>(ReactiveFrontSyncLogConfig);
+export const ReactiveFrontSyncLog = createReactiveRecord<FrontSyncLogData>(
+  ReactiveFrontSyncLogConfig
+);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
