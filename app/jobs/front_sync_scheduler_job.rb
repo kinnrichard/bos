@@ -53,7 +53,11 @@ class FrontSyncSchedulerJob < ApplicationJob
         job_args = build_job_arguments(resource_type, sync_type.to_s)
 
         # Schedule the job
-        FrontSyncJob.perform_later(*job_args)
+        if job_args.length > 2
+          FrontSyncJob.perform_later(job_args[0], job_args[1], **job_args[2])
+        else
+          FrontSyncJob.perform_later(*job_args)
+        end
         scheduled_jobs << [ resource_type, sync_type.to_s ]
 
         Rails.logger.info "Scheduled #{sync_type} sync for #{resource_type}"

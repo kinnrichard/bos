@@ -4,13 +4,13 @@ class FrontSyncLog < ApplicationRecord
   # Validations
   validates :resource_type, presence: true
   validates :sync_type, presence: true
-  validates :status, presence: true, inclusion: { in: %w[running completed completed_with_errors failed] }
+  validates :status, presence: true, inclusion: { in: %w[running completed completed_with_errors failed skipped] }
   validates :started_at, presence: true
   validates :records_synced, :records_created, :records_updated, :records_failed,
             presence: true, numericality: { greater_than_or_equal_to: 0 }
 
   # Validation that completed syncs have completion time
-  validates :completed_at, presence: true, if: -> { status.in?(%w[completed completed_with_errors failed]) }
+  validates :completed_at, presence: true, if: -> { status.in?(%w[completed completed_with_errors failed skipped]) }
 
   # Scopes for common queries
   scope :recent, ->(limit = 50) { order(started_at: :desc).limit(limit) }
@@ -20,6 +20,7 @@ class FrontSyncLog < ApplicationRecord
   scope :failed, -> { where(status: "failed") }
   scope :running, -> { where(status: "running") }
   scope :completed, -> { where(status: %w[completed completed_with_errors]) }
+  scope :skipped, -> { where(status: "skipped") }
   scope :today, -> { where(started_at: Date.current.beginning_of_day..Date.current.end_of_day) }
   scope :last_24_hours, -> { where(started_at: 24.hours.ago..Time.current) }
   scope :last_week, -> { where(started_at: 7.days.ago..Time.current) }
@@ -68,7 +69,7 @@ class FrontSyncLog < ApplicationRecord
   end
 
   def completed?
-    status.in?(%w[completed completed_with_errors failed])
+    status.in?(%w[completed completed_with_errors failed skipped])
   end
 
   def successful?
@@ -85,6 +86,10 @@ class FrontSyncLog < ApplicationRecord
 
   def failed?
     status == "failed"
+  end
+
+  def skipped?
+    status == "skipped"
   end
 
   # Mark sync as completed
@@ -138,6 +143,8 @@ class FrontSyncLog < ApplicationRecord
       "Completed with #{records_failed} failed records"
     when "failed"
       "Sync failed"
+    when "skipped"
+      "Sync skipped"
     end
   end
 
