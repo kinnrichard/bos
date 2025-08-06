@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_06_035014) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_06_135650) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -693,7 +693,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_035014) do
   add_foreign_key "front_conversation_tickets", "front_tickets"
   add_foreign_key "front_message_recipients", "front_contacts"
   add_foreign_key "front_message_recipients", "front_messages"
-  add_foreign_key "front_messages", "front_contacts", column: "author_id"
   add_foreign_key "front_messages", "front_conversations"
   add_foreign_key "front_tags", "front_tags", column: "parent_tag_id"
   add_foreign_key "job_assignments", "jobs"

@@ -213,6 +213,8 @@ module ZeroSchemaGenerator
       return nil if belongs_to_rels.empty? && has_many_rels.empty?
 
       relationships = []
+      uses_one = false
+      uses_many = false
 
       # Generate belongs_to relationships (one)
       belongs_to_rels.each do |rel|
@@ -220,9 +222,11 @@ module ZeroSchemaGenerator
           # Handle polymorphic associations with multiple target relationships
           polymorphic_rels = generate_polymorphic_relationships(rel, table_names)
           relationships.concat(polymorphic_rels)
+          uses_one = true if polymorphic_rels.any? # Only set if relationships were actually generated
         elsif rel[:target_table] && table_names.include?(rel[:target_table])
           rel_name = rel[:name].to_s.camelize(:lower)
           relationships << generate_one_relationship(rel_name, rel[:foreign_key], rel[:target_table])
+          uses_one = true
         end
       end
 
@@ -240,6 +244,7 @@ module ZeroSchemaGenerator
           # Validate that the foreign key field exists in target table before generating relationship
           if validate_foreign_key_exists(rel[:foreign_key], rel[:target_table])
             relationships << generate_many_relationship(rel_name, rel[:foreign_key], rel[:target_table])
+            uses_many = true
           else
             # Add comment about skipped relationship
             relationships << "// SKIPPED: #{rel_name} - foreign key '#{rel[:foreign_key]}' does not exist in #{rel[:target_table]} table"
@@ -250,13 +255,20 @@ module ZeroSchemaGenerator
       # Add self-referential children relationship if we have a parent relationship
       if belongs_to_rels.any? { |rel| rel[:target_table] == relationship_data[:table] && rel[:name].to_s.include?("parent") }
         relationships << generate_many_relationship("children", "parent_id", table_name)
+        uses_many = true
       end
 
       return nil if relationships.empty?
 
+      # Determine which parameters to destructure based on actual usage
+      params = []
+      params << "one" if uses_one
+      params << "many" if uses_many
+      param_list = params.join(", ")
+
       <<~TYPESCRIPT
         // #{relationship_data[:table].humanize} relationships
-        const #{table_name}Relationships = relationships(#{table_name}, ({ one, many }) => ({
+        const #{table_name}Relationships = relationships(#{table_name}, ({ #{param_list} }) => ({
           #{relationships.join(",\n  ")}
         }));
       TYPESCRIPT
@@ -318,27 +330,29 @@ module ZeroSchemaGenerator
 
       polymorphic_targets = case rel[:name].to_s
       when "notable"
-        %w[job task client]
+        %w[jobs tasks clients]
       when "loggable"
-        %w[job task client user person]
+        %w[jobs tasks clients users people]
       when "schedulable"
-        %w[job task]
+        %w[jobs tasks]
       else
         []
       end
 
       relationships = []
-      polymorphic_targets.each do |target|
-        next unless table_names.include?(target)
+      polymorphic_targets.each do |target_table|
+        next unless table_names.include?(target_table)
 
         # Create conditional relationship: notable_job, notable_task, etc.
-        rel_name = "#{rel[:name]}#{target.classify}"
+        # Use singular form for the relationship name and type value
+        singular_name = target_table.singularize
+        rel_name = "#{rel[:name]}#{singular_name.classify}"
         relationships << generate_conditional_polymorphic_relationship(
           rel_name.camelize(:lower),
           rel[:foreign_key],
           rel[:foreign_type],
-          target,
-          target.classify
+          target_table,
+          singular_name.classify
         )
       end
 
@@ -457,7 +471,7 @@ module ZeroSchemaGenerator
       when :boolean
         "boolean"
       when :jsonb, :json
-        "any" # Could be more specific based on usage
+        "Record<string, unknown>" # Type-safe JSON representation
       else
         "string" # Safe fallback
       end
