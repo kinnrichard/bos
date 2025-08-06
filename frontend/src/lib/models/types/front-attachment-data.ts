@@ -33,4 +33,6 @@ export type CreateFrontAttachmentData = Omit<FrontAttachmentData, 'id', 'created
  * Update FrontAttachment data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateFrontAttachmentData = Partial<Omit<FrontAttachmentData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateFrontAttachmentData = Partial<
+  Omit<FrontAttachmentData, 'id', 'created_at', 'updated_at'>
+>;

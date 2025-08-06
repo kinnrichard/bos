@@ -23,10 +23,17 @@ export interface FrontConversationTicketData extends BaseRecord {
  * Create FrontConversationTicket data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateFrontConversationTicketData = Omit<FrontConversationTicketData, 'id', 'created_at', 'updated_at'>;
+export type CreateFrontConversationTicketData = Omit<
+  FrontConversationTicketData,
+  'id',
+  'created_at',
+  'updated_at'
+>;
 
 /**
  * Update FrontConversationTicket data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateFrontConversationTicketData = Partial<Omit<FrontConversationTicketData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateFrontConversationTicketData = Partial<
+  Omit<FrontConversationTicketData, 'id', 'created_at', 'updated_at'>
+>;

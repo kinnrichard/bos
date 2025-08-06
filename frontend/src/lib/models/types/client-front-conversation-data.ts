@@ -23,10 +23,17 @@ export interface ClientFrontConversationData extends BaseRecord {
  * Create ClientFrontConversation data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateClientFrontConversationData = Omit<ClientFrontConversationData, 'id', 'created_at', 'updated_at'>;
+export type CreateClientFrontConversationData = Omit<
+  ClientFrontConversationData,
+  'id',
+  'created_at',
+  'updated_at'
+>;
 
 /**
  * Update ClientFrontConversation data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateClientFrontConversationData = Partial<Omit<ClientFrontConversationData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateClientFrontConversationData = Partial<
+  Omit<ClientFrontConversationData, 'id', 'created_at', 'updated_at'>
+>;

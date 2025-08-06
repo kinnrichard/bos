@@ -38,4 +38,6 @@ export type CreateParsedEmailData = Omit<ParsedEmailData, 'id', 'created_at', 'u
  * Update ParsedEmail data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateParsedEmailData = Partial<Omit<ParsedEmailData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateParsedEmailData = Partial<
+  Omit<ParsedEmailData, 'id', 'created_at', 'updated_at'>
+>;

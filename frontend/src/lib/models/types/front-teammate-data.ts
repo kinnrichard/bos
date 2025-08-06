@@ -40,4 +40,6 @@ export type CreateFrontTeammateData = Omit<FrontTeammateData, 'id', 'created_at'
  * Update FrontTeammate data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateFrontTeammateData = Partial<Omit<FrontTeammateData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateFrontTeammateData = Partial<
+  Omit<FrontTeammateData, 'id', 'created_at', 'updated_at'>
+>;

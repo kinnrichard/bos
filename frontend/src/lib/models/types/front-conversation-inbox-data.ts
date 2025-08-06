@@ -23,10 +23,17 @@ export interface FrontConversationInboxData extends BaseRecord {
  * Create FrontConversationInbox data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateFrontConversationInboxData = Omit<FrontConversationInboxData, 'id', 'created_at', 'updated_at'>;
+export type CreateFrontConversationInboxData = Omit<
+  FrontConversationInboxData,
+  'id',
+  'created_at',
+  'updated_at'
+>;
 
 /**
  * Update FrontConversationInbox data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateFrontConversationInboxData = Partial<Omit<FrontConversationInboxData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateFrontConversationInboxData = Partial<
+  Omit<FrontConversationInboxData, 'id', 'created_at', 'updated_at'>
+>;

@@ -27,10 +27,17 @@ export interface FrontMessageRecipientData extends BaseRecord {
  * Create FrontMessageRecipient data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateFrontMessageRecipientData = Omit<FrontMessageRecipientData, 'id', 'created_at', 'updated_at'>;
+export type CreateFrontMessageRecipientData = Omit<
+  FrontMessageRecipientData,
+  'id',
+  'created_at',
+  'updated_at'
+>;
 
 /**
  * Update FrontMessageRecipient data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateFrontMessageRecipientData = Partial<Omit<FrontMessageRecipientData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateFrontMessageRecipientData = Partial<
+  Omit<FrontMessageRecipientData, 'id', 'created_at', 'updated_at'>
+>;

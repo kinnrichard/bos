@@ -23,10 +23,17 @@ export interface FrontConversationTagData extends BaseRecord {
  * Create FrontConversationTag data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateFrontConversationTagData = Omit<FrontConversationTagData, 'id', 'created_at', 'updated_at'>;
+export type CreateFrontConversationTagData = Omit<
+  FrontConversationTagData,
+  'id',
+  'created_at',
+  'updated_at'
+>;
 
 /**
  * Update FrontConversationTag data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateFrontConversationTagData = Partial<Omit<FrontConversationTagData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateFrontConversationTagData = Partial<
+  Omit<FrontConversationTagData, 'id', 'created_at', 'updated_at'>
+>;

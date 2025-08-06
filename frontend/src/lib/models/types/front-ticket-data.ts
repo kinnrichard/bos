@@ -38,4 +38,6 @@ export type CreateFrontTicketData = Omit<FrontTicketData, 'id', 'created_at', 'u
  * Update FrontTicket data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateFrontTicketData = Partial<Omit<FrontTicketData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateFrontTicketData = Partial<
+  Omit<FrontTicketData, 'id', 'created_at', 'updated_at'>
+>;

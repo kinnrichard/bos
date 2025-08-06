@@ -50,10 +50,38 @@ export interface UserData extends BaseRecord {
  * Create User data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateUserData = Omit<UserData, 'id', 'created_at', 'updated_at', 'activityLogs', 'assignedJobs', 'assignedTasks', 'jobAssignments', 'technicianJobs', 'scheduledDateTimeUsers', 'scheduledDateTimes', 'notes'>;
+export type CreateUserData = Omit<
+  UserData,
+  'id',
+  'created_at',
+  'updated_at',
+  'activityLogs',
+  'assignedJobs',
+  'assignedTasks',
+  'jobAssignments',
+  'technicianJobs',
+  'scheduledDateTimeUsers',
+  'scheduledDateTimes',
+  'notes'
+>;
 
 /**
  * Update User data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateUserData = Partial<Omit<UserData, 'id', 'created_at', 'updated_at', 'activityLogs', 'assignedJobs', 'assignedTasks', 'jobAssignments', 'technicianJobs', 'scheduledDateTimeUsers', 'scheduledDateTimes', 'notes'>>;
+export type UpdateUserData = Partial<
+  Omit<
+    UserData,
+    'id',
+    'created_at',
+    'updated_at',
+    'activityLogs',
+    'assignedJobs',
+    'assignedTasks',
+    'jobAssignments',
+    'technicianJobs',
+    'scheduledDateTimeUsers',
+    'scheduledDateTimes',
+    'notes'
+  >
+>;

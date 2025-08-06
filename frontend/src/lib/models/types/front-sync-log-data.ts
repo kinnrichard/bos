@@ -39,4 +39,6 @@ export type CreateFrontSyncLogData = Omit<FrontSyncLogData, 'id', 'created_at', 
  * Update FrontSyncLog data interface
  * All fields optional except id, excludes relationships
  */
-export type UpdateFrontSyncLogData = Partial<Omit<FrontSyncLogData, 'id', 'created_at', 'updated_at'>>;
+export type UpdateFrontSyncLogData = Partial<
+  Omit<FrontSyncLogData, 'id', 'created_at', 'updated_at'>
+>;
