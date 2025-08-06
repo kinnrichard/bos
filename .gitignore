@@ -80,3 +80,5 @@ frontend/src/lib/zero/generated-schema.ts.backup.*
 /frontend/playwright/.auth/user.json
 /test-results
 /frontend/playwright/.auth/user-legacy.json
+
+/config/master.key
