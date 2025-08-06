@@ -9,15 +9,11 @@
  * import { ReactiveFrontTeammate as FrontTeammate } from './reactive-front-teammate';
  * ```
  *
- * Generated: 2025-08-05 14:49:07 UTC
+ * Generated: 2025-08-05 16:51:27 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  FrontTeammateData,
-  CreateFrontTeammateData,
-  UpdateFrontTeammateData,
-} from './types/front-teammate-data';
+import type { FrontTeammateData, CreateFrontTeammateData, UpdateFrontTeammateData } from './types/front-teammate-data';
 
 /**
  * Default values for FrontTeammate creation

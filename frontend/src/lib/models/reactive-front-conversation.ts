@@ -9,7 +9,7 @@
  * import { FrontConversation } from './front-conversation';
  * ```
  *
- * Generated: 2025-08-05 15:17:40 UTC
+ * Generated: 2025-08-05 22:30:28 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';

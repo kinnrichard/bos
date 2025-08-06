@@ -1,7 +1,7 @@
 /**
  * UserData - TypeScript interface for users table
  *
- * Generated from Rails schema: 2025-08-05 14:49:07 UTC
+ * Generated from Rails schema: 2025-08-05 22:30:28 UTC
  * * Relationships (loaded via includes()):
  * - activityLogs: has_many ActivityLog
  * - assignedJobs: has_many Job

@@ -243,6 +243,18 @@ namespace :front_sync do
     end
   end
   
+  desc "Trigger Front sync scheduler to check for needed syncs"
+  task schedule: :environment do
+    puts "\n🔄 TRIGGERING FRONT SYNC SCHEDULER"
+    puts "-" * 30
+    
+    FrontSyncSchedulerJob.perform_later
+    
+    puts "✅ Front sync scheduler job queued"
+    puts "The scheduler will check all resource types and queue sync jobs as needed based on intervals."
+    puts "\nView job status at: http://localhost:3000/good_job"
+  end
+  
   desc "Generate sync health report"
   task health_report: :environment do
     puts "\n📋 FRONT API SYNC HEALTH REPORT"

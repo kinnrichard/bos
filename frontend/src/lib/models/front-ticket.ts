@@ -9,15 +9,11 @@
  * import { ReactiveFrontTicket as FrontTicket } from './reactive-front-ticket';
  * ```
  *
- * Generated: 2025-08-05 14:49:07 UTC
+ * Generated: 2025-08-05 16:51:27 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  FrontTicketData,
-  CreateFrontTicketData,
-  UpdateFrontTicketData,
-} from './types/front-ticket-data';
+import type { FrontTicketData, CreateFrontTicketData, UpdateFrontTicketData } from './types/front-ticket-data';
 
 /**
  * ActiveRecord configuration for FrontTicket

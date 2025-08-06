@@ -9,15 +9,11 @@
  * import { ReactiveClientFrontConversation as ClientFrontConversation } from './reactive-client-front-conversation';
  * ```
  *
- * Generated: 2025-08-05 14:49:07 UTC
+ * Generated: 2025-08-05 16:51:27 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  ClientFrontConversationData,
-  CreateClientFrontConversationData,
-  UpdateClientFrontConversationData,
-} from './types/client-front-conversation-data';
+import type { ClientFrontConversationData, CreateClientFrontConversationData, UpdateClientFrontConversationData } from './types/client-front-conversation-data';
 
 /**
  * ActiveRecord configuration for ClientFrontConversation
@@ -57,19 +53,13 @@ const ClientFrontConversationConfig = {
  * const activeClientFrontConversations = await ClientFrontConversation.kept().all();
  * ```
  */
-export const ClientFrontConversation = createActiveRecord<ClientFrontConversationData>(
-  ClientFrontConversationConfig
-);
+export const ClientFrontConversation = createActiveRecord<ClientFrontConversationData>(ClientFrontConversationConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
 
 // Export types for convenience
-export type {
-  ClientFrontConversationData,
-  CreateClientFrontConversationData,
-  UpdateClientFrontConversationData,
-};
+export type { ClientFrontConversationData, CreateClientFrontConversationData, UpdateClientFrontConversationData };
 
 // Default export
 export default ClientFrontConversation;

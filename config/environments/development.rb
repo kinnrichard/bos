@@ -61,8 +61,8 @@ Rails.application.configure do
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 
-  # Use SolidQueue for job processing in development
-  config.active_job.queue_adapter = :solid_queue
+  # Use GoodJob for job processing in development
+  config.active_job.queue_adapter = :good_job
 
   # Raises error for missing translations.
   # config.i18n.raise_on_missing_translations = true

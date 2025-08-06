@@ -9,15 +9,11 @@
  * import { ReactiveFrontConversationTicket as FrontConversationTicket } from './reactive-front-conversation-ticket';
  * ```
  *
- * Generated: 2025-08-05 14:49:07 UTC
+ * Generated: 2025-08-05 16:51:27 UTC
  */
 
 import { createActiveRecord } from './base/active-record';
-import type {
-  FrontConversationTicketData,
-  CreateFrontConversationTicketData,
-  UpdateFrontConversationTicketData,
-} from './types/front-conversation-ticket-data';
+import type { FrontConversationTicketData, CreateFrontConversationTicketData, UpdateFrontConversationTicketData } from './types/front-conversation-ticket-data';
 
 /**
  * ActiveRecord configuration for FrontConversationTicket
@@ -57,19 +53,13 @@ const FrontConversationTicketConfig = {
  * const activeFrontConversationTickets = await FrontConversationTicket.kept().all();
  * ```
  */
-export const FrontConversationTicket = createActiveRecord<FrontConversationTicketData>(
-  FrontConversationTicketConfig
-);
+export const FrontConversationTicket = createActiveRecord<FrontConversationTicketData>(FrontConversationTicketConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
 
 // Export types for convenience
-export type {
-  FrontConversationTicketData,
-  CreateFrontConversationTicketData,
-  UpdateFrontConversationTicketData,
-};
+export type { FrontConversationTicketData, CreateFrontConversationTicketData, UpdateFrontConversationTicketData };
 
 // Default export
 export default FrontConversationTicket;

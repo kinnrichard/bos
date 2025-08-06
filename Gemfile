@@ -37,9 +37,10 @@ gem "jwt"
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
-# Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
+# Use the database-backed adapters for Rails.cache and Action Cable
 gem "solid_cache"
-gem "solid_queue"
+# gem "solid_queue" # Replaced with GoodJob due to heartbeat issues
+gem "good_job", "~> 4.0"
 gem "solid_cable"
 
 # Reduces boot times through caching; required in config/boot.rb
@@ -65,6 +66,8 @@ gem "octokit", "~> 9.1"
 
 # PyCall for Python integration (email parsing with Talon)
 gem "pycall", "~> 1.5"
+# Explicit fiddle dependency (required for pycall, no longer default in Ruby 3.5+)
+gem "fiddle"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem

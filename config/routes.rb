@@ -1,6 +1,11 @@
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
+  # Mount GoodJob dashboard in development
+  if Rails.env.development?
+    mount GoodJob::Engine => "/good_job"
+  end
+
   # Mount Action Cable for WebSocket connections
   # mount ActionCable.server => "/cable"
 

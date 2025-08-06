@@ -9,15 +9,11 @@
  * import { FrontConversationTicket } from './front-conversation-ticket';
  * ```
  *
- * Generated: 2025-08-05 14:49:07 UTC
+ * Generated: 2025-08-05 16:51:27 UTC
  */
 
 import { createReactiveRecord } from './base/reactive-record';
-import type {
-  FrontConversationTicketData,
-  CreateFrontConversationTicketData,
-  UpdateFrontConversationTicketData,
-} from './types/front-conversation-ticket-data';
+import type { FrontConversationTicketData, CreateFrontConversationTicketData, UpdateFrontConversationTicketData } from './types/front-conversation-ticket-data';
 
 /**
  * ReactiveRecord configuration for FrontConversationTicket
@@ -62,12 +58,12 @@ const ReactiveFrontConversationTicketConfig = {
  * const allFrontConversationTicketsQuery = ReactiveFrontConversationTicket.all().all();
  * const activeFrontConversationTicketsQuery = ReactiveFrontConversationTicket.kept().all();
  * const singleFrontConversationTicketQuery = ReactiveFrontConversationTicket.find('123');
- *
+ * 
  * // With relationships
  * const front_conversation_ticketWithRelationsQuery = ReactiveFrontConversationTicket
  *   .includes('client', 'tasks')
  *   .find('123');
- *
+ * 
  * // Complex queries
  * const filteredFrontConversationTicketsQuery = ReactiveFrontConversationTicket
  *   .where({ status: 'active' })
@@ -76,9 +72,7 @@ const ReactiveFrontConversationTicketConfig = {
  *   .all();
  * ```
  */
-export const ReactiveFrontConversationTicket = createReactiveRecord<FrontConversationTicketData>(
-  ReactiveFrontConversationTicketConfig
-);
+export const ReactiveFrontConversationTicket = createReactiveRecord<FrontConversationTicketData>(ReactiveFrontConversationTicketConfig);
 
 // Epic-009: Register model relationships for includes() functionality
 // No relationships defined for this model
@@ -98,11 +92,7 @@ export const ReactiveFrontConversationTicket = createReactiveRecord<FrontConvers
 export { ReactiveFrontConversationTicket as FrontConversationTicket };
 
 // Export types for convenience
-export type {
-  FrontConversationTicketData,
-  CreateFrontConversationTicketData,
-  UpdateFrontConversationTicketData,
-};
+export type { FrontConversationTicketData, CreateFrontConversationTicketData, UpdateFrontConversationTicketData };
 
 // Default export
 export default ReactiveFrontConversationTicket;

@@ -29,6 +29,7 @@ module Bos
     # Enable cookies and sessions for API authentication and CSRF protection
     config.middleware.use ActionDispatch::Cookies
     config.middleware.use ActionDispatch::Session::CookieStore
+    config.middleware.use ActionDispatch::Flash
     config.session_store :cookie_store, key: "_bos_api_session"
 
     # Please, add to the `ignore` list any other `lib` subdirectories that do
