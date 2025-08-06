@@ -117,7 +117,7 @@ module Zero
           # Phase 2: Schema Extraction and Filtering
           schema_data = extract_and_filter_schema
 
-          # Phase 3: Model Generation
+          # Phase 3: Model Generation (with deferred batch processing)
           generation_result = generate_models_for_all_tables(schema_data)
 
           # Phase 4: Generate Loggable Configuration
@@ -140,7 +140,7 @@ module Zero
       # @param table [Hash] Table schema information
       # @param schema_data [Hash] Complete schema data for relationships
       # @return [Hash] Model generation result for this table
-      def generate_model_set(table, schema_data)
+      def generate_model_set(table, schema_data, defer_write: false)
         # Find the Rails model for this table to get proper singular name
         rails_model = ApplicationRecord.descendants.find { |m| m.table_name == table[:name] }
         model_name = rails_model ? rails_model.name.underscore : table[:name].singularize
@@ -175,17 +175,17 @@ module Zero
 
           # Generate TypeScript data interface
           data_content = generate_data_interface(table, class_name, relationships)
-          data_file_path = file_manager.write_with_formatting("types/#{kebab_name}-data.ts", data_content)
+          data_file_path = file_manager.write_with_formatting("types/#{kebab_name}-data.ts", data_content, defer_write: defer_write)
           result[:files_generated] << data_file_path
 
           # Generate ActiveRecord model
           active_content = generate_active_model(table, class_name, kebab_name, relationships, patterns)
-          active_file_path = file_manager.write_with_formatting("#{kebab_name}.ts", active_content)
+          active_file_path = file_manager.write_with_formatting("#{kebab_name}.ts", active_content, defer_write: defer_write)
           result[:files_generated] << active_file_path
 
           # Generate ReactiveRecord model
           reactive_content = generate_reactive_model(table, class_name, kebab_name, relationships, patterns)
-          reactive_file_path = file_manager.write_with_formatting("reactive-#{kebab_name}.ts", reactive_content)
+          reactive_file_path = file_manager.write_with_formatting("reactive-#{kebab_name}.ts", reactive_content, defer_write: defer_write)
           result[:files_generated] << reactive_file_path
 
           @statistics[:files_created] += result[:files_generated].length
@@ -406,9 +406,10 @@ module Zero
           errors: []
         }
 
+        # Use deferred writing to enable true batch processing
         schema_data[:tables].each do |table|
           begin
-            model_result = generate_model_set(table, schema_data)
+            model_result = generate_model_set(table, schema_data, defer_write: true)
 
             # Aggregate results
             result[:generated_files].concat(model_result[:files_generated])
@@ -426,6 +427,10 @@ module Zero
             shell&.say "    ❌ #{error_msg}", :red
           end
         end
+
+        # Process all files in batch (format and write)
+        file_manager = service_registry.get_service(:file_manager)
+        file_manager.process_batch_files
 
         result
       end

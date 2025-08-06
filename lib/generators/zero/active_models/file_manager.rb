@@ -72,6 +72,7 @@ module Zero
         }
         @batch_queue = []
         @batch_memory_estimate = 0
+        @formatted_content_cache = {} # Cache for batch-formatted content
       end
 
       # Write file with optional formatting and semantic comparison
@@ -79,8 +80,9 @@ module Zero
       # @param relative_path [String] File path relative to output directory
       # @param content [String] File content to write
       # @param format [Boolean] Whether to format with Prettier (default: true)
+      # @param defer_write [Boolean] Whether to defer actual file writing for batch processing
       # @return [String] Absolute file path
-      def write_with_formatting(relative_path, content, format: true)
+      def write_with_formatting(relative_path, content, format: true, defer_write: false)
         file_path = if Pathname.new(output_dir).absolute?
                       File.join(output_dir, relative_path)
         else
@@ -90,24 +92,28 @@ module Zero
         # Ensure directory exists
         ensure_directory_exists(File.dirname(file_path))
 
-        # Format new content BEFORE comparison if needed
-        formatted_content = if format && should_format?(file_path) && !options[:dry_run]
-          if @batch_config[:enabled]
-            # Collect for batch formatting and get formatted content
-            collect_and_format_for_batch(file_path, content, relative_path)
-          else
-            # Immediate formatting
-            format_with_prettier(content, relative_path)
-          end
+        if defer_write && format && should_format?(file_path) && !options[:dry_run] && @batch_config[:enabled]
+          # Just queue the file for batch processing, don't write yet
+          queue_for_batch_processing(file_path, content, relative_path)
         else
-          # No formatting required
-          content
+          # Original behavior for non-deferred writes
+          formatted_content = if format && should_format?(file_path) && !options[:dry_run]
+            if @batch_config[:enabled]
+              # This shouldn't happen in defer mode but keep as fallback
+              collect_and_format_for_batch(file_path, content, relative_path)
+            else
+              # Immediate formatting
+              format_with_prettier(content, relative_path)
+            end
+          else
+            # No formatting required
+            content
+          end
+
+          # Now do semantic comparison with already-formatted new content
+          result = create_file_with_comparison(file_path, formatted_content)
+          update_statistics(result)
         end
-
-        # Now do semantic comparison with already-formatted new content
-        result = create_file_with_comparison(file_path, formatted_content)
-
-        update_statistics(result)
 
         file_path
       end
@@ -246,6 +252,35 @@ module Zero
           max_memory_mb: @batch_config[:max_memory_mb],
           enabled: @batch_config[:enabled]
         }
+      end
+
+      # Process all queued files: format in batch, then write
+      # This is the main entry point for efficient batch processing
+      #
+      # @return [void]
+      def process_batch_files
+        return if @batch_queue.empty? || options[:dry_run]
+
+        shell&.say_status(:batch, "Processing #{@batch_queue.size} files...", :blue)
+
+        # Format all files in batch
+        if @prettier_available && @batch_config[:enabled]
+          format_batch_and_cache
+        end
+
+        # Now write all files with formatted content
+        @batch_queue.each do |item|
+          formatted_content = @formatted_content_cache[item[:file_path]] || item[:content]
+
+          # Do semantic comparison and write
+          result = create_file_with_comparison(item[:file_path], formatted_content)
+          update_statistics(result)
+        end
+
+        # Clear the queue
+        @batch_queue.clear
+        @batch_memory_estimate = 0
+        @formatted_content_cache.clear
       end
 
       private
@@ -471,23 +506,143 @@ module Zero
       #
       # @param result [Symbol] Operation result
 
+      # Queue file for batch processing without formatting yet
+      # This allows us to collect all files before formatting
+      #
+      # @param file_path [String] Absolute file path
+      # @param content [String] File content
+      # @param relative_path [String] Relative path for error reporting
+      # @return [void]
+      def queue_for_batch_processing(file_path, content, relative_path)
+        # Estimate memory usage
+        content_size = content.bytesize
+        estimated_overhead = content_size * 0.5
+        total_estimate = content_size + estimated_overhead
+
+        # Add to batch queue
+        @batch_queue << {
+          file_path: file_path,
+          content: content,
+          relative_path: relative_path,
+          size: content_size
+        }
+
+        @batch_memory_estimate += total_estimate
+      end
+
       # Collect and format file for batch processing
-      # This method formats the content immediately and returns it for comparison
-      # No batch processing is needed since files are already formatted
+      # This method adds files to batch queue and processes them efficiently
+      # Returns formatted content from cache or triggers batch processing
       #
       # @param file_path [String] Absolute file path
       # @param content [String] File content
       # @param relative_path [String] Relative path for error reporting
       # @return [String] Formatted content
       def collect_and_format_for_batch(file_path, content, relative_path)
-        # Simply format and return the content immediately
-        # Since we're formatting BEFORE comparison, no batch processing is needed
-        formatted = format_with_prettier(content, relative_path)
+        return format_with_prettier(content, relative_path) unless @prettier_available
 
-        # Update statistics for tracking
-        @statistics[:formatted] += 1 if formatted != content
+        # Check if we already have formatted content for this file
+        return @formatted_content_cache[file_path] if @formatted_content_cache[file_path]
 
-        formatted
+        # Estimate memory usage
+        content_size = content.bytesize
+        estimated_overhead = content_size * 0.5
+        total_estimate = content_size + estimated_overhead
+
+        # Check if adding this file would exceed memory limits
+        if (@batch_memory_estimate + total_estimate) > (@batch_config[:max_memory_mb] * 1024 * 1024)
+          # Process current batch first
+          format_batch_and_cache if @batch_queue.any?
+        end
+
+        # Add to batch queue
+        @batch_queue << {
+          file_path: file_path,
+          content: content,
+          relative_path: relative_path,
+          size: content_size
+        }
+
+        @batch_memory_estimate += total_estimate
+
+        # Process batch if we've hit the file count limit
+        if @batch_queue.size >= @batch_config[:max_files]
+          format_batch_and_cache
+        end
+
+        # Return formatted content from cache (will be populated by format_batch_and_cache)
+        # If not in cache yet, format individually as fallback
+        @formatted_content_cache[file_path] || format_with_prettier(content, relative_path)
+      end
+
+      # Format batch of files and populate cache
+      # This processes all queued files at once for maximum efficiency
+      #
+      # @return [void]
+      def format_batch_and_cache
+        return if @batch_queue.empty? || options[:dry_run]
+        return unless @prettier_available
+
+        start_time = Time.current
+        temp_dir = File.join(@frontend_root, "tmp", "batch_format_#{Time.current.to_i}")
+
+        begin
+          ensure_directory_exists(temp_dir)
+
+          # Map to track temp files to original items
+          temp_file_mapping = {}
+
+          # Write all files to temp directory
+          @batch_queue.each_with_index do |item, index|
+            temp_file_path = File.join(temp_dir, "file_#{index}.ts")
+            File.write(temp_file_path, item[:content])
+            temp_file_mapping[temp_file_path] = item
+          end
+
+          # Run prettier on all files in one command
+          prettier_cmd = "npx prettier --write --config-precedence prefer-file #{temp_dir}/*.ts"
+
+          Dir.chdir(@frontend_root) do
+            success = system(prettier_cmd, out: File::NULL, err: File::NULL)
+
+            if success
+              # Read back formatted content and populate cache
+              temp_file_mapping.each do |temp_path, item|
+                formatted_content = File.read(temp_path)
+                @formatted_content_cache[item[:file_path]] = formatted_content
+
+                # Update statistics
+                if formatted_content != item[:content]
+                  @statistics[:formatted] += 1
+                  @statistics[:batch_formatted] += 1
+                end
+              end
+
+              @statistics[:batch_operations] += 1
+              shell&.say_status(:batch_format, "Formatted #{@batch_queue.size} files in #{(Time.current - start_time).round(2)}s", :green)
+            else
+              # Fallback: format individually and populate cache
+              shell&.say_status(:batch_fallback, "Batch formatting failed, formatting individually", :yellow)
+              @batch_queue.each do |item|
+                formatted = format_with_prettier(item[:content], item[:relative_path])
+                @formatted_content_cache[item[:file_path]] = formatted
+              end
+            end
+          end
+
+        rescue => e
+          shell&.say_status(:batch_error, "Batch formatting error: #{e.message}", :red)
+          # Fallback: format individually
+          @batch_queue.each do |item|
+            formatted = format_with_prettier(item[:content], item[:relative_path])
+            @formatted_content_cache[item[:file_path]] = formatted
+          end
+        ensure
+          # Cleanup
+          FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
+          @batch_queue.clear
+          @batch_memory_estimate = 0
+        end
       end
 
       # Collect file for batch formatting with memory management
