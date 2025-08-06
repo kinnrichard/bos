@@ -105,7 +105,7 @@ module FrontSyncErrorHandler
       should_retry = false
 
       case error
-      when Frontapp::RateLimitError, Net::HTTPTooManyRequests
+      when Net::HTTPTooManyRequests
         if retry_count <= max_retries
           retry_after = extract_retry_after_header(error)
           delay = retry_after || (base_delay * (2 ** retry_count))
@@ -117,13 +117,13 @@ module FrontSyncErrorHandler
           raise RateLimitError, "Front API rate limit exceeded: #{error.message}"
         end
 
-      when Frontapp::AuthenticationError, Net::HTTPUnauthorized
+      when Net::HTTPUnauthorized
         Rails.logger.error "Authentication failed for Front API: #{error.message}"
         self.class.record_circuit_breaker_failure(operation_key, error)
         notify_authentication_failure(error)
         raise AuthenticationError, "Front API authentication failed: #{error.message}"
 
-      when Net::TimeoutError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError
+      when Timeout::Error, Net::ReadTimeout, Net::OpenTimeout, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError
         if retry_count <= max_retries
           delay = base_delay * (2 ** retry_count)
           Rails.logger.warn "Network error (attempt #{retry_count}/#{max_retries}). Retrying in #{delay}s: #{error.message}"

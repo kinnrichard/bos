@@ -92,13 +92,19 @@ class FrontSyncJob < ApplicationJob
     # Execute sync based on type
     case sync_type
     when "full"
-      service.sync
+      # Use sync_all which is the actual method name
+      if service.respond_to?(:sync_all)
+        service.sync_all
+      else
+        raise NoMethodError, "#{service_class_name} does not implement sync_all method"
+      end
     when "incremental"
-      if service.respond_to?(:sync_since)
-        service.sync_since(since || 1.day.ago)
+      # For incremental, use sync_all with since parameter
+      if service.respond_to?(:sync_all)
+        service.sync_all(since: since || 1.day.ago)
       else
         Rails.logger.warn "Incremental sync not supported for #{resource_type}, performing full sync"
-        service.sync
+        service.sync_all
       end
     end
 

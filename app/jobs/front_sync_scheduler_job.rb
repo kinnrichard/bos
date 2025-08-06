@@ -6,19 +6,18 @@ class FrontSyncSchedulerJob < ApplicationJob
   queue_as :default
 
   # Sync scheduling configuration
+  # Only include resources that have corresponding sync services
   SYNC_INTERVALS = {
-    "contacts" => { full: 24.hours, incremental: 1.hour },
-    "conversations" => { full: 12.hours, incremental: 30.minutes },
-    "messages" => { incremental: 15.minutes }, # Messages only do incremental
+    "contacts" => { full: 1.hour },
+    "conversations" => { full: 24.hours, incremental: 15.minutes },
+    "messages" => { incremental: 1.hour }, # Messages only do incremental
     "tags" => { full: 24.hours },
     "inboxes" => { full: 24.hours },
-    "teammates" => { full: 24.hours },
-    "channels" => { full: 24.hours },
-    "comments" => { full: 6.hours, incremental: 1.hour }
+    "teammates" => { full: 24.hours }
   }.freeze
 
-  # Priority order for sync operations
-  SYNC_PRIORITY = %w[tags inboxes teammates channels contacts conversations messages comments].freeze
+  # Priority order for sync operations (removed channels and comments)
+  SYNC_PRIORITY = %w[tags inboxes teammates contacts conversations messages].freeze
 
   def perform(force_sync: false)
     Rails.logger.tagged("FrontSyncScheduler") do
@@ -196,13 +195,9 @@ class FrontSyncSchedulerJob < ApplicationJob
     )
   end
 
-  # Override perform to add health recording
-  alias_method :original_perform, :perform
-
-  def perform(*args)
-    result = original_perform(*args)
+  # Add after_perform callback to record health
+  after_perform do |job|
     record_scheduler_health
-    result
   end
 
   # Scheduler-specific metrics
