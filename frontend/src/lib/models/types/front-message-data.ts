@@ -40,12 +40,12 @@ export interface FrontMessageData extends BaseRecord {
  * Create FrontMessage data interface
  * Excludes auto-generated fields and relationships
  */
-export type CreateFrontMessageData = Omit<FrontMessageData, 'id' | 'created_at' | 'updated_at'>;
+export type CreateFrontMessageData = Omit<FrontMessageData, 'id', 'created_at', 'updated_at'>;
 
 /**
  * Update FrontMessage data interface
  * All fields optional except id, excludes relationships
  */
 export type UpdateFrontMessageData = Partial<
-  Omit<FrontMessageData, 'id' | 'created_at' | 'updated_at'>
+  Omit<FrontMessageData, 'id', 'created_at', 'updated_at'>
 >;

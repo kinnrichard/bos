@@ -41,7 +41,9 @@ export interface FrontConversationData extends BaseRecord {
  */
 export type CreateFrontConversationData = Omit<
   FrontConversationData,
-  'id' | 'created_at' | 'updated_at'
+  'id',
+  'created_at',
+  'updated_at'
 >;
 
 /**
@@ -49,5 +51,5 @@ export type CreateFrontConversationData = Omit<
  * All fields optional except id, excludes relationships
  */
 export type UpdateFrontConversationData = Partial<
-  Omit<FrontConversationData, 'id' | 'created_at' | 'updated_at'>
+  Omit<FrontConversationData, 'id', 'created_at', 'updated_at'>
 >;
