@@ -79,7 +79,7 @@ class FrontSyncJob < ApplicationJob
 
   # Sync a single resource type
   def sync_single_resource(resource_type, sync_type, since)
-    service_class_name = "Front#{resource_type.classify}SyncService"
+    service_class_name = "FrontSync::#{resource_type.classify}SyncService"
 
     begin
       service_class = service_class_name.constantize
