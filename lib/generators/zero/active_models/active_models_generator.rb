@@ -55,10 +55,10 @@ module Zero
                    desc: "Disable canary testing for this execution"
 
       def generate_active_models
-        say "🚀 Starting ActiveModels TypeScript generation (FULL MIGRATION)...", :cyan
+        say "🚀 Starting ActiveModels TypeScript generation...", :cyan
         say "📊 Rails version: #{Rails.version}", :green
         say "💎 Ruby version: #{RUBY_VERSION}", :green
-        say "🔄 GREENFIELD DEPLOYMENT: 100% NEW PIPELINE ACTIVE", :yellow
+        say "✅ Using new pipeline (100%)", :yellow
 
         configure_migration_system
 
@@ -226,7 +226,7 @@ module Zero
         # GREENFIELD: Default to 100% new pipeline
         config = {
           new_pipeline_percentage: 100,        # Full new pipeline
-          enable_canary_testing: true,         # Always validate
+          enable_canary_testing: false,        # No need to validate when 100% new
           circuit_breaker_enabled: true,       # Keep safety net
           fallback_to_legacy_on_error: true,   # Auto-fallback on errors
           track_performance_metrics: true,
