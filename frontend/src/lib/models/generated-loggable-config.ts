@@ -5,7 +5,15 @@
 // Run: rails generate zero:active_models
 
 export const LOGGABLE_MODELS = {
-  // Models with Loggable will be listed here
+  clients: { modelName: 'Client', includesLoggable: true },
+  devices: { modelName: 'Device', includesLoggable: true },
+  jobs: { modelName: 'Job', includesLoggable: true },
+  people: { modelName: 'Person', includesLoggable: true },
+  people_group_memberships: { modelName: 'PeopleGroupMembership', includesLoggable: true },
+  people_groups: { modelName: 'PeopleGroup', includesLoggable: true },
+  scheduled_date_times: { modelName: 'ScheduledDateTime', includesLoggable: true },
+  tasks: { modelName: 'Task', includesLoggable: true },
+  users: { modelName: 'User', includesLoggable: true },
 } as const;
 
 export type LoggableModelName = keyof typeof LOGGABLE_MODELS;

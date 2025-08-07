@@ -337,6 +337,64 @@ module Zero
         end
 
         # Execute pipeline for all tables
+        # Format all generated files at once using Prettier
+        def format_all_files(file_paths)
+          return if file_paths.empty?
+
+          begin
+            # Get the frontend root directory
+            frontend_root = find_frontend_root
+            return unless frontend_root
+
+            # Convert absolute paths to relative paths from frontend root
+            relative_paths = file_paths.map do |path|
+              if path.start_with?("/")
+                # Absolute path - make it relative to frontend root
+                Pathname.new(path).relative_path_from(Pathname.new(frontend_root)).to_s
+              else
+                # Already relative
+                path
+              end
+            end.compact
+
+            # Run prettier once on all files
+            if relative_paths.any?
+              files_list = relative_paths.join(" ")
+              prettier_cmd = "npx prettier --write --config-precedence prefer-file #{files_list}"
+
+              Dir.chdir(frontend_root) do
+                success = system(prettier_cmd, out: File::NULL, err: File::NULL)
+                if success
+                  puts "[FORMAT] Successfully formatted #{relative_paths.length} files with Prettier"
+                else
+                  puts "[FORMAT] Warning: Some files could not be formatted"
+                end
+              end
+            end
+          rescue => e
+            puts "[FORMAT] Warning: Failed to format files: #{e.message}"
+          end
+        end
+
+        # Find the frontend root directory
+        def find_frontend_root
+          # Try to find the frontend directory
+          possible_paths = []
+
+          # Add Rails root if available
+          possible_paths << Rails.root.join("frontend") if defined?(Rails)
+
+          # Try to find frontend from output directory
+          output_dir = @options[:output_dir] || "frontend/src/lib/models"
+          frontend_from_output = Pathname.new(output_dir).ascend.find { |p| p.basename.to_s == "frontend" }
+          possible_paths << frontend_from_output if frontend_from_output
+
+          # Fallback to current directory
+          possible_paths << Pathname.new("frontend")
+
+          possible_paths.find { |path| path && path.exist? && path.directory? }
+        end
+
         # Generate index files once for all models
         def generate_index_files_for_all_models(all_generated_models)
           generated_files = []
@@ -431,7 +489,10 @@ module Zero
           all_errors = []
 
           # Get the non-schema stages for processing individual tables
-          processing_stages = pipeline.stages.reject { |s| s.is_a?(Stages::SchemaAnalysisStage) }
+          # Also exclude FormattingStage - we'll run it once at the end
+          processing_stages = pipeline.stages.reject { |s|
+            s.is_a?(Stages::SchemaAnalysisStage) || s.is_a?(Stages::FormattingStage)
+          }
           processing_pipeline = Pipeline.new(stages: processing_stages)
 
           # Process each table
@@ -487,6 +548,11 @@ module Zero
           if all_generated_models.any?
             index_files = generate_index_files_for_all_models(all_generated_models)
             all_generated_files.concat(index_files)
+          end
+
+          # Run formatting once on all generated files
+          if all_generated_files.any?
+            format_all_files(all_generated_files)
           end
 
           # Update statistics
