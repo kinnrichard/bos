@@ -48,7 +48,6 @@
   let hasFocus = $state(false);
   let hasAutoFocused = $state(false);
 
-  // NEW: flag for user cancelation upon create; Added By: Richard 08/5/2025
   let isCancelling = false;
 
   // Update original value when value prop changes
@@ -118,7 +117,6 @@
   }
 
   function handleCancel() {
-    // NEW: set isCancelling to true if user cancel; Added By: Richard 08/5/2025
     isCancelling = true;
 
     if (element) {
@@ -165,25 +163,13 @@
     }
   }
 
-  async function handleBlur() {
+  function handleBlur() {
     hasFocus = false;
     onEditingChange?.(false);
     focusActions.clearFocus();
 
-     // NEW: cancel creation upon cancel; Added By: Richard 08/5/2025
     if (isCancelling) {
       isCancelling = false;
-      return;
-    }
-
-    const trimmedValue = value.trim();
-
-    if (!allowEmpty && !trimmedValue) {
-      handleCancel();
-      return;
-    }
-
-    if (trimmedValue === originalValue) {
       return;
     }
 
@@ -196,17 +182,6 @@
       if (draggableParent) {
         draggableParent.setAttribute('draggable', 'true');
       }
-    }
-
-    isSaving = true;
-
-    try {
-      await onSave?.(trimmedValue);
-      originalValue = trimmedValue;
-    } catch (error) {
-      
-    } finally {
-      isSaving = false;
     }
 
     handleSave();
