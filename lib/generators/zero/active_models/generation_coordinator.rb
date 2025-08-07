@@ -103,15 +103,10 @@ module Zero
           setup_output_directories
 
           # Ensure Rails models are loaded for proper singularization
-          # Load models manually to avoid eager_load issues
-          if defined?(Rails)
-            Dir[Rails.root.join("app/models/**/*.rb")].each do |file|
-              begin
-                require_dependency file
-              rescue LoadError, NameError
-                # Skip files that can't be loaded
-              end
-            end
+          # In Rails 8.0 with Zeitwerk, we only need to eager load the app/models directory
+          if defined?(Rails) && !Rails.application.config.eager_load
+            # Only load the models, not the entire application
+            Rails.autoloaders.main.eager_load_dir(Rails.root.join("app/models"))
           end
 
           # Phase 2: Schema Extraction and Filtering
@@ -847,19 +842,10 @@ module Zero
       def detect_loggable_models
         loggable_models = {}
 
-        # Load models manually instead of using eager_load! which has issues
-        model_files = Dir[Rails.root.join("app/models/**/*.rb")]
-        model_files.each do |file|
-          # Skip concerns and application_record
-          next if file.include?("concerns/") || file.include?("application_record.rb")
-
-          begin
-            # Use load instead of require_dependency to avoid issues
-            load file
-          rescue => e
-            # Skip files that can't be loaded
-            Rails.logger.debug "Skipping file #{file}: #{e.message}"
-          end
+        # Ensure all models are loaded for introspection
+        # In Rails 8.0 with Zeitwerk, only eager load the models directory
+        if !Rails.application.config.eager_load
+          Rails.autoloaders.main.eager_load_dir(Rails.root.join("app/models"))
         end
 
         # Now check loaded models for Loggable concern

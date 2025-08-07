@@ -152,14 +152,9 @@ module Zero
       def ensure_models_loaded
         return if @models_loaded
 
-        # Load all models from app/models directory
-        Dir.glob(Rails.root.join("app", "models", "**", "*.rb")).each do |file|
-          require_dependency file unless file.include?("/concerns/")
-        end
-
-        # Also load concerns as they might define associations
-        Dir.glob(Rails.root.join("app", "models", "concerns", "**", "*.rb")).each do |file|
-          require_dependency file
+        # In Rails 8.0 with Zeitwerk, only eager load the models directory
+        if !Rails.application.config.eager_load
+          Rails.autoloaders.main.eager_load_dir(Rails.root.join("app/models"))
         end
 
         @models_loaded = true
