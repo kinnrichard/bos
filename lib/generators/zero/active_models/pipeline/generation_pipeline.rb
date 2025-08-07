@@ -403,14 +403,14 @@ module Zero
             # Use the file manager for proper logging and handling
             file_manager = @file_manager
 
-            # Generate Zero.js index file
+            # Generate Zero.js index file (deferred for batch processing)
             zero_index_content = generate_zero_index_content(all_generated_models)
-            zero_file_path = file_manager.write_with_formatting("../zero/index.ts", zero_index_content)
+            zero_file_path = file_manager.write_with_formatting("../zero/index.ts", zero_index_content, defer_write: true)
             generated_files << zero_file_path if zero_file_path
 
-            # Generate Loggable configuration file
+            # Generate Loggable configuration file (deferred for batch processing)
             loggable_content = generate_loggable_config_content(all_generated_models)
-            loggable_file_path = file_manager.write_with_formatting("generated-loggable-config.ts", loggable_content)
+            loggable_file_path = file_manager.write_with_formatting("generated-loggable-config.ts", loggable_content, defer_write: true)
             generated_files << loggable_file_path if loggable_file_path
           rescue => e
             # Log error but don't fail the whole generation
@@ -603,9 +603,10 @@ module Zero
             all_generated_files.concat(index_files)
           end
 
-          # Run formatting once on all generated files
-          if all_generated_files.any?
-            format_all_files(all_generated_files)
+          # Process all batched files at once for optimal performance
+          # This formats and writes all deferred files in a single prettier call
+          if @file_manager.respond_to?(:process_batch_files)
+            @file_manager.process_batch_files
           end
 
           # Update statistics

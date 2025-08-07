@@ -105,8 +105,9 @@ module Zero
                 loggable_config_file = generate_loggable_configuration(context)
               end
 
-              # Phase 3: Process batch file operations (format and write)
-              batch_result = process_batch_files
+              # Phase 3: Skip batch processing here - will be done after all tables
+              # batch_result = process_batch_files (moved to pipeline level)
+              batch_result = { success: true, processed_count: 0 }
 
               # Phase 4: Collect all generated file paths
               all_files = [ *generated_files, zero_index_file, loggable_config_file ].compact
@@ -331,8 +332,16 @@ module Zero
           # @return [Hash] Batch processing results
           #
           def process_batch_files
-            # FileManager doesn't have batch processing yet, return empty result
-            { success: true, processed_count: 0 }
+            # Delegate to FileManager for batch processing
+            file_manager = service_registry.get_service(:file_manager)
+
+            if file_manager.respond_to?(:process_batch_files)
+              file_manager.process_batch_files
+              { success: true, processed_count: file_manager.statistics[:created] }
+            else
+              # Fallback if FileManager doesn't have batch processing
+              { success: true, processed_count: 0 }
+            end
           end
 
           # Generate model import examples for Zero.js documentation
