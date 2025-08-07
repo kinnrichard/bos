@@ -12,6 +12,7 @@
 
 import { createActiveRecord } from './base/active-record';
 import type { JobData, CreateJobData, UpdateJobData } from './types/job-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * Default values for Job creation
@@ -67,7 +68,19 @@ const JobConfig = {
 export const Job = createActiveRecord<JobData>(JobConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-// No relationships defined for this model
+registerModelRelationships('jobs', {
+  client: { type: 'belongsTo', model: 'Client' },
+  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
+  jobAssignments: { type: 'hasMany', model: 'JobAssignment' },
+  technicians: { type: 'hasMany', model: 'User' },
+  jobPeople: { type: 'hasMany', model: 'JobPerson' },
+  people: { type: 'hasMany', model: 'Person' },
+  jobTargets: { type: 'hasMany', model: 'JobTarget' },
+  tasks: { type: 'hasMany', model: 'Task' },
+  allTasks: { type: 'hasMany', model: 'Task' },
+  notes: { type: 'hasMany', model: 'Note' },
+  scheduledDateTimes: { type: 'hasMany', model: 'ScheduledDateTime' },
+});
 
 // Export types for convenience
 export type { JobData, CreateJobData, UpdateJobData };

@@ -16,6 +16,7 @@ import type {
   CreateActivityLogData,
   UpdateActivityLogData,
 } from './types/activity-log-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
@@ -100,7 +101,11 @@ declarePolymorphicRelationships({
 });
 
 // Epic-009: Register model relationships for includes() functionality
-// No relationships defined for this model
+registerModelRelationships('activity_logs', {
+  user: { type: 'belongsTo', model: 'User' },
+  client: { type: 'belongsTo', model: 'Client' },
+  job: { type: 'belongsTo', model: 'Job' },
+});
 
 /**
  * Import alias for easy switching between reactive/non-reactive

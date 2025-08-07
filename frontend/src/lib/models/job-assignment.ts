@@ -16,6 +16,7 @@ import type {
   CreateJobAssignmentData,
   UpdateJobAssignmentData,
 } from './types/job-assignment-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for JobAssignment
@@ -58,7 +59,10 @@ const JobAssignmentConfig = {
 export const JobAssignment = createActiveRecord<JobAssignmentData>(JobAssignmentConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-// No relationships defined for this model
+registerModelRelationships('job_assignments', {
+  job: { type: 'belongsTo', model: 'Job' },
+  user: { type: 'belongsTo', model: 'User' },
+});
 
 // Export types for convenience
 export type { JobAssignmentData, CreateJobAssignmentData, UpdateJobAssignmentData };

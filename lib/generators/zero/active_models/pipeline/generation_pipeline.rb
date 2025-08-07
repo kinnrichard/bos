@@ -511,9 +511,9 @@ module Zero
               table_context = GenerationContext.new(
                 table: table_data,
                 schema: full_schema,
+                relationships: table_relationships,
                 options: @options.merge(table: table_data[:name], single_table_mode: false)
               ).with_metadata(
-                relationships: table_relationships,
                 patterns: full_schema[:patterns][table_data[:name]] || {},
                 full_schema: full_schema
               )

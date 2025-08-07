@@ -12,6 +12,7 @@
 
 import { createActiveRecord } from './base/active-record';
 import type { ClientData, CreateClientData, UpdateClientData } from './types/client-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for Client
@@ -54,7 +55,15 @@ const ClientConfig = {
 export const Client = createActiveRecord<ClientData>(ClientConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-// No relationships defined for this model
+registerModelRelationships('clients', {
+  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
+  people: { type: 'hasMany', model: 'Person' },
+  jobs: { type: 'hasMany', model: 'Job' },
+  devices: { type: 'hasMany', model: 'Device' },
+  peopleGroups: { type: 'hasMany', model: 'PeopleGroup' },
+  clientsFrontConversations: { type: 'hasMany', model: 'ClientsFrontConversation' },
+  frontConversations: { type: 'hasMany', model: 'FrontConversation' },
+});
 
 // Export types for convenience
 export type { ClientData, CreateClientData, UpdateClientData };

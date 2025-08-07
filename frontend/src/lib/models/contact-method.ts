@@ -16,6 +16,7 @@ import type {
   CreateContactMethodData,
   UpdateContactMethodData,
 } from './types/contact-method-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for ContactMethod
@@ -58,7 +59,11 @@ const ContactMethodConfig = {
 export const ContactMethod = createActiveRecord<ContactMethodData>(ContactMethodConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-// No relationships defined for this model
+registerModelRelationships('contact_methods', {
+  person: { type: 'belongsTo', model: 'Person' },
+  frontConversations: { type: 'hasMany', model: 'FrontConversation' },
+  frontMessageRecipients: { type: 'hasMany', model: 'FrontMessageRecipient' },
+});
 
 // Export types for convenience
 export type { ContactMethodData, CreateContactMethodData, UpdateContactMethodData };

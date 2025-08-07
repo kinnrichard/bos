@@ -16,6 +16,7 @@ import type {
   CreateScheduledDateTimeData,
   UpdateScheduledDateTimeData,
 } from './types/scheduled-date-time-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
@@ -80,7 +81,11 @@ declarePolymorphicRelationships({
 });
 
 // Epic-009: Register model relationships for includes() functionality
-// No relationships defined for this model
+registerModelRelationships('scheduled_date_times', {
+  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
+  scheduledDateTimeUsers: { type: 'hasMany', model: 'ScheduledDateTimeUser' },
+  users: { type: 'hasMany', model: 'User' },
+});
 
 // Export types for convenience
 export type { ScheduledDateTimeData, CreateScheduledDateTimeData, UpdateScheduledDateTimeData };

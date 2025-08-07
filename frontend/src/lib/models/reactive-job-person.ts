@@ -16,6 +16,7 @@ import type {
   CreateJobPersonData,
   UpdateJobPersonData,
 } from './types/job-person-data';
+import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for JobPerson
@@ -77,7 +78,10 @@ const ReactiveJobPersonConfig = {
 export const ReactiveJobPerson = createReactiveRecord<JobPersonData>(ReactiveJobPersonConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-// No relationships defined for this model
+registerModelRelationships('job_people', {
+  job: { type: 'belongsTo', model: 'Job' },
+  person: { type: 'belongsTo', model: 'Person' },
+});
 
 /**
  * Import alias for easy switching between reactive/non-reactive
