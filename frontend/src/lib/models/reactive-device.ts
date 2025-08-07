@@ -12,7 +12,6 @@
 
 import { createReactiveRecord } from './base/reactive-record';
 import type { DeviceData, CreateDeviceData, UpdateDeviceData } from './types/device-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for Device
@@ -74,11 +73,7 @@ const ReactiveDeviceConfig = {
 export const ReactiveDevice = createReactiveRecord<DeviceData>(ReactiveDeviceConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('devices', {
-  client: { type: 'belongsTo', model: 'Client' },
-  person: { type: 'belongsTo', model: 'Person' },
-  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
-});
+// No relationships defined for this model
 
 /**
  * Import alias for easy switching between reactive/non-reactive

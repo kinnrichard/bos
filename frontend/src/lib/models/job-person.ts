@@ -16,7 +16,6 @@ import type {
   CreateJobPersonData,
   UpdateJobPersonData,
 } from './types/job-person-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for JobPerson
@@ -59,10 +58,7 @@ const JobPersonConfig = {
 export const JobPerson = createActiveRecord<JobPersonData>(JobPersonConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('job_people', {
-  job: { type: 'belongsTo', model: 'Job' },
-  person: { type: 'belongsTo', model: 'Person' },
-});
+// No relationships defined for this model
 
 // Export types for convenience
 export type { JobPersonData, CreateJobPersonData, UpdateJobPersonData };

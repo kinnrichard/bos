@@ -12,7 +12,6 @@
 
 import { createReactiveRecord } from './base/reactive-record';
 import type { UserData, CreateUserData, UpdateUserData } from './types/user-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for User
@@ -74,16 +73,7 @@ const ReactiveUserConfig = {
 export const ReactiveUser = createReactiveRecord<UserData>(ReactiveUserConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('users', {
-  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
-  assignedJobs: { type: 'hasMany', model: 'Job' },
-  assignedTasks: { type: 'hasMany', model: 'Task' },
-  jobAssignments: { type: 'hasMany', model: 'JobAssignment' },
-  technicianJobs: { type: 'hasMany', model: 'Job' },
-  scheduledDateTimeUsers: { type: 'hasMany', model: 'ScheduledDateTimeUser' },
-  scheduledDateTimes: { type: 'hasMany', model: 'ScheduledDateTime' },
-  notes: { type: 'hasMany', model: 'Note' },
-});
+// No relationships defined for this model
 
 /**
  * Import alias for easy switching between reactive/non-reactive

@@ -12,7 +12,6 @@
 
 import { createReactiveRecord } from './base/reactive-record';
 import type { ClientData, CreateClientData, UpdateClientData } from './types/client-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for Client
@@ -74,15 +73,7 @@ const ReactiveClientConfig = {
 export const ReactiveClient = createReactiveRecord<ClientData>(ReactiveClientConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('clients', {
-  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
-  people: { type: 'hasMany', model: 'Person' },
-  jobs: { type: 'hasMany', model: 'Job' },
-  devices: { type: 'hasMany', model: 'Device' },
-  peopleGroups: { type: 'hasMany', model: 'PeopleGroup' },
-  clientsFrontConversations: { type: 'hasMany', model: 'ClientsFrontConversation' },
-  frontConversations: { type: 'hasMany', model: 'FrontConversation' },
-});
+// No relationships defined for this model
 
 /**
  * Import alias for easy switching between reactive/non-reactive

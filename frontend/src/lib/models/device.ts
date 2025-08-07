@@ -12,7 +12,6 @@
 
 import { createActiveRecord } from './base/active-record';
 import type { DeviceData, CreateDeviceData, UpdateDeviceData } from './types/device-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ActiveRecord configuration for Device
@@ -55,11 +54,7 @@ const DeviceConfig = {
 export const Device = createActiveRecord<DeviceData>(DeviceConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('devices', {
-  client: { type: 'belongsTo', model: 'Client' },
-  person: { type: 'belongsTo', model: 'Person' },
-  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
-});
+// No relationships defined for this model
 
 // Export types for convenience
 export type { DeviceData, CreateDeviceData, UpdateDeviceData };

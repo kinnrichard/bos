@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "stage"
+
 module Zero
   module Generators
     module Pipeline
@@ -206,7 +208,7 @@ module Zero
 
         rescue StandardError => e
           @statistics[:stage_errors] += 1
-          raise StageError.new(stage: stage, context: context, error: e)
+          raise Stage::StageError.new(stage: stage, context: context, error: e)
         end
 
         # Validate that all stages implement required interface
@@ -273,7 +275,7 @@ module Zero
         # @raise [PipelineError] Enhanced error with pipeline context
         #
         def handle_pipeline_error(error, context)
-          if error.is_a?(StageError)
+          if error.is_a?(Stage::StageError)
             # Re-raise stage errors with full context
             raise error
           else

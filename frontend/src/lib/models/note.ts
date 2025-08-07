@@ -12,7 +12,6 @@
 
 import { createActiveRecord } from './base/active-record';
 import type { NoteData, CreateNoteData, UpdateNoteData } from './types/note-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
@@ -68,9 +67,7 @@ declarePolymorphicRelationships({
 });
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('notes', {
-  user: { type: 'belongsTo', model: 'User' },
-});
+// No relationships defined for this model
 
 // Export types for convenience
 export type { NoteData, CreateNoteData, UpdateNoteData };

@@ -12,7 +12,6 @@
 
 import { createReactiveRecord } from './base/reactive-record';
 import type { TaskData, CreateTaskData, UpdateTaskData } from './types/task-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for Task
@@ -75,17 +74,7 @@ const ReactiveTaskConfig = {
 export const ReactiveTask = createReactiveRecord<TaskData>(ReactiveTaskConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('tasks', {
-  job: { type: 'belongsTo', model: 'Job' },
-  assignedTo: { type: 'belongsTo', model: 'User' },
-  parent: { type: 'belongsTo', model: 'Task' },
-  repositionedAfter: { type: 'belongsTo', model: 'Task' },
-  client: { type: 'hasOne', model: 'Client' },
-  nextRepositionedTask: { type: 'hasOne', model: 'Task' },
-  notes: { type: 'hasMany', model: 'Note' },
-  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
-  subtasks: { type: 'hasMany', model: 'Task' },
-});
+// No relationships defined for this model
 
 /**
  * Import alias for easy switching between reactive/non-reactive

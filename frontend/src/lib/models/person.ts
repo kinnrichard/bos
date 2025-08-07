@@ -12,7 +12,6 @@
 
 import { createActiveRecord } from './base/active-record';
 import type { PersonData, CreatePersonData, UpdatePersonData } from './types/person-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * Default values for Person creation
@@ -64,17 +63,7 @@ const PersonConfig = {
 export const Person = createActiveRecord<PersonData>(PersonConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('people', {
-  client: { type: 'belongsTo', model: 'Client' },
-  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
-  contactMethods: { type: 'hasMany', model: 'ContactMethod' },
-  devices: { type: 'hasMany', model: 'Device' },
-  notes: { type: 'hasMany', model: 'Note' },
-  peopleGroupMemberships: { type: 'hasMany', model: 'PeopleGroupMembership' },
-  peopleGroups: { type: 'hasMany', model: 'PeopleGroup' },
-  peopleFrontConversations: { type: 'hasMany', model: 'PeopleFrontConversation' },
-  frontConversations: { type: 'hasMany', model: 'FrontConversation' },
-});
+// No relationships defined for this model
 
 // Export types for convenience
 export type { PersonData, CreatePersonData, UpdatePersonData };

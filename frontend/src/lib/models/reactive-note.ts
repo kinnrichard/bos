@@ -12,7 +12,6 @@
 
 import { createReactiveRecord } from './base/reactive-record';
 import type { NoteData, CreateNoteData, UpdateNoteData } from './types/note-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 import { declarePolymorphicRelationships } from '../zero/polymorphic';
 
 /**
@@ -87,9 +86,7 @@ declarePolymorphicRelationships({
 });
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('notes', {
-  user: { type: 'belongsTo', model: 'User' },
-});
+// No relationships defined for this model
 
 /**
  * Import alias for easy switching between reactive/non-reactive

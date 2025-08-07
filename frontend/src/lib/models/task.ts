@@ -12,7 +12,6 @@
 
 import { createActiveRecord } from './base/active-record';
 import type { TaskData, CreateTaskData, UpdateTaskData } from './types/task-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * Default values for Task creation
@@ -69,17 +68,7 @@ const TaskConfig = {
 export const Task = createActiveRecord<TaskData>(TaskConfig);
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('tasks', {
-  job: { type: 'belongsTo', model: 'Job' },
-  assignedTo: { type: 'belongsTo', model: 'User' },
-  parent: { type: 'belongsTo', model: 'Task' },
-  repositionedAfter: { type: 'belongsTo', model: 'Task' },
-  client: { type: 'hasOne', model: 'Client' },
-  nextRepositionedTask: { type: 'hasOne', model: 'Task' },
-  notes: { type: 'hasMany', model: 'Note' },
-  activityLogs: { type: 'hasMany', model: 'ActivityLog' },
-  subtasks: { type: 'hasMany', model: 'Task' },
-});
+// No relationships defined for this model
 
 // Export types for convenience
 export type { TaskData, CreateTaskData, UpdateTaskData };

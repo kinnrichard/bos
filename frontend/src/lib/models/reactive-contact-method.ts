@@ -16,7 +16,6 @@ import type {
   CreateContactMethodData,
   UpdateContactMethodData,
 } from './types/contact-method-data';
-import { registerModelRelationships } from './base/scoped-query-base';
 
 /**
  * ReactiveRecord configuration for ContactMethod
@@ -80,11 +79,7 @@ export const ReactiveContactMethod = createReactiveRecord<ContactMethodData>(
 );
 
 // Epic-009: Register model relationships for includes() functionality
-registerModelRelationships('contact_methods', {
-  person: { type: 'belongsTo', model: 'Person' },
-  frontConversations: { type: 'hasMany', model: 'FrontConversation' },
-  frontMessageRecipients: { type: 'hasMany', model: 'FrontMessageRecipient' },
-});
+// No relationships defined for this model
 
 /**
  * Import alias for easy switching between reactive/non-reactive

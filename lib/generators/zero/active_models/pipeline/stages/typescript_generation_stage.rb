@@ -92,16 +92,23 @@ module Zero
               # Phase 1: Write TypeScript model files with deferred processing
               generated_files = write_typescript_files(context)
 
-              # Phase 2: Generate Zero.js index file
-              zero_index_file = generate_zero_index_file(context)
+              # Phase 2: Skip index generation in multi-table mode (handled after all tables)
+              # Only generate index files if we're processing a single table
+              zero_index_file = nil
+              loggable_config_file = nil
 
-              # Phase 3: Generate Loggable configuration file
-              loggable_config_file = generate_loggable_configuration(context)
+              if context.options[:single_table_mode] != false
+                # Generate Zero.js index file
+                zero_index_file = generate_zero_index_file(context)
 
-              # Phase 4: Process batch file operations (format and write)
+                # Generate Loggable configuration file
+                loggable_config_file = generate_loggable_configuration(context)
+              end
+
+              # Phase 3: Process batch file operations (format and write)
               batch_result = process_batch_files
 
-              # Phase 5: Collect all generated file paths
+              # Phase 4: Collect all generated file paths
               all_files = [ *generated_files, zero_index_file, loggable_config_file ].compact
 
               # Phase 6: Store results in context metadata
