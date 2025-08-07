@@ -337,7 +337,7 @@ module Zero
 
       # Report execution start with environment context
       def report_execution_start
-        shell&.say "Generating ReactiveRecord models in TypeScript based on Rails models...", :green
+        # Silent generation - success message will be shown at the end
 
         if options[:dry_run]
           shell&.say "🔍 DRY RUN MODE - No files will be created", :yellow
@@ -356,7 +356,7 @@ module Zero
         file_manager.ensure_directory_exists(base_path)
         file_manager.ensure_directory_exists(types_path)
 
-        shell&.say "📁 Output directory: #{base_path}", :blue
+        # Output directory: #{base_path}
       end
 
       # Extract schema and apply filtering logic
@@ -435,8 +435,6 @@ module Zero
       # Creates a TypeScript configuration file that maps all models
       # that include the Loggable concern
       def generate_loggable_configuration_file
-        shell&.say "📝 Generating Loggable configuration...", :blue
-
         config_content = generate_loggable_config
         file_manager = service_registry.get_service(:file_manager)
 
@@ -454,7 +452,6 @@ module Zero
         # Write the file directly
         File.write(full_path, config_content)
 
-        shell&.say "  ✅ Updated: #{full_path}", :green
         @statistics[:files_created] += 1
       rescue => e
         shell&.say "  ❌ Failed to generate Loggable config: #{e.message}", :red
@@ -762,9 +759,12 @@ module Zero
       def display_comprehensive_statistics(result)
         return if options[:dry_run]
 
-        display_file_statistics(result)
-        display_service_performance(result)
-        display_execution_summary(result)
+        summary = result[:summary]
+        if summary[:success_rate] == 100.0
+          shell&.say "\n✅ ReactiveRecord successfully generated #{summary[:total_models]} TypeScript models (#{summary[:total_files]} files) in #{summary[:execution_time]}s", :green
+        else
+          shell&.say "\n⚠️ ReactiveRecord generated #{summary[:total_models]} TypeScript models (#{summary[:total_files]} files) in #{summary[:execution_time]}s with #{summary[:success_rate]}% success rate", :yellow
+        end
       end
 
       def display_file_statistics(result)
@@ -798,15 +798,6 @@ module Zero
           shell&.say "  📄 Templates rendered: #{template_stats[:renders]}", :green
           shell&.say "  ⚡ Total render time: #{template_stats[:total_time]}s", :cyan
           shell&.say "  📊 Average render time: #{template_stats[:average_time]}s", :cyan
-
-          if template_stats[:cache_enabled]
-            shell&.say "  🗄️  Template caching: enabled", :blue
-            shell&.say "  📈 Cache hit ratio: #{template_stats[:cache_hit_ratio]}%", :magenta
-            shell&.say "  🔄 Cache hits: #{template_stats[:cache_hits]}", :green
-            shell&.say "  ❌ Cache misses: #{template_stats[:cache_misses]}", :yellow
-          else
-            shell&.say "  🗄️  Template caching: disabled", :yellow
-          end
         end
       end
 
@@ -879,7 +870,6 @@ module Zero
           end
         end
 
-        shell&.say "  ✅ Detected #{loggable_models.count} Loggable models", :green if loggable_models.any?
         loggable_models
       rescue => e
         Rails.logger.warn "Failed to detect Loggable models: #{e.message}"

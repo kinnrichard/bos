@@ -129,7 +129,7 @@ module Zero
         begin
           FileUtils.mkdir_p(path)
           @statistics[:directories_created] += 1
-          shell&.say_status(:create_dir, path, :blue)
+          # Created directory: #{path}
           true
         rescue => e
           shell&.say_status(:error, "Failed to create directory #{path}: #{e.message}", :red)
@@ -261,7 +261,7 @@ module Zero
       def process_batch_files
         return if @batch_queue.empty? || options[:dry_run]
 
-        shell&.say_status(:batch, "Processing #{@batch_queue.size} files...", :blue)
+        # Processing batch of #{@batch_queue.size} files
 
         # Format all files in batch
         if @prettier_available && @batch_config[:enabled]
@@ -349,7 +349,7 @@ module Zero
         # @return [Symbol] Operation result (:created, :identical, :error)
         def create_or_skip(destination, content)
           if @comparator.identical?(destination, content)
-            @shell&.say_status(:identical, destination, :blue)
+            # File is identical, skipping: #{destination}
             OPERATION_RESULTS[:identical]
           else
             begin
@@ -619,7 +619,7 @@ module Zero
               end
 
               @statistics[:batch_operations] += 1
-              shell&.say_status(:batch_format, "Formatted #{@batch_queue.size} files in #{(Time.current - start_time).round(2)}s", :green)
+              # Formatted #{@batch_queue.size} files in #{(Time.current - start_time).round(2)}s
             else
               # Fallback: format individually and populate cache
               shell&.say_status(:batch_fallback, "Batch formatting failed, formatting individually", :yellow)

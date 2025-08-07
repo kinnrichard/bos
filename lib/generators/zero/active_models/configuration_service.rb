@@ -90,7 +90,6 @@ module Zero
         # Performance settings
         performance: {
           enable_schema_caching: true,
-          enable_template_caching: false, # Environment-specific
           cache_ttl: 3600, # 1 hour
           max_cache_entries: 100
         }.freeze,
@@ -106,9 +105,7 @@ module Zero
             enable_caching: true,
             error_handling: "detailed"
           },
-          performance: {
-            enable_template_caching: true
-          },
+          performance: {},
           file_operations: {
             enable_prettier: true
           }
@@ -119,7 +116,6 @@ module Zero
             error_handling: "minimal"
           },
           performance: {
-            enable_template_caching: true,
             cache_ttl: 7200 # 2 hours
           },
           file_operations: {
@@ -133,8 +129,7 @@ module Zero
             error_handling: "detailed"
           },
           performance: {
-            enable_schema_caching: false,
-            enable_template_caching: false
+            enable_schema_caching: false
           },
           file_operations: {
             enable_prettier: false,
@@ -271,13 +266,6 @@ module Zero
         get_config_value(:file_operations)[:force_overwrite]
       end
 
-      # Check if template caching is enabled
-      #
-      # @return [Boolean] True if template caching is enabled
-      #
-      def enable_template_caching?
-        get_config_value(:template_settings)[:enable_caching]
-      end
 
       # Get template trim mode
       #

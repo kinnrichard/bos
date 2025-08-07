@@ -23,7 +23,6 @@ if ! gem list foreman -i --silent; then
 fi
 
 # Regenerate Epic-008 models before starting servers
-echo "🔄 Generating ReactiveRecord models..."
 rails generate zero:active_models
 
 exec foreman start -f Procfile.dev "$@"

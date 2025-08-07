@@ -478,10 +478,7 @@ module Zero
         # Determine templates directory
         templates_dir = File.expand_path("templates", File.dirname(__FILE__))
 
-        TemplateRenderer.new(
-          templates_dir,
-          cache_enabled: config.enable_template_caching?
-        )
+        TemplateRenderer.new(templates_dir)
       end
 
       def create_type_mapper(dependencies)

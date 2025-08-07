@@ -11,8 +11,7 @@ module Zero
     # Features:
     # - Template existence validation with helpful error messages
     # - Centralized context building and variable management
-    # - Performance metrics and optional template caching
-    # - Development-mode template reloading
+    # - Performance metrics tracking
     # - Comprehensive error handling with debugging support
     #
     # Usage:
@@ -23,21 +22,16 @@ module Zero
       class TemplateNotFoundError < StandardError; end
       class TemplateRenderingError < StandardError; end
 
-      attr_reader :templates_dir, :cache_enabled, :performance_metrics
+      attr_reader :templates_dir, :performance_metrics
 
-      # Initialize TemplateRenderer with template directory and options
+      # Initialize TemplateRenderer with template directory
       #
       # @param templates_dir [String] Path to the templates directory
-      # @param cache_enabled [Boolean] Enable template caching for performance (default: false)
-      def initialize(templates_dir, cache_enabled: false)
+      def initialize(templates_dir)
         @templates_dir = File.expand_path(templates_dir)
-        @cache_enabled = cache_enabled
-        @template_cache = {}
         @performance_metrics = {
           renders: 0,
-          total_time: 0.0,
-          cache_hits: 0,
-          cache_misses: 0
+          total_time: 0.0
         }
 
         validate_templates_directory!
@@ -55,7 +49,8 @@ module Zero
 
         rendered_content = nil
         render_time = Benchmark.realtime do
-          template_content = load_template_content(template_name)
+          template_path = File.join(@templates_dir, template_name)
+          template_content = File.read(template_path)
           rendered_content = render_erb_template(template_content, context)
         end
 
@@ -102,30 +97,14 @@ module Zero
         File.exist?(template_path)
       end
 
-      # Clear template cache (useful in development mode)
-      #
-      # @return [Integer] Number of cached templates cleared
-      def clear_cache!
-        cleared_count = @template_cache.size
-        @template_cache.clear
-        @performance_metrics[:cache_hits] = 0
-        @performance_metrics[:cache_misses] = 0
-        cleared_count
-      end
-
       # Get performance statistics
       #
-      # @return [Hash] Performance metrics including render count, total time, cache stats
+      # @return [Hash] Performance metrics including render count and total time
       def statistics
         {
           renders: @performance_metrics[:renders],
           total_time: @performance_metrics[:total_time].round(4),
-          average_time: calculate_average_render_time,
-          cache_enabled: @cache_enabled,
-          cache_hits: @performance_metrics[:cache_hits],
-          cache_misses: @performance_metrics[:cache_misses],
-          cache_hit_ratio: calculate_cache_hit_ratio,
-          cached_templates: @template_cache.size
+          average_time: calculate_average_render_time
         }
       end
 
@@ -142,62 +121,6 @@ module Zero
         unless File.readable?(@templates_dir)
           raise ArgumentError, "Templates directory is not readable: #{@templates_dir}"
         end
-      end
-
-      # Load template content from file or cache
-      #
-      # @param template_name [String] Name of the template file
-      # @return [String] Template file content
-      def load_template_content(template_name)
-        if @cache_enabled
-          load_cached_template_content(template_name)
-        else
-          load_fresh_template_content(template_name)
-        end
-      end
-
-      # Load template content from cache or file system
-      #
-      # @param template_name [String] Name of the template file
-      # @return [String] Template file content
-      def load_cached_template_content(template_name)
-        template_path = File.join(@templates_dir, template_name)
-        cache_key = template_path
-
-        # Check if cached version is still valid (development mode reloading)
-        if @template_cache[cache_key] && !template_modified_since_cache?(template_path, cache_key)
-          @performance_metrics[:cache_hits] += 1
-          return @template_cache[cache_key]
-        end
-
-        # Load fresh content and cache it
-        content = load_fresh_template_content(template_name)
-        @template_cache[cache_key] = content
-        @performance_metrics[:cache_misses] += 1
-        content
-      end
-
-      # Load template content directly from file system
-      #
-      # @param template_name [String] Name of the template file
-      # @return [String] Template file content
-      def load_fresh_template_content(template_name)
-        template_path = File.join(@templates_dir, template_name)
-        File.read(template_path)
-      end
-
-      # Check if template file has been modified since it was cached
-      #
-      # @param template_path [String] Full path to template file
-      # @param cache_key [String] Cache key for the template
-      # @return [Boolean] True if template has been modified
-      def template_modified_since_cache?(template_path, cache_key)
-        return false unless @template_cache.key?(cache_key)
-
-        current_mtime = File.mtime(template_path)
-        cached_mtime = @template_cache["#{cache_key}_mtime"]
-
-        cached_mtime.nil? || current_mtime > cached_mtime
       end
 
       # Render ERB template with context binding
@@ -312,16 +235,6 @@ module Zero
         return 0.0 if @performance_metrics[:renders] == 0
 
         (@performance_metrics[:total_time] / @performance_metrics[:renders]).round(4)
-      end
-
-      # Calculate cache hit ratio as percentage
-      #
-      # @return [Float] Cache hit ratio as percentage (0-100)
-      def calculate_cache_hit_ratio
-        total_attempts = @performance_metrics[:cache_hits] + @performance_metrics[:cache_misses]
-        return 0.0 if total_attempts == 0
-
-        ((@performance_metrics[:cache_hits].to_f / total_attempts) * 100).round(2)
       end
     end
   end
