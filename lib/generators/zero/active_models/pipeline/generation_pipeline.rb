@@ -457,8 +457,15 @@ module Zero
 
         # Generate Loggable configuration content
         def generate_loggable_config_content(all_generated_models)
-          # For now, just return a basic config
-          # This would need to be enhanced to detect which models actually include Loggable
+          loggable_models = detect_loggable_models
+
+          # Sort models by table name for consistent output
+          sorted_models = loggable_models.sort_by { |table_name, _| table_name }
+
+          model_entries = sorted_models.map do |table_name, config|
+            "  '#{table_name}': { modelName: '#{config[:modelName]}', includesLoggable: true }"
+          end.join(",\n")
+
           <<~TYPESCRIPT
             // 🤖 AUTO-GENERATED LOGGABLE CONFIGURATION
             //
@@ -467,7 +474,7 @@ module Zero
             // Run: rails generate zero:active_models
 
             export const LOGGABLE_MODELS = {
-              // Models with Loggable will be listed here
+            #{model_entries}
             } as const;
 
             export type LoggableModelName = keyof typeof LOGGABLE_MODELS;
@@ -480,6 +487,52 @@ module Zero
               return LOGGABLE_MODELS[tableName];
             }
           TYPESCRIPT
+        end
+
+        # Detect models that include the Loggable concern
+        def detect_loggable_models
+          loggable_models = {}
+
+          # Ensure all models are loaded for introspection
+          # In Rails 8.0 with Zeitwerk, only eager load the models directory
+          if defined?(Rails) && !Rails.application.config.eager_load
+            Rails.autoloaders.main.eager_load_dir(Rails.root.join("app/models"))
+          end
+
+          # Check loaded models for Loggable concern
+          if defined?(ApplicationRecord)
+            ApplicationRecord.descendants.each do |model|
+              next unless model.respond_to?(:included_modules)
+              next unless defined?(Loggable) && model.included_modules.include?(Loggable)
+
+              loggable_models[model.table_name] = {
+                modelName: model.name,
+                includesLoggable: true
+              }
+            end
+          end
+
+          # If still empty, use known models as fallback
+          if loggable_models.empty?
+            %w[Job Task Client User Person Device ScheduledDateTime PeopleGroup PeopleGroupMembership].each do |model_name|
+              begin
+                model = model_name.constantize
+                if model.included_modules.include?(Loggable)
+                  loggable_models[model.table_name] = {
+                    modelName: model_name,
+                    includesLoggable: true
+                  }
+                end
+              rescue NameError
+                # Model doesn't exist, skip
+              end
+            end
+          end
+
+          loggable_models
+        rescue => e
+          puts "Warning: Failed to detect Loggable models: #{e.message}"
+          {}
         end
 
         def execute_all_tables(pipeline, schema_context, start_time)
