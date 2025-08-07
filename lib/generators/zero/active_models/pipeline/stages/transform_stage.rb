@@ -105,14 +105,10 @@ module Zero
 
             rescue StandardError => e
               # Wrap transformation errors with stage context
-              raise StageError.new(
+              raise Stage::StageError.new(
                 stage: self,
                 context: context,
-                error: TransformationError.new("Data transformation failed: #{e.message}"),
-                metadata: {
-                  transformation_duration: Time.current - transformation_start_time,
-                  failed_rule: detect_failed_rule(e)
-                }
+                error: TransformationError.new("Data transformation failed: #{e.message}")
               )
             end
           end

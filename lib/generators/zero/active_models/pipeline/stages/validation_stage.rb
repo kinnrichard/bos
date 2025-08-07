@@ -96,11 +96,10 @@ module Zero
 
             rescue ValidationError => e
               # Wrap validation errors with stage context
-              raise StageError.new(
+              raise Stage::StageError.new(
                 stage: self,
                 context: context,
-                error: e,
-                metadata: { validation_duration: Time.current - validation_start_time }
+                error: e
               )
             end
           end

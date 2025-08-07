@@ -55,7 +55,7 @@ module Zero
         #
         class FormattingStage < Stage
           # Formatting specific errors
-          class FormattingError < StageError; end
+          class FormattingError < StandardError; end
           class PrettierNotFoundError < FormattingError; end
           class BatchFormattingError < FormattingError; end
           class FrontendRootNotFoundError < FormattingError; end
@@ -140,7 +140,7 @@ module Zero
               })
 
             rescue StandardError => e
-              raise StageError.new(
+              raise Stage::StageError.new(
                 stage: self,
                 context: context,
                 error: e

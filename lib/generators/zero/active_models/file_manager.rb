@@ -117,7 +117,8 @@ module Zero
         {
           dry_run: options[:dry_run],
           force: options[:force],
-          verbose: shell ? true : false
+          verbose: shell ? true : false,
+          quiet: true  # Suppress FileWriter's own logging since FileManager handles it
         }
       end
 

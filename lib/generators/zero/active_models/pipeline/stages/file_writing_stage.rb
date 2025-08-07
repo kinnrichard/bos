@@ -41,7 +41,7 @@ module Zero
         #
         class FileWritingStage < Stage
           # File writing specific errors
-          class FileWritingError < StageError; end
+          class FileWritingError < StandardError; end
           class OutputDirectoryError < FileWritingError; end
 
           attr_reader :service_registry, :file_writer
@@ -103,7 +103,7 @@ module Zero
               })
 
             rescue StandardError => e
-              raise StageError.new(
+              raise Stage::StageError.new(
                 stage: self,
                 context: context,
                 error: e

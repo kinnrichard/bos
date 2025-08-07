@@ -166,6 +166,9 @@ module Zero
       # @param operation [Symbol] Operation type (:create, :identical, :error)
       # @param path [String] File path for logging
       def log_operation(operation, path)
+        # Skip logging if quiet mode is enabled
+        return if @options[:quiet]
+
         return unless @options[:verbose] || @options[:dry_run]
 
         relative_path = path.is_a?(String) && path.start_with?(@output_dir) ?

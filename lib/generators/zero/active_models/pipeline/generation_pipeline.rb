@@ -7,6 +7,7 @@ require_relative "../template_renderer"
 require_relative "../default_value_converter"
 require_relative "../polymorphic_model_analyzer"
 require_relative "../generation_context"
+require_relative "pipeline"
 require_relative "../../../../zero_schema_generator/rails_schema_introspector"
 require_relative "stages/schema_analysis_stage"
 require_relative "stages/model_generation_stage"
@@ -86,11 +87,18 @@ module Zero
             # Create or use provided context
             context = initial_context || build_initial_context
 
-            # Execute pipeline stages
-            result_context = pipeline.execute(context)
+            # Execute pipeline stages - first get schema
+            schema_context = execute_schema_analysis(pipeline, context)
 
-            # Compile final results
-            compile_execution_results(result_context, execution_start_time)
+            # Check if we need to process multiple tables
+            if @options[:table].nil? && schema_context.metadata[:full_schema]
+              # Process all tables
+              execute_all_tables(pipeline, schema_context, execution_start_time)
+            else
+              # Process single table
+              result_context = pipeline.execute(context)
+              compile_execution_results(result_context, execution_start_time)
+            end
 
           rescue => e
             @statistics[:errors_encountered] += 1
@@ -125,43 +133,60 @@ module Zero
         #
         # @return [Pipeline] Configured pipeline instance
         def build_pipeline
+          # Create a shared service registry for all stages
+          service_registry = build_service_registry
+
           stages = [
-            build_schema_analysis_stage,
-            build_model_generation_stage,
-            build_typescript_generation_stage,
-            build_formatting_stage
+            Stages::SchemaAnalysisStage.new(service_registry),
+            Stages::ModelGenerationStage.new(service_registry),
+            Stages::TypeScriptGenerationStage.new(service_registry),
+            Stages::FormattingStage.new(service_registry)
           ]
 
           Pipeline.new(stages: stages)
         end
 
-        # Build individual pipeline stages with injected dependencies
+        # Build a service registry that provides all needed services
+        def build_service_registry
+          pipeline = self
 
-        def build_schema_analysis_stage
-          Stages::SchemaAnalysisStage.new(@schema_introspector, @options)
-        end
+          Class.new do
+            def initialize(pipeline)
+              @pipeline = pipeline
+            end
 
-        def build_model_generation_stage
-          Stages::ModelGenerationStage.new(
-            type_mapper: @type_mapper,
-            relationship_processor_factory: @relationship_processor_factory,
-            default_value_converter: @default_value_converter,
-            polymorphic_analyzer: @polymorphic_analyzer,
-            template_renderer: @template_renderer
-          )
-        end
+            def get_service(name)
+              case name
+              when :schema
+                @pipeline.instance_variable_get(:@schema_introspector)
+              when :type_mapper
+                @pipeline.instance_variable_get(:@type_mapper)
+              when :relationship_processor_factory, :relationship_processor
+                # Both names map to the same factory
+                @pipeline.instance_variable_get(:@relationship_processor_factory)
+              when :template_renderer
+                @pipeline.instance_variable_get(:@template_renderer)
+              when :file_manager
+                @pipeline.instance_variable_get(:@file_manager)
+              when :default_value_converter
+                @pipeline.instance_variable_get(:@default_value_converter)
+              when :polymorphic_analyzer, :polymorphic_model_analyzer
+                @pipeline.instance_variable_get(:@polymorphic_analyzer)
+              when :formatting_service
+                # FormattingStage expects a formatting service
+                @pipeline.instance_variable_get(:@file_manager)
+              when :shell
+                # Return a simple shell object for output
+                @pipeline.send(:create_simple_shell)
+              else
+                raise "Unknown service: #{name}"
+              end
+            end
 
-        def build_typescript_generation_stage
-          Stages::TypeScriptGenerationStage.new(
-            template_renderer: @template_renderer
-          )
-        end
-
-        def build_formatting_stage
-          Stages::FormattingStage.new(
-            file_manager: @file_manager,
-            options: @options
-          )
+            def options
+              @pipeline.options
+            end
+          end.new(pipeline)
         end
 
         # Default dependency implementations
@@ -186,7 +211,8 @@ module Zero
         end
 
         def default_template_renderer
-          templates_dir = File.expand_path("../../templates", File.dirname(__FILE__))
+          # Templates are in lib/generators/zero/active_models/templates
+          templates_dir = File.expand_path("../templates", File.dirname(__FILE__))
           TemplateRenderer.new(templates_dir)
         end
 
@@ -225,8 +251,16 @@ module Zero
         def build_initial_context
           table_name = @options[:table]
 
+          # Use a placeholder table structure for all-tables processing
+          # The SchemaAnalysisStage will populate with actual table data
+          table_data = if table_name
+            { name: table_name, columns: [] }
+          else
+            { name: "*", columns: [] }  # "*" indicates all tables
+          end
+
           GenerationContext.new(
-            table: table_name ? { name: table_name, columns: [] } : nil,
+            table: table_data,
             schema: {},
             options: @options
           )
@@ -291,6 +325,86 @@ module Zero
               puts message
             end
           end.new
+        end
+
+        # Execute schema analysis stage only
+        def execute_schema_analysis(pipeline, context)
+          # Just run the schema analysis stage
+          schema_stage = pipeline.stages.find { |s| s.is_a?(Stages::SchemaAnalysisStage) }
+          return context unless schema_stage
+
+          schema_stage.process(context)
+        end
+
+        # Execute pipeline for all tables
+        def execute_all_tables(pipeline, schema_context, start_time)
+          full_schema = schema_context.metadata[:full_schema]
+          all_generated_models = []
+          all_generated_files = []
+          all_errors = []
+
+          # Get the non-schema stages for processing individual tables
+          processing_stages = pipeline.stages.reject { |s| s.is_a?(Stages::SchemaAnalysisStage) }
+          processing_pipeline = Pipeline.new(stages: processing_stages)
+
+          # Process each table
+          full_schema[:tables].each do |table_data|
+            begin
+              # Find relationships for this table
+              table_relationships = full_schema[:relationships].find { |r| r[:table] == table_data[:name] } || {
+                belongs_to: [],
+                has_many: [],
+                has_one: [],
+                polymorphic: []
+              }
+
+              # Create context for this specific table
+              table_context = GenerationContext.new(
+                table: table_data,
+                schema: full_schema,
+                options: @options.merge(table: table_data[:name])
+              ).with_metadata(
+                relationships: table_relationships,
+                patterns: full_schema[:patterns][table_data[:name]] || {},
+                full_schema: full_schema
+              )
+
+              # Process this table through remaining stages
+              result = processing_pipeline.execute(table_context)
+
+              # Collect results
+              if result.metadata[:generated_content]
+                model_info = {
+                  table_name: table_data[:name],
+                  class_name: table_data[:name].singularize.camelize,
+                  kebab_name: table_data[:name].dasherize,
+                  content: result.metadata[:generated_content]
+                }
+                all_generated_models << model_info
+
+                # Track generated files
+                if result.metadata[:generated_files]
+                  all_generated_files.concat(result.metadata[:generated_files])
+                end
+              end
+
+            rescue => e
+              all_errors << "Table #{table_data[:name]}: #{e.message}"
+            end
+          end
+
+          # Update statistics
+          @statistics[:execution_time] = (Time.current - start_time).round(4)
+          @statistics[:models_generated] = all_generated_models.length
+          @statistics[:files_created] = all_generated_files.length
+
+          {
+            success: all_errors.empty?,
+            generated_models: all_generated_models,
+            generated_files: all_generated_files,
+            errors: all_errors,
+            statistics: @statistics
+          }
         end
       end
     end

@@ -41,7 +41,7 @@ module Zero
         #
         class SchemaAnalysisStage < Stage
           # Schema analysis specific errors
-          class SchemaAnalysisError < StageError; end
+          class SchemaAnalysisError < StandardError; end
           class SchemaExtractionError < SchemaAnalysisError; end
           class TableFilteringError < SchemaAnalysisError; end
           class RelationshipDiscoveryError < SchemaAnalysisError; end
@@ -81,16 +81,20 @@ module Zero
               # Phase 3: Enrich context with schema data and metadata
               enriched_context = enrich_context_with_schema(context, schema_data)
 
-              # Phase 4: Add stage execution metadata
-              add_stage_metadata(enriched_context, {
+              # Phase 4: Add stage execution metadata and return final context
+              final_context = add_stage_metadata(enriched_context, {
                 tables_analyzed: schema_data[:tables].length,
                 relationships_discovered: schema_data[:relationships].length,
                 patterns_detected: count_patterns(schema_data[:patterns]),
                 schema_extraction_source: schema_service.class.name
               })
 
+              final_context
+
             rescue StandardError => e
-              raise StageError.new(
+              Rails.logger.error "[SchemaAnalysisStage] Error: #{e.class} - #{e.message}" if defined?(Rails)
+              Rails.logger.error "[SchemaAnalysisStage] Backtrace: #{e.backtrace.first(5).join("\n")}" if defined?(Rails)
+              raise Stage::StageError.new(
                 stage: self,
                 context: context,
                 error: e
@@ -155,12 +159,17 @@ module Zero
               exclude_tables = context.options[:exclude_tables] || []
               include_only = context.options[:table] ? [ context.options[:table] ] : nil
 
-              # Use SchemaService for optimized schema extraction
-              schema_data = schema_service.extract_filtered_schema(
-                exclude_tables: exclude_tables,
-                include_only: include_only,
-                skip_validation: false  # Always validate at this stage
-              )
+              # Use SchemaService for schema extraction
+              schema_data = schema_service.extract_schema
+
+              # Apply filtering manually
+              if include_only
+                # Filter to only include specified table
+                schema_data[:tables] = schema_data[:tables].select { |t| include_only.include?(t[:name]) }
+              elsif exclude_tables.any?
+                # Filter out excluded tables
+                schema_data[:tables] = schema_data[:tables].reject { |t| exclude_tables.include?(t[:name]) }
+              end
 
               # Handle empty results
               if schema_data[:tables].empty?

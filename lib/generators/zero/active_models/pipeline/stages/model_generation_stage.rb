@@ -47,7 +47,7 @@ module Zero
         #
         class ModelGenerationStage < Stage
           # Model generation specific errors
-          class ModelGenerationError < StageError; end
+          class ModelGenerationError < StandardError; end
           class TemplateRenderingError < ModelGenerationError; end
           class TypeMappingError < ModelGenerationError; end
           class RelationshipProcessingError < ModelGenerationError; end
@@ -111,7 +111,7 @@ module Zero
               })
 
             rescue StandardError => e
-              raise StageError.new(
+              raise Stage::StageError.new(
                 stage: self,
                 context: context,
                 error: e
