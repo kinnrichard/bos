@@ -3,11 +3,19 @@
 module Zero
   module Generators
     # Service class for processing Rails model relationships
-    # Eliminates duplication in relationship iteration and validation logic
+    #
+    # Uses constructor injection with explicit dependencies.
+    # No service registry lookups, all dependencies are provided explicitly.
     class RelationshipProcessor
-      def initialize(relationships, current_table_name)
+      # Initialize with explicit dependencies
+      #
+      # @param relationships [Hash] Relationship data from schema analysis
+      # @param current_table_name [String] Name of the current table being processed
+      # @param schema_introspector [Object] Optional schema introspector for additional queries
+      def initialize(relationships, current_table_name, schema_introspector: nil)
         @relationships = relationships || {}
         @current_table_name = current_table_name
+        @schema_introspector = schema_introspector
       end
 
       def process_all

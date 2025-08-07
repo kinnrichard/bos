@@ -60,12 +60,18 @@ module Zero
 
       # Initialize TypeMapper with optional custom configuration
       #
+      # Uses constructor injection with sensible defaults, following Sandi Metz principles.
+      # No hidden dependencies, no service registry lookups.
+      #
       # @param custom_mappings [Hash] Additional type mappings to merge with defaults
       # @param unknown_type_handler [String] Custom fallback for unknown types
       def initialize(custom_mappings: {}, unknown_type_handler: DEFAULT_UNKNOWN_TYPE)
-        @custom_mappings = custom_mappings
+        @custom_mappings = custom_mappings || {}
         @unknown_type_handler = unknown_type_handler
-        @effective_mappings = FLATTENED_TYPE_MAP.merge(custom_mappings)
+
+        # Ensure custom mappings use string keys to match FLATTENED_TYPE_MAP
+        stringified_custom_mappings = @custom_mappings.transform_keys(&:to_s)
+        @effective_mappings = FLATTENED_TYPE_MAP.merge(stringified_custom_mappings)
       end
 
       # Map Rails column type to appropriate TypeScript type
