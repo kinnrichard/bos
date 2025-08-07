@@ -382,9 +382,11 @@ module Zero
                 }
                 all_generated_models << model_info
 
-                # Track generated files
+                # Track generated files - check both possible metadata keys
                 if result.metadata[:generated_files]
                   all_generated_files.concat(result.metadata[:generated_files])
+                elsif result.metadata[:typescript_files]
+                  all_generated_files.concat(result.metadata[:typescript_files])
                 end
               end
 
