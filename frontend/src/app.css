@@ -116,6 +116,11 @@
 		color: var(--text-primary);
 	}
 
+	* {
+		user-select: none;
+	}
+
+
 	body {
 		background-color: var(--bg-black);
 	}
@@ -148,7 +153,8 @@
 	a,
 	[onclick],
 	[tabindex]:not([tabindex="-1"]) {
-		cursor: default !important;
+		/* cursor: default !important; */
+		cursor: default;
 	}
 
 	/* Keep not-allowed cursor for disabled states */
