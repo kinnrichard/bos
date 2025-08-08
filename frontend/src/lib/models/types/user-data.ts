@@ -27,13 +27,13 @@ import type { NoteData } from './note-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface UserData extends BaseRecord {
+  id: string;
   name?: string;
   email?: string;
   created_at: string | number;
   updated_at: string | number;
   password_digest?: string;
   resort_tasks_on_status_change: boolean;
-  id: string;
   role: 'admin' | 'technician' | 'customer_specialist' | 'owner';
   short_name?: string;
   activityLogs?: ActivityLogData[]; // has_many

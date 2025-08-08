@@ -18,12 +18,12 @@ import type { JobData } from './job-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface ActivityLogData extends BaseRecord {
+  id: string;
   action?: string;
   loggable_type: string;
   metadata?: Record<string, unknown>;
   created_at: string | number;
   updated_at: string | number;
-  id: string;
   user_id?: string;
   client_id?: string;
   job_id?: string;

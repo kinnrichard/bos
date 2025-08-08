@@ -33,12 +33,12 @@ import type { ScheduledDateTimeData } from './scheduled-date-time-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface JobData extends BaseRecord {
+  id: string;
   title?: string;
   created_at: string | number;
   updated_at: string | number;
   description?: string;
   lock_version: number;
-  id: string;
   client_id?: string;
   due_at?: string | number;
   due_time_set: boolean;

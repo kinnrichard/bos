@@ -213,7 +213,7 @@ class Api::V1::Auth::SessionsController < Api::V1::BaseController
     refresh_payload[:iat] = Time.current.to_i
 
     # Encode without generating new JTI
-    refresh_token = ::JWT.encode(refresh_payload, Rails.application.credentials.secret_key_base || Rails.application.secrets.secret_key_base, "HS256")
+    refresh_token = ::JWT.encode(refresh_payload, Rails.application.credentials.secret_key_base || Rails.application.secret_key_base, "HS256")
 
     {
       access_token: access_token,

@@ -18,6 +18,7 @@ import type { ActivityLogData } from './activity-log-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface DeviceData extends BaseRecord {
+  id: string;
   name?: string;
   model?: string;
   serial_number?: string;
@@ -25,7 +26,6 @@ export interface DeviceData extends BaseRecord {
   notes?: string;
   created_at: string | number;
   updated_at: string | number;
-  id: string;
   client_id?: string;
   person_id?: string;
   client?: ClientData; // belongs_to

@@ -18,11 +18,11 @@ import type { FrontMessageRecipientData } from './front-message-recipient-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface ContactMethodData extends BaseRecord {
+  id: string;
   value?: string;
   formatted_value?: string;
   created_at: string | number;
   updated_at: string | number;
-  id: string;
   person_id?: string;
   contact_type: 'phone' | 'email' | 'address';
   normalized_value: string;

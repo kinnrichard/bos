@@ -12,9 +12,9 @@ import type { BaseRecord } from '../base/types';
  * Matches the database schema exactly with optional relationships
  */
 export interface ScheduledDateTimeUserData extends BaseRecord {
+  id: string;
   created_at: string | number;
   updated_at: string | number;
-  id: string;
   scheduled_date_time_id?: string;
   user_id?: string;
 }

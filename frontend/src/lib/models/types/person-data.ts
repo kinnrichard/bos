@@ -30,10 +30,10 @@ import type { FrontConversationData } from './front-conversation-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface PersonData extends BaseRecord {
+  id: string;
   name?: string;
   created_at: string | number;
   updated_at: string | number;
-  id: string;
   client_id?: string;
   name_preferred?: string;
   name_pronunciation_hint?: string;

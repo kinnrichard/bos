@@ -18,12 +18,12 @@ import type { UserData } from './user-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface ScheduledDateTimeData extends BaseRecord {
+  id: string;
   schedulable_type: string;
   scheduled_type: string;
   notes?: string;
   created_at: string | number;
   updated_at: string | number;
-  id: string;
   schedulable_id?: string;
   scheduled_at?: string | number;
   scheduled_time_set: boolean;

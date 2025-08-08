@@ -26,11 +26,11 @@ import type { FrontConversationData } from './front-conversation-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface ClientData extends BaseRecord {
+  id: string;
   name?: string;
   created_at: string | number;
   updated_at: string | number;
   name_normalized?: string;
-  id: string;
   client_type: 'residential' | 'business';
   activityLogs?: ActivityLogData[]; // has_many
   people?: PersonData[]; // has_many

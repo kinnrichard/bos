@@ -113,6 +113,18 @@
   /* NEW: added display: flex to task-item-add-new to expand input box to the end when inputting; Added By Richard 08/05/2025*/
   .task-item-add-new {
     display: flex;
+    opacity: 0.7;
+  }
+
+  .task-item-add-new.is-hovered .add-task-placeholder {
+    opacity: 1;
+    cursor: default;
+    transition: color 0.2s ease, opacity 0.2s ease;
+  }
+
+  .task-item-add-new .add-task-placeholder {
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
   }
 
   .task-content {

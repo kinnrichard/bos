@@ -24,7 +24,7 @@ class JwtService
     private
 
     def secret_key
-      Rails.application.credentials.secret_key_base || Rails.application.secrets.secret_key_base
+      Rails.application.credentials.secret_key_base || Rails.application.secret_key_base
     end
 
     def raise_decode_error(error)

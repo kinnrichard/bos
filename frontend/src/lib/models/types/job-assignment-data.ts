@@ -16,9 +16,9 @@ import type { UserData } from './user-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface JobAssignmentData extends BaseRecord {
+  id: string;
   created_at: string | number;
   updated_at: string | number;
-  id: string;
   job_id?: string;
   user_id?: string;
   job?: JobData; // belongs_to

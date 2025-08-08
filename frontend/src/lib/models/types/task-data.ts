@@ -26,6 +26,7 @@ import type { ActivityLogData } from './activity-log-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface TaskData extends BaseRecord {
+  id: string;
   title?: string;
   position: number;
   created_at: string | number;
@@ -34,7 +35,6 @@ export interface TaskData extends BaseRecord {
   reordered_at?: string | number;
   lock_version: number;
   applies_to_all_targets: boolean;
-  id: string;
   job_id?: string;
   assigned_to_id?: string;
   parent_id?: string;

@@ -14,12 +14,12 @@ import type { UserData } from './user-data';
  * Matches the database schema exactly with optional relationships
  */
 export interface NoteData extends BaseRecord {
+  id: string;
   notable_type: string;
   content?: string;
   created_at: string | number;
   updated_at: string | number;
   metadata?: Record<string, unknown>;
-  id: string;
   user_id?: string;
   notable_id?: string;
   user?: UserData; // belongs_to

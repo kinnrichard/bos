@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
     define: {
       // These will be available at build time
       'import.meta.env.PUBLIC_API_URL': JSON.stringify(
-        env.PUBLIC_API_URL || 'http://localhost:4000/api/v1'
+        env.PUBLIC_API_URL || 'http://localhost:3000/api/v1'
       ),
     },
   };

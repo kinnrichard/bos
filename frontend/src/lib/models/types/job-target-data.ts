@@ -12,13 +12,13 @@ import type { BaseRecord } from '../base/types';
  * Matches the database schema exactly with optional relationships
  */
 export interface JobTargetData extends BaseRecord {
+  id: string;
   target_type: string;
   status?: string;
   instance_number: number;
   reason?: string;
   created_at: string | number;
   updated_at: string | number;
-  id: string;
   job_id?: string;
   target_id?: string;
 }
