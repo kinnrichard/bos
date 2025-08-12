@@ -195,6 +195,15 @@
       unregisterPopover();
       unregisterPopover = null;
     }
+
+    if ($open && enabled && panelElement) {
+      const rect = panelElement.getBoundingClientRect();
+      if (preferredPlacement === 'left' && rect.top < 140) {
+        console.log(rect.top);
+        console.log('True');
+        panelElement.style.setProperty('--arrow-top', '43%');
+      }
+    }
   });
 
   // Clean up on destroy
@@ -267,6 +276,11 @@
     z-index: var(--z-popover, 2000);
     position: relative;
   }
+
+  .base-popover-panel.panel-left {
+    transform: translateX(-5px);
+  }
+
 
   .base-popover-inner {
     /* All visual styling moved here */
@@ -394,6 +408,12 @@
     border-bottom: 10px solid transparent;
     border-left: 10px solid var(--bg-secondary);
     z-index: 2;
+  }
+
+  /* overrides the top if the the popover is near on the top of the browser */
+  .panel-left::before,
+  .panel-left::after {
+    top: var(--arrow-top, 50%);
   }
 
   /* Right placement (arrow points left to button) */

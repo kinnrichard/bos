@@ -11,3 +11,7 @@
 - New Task label should appear whenever row is hovered
 - Make I-beam (cursor:text) appear inline edits, such as job title and task title
 - Make UI Text unselectable
+
+- Fix popover border issue
+- Add some spacing from popover and the info icon
+- Fix popover alignment when its near the top of the browser address bar

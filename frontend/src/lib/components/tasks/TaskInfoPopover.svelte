@@ -811,7 +811,6 @@
   .add-note-section {
     padding: 16px;
     border-top: 1px solid var(--border-secondary);
-    background: var(--bg-primary);
     flex-shrink: 0;
     margin-top: auto; /* Push to bottom of scrollable area */
   }
