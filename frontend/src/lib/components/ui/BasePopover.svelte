@@ -199,9 +199,22 @@
     if ($open && enabled && panelElement) {
       const rect = panelElement.getBoundingClientRect();
       if (preferredPlacement === 'left' && rect.top < 140) {
-        console.log(rect.top);
-        console.log('True');
         panelElement.style.setProperty('--arrow-top', '43%');
+        console.log(rect.top);
+      } else if (preferredPlacement === 'left' && rect.top > 909) {
+        panelElement.style.setProperty('--arrow-top', '87%');
+        console.log(rect.top);
+      } else if (preferredPlacement === 'left' && rect.top > 879 && rect.top < 909) {
+        panelElement.style.setProperty('--arrow-top', '76%');
+        console.log(rect.top);
+      } else if (preferredPlacement === 'left' && rect.top > 849 && rect.top < 879) {
+        panelElement.style.setProperty('--arrow-top', '65%');
+        console.log(rect.top);
+      } else if (preferredPlacement === 'left' && rect.top > 818 && rect.top < 849) {
+        panelElement.style.setProperty('--arrow-top', '55%');
+        console.log(rect.top);
+      } else {
+        console.log(rect.top);
       }
     }
   });
