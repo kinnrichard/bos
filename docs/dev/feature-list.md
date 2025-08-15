@@ -1,6 +1,7 @@
 # Feature List & Implementation Status
 
 ## Legend
+
 - ✅ **Completed** - implemented and working
 - 🚧 **In Progress** - partially implemented
 - 📋 **Planned** - planned for development
@@ -9,6 +10,7 @@
 # Core Platform Features
 
 ## Appearance
+
 - ✅ macOS 26 look and feel
 - ✅ Desktop-like interface (no hand pointer or hover)
 - ✅ Sidebar show button
@@ -22,15 +24,19 @@
 - 💭 v3 Slide in/out sidebar
 
 ## Authentication
+
 - 🚧 Make user stay logged in
 
 ## Drag & Drop
+
 - 📋 make Drag & Drop more solid with a robust test library
 
 ## Svelte Components
+
 - ✅ Components that are repeated 3x (namely popovers) are DRY
 
 ## ReactiveRecord
+
 - ✅ When a model is instantiated client-side with .new(), it gets same default values that it would in Rails schema
 - 💭 v2 Utilizing the Zero.js permissions system but defining it easily in Rails, for example, via Action Policy
 - ✅ ActivityLogs should be generated client-side
@@ -45,6 +51,7 @@
 # v1 Features
 
 ## Features that span models
+
 - ✅ Basic search filtering
   - 💭 Different behavior with spacebar
   - 💭 v2 AI-powered search
@@ -52,12 +59,13 @@
 - 💭 v2 Audit higher-risk activites
 
 ## Clients
+
 - ✅ List Clients
 - ✅ Create
 - ✅ Edit
 - ✅ Mark as business or residential
 - ✅ Basic Search
-- ✅ Name normalization** with duplicate prevention
+- ✅ Name normalization\*\* with duplicate prevention
   - 💭 v2 Client side
 - 💭 Domain recognition
 - 💭 v2 Search by other attributes
@@ -66,6 +74,7 @@
 - 💭 v2 Status (Potential/New/Current/Former)
 
 ## People
+
 - ✅ List
 - ✅ Create
 - ✅ Edit
@@ -75,10 +84,12 @@
   - 💭 Gracefully remove during edit
 
 ## Activity Logging
-  - ✅ Build client-side
-  - 💭 Validate server-side
+
+- ✅ Build client-side
+- 💭 Validate server-side
 
 ## Jobs
+
 - ✅ Create
 - ✅ Technician Emoji
 - ✅ Drag & drop nesting and un-nesting
@@ -87,7 +98,7 @@
   - 💭 Sort by priority
 - ✅ Assign to technician
   - ✅ Filter by assignment
-- 💭 Filter by date
+- 🚧 Filter by date
 - 💭 Appointment Scheduling
 - 💭 User Setting - move completed to bottom
 - 💭 Job Info
@@ -102,6 +113,7 @@
 - 💭 v2 If clicking would change status and new status would be filtered out, open popover instead
 
 ## Tasks
+
 - ✅ Task deletion
   - ✅ Modal for deletion
   - 🚧 Deleted Task view
@@ -111,29 +123,32 @@
 - 💭 Smart behavior when marking something as canceled or complete
 
 ## Logs
+
 - 🚧 Correctly group by date
 
 ## UI Inconsistencies
+
 - ✅ Technician glyphs don't have shadows
 - ✅ Remove mouse hand-pointer from everywhere
 - ✅ Remove Sidebar hover states
-- 💭 On New Job page, new tasks don't wrap nicely
-- 💭 Cancel button when creating a job doesn't work if user has typed in a job name already
+- 🚧 On New Job page, new tasks don't wrap nicely
+- 🚧 Cancel button when creating a job doesn't work if user has typed in a job name already
 - 💭 Move user menu to sidebar
 - 💭 Make sidebar hierarchical
 - 💭 Text in selected cancelled or completed tasks is illegible
-- 💭 Popovers should fade out @ 200ms (but not fade in)
-- 💭 New Task label should have mouse-arrow everywhere
-- 💭 New Task label should appear whenever row is hovered
-- 💭 Use I-beam mouse pointer when over contenteditable inline edits, such as job title and task title
-- 💭 Popover arrows should anchor to the activating button
+- 🚧 Popovers should fade out @ 200ms (but not fade in)
+- 🚧 New Task label should have mouse-arrow everywhere
+- 🚧 New Task label should appear whenever row is hovered
+- 🚧 Use I-beam mouse pointer when over contenteditable inline edits, such as job title and task title
+- 🚧 Popover arrows should anchor to the activating button
 - 💭 Assigned To button should not get wider when just 1 technician
 - 💭 Scroll containers should be normalized
   - Have padding at the bottom to match sidebar margin
-- 💭 Make UI text un-selectable
+- 🚧 Make UI text un-selectable
 - ✅ Show technician glyphs on Job list
 
 ## Front Conversations
+
 - ✅ Import
 - 🚧 Background sync
 - 🚧 Link to client/person
@@ -142,6 +157,7 @@
 # Features for future versions
 
 ## Integrations
+
 - 📋 Addigy (gem prototyped)
 - 📋 M365 (gem in alpha)
 - 📋 Zoom (gem prototyped)
@@ -154,6 +170,7 @@
 - 💭 UniFi
 
 ### Scheduling & Appointments
+
 - 💭 Appointments (Jobs) - basic
 - 💭 Proper calendar
 - 💭 Appointment Scheduling
@@ -161,11 +178,13 @@
 - 💭 v3 Customer scheduling
 
 ### Security & Authentication
+
 - 💭 Basic Security (restricting database activity)
 - 💭 Security Hardening
 - 💭 Sign Out functionality
 
 ### v2 Communication & Integration
+
 - ✅ Zoom integration (Phone)
 - 💭 Zoom Meetings
 - 💭 Send appointments via Zoom
@@ -176,6 +195,7 @@
 - 💭 Boxes Attached to Emails
 
 ### Data Management
+
 - ✅ File Organization
 - 💭 Document Signing
 - 💭 Devices management
@@ -184,12 +204,14 @@
 ### v3 Internal and External Knowledgebases
 
 ### v3 Business Operations
+
 - 💭 Invoices
 - 💭 Accounting
 - 💭 Timesheets
 - 💭 Field Tickets
 
 ### v2 Services & Products
+
 - 💭 All-you-can-eat MSP
 - 💭 Hourly
 - 💭 Insurance services
@@ -202,6 +224,7 @@
   - 💭 Policy number tracking
 
 ### v4 Forms & Documentation
+
 - 💭 Milling Machine Check Out Form
 - 💭 Truck Check Out Form
 - 💭 Toolbox Safety Talk/Job Safety Checklist
@@ -211,6 +234,7 @@
 - 💭 Expense reimbursement
 
 ### Equipment & Resources
+
 - 💭 Equipment management
 - 💭 Operator assignment
 - 💭 Supplies tracking
@@ -219,6 +243,7 @@
 - 💭 Repairs tracking (nested categories)
 
 ### Multi-Tenant Features
+
 - 💭 Company Settings
   - 💭 Custom Job terminology
   - 💭 Custom User terminology
@@ -226,6 +251,7 @@
   - 💭 Completed task sorting preferences
 
 ### Development & Automation
+
 - 💭 Improve and Organize Documentation
 - 💭 Improve Agile Workflow
 - 💭 Automate AI
@@ -233,4 +259,4 @@
 
 ---
 
-*Last updated: 2025-07-30*
+_Last updated: 2025-07-30_

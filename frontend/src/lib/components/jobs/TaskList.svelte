@@ -107,7 +107,7 @@
   // Phase 1: Consolidate data sources into single canonicalTasks
   // Combine and deduplicate tasks and keptTasks into one normalized source
   const canonicalTasks = $derived(() => {
-    // Ensure both inputs are arrays before combining
+  // Ensure both inputs are arrays before combining
     const safeTasks = Array.isArray(tasks) ? tasks : [];
     const safeKeptTasks = Array.isArray(keptTasks) ? keptTasks : [];
 
@@ -120,7 +120,10 @@
 
     // Apply cleanup and normalization to the combined set
     const combinedTasks = Array.from(uniqueTasks.values());
-    return normalizeTaskData(combinedTasks);
+    const normalized = normalizeTaskData(combinedTasks);
+    
+    // Sort by position to ensure correct display order
+    return normalized.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   });
 
   // Task hierarchy management
@@ -720,284 +723,327 @@
     }
   }
 
-    // Types for better type safety
-  interface TaskPosition {
-    position: number;
-    parentId?: string;
-    repositionedAfterId: string | null;
-    isTopOfList: boolean;
+  // Types for better type safety
+interface TaskPosition {
+  position: number;
+  parentId?: string;
+  repositionedAfterId: string | null;
+  isTopOfList: boolean;
+}
+
+interface TaskCreationData {
+  title: string;
+  job_id: string;
+  status: string;
+  position: number;
+  repositioned_after_id: string | null;
+  parent_id?: string;
+  lock_version: number;
+  applies_to_all_targets: boolean;
+  position_finalized: boolean;
+  repositioned_to_top: boolean;
+}
+
+// Constants
+const FEEDBACK_TIMEOUT = 2000;
+const ERROR_FEEDBACK_TIMEOUT = 3000;
+const SUCCESS_MESSAGE = 'Task created successfully!';
+const ERROR_MESSAGE = 'Failed to create task - please try again';
+
+/**
+ * Calculates position for inline task creation
+ */
+function calculateInlineTaskPosition(insertNewTaskAfter: string): TaskPosition {
+  const afterTask = canonicalTasks().find((t) => t.id === insertNewTaskAfter);
+  
+  console.log('[Position] Inline calculation for:', insertNewTaskAfter.substring(0, 8));
+  console.log('[Position] Found afterTask:', afterTask ? { id: afterTask.id.substring(0, 8), position: afterTask.position } : null);
+  
+  if (!afterTask) {
+    console.error('[TaskList] After task not found:', insertNewTaskAfter);
+    // Fallback to bottom creation logic
+    return calculateBottomTaskPosition();
   }
 
-  interface TaskCreationData {
-    title: string;
-    job_id: string;
-    status: string;
-    position: number;
-    repositioned_after_id: string | null;
-    parent_id?: string;
-    lock_version: number;
-    applies_to_all_targets: boolean;
-    position_finalized: boolean;
-    repositioned_to_top: boolean;
-  }
+  const parentId = afterTask.parent_id || undefined;
+  
+  // Get siblings sorted by position to match UI order
+  const siblings = canonicalTasks()
+    .filter((t) => (t.parent_id || null) === (parentId || null))
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
-  // Constants
-  const FEEDBACK_TIMEOUT = 2000;
-  const ERROR_FEEDBACK_TIMEOUT = 3000;
-  const SUCCESS_MESSAGE = 'Task created successfully!';
-  const ERROR_MESSAGE = 'Failed to create task - please try again';
+  console.log('[Position] Siblings:', siblings.map(t => ({ id: t.id.substring(0, 8), position: t.position })));
 
-  /**
-   * Calculates position for inline task creation
-   */
-  function calculateInlineTaskPosition(insertNewTaskAfter: string): TaskPosition {
-    const afterTask = canonicalTasks().find((t) => t.id === insertNewTaskAfter);
-    
-    if (!afterTask) {
-      console.error('[TaskList] After task not found:', insertNewTaskAfter);
-      // Fallback to bottom creation logic
-      return calculateBottomTaskPosition();
-    }
-
-    const parentId = afterTask.parent_id || undefined;
-    
-    // Get siblings sorted by position to match UI order
-    const siblings = canonicalTasks()
-      .filter((t) => (t.parent_id || null) === (parentId || null))
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-    const afterIndex = siblings.findIndex((t) => t.id === insertNewTaskAfter);
-    
-    if (afterIndex === -1) {
-      // Fallback if task not found in siblings
-      return {
-        position: calculatePosition(afterTask.position ?? 0, null),
-        parentId,
-        repositionedAfterId: insertNewTaskAfter,
-        isTopOfList: false
-      };
-    }
-
-    const afterPosition = afterTask.position ?? 0;
-    const nextTask = siblings[afterIndex + 1] ?? null;
-    const nextPosition = nextTask?.position ?? null;
-    
-    return {
-      position: calculatePosition(afterPosition, nextPosition),
+  const afterIndex = siblings.findIndex((t) => t.id === insertNewTaskAfter);
+  
+  console.log('[Position] After task index in siblings:', afterIndex);
+  
+  if (afterIndex === -1) {
+    // Fallback if task not found in siblings
+    const result = {
+      position: calculatePosition(afterTask.position ?? 0, null),
       parentId,
       repositionedAfterId: insertNewTaskAfter,
       isTopOfList: false
     };
+    console.log('[Position] Fallback result:', result);
+    return result;
   }
 
-  /**
-   * Calculates position for bottom task creation
-   */
-  function calculateBottomTaskPosition(): TaskPosition {
-    const rootTasks = canonicalTasks().filter((t) => !t.parent_id);
-    const lastRootTask = rootTasks.length > 0 ? rootTasks[rootTasks.length - 1] : null;
-    
-    const repositionedAfterId = lastRootTask?.id || null;
-    const position = lastRootTask 
-      ? calculatePosition(lastRootTask.position ?? 0, null)
-      : calculatePosition(null, null);
-    
-    return {
-      position,
-      repositionedAfterId,
-      isTopOfList: repositionedAfterId === null
-    };
-  }
+  const afterPosition = afterTask.position ?? 0;
+  const nextTask = siblings[afterIndex + 1] ?? null;
+  const nextPosition = nextTask?.position ?? null;
+  
+  console.log('[Position] Calculating between:', { afterPosition, nextPosition });
+  
+  const result = {
+    position: calculatePosition(afterPosition, nextPosition),
+    parentId,
+    repositionedAfterId: insertNewTaskAfter,
+    isTopOfList: false
+  };
+  
+  console.log('[Position] Inline result:', result);
+  return result;
+}
 
-  /**
-   * Determines task position based on creation type
-   */
-  function determineTaskPosition(type: 'bottom' | 'inline', insertNewTaskAfter?: string): TaskPosition {
-    if (type === 'inline' && insertNewTaskAfter) {
-      return calculateInlineTaskPosition(insertNewTaskAfter);
-    }
-    return calculateBottomTaskPosition();
-  }
+/**
+ * Calculates position for bottom task creation
+ */
+function calculateBottomTaskPosition(): TaskPosition {
+  const rootTasks = canonicalTasks().filter((t) => !t.parent_id);
+  const lastRootTask = rootTasks.length > 0 ? rootTasks[rootTasks.length - 1] : null;
+  
+  console.log('[Position] Bottom calculation:', {
+    rootTaskCount: rootTasks.length,
+    lastRootTask: lastRootTask ? { id: lastRootTask.id.substring(0, 8), position: lastRootTask.position } : null
+  });
+  
+  const repositionedAfterId = lastRootTask?.id || null;
+  const position = lastRootTask 
+    ? calculatePosition(lastRootTask.position ?? 0, null)
+    : calculatePosition(null, null);
+  
+  const result = {
+    position,
+    repositionedAfterId,
+    isTopOfList: repositionedAfterId === null
+  };
+  
+  console.log('[Position] Bottom result:', result);
+  return result;
+}
 
-  /**
-   * Builds the task creation payload
-   */
-  function buildTaskCreationData(
-    title: string, 
-    jobId: string, 
-    position: TaskPosition
-  ): TaskCreationData {
-    return {
-      title,
-      job_id: jobId,
-      status: 'new_task',
-      position: position.position,
-      repositioned_after_id: position.repositionedAfterId,
-      parent_id: position.parentId,
-      lock_version: 0,
-      applies_to_all_targets: false,
-      position_finalized: false,
-      repositioned_to_top: position.isTopOfList,
-    };
+/**
+ * Determines task position based on creation type
+ */
+function determineTaskPosition(type: 'bottom' | 'inline', insertNewTaskAfter?: string): TaskPosition {
+  if (type === 'inline' && insertNewTaskAfter) {
+    return calculateInlineTaskPosition(insertNewTaskAfter);
   }
+  return calculateBottomTaskPosition();
+}
 
-  /**
-   * Inserts the new task into the local task list
-   */
-  function insertTaskIntoLocalList(
-    newTask: Task, 
-    type: 'bottom' | 'inline', 
-    insertNewTaskAfter?: string
-  ): Task[] {
-    if (type === 'inline' && insertNewTaskAfter) {
-      return insertTaskAfterTarget(newTask, insertNewTaskAfter);
-    }
-    
-    // Bottom creation - append to end
-    return [...canonicalTasks(), newTask];
+/**
+ * Builds the task creation payload
+ */
+function buildTaskCreationData(
+  title: string, 
+  jobId: string, 
+  position: TaskPosition
+): TaskCreationData {
+  return {
+    title,
+    job_id: jobId,
+    status: 'new_task',
+    position: position.position,
+    repositioned_after_id: position.repositionedAfterId,
+    parent_id: position.parentId,
+    lock_version: 0,
+    applies_to_all_targets: false,
+    position_finalized: false,
+    repositioned_to_top: position.isTopOfList,
+  };
+}
+
+/**
+ * Inserts the new task into the local task list
+ */
+function insertTaskIntoLocalList(
+  newTask: Task, 
+  type: 'bottom' | 'inline', 
+  insertNewTaskAfter?: string
+): Task[] {
+  if (type === 'inline' && insertNewTaskAfter) {
+    return insertTaskAfterTarget(newTask, insertNewTaskAfter);
   }
+  
+  // Bottom creation - append to end
+  return [...canonicalTasks(), newTask];
+}
 
-  /**
-   * Inserts task after a specific target task
-   */
-  function insertTaskAfterTarget(newTask: Task, targetId: string): Task[] {
-    const visualIndex = flatTaskIds.indexOf(targetId);
-    
-    if (visualIndex === -1 || visualIndex >= flatTaskIds.length - 1) {
-      // Target not found or is last item - append to end
-      return [...canonicalTasks(), newTask];
-    }
-    
-    const nextTaskId = flatTaskIds[visualIndex + 1];
-    const nextTaskIndex = canonicalTasks().findIndex((t) => t.id === nextTaskId);
-    
-    if (nextTaskIndex === -1) {
-      return [...canonicalTasks(), newTask];
-    }
-    
-    return [
-      ...canonicalTasks().slice(0, nextTaskIndex),
-      newTask,
-      ...canonicalTasks().slice(nextTaskIndex),
-    ];
+/**
+ * Inserts task after a specific target task
+ */
+function insertTaskAfterTarget(newTask: Task, targetId: string): Task[] {
+  const currentTasks = canonicalTasks();
+  
+  // Find the target task in the current tasks array
+  const targetTaskIndex = currentTasks.findIndex((t) => t.id === targetId);
+  
+  if (targetTaskIndex === -1) {
+    // Target not found - append to end as fallback
+    console.warn('[TaskList] Target task not found for inline insertion:', targetId);
+    return [...currentTasks, newTask];
   }
+  
+  // Insert the new task right after the target task
+  const insertIndex = targetTaskIndex + 1;
+  
+  return [
+    ...currentTasks.slice(0, insertIndex),
+    newTask,
+    ...currentTasks.slice(insertIndex),
+  ];
+}
 
-  /**
-   * Handles successful task creation
-   */
-  function handleTaskCreationSuccess(
-    newTask: Task,
-    type: 'bottom' | 'inline',
-    shouldSelectAfterCreate: boolean,
-    insertNewTaskAfter?: string
-  ): void {
-    // Update task list
-    tasks = insertTaskIntoLocalList(newTask, type, insertNewTaskAfter);
+/**
+ * Handles successful task creation
+ */
+function handleTaskCreationSuccess(
+  newTask: Task,
+  type: 'bottom' | 'inline',
+  shouldSelectAfterCreate: boolean
+): void {
+  console.log('[TaskCreation] Before insertion - current tasks:', 
+    canonicalTasks().map(t => ({ id: t.id.substring(0, 8), title: t.title, position: t.position }))
+  );
+  
+  // Update task list - properly trigger reactivity
+  const updatedTasks = insertTaskIntoLocalList(newTask, type, insertNewTaskAfter);
+  
+  console.log('[TaskCreation] After insertion - new task list:', 
+    updatedTasks.map(t => ({ id: t.id.substring(0, 8), title: t.title, position: t.position }))
+  );
+  
+  tasks = [...updatedTasks]; // Force reactivity with new array reference
+  
+  // Update insertion point for inline creation (global variable mutation)
+  if (type === 'inline') {
+    insertNewTaskAfter = newTask.id;
+    console.log('[TaskCreation] Updated insertNewTaskAfter to:', newTask.id.substring(0, 8));
+  }
+  
+  // Select task if requested
+  if (shouldSelectAfterCreate) {
+    taskSelectionActions.selectTask(newTask.id);
+  }
+  
+  // Handle UI updates
+  skipNextAnimation = true;
+  tick().then(() => {
+    skipNextAnimation = false;
+  });
+  
+  showFeedback(SUCCESS_MESSAGE, FEEDBACK_TIMEOUT);
+}
+
+/**
+ * Handles task creation errors
+ */
+function handleTaskCreationError(
+  error: unknown,
+  type: 'bottom' | 'inline',
+  title: string,
+  createData: TaskCreationData
+): void {
+  console.error('[TaskList] Task creation failed:', error);
+  console.error('[TaskList] Error details:', {
+    message: error?.message,
+    stack: error?.stack,
+    error,
+    taskData: createData,
+  });
+  
+  debugBusiness.workflow.error('Task creation failed', { 
+    error, 
+    taskData: { title, type } 
+  });
+  
+  // Restore form state
+  taskCreationManager.show(type);
+  taskCreationManager.setTitle(type, title);
+  
+  showFeedback(ERROR_MESSAGE, ERROR_FEEDBACK_TIMEOUT);
+}
+
+/**
+ * Shows feedback message with timeout
+ */
+function showFeedback(message: string, timeout: number): void {
+  dragFeedback = message;
+  setTimeout(() => (dragFeedback = ''), timeout);
+}
+
+/**
+ * Logs debug information for task creation
+ */
+function logTaskCreationDebug(createData: TaskCreationData, position: TaskPosition): void {
+  debugBusiness.workflow('TaskList: Creating task with data:', createData);
+  debugBusiness.workflow('TaskList: Position:', position.position, 'Type:', typeof position.position);
+  debugBusiness.workflow('TaskList: RepositionedAfterId:', position.repositionedAfterId);
+  debugBusiness.workflow('TaskList: ParentId:', position.parentId);
+}
+
+/**
+ * Main unified task creation function
+ */
+async function createTask(
+  type: 'bottom' | 'inline', 
+  shouldSelectAfterCreate: boolean = false
+): Promise<void> {
+  const state = taskCreationManager.getState(type);
+  const title = state.title.trim();
+  
+  if (!title) return;
+  
+  console.log('[TaskCreation] Creating task:', { type, title, insertNewTaskAfter });
+  
+  // Calculate task position
+  const position = determineTaskPosition(type, insertNewTaskAfter);
+  
+  console.log('[TaskCreation] Calculated position:', position);
+  
+  // Hide form after position calculation to preserve state
+  taskCreationManager.hide(type);
+  
+  // Build creation payload
+  const createData = buildTaskCreationData(title, jobId, position);
+  
+  // Log debug information
+  logTaskCreationDebug(createData, position);
+  
+  try {
+    // Create task via API
+    const rawNewTask = await TaskModel.create(createData);
+    debugBusiness.workflow('TaskList: Task created successfully:', rawNewTask);
     
-    // Update insertion point for inline creation
-    if (type === 'inline') {
-      insertNewTaskAfter = newTask.id;
-    }
-    
-    // Select task if requested
-    if (shouldSelectAfterCreate) {
-      taskSelectionActions.selectTask(newTask.id);
-    }
-    
-    // Handle UI updates
-    skipNextAnimation = true;
-    tick().then(() => {
-      skipNextAnimation = false;
+    // Normalize and handle success
+    const newTask = normalizeTaskData([rawNewTask])[0];
+    console.log('[TaskCreation] About to insert task:', { 
+      newTask: newTask.title, 
+      type, 
+      insertNewTaskAfter,
+      currentTaskCount: canonicalTasks().length 
     });
     
-    showFeedback(SUCCESS_MESSAGE, FEEDBACK_TIMEOUT);
+    handleTaskCreationSuccess(newTask, type, shouldSelectAfterCreate);
+    
+  } catch (error: unknown) {
+    handleTaskCreationError(error, type, title, createData);
   }
-
-  /**
-   * Handles task creation errors
-   */
-  function handleTaskCreationError(
-    error: unknown,
-    type: 'bottom' | 'inline',
-    title: string,
-    createData: TaskCreationData
-  ): void {
-    console.error('[TaskList] Task creation failed:', error);
-    console.error('[TaskList] Error details:', {
-      message: error?.message,
-      stack: error?.stack,
-      error,
-      taskData: createData,
-    });
-    
-    debugBusiness.workflow.error('Task creation failed', { 
-      error, 
-      taskData: { title, type } 
-    });
-    
-    // Restore form state
-    taskCreationManager.show(type);
-    taskCreationManager.setTitle(type, title);
-    
-    showFeedback(ERROR_MESSAGE, ERROR_FEEDBACK_TIMEOUT);
-  }
-
-  /**
-   * Shows feedback message with timeout
-   */
-  function showFeedback(message: string, timeout: number): void {
-    dragFeedback = message;
-    setTimeout(() => (dragFeedback = ''), timeout);
-  }
-
-  /**
-   * Logs debug information for task creation
-   */
-  function logTaskCreationDebug(createData: TaskCreationData, position: TaskPosition): void {
-    debugBusiness.workflow('TaskList: Creating task with data:', createData);
-    debugBusiness.workflow('TaskList: Position:', position.position, 'Type:', typeof position.position);
-    debugBusiness.workflow('TaskList: RepositionedAfterId:', position.repositionedAfterId);
-    debugBusiness.workflow('TaskList: ParentId:', position.parentId);
-  }
-
-  /**
-   * Main unified task creation function
-   */
-  async function createTask(
-    type: 'bottom' | 'inline', 
-    shouldSelectAfterCreate: boolean = false
-  ): Promise<void> {
-    const state = taskCreationManager.getState(type);
-    const title = state.title.trim();
-    
-    if (!title) return;
-    
-    // Calculate task position
-    const position = determineTaskPosition(type, insertNewTaskAfter);
-    
-    // Hide form after position calculation to preserve state
-    taskCreationManager.hide(type);
-    
-    // Build creation payload
-    const createData = buildTaskCreationData(title, jobId, position);
-    
-    // Log debug information
-    logTaskCreationDebug(createData, position);
-    
-    try {
-      // Create task via API
-      const rawNewTask = await TaskModel.create(createData);
-      debugBusiness.workflow('TaskList: Task created successfully:', rawNewTask);
-      
-      // Normalize and handle success
-      const newTask = normalizeTaskData([rawNewTask])[0];
-      handleTaskCreationSuccess(newTask, type, shouldSelectAfterCreate, insertNewTaskAfter);
-      
-    } catch (error: unknown) {
-      handleTaskCreationError(error, type, title, createData);
-    }
-  }
-
+}
+   
   // NOTE: handleNewTaskRowClick function removed as it was unused
 
   function handleTaskUpdated(event: CustomEvent) {

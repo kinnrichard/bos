@@ -13,6 +13,7 @@
   import ClientTypeFilterPopover from './ClientTypeFilterPopover.svelte';
   import JobFilterPopover from './JobFilterPopover.svelte';
   import TechnicianFilterPopover from '$lib/components/jobs/TechnicianFilterPopover.svelte';
+  import DateFilterPopover from '$lib/components/layout/DateFilterPopover.svelte';
   import PeopleFilterPopover from './PeopleFilterPopover.svelte';
   import SearchBar from './SearchBar.svelte';
   import PageActionsBar from './PageActionsBar.svelte';
@@ -189,6 +190,14 @@
     ]);
   }
 
+  // Date filter handler
+  function handleDateFilterChange(newSelection: string[]) {
+    jobFilter.setSelected([
+      ...jobFilter.selected.filter((id) => !id.startsWith('due_date:')),
+      ...newSelection,
+    ]);
+  }
+
   // Clear all searches when context changes
   $effect(() => {
     if (searchContext) {
@@ -274,6 +283,12 @@
       <TechnicianFilterPopover
         selected={jobFilter.selected.filter((id) => id.startsWith('technician:'))}
         onFilterChange={handleTechnicianFilterChange}
+        {disabled}
+      />
+      <DateFilterPopover
+        selected={jobFilter.selected.filter((id) => id.startsWith('due_date:'))}
+        onFilterChange={handleDateFilterChange}
+        fieldName="due_date"
         {disabled}
       />
     {/if}

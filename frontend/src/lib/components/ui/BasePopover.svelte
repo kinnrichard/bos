@@ -200,21 +200,16 @@
       const rect = panelElement.getBoundingClientRect();
       if (preferredPlacement === 'left' && rect.top < 140) {
         panelElement.style.setProperty('--arrow-top', '43%');
-        console.log(rect.top);
-      } else if (preferredPlacement === 'left' && rect.top > 909) {
+      } else if (preferredPlacement === 'left' && rect.top > 900) {
         panelElement.style.setProperty('--arrow-top', '87%');
-        console.log(rect.top);
-      } else if (preferredPlacement === 'left' && rect.top > 879 && rect.top < 909) {
+      } else if (preferredPlacement === 'left' && rect.top > 870 && rect.top < 900) {
         panelElement.style.setProperty('--arrow-top', '76%');
-        console.log(rect.top);
-      } else if (preferredPlacement === 'left' && rect.top > 849 && rect.top < 879) {
+      } else if (preferredPlacement === 'left' && rect.top > 840 && rect.top < 870) {
         panelElement.style.setProperty('--arrow-top', '65%');
-        console.log(rect.top);
-      } else if (preferredPlacement === 'left' && rect.top > 818 && rect.top < 849) {
+      } else if (preferredPlacement === 'left' && rect.top > 810 && rect.top < 840) {
         panelElement.style.setProperty('--arrow-top', '55%');
-        console.log(rect.top);
       } else {
-        console.log(rect.top);
+        //
       }
     }
   });
@@ -258,7 +253,7 @@
         --arrow-left: {arrowPosition.left};
         --arrow-top: {arrowPosition.top};
       "
-      transition:fade={{ duration: animationDuration }}
+      transition:fade|global={{ duration: animationDuration }}
     >
       {#if showArrow !== false}
         <!-- Arrow will be added via CSS pseudo-elements -->
@@ -290,10 +285,15 @@
     position: relative;
   }
 
+  /* Moving away the panel triangle object to the icon button */
   .base-popover-panel.panel-left {
     transform: translateX(-5px);
   }
 
+  /* Moving away the panel triangle object to the icon button */
+  .base-popover-panel.panel-bottom {
+    transform: translateY(5px);
+  }
 
   .base-popover-inner {
     /* All visual styling moved here */
