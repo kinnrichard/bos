@@ -81,59 +81,59 @@
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function calculateArrowPosition() {
-    // Wait for next tick to ensure panel is positioned
-    await tick();
-
     if (!buttonElement || !panelElement || !showArrow) return;
 
-    // Find the actual button element inside the wrapper
-    const actualButton = buttonElement.querySelector('button') || buttonElement;
+    await tick();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    // Find the actual trigger button - be more thorough in searching
+    const actualButton = buttonElement.querySelector('button') || 
+                        buttonElement.querySelector('[role="button"]') || 
+                        buttonElement.querySelector('.task-action-button') ||
+                        buttonElement;
+
     const triggerRect = actualButton.getBoundingClientRect();
     const panelRect = panelElement.getBoundingClientRect();
 
-    // Calculate arrow position relative to the trigger button
-    const triggerCenterX = triggerRect.left + triggerRect.width / 2;
-    const triggerCenterY = triggerRect.top + triggerRect.height / 2;
-
-    let arrowLeft: string;
-    let arrowTop: string;
-
-    switch (preferredPlacement) {
-      case 'left':
-      case 'right': {
-        // For horizontal placements, arrow should point to trigger center
-        const relativeY = triggerCenterY - panelRect.top;
-        const clampedY = Math.max(12, Math.min(relativeY, panelRect.height - 12));
-        arrowTop = `${clampedY}px`;
-        arrowLeft = '50%'; // Will be overridden by CSS
-        break;
-      }
-
-      case 'top':
-      case 'bottom': {
-        // For vertical placements, arrow should point to trigger center
-        const relativeX = triggerCenterX - panelRect.left;
-        const clampedX = Math.max(12, Math.min(relativeX, panelRect.width - 12));
-        arrowLeft = `${clampedX}px`;
-        arrowTop = '50%'; // Will be overridden by CSS
-        break;
-      }
-
-      default:
-        arrowLeft = '50%';
-        arrowTop = '50%';
+    if (preferredPlacement === 'left' || preferredPlacement === 'right') {
+      // Calculate where the trigger center should be relative to the panel
+      const triggerCenterY = triggerRect.top + triggerRect.height / 2;
+      const panelTop = panelRect.top;
+      const panelHeight = panelRect.height;
+      
+      // Calculate the relative position within the panel
+      const relativeY = triggerCenterY - panelTop;
+      
+      // Ensure arrow stays within reasonable bounds (20px from edges)
+      const minY = 20;
+      const maxY = panelHeight - 20;
+      const clampedY = Math.max(minY, Math.min(maxY, relativeY));
+      const percentY = (clampedY / panelHeight) * 100;
+      
+      const finalArrowTop = `${percentY}%`;
+    
+      // Set the CSS custom property
+      panelElement.style.setProperty('--arrow-top', finalArrowTop);
+      
+      // Also try setting it on the root for debugging
+      document.documentElement.style.setProperty('--debug-arrow-top', finalArrowTop);
+      
+    } else if (preferredPlacement === 'top' || preferredPlacement === 'bottom') {
+      // Handle horizontal arrow positioning
+      const triggerCenterX = triggerRect.left + triggerRect.width / 2;
+      const relativeX = triggerCenterX - panelRect.left;
+      
+      const minX = 20;
+      const maxX = panelRect.width - 20;
+      const clampedX = Math.max(minX, Math.min(maxX, relativeX));
+      const percentX = (clampedX / panelRect.width) * 100;
+      
+      panelElement.style.setProperty('--arrow-left', `${percentX}%`);
+      console.log('Horizontal arrow positioned at:', `${percentX}%`);
     }
 
-    arrowPosition = { left: arrowLeft, top: arrowTop };
     arrowPositioned = true;
-
-    debugComponent('Arrow position calculated', {
-      placement: preferredPlacement,
-      arrowLeft,
-      arrowTop,
-      triggerCenter: { x: triggerCenterX, y: triggerCenterY },
-      panelRect: { top: panelRect.top, left: panelRect.left },
-    });
+    console.log('=== End Arrow Debug ===');
   }
 
   // Enhanced outside click handler with configurable behavior
@@ -190,27 +190,17 @@
     if ($open && enabled) {
       // Register this popover as open
       unregisterPopover = registerPopover();
+      
+      // Calculate dynamic arrow positioning
+      if (panelElement && buttonElement && showArrow) {
+        tick().then(() => {
+          calculateArrowPosition();
+        });
+      }
     } else if (unregisterPopover) {
       // Unregister when closing
       unregisterPopover();
       unregisterPopover = null;
-    }
-
-    if ($open && enabled && panelElement) {
-      const rect = panelElement.getBoundingClientRect();
-      if (preferredPlacement === 'left' && rect.top < 140) {
-        panelElement.style.setProperty('--arrow-top', '43%');
-      } else if (preferredPlacement === 'left' && rect.top > 900) {
-        panelElement.style.setProperty('--arrow-top', '87%');
-      } else if (preferredPlacement === 'left' && rect.top > 870 && rect.top < 900) {
-        panelElement.style.setProperty('--arrow-top', '76%');
-      } else if (preferredPlacement === 'left' && rect.top > 840 && rect.top < 870) {
-        panelElement.style.setProperty('--arrow-top', '65%');
-      } else if (preferredPlacement === 'left' && rect.top > 810 && rect.top < 840) {
-        panelElement.style.setProperty('--arrow-top', '55%');
-      } else {
-        //
-      }
     }
   });
 
@@ -341,7 +331,7 @@
     content: '';
     position: absolute;
     top: -12px;
-    left: 50%;
+    left: var(--arrow-left, 50%);
     transform: translateX(-50%);
     width: 0;
     height: 0;
@@ -354,8 +344,8 @@
   .panel-bottom::after {
     content: '';
     position: absolute;
-    top: -9px; /* Moved 1px down to overlap the border */
-    left: 50%;
+    top: -9px;
+    left: var(--arrow-left, 50%);
     transform: translateX(-50%);
     width: 0;
     height: 0;
@@ -365,12 +355,11 @@
     z-index: 2;
   }
 
-  /* Top placement (arrow points down to button) */
   .panel-top::before {
     content: '';
     position: absolute;
     bottom: -12px;
-    left: 50%;
+    left: var(--arrow-left, 50%);
     transform: translateX(-50%);
     width: 0;
     height: 0;
@@ -383,8 +372,8 @@
   .panel-top::after {
     content: '';
     position: absolute;
-    bottom: -9px; /* Consistent with other arrow directions */
-    left: 50%;
+    bottom: -9px;
+    left: var(--arrow-left, 50%);
     transform: translateX(-50%);
     width: 0;
     height: 0;
@@ -399,7 +388,7 @@
     content: '';
     position: absolute;
     right: -12px;
-    top: 50%;
+    top: var(--arrow-top, 50%);
     transform: translateY(-50%);
     width: 0;
     height: 0;
@@ -412,8 +401,8 @@
   .panel-left::after {
     content: '';
     position: absolute;
-    right: -9px; /* Moved 1px left to overlap the border */
-    top: 50%;
+    right: -9px;
+    top: var(--arrow-top, 50%);
     transform: translateY(-50%);
     width: 0;
     height: 0;
@@ -423,18 +412,12 @@
     z-index: 2;
   }
 
-  /* overrides the top if the the popover is near on the top of the browser */
-  .panel-left::before,
-  .panel-left::after {
-    top: var(--arrow-top, 50%);
-  }
-
   /* Right placement (arrow points left to button) */
   .panel-right::before {
     content: '';
     position: absolute;
     left: -12px;
-    top: 50%;
+    top: var(--arrow-top, 50%);
     transform: translateY(-50%);
     width: 0;
     height: 0;
@@ -447,8 +430,8 @@
   .panel-right::after {
     content: '';
     position: absolute;
-    left: -9px; /* Moved 1px right to overlap the border */
-    top: 50%;
+    left: -9px;
+    top: var(--arrow-top, 50%);
     transform: translateY(-50%);
     width: 0;
     height: 0;

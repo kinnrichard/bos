@@ -7,6 +7,7 @@
     getSelectedJobStatuses,
     getSelectedJobPriorities,
     getSelectedTechnicianIds,
+    getSelectedDueDateFilters,
   } from '$lib/stores/jobFilter.svelte';
   import { getCurrentUser } from '$lib/auth/current-user';
   import { ReactiveUser } from '$lib/models/reactive-user';
@@ -37,6 +38,7 @@
   const selectedStatuses = $derived(getSelectedJobStatuses());
   const selectedPriorities = $derived(getSelectedJobPriorities());
   const storedTechnicianIds = $derived(getSelectedTechnicianIds());
+  const selectedDueDateFilters = $derived(getSelectedDueDateFilters());
 
   // Determine technician filters based on query param or stored selection
   const selectedTechnicianIds = $derived(() => {
@@ -68,6 +70,7 @@
       statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
       priorities: selectedPriorities.length > 0 ? selectedPriorities : undefined,
       technicianIds: selectedTechnicianIds().length > 0 ? selectedTechnicianIds() : undefined,
+      dueDateFilters: selectedDueDateFilters.length > 0 ? selectedDueDateFilters : undefined,
     })
   );
 

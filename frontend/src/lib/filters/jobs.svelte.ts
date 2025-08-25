@@ -8,6 +8,7 @@
 
 import type { JobData } from '$lib/models/types/job-data';
 import type { JobStatus, JobPriority } from '$lib/types/job';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, isBefore, isAfter, isToday, isTomorrow } from 'date-fns';
 
 /**
  * Filter options for jobs display
@@ -23,6 +24,7 @@ export interface JobFilterOptions {
   clientId?: string;
   dateFrom?: string;
   dateTo?: string;
+  dueDateFilters?: string[];
   scope?: 'all' | 'mine';
   currentUserId?: string;
 }
@@ -94,6 +96,57 @@ export function matchesTechnicianFilter(
   }
 
   return false;
+}
+
+/**
+ * Checks if a job matches due date filters
+ * Supports multiple due date filter types: overdue, today, tomorrow, this_week, next_week, this_month, no_due_date
+ */
+export function matchesDueDateFilters(job: JobData, dueDateFilters: string[]): boolean {
+  if (!dueDateFilters || dueDateFilters.length === 0) return true;
+
+  const jobDueDate = job.due_at ? new Date(job.due_at) : null;
+  const today = new Date();
+
+  return dueDateFilters.some(filter => {
+    switch (filter) {
+      case 'overdue':
+        return jobDueDate && isBefore(jobDueDate, startOfDay(today));
+        
+      case 'today':
+        return jobDueDate && isToday(jobDueDate);
+        
+      case 'tomorrow':
+        return jobDueDate && isTomorrow(jobDueDate);
+        
+      case 'this_week':
+        const thisWeekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+        const thisWeekEnd = endOfWeek(today, { weekStartsOn: 1 });
+        return jobDueDate && 
+               !isBefore(jobDueDate, thisWeekStart) && 
+               !isAfter(jobDueDate, thisWeekEnd);
+        
+      case 'next_week':
+        const nextWeekStart = addWeeks(startOfWeek(today, { weekStartsOn: 1 }), 1);
+        const nextWeekEnd = endOfWeek(nextWeekStart, { weekStartsOn: 1 });
+        return jobDueDate && 
+               !isBefore(jobDueDate, nextWeekStart) && 
+               !isAfter(jobDueDate, nextWeekEnd);
+        
+      case 'this_month':
+        const thisMonthStart = startOfMonth(today);
+        const thisMonthEnd = endOfMonth(today);
+        return jobDueDate && 
+               !isBefore(jobDueDate, thisMonthStart) && 
+               !isAfter(jobDueDate, thisMonthEnd);
+        
+      case 'no_due_date':
+        return !jobDueDate;
+        
+      default:
+        return false;
+    }
+  });
 }
 
 /**
@@ -172,6 +225,11 @@ export function createJobsFilter(options: JobFilterOptions) {
         return false;
       }
 
+      // Apply due date filters
+      if (options.dueDateFilters && !matchesDueDateFilters(job, options.dueDateFilters)) {
+        return false;
+      }
+
       // Apply client filter (redundant if already filtered at query level)
       if (options.clientId && job.client_id !== options.clientId) {
         return false;
@@ -205,10 +263,12 @@ export function createFilterFromSearchParams(
   const statusParam = searchParams.get('status');
   const priorityParam = searchParams.get('priority');
   const technicianIdsParam = searchParams.get('technician_ids');
+  const dueDateParam = searchParams.get('due_date');
 
   const statuses = statusParam ? (statusParam.split(',') as JobStatus[]) : undefined;
   const priorities = priorityParam ? (priorityParam.split(',') as JobPriority[]) : undefined;
   const technicianIds = technicianIdsParam ? technicianIdsParam.split(',') : undefined;
+  const dueDateFilters = dueDateParam ? dueDateParam.split(',') : undefined;
 
   return {
     status: statuses?.length === 1 ? statuses[0] : undefined,
@@ -217,6 +277,7 @@ export function createFilterFromSearchParams(
     priorities: priorities?.length && priorities.length > 1 ? priorities : undefined,
     technicianId: searchParams.get('technician_id') || undefined,
     technicianIds: technicianIds?.length ? technicianIds : undefined,
+    dueDateFilters: dueDateFilters?.length ? dueDateFilters : undefined,
     clientId: searchParams.get('client_id') || undefined,
     dateFrom: searchParams.get('date_from') || undefined,
     dateTo: searchParams.get('date_to') || undefined,

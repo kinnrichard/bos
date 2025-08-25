@@ -90,6 +90,7 @@ class JobFilterStore {
 
     const statusParam = url.searchParams.get('status');
     const priorityParam = url.searchParams.get('priority');
+    const dueDateParam = url.searchParams.get('due_date');
     // Note: technician filter is now handled by query param 'technician', not stored in this store
     const technicianIdsParam = null; // Deprecated - using query params directly
 
@@ -111,6 +112,18 @@ class JobFilterStore {
       priorities.forEach((priority) => {
         if (jobPriorityOptions.some((opt) => opt.value === priority)) {
           selected.push(`priority:${priority}`);
+        }
+      });
+    }
+
+    // Add due date selections
+    if (dueDateParam) {
+      const dueDateFilters = dueDateParam.split(',');
+      dueDateFilters.forEach((filter) => {
+        // Validate against known due date filter options
+        const validFilters = ['overdue', 'today', 'tomorrow', 'this_week', 'next_week', 'this_month', 'no_due_date'];
+        if (validFilters.includes(filter)) {
+          selected.push(`due_date:${filter}`);
         }
       });
     }
@@ -160,6 +173,12 @@ class JobFilterStore {
           .filter((id) => id.startsWith('priority:'))
           .map((id) => id.replace('priority:', ''));
 
+
+        // Extract due date selections
+        const dueDateFilters = this._selected
+          .filter((id) => id.startsWith('due_date:'))
+          .map((id) => id.replace('due_date:', ''));
+
         // Update URL parameters for status and priority only
         // Technician filters are handled separately via query params
         if (statuses.length > 0) {
@@ -172,6 +191,12 @@ class JobFilterStore {
           url.searchParams.set('priority', priorities.join(','));
         } else {
           url.searchParams.delete('priority');
+        }
+
+        if (dueDateFilters.length > 0) {
+          url.searchParams.set('due_date', dueDateFilters.join(','));
+        } else {
+          url.searchParams.delete('due_date');
         }
 
         // Note: technician filters now use 'technician' query param, handled by TechnicianFilterPopover
@@ -224,4 +249,10 @@ export function getSelectedTechnicianIds(): string[] {
   return jobFilter.selected
     .filter((id) => id.startsWith('technician:'))
     .map((id) => id.replace('technician:', ''));
+}
+
+export function getSelectedDueDateFilters(): string[] {
+  return jobFilter.selected
+    .filter((id) => id.startsWith('due_date:'))
+    .map((id) => id.replace('due_date:', ''));
 }
