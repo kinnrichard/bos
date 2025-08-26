@@ -21,4 +21,6 @@
   {disabled}
   showAllSelectedByDefault={false}
   preventAllUnchecked={false}
+  showIcons={true}
+  iconPosition="left"
 />

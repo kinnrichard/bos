@@ -103,50 +103,57 @@ export function matchesTechnicianFilter(
  * Supports multiple due date filter types: overdue, today, tomorrow, this_week, next_week, this_month, no_due_date
  */
 export function matchesDueDateFilters(job: JobData, dueDateFilters: string[]): boolean {
+  // Handle empty or no filters - show all jobs
   if (!dueDateFilters || dueDateFilters.length === 0) return true;
 
+  // Since it's single select, take the first filter
+  const selectedFilter = dueDateFilters[0];
+  
   const jobDueDate = job.due_at ? new Date(job.due_at) : null;
   const today = new Date();
 
-  return dueDateFilters.some(filter => {
-    switch (filter) {
-      case 'overdue':
-        return jobDueDate && isBefore(jobDueDate, startOfDay(today));
-        
-      case 'today':
-        return jobDueDate && isToday(jobDueDate);
-        
-      case 'tomorrow':
-        return jobDueDate && isTomorrow(jobDueDate);
-        
-      case 'this_week':
-        const thisWeekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
-        const thisWeekEnd = endOfWeek(today, { weekStartsOn: 1 });
-        return jobDueDate && 
-               !isBefore(jobDueDate, thisWeekStart) && 
-               !isAfter(jobDueDate, thisWeekEnd);
-        
-      case 'next_week':
-        const nextWeekStart = addWeeks(startOfWeek(today, { weekStartsOn: 1 }), 1);
-        const nextWeekEnd = endOfWeek(nextWeekStart, { weekStartsOn: 1 });
-        return jobDueDate && 
-               !isBefore(jobDueDate, nextWeekStart) && 
-               !isAfter(jobDueDate, nextWeekEnd);
-        
-      case 'this_month':
-        const thisMonthStart = startOfMonth(today);
-        const thisMonthEnd = endOfMonth(today);
-        return jobDueDate && 
-               !isBefore(jobDueDate, thisMonthStart) && 
-               !isAfter(jobDueDate, thisMonthEnd);
-        
-      case 'no_due_date':
-        return !jobDueDate;
-        
-      default:
-        return false;
-    }
-  });
+  // Handle "no_due_date" separately - only show jobs without due dates
+  if (selectedFilter === 'no_due_date') {
+    return !jobDueDate;
+  }
+
+  // If job has no due date and we're filtering by date ranges, exclude it
+  if (!jobDueDate) {
+    return false;
+  }
+
+  // Define the maximum date for each filter (cumulative logic)
+  let maxDate: Date;
+
+  switch (selectedFilter) {
+    case 'overdue':
+      // Only overdue (before today)
+      maxDate = startOfDay(today);
+      return isBefore(jobDueDate, maxDate);
+      
+    case 'today':
+      // Overdue + due today
+      maxDate = endOfDay(today);
+      return !isAfter(jobDueDate, maxDate);
+      
+    case 'tomorrow':
+      // Overdue + due today + due tomorrow
+      maxDate = endOfDay(addDays(today, 1));
+      return !isAfter(jobDueDate, maxDate);
+      
+    case 'this_week':
+      // Overdue + due today + due tomorrow + due this week
+      maxDate = endOfWeek(today, { weekStartsOn: 1 }); // Monday start
+      return !isAfter(jobDueDate, maxDate);
+      
+    case 'this_month':
+      // Overdue + due today + due tomorrow + due this week + due this month
+      maxDate = endOfMonth(today);
+      return !isAfter(jobDueDate, maxDate);
+      
+    default:
+      return false;
+  }
 }
 
 /**
@@ -268,7 +275,9 @@ export function createFilterFromSearchParams(
   const statuses = statusParam ? (statusParam.split(',') as JobStatus[]) : undefined;
   const priorities = priorityParam ? (priorityParam.split(',') as JobPriority[]) : undefined;
   const technicianIds = technicianIdsParam ? technicianIdsParam.split(',') : undefined;
-  const dueDateFilters = dueDateParam ? dueDateParam.split(',') : undefined;
+  
+  // For due date, since it's now single select, only take the first value
+  const dueDateFilters = dueDateParam ? [dueDateParam.split(',')[0]] : undefined;
 
   return {
     status: statuses?.length === 1 ? statuses[0] : undefined,
@@ -277,7 +286,7 @@ export function createFilterFromSearchParams(
     priorities: priorities?.length && priorities.length > 1 ? priorities : undefined,
     technicianId: searchParams.get('technician_id') || undefined,
     technicianIds: technicianIds?.length ? technicianIds : undefined,
-    dueDateFilters: dueDateFilters?.length ? dueDateFilters : undefined,
+    dueDateFilters: dueDateFilters, // Now single select array with max 1 item
     clientId: searchParams.get('client_id') || undefined,
     dateFrom: searchParams.get('date_from') || undefined,
     dateTo: searchParams.get('date_to') || undefined,

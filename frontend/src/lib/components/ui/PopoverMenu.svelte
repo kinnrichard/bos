@@ -436,7 +436,7 @@
   .popover-menu-header {
     display: flex;
     align-items: center;
-    padding: 4px 12px;
+    /* padding: 4px 12px; */
     font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);

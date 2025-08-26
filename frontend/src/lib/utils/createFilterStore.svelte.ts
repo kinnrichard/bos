@@ -4,6 +4,7 @@ export interface FilterOption {
   id: string;
   value: string;
   label: string;
+  icon?: string; // Optional icon path or URL
 }
 
 export interface FilterStoreConfig<T extends FilterOption> {
@@ -24,6 +25,7 @@ export interface FilterStore<T extends FilterOption> {
   clearFilters: () => void;
   isSelected: (value: string) => boolean;
   getFilteredItems: <Item>(items: Item[], getItemValue: (item: Item) => string, getItemDiscardedAt?: (item: Item) => unknown) => Item[];
+  getSelectedOptions: () => T[]; // Helper to get selected option objects with icons
 }
 
 export function createFilterStore<T extends FilterOption>(
@@ -115,6 +117,10 @@ export function createFilterStore<T extends FilterOption>(
     return selected.includes(value);
   }
   
+  function getSelectedOptions(): T[] {
+    return options.filter(option => selected.includes(option.value));
+  }
+  
   function getFilteredItems<Item>(
     items: Item[], 
     getItemValue: (item: Item) => string,
@@ -159,6 +165,7 @@ export function createFilterStore<T extends FilterOption>(
     setShowDeleted,
     clearFilters,
     isSelected,
-    getFilteredItems
+    getFilteredItems,
+    getSelectedOptions
   };
 }

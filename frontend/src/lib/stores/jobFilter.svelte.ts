@@ -13,27 +13,28 @@ import type { JobStatus, JobPriority } from '$lib/types/job';
 
 // Define status filter options matching JobStatus type
 export const jobStatusOptions: FilterOption[] = [
-  { id: 'open', value: 'open', label: 'Open' },
-  { id: 'in_progress', value: 'in_progress', label: 'In Progress' },
-  { id: 'waiting_for_customer', value: 'waiting_for_customer', label: 'Waiting for Customer' },
+  { id: 'open', value: 'open', label: 'Open', icon: '⚫' },
+  { id: 'in_progress', value: 'in_progress', label: 'In Progress' , icon: '🟢' },
+  { id: 'waiting_for_customer', value: 'waiting_for_customer', label: 'Waiting for Customer' , icon: '⏳' },
   {
     id: 'waiting_for_scheduled_appointment',
     value: 'waiting_for_scheduled_appointment',
     label: 'Waiting for Appointment',
+    icon: '⏳'
   },
-  { id: 'paused', value: 'paused', label: 'Paused' },
-  { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed' },
-  { id: 'cancelled', value: 'cancelled', label: 'Cancelled' },
+  { id: 'paused', value: 'paused', label: 'Paused' , icon: '⏸️' },
+  { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed' , icon: '☑️' },
+  { id: 'cancelled', value: 'cancelled', label: 'Cancelled' , icon: '❌' },
 ];
 
 // Define priority filter options matching JobPriority type
 export const jobPriorityOptions: FilterOption[] = [
-  { id: 'critical', value: 'critical', label: 'Critical' },
-  { id: 'very_high', value: 'very_high', label: 'Very High' },
-  { id: 'high', value: 'high', label: 'High' },
-  { id: 'normal', value: 'normal', label: 'Normal' },
-  { id: 'low', value: 'low', label: 'Low' },
-  { id: 'proactive_followup', value: 'proactive_followup', label: 'Proactive Follow-up' },
+  { id: 'critical', value: 'critical', label: 'Critical' , icon: '🔥' },
+  { id: 'very_high', value: 'very_high', label: 'Very High' , icon: '‼️' },
+  { id: 'high', value: 'high', label: 'High' , icon: '❗' },
+  { id: 'normal', value: 'normal', label: 'Normal' , icon: '➖' },
+  { id: 'low', value: 'low', label: 'Low' , icon: '🐢' },
+  { id: 'proactive_followup', value: 'proactive_followup', label: 'Proactive Follow-up' , icon: '💬' },
 ];
 
 // Extended filter option interface to support headers and dividers
@@ -49,6 +50,7 @@ export const jobFilterOptions: ExtendedFilterOption[] = [
     ...opt,
     id: `status:${opt.id}`,
     value: `status:${opt.value}`,
+    icon: opt.icon
   })),
   { id: 'divider', value: 'divider', label: '', divider: true },
   {
@@ -61,6 +63,7 @@ export const jobFilterOptions: ExtendedFilterOption[] = [
     ...opt,
     id: `priority:${opt.id}`,
     value: `priority:${opt.value}`,
+    icon: opt.icon
   })),
 ];
 

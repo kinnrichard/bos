@@ -1,9 +1,9 @@
-<script lang="ts" generics="T extends { id: string; value: string; label: string }">
+<script lang="ts" generics="T extends { id: string; value: string; label: string; icon?: string }">
   import BasePopover from '$lib/components/ui/BasePopover.svelte';
   import PopoverMenu from '$lib/components/ui/PopoverMenu.svelte';
   import '$lib/styles/popover-common.css';
 
-  interface Props<T extends { id: string; value: string; label: string }> {
+  interface Props<T extends { id: string; value: string; label: string; icon?: string }> {
     title?: string | null;
     options: T[];
     selected: string[];
@@ -15,6 +15,8 @@
     deletedLabel?: string;
     showDeleted?: boolean;
     onDeletedToggle?: (showDeleted: boolean) => void;
+    showIcons?: boolean; // New prop to control icon display
+    iconPosition?: 'left' | 'right'; // New prop for icon position
   }
 
   let {
@@ -29,6 +31,8 @@
     deletedLabel = 'Deleted',
     showDeleted = $bindable(false),
     onDeletedToggle = () => {},
+    showIcons = false, // Default to false for backwards compatibility
+    iconPosition = 'left', // Default position
   } = $props<Props<T>>();
 
   // Note: Initialization is handled by parent component to avoid circular updates
@@ -127,7 +131,7 @@
       onclick={disabled ? undefined : (e: MouseEvent) => e.stopPropagation()}
     >
       <img
-        src={hasActiveFilters ? '/icons/filter-active.svg' : '/icons/filter-inactive.svg'}
+        src="/icons/filter-inactive.svg" 
         alt=""
         class="filter-icon"
         class:active={hasActiveFilters}
@@ -139,12 +143,31 @@
     <PopoverMenu
       options={menuOptions}
       showCheckmarks={true}
-      showIcons={false}
+      showIcons={showIcons}
+      iconPosition={iconPosition}
       multiple={true}
       selected={allSelectedValues}
       onSelect={handleSelect}
       onClose={close}
-    />
+    >
+      {#snippet iconContent({ option })}
+        {#if option.icon}
+          {#if option.icon.startsWith('/') || option.icon.startsWith('http')}
+            <!-- Image file -->
+            <img 
+              src={option.icon} 
+              alt={option.label} 
+              class="menu-icon"
+            />
+          {:else}
+            <!-- Emoji or text icon -->
+            <span class="menu-emoji" aria-label={option.label}>
+              {option.icon}
+            </span>
+          {/if}
+        {/if}
+      {/snippet}
+    </PopoverMenu>
   {/snippet}
 </BasePopover>
 
@@ -157,8 +180,22 @@
     opacity: 0.7;
   }
 
-  .filter-icon.active {
+  /* .filter-icon.active {
     opacity: 1;
+  } */
+
+  .menu-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+
+  .menu-emoji {
+    font-size: 16px;
+    line-height: 1;
+    display: inline-block;
+    width: 20px;
+    text-align: center;
   }
 
   /* Accessibility improvements and high contrast support are imported from popover-common.css */

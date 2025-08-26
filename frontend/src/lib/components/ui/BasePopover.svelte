@@ -344,14 +344,14 @@
   .panel-bottom::after {
     content: '';
     position: absolute;
-    top: -9px;
+    top: -9px; /* Back to original position */
     left: var(--arrow-left, 50%);
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid var(--bg-secondary);
+    border-left: 11px solid transparent; /* Increased from 10px to 11px */
+    border-right: 11px solid transparent; /* Increased from 10px to 11px */
+    border-bottom: 11px solid var(--bg-secondary); /* Increased from 10px to 11px */
     z-index: 2;
   }
 
@@ -406,9 +406,9 @@
     transform: translateY(-50%);
     width: 0;
     height: 0;
-    border-top: 10px solid transparent;
-    border-bottom: 10px solid transparent;
-    border-left: 10px solid var(--bg-secondary);
+    border-top: 11px solid transparent; /* Increased from 10px to 11px */
+    border-bottom: 11px solid transparent; /* Increased from 10px to 11px */
+    border-left: 11px solid var(--bg-secondary); /* Increased from 10px to 11px */
     z-index: 2;
   }
 

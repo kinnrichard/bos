@@ -18,28 +18,29 @@
 
   // Date filter options
   const dateOptions = [
-    { id: 'due_date:overdue', value: 'due_date:overdue', label: 'Overdue', icon: '/icons/calendar-with-badge.svg', isOverdue: true },
-    { id: 'due_date:today', value: 'due_date:today', label: 'Due Today', icon: '/icons/calendar-with-badge.svg' },
-    { id: 'due_date:tomorrow', value: 'due_date:tomorrow', label: 'Due Tomorrow', icon: '/icons/calendar-with-badge.svg' },
-    { id: 'due_date:this_week', value: 'due_date:this_week', label: 'This Week', icon: '/icons/calendar-with-badge.svg' },
-    { id: 'due_date:next_week', value: 'due_date:next_week', label: 'Next Week', icon: '/icons/calendar-with-badge.svg' },
-    { id: 'due_date:this_month', value: 'due_date:this_month', label: 'This Month', icon: '/icons/calendar-with-badge.svg' },
-    { id: 'due_date:no_due_date', value: 'due_date:no_due_date', label: 'No Due Date', icon: '/icons/calendar-with-badge.svg', isNoDueDate: true },
+    { id: 'due_date:no_due_date', value: 'due_date:no_due_date', label: 'No Due Date', icon: '/icons/questionmark.circle.fill.svg', isNoDueDate: true },
+    { id: 'divider', value: 'divider', label: '', divider: true },
+    { id: 'due_date:overdue', value: 'due_date:overdue', label: 'Overdue', icon: '/icons/calendar.badge.exclamation.svg', isOverdue: true },
+    { id: 'due_date:today', value: 'due_date:today', label: 'Due Today', icon: '/icons/0.calendar.svg' },
+    { id: 'due_date:tomorrow', value: 'due_date:tomorrow', label: 'Due Tomorrow', icon: '/icons/1.calendar.svg' },
+    { id: 'due_date:this_week', value: 'due_date:this_week', label: 'This Week', icon: '/icons/7.calendar.svg' },
+    { id: 'due_date:this_month', value: 'due_date:this_month', label: 'This Month', icon: '/icons/30.calendar.svg' },
   ];
 
-  // Determine effective selection based on query param or props
+  // Determine effective selection based on query param or props (single value only)
   const effectiveSelection = $derived(() => {
     const dueDateParam = currentUrl.searchParams.get('due_date');
 
-    if (!dueDateParam) return selected;
+    if (!dueDateParam) return selected.slice(0, 1); // Take only first item if multiple
 
-    // Parse comma-separated values
-    return dueDateParam.split(',').map((value) => `due_date:${value}`);
+    // For single select, only take the first value
+    const firstValue = dueDateParam.split(',')[0];
+    return [`due_date:${firstValue}`];
   });
 
-  // Parse selected date filters
-  const selectedDateFilters = $derived(
-    effectiveSelection().filter((id) => id.startsWith('due_date:'))
+  // Parse selected date filter (single value)
+  const selectedDateFilter = $derived(
+    effectiveSelection().find((id) => id.startsWith('due_date:'))
   );
 
   // Create filter options with icons
@@ -56,11 +57,11 @@
     let newSelection: string[];
 
     if (isCurrentlySelected) {
-      // Remove from selection
-      newSelection = effectiveSelection().filter((id) => id !== value);
+      // If clicking the currently selected item, deselect it
+      newSelection = [];
     } else {
-      // Add to selection
-      newSelection = [...effectiveSelection(), value];
+      // Replace current selection with new single selection
+      newSelection = [value];
     }
 
     // Build new URL with appropriate query params
@@ -70,9 +71,9 @@
       // No selection, remove due_date param
       url.searchParams.delete('due_date');
     } else {
-      // Custom selection - use comma-separated values without the due_date: prefix
-      const filterValues = newSelection.map((id) => id.replace('due_date:', ''));
-      url.searchParams.set('due_date', filterValues.join(','));
+      // Single selection - use single value without the due_date: prefix
+      const filterValue = newSelection[0].replace('due_date:', '');
+      url.searchParams.set('due_date', filterValue);
     }
 
     // Navigate to the new URL
@@ -84,7 +85,7 @@
 
   const hasActiveFilters = $derived(effectiveSelection().length > 0);
   
-  // Get selected options for display
+  // Get selected option for display (single option)
   const selectedOptions = $derived(
     dateOptions.filter(option => effectiveSelection().includes(option.value))
   );
@@ -107,10 +108,9 @@
       showCheckmarks={true}
       showIcons={true}
       iconPosition="left"
-      multiple={true}
+      multiple={false}
       selected={effectiveSelection()}
       onSelect={handleSelect}
-      onClose={close}
     >
       {#snippet iconContent({ option })}
         {#if option.icon}
@@ -118,8 +118,6 @@
             src={option.icon} 
             alt={option.label} 
             class="menu-icon"
-            class:overdue={option.isOverdue}
-            class:no-due-date={option.isNoDueDate}
           />
         {/if}
       {/snippet}
@@ -131,18 +129,17 @@
   .menu-icon {
     width: 20px;
     height: 20px;
-    border-radius: 50%;
     object-fit: contain;
   }
 
-  .menu-icon.overdue {
-    filter: hue-rotate(0deg) saturate(1.5) brightness(1.2);
-    /* Tint the calendar icon reddish for overdue items */
-    color: #ef4444;
+  /* Remove blue selection highlighting for date filter */
+  :global(.popover-menu-item.selected) {
+    background-color: transparent !important;
   }
-
-  .menu-icon.no-due-date {
-    opacity: 0.6;
-    /* Make it slightly faded for "no due date" */
+  
+  /* Or if you want to keep some visual indication but not blue */
+  :global(.popover-menu-item.selected) {
+    background-color: var(--bg-tertiary) !important;
+    border-left: 2px solid var(--accent-primary) !important;
   }
 </style>
