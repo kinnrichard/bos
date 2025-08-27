@@ -127,19 +127,8 @@
 
 <style>
   .menu-icon {
-    width: 20px;
-    height: 20px;
+    width: 50px;
+    height: 50px;
     object-fit: contain;
-  }
-
-  /* Remove blue selection highlighting for date filter */
-  :global(.popover-menu-item.selected) {
-    background-color: transparent !important;
-  }
-  
-  /* Or if you want to keep some visual indication but not blue */
-  :global(.popover-menu-item.selected) {
-    background-color: var(--bg-tertiary) !important;
-    border-left: 2px solid var(--accent-primary) !important;
   }
 </style>

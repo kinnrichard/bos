@@ -46,7 +46,7 @@
     ...(showDeletedToggle
       ? [
           { id: 'separator', divider: true },
-          { id: 'deleted', value: 'deleted', label: deletedLabel },
+          { id: 'deleted', value: 'deleted', label: deletedLabel, icon: '🗑️' },
         ]
       : []),
   ]);

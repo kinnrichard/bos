@@ -30,4 +30,5 @@
   deletedLabel="Deleted"
   showDeleted={taskStatusFilter.showDeleted}
   onDeletedToggle={handleDeletedToggle}
+  showIcons={true}
 />

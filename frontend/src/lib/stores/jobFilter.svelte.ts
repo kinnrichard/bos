@@ -15,14 +15,14 @@ import type { JobStatus, JobPriority } from '$lib/types/job';
 export const jobStatusOptions: FilterOption[] = [
   { id: 'open', value: 'open', label: 'Open', icon: '⚫' },
   { id: 'in_progress', value: 'in_progress', label: 'In Progress' , icon: '🟢' },
+  { id: 'paused', value: 'paused', label: 'Paused' , icon: '⏸️' },
   { id: 'waiting_for_customer', value: 'waiting_for_customer', label: 'Waiting for Customer' , icon: '⏳' },
   {
     id: 'waiting_for_scheduled_appointment',
     value: 'waiting_for_scheduled_appointment',
-    label: 'Waiting for Appointment',
-    icon: '⏳'
+    label: 'Scheduled',
+    icon: '🗓️'
   },
-  { id: 'paused', value: 'paused', label: 'Paused' , icon: '⏸️' },
   { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed' , icon: '☑️' },
   { id: 'cancelled', value: 'cancelled', label: 'Cancelled' , icon: '❌' },
 ];

@@ -145,7 +145,7 @@ export function getTaskStatusLabel(status: string | number | null | undefined): 
     case 'paused':
       return 'Paused';
     case 'successfully_completed':
-      return 'Completed Successfully';
+      return 'Completed';
     case 'cancelled':
       return 'Cancelled';
     default:

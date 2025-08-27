@@ -3,7 +3,6 @@
   import Portal from './Portal.svelte';
   import { onDestroy, onMount, tick } from 'svelte';
   import { fade } from 'svelte/transition';
-  // import { calculatePopoverPosition, type PopoverPosition } from '$lib/utils/popover-positioning';
   import { debugComponent } from '$lib/utils/debug';
   import { registerPopover } from '$lib/stores/popover-state';
 
@@ -19,7 +18,7 @@
     closeOnEscape = true,
     animationDuration = 200,
     className = '',
-    arrowClassName = '', // eslint-disable-line @typescript-eslint/no-unused-vars
+    arrowClassName = '',
     enabled = true,
     trigger,
     children,
@@ -55,22 +54,29 @@
     disableFocusTrap: false,
     closeOnOutsideClick: closeOnClickOutside,
     preventScroll: false,
-    portal: null, // Use portal for proper event handling
+    portal: null,
   });
 
+  // State variables
   let buttonElement = $state<HTMLElement>();
   let panelElement = $state<HTMLElement>();
-
+  let showPanel = $state(false);
+  
   // Arrow positioning state
   let arrowPosition = $state<{ top: string; left: string }>({ top: '50%', left: '50%' });
   let arrowPositioned = $state(false);
 
-  // Disable custom arrow positioning for now
-  // $effect(() => {
-  //   if ($open && showArrow && buttonElement && panelElement) {
-  //     calculateArrowPosition();
-  //   }
-  // });
+  // Track open state changes to control panel visibility with delay for closing
+  $effect(() => {
+    if ($open) {
+      showPanel = true;
+    } else if (showPanel) {
+      // Delay hiding to allow fade-out transition
+      setTimeout(() => {
+        showPanel = false;
+      }, animationDuration);
+    }
+  });
 
   // Reset arrow position when popover closes
   $effect(() => {
@@ -79,14 +85,12 @@
     }
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function calculateArrowPosition() {
     if (!buttonElement || !panelElement || !showArrow) return;
 
     await tick();
     await new Promise(resolve => requestAnimationFrame(resolve));
 
-    // Find the actual trigger button - be more thorough in searching
     const actualButton = buttonElement.querySelector('button') || 
                         buttonElement.querySelector('[role="button"]') || 
                         buttonElement.querySelector('.task-action-button') ||
@@ -96,30 +100,21 @@
     const panelRect = panelElement.getBoundingClientRect();
 
     if (preferredPlacement === 'left' || preferredPlacement === 'right') {
-      // Calculate where the trigger center should be relative to the panel
       const triggerCenterY = triggerRect.top + triggerRect.height / 2;
       const panelTop = panelRect.top;
       const panelHeight = panelRect.height;
       
-      // Calculate the relative position within the panel
       const relativeY = triggerCenterY - panelTop;
       
-      // Ensure arrow stays within reasonable bounds (20px from edges)
       const minY = 20;
       const maxY = panelHeight - 20;
       const clampedY = Math.max(minY, Math.min(maxY, relativeY));
       const percentY = (clampedY / panelHeight) * 100;
       
       const finalArrowTop = `${percentY}%`;
-    
-      // Set the CSS custom property
       panelElement.style.setProperty('--arrow-top', finalArrowTop);
       
-      // Also try setting it on the root for debugging
-      document.documentElement.style.setProperty('--debug-arrow-top', finalArrowTop);
-      
     } else if (preferredPlacement === 'top' || preferredPlacement === 'bottom') {
-      // Handle horizontal arrow positioning
       const triggerCenterX = triggerRect.left + triggerRect.width / 2;
       const relativeX = triggerCenterX - panelRect.left;
       
@@ -129,21 +124,17 @@
       const percentX = (clampedX / panelRect.width) * 100;
       
       panelElement.style.setProperty('--arrow-left', `${percentX}%`);
-      console.log('Horizontal arrow positioned at:', `${percentX}%`);
     }
 
     arrowPositioned = true;
-    console.log('=== End Arrow Debug ===');
   }
 
-  // Enhanced outside click handler with configurable behavior
   function handleOutsideClick(event: MouseEvent) {
     if (!$open || !enabled || !closeOnClickOutside) return;
 
     const target = event.target as Node;
     if (!target) return;
 
-    // Check if click is outside both panel and trigger
     if (
       panelElement &&
       !panelElement.contains(target) &&
@@ -154,7 +145,6 @@
     }
   }
 
-  // Escape key handler
   function handleKeydown(event: KeyboardEvent) {
     if (!$open || !enabled || !closeOnEscape) return;
 
@@ -165,7 +155,6 @@
     }
   }
 
-  // Set up event listeners
   onMount(() => {
     if (closeOnClickOutside) {
       window.addEventListener('click', handleOutsideClick, true);
@@ -180,31 +169,25 @@
     window.removeEventListener('keydown', handleKeydown, true);
   });
 
-  // Provide close function to slot content
   const closePopover = () => open.set(false);
 
-  // Register with global popover state when open
   let unregisterPopover: (() => void) | null = null;
 
   $effect(() => {
     if ($open && enabled) {
-      // Register this popover as open
       unregisterPopover = registerPopover();
       
-      // Calculate dynamic arrow positioning
       if (panelElement && buttonElement && showArrow) {
         tick().then(() => {
           calculateArrowPosition();
         });
       }
     } else if (unregisterPopover) {
-      // Unregister when closing
       unregisterPopover();
       unregisterPopover = null;
     }
   });
 
-  // Clean up on destroy
   onDestroy(() => {
     if (unregisterPopover) {
       unregisterPopover();
@@ -214,7 +197,6 @@
 
 <div class="base-popover-container">
   {#if trigger}
-    <!-- Use trigger snippet with Melt trigger action -->
     <div class="base-popover-trigger" bind:this={buttonElement}>
       {@render trigger({
         popover: {
@@ -227,8 +209,7 @@
   {/if}
 </div>
 
-<!-- Render popover content in Portal for proper event isolation -->
-<Portal enabled={$open && enabled}>
+<Portal enabled={showPanel && enabled}>
   {#if $open && enabled}
     <div
       use:content
@@ -243,7 +224,8 @@
         --arrow-left: {arrowPosition.left};
         --arrow-top: {arrowPosition.top};
       "
-      transition:fade|global={{ duration: animationDuration }}
+      in:fade|global={{ duration: 0 }}
+      out:fade|global={{ duration: animationDuration }}
     >
       {#if showArrow !== false}
         <!-- Arrow will be added via CSS pseudo-elements -->
@@ -260,7 +242,7 @@
 <style>
   .base-popover-container {
     display: flex;
-    align-items: center; /* This centers children vertically */
+    align-items: center;
   }
 
   .base-popover-trigger {
@@ -270,42 +252,37 @@
   }
 
   .base-popover-panel {
-    /* Panel is now just a positioning container for arrows */
     z-index: var(--z-popover, 2000);
     position: relative;
   }
 
-  /* Moving away the panel triangle object to the icon button */
   .base-popover-panel.panel-left {
     transform: translateX(-5px);
   }
 
-  /* Moving away the panel triangle object to the icon button */
   .base-popover-panel.panel-bottom {
     transform: translateY(5px);
   }
 
   .base-popover-inner {
-    /* All visual styling moved here */
     background-color: var(--bg-secondary);
     box-shadow:
       inset 0 0 0 1px var(--border-primary),
       var(--shadow-xl);
     border-radius: var(--radius-lg);
-    overflow: hidden; /* Clip content to rounded corners */
+    overflow: hidden;
     width: 100%;
     height: 100%;
   }
 
   .popover-content-wrapper {
     width: 100%;
-    max-height: calc(100vh - 100px); /* Match parent's default max-height */
-    overflow-y: auto; /* Enable scrolling */
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
     overflow-x: hidden;
-    overscroll-behavior: contain; /* Prevent scroll chaining */
+    overscroll-behavior: contain;
   }
 
-  /* Scrollbar styling */
   .popover-content-wrapper::-webkit-scrollbar {
     width: 6px;
   }
@@ -324,9 +301,8 @@
     background-color: var(--border-primary);
   }
 
-  /* CSS Arrow styles - using ::before and ::after pseudo-elements */
+  /* CSS Arrow styles */
 
-  /* Bottom placement (arrow points up to button) */
   .panel-bottom::before {
     content: '';
     position: absolute;
@@ -344,14 +320,14 @@
   .panel-bottom::after {
     content: '';
     position: absolute;
-    top: -9px; /* Back to original position */
+    top: -9px;
     left: var(--arrow-left, 50%);
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 11px solid transparent; /* Increased from 10px to 11px */
-    border-right: 11px solid transparent; /* Increased from 10px to 11px */
-    border-bottom: 11px solid var(--bg-secondary); /* Increased from 10px to 11px */
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-bottom: 11px solid var(--bg-secondary);
     z-index: 2;
   }
 
@@ -383,7 +359,6 @@
     z-index: 2;
   }
 
-  /* Left placement (arrow points right to button) */
   .panel-left::before {
     content: '';
     position: absolute;
@@ -406,13 +381,12 @@
     transform: translateY(-50%);
     width: 0;
     height: 0;
-    border-top: 11px solid transparent; /* Increased from 10px to 11px */
-    border-bottom: 11px solid transparent; /* Increased from 10px to 11px */
-    border-left: 11px solid var(--bg-secondary); /* Increased from 10px to 11px */
+    border-top: 11px solid transparent;
+    border-bottom: 11px solid transparent;
+    border-left: 11px solid var(--bg-secondary);
     z-index: 2;
   }
 
-  /* Right placement (arrow points left to button) */
   .panel-right::before {
     content: '';
     position: absolute;
@@ -441,21 +415,18 @@
     z-index: 2;
   }
 
-  /* Responsive adjustments */
   @media (max-width: 768px) {
     .base-popover-panel {
       max-width: calc(100vw - 40px);
     }
   }
 
-  /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
     .base-popover-panel {
       transition: none;
     }
   }
 
-  /* High contrast mode support */
   @media (prefers-contrast: high) {
     .base-popover-panel {
       border-width: 2px;

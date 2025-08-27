@@ -2,11 +2,11 @@ import { createFilterStore, type FilterOption } from '$lib/utils/createFilterSto
 
 // Task status filter options
 export const taskStatusOptions: FilterOption[] = [
-  { id: 'new_task', value: 'new_task', label: 'New' },
-  { id: 'in_progress', value: 'in_progress', label: 'In Progress' },
-  { id: 'paused', value: 'paused', label: 'Paused' },
-  { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed' },
-  { id: 'cancelled', value: 'cancelled', label: 'Cancelled' },
+  { id: 'new_task', value: 'new_task', label: 'New Task', icon: '⚫' },
+  { id: 'in_progress', value: 'in_progress', label: 'In Progress', icon: '🟢' },
+  { id: 'paused', value: 'paused', label: 'Paused', icon: '⏸️' },
+  { id: 'successfully_completed', value: 'successfully_completed', label: 'Completed', icon: '☑️' },
+  { id: 'cancelled', value: 'cancelled', label: 'Cancelled', icon: '❌' },
 ];
 
 // Create task status filter store with deleted support
