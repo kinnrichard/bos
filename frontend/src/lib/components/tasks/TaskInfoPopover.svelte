@@ -51,9 +51,11 @@
   let {
     task,
     isSelected = false, // Whether this task is selected
+    onPopoverChange, // Callback to notify parent of popover state changes
   }: {
     task: Task;
     isSelected?: boolean;
+    onPopoverChange?: (isOpen: boolean) => void;
   } = $props();
 
   const dispatch = createEventDispatcher();
@@ -139,10 +141,16 @@
 
   // Track when popover content element exists to know when popover is open
   $effect(() => {
+    const wasOpen = popoverOpen;
     if (popoverContentElement) {
       popoverOpen = true;
     } else {
       popoverOpen = false;
+    }
+    
+    // Notify parent component of popover state change
+    if (wasOpen !== popoverOpen) {
+      onPopoverChange?.(popoverOpen);
     }
   });
 
@@ -399,13 +407,14 @@
     {#snippet trigger({ popover })}
       <button
         class="task-action-button"
+        class:popover-is-open={popoverOpen}
         title="Task details"
         use:popover.button
         onclick={(e) => {
           e.stopPropagation();
         }}
       >
-        <img src="/icons/{isSelected ? 'info' : 'info-blue'}.svg" alt="Info" class="action-icon" />
+         <img src="/icons/{isSelected ? 'info' : 'info-blue'}.svg" alt="Info" class="action-icon" />
       </button>
     {/snippet}
 
@@ -428,7 +437,7 @@
 
         <!-- Debug info -->
         {#if false}
-          <div style="padding: 8px; background: #333; font-size: 11px; font-family: monospace;">
+          <div style="padding: 8px; background: #333; font-size: 11px; font-family: monospace; color: #fff;">
             <div>Popover open: {popoverOpen}</div>
             <div>Task ID: {task?.id ?? 'null'}</div>
             <div>Queries initialized: {queriesInitialized}</div>
@@ -602,12 +611,33 @@
     display: inline-block;
   }
 
-  /* Button styling handled by parent TaskList component */
+  /* Override parent task-actions opacity when popover is open */
+  .task-info-popover-container:has(.popover-is-open) {
+    opacity: 1 !important;
+  }
+
+  /* Alternative approach if :has() isn't supported - add this class to parent */
+  .task-actions-visible {
+    opacity: 1 !important;
+  }
+
+  /* Button styling with always-blue appearance and debug features */
   .task-action-button {
     pointer-events: auto !important;
     position: relative;
     z-index: 10;
-    vertical-align: middle; /* If inline-flex */
+    vertical-align: middle;
+    
+    border: none !important;
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  /* Debug indicator dot */
+  .debug-indicator {
+    display: none; /* Hide debug indicator */
   }
 
   /* Action icon (SVG) styling */
@@ -616,7 +646,7 @@
     height: 18px;
   }
 
-  /* Popover content wrapper with scrolling */
+  /* Rest of your existing styles... */
   .popover-content-scrollable {
     display: flex;
     flex-direction: column;
@@ -626,7 +656,6 @@
     max-height: 500px;
   }
 
-  /* Header */
   .popover-header {
     display: flex;
     align-items: center;
@@ -663,7 +692,6 @@
     color: var(--status-in-progress-text);
   }
 
-  /* Timeline section */
   .timeline-section {
     padding: 16px;
     flex: 1;
@@ -676,7 +704,7 @@
   }
 
   .timeline-item {
-    margin-left: 26px; /* Indent to align with user name (20px icon + 6px gap) */
+    margin-left: 26px;
   }
 
   .timeline-item--note .timeline-content {
@@ -685,7 +713,7 @@
 
   .timeline-item--note .timeline-note {
     font-size: 14px;
-    color: var(--text-primary); /* Same offwhite as status changes */
+    color: var(--text-primary);
     white-space: pre-wrap;
     word-break: break-word;
   }
@@ -695,7 +723,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    flex-wrap: nowrap; /* Default to no wrapping */
+    flex-wrap: nowrap;
   }
 
   .timeline-content {
@@ -723,7 +751,7 @@
   }
 
   .timeline-label {
-    font-weight: 600; /* Make status changes bold */
+    font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
   }
@@ -736,7 +764,6 @@
     margin-left: auto;
   }
 
-  /* Timeline headers */
   .timeline-header {
     font-size: 13px;
     color: var(--text-muted);
@@ -744,7 +771,7 @@
     margin-top: 16px;
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Space between left and right content */
+    justify-content: space-between;
     gap: 6px;
   }
 
@@ -759,38 +786,35 @@
   }
 
   .timeline-header-user {
-    font-weight: 600; /* Bold technician name */
+    font-weight: 600;
   }
 
   .timeline-header-date {
-    margin-left: auto; /* Push date to the right */
-    font-weight: 600; /* Bold date */
+    margin-left: auto;
+    font-weight: 600;
   }
 
   .timeline-header-icon {
-    /* User avatar styling is handled by .user-avatar class */
-    /* Just ensure proper size for timeline context */
     width: 20px;
     height: 20px;
-    font-size: 12px; /* Match the increased font size from earlier */
+    font-size: 12px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  /* Note-specific styling */
   .timeline-item--note .timeline-row {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    flex-wrap: nowrap; /* Prevent wrapping by default */
+    flex-wrap: nowrap;
   }
 
   .timeline-item--note .timeline-content {
     flex: 1 1 auto;
-    min-width: 0; /* Allow content to shrink */
+    min-width: 0;
     display: flex;
     align-items: flex-start;
     gap: 8px;
@@ -799,20 +823,19 @@
   .timeline-note {
     word-break: break-word;
     white-space: pre-wrap;
-    color: var(--text-primary); /* Ensure consistent offwhite color */
+    color: var(--text-primary);
   }
 
   .timeline-item--note .timeline-time {
-    flex-shrink: 0; /* Never shrink the time */
-    margin-left: 12px; /* Ensure consistent spacing */
+    flex-shrink: 0;
+    margin-left: 12px;
   }
 
-  /* Add note section */
   .add-note-section {
     padding: 16px;
     border-top: 1px solid var(--border-secondary);
     flex-shrink: 0;
-    margin-top: auto; /* Push to bottom of scrollable area */
+    margin-top: auto;
   }
 
   .note-input {
@@ -845,7 +868,6 @@
     margin-top: 8px;
   }
 
-  /* Button styles */
   .button {
     padding: 6px 16px;
     border: none;
@@ -865,7 +887,6 @@
     cursor: not-allowed;
   }
 
-  /* Loading and error states */
   .loading-state,
   .error-state,
   .empty-state {
@@ -906,6 +927,4 @@
       transform: rotate(360deg);
     }
   }
-
-  /* Responsive behavior is handled automatically by the positioning utilities */
 </style>

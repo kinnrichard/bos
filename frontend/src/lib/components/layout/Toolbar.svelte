@@ -180,6 +180,13 @@
     }
   });
 
+  function handleJobFilterChange(newSelection: string[]) {
+    jobFilter.setSelected([
+      ...jobFilter.selected.filter((id) => !id.startsWith('status:') && !id.startsWith('priority:')),
+      ...newSelection,
+    ]);
+  }
+
   // Technician filter handler
   function handleTechnicianFilterChange(newSelection: string[]) {
     jobFilter.setSelected([
@@ -279,7 +286,11 @@
 
     <!-- Job filter -->
     {#if showJobFilter}
-      <JobFilterPopover {disabled} />
+      <JobFilterPopover 
+        selected={jobFilter.selected.filter((id) => id.startsWith('status:') || id.startsWith('priority:'))}
+        onFilterChange={handleJobFilterChange}
+        {disabled} 
+      />
       <TechnicianFilterPopover
         selected={jobFilter.selected.filter((id) => id.startsWith('technician:'))}
         onFilterChange={handleTechnicianFilterChange}

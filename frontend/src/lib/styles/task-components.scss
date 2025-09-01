@@ -301,7 +301,8 @@
   opacity: 0;
 
   .task-item:hover &,
-  &:focus-within {
+  &:focus-within,
+  &.has-open-popover {
     opacity: 1;
   }
 }

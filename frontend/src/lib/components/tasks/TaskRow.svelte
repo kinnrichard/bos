@@ -49,6 +49,7 @@
 
   // Reference for right-click popover trigger
   let rightClickTrigger = $state<HTMLButtonElement | null>(null);
+  let infoPopoverOpen = $state(false);
 
   // Debug permissions using proper debug system
   $effect(() => {
@@ -212,6 +213,10 @@
     });
   }
 
+  function handleInfoPopoverChange(isOpen: boolean) {
+    infoPopoverOpen = isOpen;
+  }
+
   // Focus management is now handled by the centralized focus store
   // The focus store coordinates all focus operations to prevent race conditions
 </script>
@@ -335,12 +340,13 @@
   </div>
 
   <!-- Task Actions -->
-  <div class="task-actions">
+  <div class="task-actions" class:has-open-popover={infoPopoverOpen}>
     <TaskInfoPopover
       {task}
       {jobId}
       {batchTaskDetails}
       {isSelected}
+      onPopoverChange={handleInfoPopoverChange}
       on:task-updated={handleTaskUpdated}
     />
   </div>
