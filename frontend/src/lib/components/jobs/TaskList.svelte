@@ -752,59 +752,74 @@ const ERROR_MESSAGE = 'Failed to create task - please try again';
 
 /**
  * Calculates position for inline task creation
+ * If the target task has subtasks, the new task becomes a subtask
+ * Otherwise, it becomes a sibling
  */
 function calculateInlineTaskPosition(insertNewTaskAfter: string): TaskPosition {
   const afterTask = canonicalTasks().find((t) => t.id === insertNewTaskAfter);
-  
-  console.log('[Position] Inline calculation for:', insertNewTaskAfter.substring(0, 8));
-  console.log('[Position] Found afterTask:', afterTask ? { id: afterTask.id.substring(0, 8), position: afterTask.position } : null);
-  
+
   if (!afterTask) {
     console.error('[TaskList] After task not found:', insertNewTaskAfter);
     // Fallback to bottom creation logic
     return calculateBottomTaskPosition();
   }
 
-  const parentId = afterTask.parent_id || undefined;
-  
-  // Get siblings sorted by position to match UI order
-  const siblings = canonicalTasks()
-    .filter((t) => (t.parent_id || null) === (parentId || null))
-    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  // Check if the target task has existing subtasks
+  const hasSubtasks = canonicalTasks().some((t) => t.parent_id === afterTask.id);
 
-  console.log('[Position] Siblings:', siblings.map(t => ({ id: t.id.substring(0, 8), position: t.position })));
-
-  const afterIndex = siblings.findIndex((t) => t.id === insertNewTaskAfter);
-  
-  console.log('[Position] After task index in siblings:', afterIndex);
-  
-  if (afterIndex === -1) {
-    // Fallback if task not found in siblings
+  if (hasSubtasks) {
+    // Create as a subtask - find the last subtask and position after it
+    const subtasks = canonicalTasks()
+      .filter((t) => t.parent_id === afterTask.id)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    
+    const lastSubtask = subtasks[subtasks.length - 1];
+    
     const result = {
-      position: calculatePosition(afterTask.position ?? 0, null),
+      position: lastSubtask 
+        ? calculatePosition(lastSubtask.position ?? 0, null)
+        : calculatePosition(null, null), // First subtask
+      parentId: afterTask.id, // Make it a child of the target task
+      repositionedAfterId: lastSubtask?.id || null,
+      isTopOfList: !lastSubtask // True if this is the first subtask
+    };
+
+    return result;
+  } else {
+    // Original sibling creation logic
+    const parentId = afterTask.parent_id || undefined;
+    
+    // Get siblings sorted by position to match UI order
+    const siblings = canonicalTasks()
+      .filter((t) => (t.parent_id || null) === (parentId || null))
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+    const afterIndex = siblings.findIndex((t) => t.id === insertNewTaskAfter);
+    
+    if (afterIndex === -1) {
+      // Fallback if task not found in siblings
+      const result = {
+        position: calculatePosition(afterTask.position ?? 0, null),
+        parentId,
+        repositionedAfterId: insertNewTaskAfter,
+        isTopOfList: false
+      };
+      return result;
+    }
+
+    const afterPosition = afterTask.position ?? 0;
+    const nextTask = siblings[afterIndex + 1] ?? null;
+    const nextPosition = nextTask?.position ?? null;
+    
+    const result = {
+      position: calculatePosition(afterPosition, nextPosition),
       parentId,
       repositionedAfterId: insertNewTaskAfter,
       isTopOfList: false
     };
-    console.log('[Position] Fallback result:', result);
+    
     return result;
   }
-
-  const afterPosition = afterTask.position ?? 0;
-  const nextTask = siblings[afterIndex + 1] ?? null;
-  const nextPosition = nextTask?.position ?? null;
-  
-  console.log('[Position] Calculating between:', { afterPosition, nextPosition });
-  
-  const result = {
-    position: calculatePosition(afterPosition, nextPosition),
-    parentId,
-    repositionedAfterId: insertNewTaskAfter,
-    isTopOfList: false
-  };
-  
-  console.log('[Position] Inline result:', result);
-  return result;
 }
 
 /**
@@ -813,12 +828,7 @@ function calculateInlineTaskPosition(insertNewTaskAfter: string): TaskPosition {
 function calculateBottomTaskPosition(): TaskPosition {
   const rootTasks = canonicalTasks().filter((t) => !t.parent_id);
   const lastRootTask = rootTasks.length > 0 ? rootTasks[rootTasks.length - 1] : null;
-  
-  console.log('[Position] Bottom calculation:', {
-    rootTaskCount: rootTasks.length,
-    lastRootTask: lastRootTask ? { id: lastRootTask.id.substring(0, 8), position: lastRootTask.position } : null
-  });
-  
+
   const repositionedAfterId = lastRootTask?.id || null;
   const position = lastRootTask 
     ? calculatePosition(lastRootTask.position ?? 0, null)
@@ -830,7 +840,6 @@ function calculateBottomTaskPosition(): TaskPosition {
     isTopOfList: repositionedAfterId === null
   };
   
-  console.log('[Position] Bottom result:', result);
   return result;
 }
 
