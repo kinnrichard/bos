@@ -14,6 +14,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { browser } from '$app/environment';
+  import { beforeNavigate, afterNavigate } from '$app/navigation';
   import { initZero, getZeroState } from '$lib/zero';
   import { authService } from '$lib/api/auth';
   import { setCurrentUser } from '$lib/auth/current-user';
@@ -32,6 +33,86 @@
   let errorMessage = $state<string | null>(null);
   let retryCount = $state(0);
   const maxRetries = 3;
+
+  // Add scroll restoration state
+  const scrollPositions = new Map<string, number>();
+
+  beforeNavigate((navigation) => {
+    const windowScroll = window.scrollY;
+    // Find the actual scrolling container
+    const possibleScrollContainers = [
+      document.querySelector('.jobs-list'),
+      document.querySelector('.jobs-container'), 
+      document.querySelector('[class*="scroll"]'),
+      document.querySelector('main'),
+      document.querySelector('.content'),
+      ...document.querySelectorAll('div')
+    ].filter(el => {
+      if (!el) return false;
+      return el.scrollHeight > el.clientHeight && el.scrollTop >= 0;
+    });
+    
+    // Save all container scroll positions
+    const scrollData = { window: windowScroll };
+    possibleScrollContainers.forEach((el, index) => {
+      if (el.scrollTop > 0) {
+        scrollData[`container_${index}_${el.className || el.tagName}`] = el.scrollTop;
+      }
+    });
+    
+    if (browser && navigation.from) {
+      scrollPositions.set(navigation.from.url.pathname, scrollData);
+    }
+  });
+
+  afterNavigate(({ to }) => {
+    if (browser && to) {
+      const savedScrollData = scrollPositions.get(to.url.pathname);
+      
+      if (savedScrollData && typeof savedScrollData === 'object') {
+        const restoreScroll = () => {
+          if (zeroState === 'ready') {
+            // Restore window scroll
+            if (savedScrollData.window) {
+              window.scrollTo({ top: savedScrollData.window, behavior: 'auto' });
+            }
+            
+            // Restore container scrolls - better approach
+            Object.entries(savedScrollData).forEach(([key, scrollPos]) => {
+              if (key.startsWith('container_') && typeof scrollPos === 'number') {
+                
+                // Find containers with the same class pattern
+                const className = key.split('_').slice(2).join('_'); // Get "content s-w8hPWgbWy-fJ"
+                const containers = document.querySelectorAll('.content');
+                
+                // Try to find the scrollable one
+                for (let i = 0; i < containers.length; i++) {
+                  const container = containers[i];
+                  if (container.scrollHeight > container.clientHeight) {
+                    container.scrollTop = scrollPos;
+                    
+                    break; // Only restore to the first scrollable container
+                  }
+                }
+              }
+            });
+          } else {
+            setTimeout(restoreScroll, 50);
+          }
+        };
+        restoreScroll();
+      } else {
+        // Scroll to top of all containers
+        const scrollableContainers = document.querySelectorAll('.content');
+        scrollableContainers.forEach((el, index) => {
+          if (el.scrollHeight > el.clientHeight) {
+            el.scrollTop = 0;
+          }
+        });
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+    }
+  });
 
   onMount(async () => {
     if (!browser) return;
