@@ -14,7 +14,7 @@
 - ✅ macOS 26 look and feel
 - ✅ Desktop-like interface (no hand pointer or hover)
 - ✅ Sidebar show button
-- 💭 Scroll state restoration
+- 🚧 Scroll state restoration
 - 💭 Redesign sidebar with nesting
 - 💭 Tweak coloring of forms, toolbar buttons, etc
 - 💭 v2 Better popover positioning
