@@ -1,8 +1,8 @@
 <!--
-  Client Detail Page
+  Client Detail Page with Edit Button Integration
   
-  Displays client information with view/edit modes and new client creation
-  Supports both /clients/[id] and /clients/new routes
+  Updated to match the person detail page's edit button functionality
+  Save button is never disabled - validation handled through error messages
 -->
 
 <script lang="ts">
@@ -24,6 +24,8 @@
   // Client data and loading states
   let clientQuery = $state<ReturnType<typeof ReactiveClient.find> | null>(null);
   let isEditing = $state(false);
+  let isSaving = $state(false);
+  let error = $state<string | null>(null);
 
   // Initialize edit mode for new clients
   $effect(() => {
@@ -34,8 +36,6 @@
       isEditing = false;
     }
   });
-  let isSaving = $state(false);
-  let error = $state<string | null>(null);
 
   // Create new client object for new client mode
   const newClientObject = $derived(
@@ -102,7 +102,7 @@
     return null;
   }
 
-  // Event handlers
+  // Event handlers - matching person page pattern
   function handleEdit() {
     if (client) {
       formData.name = client.name || '';
@@ -174,6 +174,18 @@
     }
   }
 
+  // Delete handler (similar to person page)
+  async function handleDelete() {
+    if (!client || isNewClient) return;
+    
+    try {
+      await Client.destroy(client.id);
+      goto('/clients');
+    } catch (err: unknown) {
+      error = err instanceof Error ? err.message : 'Failed to delete client. Please try again.';
+    }
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     if (isEditing) {
       if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
@@ -201,23 +213,30 @@
     }
   });
 
-  // Derived validation state
-  const canSave = $derived(validateForm() === null);
-
-  // Set up client edit state in layout store
+  // Set up client edit state in layout store - MATCHING PERSON PAGE PATTERN
   $effect(() => {
     layoutActions.setClientEditState(isEditing, isNewClient);
     layoutActions.setSavingClient(isSaving);
-    layoutActions.setCanSaveClient(canSave);
+    layoutActions.setCanSaveClient(true); // Always allow saving - validation handled in save function
     layoutActions.setClientEditCallbacks({
       onEdit: handleEdit,
       onSave: handleSave,
       onCancel: handleCancel,
     });
 
+    // Set page title based on mode (matching person page)
+    if (isEditing && !isNewClient) {
+      layoutActions.setPageTitle('Edit Client');
+    } else if (isNewClient) {
+      layoutActions.setPageTitle('New Client');
+    } else {
+      layoutActions.setPageTitle(null); // No title in view mode
+    }
+
     // Cleanup on unmount
     return () => {
       layoutActions.clearClientEditState();
+      layoutActions.clearPageTitle();
     };
   });
 
@@ -286,6 +305,22 @@
                   ariaLabel="Client type"
                 />
               </div>
+
+              <!-- Form action buttons - save button is never disabled -->
+              <div class="form-actions">
+                <button 
+                  class="cancel-button" 
+                  onclick={handleCancel}
+                >
+                  Cancel
+                </button>
+                <button 
+                  class="save-button" 
+                  onclick={handleSave}
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
             </div>
           {:else}
             <!-- View Mode -->
@@ -311,6 +346,16 @@
                     </span>
                   </div>
                 {/if}
+              </div>
+
+              <!-- View action buttons -->
+              <div class="view-actions">
+                <button class="edit-button" onclick={handleEdit}>
+                  Edit Client
+                </button>
+                <button class="delete-button" onclick={handleDelete}>
+                  Delete Client
+                </button>
               </div>
             </div>
           {/if}
@@ -355,7 +400,7 @@
     flex-direction: column;
     gap: 16px;
     max-width: 400px;
-    margin: 0 auto;
+    margin: 0 auto 32px auto;
   }
 
   .detail-item {
@@ -375,6 +420,46 @@
   .detail-value {
     font-size: 14px;
     color: var(--text-primary, #f2f2f7);
+  }
+
+  /* View Actions */
+  .view-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 24px;
+  }
+
+  .edit-button {
+    padding: 12px 24px;
+    background-color: var(--accent-blue, #00a3ff);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: default;
+    transition: all 0.15s ease;
+  }
+
+  .edit-button:hover {
+    background-color: var(--accent-blue-hover, #0089e0);
+  }
+
+  .delete-button {
+    padding: 12px 24px;
+    background-color: var(--accent-red, #ff3b30);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: default;
+    transition: all 0.15s ease;
+  }
+
+  .delete-button:hover {
+    background-color: var(--accent-red-hover, #e6342a);
   }
 
   /* Edit Mode */
@@ -411,6 +496,46 @@
     margin-bottom: 24px;
     color: var(--accent-red, #ff3b30);
     font-size: 14px;
+  }
+
+  /* Form Actions */
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 32px;
+  }
+
+  .cancel-button {
+    padding: 12px 24px;
+    background-color: var(--bg-secondary, #1c1c1e);
+    color: var(--text-primary, #f2f2f7);
+    border: 1px solid var(--border-primary, #38383a);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: default;
+    transition: all 0.15s ease;
+  }
+
+  .cancel-button:hover {
+    background-color: var(--bg-tertiary, #2c2c2e);
+  }
+
+  .save-button {
+    padding: 12px 24px;
+    background-color: var(--accent-green, #30d158);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: default;
+    transition: all 0.15s ease;
+  }
+
+  .save-button:hover {
+    background-color: var(--accent-green-hover, #2bb84a);
   }
 
   /* States */
@@ -456,6 +581,11 @@
     .client-title {
       font-size: 36px;
     }
+
+    .view-actions,
+    .form-actions {
+      flex-direction: column;
+    }
   }
 
   @media (max-width: 480px) {
@@ -481,7 +611,11 @@
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
-    .retry-button {
+    .retry-button,
+    .edit-button,
+    .delete-button,
+    .save-button,
+    .cancel-button {
       transition: none;
     }
   }
