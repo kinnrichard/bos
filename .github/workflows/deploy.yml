@@ -25,7 +25,7 @@ jobs:
         with:
           context: ./api
           push: true
-          tags: username/rails-api:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/rails-api:latest
 
       # Build and push Svelte Frontend
       - name: Build & push Svelte Frontend
@@ -33,7 +33,7 @@ jobs:
         with:
           context: ./frontend
           push: true
-          tags: username/svelte-frontend:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/svelte-frontend:latest
 
       # Deploy to DigitalOcean App Platform
       - name: Deploy to DigitalOcean App Platform
@@ -41,3 +41,4 @@ jobs:
         with:
           app-id: ${{ secrets.DO_APP_ID }}
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          spec: .do/app.yml
