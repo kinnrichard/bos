@@ -35,10 +35,15 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/svelte-frontend:latest
 
-      # Deploy to DigitalOcean App Platform
+      # Install doctl
+      - name: Install doctl
+        run: |
+          sudo snap install doctl --classic
+
+      # Authenticate doctl
+      - name: Authenticate doctl
+        run: doctl auth init -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      # Trigger App Platform deployment
       - name: Deploy to DigitalOcean App Platform
-        uses: digitalocean/app-action@v2
-        with:
-          app-id: ${{ secrets.DO_APP_ID }}
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          spec: .do/app.yml
+        run: doctl apps update ${{ secrets.DO_APP_ID }} --spec .do/app.yml
