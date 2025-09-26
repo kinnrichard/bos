@@ -3,33 +3,12 @@ alerts:
   - rule: DOMAIN_FAILED
 
 envs:
-  - key: DB_HOST
-    scope: RUN_AND_BUILD_TIME
-    value: ${DATABASE_HOST}
-  - key: DB_NAME
-    scope: RUN_AND_BUILD_TIME
-    value: ${DATABASE_NAME}
-  - key: DB_USER
-    scope: RUN_AND_BUILD_TIME
-    value: ${DATABASE_USER}
-  - key: DB_PASSWORD
-    scope: RUN_AND_BUILD_TIME
-    value: ${DATABASE_PASSWORD}
-  - key: DB_PORT
-    scope: RUN_AND_BUILD_TIME
-    value: ${DATABASE_PORT}
-  - key: DB_SSLMODE
-    scope: RUN_AND_BUILD_TIME
-    value: require
-  - key: RAILS_ENV
+   - key: RAILS_ENV
     scope: RUN_AND_BUILD_TIME
     value: production
   - key: SECRET_KEY_BASE
     scope: RUN_AND_BUILD_TIME
     value: 6d979c329f8a3ef3d0eea4743f19d3dd2b30d15fd55998ca0b9f3ee45c53b2e74f625204a33ce2b6d5f0c5a38c9e2a79ec06e6b0813ec70a874948a3482fd88a
-  # - key: RAILS_MASTER_KEY
-  #   scope: RUN_AND_BUILD_TIME
-  #   value: 69f9d769a6f38dbcaefd04eabd0919dd
   - key: DATABASE_URL
     scope: RUN_AND_BUILD_TIME
     value: ${DATABASE_URL}
