@@ -3,7 +3,7 @@ alerts:
   - rule: DOMAIN_FAILED
 
 envs:
-   - key: RAILS_ENV
+  - key: RAILS_ENV
     scope: RUN_AND_BUILD_TIME
     value: production
   - key: SECRET_KEY_BASE
