@@ -1,0 +1,43 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build and push Rails API
+      - name: Build & push Rails API
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api
+          push: true
+          tags: username/rails-api:latest
+
+      # Build and push Svelte Frontend
+      - name: Build & push Svelte Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: username/svelte-frontend:latest
+
+      # Deploy to DigitalOcean App Platform
+      - name: Deploy to DigitalOcean App Platform
+        uses: digitalocean/app-action@v2
+        with:
+          app-id: ${{ secrets.DO_APP_ID }}
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
