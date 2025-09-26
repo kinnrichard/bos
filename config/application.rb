@@ -37,6 +37,12 @@ module Bos
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks generators])
 
+    # Don't load generators in production at all
+    unless Rails.env.development?
+      config.autoload_paths -= Dir[Rails.root.join('lib/generators')]
+      config.eager_load_paths -= Dir[Rails.root.join('lib/generators')]
+    end
+
     # Autoload custom error classes
     config.autoload_paths << Rails.root.join("app/errors")
 
