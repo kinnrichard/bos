@@ -38,11 +38,11 @@ jobs:
       # Install doctl (DigitalOcean CLI)
       - name: Install doctl
         run: |
-          curl -sL https://github.com/digitalocean/doctl/releases/download/v1.113.0/doctl-1.113.0-linux-amd64.tar.gz \
+          curl -sL https://github.com/digitalocean/doctl/releases/download/v1.100.0/doctl-1.100.0-linux-amd64.tar.gz \
           | tar -xzv
           sudo mv doctl /usr/local/bin
 
-      # Deploy to DigitalOcean App Platform
+      # Deploy to DigitalOcean App Platform using app.yml
       - name: Deploy to DigitalOcean
         run: |
           doctl apps update ${{ secrets.DO_APP_ID }} \

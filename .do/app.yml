@@ -48,7 +48,7 @@ services:
   - name: bos-backend
     http_port: 3000
     image:
-      registry: ${{ secrets.DOCKERHUB_USERNAME }}
+      registry: richardfaultless # 👈 your Docker Hub username here
       registry_type: DOCKER_HUB
       repository: rails-api
       tag: latest
@@ -62,7 +62,7 @@ services:
   - name: bos-frontend
     http_port: 80
     image:
-      registry: ${{ secrets.DOCKERHUB_USERNAME }}
+      registry: richardfaultless # 👈 your Docker Hub username here
       registry_type: DOCKER_HUB
       repository: svelte-frontend
       tag: latest
