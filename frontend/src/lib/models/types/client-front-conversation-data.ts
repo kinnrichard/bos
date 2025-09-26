@@ -17,6 +17,7 @@ export interface ClientFrontConversationData extends BaseRecord {
   front_conversation_id: string;
   created_at: string | number;
   updated_at: string | number;
+  waiting_since_timestamp?: number;
 }
 
 /**

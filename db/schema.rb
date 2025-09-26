@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_06_135650) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_08_135830) do
   create_schema "zero"
   create_schema "zero_0"
   create_schema "zero_0/cdc"
@@ -55,7 +55,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_135650) do
     t.uuid "front_conversation_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "waiting_since_timestamp"
     t.index ["client_id", "front_conversation_id"], name: "idx_client_front_conversation", unique: true
+    t.index ["client_id", "waiting_since_timestamp"], name: "index_clients_front_conversations_on_client_and_waiting", order: { waiting_since_timestamp: :desc }
     t.index ["client_id"], name: "index_clients_front_conversations_on_client_id"
     t.index ["front_conversation_id"], name: "idx_clients_front_convs_on_conv_id"
     t.index ["front_conversation_id"], name: "index_clients_front_conversations_on_front_conversation_id"
@@ -172,6 +174,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_135650) do
     t.index ["front_id"], name: "index_front_conversations_on_front_id", unique: true
     t.index ["recipient_contact_id"], name: "index_front_conversations_on_recipient_contact_id"
     t.index ["status"], name: "index_front_conversations_on_status"
+    t.index ["status_category", "waiting_since_timestamp"], name: "idx_front_conv_status_cat_waiting_since", order: { waiting_since_timestamp: :desc }
+    t.index ["status_category"], name: "idx_front_conversations_status_category"
+    t.index ["waiting_since_timestamp"], name: "idx_front_conversations_waiting_since"
   end
 
   create_table "front_inboxes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
