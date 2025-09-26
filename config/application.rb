@@ -39,9 +39,10 @@ module Bos
 
     # Don't load generators in production at all
     unless Rails.env.development?
-      config.autoload_paths -= Dir[Rails.root.join('lib/generators')]
-      config.eager_load_paths -= Dir[Rails.root.join('lib/generators')]
+      config.autoload_paths -= %W(#{config.root}/lib/generators)
+      config.eager_load_paths -= %W(#{config.root}/lib/generators)
     end
+
 
     # Autoload custom error classes
     config.autoload_paths << Rails.root.join("app/errors")
