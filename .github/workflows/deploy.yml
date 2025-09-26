@@ -19,18 +19,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Build and push Rails API (inside "Rails api" folder)
+      # Build and push Rails API (root folder)
       - name: Build & push Rails API
         uses: docker/build-push-action@v5
         with:
-          context: ./Rails api
+          context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/rails-api:latest
 
-      # Build and push Svelte Frontend (inside "Rails api/frontend" folder)
+      # Build and push Svelte Frontend (frontend folder)
       - name: Build & push Svelte Frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./Rails api/frontend
+          context: ./frontend
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/svelte-frontend:latest
