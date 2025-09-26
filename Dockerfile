@@ -12,10 +12,10 @@ ENV RAILS_ENV=production
 COPY Gemfile Gemfile.lock ./
 RUN bundle install --without development test
 
-# Copy app code
+# Copy app code but exclude generators
 COPY . .
+RUN rm -rf lib/generators
 
 EXPOSE 3000
 
-# Don't run migrations in CMD
 CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]

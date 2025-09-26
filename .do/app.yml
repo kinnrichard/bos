@@ -2,14 +2,6 @@ alerts:
   - rule: DEPLOYMENT_FAILED
   - rule: DOMAIN_FAILED
 
-envs:
-  - key: RAILS_ENV
-    scope: RUN_AND_BUILD_TIME
-    value: production
-  - key: SECRET_KEY_BASE
-    scope: RUN_AND_BUILD_TIME
-    value: 6d979c329f8a3ef3d0eea4743f19d3dd2b30d15fd55998ca0b9f3ee45c53b2e74f625204a33ce2b6d5f0c5a38c9e2a79ec06e6b0813ec70a874948a3482fd88a
-
 features:
   - buildpack-stack=ubuntu-22
 
@@ -37,7 +29,7 @@ services:
       registry_type: DOCKER_HUB
       repository: rails-api
       tag: latest
-    instance_count: 2
+    instance_count: 1
     instance_size_slug: apps-s-1vcpu-1gb
 
   - name: bos-frontend
