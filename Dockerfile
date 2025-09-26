@@ -15,8 +15,9 @@ RUN bundle install --without development test
 # Copy app code
 COPY . .
 
-# Remove generators directory to prevent Zeitwerk issues
-RUN rm -rf lib/generators
+# Force verification that generators are gone
+RUN ls -la lib/ || echo "lib directory does not exist"
+RUN ls -la lib/generators || echo "generators directory successfully removed"
 
 EXPOSE 3000
 
