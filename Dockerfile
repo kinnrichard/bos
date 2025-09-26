@@ -12,8 +12,10 @@ ENV RAILS_ENV=production
 COPY Gemfile Gemfile.lock ./
 RUN bundle install --without development test
 
-# Copy app code but exclude generators
+# Copy app code
 COPY . .
+
+# Remove generators directory to prevent Zeitwerk issues
 RUN rm -rf lib/generators
 
 EXPOSE 3000
