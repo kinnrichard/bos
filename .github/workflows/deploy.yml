@@ -19,31 +19,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Build and push Rails API
+      # Build and push Rails API (inside "Rails api" folder)
       - name: Build & push Rails API
         uses: docker/build-push-action@v5
         with:
-          context: ./api
+          context: ./Rails api
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/rails-api:latest
 
-      # Build and push Svelte Frontend
+      # Build and push Svelte Frontend (inside "Rails api/frontend" folder)
       - name: Build & push Svelte Frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
+          context: ./Rails api/frontend
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/svelte-frontend:latest
-
-      # Install doctl
-      - name: Install doctl
-        run: |
-          sudo snap install doctl --classic
-
-      # Authenticate doctl
-      - name: Authenticate doctl
-        run: doctl auth init -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
-      # Trigger App Platform deployment
-      - name: Deploy to DigitalOcean App Platform
-        run: doctl apps update ${{ secrets.DO_APP_ID }} --spec .do/app.yml
