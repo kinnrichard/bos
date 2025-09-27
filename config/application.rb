@@ -35,14 +35,7 @@ module Bos
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
-    config.autoload_lib(ignore: %w[assets tasks generators])
-
-    # Don't load generators in production at all
-    unless Rails.env.development?
-      config.autoload_paths -= %W(#{config.root}/lib/generators)
-      config.eager_load_paths -= %W(#{config.root}/lib/generators)
-    end
-
+    config.autoload_lib(ignore: %w[assets tasks])
 
     # Autoload custom error classes
     config.autoload_paths << Rails.root.join("app/errors")
@@ -57,5 +50,7 @@ module Bos
     #
     config.time_zone = "Eastern Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+    config.eager_load_paths -= Dir[Rails.root.join('lib/generators')]
+    config.autoload_paths -= Dir[Rails.root.join('lib/generators')]
   end
 end
